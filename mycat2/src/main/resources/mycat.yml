@@ -10,7 +10,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
               function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
               #提供表的字段信息,升级计划:通过已有数据库拉取该信息
           createTableSQL: |-
-            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
           dataNodes: [{targetName: repli ,schemaName: db1, tableName: travelrecord},
                       {targetName: repli ,schemaName: db1, tableName: travelrecord2},
                       {targetName: repli ,schemaName: db1, tableName: travelrecord3},
@@ -174,6 +174,10 @@ plug:
     {name: BalanceRunOnReplica, clazz: io.mycat.plug.loadBalance.BalanceRunOnReplica},
     {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
     ]
-
+  sequence:
+    sequences: [
+    {name: 'db1_travelrecord', clazz: io.mycat.plug.sequence.SequenceMySQLGenerator ,args: "sql : SELECT db1.mycat_seq_nextval('GLOBAL') , targetName:defaultDs"},
+    {name: 'db1_address', clazz: io.mycat.plug.sequence.SequenceSnowflakeGenerator ,args: 'workerId:1'},
+    ]
 
     #10.3.15-MariaDB

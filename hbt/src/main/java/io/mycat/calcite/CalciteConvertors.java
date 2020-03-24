@@ -67,7 +67,7 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, JDBCType.valueOf(typeString), nullable));
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, JDBCType.valueOf(typeString), nullable,false,false));
             }
             return res;
         } catch (SQLException e) {
@@ -168,8 +168,10 @@ public class CalciteConvertors {
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
+            boolean autoIncrement = mycatRowMetaData.isAutoIncrement(i);
+            boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNullable(i)));
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey));
         }
         return list;
     }

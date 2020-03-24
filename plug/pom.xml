@@ -20,6 +20,12 @@
         <artifactId>common</artifactId>
         <version>0.7-SNAPSHOT</version>
       </dependency>
+        <!-- https://mvnrepository.com/artifact/com.imadcn.framework/idworker -->
+        <dependency>
+            <groupId>com.imadcn.framework</groupId>
+            <artifactId>idworker</artifactId>
+            <version>1.4.0</version>
+        </dependency>
     </dependencies>
 
 

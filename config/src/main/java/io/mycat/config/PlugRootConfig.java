@@ -12,6 +12,7 @@ import java.util.List;
 @Data
 public class PlugRootConfig {
     private LoadBalance loadBalance = new LoadBalance();
+    private Sequence sequence = new Sequence();
 
     @Data
     public static class LoadBalance {
@@ -19,9 +20,22 @@ public class PlugRootConfig {
         List<LoadBalanceConfig> loadBalances = new ArrayList<>();
     }
 
+
     @Data
     public static class LoadBalanceConfig {
         String name;
         String clazz;
+    }
+
+    @Data
+    public static class Sequence {
+        List<SequenceConfig> sequences = new ArrayList<>();
+    }
+
+    @Data
+    public static class SequenceConfig {
+        String name;
+        String clazz;
+        String args;
     }
 }

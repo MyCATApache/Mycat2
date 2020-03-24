@@ -90,4 +90,9 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     public ResultSetMetaData metaData() {
         return null;
     }
+
+    @Override
+    public boolean isPrimaryKey(int column) {
+        return columnInfo.get(column).isPrimaryKey();
+    }
 }

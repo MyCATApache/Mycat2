@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
@@ -118,8 +119,28 @@ public class GlobalTable implements GlobalTableHandler {
     }
 
     @Override
-    public List<SimpleColumnInfo> getRawColumns() {
+    public List<SimpleColumnInfo> getColumns() {
         return logicTable.getRawColumns();
+    }
+
+    @Override
+    public SimpleColumnInfo getColumnByName(String name) {
+        return logicTable.getColumnByName(name);
+    }
+
+    @Override
+    public SimpleColumnInfo getAutoIncrementColumn() {
+        return logicTable.getAutoIncrementColumn();
+    }
+
+    @Override
+    public String getUniqueName() {
+        return logicTable.getUniqueName();
+    }
+
+    @Override
+    public Supplier<String> nextSequence() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

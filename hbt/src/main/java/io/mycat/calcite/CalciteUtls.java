@@ -52,7 +52,7 @@ public class CalciteUtls {
 
 
         //
-        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+        List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         List<QueryBackendTask> list = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
@@ -91,7 +91,7 @@ public class CalciteUtls {
     }
 
     public static String getBackendTaskSQL(ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
-        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+        List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
     }
@@ -112,7 +112,7 @@ public class CalciteUtls {
         if (projects == null) {
             return Collections.emptyList();
         } else {
-            List<SimpleColumnInfo> rawColumns = table.getRawColumns();
+            List<SimpleColumnInfo> rawColumns = table.getColumns();
             return Arrays.stream(projects).mapToObj(rawColumns::get).collect(Collectors.toList());
         }
     }
@@ -149,7 +149,7 @@ public class CalciteUtls {
     }
 
     public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
-        List<SimpleColumnInfo> rowOrder = table.getRawColumns();
+        List<SimpleColumnInfo> rowOrder = table.getColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();

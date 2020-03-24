@@ -6,6 +6,7 @@ import io.mycat.queryCondition.SimpleColumnInfo;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public interface TableHandler {
     public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler();
@@ -22,5 +23,17 @@ public interface TableHandler {
 
     String getCreateTableSQL();
 
-    List<SimpleColumnInfo> getRawColumns();
+    List<SimpleColumnInfo> getColumns();
+
+    SimpleColumnInfo getColumnByName(String name);
+
+    SimpleColumnInfo getAutoIncrementColumn();
+
+    String getUniqueName();
+
+    Supplier<String> nextSequence();
+
+    default boolean isAutoIncrement() {
+        return getAutoIncrementColumn() != null;
+    }
 }

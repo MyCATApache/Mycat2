@@ -90,7 +90,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                 GlobalTableHandler table = (GlobalTableHandler) this.table;
                 BackendTableInfo globalBackendTableInfo =table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
                 String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
-                        table.getRawColumns(),
+                        table.getColumns(),
                         CalciteUtls.getColumnList(table, projects)
                         , globalBackendTableInfo);
                 return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));

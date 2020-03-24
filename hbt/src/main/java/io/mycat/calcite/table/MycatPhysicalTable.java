@@ -50,7 +50,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
-                logicTable().getRawColumns(),
+                logicTable().getColumns(),
                 CalciteUtls.getColumnList(logicTable(),projects), backendTableInfo);
         return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName()));
     }

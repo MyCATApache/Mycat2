@@ -19,5 +19,5 @@ public interface ShardingTableHandler extends TableHandler {
 
     SimpleColumnInfo.ShardingInfo getTableColumnInfo();
 
-    List<SimpleColumnInfo> getRawColumns();
+    List<SimpleColumnInfo> getColumns();
 }

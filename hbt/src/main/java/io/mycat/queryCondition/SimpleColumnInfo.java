@@ -1,10 +1,7 @@
 package io.mycat.queryCondition;
 
 import io.mycat.router.RuleFunction;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 
 import java.sql.JDBCType;
 import java.util.ArrayList;
@@ -17,6 +14,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
+@EqualsAndHashCode
 public class SimpleColumnInfo {
     @NonNull
     final String columnName;
@@ -26,6 +24,8 @@ public class SimpleColumnInfo {
     @NonNull
     final JDBCType jdbcType;
     final boolean nullable;
+    final boolean autoIncrement;
+    final boolean primaryKey;
     @NonNull
     final List<ShardingInfo> shardingInfo = new ArrayList<>();
 

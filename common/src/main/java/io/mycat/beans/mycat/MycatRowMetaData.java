@@ -56,6 +56,10 @@ public interface MycatRowMetaData {
 
     public boolean isNullable(int column);
 
+    public default boolean isPrimaryKey(int column){
+        return false;
+    }
+
     default String toSimpleText() {
         int columnCount = getColumnCount();
         List list = new ArrayList();
