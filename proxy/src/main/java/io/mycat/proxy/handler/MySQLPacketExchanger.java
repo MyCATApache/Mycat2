@@ -32,6 +32,8 @@ import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.util.Objects;
 
+import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_OK;
+
 /**
  *@author jamie12221
  */
@@ -105,6 +107,12 @@ public enum MySQLPacketExchanger {
         while (mysql.readPartProxyPayload()) {
             endPos = packetResolver.getEndPos();
             mySQLPacket.packetReadStartIndex(endPos);
+        }
+        if (packetResolver.getMySQLPayloadType()==FIRST_OK){
+            int okLastInsertId = packetResolver.getOkLastInsertId();
+            int okAffectedRows = packetResolver.getOkAffectedRows();
+            mycatSession.setLastInsertId(okLastInsertId);
+            mycatSession.setAffectedRows(okAffectedRows);
         }
         proxyBuffer.channelWriteStartIndex(startIndex);
         proxyBuffer.channelWriteEndIndex(endPos);
