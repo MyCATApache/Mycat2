@@ -86,7 +86,9 @@ public class ContextRunner {
     public static final String OFF_XA = ("offXA");
     public static final String SET_AUTOCOMMIT_OFF = ("setAutoCommitOff");
     public static final String SET_AUTOCOMMIT_ON = ("setAutoCommitOn");
-
+    public static final String SELECT_LAST_INSERT_ID = ("selectLastInsertId");
+    public static final String SELECT_AUTOCOMMIT = ("selectAutocommit");
+    public static final String SELECT_READ_ONLY = ("selectTransactionReadOnly");
     static final ConcurrentHashMap<String, Command> COMMANDS;
 
     public static void run(MycatClient client, Context analysis, MycatSession session) {
@@ -159,7 +161,6 @@ public class ContextRunner {
     static {
         COMMANDS = new ConcurrentHashMap<>();
         COMMANDS.put(ERROR, ERROR_COMMAND);
-
         /**
          * 参数:statement
          */
@@ -181,24 +182,72 @@ public class ContextRunner {
         });
 
         /**
-         * 参数:statement
+         * 参数:无
          */
-        COMMANDS.put(EXPLAIN, new Command() {
+        COMMANDS.put(SELECT_LAST_INSERT_ID, new Command() {
+            String columnName = "last_insert_id()";
+
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
-                String sql = context.getVariable("statement");
-                Context analysis = client.analysis(sql);
-                Command command = COMMANDS.get(analysis.getCommand());
-                return command.explain(client, analysis, session);
+                MycatResultSet defaultResultSet = ResultSetProvider.INSTANCE.createDefaultResultSet(1, 33, Charset.defaultCharset());
+                String lastInsertId = String.valueOf(session.getLastInsertId());
+                defaultResultSet.addColumnDef(0, columnName, MySQLFieldsType.FIELD_TYPE_LONGLONG);
+                defaultResultSet.addTextRowPayload(lastInsertId);
+                return () -> SQLExecuterWriter.writeToMycatSession(session, defaultResultSet);
             }
 
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
                 return () -> {
-                    writePlan(session, "explainSql statement");
+                    writePlan(session, columnName + ":" + session.getLastInsertId());
                 };
             }
         });
+        /**
+         * 参数:无
+         */
+        COMMANDS.put(SELECT_AUTOCOMMIT, new Command() {
+            String columnName = "@@session.autocommit";
+
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                MycatResultSet defaultResultSet = ResultSetProvider.INSTANCE.createDefaultResultSet(1, 33, Charset.defaultCharset());
+                String isAutocommit = session.isAutocommit() ? "1" : "0";
+                defaultResultSet.addColumnDef(0, columnName, MySQLFieldsType.FIELD_TYPE_LONGLONG);
+                defaultResultSet.addTextRowPayload(isAutocommit);
+                return () -> SQLExecuterWriter.writeToMycatSession(session, defaultResultSet);
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    writePlan(session, columnName + ":" + session.isAutocommit());
+                };
+            }
+        });
+        /**
+         * 参数:无
+         */
+        COMMANDS.put(SELECT_READ_ONLY, new Command() {
+
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                String columnName = context.getVariable("columnName");
+                MycatResultSet defaultResultSet = ResultSetProvider.INSTANCE.createDefaultResultSet(1, 33, Charset.defaultCharset());
+                String isReadOnly = session.getDataContext().isReadOnly() ? "1" : "0";
+                defaultResultSet.addColumnDef(0, columnName, MySQLFieldsType.FIELD_TYPE_LONGLONG);
+                defaultResultSet.addTextRowPayload(isReadOnly);
+                return () -> SQLExecuterWriter.writeToMycatSession(session, defaultResultSet);
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    writePlan(session, SELECT_READ_ONLY + ":" + session.getDataContext().isReadOnly());
+                };
+            }
+        });
+
         /**
          * 参数:接收的sql
          */
@@ -224,7 +273,7 @@ public class ContextRunner {
                                 ProxyInfo proxyInfo = plan1.tryGetProxyInfo();
                                 if (proxyInfo != null) {
                                     MySQLTaskUtil.proxyBackendByTargetName(session, proxyInfo.getTargetName(), proxyInfo.getSql(),
-                                            MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
+                                            MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                             session.getIsolation(), proxyInfo.isUpdateOpt(), null);
                                     return;
                                 }
@@ -543,6 +592,7 @@ public class ContextRunner {
                 };
             }
         });
+
         /**
          * 参数:无
          */
@@ -610,7 +660,7 @@ public class ContextRunner {
                 LOGGER.debug("session id:{} execute :{}", session.sessionId(), details.toString());
 
 
-                if (details.globalTableUpdate & (client.getTransactionType() == TransactionType.PROXY_TRANSACTION_TYPE||forceProxy)) {
+                if (details.globalTableUpdate & (client.getTransactionType() == TransactionType.PROXY_TRANSACTION_TYPE || forceProxy)) {
                     return () -> block(session, (mycat -> {
                         Map<String, List<String>> targets = details.targets;
                         if (targets.isEmpty()) {
@@ -643,7 +693,7 @@ public class ContextRunner {
                             }
                         }
                         MySQLTaskUtil.proxyBackendByTargetName(session, targetName, sql,
-                                MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
+                                MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                 session.getIsolation(), details.executeType.isMaster(), balance);
                     }));
                 }
@@ -654,7 +704,7 @@ public class ContextRunner {
                     return () -> {
                         MycatDataContext dataContext = session.getDataContext();
                         MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
-                                MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
+                                MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                 session.getIsolation(), details.executeType.isMaster(), balance);
                     };
                 } else {

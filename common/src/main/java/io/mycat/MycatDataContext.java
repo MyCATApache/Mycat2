@@ -37,7 +37,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
         return builder.build();
     }
 
-    public boolean isAutoCommit();
+    public boolean isAutocommit();
 
     public void setAutoCommit(boolean autoCommit);
 

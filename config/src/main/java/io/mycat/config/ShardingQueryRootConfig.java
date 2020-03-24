@@ -5,24 +5,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
 public class ShardingQueryRootConfig {
     Map<String, LogicSchemaConfig> schemas = new HashMap<>();
     PrototypeServer prototype;
 
-    @AllArgsConstructor
-    @Data
-    @Builder
-    public static class LogicTableConfig {
-        List<BackEndTableInfoConfig> dataNodes;
-        List<Column> columns = new ArrayList<>();
-        String createTableSQL;
 
-        public LogicTableConfig() {
-        }
-    }
 
     @AllArgsConstructor
     @Data
@@ -39,7 +32,7 @@ public class ShardingQueryRootConfig {
 
     @Data
     public static final class LogicSchemaConfig {
-        Map<String, LogicTableConfig> shadingTables = new HashMap<>();
+        Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
         Map<String, GlobalTableConfig> globalTables = new HashMap<>();
     }
 

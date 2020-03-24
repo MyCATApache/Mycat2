@@ -156,7 +156,7 @@ public class MycatDataContextImpl implements MycatDataContext {
             case CHARSET_INDEX:
                 return getCharsetIndex();
             case IS_AUTOCOMMIT:
-                return isAutoCommit();
+                return isAutocommit();
             case ISOLATION:
                 return getIsolation();
             case LAST_MESSAGE:
@@ -198,7 +198,7 @@ public class MycatDataContextImpl implements MycatDataContext {
         return false;
     }
 
-    public boolean isAutoCommit() {
+    public boolean isAutocommit() {
         return autoCommit;
     }
 

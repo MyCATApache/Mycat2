@@ -370,7 +370,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 //      LOGGER.debug(
 //          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
 //          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
-//          c.getIsolation(), c.getCharset(), c.isAutoCommit(),
+//          c.getIsolation(), c.getCharset(), c.isAutocommit(),
 //          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }
   }

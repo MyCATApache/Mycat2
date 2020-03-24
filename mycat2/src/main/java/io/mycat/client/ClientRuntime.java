@@ -118,8 +118,8 @@ public enum ClientRuntime {
             }
 
             @Override
-            public boolean isAutoCommit() {
-                return dataContext.isAutoCommit();
+            public boolean isAutocommit() {
+                return dataContext.isAutocommit();
             }
 
             @Override

@@ -35,6 +35,7 @@ import io.mycat.SchemaInfo;
 import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -74,9 +75,9 @@ public enum MetadataManager {
         logicTableMap.computeIfAbsent("`" + schemaName + "`", s -> new ConcurrentHashMap<>());
     }
 
-    public void addTable(String schemaName, String tableName, ShardingQueryRootConfig.LogicTableConfig tableConfig, List<ShardingQueryRootConfig.BackEndTableInfoConfig> backends, ShardingQueryRootConfig.PrototypeServer prototypeServer) {
+    public void addTable(String schemaName, String tableName, ShardingTableConfig tableConfig, List<ShardingQueryRootConfig.BackEndTableInfoConfig> backends, ShardingQueryRootConfig.PrototypeServer prototypeServer) {
         addSchema(schemaName);
-        addLogicTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends));
+        addShardingTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends));
     }
 
     public void removeTable(String schemaName, String tableName) {
@@ -96,16 +97,16 @@ public enum MetadataManager {
             String orignalSchemaName = entry.getKey();
             ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
             final String schemaName = orignalSchemaName.toLowerCase();
-            for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getShadingTables().entrySet()) {
+            for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                 String tableName = e.getKey().toLowerCase();
-                ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
-                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
+                ShardingTableConfig tableConfigEntry = e.getValue();
+                addShardingTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
             }
 
             for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                 String tableName = e.getKey().toLowerCase();
                 GlobalTableConfig tableConfigEntry = e.getValue();
-                addLogicTable2(schemaName, tableName,
+                addGlobalTable(schemaName, tableName,
                         tableConfigEntry,
                         shardingQueryRootConfig.getPrototype(),
                         getBackendTableInfos(tableConfigEntry.getDataNodes()),
@@ -118,7 +119,7 @@ public enum MetadataManager {
         }
     }
 
-    private void addLogicTable2(String schemaName,
+    private void addGlobalTable(String schemaName,
                                 String orignalTableName,
                                 GlobalTableConfig tableConfigEntry,
                                 ShardingQueryRootConfig.PrototypeServer prototypeServer,
@@ -156,7 +157,7 @@ public enum MetadataManager {
         TABLE_REPOSITORY.acceptDDL(sql);
     }
 
-    private void addLogicTable(String schemaName, String orignalTableName, ShardingQueryRootConfig.LogicTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
+    private void addShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName.toLowerCase();
         String createTableSQL = tableConfigEntry.getCreateTableSQL();

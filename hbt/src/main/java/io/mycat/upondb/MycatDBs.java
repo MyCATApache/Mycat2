@@ -125,7 +125,7 @@ public class MycatDBs {
 
             @Override
             public boolean isAutocommit() {
-                return dataContext.isAutoCommit();
+                return dataContext.isAutocommit();
             }
 
             @Override

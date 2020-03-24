@@ -32,7 +32,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public boolean isAutocommit() {
-        return dataContext.isAutoCommit();
+        return dataContext.isAutocommit();
     }
 
     public void begin() {

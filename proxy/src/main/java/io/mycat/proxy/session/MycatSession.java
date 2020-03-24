@@ -130,11 +130,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         }
     }
 
-    public boolean isAutoCommit() {
-        return this.dataContext.isAutoCommit();
-    }
-
-
     public MySQLIsolation getIsolation() {
         return this.dataContext.getIsolation();
     }
@@ -515,7 +510,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     public boolean isAutocommit() {
-        return dataContext.isAutoCommit();
+        return dataContext.isAutocommit();
     }
 
     @Override

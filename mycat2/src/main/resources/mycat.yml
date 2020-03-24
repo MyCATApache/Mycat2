@@ -105,12 +105,14 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
    sql: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
    explain: 'SELECT @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
     ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
-  {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',explain: 'SELECT @@session.tx_read_only' ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
+  {name: 'mysql SELECT @@session.tx_read_only',sql: 'SELECT @@session.tx_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.tx_read_only'}},
   {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
-  {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
+  {name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
   ]
-  transactionType: proxy #xa.proxy
+  transactionType: xa #xa.proxy
   defaultSchema: db1
 datasource:
   datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
