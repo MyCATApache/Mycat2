@@ -165,6 +165,9 @@ public enum MetadataManager {
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
         //////////////////////////////////////////////
         Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(schemaName.toLowerCase() + "_" + orignalTableName.toLowerCase());
+        if (sequence == null) {
+            sequence = SequenceGenerator.INSTANCE.getSequence(orignalTableName.toUpperCase());
+        }
         addLogicTable(LogicTable.createShardingTable(schemaName, tableName, backends, columns, getShardingInfo(columns, tableConfigEntry.getColumns()), createTableSQL, sequence));
     }
 
