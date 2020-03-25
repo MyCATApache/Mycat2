@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,7 +64,27 @@ public class FileConfigProvider implements ConfigProvider {
         if (!Files.exists(asbPath)) {
             throw new IllegalArgumentException(MessageFormat.format("path not found: {0}", Objects.toString(asbPath)));
         }
-        config = YamlUtil.load(asbPath.toString(), MycatConfig.class);
+        Iterator<String> iterator = Files.lines(asbPath).iterator();
+        StringBuilder sqlGroups  = new StringBuilder();
+        StringBuilder full  = new StringBuilder();
+        boolean in= false;
+        while (iterator.hasNext()){
+            String next = iterator.next();
+            if (next.startsWith("#sqlGroups start")){
+                sqlGroups.append(next).append('\n');
+                in = true;
+            }else if (in){
+                sqlGroups.append(next).append('\n');
+            }else if (next.startsWith("#sqlGroups end")){
+                sqlGroups.append(next).append('\n');
+                in =false;
+            }else {
+                full.append(next).append('\n');
+            }
+        }
+        sqlGroups.append(full);
+        System.out.println(sqlGroups);
+        config = YamlUtil.loadText(sqlGroups.toString(), MycatConfig.class);
     }
 
 

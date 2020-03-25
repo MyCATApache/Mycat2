@@ -9,14 +9,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
 public class PatternRootConfig {
     private UserConfig user;
     private List<SchemaConfig> schemas = new ArrayList<>();
     private List<TextItemConfig> sqls = new ArrayList<>();
+    private List<List<TextItemConfig>> sqlsGroup = new ArrayList<>();
     private Handler defaultHanlder;
     private String transactionType;
+
+    public List<TextItemConfig> getSqls() {//注意去重
+        return Stream.concat(sqlsGroup.stream().flatMap(i -> i.stream()), sqls.stream()).distinct().collect(Collectors.toList());
+    }
 
     @Data
     @AllArgsConstructor

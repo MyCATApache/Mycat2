@@ -14,8 +14,11 @@
  */
 package io.mycat.util;
 
+import io.mycat.MycatConfig;
+import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
@@ -63,10 +66,16 @@ public class YamlUtil {
         }
     }
     public static <T> T load(Class<T> clazz, Reader fis) {
-        return   new Yaml().loadAs(fis, clazz);
+        return   getYaml().loadAs(fis, clazz);
     }
     public static <T> T loadText(String text,Class<T> clazz) {
-        return   new Yaml().loadAs(text, clazz);
+        return   getYaml().loadAs(text, clazz);
+    }
+
+    @NotNull
+    private static Yaml getYaml() {
+        Constructor constructor = new Constructor(MycatConfig.class);
+        return new Yaml(constructor);
     }
 
 
