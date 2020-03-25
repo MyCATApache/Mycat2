@@ -2,6 +2,7 @@ package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.util.SQLContext;
 
 import java.util.Iterator;
 import java.util.List;
@@ -62,4 +63,6 @@ public interface MycatDBClientApi  {
     void recycleResource();
 
     int getServerStatus();
+
+    SQLContext sqlContext();
 }

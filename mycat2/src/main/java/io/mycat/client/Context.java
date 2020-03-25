@@ -43,6 +43,7 @@ public class Context {
     private final String explain;
     private Integer sqlId;
     private boolean cache = false;
+    private Boolean simply;
     private static final ConcurrentHashMap<String, Hint> HINTS = new ConcurrentHashMap<>();
     //cache
     private String res;
@@ -61,7 +62,7 @@ public class Context {
                    String type,
                    String explain,
                    Integer sqlId,
-                   boolean cache) {
+                   boolean cache, Boolean simply) {
         this.name = name;
         this.sql = sql;
         this.tables = tables;
@@ -72,6 +73,7 @@ public class Context {
         this.explain = explain;
         this.sqlId = sqlId;
         this.cache = cache;
+        this.simply = simply;
     }
 
     public String getExplain() {
@@ -183,5 +185,9 @@ public class Context {
 
     public boolean isCache() {
         return cache;
+    }
+
+    public boolean isSimply() {
+        return simply == Boolean.TRUE;
     }
 }

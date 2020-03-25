@@ -32,6 +32,7 @@ public enum PlugRuntime {
 
 
       SequenceGenerator.INSTANCE.register("snowflake",new SequenceSnowflakeGenerator("workerId:1"));
+      SequenceGenerator.INSTANCE.register("GLOBAL",new SequenceSnowflakeGenerator("workerId:1"));
       for (PlugRootConfig.SequenceConfig sequence : plugRootConfig.getSequence().getSequences()) {
         String name = sequence.getName();
         String clazz = sequence.getClazz();

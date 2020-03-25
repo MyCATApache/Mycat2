@@ -191,11 +191,16 @@ public enum ClientRuntime {
                                         PatternRootConfig.TextItemConfig textItemConfig = info.map.get(matcher.id());
                                         if (textItemConfig != null) {
                                             String name = textItemConfig.getName();
-                                            return getContext(name, sql, collectionMap, map, textItemConfig,matcher.id(),textItemConfig.getCache()!=null);
+                                            return getContext(name,
+                                                    sql,
+                                                    collectionMap,
+                                                    map,
+                                                    textItemConfig,
+                                                    matcher.id());
                                         }
                                         if (info.handler != null) {
                                             String name = Objects.toString(info);
-                                            return getContext(name, sql, collectionMap, map, info.handler,null,false);
+                                            return getContext(name, sql, collectionMap, map, info.handler,null);
                                         }
                                     }
                                 }
@@ -209,19 +214,18 @@ public enum ClientRuntime {
                     PatternRootConfig.TextItemConfig textItemConfig = runtime.idToItem.get(matcher.id());
                     if (textItemConfig != null) {
                         String name = Objects.toString(textItemConfig);
-                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig,matcher.id(),textItemConfig.getCache()!=null);
+                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig,matcher.id());
                     }
                 }
                 if (runtimeInfo.defaultHandler != null) {
                     String name = "defaultHandler";
-                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtimeInfo.defaultHandler,null,false);
+                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtimeInfo.defaultHandler,null);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler,Integer sqlId,
-                                       boolean cache) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,cache);
+            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler,Integer sqlId) {
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,handler.getCache()!=null,handler.getSimply());
             }
 
 
@@ -231,9 +235,8 @@ public enum ClientRuntime {
                                        Map<String, Collection<String>> geTableMap,
                                        Map<String, String> namesContext,
                                        PatternRootConfig.TextItemConfig handler,
-                                       Integer sqlId,
-                                       boolean cache) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,cache);
+                                       Integer sqlId) {
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,handler.getCache()!=null, handler.getSimply());
             }
 
             @Override

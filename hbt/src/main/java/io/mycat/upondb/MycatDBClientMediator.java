@@ -16,6 +16,7 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
 
     @Override
     public PrepareObject prepare(String sql) {
+        sql =  sqlContext().simplySql(sql);
         return getUponDBSharedServer().prepare(sql, (MycatDBContext) this);
     }
 
@@ -31,21 +32,25 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
 
     @Override
     public Iterator<RowBaseIterator> executeSqls(String sql) {
+        sql =  sqlContext().simplySql(sql);//todo 支持多语句
         return getUponDBSharedServer().executeSqls(sql, (MycatDBContext) this);
     }
 
     @Override
     public UpdateRowIteratorResponse update(String sql) {
+        sql =  sqlContext().simplySql(sql);
         return getUponDBSharedServer().update(sql, (MycatDBContext) this);
     }
 
     @Override
     public RowBaseIterator query(String sql) {
+        sql =  sqlContext().simplySql(sql);
         return getUponDBSharedServer().query(sql, (MycatDBContext) this);
     }
 
     @Override
     public UpdateRowIteratorResponse loadData(String sql) {
+        sql =  sqlContext().simplySql(sql);
         return getUponDBSharedServer().loadData(sql,(MycatDBContext) this);
     }
 

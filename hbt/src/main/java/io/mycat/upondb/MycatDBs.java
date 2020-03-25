@@ -5,6 +5,8 @@ import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.metadata.MetadataManager;
+import io.mycat.util.SQLContext;
+import io.mycat.util.SQLContextImpl;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,6 +164,11 @@ public class MycatDBs {
             @Override
             public int getServerStatus() {
                 return dataContext.getTransactionSession().getServerStatus();
+            }
+
+            @Override
+            public SQLContext sqlContext() {
+                return new SQLContextImpl(this);
             }
 
             @Override

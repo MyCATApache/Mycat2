@@ -6,6 +6,7 @@ import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.upondb.MycatDBClientBasedConfig;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBSharedServer;
+import io.mycat.util.SQLContext;
 import lombok.AllArgsConstructor;
 
 import java.util.List;
@@ -160,5 +161,10 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     @Override
     public int getServerStatus() {
         return 0;
+    }
+
+    @Override
+    public SQLContext sqlContext() {
+        return null;
     }
 }

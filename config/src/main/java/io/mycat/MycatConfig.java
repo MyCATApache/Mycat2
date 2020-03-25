@@ -20,6 +20,7 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class MycatConfig {
@@ -31,8 +32,8 @@ public class MycatConfig {
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
     List<String> packageNameList = new ArrayList<>();
+    Map<String,String> properties;
     boolean debug;
-
     public static void main(String[] args) {
         MycatConfig mycatConfig = new MycatConfig();
         String dump = YamlUtil.dump(mycatConfig);

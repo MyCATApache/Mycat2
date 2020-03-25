@@ -41,6 +41,7 @@ public class PatternRootConfig {
         String command;
         String explain;
         String cache;
+        Boolean simply;
 //        String transactionType;
     }
 
@@ -52,6 +53,7 @@ public class PatternRootConfig {
         String command;
         String explain;
         String cache;
+        Boolean simply;
 //         String transactionType;
     }
 

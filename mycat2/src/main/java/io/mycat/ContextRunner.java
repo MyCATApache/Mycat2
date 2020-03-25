@@ -263,8 +263,7 @@ public class ContextRunner {
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
                     MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
                     client1.useSchema(defaultSchema);
-
-                    MycatSQLPrepareObject mycatSQLPrepareObject = client1.getUponDBSharedServer().innerQueryPrepareObject(explain, client1);
+                    MycatSQLPrepareObject mycatSQLPrepareObject = client1.getUponDBSharedServer().innerQueryPrepareObject(client1.sqlContext().simplySql(explain), client1);
                     PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
                     switch (client.getTransactionType()) {
                         case PROXY_TRANSACTION_TYPE: {
