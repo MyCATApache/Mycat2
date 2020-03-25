@@ -67,7 +67,8 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, JDBCType.valueOf(typeString), nullable,false,false));
+              ;  JDBCType jdbcType = JDBCType.valueOf(typeString);
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), precision, scale,jdbcType , nullable,false,false));
             }
             return res;
         } catch (SQLException e) {
@@ -80,7 +81,7 @@ public class CalciteConvertors {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for (SimpleColumnInfo info : infos) {
-            RelDataType relDataType = sqlType(typeFactory, info.getDataType(), info.getPrecision(), info.getScale(), info.getJdbcType().getName());
+            RelDataType relDataType = sqlType(typeFactory,  info.getJdbcType().ordinal(),info.getPrecision(), info.getScale(), info.getJdbcType().getName());
             fieldInfo.add(info.getColumnName(), relDataType).nullable(info.isNullable());
         }
         return RelDataTypeImpl.proto(fieldInfo.build());
@@ -171,7 +172,7 @@ public class CalciteConvertors {
             boolean autoIncrement = mycatRowMetaData.isAutoIncrement(i);
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey));
+            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey));
         }
         return list;
     }

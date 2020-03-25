@@ -18,7 +18,6 @@ import java.util.List;
 public class SimpleColumnInfo {
     @NonNull
     final String columnName;
-    final int dataType;
     final int precision;
     final int scale;
     @NonNull
