@@ -117,9 +117,6 @@ public class MySQLTaskUtil {
                             mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
                         }
                     } else {
-                        if (mycat.isBindMySQLSession()) {
-                            throw new AssertionError();
-                        }
                         mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
                     }
                 };
