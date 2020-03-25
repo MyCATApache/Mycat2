@@ -24,8 +24,12 @@ import io.mycat.config.PatternRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.pattern.*;
+import io.mycat.proxy.session.SimpleTransactionSessionRunner;
+import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
+import io.mycat.util.CachingSha2PasswordPlugin;
+import io.mycat.util.MysqlNativePasswordPluginUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,7 +38,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -43,42 +50,39 @@ import java.util.stream.Collectors;
 public enum ClientRuntime {
     INSTANCE;
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ClientRuntime.class);
-    final BuilderInfo wapper = new BuilderInfo();
-    volatile RuntimeInfo runtimeInfo;
-    TransactionType transactionType = TransactionType.JDBC_TRANSACTION_TYPE;
-    private String defaultSchema;
+    final Map<String, BuilderInfo> wapper = new ConcurrentHashMap<>();
+    volatile MycatConfig mycatConfig;
 
-    private static SchemaTable apply(String commonTableName) {
+
+    private static SchemaTable splitSchemaTable(String commonTableName) {
         String[] split1 = commonTableName.split("\\.");
         String schemaName = split1[0].intern();
         String tableName = split1[1].intern();
         return new SchemaTable(schemaName, tableName);
     }
 
-    public synchronized void addDefaultHanlder(PatternRootConfig.Handler handler) {
-        wapper.replaceDefaultHanlder(handler);
+    public List<MycatClient> getDefaultUsers() {
+        List<MycatClient> list = new ArrayList<>();
+        for (Map.Entry<String, BuilderInfo> stringBuilderInfoEntry : wapper.entrySet()) {
+            String key = stringBuilderInfoEntry.getKey();
+            MycatDataContextImpl mycatDataContext = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+            mycatDataContext.setUser(MycatUser.builder().userName(key).build());
+            list.add(login(mycatDataContext, false));
+        }
+        return list;
     }
 
-    public synchronized void addOrReplaceSQLMatch(PatternRootConfig.TextItemConfig textItemConfig) {
-        wapper.addOrReplaceSQLMatch(textItemConfig);
-    }
+    public MycatClient login(MycatDataContext dataContext, boolean check) {
+        String userName = dataContext.getUser().getUserName();
+        BuilderInfo builderInfo = wapper.get(userName);
+        if (check) {
+            if (!builderInfo.check(dataContext.getUser())) {
+                throw new MycatException("用户登录失败:" + dataContext.getUser());
+            }
+        }
+        MycatClient client = new MycatClient() {
 
-    public synchronized void removeSQLMatch(String name) {
-        wapper.removeSQLMatch(name);
-    }
-
-    public synchronized void addOrReplaceSchemaMatch(PatternRootConfig.SchemaConfig schemaConfig) {
-        wapper.addOrReplaceSchemaMatch(schemaConfig);
-    }
-
-    public synchronized void removeSchemaMatch(String name) {
-        wapper.removeSchemaMatch(name);
-    }
-
-
-    public MycatClient login(MycatDataContext dataContext) {
-        return new MycatClient() {
-            private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
+            private RuntimeInfo runtime = Objects.requireNonNull(builderInfo.runtimeInfo);
             private final MycatDBClientMediator db = MycatDBs.createClient(dataContext);
 
             @Override
@@ -200,7 +204,7 @@ public enum ClientRuntime {
                                         }
                                         if (info.handler != null) {
                                             String name = Objects.toString(info);
-                                            return getContext(name, sql, collectionMap, map, info.handler,null);
+                                            return getContext(name, sql, collectionMap, map, info.handler, null);
                                         }
                                     }
                                 }
@@ -214,18 +218,18 @@ public enum ClientRuntime {
                     PatternRootConfig.TextItemConfig textItemConfig = runtime.idToItem.get(matcher.id());
                     if (textItemConfig != null) {
                         String name = Objects.toString(textItemConfig);
-                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig,matcher.id());
+                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig, matcher.id());
                     }
                 }
-                if (runtimeInfo.defaultHandler != null) {
+                if (runtime.defaultHandler != null) {
                     String name = "defaultHandler";
-                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtimeInfo.defaultHandler,null);
+                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtime.defaultHandler, null);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler,Integer sqlId) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,handler.getCache()!=null,handler.getSimply());
+            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler, Integer sqlId) {
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId, handler.getCache() != null, handler.getSimply());
             }
 
 
@@ -236,13 +240,12 @@ public enum ClientRuntime {
                                        Map<String, String> namesContext,
                                        PatternRootConfig.TextItemConfig handler,
                                        Integer sqlId) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,handler.getCache()!=null, handler.getSimply());
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId, handler.getCache() != null, handler.getSimply());
             }
 
             @Override
             public void useSchema(String schemaName) {
                 if (schemaName != null) {
-                    db.useSchema(schemaName);
                     dataContext.useShcema(schemaName);
                 } else {
                     LOGGER.warn("use null schema");
@@ -251,8 +254,7 @@ public enum ClientRuntime {
 
             @Override
             public TransactionType getTransactionType() {
-                TransactionType parse = TransactionType.parse(dataContext.getTransactionSession().name());
-                return parse;
+                return TransactionType.parse(dataContext.getTransactionSession().name());
             }
 
             @Override
@@ -405,89 +407,54 @@ public enum ClientRuntime {
                 return db;
             }
         };
+        client.useTransactionType(builderInfo.transactionType);
+        return client;
     }
 
 
-    public void flash() {
+    private synchronized void flash() {
         //config
-        final PatternRootConfig patternRootConfig = wapper.patternRootConfig;
-        List<PatternRootConfig.TextItemConfig> sqls = new ArrayList<>(patternRootConfig.getSqls());
-        List<PatternRootConfig.SchemaConfig> schemas = new ArrayList<>(patternRootConfig.getSchemas());
-        PatternRootConfig.Handler defaultHanlder = patternRootConfig.getDefaultHanlder();
-        //builder
+        this.wapper.clear();
+        for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
+            PatternRootConfig.UserConfig user = Objects.requireNonNull(interceptor.getUser());
+            String username = user.getUsername();
 
-        //pre
-//        for (PatternRootConfig.HandlerToSQLs handler : patternRootConfig.getHandlers()) {
-//            String name = handler.getName();
-//            String explainSql = handler.getExplain();
-//            Map<String, String> tags = handler.getTags();
-//            String type = handler.getType();
-//
-//            List<String> tables = handler.getTables();
-//            if (tables.isEmpty()) {
-//                for (String sql : handler.getSqls()) {
-//                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
-//                    textItemConfig.setName(name);
-//                    textItemConfig.setSql(sql);
-//                    textItemConfig.setTags(tags);
-//                    textItemConfig.setExplain(explainSql);
-//                    textItemConfig.setCommand(type);
-//                    sqls.add(textItemConfig);
-//                }
-//            } else {
-//                ArrayList<PatternRootConfig.TextItemConfig> textItemConfigs = new ArrayList<PatternRootConfig.TextItemConfig>();
-//                for (String sql : handler.getSqls()) {
-//                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
-//                    textItemConfig.setName(name);
-//                    textItemConfig.setSql(sql);
-//                    textItemConfig.setTags(tags);
-//                    textItemConfig.setExplain(explainSql);
-//                    textItemConfigs.add(textItemConfig);
-//                    textItemConfig.setCommand(type);
-//                }
-//                PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
-//                schemaConfig.setDefaultHanlder(null);
-//                schemaConfig.setName(name);
-//                schemaConfig.setTables(tables);
-//                schemaConfig.setSqls(textItemConfigs);
-//                schemas.add(schemaConfig);
-//            }
-//        }
-        //build
-        ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> itemMap = new ConcurrentHashMap<>();
-        final GPatternBuilder noTablesPatternBuilder = new GPatternBuilder(0);
-        for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
-            itemMap.put(noTablesPatternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
-        }
-        Supplier<GPattern> noTablesPattern = () -> noTablesPatternBuilder.createGroupPattern();
-
-
-        Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new ConcurrentHashMap<>();
-        for (PatternRootConfig.SchemaConfig schema : schemas) {
-            ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> map = new ConcurrentHashMap<>();
-            final GPatternBuilder tablesPatternBuilder = new GPatternBuilder(0);
-            for (PatternRootConfig.TextItemConfig sql : schema.getSqls()) {
-                map.put(tablesPatternBuilder.addRule(sql.getSql()), sql);
+            List<PatternRootConfig.TextItemConfig> sqls = new ArrayList<>(interceptor.getSqls());
+            List<PatternRootConfig.SchemaConfig> schemas = new ArrayList<>(interceptor.getSchemas());
+            PatternRootConfig.Handler defaultHanlder = interceptor.getDefaultHanlder();
+            ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> itemMap = new ConcurrentHashMap<>();
+            final GPatternBuilder noTablesPatternBuilder = new GPatternBuilder(0);
+            for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
+                itemMap.put(noTablesPatternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
             }
-            List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new CopyOnWriteArrayList<>());
-            tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(), () -> tablesPatternBuilder.createGroupPattern()));
+            Supplier<GPattern> noTablesPattern = () -> noTablesPatternBuilder.createGroupPattern();
+            Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new ConcurrentHashMap<>();
+            for (PatternRootConfig.SchemaConfig schema : schemas) {
+                ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> map = new ConcurrentHashMap<>();
+                final GPatternBuilder tablesPatternBuilder = new GPatternBuilder(0);
+                for (PatternRootConfig.TextItemConfig sql : schema.getSqls()) {
+                    map.put(tablesPatternBuilder.addRule(sql.getSql()), sql);
+                }
+                List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new CopyOnWriteArrayList<>());
+                tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(), () -> tablesPatternBuilder.createGroupPattern()));
+            }
+            GPatternIdRecorderImpl gPatternIdRecorder = new GPatternIdRecorderImpl(false);
+            TableCollectorBuilder tableCollectorBuilder = new TableCollectorBuilder(gPatternIdRecorder, (Map) getTableMap(schemas));
+            final GPatternBuilder tableCollectorPatternBuilder = new GPatternBuilder(0);
+            RuntimeInfo runtimeInfo = new RuntimeInfo(() -> tableCollectorPatternBuilder.createGroupPattern(tableCollectorBuilder.create()), itemMap, tableMap, defaultHanlder, noTablesPattern);
+            TransactionType transactionType = TransactionType.parse(interceptor.getTransactionType());
+            this.wapper.put(username, new BuilderInfo(interceptor, runtimeInfo, transactionType));
         }
-        GPatternIdRecorderImpl gPatternIdRecorder = new GPatternIdRecorderImpl(false);
-        TableCollectorBuilder tableCollectorBuilder = new TableCollectorBuilder(gPatternIdRecorder, (Map) getTableMap(schemas));
-        final GPatternBuilder tableCollectorPatternBuilder = new GPatternBuilder(0);
-        runtimeInfo = new RuntimeInfo(() -> tableCollectorPatternBuilder.createGroupPattern(tableCollectorBuilder.create()), itemMap, tableMap, defaultHanlder, noTablesPattern);
-        this.transactionType = TransactionType.parse(patternRootConfig.getTransactionType());
-        this.defaultSchema = patternRootConfig.getDefaultSchema();
     }
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
         return schemaConfigs.stream().flatMap(i -> {
-            return i.getTables().stream().map(commonTableName -> apply(commonTableName));
+            return i.getTables().stream().map(commonTableName -> splitSchemaTable(commonTableName));
         }).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
     }
 
     private Map<String, Set<String>> getTableMap(PatternRootConfig.SchemaConfig schemaConfig) {
-        return schemaConfig.getTables().stream().map(ClientRuntime::apply).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
+        return schemaConfig.getTables().stream().map(ClientRuntime::splitSchemaTable).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
 
     }
 
@@ -496,8 +463,12 @@ public enum ClientRuntime {
 
     }
 
-    public void load(MycatConfig config) {
-        wapper.setPatternRootConfig(config.getInterceptor());
+    public synchronized void load(MycatConfig config) {
+        if (this.mycatConfig == config) {
+            return;
+        } else {
+            this.mycatConfig = config;
+        }
         flash();
     }
 
@@ -534,46 +505,79 @@ public enum ClientRuntime {
         }
     }
 
-    private static class BuilderInfo {
-        volatile PatternRootConfig patternRootConfig = new PatternRootConfig();
 
-        public void setPatternRootConfig(PatternRootConfig patternRootConfig) {
+    public static class BuilderInfo {
+        final PatternRootConfig patternRootConfig;
+        final RuntimeInfo runtimeInfo;
+        final TransactionType transactionType;
+        private final BiPredicate<byte[],byte[]> passwordChecker;
+        private final Predicate<String> ipChecker;
+
+        public BuilderInfo(PatternRootConfig patternRootConfig, RuntimeInfo runtimeInfo, TransactionType transactionType) {
             this.patternRootConfig = patternRootConfig;
+            this.runtimeInfo = runtimeInfo;
+            this.transactionType = transactionType;
+
+            PatternRootConfig.UserConfig user = patternRootConfig.getUser();
+            String password = user.getPassword();
+            if (password == null) {
+                this.passwordChecker = (i,seed) -> true;
+            } else {
+                this.passwordChecker = (i,seed)->checkPassword(password,i,seed);
+            }
+            String ip = user.getIp();
+            if (ip == null) {
+                this.ipChecker = (i) -> true;
+            } else {
+                this.ipChecker = Pattern.compile(ip).asPredicate();
+            }
+
+
         }
 
-        public synchronized void replaceDefaultHanlder(PatternRootConfig.Handler handler) {
-            Objects.requireNonNull(handler);
-            patternRootConfig.setDefaultHanlder(handler);
+        public boolean check(MycatUser user) {
+            boolean p = this.passwordChecker.test(user.getPassword(),user.getSeed());
+            boolean h = this.ipChecker.test(user.getHost());
+            boolean b = p && h;
+            if (b){
+                user.setSeed(null);
+                user.setPassword(null);
+            }
+            return b;
         }
 
-        public synchronized void addOrReplaceSQLMatch(PatternRootConfig.TextItemConfig textItemConfig) {
-            removeSQLMatch(textItemConfig.getName());
-            patternRootConfig.getSqls().add(textItemConfig);
+        private boolean checkPassword(String rightPassword,  byte[] password,byte[] seed) {
+            if (rightPassword == null || rightPassword.length() == 0) {
+                return (password == null || password.length == 0);
+            }
+            if (password == null || password.length == 0) {
+                return false;
+            }
+//        if(clientAuthPluginName.equals(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME)) {
+            byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(rightPassword, seed);
+            if (checkBytes(password, encryptPass)) {
+                return true;
+            }
+//        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
+            encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
+            return checkBytes(password, encryptPass);
+//        } else {
+//            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
+//        }
         }
 
-        public synchronized void removeSQLMatch(String name) {
-            List<PatternRootConfig.TextItemConfig> sqls = patternRootConfig.getSqls();
-            Optional<PatternRootConfig.TextItemConfig> first = sqls.stream().filter(i -> name.equals(i.getName())).findFirst();
-            first.ifPresent(sqls::remove);
-        }
-
-        public synchronized void addOrReplaceSchemaMatch(PatternRootConfig.SchemaConfig schemaConfig) {
-            removeSchemaMatch(schemaConfig.getName());
-            List<PatternRootConfig.SchemaConfig> schemas = patternRootConfig.getSchemas();
-            schemas.add(schemaConfig);
-        }
-
-        public synchronized void removeSchemaMatch(String name) {
-            List<PatternRootConfig.SchemaConfig> schemas = patternRootConfig.getSchemas();
-            Optional<PatternRootConfig.SchemaConfig> first = schemas.stream().filter(i -> name.equals(i.getName())).findFirst();
-            first.ifPresent(schemas::remove);
+        private boolean checkBytes(byte[] encryptPass, byte[] password) {
+            if (encryptPass != null && (encryptPass.length == password.length)) {
+                int i = encryptPass.length;
+                while (i-- != 0) {
+                    if (encryptPass[i] != password[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
         }
     }
-
-    public TransactionType getTransactionType() {
-        return transactionType;
-    }
-
-    public String getDefaultSchema() {
-        return defaultSchema;
-    }}
+}

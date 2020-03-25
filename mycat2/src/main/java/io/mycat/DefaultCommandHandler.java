@@ -39,10 +39,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MycatSession session) {
-        this.client = ClientRuntime.INSTANCE.login((MycatDataContext)session.unwrap(MycatDataContext.class));
+        this.client = ClientRuntime.INSTANCE.login((MycatDataContext)session.unwrap(MycatDataContext.class),true);
         this.client.useSchema(session.getSchema());
-
-        this.client.useTransactionType(ClientRuntime.INSTANCE.getTransactionType());
     }
 
     @Override

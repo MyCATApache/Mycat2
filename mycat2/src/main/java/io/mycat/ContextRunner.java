@@ -21,7 +21,7 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.boost.BoostRuntime;
+import io.mycat.boost.UserBooster;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
@@ -744,7 +744,7 @@ public class ContextRunner {
                 return () -> writePlan(session, getDetails(client, context, session.isInTransaction(), metaData).toExplain());
             }
         });
-        Set<String> supportCommands = BoostRuntime.INSTANCE.getSupportCommands();
+        Set<String> supportCommands = UserBooster.getSupportCommands();
         for (Map.Entry<String, Command> stringCommandEntry : COMMANDS.entrySet()) {
             Command value = stringCommandEntry.getValue();
             if (supportCommands.contains(stringCommandEntry.getKey())) {

@@ -17,14 +17,15 @@ public enum MycatDataContextSupport {
     INSTANCE;
     private Map<String, Function<MycatDataContext, TransactionSession>> transcationFactoryMap;
     private GThreadPool gThreadPool;
-    private String defaultTranscationType;
 
-    public void init(ServerConfig.Worker worker, Map<String, Function<MycatDataContext, TransactionSession>> transcationFactoryMap, String defaultTranscationType) {
-        this.defaultTranscationType = defaultTranscationType;
+    public void init(ServerConfig.Worker worker, Map<String, Function<MycatDataContext, TransactionSession>> transcationFactoryMap) {
         Map<String, Function<MycatDataContext, TransactionSession>> map = new HashMap<>();
         final String proxy = "proxy";
-        if (!transcationFactoryMap.containsKey(proxy)) {
+        if (!transcationFactoryMap.containsKey("local")) {
             map.put("local", mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+        }
+        if (!transcationFactoryMap.containsKey("proxy")) {
+            map.put("proxy", mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
         }
         map.putAll(transcationFactoryMap);
         this.transcationFactoryMap = map;
@@ -40,7 +41,7 @@ public enum MycatDataContextSupport {
 
     public MycatDataContext createDataContext(MycatSession session) {
         MycatDataContextImpl mycatDataContext = new MycatDataContextImpl(createRunner(session));
-        mycatDataContext.switchTransaction(defaultTranscationType);
+        mycatDataContext.switchTransaction("proxy");
         return mycatDataContext;
     }
 

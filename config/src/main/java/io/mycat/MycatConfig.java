@@ -24,14 +24,13 @@ import java.util.Map;
 
 @Data
 public class MycatConfig {
-    PatternRootConfig interceptor = new PatternRootConfig();
+    List<PatternRootConfig> interceptors = new ArrayList<>();
     ShardingQueryRootConfig metadata = new ShardingQueryRootConfig();
     DatasourceRootConfig datasource = new DatasourceRootConfig();
     ClusterRootConfig cluster = new ClusterRootConfig();
     //    SecurityConfig security = new SecurityConfig();
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
-    List<String> packageNameList = new ArrayList<>();
     Map<String,String> properties;
     boolean debug;
     public static void main(String[] args) {

@@ -14,16 +14,26 @@
  */
 package io.mycat;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * @author jamie12221 date 2020-01-08 13:21
  **/
 @Data
-@AllArgsConstructor
+@Builder
+@ToString
 public class MycatUser {
   String userName;
-  String password;
+  byte[] password;
+  byte[] seed;
   String host;
+
+  public MycatUser(String userName, byte[] password,byte[] seed, String host) {
+    this.userName = userName;
+    this.password = password;
+    this.seed = seed;
+    this.host = host;
+  }
 }

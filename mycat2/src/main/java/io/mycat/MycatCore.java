@@ -21,7 +21,7 @@ import io.mycat.api.collector.CollectorUtil;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.boost.BoostRuntime;
+import io.mycat.boost.UserBooster;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.client.ClientRuntime;
@@ -81,7 +81,7 @@ public enum MycatCore {
 
         MetadataManager.INSTANCE.load(mycatConfig);
 
-        BoostRuntime.INSTANCE.init();
+        UserBooster.init();
         startProxy(mycatConfig);
     }
 
@@ -127,7 +127,7 @@ public enum MycatCore {
         transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> new UserTransactionImp()));
         transcationFactoryMap.put("proxy", mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
-        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap, mycatConfig.getInterceptor().getTransactionType());
+        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap);
 
 
         long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);

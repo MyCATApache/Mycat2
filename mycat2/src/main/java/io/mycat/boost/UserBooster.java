@@ -15,20 +15,14 @@ import io.mycat.client.MycatClient;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
-import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.StringUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -36,8 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Log4j
-public enum BoostRuntime {
-    INSTANCE;
+public class UserBooster {
     private static final Splitter KEYS_SPLITTER = Splitter.on(',').trimResults();
     private static final Splitter KEY_VALUE_SPLITTER = Splitter.on('=').trimResults();
     private static final ImmutableMap<String, BiFunction<String, String, Consumer<CacheConfig>>> VALUE_PARSERS =
@@ -50,41 +43,37 @@ public enum BoostRuntime {
     public static final String DISTRIBUTED_QUERY = "distributedQuery";
     public static final String EXECUTE_PLAN = "executePlan";
 
-    public Set<String> getSupportCommands() {
-        return ImmutableSet.of(DISTRIBUTED_QUERY, EXECUTE_PLAN);
-    }
-
-    final private ExecutorService executorService = Executors.newCachedThreadPool();
-    final private ConcurrentHashMap<Integer, Task> map = new ConcurrentHashMap<>();
-
-
-    public MycatResultSetResponse getResultSetBySqlId(Integer sql) {
-        Task task = map.get(sql);
-        if (task != null) {
-            return task.get();
-        }
-        return null;
-    }
-
-    public void init() {
-        map.clear();
-        MycatDataContextImpl mycatDataContext = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
-        MycatDBClientMediator db = MycatDBs.createClient(mycatDataContext);
-        MycatClient client = ClientRuntime.INSTANCE.login(mycatDataContext);
+    public UserBooster(MycatClient client) {
         List<CacheConfig> cacheConfigs = new ArrayList<>();
         loadConfig(client, cacheConfigs);
-
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
-
         for (CacheConfig cacheConfig : cacheConfigs) {
-            Task task = getTask(db, timer, cacheConfig);
+            Task task = getTask(client.getMycatDb(), timer, cacheConfig);
             map.put(cacheConfig.getSqlId(), task);
         }
         map.values().forEach(i -> i.start());
     }
 
+    public static Set<String> getSupportCommands() {
+        return ImmutableSet.of(DISTRIBUTED_QUERY, EXECUTE_PLAN);
+    }
+
+    final static private ExecutorService executorService = Executors.newCachedThreadPool();
+    final private ConcurrentHashMap<Integer, Task> map = new ConcurrentHashMap<>();
+    final private static ConcurrentHashMap<String, UserBooster> userMap = new ConcurrentHashMap<>();
+
+    public static MycatResultSetResponse getResultSetBySqlId(String username, Integer sql) {
+        return Optional.ofNullable(userMap.get(username)).map(i -> i.map.get(sql)).map(i -> (MycatResultSetResponse) i.get()).orElse(null);
+    }
+
+    public static void init() {
+        for (MycatClient client : ClientRuntime.INSTANCE.getDefaultUsers()) {
+            UserBooster userBooster = new UserBooster(client);
+        }
+    }
+
     @NotNull
-    private BoostRuntime.Task getTask(MycatDBClientMediator db, ScheduledExecutorService timer, CacheConfig cacheConfig) {
+    private UserBooster.Task getTask(MycatDBClientMediator db, ScheduledExecutorService timer, CacheConfig cacheConfig) {
         return new Task(cacheConfig) {
             volatile CacheFile cache;
 
@@ -178,43 +167,49 @@ public enum BoostRuntime {
 
     private static void loadConfig(MycatClient client, List<CacheConfig> cacheConfigs) {
         MycatConfig config = RootHelper.INSTANCE.getConfigProvider().currentConfig();
-        Stream<PatternRootConfig.TextItemConfig> stream1 = config.getInterceptor().getSchemas().stream().flatMap(i -> i.getSqls().stream());
-        for (PatternRootConfig.TextItemConfig textItemConfig : Stream
-                .concat(stream1, config.getInterceptor().getSqls().stream())
-                .filter(i -> !StringUtil.isEmpty(i.getCache())).collect(Collectors.toList())) {
-            String cache = textItemConfig.getCache();
-            String command = textItemConfig.getCommand();
-            CacheConfig cacheConfig = new CacheConfig();
-            cacheConfig.setCommand(command);
+        String username = client.getUser().getUserName();
+        config.getInterceptors().stream().filter(i -> username.equals(i.getUser().getUsername())).findFirst().ifPresent(patternRootConfig -> {
+            Stream<PatternRootConfig.TextItemConfig> stream1 = patternRootConfig.getSchemas().stream()
+                    .flatMap(i -> i.getSqls().stream()).filter(i -> !StringUtil.isEmpty(i.getCache()));
+            for (PatternRootConfig.TextItemConfig textItemConfig : Stream
+                    .concat(stream1, patternRootConfig.getSqls().stream()
+                            .filter(i -> !StringUtil.isEmpty(i.getCache())))
+                    .collect(Collectors.toList())) {
+                String cache = textItemConfig.getCache();
+                String command = textItemConfig.getCommand();
+                CacheConfig cacheConfig = new CacheConfig();
+                cacheConfig.setCommand(command);
 
-            switch (command) {
-                case DISTRIBUTED_QUERY: {
-                    cacheConfig.setText(textItemConfig.getSql());
-                    break;
+                switch (command) {
+                    case DISTRIBUTED_QUERY: {
+                        cacheConfig.setText(textItemConfig.getSql());
+                        break;
+                    }
+                    case EXECUTE_PLAN: {
+                        cacheConfig.setText(textItemConfig.getExplain());
+                        break;
+                    }
+                    default:
+                        throw new UnsupportedOperationException(command);
                 }
-                case EXECUTE_PLAN: {
-                    cacheConfig.setText(textItemConfig.getExplain());
-                    break;
-                }
-                default:
-                    throw new UnsupportedOperationException(command);
-            }
-            Context analysis = client.analysis(cacheConfig.getText());
-            cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(), textItemConfig + " " + "sql id is null"));
+                Context analysis = client.analysis(cacheConfig.getText());
+                cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(), textItemConfig + " " + "sql id is null"));
 
-            for (String i : KEYS_SPLITTER.split(cache)) {
-                ImmutableList<String> strings = ImmutableList.copyOf(KEY_VALUE_SPLITTER.split(i));
-                String key = strings.get(0).trim();
-                String value = strings.get(1);
-                try {
-                    BiFunction<String, String, Consumer<CacheConfig>> stringStringConsumerBiFunction = VALUE_PARSERS.get(key);
-                    Consumer<CacheConfig> apply = stringStringConsumerBiFunction.apply(key, value);
-                    apply.accept(cacheConfig);
-                } catch (Exception e) {
-                    log.error(e);
+                for (String i : KEYS_SPLITTER.split(cache)) {
+                    ImmutableList<String> strings = ImmutableList.copyOf(KEY_VALUE_SPLITTER.split(i));
+                    String key = strings.get(0).trim();
+                    String value = strings.get(1);
+                    try {
+                        BiFunction<String, String, Consumer<CacheConfig>> stringStringConsumerBiFunction = VALUE_PARSERS.get(key);
+                        Consumer<CacheConfig> apply = stringStringConsumerBiFunction.apply(key, value);
+                        apply.accept(cacheConfig);
+                    } catch (Exception e) {
+                        log.error(e);
+                    }
                 }
+                cacheConfigs.add(cacheConfig);
             }
-            cacheConfigs.add(cacheConfig);
-        }
+        });
+
     }
 }

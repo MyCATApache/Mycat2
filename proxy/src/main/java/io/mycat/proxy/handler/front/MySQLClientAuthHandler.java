@@ -34,6 +34,7 @@ import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
 
+import java.net.SocketAddress;
 import java.util.Map;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
@@ -112,18 +113,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             Map<String, String> attrs = auth.getClientConnectAttrs();
 
 
-            //login connect direct
-//            if (!securityManager.isIgnorePassword()) {
-//                String password = runtime.getSecurityManager()
-//                        .getPasswordByUserName(username);
-//
-//                if (!checkPassword(password, input)) {
-//                    String message = "password is wrong!";
-//                    failture(mycat, message);
-//                    return;
-//                }
-//            }
-            MycatUser user = new MycatUser(username,new String(password),mycat.channel().socket().getRemoteSocketAddress().toString());
+            SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
+            MycatUser user = new MycatUser(username,password,seed, SocketAddressUtil.simplySocketAddress(remoteSocketAddress));
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
@@ -152,6 +143,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             failture(mycat, e);
         }
     }
+
 
     private AuthPacket readResponseAuthPacket(MycatSession mycat) {
         MySQLPacket mySQLPacket = mycat.currentProxyPayload();
