@@ -54,8 +54,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 sql = sql.substring(0, sql.length() - 1);
                 LOGGER.debug("-----------------tirm-right-semi(;)--------------------");
             }
-            MycatDataContext unwrap = session.unwrap(MycatDataContext.class);
-            TransactionSession transactionSession = unwrap.getTransactionSession();
             Context analysis = client.analysis(sql);
             ContextRunner.run(client, analysis, session);
         } catch (Exception e) {
