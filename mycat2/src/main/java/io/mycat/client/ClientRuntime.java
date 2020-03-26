@@ -28,8 +28,6 @@ import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
-import io.mycat.util.CachingSha2PasswordPlugin;
-import io.mycat.util.MysqlNativePasswordPluginUtil;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,10 +36,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -75,11 +70,6 @@ public enum ClientRuntime {
     public MycatClient login(MycatDataContext dataContext, boolean check) {
         String userName = dataContext.getUser().getUserName();
         BuilderInfo builderInfo = wapper.get(userName);
-        if (check) {
-            if (!builderInfo.check(dataContext.getUser())) {
-                throw new MycatException("用户登录失败:" + dataContext.getUser());
-            }
-        }
         MycatClient client = new MycatClient() {
 
             private RuntimeInfo runtime = Objects.requireNonNull(builderInfo.runtimeInfo);
@@ -510,74 +500,11 @@ public enum ClientRuntime {
         final PatternRootConfig patternRootConfig;
         final RuntimeInfo runtimeInfo;
         final TransactionType transactionType;
-        private final BiPredicate<byte[],byte[]> passwordChecker;
-        private final Predicate<String> ipChecker;
 
         public BuilderInfo(PatternRootConfig patternRootConfig, RuntimeInfo runtimeInfo, TransactionType transactionType) {
             this.patternRootConfig = patternRootConfig;
             this.runtimeInfo = runtimeInfo;
             this.transactionType = transactionType;
-
-            PatternRootConfig.UserConfig user = patternRootConfig.getUser();
-            String password = user.getPassword();
-            if (password == null) {
-                this.passwordChecker = (i,seed) -> true;
-            } else {
-                this.passwordChecker = (i,seed)->checkPassword(password,i,seed);
-            }
-            String ip = user.getIp();
-            if (ip == null) {
-                this.ipChecker = (i) -> true;
-            } else {
-                this.ipChecker = Pattern.compile(ip).asPredicate();
-            }
-
-
-        }
-
-        public boolean check(MycatUser user) {
-            boolean p = this.passwordChecker.test(user.getPassword(),user.getSeed());
-            boolean h = this.ipChecker.test(user.getHost());
-            boolean b = p && h;
-            if (b){
-                user.setSeed(null);
-                user.setPassword(null);
-            }
-            return b;
-        }
-
-        private boolean checkPassword(String rightPassword,  byte[] password,byte[] seed) {
-            if (rightPassword == null || rightPassword.length() == 0) {
-                return (password == null || password.length == 0);
-            }
-            if (password == null || password.length == 0) {
-                return false;
-            }
-//        if(clientAuthPluginName.equals(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME)) {
-            byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(rightPassword, seed);
-            if (checkBytes(password, encryptPass)) {
-                return true;
-            }
-//        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
-            encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
-            return checkBytes(password, encryptPass);
-//        } else {
-//            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
-//        }
-        }
-
-        private boolean checkBytes(byte[] encryptPass, byte[] password) {
-            if (encryptPass != null && (encryptPass.length == password.length)) {
-                int i = encryptPass.length;
-                while (i-- != 0) {
-                    if (encryptPass[i] != password[i]) {
-                        return false;
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
         }
     }
 }

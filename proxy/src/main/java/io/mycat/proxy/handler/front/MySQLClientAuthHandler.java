@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,6 +28,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
@@ -41,17 +42,17 @@ import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58
- *
+ * <p>
  * 服务器发送给客户端的验证处理器
  **/
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     private static final MycatLogger LOGGER = MycatLoggerFactory
-        .getLogger(MySQLClientAuthHandler.class);
+            .getLogger(MySQLClientAuthHandler.class);
     public byte[] seed;
     public MycatSession mycat;
     private boolean finished = false;
-    private AuthPacket auth ;
+    private AuthPacket auth;
     public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
     private MycatSessionManager mycatSessionManager;
@@ -75,7 +76,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             }
 //            MycatSecurityConfig securityManager = runtime.getSecurityManager();
             byte[] password = new byte[]{};
-            if(!isChangeAuthPlugin) {
+            if (!isChangeAuthPlugin) {
                 //密码读取与验证
                 this.auth = readResponseAuthPacket(mycat);
                 if (true) {
@@ -87,34 +88,24 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                         //发送切换包的auth_response
                         isChangeAuthPlugin = true;
                         AuthSwitchRequestPacket authSwitchRequestPacket = new AuthSwitchRequestPacket();
-                        clientAuthPluginName = StringUtil.isEmpty(authPluginName)?MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME:authPluginName;
+                        clientAuthPluginName = StringUtil.isEmpty(authPluginName) ? MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME : authPluginName;
                         authSwitchRequestPacket.setAuthPluginName(clientAuthPluginName);
-                        authSwitchRequestPacket.setStatus((byte)0xfe);
+                        authSwitchRequestPacket.setStatus((byte) 0xfe);
                         authSwitchRequestPacket.setAuthPluginData(new String(seed));
 
                         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(1024);
                         authSwitchRequestPacket.writePayload(mySQLPayloadWriter);
-                        mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
+                        mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
                         return;
                     }
                     //握手包中的加密密码
                     password = auth.getPassword();
                 }
-            }  else {
+            } else {
                 MySQLPacket mySQLPacket = mycat.currentProxyPayload();
                 password = mySQLPacket.readNULStringBytes();
             }
 
-            String username = auth.getUsername();
-            int maxPacketSize = auth.getMaxPacketSize();
-            String database = auth.getDatabase();
-
-            int characterSet = auth.getCharacterSet();
-            Map<String, String> attrs = auth.getClientConnectAttrs();
-
-
-            SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
-            MycatUser user = new MycatUser(username,password,seed, SocketAddressUtil.simplySocketAddress(remoteSocketAddress));
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
@@ -122,11 +113,35 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 mycat.lazyClose(true, message);
                 return;
             }
-          if (user == null) {
-            String message = "user name is not existed";
-            failture(mycat, message);
-            return;
-          }
+            String username = auth.getUsername();
+            int maxPacketSize = auth.getMaxPacketSize();
+            String database = auth.getDatabase();
+
+            int characterSet = auth.getCharacterSet();
+            Map<String, String> attrs = auth.getClientConnectAttrs();
+
+            MycatUser user = null;
+            SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
+            Authenticator authenticator = mycatSessionManager.getAuthenticator();
+            String ip = SocketAddressUtil.simplySocketAddress(remoteSocketAddress);
+            Authenticator.AuthInfo authInfo = authenticator.getPassword(username, ip);
+            if (!authInfo.isOk()) {
+                failture(mycat, authInfo.getException());
+                return;
+            } else {
+                String rightPassword = authInfo.getRightPassword();
+                if (rightPassword != null) {
+                    if (!checkPassword(rightPassword, password)) {
+                        failture(mycat, "password is wrong");
+                        return;
+                    } else {
+                        user = new MycatUser(username, null, null, ip);
+                    }
+                } else {
+                    user = new MycatUser(username, null, null, ip);
+                }
+            }
+
             mycat.setUser(user);
             mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());
@@ -137,8 +152,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             mycatSessionManager.initCommandDispatcher(mycat);
             mycat.writeOkEndPacket();
         } catch (Exception e) {
-            LOGGER.error("",e);
-            MycatMonitor.onAuthHandlerReadException(mycat,e);
+            LOGGER.error("", e);
+            MycatMonitor.onAuthHandlerReadException(mycat, e);
             onClear(mycat);
             failture(mycat, e);
         }
@@ -187,7 +202,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onException(MycatSession session, Exception e) {
-        MycatMonitor.onAuthHandlerException(session,e);
+        MycatMonitor.onAuthHandlerException(session, e);
         LOGGER.error("{}", e);
         onClear(mycat);
         mycat.close(false, e);
@@ -219,7 +234,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
         mycat.setPacketId(-1);//使用获取的packetId变为0
-        mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
+        mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
     }
 
 
@@ -231,13 +246,13 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             return false;
         }
 //        if(clientAuthPluginName.equals(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME)) {
-            byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(rightPassword, seed);
-            if (checkBytes(password, encryptPass)) {
-                return true;
-            }
+        byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(rightPassword, seed);
+        if (checkBytes(password, encryptPass)) {
+            return true;
+        }
 //        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
-            encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
-      return checkBytes(password, encryptPass);
+        encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
+        return checkBytes(password, encryptPass);
 //        } else {
 //            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
 //        }

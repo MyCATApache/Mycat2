@@ -27,7 +27,10 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
@@ -42,9 +45,11 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
     final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
+    private final Authenticator authenticator;
 
-    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function) {
+    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function,Authenticator authenticator) {
         this.commandDispatcher = function;
+        this.authenticator = Objects.requireNonNull(authenticator);
     }
 
 
@@ -118,7 +123,13 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
         }
     }
 
+
+
     public void initCommandDispatcher(MycatSession session) {
         session.setCommandHandler(commandDispatcher.apply(session));
+    }
+
+    public Authenticator getAuthenticator() {
+        return authenticator;
     }
 }

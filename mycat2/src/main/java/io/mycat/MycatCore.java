@@ -26,10 +26,7 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.client.ClientRuntime;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.config.ClusterRootConfig;
-import io.mycat.config.DatasourceRootConfig;
-import io.mycat.config.ServerConfig;
-import io.mycat.config.TimerConfig;
+import io.mycat.config.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.ext.MySQLAPIImpl;
@@ -40,6 +37,7 @@ import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.*;
+import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
@@ -56,6 +54,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author cjw
@@ -108,7 +107,8 @@ public enum MycatCore {
                     throw new RuntimeException(e);
                 }
             };
-            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function));
+            Map<String, PatternRootConfig.UserConfig> userConfigMap = mycatConfig.getInterceptors().stream().map(u -> u.getUser()).collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
+            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function, new AuthenticatorImpl(userConfigMap)));
             thread.start();
             list.add(thread);
         }
@@ -161,8 +161,8 @@ public enum MycatCore {
                             }
                         });
                     }
-                }catch (Exception e){
-                    LOGGER.error("{}",e);
+                } catch (Exception e) {
+                    LOGGER.error("{}", e);
                 }
             }, frontSessionChecker.getInitialDelay(), frontSessionChecker.getPeriod(), TimeUnit.valueOf(frontSessionChecker.getTimeUnit()));
         }
