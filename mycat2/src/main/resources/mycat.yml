@@ -107,7 +107,7 @@ plug:
 properties:
   key: value
 
-#sqlGroups start
+#lib start
 sqlGroups:
   jdbcAdapter:
     sqls: &jdbcAdapter [
@@ -143,6 +143,6 @@ sqlGroups:
     {name: 'mysql SET net_write_timeout', sql: 'SET net_write_timeout {any}',command: ok },
     {name: 'mycat SELECT next_value_for', sql: 'SELECT next_value_for{xxx}',command: distributedQuery },
     ]
-#sqlGroups end
+#lib end
 
 

@@ -70,12 +70,12 @@ public class FileConfigProvider implements ConfigProvider {
         boolean in= false;
         while (iterator.hasNext()){
             String next = iterator.next();
-            if (next.startsWith("#sqlGroups start")){
+            if (next.startsWith("#lib start")){
                 sqlGroups.append(next).append('\n');
                 in = true;
             }else if (in){
                 sqlGroups.append(next).append('\n');
-            }else if (next.startsWith("#sqlGroups end")){
+            }else if (next.startsWith("#lib end")){
                 sqlGroups.append(next).append('\n');
                 in =false;
             }else {
