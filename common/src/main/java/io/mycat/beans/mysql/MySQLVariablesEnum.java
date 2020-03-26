@@ -16,6 +16,9 @@
  */
 package io.mycat.beans.mysql;
 
+/**
+ * @author: chenjunwen 294712221
+ */
 public enum MySQLVariablesEnum {
     //    autocommit(Type.BOTH),
 //    sql_mode(Type.BOTH),
@@ -23,6 +26,8 @@ public enum MySQLVariablesEnum {
 //    tx_isolation(Type.BOTH),
 //    max_execution_time(Type.BOTH),
 //    innodb_lock_wait_timeout(Type.BOTH),
+
+    // 注意:不包含 new		Both
     audit_log_connection_policy(Type.GLOBAL),
     audit_log_exclude_accounts(Type.GLOBAL),
     audit_log_flush((Type.GLOBAL)),

@@ -22,9 +22,11 @@ import lombok.ToString;
 
 import java.sql.JDBCType;
 
+/**
+ * @author: chenjunwen 294712221
+ */
 @ToString
 @Data
-
 public class MySQLVariableObject {
     private MySQLVariablesEnum enumObject;
     private String columnName;
