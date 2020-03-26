@@ -20,6 +20,8 @@ import io.mycat.hint.Hint;
 import io.mycat.hint.NatureValueHint;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -189,5 +191,26 @@ public class Context {
 
     public boolean isSimply() {
         return simply == Boolean.TRUE;
+    }
+
+    public SchemaTableObject getTableForUpdateOpt(){
+        Map<String, Collection<String>> tables = this.getTables();
+        if (tables.size() != 1) {
+            throw new UnsupportedOperationException();
+        }
+        Map.Entry<String, Collection<String>> next = tables.entrySet().iterator().next();
+        if (next.getValue().size() != 1) {
+            throw new UnsupportedOperationException();
+        }
+        String schemaName = next.getKey();
+        String tableName = next.getValue().iterator().next();
+        return new SchemaTableObject(schemaName,tableName);
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class SchemaTableObject{
+        String schema;
+        String table;
     }
 }

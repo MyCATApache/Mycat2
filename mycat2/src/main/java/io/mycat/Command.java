@@ -22,6 +22,8 @@ import io.mycat.proxy.session.MycatSession;
  * @author chen junwen
  */
 public interface Command {
+
+
     Runnable apply(MycatClient client, Context context, MycatSession session);
 
     Runnable explain(MycatClient client, Context context, MycatSession session);
