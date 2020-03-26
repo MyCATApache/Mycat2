@@ -26,9 +26,9 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
                 tables:[ 'db1.travelrecord','db1.address','db1.company'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
                 sqls: [
                 {sql: 'select {any}',command: distributedQuery },
-                {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
-                {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
-                {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }},
+                {sql: 'insert {any}',command: distributedInsert},
+                {sql: 'update {any}',command: distributedUpdate},
+                {sql: 'delete {any}',command: distributedUpdate},
                 {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
                   #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
                 ],
