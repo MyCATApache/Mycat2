@@ -120,7 +120,7 @@ sqlGroups:
     {name: setXA ,sql: 'set xa = on',command: onXA},
     {name: setProxy ,sql: 'set xa = off',command: offXA},
     {name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
-    {name: start transaction ,sql: ' START TRANSACTION; ',command: begin},
+    {name: start transaction ,sql: ' START TRANSACTION ',command: begin},
     {name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
     {name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
     {name: mariadb-setAutoCommitOn,sql: 'set autocommit=1',command: setAutoCommitOn},
@@ -133,10 +133,15 @@ sqlGroups:
     {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
     {name: 'mysql SELECT @@session.tx_read_only',sql: 'SELECT @@session.tx_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.tx_read_only'}},
     {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
-    {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
     {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
     {name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
-    {name: 'mycat SELECT next_value_for', sql: 'SELECT next_value_for{xxx}',command: distributedQuery }
+    {name: 'mysql set names', sql: 'set names {any}',command: ok },
+    {name: 'mysql set character_set_results', sql: 'set character_set_results {any}',command: ok },
+    {name: 'mysql set GLOBAL TRANSACTION', sql: 'set GLOBAL TRANSACTION {any}',command: ok },
+    {name: 'mysql set session transaction', sql: 'set session transaction {any}',command: ok },
+    {name: 'mysql SET SQL_SELECT_LIMIT', sql: 'SET SQL_SELECT_LIMIT {any}',command: ok },
+    {name: 'mysql SET net_write_timeout', sql: 'SET net_write_timeout {any}',command: ok },
+    {name: 'mycat SELECT next_value_for', sql: 'SELECT next_value_for{xxx}',command: distributedQuery },
     ]
 #sqlGroups end
 
