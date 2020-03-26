@@ -24,7 +24,7 @@ import org.apache.calcite.util.TimestampString;
 
 import java.util.*;
 
-public class CalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
+public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     static Map<Long, SqlOperator> operators = new HashMap<Long, SqlOperator>();
 
     static {
@@ -1486,7 +1486,7 @@ public class CalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (ast == null) {
             return null;
         }
-        CalciteMySqlNodeVisitor visitor = new CalciteMySqlNodeVisitor();
+        MycatCalciteMySqlNodeVisitor visitor = new MycatCalciteMySqlNodeVisitor();
         ast.accept(visitor);
         return visitor.getSqlNode();
     }

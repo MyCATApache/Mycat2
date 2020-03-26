@@ -17,7 +17,7 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.calcite.CalciteMySqlNodeVisitor;
+import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.prepare.*;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -389,7 +389,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             sqlStatement, MycatDBContext dataContext) {
         SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
         boolean forUpdate = queryBlock.isForUpdate();
-        io.mycat.calcite.CalciteMySqlNodeVisitor  calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor ();
+        MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(calciteMySqlNodeVisitor);
         SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(dataContext);
