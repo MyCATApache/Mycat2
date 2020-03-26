@@ -59,7 +59,12 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                 break;
             }
             case GLOBAL: {
-
+                GlobalTableHandler table = (GlobalTableHandler) t;
+                for (Map.Entry<String, BackendTableInfo> stringBackendTableInfoEntry : table.getDataNodeMap().entrySet()) {
+                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, stringBackendTableInfoEntry.getValue());
+                    dataNodes.add(mycatPhysicalTable);
+                    dataNodeMap.put(stringBackendTableInfoEntry.getValue().getUniqueName(), mycatPhysicalTable);
+                }
                 break;
             }
             case ER: {

@@ -11,14 +11,14 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
               #提供表的字段信息,升级计划:通过已有数据库拉取该信息
           createTableSQL: |-
             CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-          dataNodes: [{targetName: repli ,schemaName: db1, tableName: travelrecord},
-                      {targetName: repli ,schemaName: db1, tableName: travelrecord2},
-                      {targetName: repli ,schemaName: db1, tableName: travelrecord3},
-                      {targetName: repli ,schemaName: db2, tableName: travelrecord}] #9999999999
+          dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
+                      {targetName: defaultDs2 ,schemaName: db2, tableName: travelrecord}] #9999999999
       globalTables:
         company:
           createTableSQL: CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))
-          dataNodes: [{targetName: repli ,schemaName: db1, tableName: company},{targetName: repli ,schemaName: db2, tableName: company}]
+          dataNodes: [{targetName: defaultDs2 ,schemaName: db1, tableName: company},{targetName: defaultDs2 ,schemaName: db2, tableName: company}]
 interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   [{user:{username: 'root' ,password: '123456' , ip: '.'},
     defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}},
@@ -29,7 +29,7 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
                 {sql: 'insert {any}',command: distributedInsert},
                 {sql: 'update {any}',command: distributedUpdate},
                 {sql: 'delete {any}',command: distributedUpdate},
-                {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
+#                {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
                   #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
                 ],
               },
@@ -50,7 +50,7 @@ datasource:
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
                 },
                 {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
-                 url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
+                 url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
                 }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
@@ -132,7 +132,6 @@ sqlGroups:
       ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
     {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
     {name: 'mysql SELECT @@session.tx_read_only',sql: 'SELECT @@session.tx_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.tx_read_only'}},
-    {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
     {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
     {name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
     {name: 'mysql set names', sql: 'set names {any}',command: ok },

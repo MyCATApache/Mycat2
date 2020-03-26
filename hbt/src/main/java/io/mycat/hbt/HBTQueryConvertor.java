@@ -29,7 +29,6 @@ import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.TableHandler;
 import io.mycat.util.MycatSqlUtil;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -53,6 +52,8 @@ import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,8 +64,9 @@ import static io.mycat.hbt.ast.HBTOp.*;
 /**
  * @author jamie12221
  **/
-@Log4j
+
 public class HBTQueryConvertor {
+    final static Logger log = LoggerFactory.getLogger(HBTQueryConvertor.class);
     private final MycatRelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
     private int joinCount;
@@ -189,6 +191,7 @@ public class HBTQueryConvertor {
                         String schema = id.names.get(0);
                         String table = id.names.get(1);
                         MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
+                        Objects.requireNonNull(logicTable,"无法推导sql结果集类型");
                         TableHandler table1 = logicTable.getTable();
                         return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
                     }
@@ -462,13 +465,13 @@ public class HBTQueryConvertor {
                                     return relBuilder.field(joinCount, i, indexOf);
                                 } catch (Exception e) {
                                     log.warn("may be a bug");
-                                    log.error(e);
+                                    log.error("",e);
                                 }
                             }
                         }
                     } catch (Exception e) {
                         log.warn("may be a bug");
-                        log.error(e);
+                        log.error("",e);
                     }
 
                     try {
@@ -479,7 +482,7 @@ public class HBTQueryConvertor {
                         }
                     } catch (Exception e) {
                         log.warn("may be a bug");
-                        log.error(e);
+                        log.error("",e);
                     }
                     return relBuilder.field(value);
                 } else {

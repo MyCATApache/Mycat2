@@ -96,7 +96,7 @@ public class TextConvertor {
         }
     }
 
-    public static String dumpRel(RelNode rel) {
+    public static String dumpResultSet(RelNode rel) {
         CharArrayWriter writer = new CharArrayWriter(8192);
         dumpResultSet(rel, writer);
         return new String(writer.toCharArray()).replaceAll("\r", "");

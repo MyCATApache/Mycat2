@@ -45,6 +45,8 @@ import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Program;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -241,19 +243,24 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     public MycatLogicTable getLogicTable(String targetName, String schema, String table) {
         String uniqueName = targetName + "." + schema + "." + table;
         SchemaPlus rootSchema = getRootSchema();
-        for (String subSchemaName : rootSchema.getSubSchemaNames()) {
+        Set<String> subSchemaNames = rootSchema.getSubSchemaNames();
+        for (String subSchemaName :subSchemaNames) {
             SchemaPlus subSchema = rootSchema.getSubSchema(subSchemaName);
+            log.debug("schemaName:{}",subSchemaName);
             Set<String> tableNames = subSchema.getTableNames();
+            log.debug("tableNames:{}",tableNames);
             for (String tableName : tableNames) {
                 Table table1 = subSchema.getTable(tableName);
                 if (table1 instanceof MycatLogicTable) {
                     Map<String, MycatPhysicalTable> dataNodeMap = ((MycatLogicTable) table1).getDataNodeMap();
+                    log.debug("dataNodeMap:{}",dataNodeMap);
                     if (dataNodeMap.containsKey(uniqueName)) {
-                        return (MycatLogicTable)table1;
+                        return Objects.requireNonNull((MycatLogicTable)table1);
                     }
                 }
             }
         }
         return null;
     }
+    final static Logger log = LoggerFactory.getLogger(MycatCalciteDataContext.class);
 }

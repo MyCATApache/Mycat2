@@ -46,7 +46,6 @@ public class MycatImplementor extends RelToSqlConverter {
         }
 
     }
-
 //    public static String toString(RelNode node) {
 //        try {
 //            MycatImplementor dataNodeSqlConverter = new MycatImplementor();

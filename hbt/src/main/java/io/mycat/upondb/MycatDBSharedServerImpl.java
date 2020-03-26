@@ -13,11 +13,11 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
-import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.calcite.CalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.prepare.*;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -389,7 +389,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             sqlStatement, MycatDBContext dataContext) {
         SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
         boolean forUpdate = queryBlock.isForUpdate();
-        CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
+        io.mycat.calcite.CalciteMySqlNodeVisitor  calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor ();
         sqlStatement.accept(calciteMySqlNodeVisitor);
         SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(dataContext);

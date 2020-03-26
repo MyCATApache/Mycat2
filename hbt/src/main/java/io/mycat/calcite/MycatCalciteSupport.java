@@ -39,6 +39,7 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -81,6 +82,23 @@ public enum MycatCalciteSupport implements Context {
    public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
     public   final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
+    /*
+
+    new SqlParserImplFactory() {
+                @Override
+                @SneakyThrows
+                public SqlAbstractParserImpl getParser(Reader stream) {
+                    String string = CharStreams.toString(stream);
+                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+                    SqlParserImplFactory factory = SqlParserImpl.FACTORY;
+                    CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
+                    sqlStatement.accept(calciteMySqlNodeVisitor);
+                    SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
+                    return new SqlAbstractParserImpl() {
+                    };
+                }
+            }
+     */
     public    final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
@@ -256,7 +274,11 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToSql(RelNode input, SqlDialect dialect,boolean forUpdate) {
-        String sql = new MycatImplementor(dialect).implement(input).asStatement().toSqlString(dialect, false).getSql();
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect);
+        SqlImplementor.Result implement = mycatImplementor.implement(input);
+        SqlNode sqlNode =implement.asStatement();
+        String sql = sqlNode.toSqlString(dialect, false).getSql();
+        SqlImplementor.Result implement2 = mycatImplementor.implement(input);
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
         return sql+(forUpdate?" for update":"");

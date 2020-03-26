@@ -35,6 +35,8 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.NlsString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,9 +55,10 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CAST;
  * @author jamie12221 294712221@qq.com
  **/
 public class RelNodeConvertor {
+    final static Logger log = LoggerFactory.getLogger(RelNodeConvertor.class);
 
-    public static Expr convertRexNode(RexNode condition, List<String> fieldNames) {
-        ExprExplain exprExplain = new ExprExplain(fieldNames);
+    public static Expr convertRexNode(RexNode condition) {
+        ExprExplain exprExplain = new ExprExplain();
         return exprExplain.getExpr(condition);
     }
 
@@ -127,13 +130,15 @@ public class RelNodeConvertor {
     private static Schema logicalJoin(RelNode relNode) {
         LogicalJoin join = (LogicalJoin) relNode;
         JoinRelType joinType = join.getJoinType();
+        RelNode rightRelNode = join.getRight();
+        RelNode leftRelNode = join.getLeft();
         RexNode condition = join.getCondition();
         List<String> fieldList = join.getRowType().getFieldNames();
-        ExprExplain exprExplain = new ExprExplain(fieldList);
+        ExprExplain exprExplain = new ExprExplain(join);
         List<RelNode> inputs = join.getInputs();
-        Schema left = convertRelNode(inputs.get(0));
-        Schema right = convertRelNode(inputs.get(1));
-        return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition),  right,left);
+        Schema left = convertRelNode(leftRelNode);
+        Schema right = convertRelNode(rightRelNode);
+        return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition), left, right);
     }
 
     private static Schema getJoinLeftExpr(List<String> leftFieldNames, Schema left, List<String> list) {
@@ -187,12 +192,12 @@ public class RelNodeConvertor {
         LogicalFilter relNode1 = (LogicalFilter) relNode;
         RexNode condition = relNode1.getCondition();
         List<String> fieldNames = relNode1.getInput().getRowType().getFieldNames();
-        Expr expr = convertRexNode(condition, fieldNames);
+        Expr expr = convertRexNode(condition);
         return new FilterSchema(convertRelNode(relNode1.getInput()), expr);
     }
 
-    private static List<Expr> getExprs(List<RexNode> map, List<String> fieldNames) {
-        ExprExplain exprExplain = new ExprExplain(fieldNames);
+    private static List<Expr> getExprs(List<RexNode> map, Join join) {
+        ExprExplain exprExplain = new ExprExplain(join);
         return map.stream().map(i -> exprExplain.getExpr(i)).collect(Collectors.toList());
     }
 
@@ -313,7 +318,7 @@ public class RelNodeConvertor {
         LogicalProject project = (LogicalProject) relNode;
         Schema schema = convertRelNode(project.getInput());
         List<String> fieldNames = project.getInput().getRowType().getFieldNames();
-        List<Expr> expr = getExprs(project.getChildExps(), fieldNames);
+        List<Expr> expr = getExprs(project.getChildExps(), null);
         RelDataType outRowType = project.getRowType();
         List<String> outFieldNames = outRowType.getFieldNames();
         ArrayList<Expr> outExpr = new ArrayList<>();
@@ -372,10 +377,14 @@ public class RelNodeConvertor {
     }
 
     static final class ExprExplain {
-        final List<String> fieldNames;
+        final Join join;
 
-        public ExprExplain(List<String> fieldNames) {
-            this.fieldNames = fieldNames;
+        public ExprExplain() {
+            this(null);
+        }
+
+        public ExprExplain(Join join) {
+            this.join = join;
         }
 
         public static String op(SqlOperator kind) {
@@ -390,11 +399,26 @@ public class RelNodeConvertor {
             if (rexNode instanceof RexLiteral) {
                 RexLiteral rexNode1 = (RexLiteral) rexNode;
                 Object o = unWrapper(rexNode1);
-                return new Literal(o );
+                return new Literal(o);
             }
             if (rexNode instanceof RexInputRef) {
                 RexInputRef expr = (RexInputRef) rexNode;
-                return new Identifier(fieldNames.get(expr.getIndex()));
+                if (join == null) {
+                    return new Identifier("$" + (expr.getIndex()));
+                } else {
+                    int leftCount = this.join.getLeft().getRowType().getFieldCount();
+                    int fieldCount = this.join.getRowType().getFieldCount();
+                    String pre;
+                    int index;
+                    if (expr.getIndex() < leftCount) {
+                        pre = "$";
+                        index = expr.getIndex();
+                    } else {
+                        pre = "$$";
+                        index =  expr.getIndex()-leftCount;
+                    }
+                    return new Identifier(pre + index);
+                }
             }
             if (rexNode instanceof RexCall) {
                 RexCall expr = (RexCall) rexNode;
