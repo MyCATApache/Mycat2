@@ -137,7 +137,7 @@ sqlGroups:
     {name: 'mysql set names', sql: 'set names {any}',command: ok },
     {name: 'mysql set character_set_results', sql: 'set character_set_results {any}',command: ok },
     {name: 'mysql set GLOBAL TRANSACTION', sql: 'set GLOBAL TRANSACTION {any}',command: ok },
-    {name: 'mysql set session transaction', sql: 'set session transaction {any}',command: ok },
+    {name: 'mysql set session transaction', sql: 'set session transaction READ ONLY',command: ok },
     {name: 'mysql SET SQL_SELECT_LIMIT', sql: 'SET SQL_SELECT_LIMIT {any}',command: ok },
     {name: 'mysql SET net_write_timeout', sql: 'SET net_write_timeout {any}',command: ok },
     {name: 'mycat SELECT next_value_for', sql: 'SELECT next_value_for{xxx}',command: distributedQuery },
