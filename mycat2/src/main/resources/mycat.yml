@@ -23,7 +23,7 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
   [{user:{username: 'root' ,password: '123456' , ip: '.'},
     defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}},
     schemas: [{
-                tables:[ 'db1.travelrecord','db1.address','db1.company'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
+                tables:[ 'db1.travelrecord','db1.company'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
                 sqls: [
                 {sql: 'select {any}',command: distributedQuery },
                 {sql: 'insert {any}',command: distributedInsert},
