@@ -818,7 +818,7 @@ public class ContextRunner {
 
                                 case INSERT:
                                 case UPDATE:
-                                    writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true));
+                                    writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true,details.globalTableUpdate));
                                     return;
                             }
                             throw new IllegalArgumentException();

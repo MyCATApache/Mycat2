@@ -71,7 +71,7 @@ public class TransactionSessionUtil {
         return connection.executeUpdate(sql, needGeneratedKeys,transactionSession.getServerStatus());
     }
 
-    public static UpdateRowIteratorResponse executeUpdateByDatasouce(TransactionSession transactionSession,Map<String, List<String>> map, boolean needGeneratedKeys) {
+    public static UpdateRowIteratorResponse executeUpdateByDatasouce(TransactionSession transactionSession,Map<String, List<String>> map, boolean needGeneratedKeys,boolean global) {
         int lastId = 0;
         int count = 0;
         int serverStatus = 0;
@@ -85,6 +85,6 @@ public class TransactionSessionUtil {
                 serverStatus = mycatUpdateResponse.serverStatus();
             }
         }
-        return new UpdateRowIteratorResponse(count, lastId, serverStatus);
+        return new UpdateRowIteratorResponse(global?count/2:count, lastId, serverStatus);
     }
 }
