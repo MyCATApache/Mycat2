@@ -14,13 +14,31 @@ import java.util.List;
 public class ReadWriteSeparationTest {
     private static final Logger logger = LoggerFactory.getLogger(ReadWriteSeparationTest.class);
 
+    /**
+     * 移除元数据db1.company配置
+     * 添加以下配置
+     *
+     *         {
+     *              tables:[ 'db1.company'],
+     *              sqls: [
+     *              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
+     *              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
+     *              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
+     *              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+     *              ],
+     *            },
+     *
+     * @param args
+     * @throws Exception
+     */
+
     public static void main(String[] args) throws Exception {
         try(Connection mySQLConnection = TestUtil.getMySQLConnection()){
             try(Statement statement = mySQLConnection.createStatement()){
                 statement.execute("set xa = on");
                 statement.execute("delete db1.travelrecord");
                 statement.execute("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1')");
-                statement.execute("delete db1.company");
+                statement.execute("delete FROM db1.company");
                 statement.execute("INSERT INTO `db1`.`company` (`id`, `companyname`, `addressid`) VALUES ('1','Intel','1'),('2','IBM','2'),('3','Dell','3')");
             }
         }
