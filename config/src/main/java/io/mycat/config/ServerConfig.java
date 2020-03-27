@@ -17,7 +17,10 @@ package io.mycat.config;
 
 import lombok.Data;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +34,20 @@ public class ServerConfig {
     private int reactorNumber = 1;
     private String handlerName;
     private Worker worker = new Worker();
-    private BufferPoolConfig bufferPool= new BufferPoolConfig();
-    private TimerConfig timer = new TimerConfig(3,3,TimeUnit.SECONDS.name());
+    private BufferPoolConfig bufferPool = new BufferPoolConfig();
+    private TimerConfig timer = new TimerConfig(3, 3, TimeUnit.SECONDS.name());
     private String tempDirectory;
 
     {
         try {
-            tempDirectory = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).toString();
+            Path target = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).resolve("target");
+            if (!Files.exists(target)) {
+                Files.createDirectories(target);
+            }
+            tempDirectory = target.toString();
         } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -52,10 +61,11 @@ public class ServerConfig {
         private int maxPengdingLimit = 65535;
         private boolean close = false;
     }
+
     @Data
     public static class BufferPoolConfig {
         String poolName;
-        Map<String,String> args = new HashMap<>();
+        Map<String, String> args = new HashMap<>();
     }
 
 

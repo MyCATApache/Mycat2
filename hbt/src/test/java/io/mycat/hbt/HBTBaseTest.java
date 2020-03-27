@@ -141,10 +141,10 @@ public class HBTBaseTest implements HBTBuiltinHelper {
 
     @Test
     public void selectProjectItemWithoutFrom2() throws IOException {
-        String sugar = "table(fields(fieldType(id,integer),fieldType(id2,integer)),values()).map(id2 as id4)";
-        String desugar = "map(table(fields(fieldType(id,integer),fieldType(id2,integer)),values()),id2 as id4)";
+        String sugar = "table(fields(fieldType(id,integer),fieldType(id2,integer)),values()).map($1 as id4)";
+        String desugar = "map(table(fields(fieldType(id,integer),fieldType(id2,integer)),values()),$1 as id4)";
 
-        Schema code = map(table(Arrays.asList(fieldType("id", "integer",true), fieldType("id2", "integer",true)), Arrays.asList()), Arrays.asList(as(new Identifier("id2"), new Identifier("id4"))));
+        Schema code = map(table(Arrays.asList(fieldType("id", "integer",true), fieldType("id2", "integer",true)), Arrays.asList()), Arrays.asList(as(new Identifier("$1"), new Identifier("id4"))));
         testText(sugar, desugar, code, "LogicalProject(id4=[$1])  LogicalValues(tuples=[[]])");
 
         testDumpResultSet(transfor(sugar), "");
@@ -161,9 +161,9 @@ public class HBTBaseTest implements HBTBuiltinHelper {
 
     @Test
     public void selectProjectFrom() throws IOException {
-        String sugar = "fromTable(db1,travelrecord).map(id as id0)";
-        String desugar = "map(fromTable(db1,travelrecord),id as id0)";
-        Schema code = map(fromTable("db1", "travelrecord"), Arrays.asList(as(new Identifier("id"), new Identifier("id0"))));
+        String sugar = "fromTable(db1,travelrecord).map($0 as id0)";
+        String desugar = "map(fromTable(db1,travelrecord),$0 as id0)";
+        Schema code = map(fromTable("db1", "travelrecord"), Arrays.asList(as(new Identifier("$0"), new Identifier("id0"))));
         testText(sugar, desugar, code, "LogicalProject(id0=[$0])  LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDumpResultSet(transfor(sugar), "(1)\n" +
