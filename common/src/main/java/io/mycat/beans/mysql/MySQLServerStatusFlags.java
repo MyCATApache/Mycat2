@@ -173,7 +173,7 @@ public final class MySQLServerStatusFlags {
         }
 
         public Builder setAutoCommit() {
-            this.value |= IN_TRANSACTION;
+            this.value |= AUTO_COMMIT;
             return this;
         }
 
