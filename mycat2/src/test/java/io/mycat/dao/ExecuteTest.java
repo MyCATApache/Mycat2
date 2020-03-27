@@ -15,6 +15,14 @@ public class ExecuteTest {
     private static final Logger logger = LoggerFactory.getLogger(ReadWriteSeparationTest.class);
 
     public static void main(String[] args) throws Exception {
+        try(Connection mySQLConnection = TestUtil.getMySQLConnection()){
+            try(Statement statement = mySQLConnection.createStatement()){
+                statement.execute("set xa = on");
+                statement.execute("delete db1.travelrecord");
+                statement.execute("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1')");
+            }
+        }
+
         List<String> initList = Arrays.asList("set xa = off");
         test(TestUtil.getMySQLConnection(), initList,false);
         test(TestUtil.getMariaDBConnection(), initList,false);
