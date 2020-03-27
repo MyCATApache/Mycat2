@@ -1137,8 +1137,8 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
              sqls: [
              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
-             {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
-             {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+             {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: repli,needTransaction: true,}},
+             {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: repli,needTransaction: true,}}
              ],
            },
 ```
