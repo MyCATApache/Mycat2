@@ -33,7 +33,7 @@ public class SimpleColumnInfo {
      */
     public enum ShardingType {
         MAP_TARGET,
-        MAP_DATABASE,
+        MAP_SCHEMA,
         MAP_TABLE,
         NATURE_DATABASE_TABLE,
 

@@ -34,7 +34,7 @@ public class ShardingTable implements ShardingTableHandler {
         this.backends = backends == null ? Collections.emptyList() : backends;
         this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
         this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
-        this.databaseColumnInfo = shardingInfo.get(MAP_DATABASE);
+        this.databaseColumnInfo = shardingInfo.get(MAP_SCHEMA);
         this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
         this.sequence = sequence;
     }

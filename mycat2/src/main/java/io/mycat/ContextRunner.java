@@ -76,6 +76,7 @@ public class ContextRunner {
     public static final String DISTRIBUTED_QUERY = ("distributedQuery");
     public static final String DISTRIBUTED_INSERT = ("distributedInsert");
     public static final String DISTRIBUTED_UPDATE = ("distributedUpdate");
+    public static final String DISTRIBUTED_DELETE = ("distributedDelete");
     public static final String EXECUTE_PLAN = ("executePlan");
     public static final String USE_STATEMENT = ("useStatement");
     public static final String COMMIT = ("commit");
@@ -421,8 +422,7 @@ public class ContextRunner {
                     block(session, mycat -> {
                         MycatDBClientApi mycatDb = client.getMycatDb();
                         String explain = context.getExplain();
-                        RowBaseIterator rowBaseIterator = mycatDb.executeRel(explain);
-                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
+                        writePlan(session,mycatDb.explainRel(explain));
                         mycatDb.recycleResource();//移除已经关闭的连接,
                     });
                 };
@@ -726,6 +726,7 @@ public class ContextRunner {
                 return () -> writePlan(session, details.toExplain());
             }
         };
+        COMMANDS.put(DISTRIBUTED_DELETE, executeSupplier.apply(ExecuteType.UPDATE));
         COMMANDS.put(DISTRIBUTED_UPDATE, executeSupplier.apply(ExecuteType.INSERT));
         COMMANDS.put(DISTRIBUTED_INSERT, executeSupplier.apply(ExecuteType.UPDATE));
         Set<String> supportCommands = UserBooster.getSupportCommands();
