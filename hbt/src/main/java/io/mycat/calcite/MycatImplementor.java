@@ -18,13 +18,17 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * @author Junwen Chen
@@ -69,5 +73,22 @@ public class MycatImplementor extends RelToSqlConverter {
 
     public Result implement(RelNode node) {
         return dispatch(node);
+    }
+
+    /**
+     * 1.修复生成的sql不带select items
+     * @param e
+     * @return
+     */
+    @Override
+    public Result visit(Project e) {
+        if (e.getProjects().isEmpty()){
+            Result x = visitChild(0, e.getInput());
+            final Builder builder =
+                    x.builder(e, Clause.SELECT);
+            builder.setSelect(new SqlNodeList(Collections.singleton(SqlLiteral.createNull(POS)), POS));
+            return builder.result();
+        }
+        return super.visit(e);
     }
 }
