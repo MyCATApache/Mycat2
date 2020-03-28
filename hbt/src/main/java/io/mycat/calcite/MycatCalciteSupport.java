@@ -14,7 +14,6 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -44,7 +43,9 @@ import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
@@ -234,15 +235,15 @@ public enum MycatCalciteSupport implements Context {
 
         @Override
         public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2) {
-            SqlTypeFamily a = type1.getSqlTypeName().getFamily();
-            SqlTypeFamily b = type2.getSqlTypeName().getFamily();
-            if (SqlTypeFamily.NUMERIC.equals(a) || SqlTypeFamily.NUMERIC.equals(b)) {
-                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
-            }
-            RelDataType relDataType = super.deriveDecimalDivideType(typeFactory, type1, type2);
-            if (typeFactory.createUnknownType().equals(relDataType)) {
-                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
-            }
+//            SqlTypeFamily a = type1.getSqlTypeName().getFamily();
+//            SqlTypeFamily b = type2.getSqlTypeName().getFamily();
+//            if (SqlTypeFamily.NUMERIC.equals(a) || SqlTypeFamily.NUMERIC.equals(b)) {
+//                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
+//            }
+//            RelDataType relDataType = super.deriveDecimalDivideType(typeFactory, type1, type2);
+//            if (typeFactory.createUnknownType().equals(relDataType)) {
+//                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
+//            }
             return super.deriveDecimalDivideType(typeFactory, type1, type2);
         }
     }
@@ -253,22 +254,22 @@ public enum MycatCalciteSupport implements Context {
         @Override
         public SqlRexConvertlet get(SqlCall call) {
             SqlRexConvertlet sqlRexConvertlet = StandardConvertletTable.INSTANCE.get(call);
-            if (call.getKind() == SqlKind.DIVIDE) {
-                return (cx, call1) -> {
-                    //,mysql除法返回浮点型
-                    RexNode rexNode = sqlRexConvertlet.convertCall(cx, call1);
-                    final RexBuilder rexBuilder = cx.getRexBuilder();
-                    RelDataType sqlType = cx.getTypeFactory().createSqlType(SqlTypeName.DOUBLE);
-                    ImmutableList<RexNode> operands = ((RexCall) rexNode).operands;
-                    RexNode a = operands.get(0);
-                    RexNode b = operands.get(1);
-                    if (b.getType().getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC) {
-                        return rexBuilder.makeCall(((RexCall) rexNode).getOperator(), rexBuilder.makeCast(sqlType, a), b);
-                    } else {
-                        return rexNode;
-                    }
-                };
-            }
+//            if (call.getKind() == SqlKind.DIVIDE) {
+//                return (cx, call1) -> {
+//                    //,mysql除法返回浮点型
+//                    RexNode rexNode = sqlRexConvertlet.convertCall(cx, call1);
+//                    final RexBuilder rexBuilder = cx.getRexBuilder();
+//                    RelDataType sqlType = cx.getTypeFactory().createSqlType(SqlTypeName.DOUBLE);
+//                    ImmutableList<RexNode> operands = ((RexCall) rexNode).operands;
+//                    RexNode a = operands.get(0);
+//                    RexNode b = operands.get(1);
+//                    if (b.getType().getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC) {
+//                        return rexBuilder.makeCall(((RexCall) rexNode).getOperator(), rexBuilder.makeCast(sqlType, a), b);
+//                    } else {
+//                        return rexNode;
+//                    }
+//                };
+//            }
 
             return sqlRexConvertlet;
         }

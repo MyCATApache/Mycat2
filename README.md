@@ -991,7 +991,9 @@ sql是最终查询数据库的sql
 
 targetName是数据源的名字
 
+所需的函数脚本
 
+https://github.com/MyCATApache/Mycat2/blob/052973dfd0a9bd1b1bce85190fd5e828bb9c6a12/mycat2/src/main/resources/dbseq.sql
 
 ### io.mycat.plug.sequence.SequenceSnowflakeGenerator
 
@@ -1167,14 +1169,36 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
    `select 1 from db1.travelrecord where id = 1 limit 1`
 
-4. sql一般带有分片条件,而且位于表名后的where,而且是简单的形式,复杂的条件和不写条件都会导致全表扫描
+4. sql一般带有分片条件,否则无法发挥分表优势,而且位于表名后的where,而且是简单的形式,复杂的条件和不写条件,not表达式都会导致全表扫描
 
-5. sql函数名不能出现Crudate的情况,否则无法识别
+5. sql函数名不能出现Crudate大小写混合的情况,否则无法识别
 
-   
+6. 不建议使用除法,不同的数据库的除法的结果存在整形和浮点两种,使用除法请在sql中使用cast保证类型和类型或者*1.0
+
+7. avg函数默认结果是取整的,所以参数值用*1.0转成浮点可以保证精度
 
 
 
-###### 更新日志
+## 内置函数列表
+
+原则上mycat不应该对函数运算,想要更多函数支持请提issue
+
+##### 数学函数
+
+https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b739563b/mycat2/src/test/java/io/mycat/sql/MathChecker.java
+
+##### 日期函数
+
+https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b739563b/mycat2/src/test/java/io/mycat/sql/DateChecker.java
+
+##### 字符函数
+
+https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331765/mycat2/src/test/java/io/mycat/sql/CharChecker.java
+
+## SQL支持情况
+
+
+
+##### 更新日志
 
 具体看git记录

@@ -1,7 +1,6 @@
 package io.mycat.calcite;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
@@ -14,12 +13,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.tools.RelRunners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -64,12 +60,11 @@ public class CalciteRunners {
                     return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
                 };
             }catch (Throwable e){
-                LOGGER.info("该关系表达式不是原生的"+relNode);
+                e.printStackTrace();
+                LOGGER.info("该关系表达式不被支持的"+relNode);
                 LOGGER.error("",e);
+                throw e;
             }
-            PreparedStatement run = RelRunners.run(relNode);
-            ResultSet resultSet = run.executeQuery();
-            return ()->new JdbcRowBaseIterator(run,resultSet);
         } catch (java.lang.AssertionError | Exception e) {//实在运行不了使用原来的方法运行
             LOGGER.error("",e);
             throw e;

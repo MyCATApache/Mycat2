@@ -15,7 +15,7 @@ public class MathChecker extends BaseChecker {
     }
 
     public void run() {
-        check("select 1 from db1.travelrecord where id = 1 limit 1", "(1)");//
+        check("select 1 from db1.travelrecord where id = 1 limit 1");//
 
         simplyCheck("abs(-1)","1");//
         simplyCheck("ACOS(-1)","3.141592653589793");//
