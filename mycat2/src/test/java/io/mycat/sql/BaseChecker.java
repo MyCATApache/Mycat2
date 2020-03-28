@@ -8,15 +8,22 @@ import org.junit.Assert;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 
-public class BaseChecker {
+public abstract class BaseChecker implements Runnable {
     final Statement statement;
 
     public BaseChecker(Statement statement) {
         this.statement = statement;
     }
+
+    public void simplyCheck(String fun, String expected) {
+        String format = MessageFormat.format("select {0} from db1.travelrecord where id = 1 limit 1", fun);
+        check(format, expected);//
+    }
+
 
     @SneakyThrows
     public static void main(String[] args) {
@@ -26,7 +33,7 @@ public class BaseChecker {
             for (String u : initList) {
                 statement.execute(u);
             }
-            MathChecker checker = new MathChecker(statement);
+            BaseChecker checker = new MathChecker(statement);
             checker.run();
         }
     }
@@ -40,6 +47,11 @@ public class BaseChecker {
             expectedRes = "(" + expectedRes + ")";
         }
         Assert.assertEquals(expectedRes, s);
+    }
+
+    @SneakyThrows
+    public void simplyCheck(String sql) {
+        check(  MessageFormat.format("select {0} from db1.travelrecord where id = 1 limit 1", sql));
     }
 
     @SneakyThrows
