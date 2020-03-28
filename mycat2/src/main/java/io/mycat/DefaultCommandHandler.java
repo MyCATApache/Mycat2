@@ -56,7 +56,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             }
             Context analysis = client.analysis(sql);
             ContextRunner.run(client, analysis, session);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
         }
