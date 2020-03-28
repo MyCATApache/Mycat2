@@ -282,8 +282,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         //where
-        SqlNode where = convertToSqlNode(x.getWhere());
-
+        SQLExpr whereAst = x.getWhere();
+        SqlNode where = convertToSqlNode(whereAst);
+        if (whereAst!=null){
+            if (where==null){
+                throw new IllegalArgumentException("该表达式不被支持:"+x.getWhere());
+            }
+        }
         //order by
         SqlNodeList orderBySqlNode = null;
         SQLOrderBy orderBy = x.getOrderBy();
@@ -1437,6 +1442,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     public boolean visit(SQLUnaryExpr x) {
         SQLUnaryOperator operator = x.getOperator();
         switch (operator) {
+            case Not:
             case NOT:
                 this.sqlNode = SqlStdOperatorTable.NOT.createCall(SqlParserPos.ZERO,
                                                                   convertToSqlNode(x.getExpr()));
@@ -1445,7 +1451,6 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = SqlStdOperatorTable.UNARY_MINUS.createCall(SqlParserPos.ZERO,
                                                                           convertToSqlNode(x.getExpr()));
                 break;
-            case Not:
             case Compl:
             case BINARY:
             default:
