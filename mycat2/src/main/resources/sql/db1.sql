@@ -29,7 +29,7 @@ CREATE TABLE `travelrecord` (
 insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,NULL,NULL,NULL,NULL,NULL);
 
 CREATE TABLE `travelrecord2` (
-  `id` bigint(20) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
   `traveldate` date DEFAULT NULL,
   `fee` decimal(10,0) DEFAULT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE `travelrecord2` (
 
 
 CREATE TABLE `travelrecord3` (
-  `id` bigint(20) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
   `traveldate` date DEFAULT NULL,
   `fee` decimal(10,0) DEFAULT NULL,

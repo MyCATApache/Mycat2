@@ -6,7 +6,7 @@ CREATE TABLE `address` (
 
 
 CREATE TABLE `company` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `companyname` varchar(20) DEFAULT NULL,
   `addressid` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -19,7 +19,7 @@ CREATE TABLE `test` (
 
 
 CREATE TABLE `travelrecord` (
-  `id` bigint(20) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(100) DEFAULT NULL,
   `traveldate` date DEFAULT NULL,
   `fee` decimal(10,0) DEFAULT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `travelrecord` (
 
 
 CREATE TABLE `travelrecord2` (
-  `id` bigint(20) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(100) DEFAULT NULL,
   `traveldate` date DEFAULT NULL,
   `fee` decimal(10,0) DEFAULT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE `travelrecord2` (
 
 
 CREATE TABLE `travelrecord3` (
-  `id` bigint(20) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(100) DEFAULT NULL,
   `traveldate` date DEFAULT NULL,
   `fee` decimal(10,0) DEFAULT NULL,
