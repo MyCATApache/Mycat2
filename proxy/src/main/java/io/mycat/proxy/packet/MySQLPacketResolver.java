@@ -633,8 +633,9 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         } else if (head == 0xfe && payloadLength < 0xffffff) {
           resolveResultsetRowEnd(mySQLPacket, isPacketFinished);
         } else if (head == 0xff) {
-          setState(ComQueryState.COMMAND_END);
+          setState(ComQueryState.RESULTSET_ROW_ERROR);
           setMySQLPayloadType(ROW_ERROR);
+          markedResolvePayloadType(false);//还需要切换状态到COMMAND_END
         } else {
           //text resultset row
           setMySQLPayloadType(TEXT_ROW);
@@ -644,6 +645,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 //            case RESULTSET_ROW_END:
 //                resolveResultsetRowEnd(currentMySQLPacket, isPacketFinished);
 //                break;
+      case RESULTSET_ROW_ERROR: {
+        setState(ComQueryState.COMMAND_END);//COMMAND_END结束完毕就切换到读状态
+        setMySQLPayloadType(ROW_ERROR);
+        break;
+      }
       case PREPARE_FIELD:
       case PREPARE_FIELD_EOF:
       case PREPARE_PARAM:
@@ -750,7 +756,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     AUTH_SWITCH_OTHER_REQUEST(true),
     COLUMN_END_EOF(true),
     RESULTSET_ROW(false),
-    RESULTSET_ROW_END(true),
+    RESULTSET_ROW_ERROR(true),
     PREPARE_FIELD(false),
     PREPARE_FIELD_EOF(true),
     PREPARE_PARAM(false),
