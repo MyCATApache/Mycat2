@@ -66,10 +66,7 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -79,9 +76,9 @@ public enum MycatCalciteSupport implements Context {
     INSTANCE;
 
     public static final Driver DRIVER = new Driver();//触发驱动注册
-   public final FrameworkConfig config;
+    public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
-    public   final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
+    public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
     /*
 
     new SqlParserImplFactory() {
@@ -99,7 +96,7 @@ public enum MycatCalciteSupport implements Context {
                 }
             }
      */
-    public    final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+    public final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
     public MycatTypeSystem TypeSystem = new MycatTypeSystem();
@@ -118,7 +115,6 @@ public enum MycatCalciteSupport implements Context {
             .withRelBuilderFactory(relBuilderFactory).build();
 
 
-
     public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
         return new MycatCalciteDataContext(uponDBContext);
     }
@@ -131,8 +127,27 @@ public enum MycatCalciteSupport implements Context {
         SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
         instance.init();
         configBuilder.operatorTable(new SqlOperatorTable() {
+            final HashMap<String, SqlOperator> map = new HashMap<>();
+            final HashMap<String, SqlOperator> build = new HashMap<>();
+            {
+                build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
+                build.put("LOG", SqlStdOperatorTable.LOG10);
+                build.put("PI",SqlStdOperatorTable.PI);
+                build.put("POW",SqlStdOperatorTable.POWER);
+                for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
+                    map.put(stringSqlOperatorEntry.getKey().toUpperCase(),stringSqlOperatorEntry.getValue());
+                    map.put(stringSqlOperatorEntry.getKey().toLowerCase(),stringSqlOperatorEntry.getValue());
+                }
+
+            }
+
             @Override
             public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
+                SqlOperator sqlOperator = map.get(opName.getSimple());
+                if (sqlOperator != null) {
+                    operatorList.add(sqlOperator);
+                }
                 instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
             }
 
@@ -197,7 +212,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToHBTText(Schema schema) {
-        return   TextConvertor.dumpExplain(schema);
+        return TextConvertor.dumpExplain(schema);
     }
 
 
@@ -273,18 +288,18 @@ public enum MycatCalciteSupport implements Context {
         return calciteConnectionConfig;
     }
 
-    public String convertToSql(RelNode input, SqlDialect dialect,boolean forUpdate) {
+    public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
         MycatImplementor mycatImplementor = new MycatImplementor(dialect);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
-        SqlNode sqlNode =implement.asStatement();
+        SqlNode sqlNode = implement.asStatement();
         String sql = sqlNode.toSqlString(dialect, false).getSql();
         SqlImplementor.Result implement2 = mycatImplementor.implement(input);
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
-        return sql+(forUpdate?" for update":"");
+        return sql + (forUpdate ? " for update" : "");
     }
 
-    public String convertToMycatRelNodeText(RelNode node,MycatCalciteDataContext dataContext) {
+    public String convertToMycatRelNodeText(RelNode node, MycatCalciteDataContext dataContext) {
         final StringWriter sw = new StringWriter();
         final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
         RelNode relNode = MycatCalciteSupport.INSTANCE.createPlanner(dataContext).convertToMycatRel(node);
@@ -293,14 +308,15 @@ public enum MycatCalciteSupport implements Context {
     }
 
 
-    public  String dumpMetaData(RelDataType mycatRowMetaData) {
+    public String dumpMetaData(RelDataType mycatRowMetaData) {
         return RowIteratorUtil.dumpColumnInfo(convertToRowIterator(mycatRowMetaData));
     }
 
-    public  RowBaseIterator convertToRowIterator(RelDataType mycatRowMetaData) {
+    public RowBaseIterator convertToRowIterator(RelDataType mycatRowMetaData) {
         return ColumnInfoRowMetaData.INSTANCE.convertToRowIterator(new CalciteRowMetaData(mycatRowMetaData.getFieldList()));
     }
-    public  String dumpMetaData(MycatRowMetaData mycatRowMetaData) {
+
+    public String dumpMetaData(MycatRowMetaData mycatRowMetaData) {
         return RowIteratorUtil.dumpColumnInfo(ColumnInfoRowMetaData.INSTANCE.convertToRowIterator(mycatRowMetaData));
     }
 

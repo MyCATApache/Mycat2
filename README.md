@@ -1159,7 +1159,19 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 ###### 分布式查询引擎
 
-结果集字段名不写别名的情况下,生成的列名是不确定的
+1. 结果集字段名不写别名的情况下,生成的列名是不确定的
+
+2. sql不写order的情况下,结果集可能是未经排序的
+
+3. 不建议写类似sql,sql中没有引用表的列名,这种sql在mycat里未正式支持(0.8版本后可以运行)
+
+   `select 1 from db1.travelrecord where id = 1 limit 1`
+
+4. sql一般带有分片条件,而且位于表名后的where,而且是简单的形式,复杂的条件和不写条件都会导致全表扫描
+
+5. sql函数名不能出现Crudate的情况,否则无法识别
+
+   
 
 
 
