@@ -15,6 +15,11 @@ public class CharChecker  extends BaseChecker{
     @Override
     public void run() {
         simplyCheck("ASCII('a')", "(97)");
+        simplyCheck("TRIM(' a ')", "(a)");
+//        simplyCheck("RTRIM(' a ')", "(a)");
+//        simplyCheck("UCASE('A')", "(a)");
+        simplyCheck("UPPER('a')", "(A)");
+        simplyCheck("LOWER('A')", "(a)");
 //        simplyCheck("CONCAT('a','b')", "1");
 //        simplyCheck("CONCAT_WS('a','b')", "1");
 //        simplyCheck("BIN('a')", "1");
