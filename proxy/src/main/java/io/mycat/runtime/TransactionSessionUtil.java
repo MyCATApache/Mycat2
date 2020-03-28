@@ -75,8 +75,10 @@ public class TransactionSessionUtil {
         int lastId = 0;
         int count = 0;
         int serverStatus = 0;
+        int sqlCount = 0;
         for (Map.Entry<String, List<String>> backendTableInfoStringEntry : map.entrySet()) {
             for (String s : backendTableInfoStringEntry.getValue()) {
+                sqlCount++;
                 MycatUpdateResponse mycatUpdateResponse = executeUpdate(transactionSession,backendTableInfoStringEntry.getKey(), s, needGeneratedKeys);
                 long lastInsertId = mycatUpdateResponse.getLastInsertId();
                 long updateCount = mycatUpdateResponse.getUpdateCount();
@@ -85,6 +87,6 @@ public class TransactionSessionUtil {
                 serverStatus = mycatUpdateResponse.serverStatus();
             }
         }
-        return new UpdateRowIteratorResponse(global?count/2:count, lastId, serverStatus);
+        return new UpdateRowIteratorResponse(global?count/sqlCount:count, lastId, serverStatus);
     }
 }
