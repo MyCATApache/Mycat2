@@ -413,7 +413,7 @@ interceptors:
                 {sql: 'select {any}',command: distributedQuery }, #带表sql匹配Hanlder
                 {sql: 'insert {any}',command: distributedInsert},
                 {sql: 'update {any}',command: distributedUpdate},
-                {sql: 'delete {any}',command: distributedUpdate},
+                {sql: 'delete {any}',command: distributedDelete},
                 ],
               },
     ],
@@ -1143,3 +1143,26 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
            },
 ```
 
+
+
+## 已知限制
+
+###### proxy事务模式
+
+开启事务后的操作只能是同一个分片
+
+事务里使用全局表会出现非同一分片的全局表无法回滚的现象
+
+对于这种更新操作,,要求强一致性,可以开启xa
+
+
+
+###### 分布式查询引擎
+
+结果集字段名不写别名的情况下,生成的列名是不确定的
+
+
+
+###### 更新日志
+
+具体看git记录

@@ -28,7 +28,7 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
                 {sql: 'select {any}',command: distributedQuery },
                 {sql: 'insert {any}',command: distributedInsert},
                 {sql: 'update {any}',command: distributedUpdate},
-                {sql: 'delete {any}',command: distributedUpdate},
+                {sql: 'delete {any}',command: distributedDelete},
 #                {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
                   #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
                 ],
