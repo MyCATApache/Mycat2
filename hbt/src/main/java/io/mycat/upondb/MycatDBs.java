@@ -4,6 +4,7 @@ import io.mycat.Identical;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.util.SQLContext;
 import io.mycat.util.SQLContextImpl;
@@ -74,8 +75,13 @@ public class MycatDBs {
             }
 
             @Override
+            public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+                return dataContext.query(mycatRowMetaData,targetName, sql);
+            }
+
+            @Override
             public RowBaseIterator query(String targetName, String sql) {
-                return dataContext.query(targetName, sql);
+                return dataContext.query( targetName, sql);
             }
 
             @Override

@@ -15,6 +15,7 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.CalciteConvertors;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.metadata.TableHandler;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.rel.type.RelDataType;
@@ -38,7 +39,9 @@ public abstract class MycatTableBase extends AbstractTable implements Projectabl
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return CalciteConvertors.getRelDataType(logicTable().getColumns(), typeFactory);
     }
-
+    public RelDataType getRowType() {
+        return CalciteConvertors.getRelDataType(logicTable().getColumns(), MycatCalciteSupport.INSTANCE.TypeFactory);
+    }
     @Override
     public Statistic getStatistic() {
         return Statistics.UNKNOWN;

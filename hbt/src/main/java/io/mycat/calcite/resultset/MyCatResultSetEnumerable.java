@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatCalciteDataContext;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.rel.type.RelDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +37,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final MycatCalciteDataContext dataContext;
     private final AtomicBoolean CANCEL_FLAG;
+    private RelDataType rowType;
     private final List<QueryBackendTask> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, List<QueryBackendTask> res) {
+    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, RelDataType rowType, List<QueryBackendTask> res) {
         this.dataContext = dataContext;
+        this.rowType = rowType;
         this.backStoreList = res;
         this.CANCEL_FLAG = DataContext.Variable.CANCEL_FLAG.get(dataContext);
         for (QueryBackendTask sql : res) {
@@ -48,8 +51,8 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         }
     }
 
-    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, QueryBackendTask res) {
-        this(dataContext, Collections.singletonList(res));
+    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext,RelDataType rowType, QueryBackendTask res) {
+        this(dataContext,rowType, Collections.singletonList(res));
     }
 
     @Override
@@ -58,7 +61,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (QueryBackendTask endTableInfo : backStoreList) {
-            iterators.add(dataContext.getUponDBContext().query(endTableInfo.getTargetName(), endTableInfo.getSql()));
+            iterators.add(dataContext.getUponDBContext().query(new CalciteRowMetaData(rowType.getFieldList()),endTableInfo.getTargetName(), endTableInfo.getSql()));
             LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
         }
 

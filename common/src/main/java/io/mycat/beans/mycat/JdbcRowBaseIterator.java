@@ -18,6 +18,7 @@ import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import lombok.SneakyThrows;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -227,13 +228,12 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
+    @SneakyThrows
     public Object getObject(int columnIndex) {
-        try {
-            return resultSet.getObject(columnIndex);
-        } catch (Exception e) {
-            throw new MycatException(e);
-        }
+        Object object = resultSet.getObject(columnIndex);
+        return object;
     }
+
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) {

@@ -18,6 +18,7 @@ import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
@@ -136,4 +137,17 @@ public class DefaultConnection implements AutoCloseable {
         return connection;
     }
 
+    public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
+        try {
+            Statement statement = connection.createStatement();
+            return new JdbcRowBaseIterator(statement, statement.executeQuery(sql)){
+                @Override
+                public MycatRowMetaData getMetaData() {
+                    return mycatRowMetaData;
+                }
+            };
+        } catch (Exception e) {
+            throw new MycatException(e);
+        }
+    }
 }

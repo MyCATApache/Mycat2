@@ -44,7 +44,25 @@ public class JoinSQLChecker  extends BaseChecker {
         check("select * from (db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id)  LEFT  JOIN db1.company as c2 on t.id = c2.id",
                 "(999999999,999,null,null,null,null,null,null,null,null,null,null)(1,999,null,null,null,null,1,Intel,1,1,Intel,1)");
 
-//        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","");
+        /*
+
+SET GLOBAL sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+EXECUTE plan leftJoin(`$0` eq `$$0`,fromSql(defaultDs,'SELECT *  FROM `db1`.`travelrecord`  WHERE `id` = 1'),
+
+fromSql(defaultDs2,FIELDS(fieldType(`id0`,`integer`,TRUE),fieldType(`$f1`,`Bigint`,TRUE)),
+'SELECT id AS `id0`, CASE COUNT(`id`) WHEN 0 THEN NULL WHEN 1 THEN `id` ELSE (SELECT 1  UNION ALL  SELECT 1) END AS `$f1`  FROM `db2`.`company`   GROUP BY `id`')
+).map(`$7` AS `EXPR$0`)
+
+EXECUTE plan leftJoin(`$0` eq `$$0`,fromSql(defaultDs,'SELECT *  FROM `db1`.`travelrecord`  WHERE `id` = 1'),
+
+fromSql(defaultDs2,FIELDS(fieldType(`id0`,`integer`,TRUE),fieldType(`$f1`,`Bigint`,TRUE)),
+'SELECT id AS `id0`, CASE COUNT(`id`) WHEN 0 THEN NULL WHEN 1 THEN `id` ELSE (SELECT 1  UNION ALL  SELECT 1) END AS `$f1`  FROM `db2`.`company`   GROUP BY `id`')
+).map(`$7` AS `EXPR$0`)
+         */
+
+        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","");
     }
 
     @SneakyThrows

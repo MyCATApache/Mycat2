@@ -18,6 +18,7 @@ package io.mycat.client;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.config.PatternRootConfig;
@@ -353,8 +354,8 @@ public enum ClientRuntime {
             }
 
             @Override
-            public RowBaseIterator query(String targetName, String sql) {
-                return dataContext.query(targetName, sql);
+            public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+                return dataContext.query(mycatRowMetaData, targetName, sql);
             }
 
             @Override
@@ -380,6 +381,11 @@ public enum ClientRuntime {
             @Override
             public String resolveDatasourceTargetName(String targetName) {
                 return dataContext.resolveDatasourceTargetName(targetName);
+            }
+
+            @Override
+            public RowBaseIterator query(String targetName, String sql) {
+                return dataContext.query(targetName,sql);
             }
 
             @Override

@@ -3,6 +3,7 @@ package io.mycat.hbt;
 import io.mycat.Identical;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.upondb.MycatDBClientBasedConfig;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBSharedServer;
@@ -65,6 +66,11 @@ public class MockDBClientMediator extends MycatDBClientMediator {
 
     @Override
     public UpdateRowIteratorResponse update(String targetName, String sql) {
+        return null;
+    }
+
+    @Override
+    public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
         return null;
     }
 

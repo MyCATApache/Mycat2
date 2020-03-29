@@ -3,6 +3,7 @@ package io.mycat.runtime;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import lombok.Getter;
@@ -263,11 +264,15 @@ public class MycatDataContextImpl implements MycatDataContext {
         DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, true, null, transactionSession);
         return defaultConnection.executeUpdate(sql, true, transactionSession.getServerStatus());
     }
-
     @Override
-    public RowBaseIterator query(String targetName, String sql) {
+    public RowBaseIterator query(String targetName, String sql){
         DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
         return defaultConnection.executeQuery(sql);
+    }
+    @Override
+    public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
+        return defaultConnection.executeQuery(mycatRowMetaData,sql);
     }
 
     @Override

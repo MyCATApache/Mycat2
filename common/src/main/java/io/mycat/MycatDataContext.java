@@ -2,6 +2,7 @@ package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 
@@ -97,7 +98,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public UpdateRowIteratorResponse update(String targetName, String sql);
 
-    public RowBaseIterator query(String targetName, String sql);
+    public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql);
 
     public RowBaseIterator queryDefaultTarget(String sql);
 
@@ -111,4 +112,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     void block(Runnable runnable);
 
     public String resolveDatasourceTargetName(String targetName);
+
+    RowBaseIterator query(String targetName, String sql);
 }

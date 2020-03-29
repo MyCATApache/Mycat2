@@ -426,13 +426,13 @@ public class ExplainVisitor implements NodeVisitor {
         append(targetName);
         append(",");
         StringBuilder comment = new StringBuilder();
-        comment.append("targetName:").append(targetName).append("\n");
-        if (!fromSqlSchema.getFieldTypes().isEmpty()) {
+//        comment.append("targetName:").append(targetName).append("\n");
+
             comment.append("fields(");
             comment.append(getExprString(fromSqlSchema.getFieldTypes()));
-            comment.append(")\n\n");
-            comments.add(comment.toString());
-        }
+            comment.append(")\n");
+        append(comment.toString());
+            append(",");
         append("\n");
         append("'");
         append(sql);

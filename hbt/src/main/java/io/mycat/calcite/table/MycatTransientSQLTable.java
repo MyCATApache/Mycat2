@@ -80,7 +80,8 @@ public class MycatTransientSQLTable extends PreComputationSQLTable
             return preComputation;
         }
         String sql = getExplainSQL();
-        return new MyCatResultSetEnumerable(root1, new QueryBackendTask( convention.targetName,sql));
+        return new MyCatResultSetEnumerable(root1,getRowType(MycatCalciteSupport.INSTANCE.TypeFactory), new QueryBackendTask( convention.targetName,sql));
+
 
     }
 

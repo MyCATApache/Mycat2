@@ -20,9 +20,11 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.util.StringUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -69,7 +71,27 @@ public class JdbcConnectionManager implements ConnectionManager {
             return operand;
         }) < key.getMaxCon()) {
             try {
-                return new DefaultConnection(key.dataSource.getConnection(), key, autocommit, transactionIsolation,readOnly, this);
+                DatasourceRootConfig.DatasourceConfig config = key.getConfig();
+                String initSQL = config.getInitSQL();
+                DefaultConnection defaultConnection = new DefaultConnection(key.dataSource.getConnection(), key, autocommit, transactionIsolation, readOnly, this);
+                if (initSQL!=null) {
+                   try(Statement statement = defaultConnection.getRawConnection().createStatement()){
+                       String[] split = initSQL.split(";");
+                       if (split.length==1){
+                           statement.execute(initSQL);
+                       }else {
+                           for (String s : split) {
+                               s = s.trim();
+                               if (!StringUtil.isEmpty(s)){
+                                   statement.execute(s);
+                               }
+                           }
+                       }
+                   }
+                    return defaultConnection;
+                }else {
+                    return defaultConnection;
+                }
             } catch (SQLException e) {
                 key.counter.decrementAndGet();
                 throw new MycatException(e);

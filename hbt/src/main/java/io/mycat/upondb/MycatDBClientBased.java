@@ -3,6 +3,7 @@ package io.mycat.upondb;
 import io.mycat.Identical;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.beans.mycat.MycatRowMetaData;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public interface MycatDBClientBased {
 
     UpdateRowIteratorResponse update(String targetName, String sql);
 
+    RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql);
     RowBaseIterator query(String targetName, String sql);
     RowBaseIterator queryDefaultTarget(String sql);
     UpdateRowIteratorResponse updateDefaultTarget( String sql);
