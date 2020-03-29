@@ -113,14 +113,13 @@ public class SchemaConvertor {
             HBTOp op = map.get(name);
             if (op == null) {
                 System.err.println(name);
+                Objects.requireNonNull(name);
             }
             switch (op) {
                 case UNION_DISTINCT:
                 case UNION_ALL:
                 case EXCEPT_DISTINCT:
                 case EXCEPT_ALL:
-                case MINUS_ALL:
-                case MINUS_DISTINCT:
                 case INTERSECT_DISTINCT:
                 case INTERSECT_ALL: {
                     List<Schema> collect = exprList.stream().map(expr -> transforSchema(expr)).collect(Collectors.toList());

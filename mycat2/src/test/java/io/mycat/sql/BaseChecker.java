@@ -83,7 +83,10 @@ public abstract class BaseChecker implements Runnable {
     public void check(String sql) {
         statement.execute(sql);
     }
-
+    @SneakyThrows
+    public void checkHbt(String sql,String expectedRes) {
+        check("execute plan "+sql,expectedRes);
+    }
     @SneakyThrows
     public void checkContains(String sql, String element) {
         ResultSet resultSet = statement.executeQuery(sql);

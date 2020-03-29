@@ -133,6 +133,8 @@ public class HBTQueryConvertor {
                 case UNION_DISTINCT:
                 case EXCEPT_ALL:
                 case EXCEPT_DISTINCT:
+                case INTERSECT_DISTINCT:
+                case INTERSECT_ALL:
                     return setSchema((SetOpSchema) input);
                 case LEFT_JOIN:
                 case RIGHT_JOIN:
@@ -151,7 +153,7 @@ public class HBTQueryConvertor {
         } finally {
             relBuilder.clear();
         }
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(input.getOp().getFun());
     }
 
     public RelNode filterFromTable(FilterFromTableSchema input) {

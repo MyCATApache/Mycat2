@@ -90,6 +90,12 @@ public class SQLExprChecker extends BaseChecker {
         //not表达式
         check("select id,user_id from db1.travelrecord where !(id = "+min+" and "+" user_id = 999"+")","(" +max+ ",999)");
 
+        //between
+        check("select id,user_id from db1.travelrecord where id between 1 and 999","(" +max+ ",999)");
+
+        //like
+        check("select id,user_id from db1.travelrecord where user_id LIKE '99%'","(1,999)");
+
         //xor表达式 不支持
 //        check("select id,user_id from db1.travelrecord where (id = "+min+" xor "+" user_id = 999"+")","(" +max+ ",999)");
     }

@@ -85,7 +85,7 @@ text
 
 ```sql
 table(fields(fieldType(`1`,`integer`),fieldType(`2`,`varchar`)),values())
-table(fields(fieldType(id,int)),values(1,2,3))
+table(fields(fieldType(id,`integer`)),values(1,2,3))
 ```
 
 
@@ -314,10 +314,6 @@ exceptAll
 除
 exceptDistinct
 除,去重
-minusAll
-减
-minusDistinct
-减,去重
 intersectAll
 交
 intersectDistinct
@@ -342,8 +338,6 @@ java
 //io.mycat.hbt.ast.HBTOp#UNION_DISTINCT
 //io.mycat.hbt.ast.HBTOp#EXCEPT_ALL
 //io.mycat.hbt.ast.HBTOp#EXCEPT_DISTINCT
-//io.mycat.hbt.ast.HBTOp#MINUS_ALL
-//io.mycat.hbt.ast.HBTOp#MINUS_DISTINCT
 //io.mycat.hbt.ast.HBTOp#INTERSECT_ALL
 //io.mycat.hbt.ast.HBTOp#INTERSECT_DISTINCT
 //io.mycat.hbt.ast.HBTBuiltinHelper#set(io.mycat.hbt.HBTOp, java.util.List<io.mycat.hbt.ast.base.Schema>)
@@ -932,8 +926,6 @@ unionAll,
 unionDistinct,
 exceptDistinct,
 exceptAll,
-minusAll,
-minusDistinct,
 rename,
 groupBy
 distinct,

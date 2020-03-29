@@ -1034,17 +1034,11 @@ joinCondition:
 
 tableReference:
       tablePrimary
-      [ FOR SYSTEM_TIME AS OF expression ]
-      [ matchRecognize ]
       [ [ AS ] alias [ '(' columnAlias [, columnAlias ]* ')' ] ]
 
 tablePrimary:
       [ [ catalogName . ] schemaName . ] tableName
       '(' TABLE [ [ catalogName . ] schemaName . ] tableName ')'
-  |   tablePrimary [ EXTEND ] '(' columnDecl [, columnDecl ]* ')'
-  |   [ LATERAL ] '(' query ')'
-  |   UNNEST '(' expression ')' [ WITH ORDINALITY ]
-  |   [ LATERAL ] TABLE '(' [ SPECIFIC ] functionName '(' expression [, expression ]* ')' ')'
 
 columnDecl:
       column type [ NOT NULL ]
@@ -1056,9 +1050,6 @@ groupItem:
       expression
   |   '(' ')'
   |   '(' expression [, expression ]* ')'
-  |   CUBE '(' expression [, expression ]* ')'
-  |   ROLLUP '(' expression [, expression ]* ')'
-  |   GROUPING SETS '(' groupItem [, groupItem ]* ')'
 
 ```
 
@@ -1176,6 +1167,12 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 6. 不建议使用除法,不同的数据库的除法的结果存在整形和浮点两种,使用除法请在sql中使用cast保证类型和类型或者*1.0
 
 7. avg函数默认结果是取整的,所以参数值用*1.0转成浮点可以保证精度
+
+8. 聚合函数max,min函数不能与group by一起用
+
+9. union等集合操作暂时不支持
+
+10. 非查询语句,mycat暂时不会自动处理函数表达式调用,会路由到mysql中调用,所以按日期分表的情况,需要sql中写清楚日期
 
 
 
