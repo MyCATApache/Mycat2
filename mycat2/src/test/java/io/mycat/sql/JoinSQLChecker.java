@@ -43,6 +43,8 @@ public class JoinSQLChecker  extends BaseChecker {
         //三表
         check("select * from (db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id)  LEFT  JOIN db1.company as c2 on t.id = c2.id",
                 "(999999999,999,null,null,null,null,null,null,null,null,null,null)(1,999,null,null,null,null,1,Intel,1,1,Intel,1)");
+
+//        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","");
     }
 
     @SneakyThrows

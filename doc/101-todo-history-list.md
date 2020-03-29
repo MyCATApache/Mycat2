@@ -189,6 +189,10 @@ limit/order下推
 
 
 
+###### SQL执行信息统计
+
+
+
 
 
 ##### 2020.3.27 -> 2020.3.31开发计划
@@ -205,13 +209,59 @@ limit/order下推
 
 使用元数据配置实现全局表,可配置选择proxy/xa形式写入多个目标
 
+https://github.com/MyCATApache/Mycat2/commit/b222ab5eb69b5c229747ac08522c45254426016a
+
+https://github.com/MyCATApache/Mycat2/commit/3836ad279081b1d0913599fad1b09d13147661fe
+
+https://github.com/MyCATApache/Mycat2/commit/d64d155b886582aed8f3003478c1f8f154887522
+
 使用元数据配置实现ER表(废弃)
 
 分布式查询命令能生成for update语句
 
+https://github.com/MyCATApache/Mycat2/commit/d141df1473f607983b90f16db7b55bd16447635a
+
 使用元数据实现全局序列号
 
+https://github.com/MyCATApache/Mycat2/commit/a463f53709d28fecd1f8018b462be59d2270ce5a
 
+实现自增序列
+
+https://github.com/MyCATApache/Mycat2/commit/0e73b4053dd24666b2e0b2f98de53ab2c017a27d
+
+实现登录权限
+
+https://github.com/MyCATApache/Mycat2/commit/0f02bb461c4353af8f041b93dc595134e38a7f75
+
+[添加ok,distributedInsert,distributedUpdate命令](https://github.com/MyCATApache/Mycat2/commit/08ebdd28110515f45072525132373a1302b2bd7d)
+
+简化配置
+
+https://github.com/MyCATApache/Mycat2/commit/3c516f1ee2193e479197ca5a9ce437cf88d643df
+
+升级calcite到1.22.0
+
+https://github.com/MyCATApache/Mycat2/commit/9cd5e357617e0f0240c66da302b64ce8e9e069f4
+
+修复不支持not表达式
+
+https://github.com/MyCATApache/Mycat2/commit/977b52826bd42cbd20d18f391a69c2935e7de19f
+
+添加部分sql表达式支持列表
+
+https://github.com/MyCATApache/Mycat2/commit/106d61a0136376d216a2b808ff836c558ffe7963
+
+https://github.com/MyCATApache/Mycat2/commit/08045e4fda1eb135d2e6a7029ef4bcc5b739563b
+
+https://github.com/MyCATApache/Mycat2/commit/6f76f1a2c6550b21e6197b5ea6eb0ca714aa3900
+
+修复生成ok包工具,autocommit设置成存在事务导致事务异常
+
+https://github.com/MyCATApache/Mycat2/commit/a3039459e085112be116ffced34d108f7928286f
+
+修复结果集的row阶段出现错误包后没有继续透传的错误
+
+https://github.com/MyCATApache/Mycat2/commit/2023ccfcfea6734739777c4f050ac986e4560d21
 
 ##### 2020.3.16 -> 2020.3.23开发日志
 

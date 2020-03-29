@@ -82,7 +82,7 @@ server:
   #用于多线程任务的线程池,
   worker: {close: false, #禁用多线程池,jdbc等功能将不能使用
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
-           maxThread: 2,
+           maxThread: 1000,
            minThread: 2,
            timeUnit: SECONDS,
            waitTaskTimeout: 5 #超时后将结束闲置的线程

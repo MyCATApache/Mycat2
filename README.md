@@ -1174,6 +1174,8 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 10. 非查询语句,mycat暂时不会自动处理函数表达式调用,会路由到mysql中调用,所以按日期分表的情况,需要sql中写清楚日期
 
+11. 部分关联子查询暂时不支持
+
 
 
 ## 内置函数列表

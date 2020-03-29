@@ -59,7 +59,7 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
         if (preComputation != null) {
             return preComputation;
         }
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
+        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask( convention.targetName,sql));
     }
 
 }

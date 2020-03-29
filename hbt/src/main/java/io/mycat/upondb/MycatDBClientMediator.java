@@ -107,6 +107,6 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
 
     @Override
     public List<String> explainRel(String text) {
-        return getUponDBSharedServer().explain(text,this);
+        return getUponDBSharedServer().explainRel(text,this);
     }
 }

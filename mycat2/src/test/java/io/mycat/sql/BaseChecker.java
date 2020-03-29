@@ -65,6 +65,7 @@ public abstract class BaseChecker implements Runnable {
         ResultSet resultSet = statement.executeQuery(sql);
         String s = TextConvertor.dumpResultSet(resultSet).replaceAll("\n", "").replaceAll("\r", "");
         System.out.println(s);
+        System.out.println(s.replaceAll("\\)\\(",""));
         if (!expectedRes.startsWith("(")) {
             expectedRes = "(" + expectedRes + ")";
         }
@@ -86,6 +87,18 @@ public abstract class BaseChecker implements Runnable {
     @SneakyThrows
     public void checkHbt(String sql,String expectedRes) {
         check("execute plan "+sql,expectedRes);
+    }
+    @SneakyThrows
+    public void explainHbt(String sql,String expectedRes) {
+        check("explain plan "+sql,expectedRes);
+    }
+    @SneakyThrows
+    public void explainHbtContains(String sql,String expectedRes) {
+        checkContains("explain plan "+sql,expectedRes);
+    }
+    @SneakyThrows
+    public void explainSql(String sql,String expectedRes) {
+        check("explain "+sql,expectedRes);
     }
     @SneakyThrows
     public void checkContains(String sql, String element) {

@@ -23,7 +23,7 @@ public class QueryBackendTask {
     String sql;
     String targetName;
 
-    public QueryBackendTask(String sql, String targetName) {
+    public QueryBackendTask( String targetName,String sql) {
         this.sql = sql;
         this.targetName = targetName;
     }

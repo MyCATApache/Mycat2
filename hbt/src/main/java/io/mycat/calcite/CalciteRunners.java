@@ -65,7 +65,9 @@ public class CalciteRunners {
                 LOGGER.error("",e);
                 throw e;
             }
-        } catch (java.lang.AssertionError | Exception e) {//实在运行不了使用原来的方法运行
+        } catch (java.lang.AssertionError | Exception e) {
+            e.printStackTrace();
+            LOGGER.info("该关系表达式不被支持的"+relNode);
             LOGGER.error("",e);
             throw e;
         }

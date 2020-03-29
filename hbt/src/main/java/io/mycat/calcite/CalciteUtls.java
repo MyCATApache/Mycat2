@@ -57,7 +57,7 @@ public class CalciteUtls {
         List<QueryBackendTask> list = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
             String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
-            QueryBackendTask queryBackendTask = new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName());
+            QueryBackendTask queryBackendTask = new QueryBackendTask( backendTableInfo.getTargetName(),backendTaskSQL);
             list.add(queryBackendTask);
         }
         return list;
