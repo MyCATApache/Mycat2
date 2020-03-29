@@ -18,17 +18,20 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Junwen Chen
@@ -90,5 +93,27 @@ public class MycatImplementor extends RelToSqlConverter {
             return builder.result();
         }
         return super.visit(e);
+    }
+    @Override
+    protected Result buildAggregate(Aggregate e, Builder builder,
+                                    List<SqlNode> selectList, List<SqlNode> groupByList) {
+        for (AggregateCall aggCall : e.getAggCallList()) {
+
+            RelDataType type = aggCall.type;
+            SqlNode aggCallSqlNode = builder.context.toSql(aggCall);
+            if (aggCall.getAggregation() instanceof SqlSingleValueAggFunction) {
+                aggCallSqlNode = dialect.rewriteSingleValueExpr(aggCallSqlNode);
+                aggCallSqlNode=   SqlStdOperatorTable.CAST.createCall(POS,
+                        aggCallSqlNode, dialect.getCastSpec(type));
+            }
+            addSelect(selectList, aggCallSqlNode, e.getRowType());
+        }
+        builder.setSelect(new SqlNodeList(selectList, POS));
+        if (!groupByList.isEmpty() || e.getAggCallList().isEmpty()) {
+            // Some databases don't support "GROUP BY ()". We can omit it as long
+            // as there is at least one aggregate function.
+            builder.setGroupBy(new SqlNodeList(groupByList, POS));
+        }
+        return builder.result();
     }
 }

@@ -62,6 +62,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
 
     @Override
     public boolean next() {
+        MycatRowMetaData metaData = getMetaData();
         try {
             return resultSet.next();
         } catch (Exception e) {
@@ -230,8 +231,22 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     @SneakyThrows
     public Object getObject(int columnIndex) {
+        MycatRowMetaData metaData = getMetaData();
+        int columnType = metaData.getColumnType(columnIndex);
         Object object = resultSet.getObject(columnIndex);
-        return object;
+        if (object != null) {
+
+            if (columnType == Types.INTEGER) {
+                return ((Number) object).intValue();
+            }
+            if (columnType == Types.BIGINT) {
+                return ((Number) object).longValue();
+            }
+            return object;
+        } else {
+            return null;
+
+        }
     }
 
 

@@ -35,6 +35,7 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -291,10 +292,10 @@ public enum MycatCalciteSupport implements Context {
 
     public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
         MycatImplementor mycatImplementor = new MycatImplementor(dialect);
+        input= RelOptUtil.createCastRel(input,input.getRowType(),true);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         String sql = sqlNode.toSqlString(dialect, false).getSql();
-        SqlImplementor.Result implement2 = mycatImplementor.implement(input);
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
         return sql + (forUpdate ? " for update" : "");
