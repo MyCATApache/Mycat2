@@ -23,6 +23,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import lombok.SneakyThrows;
 
 import javax.transaction.UserTransaction;
+import java.util.List;
 import java.util.Properties;
 /**
  * @author Junwen Chen
@@ -37,7 +38,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     String url = config.getUrl();
     String dbType = config.getDbType();
     int maxRetryCount = config.getMaxRetryCount();
-    String initSQL = config.getInitSQL();
+    List<String> initSQL = config.getInitSqls();
 
     String jdbcDriver = config.getJdbcDriverClass();
     int maxCon = config.getMaxCon();

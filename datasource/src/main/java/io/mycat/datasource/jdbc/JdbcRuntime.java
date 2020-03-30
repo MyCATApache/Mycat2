@@ -15,11 +15,13 @@
 package io.mycat.datasource.jdbc;
 
 
+import io.mycat.ExecutorUtil;
 import io.mycat.MycatConfig;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
@@ -34,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -48,7 +49,7 @@ public enum JdbcRuntime {
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private  ExecutorService executorService;
 
 
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
@@ -71,7 +72,11 @@ public enum JdbcRuntime {
         connectionManager.closeConnection(connection);
     }
 
-    public void load(MycatConfig config) {
+    public synchronized void load(MycatConfig config) {
+        ServerConfig.Worker worker = config.getServer().getWorker();
+        int maxThread = worker.getMaxThread();
+        executorService  = ExecutorUtil.create("heartBeatExecutor", 1);
+
         if (!config.getServer().getWorker().isClose()) {
             PlugRuntime.INSTCANE.load(config);
             ReplicaSelectorRuntime.INSTANCE.load(config);
@@ -165,4 +170,6 @@ public enum JdbcRuntime {
         return config.getServer().getWorker().getMaxPengdingLimit();
     }
 
-}
+    public JdbcConnectionManager getConnectionManager() {
+        return connectionManager;
+    }}

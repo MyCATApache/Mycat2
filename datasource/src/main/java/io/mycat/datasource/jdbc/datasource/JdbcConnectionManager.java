@@ -20,7 +20,6 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.util.StringUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -57,7 +56,7 @@ public class JdbcConnectionManager implements ConnectionManager {
     }
 
     public DefaultConnection getConnection(String name) {
-        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ,false);
+        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ, false);
     }
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
@@ -72,25 +71,18 @@ public class JdbcConnectionManager implements ConnectionManager {
         }) < key.getMaxCon()) {
             try {
                 DatasourceRootConfig.DatasourceConfig config = key.getConfig();
-                String initSQL = config.getInitSQL();
-                DefaultConnection defaultConnection = new DefaultConnection(key.dataSource.getConnection(), key, autocommit, transactionIsolation, readOnly, this);
-                if (initSQL!=null) {
-                   try(Statement statement = defaultConnection.getRawConnection().createStatement()){
-                       String[] split = initSQL.split(";");
-                       if (split.length==1){
-                           statement.execute(initSQL);
-                       }else {
-                           for (String s : split) {
-                               s = s.trim();
-                               if (!StringUtil.isEmpty(s)){
-                                   statement.execute(s);
-                               }
-                           }
-                       }
-                   }
+                Connection connection = key.getDataSource().getConnection();
+                DefaultConnection defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
+                try{
                     return defaultConnection;
-                }else {
-                    return defaultConnection;
+                }finally {
+                    if (config.isInitSqlsGetConnection()) {
+                        try(Statement statement = connection.createStatement()){
+                            for (String initSql : config.getInitSqls()) {
+                                statement.execute(initSql);
+                            }
+                        }
+                    }
                 }
             } catch (SQLException e) {
                 key.counter.decrementAndGet();

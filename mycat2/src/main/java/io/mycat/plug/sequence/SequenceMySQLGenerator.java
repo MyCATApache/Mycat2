@@ -1,15 +1,16 @@
 package io.mycat.plug.sequence;
 
-import io.mycat.MycatException;
-import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.SplitUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -26,14 +27,18 @@ public class SequenceMySQLGenerator implements Supplier<String> {
     public SequenceMySQLGenerator(String config) {
         this(config, (s, s2) -> {
             String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(s, true, null);
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(datasourceName, null, Connection.TRANSACTION_READ_UNCOMMITTED, false)) {
-                try(RowBaseIterator rowBaseIterator = connection.executeQuery(s2)){
-                    while (rowBaseIterator.next()){
-                        return rowBaseIterator.getString(1);
+            JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+            try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
+                try(Statement statement = connection1.createStatement()){
+                    ResultSet resultSet = statement.executeQuery(s2);
+                    while (resultSet.next()){
+                        return resultSet.getString(1);
                     }
                 }
+            } catch (SQLException e) {
+               throw new RuntimeException("can not get queryTargetName:"+s+",sql:"+s2+" e");
             }
-            throw new MycatException("can not get queryTargetName:"+s+",sql:"+s2);
+            return null;
         });
     }
 

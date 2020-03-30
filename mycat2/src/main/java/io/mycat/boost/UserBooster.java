@@ -69,7 +69,7 @@ public class UserBooster {
     public static void init() {
         for (MycatClient client : ClientRuntime.INSTANCE.getDefaultUsers()) {
             UserBooster userBooster = new UserBooster(client);
-            userMap.put(client.getUser().getUserName(),userBooster);
+            userMap.put(client.getUser().getUserName(), userBooster);
         }
     }
 
@@ -96,6 +96,9 @@ public class UserBooster {
 
                 text = text.replaceAll("[\\?\\\\/:|<>\\*]", " "); //filter ? \ / : | < > *
                 text = text.replaceAll("\\s+", "_");
+                if (text.length() > 5) {
+                    text = text.substring(0, 5);
+                }
                 cache = CacheLib.cache(() -> new TextResultSetResponse(query), text.replaceAll(" ", "_"));
                 if (cache2 != null) {
                     cache2.close();
@@ -193,7 +196,7 @@ public class UserBooster {
                     default:
                         throw new UnsupportedOperationException(command);
                 }
-                Context analysis = client.analysis(cacheConfig.getText());
+                Context analysis = client.analysis(textItemConfig.getSql());
                 cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(), textItemConfig + " " + "sql id is null"));
 
                 for (String i : KEYS_SPLITTER.split(cache)) {

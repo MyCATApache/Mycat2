@@ -859,9 +859,10 @@ datasource:
    dbType: mysql, #
    url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
    weight: 1, #负载均衡权重
-   initSQL: 'use db1', #建立连接后执行的sql,在此可以写上use xxx初始化默认database,该配置可能无效
+   initSqls: ['use db1'], #建立连接后执行的sql,在此可以写上use xxx初始化默认database,该配置可能无效
     jdbcDriverClass: , #jdbc驱动
    instanceType: ,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
+   initSqlsGetConnection: true
   }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider

@@ -522,7 +522,7 @@ public class MySQLSessionManager implements
                 assert session.currentProxyBuffer() == null;
                 MycatMonitor.onNewMySQLSession(session);
                 MySQLDatasource datasource = session.getDatasource();
-                String sql = datasource.getInitSQL();
+                String sql = datasource.getInitSqlForProxy();
                 allSessions.put(session.sessionId(), session);
                 if (!StringUtil.isEmpty(sql)) {
                     executeInitSQL(session, sql);

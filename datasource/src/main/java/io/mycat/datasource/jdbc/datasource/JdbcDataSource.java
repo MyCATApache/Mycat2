@@ -86,4 +86,7 @@ public class JdbcDataSource implements MycatDataSource {
         return result;
     }
 
+    public DataSource getDataSource() {
+        return dataSource;
+    }
 }

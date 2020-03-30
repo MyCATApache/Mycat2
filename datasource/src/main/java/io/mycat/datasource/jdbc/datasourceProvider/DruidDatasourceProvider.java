@@ -15,13 +15,12 @@
 package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 /**
  * @author Junwen Chen
  **/
@@ -34,7 +33,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     String url = config.getUrl();
     String dbType = config.getDbType();
     int maxRetryCount = config.getMaxRetryCount();
-    String initSQL = config.getInitSQL();
+    List<String> initSQLs = config.getInitSqls();
 
     String jdbcDriver = config.getJdbcDriverClass();
     int maxCon = config.getMaxCon();
@@ -54,11 +53,8 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     if (dbType != null) {
       datasource.setDbType(dbType);
     }
-    if (initSQL != null) {
-      datasource.setConnectionInitSqls(
-          SQLParserUtils.createSQLStatementParser(initSQL, dbType).parseStatementList().stream()
-              .map(Object::toString).collect(
-              Collectors.toList()));
+    if (initSQLs != null) {
+      datasource.setConnectionInitSqls(initSQLs);
     }
     if (jdbcDriver != null) {
       datasource.setDriverClassName(jdbcDriver);

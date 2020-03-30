@@ -19,6 +19,7 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -101,8 +102,14 @@ public abstract class MySQLDatasource implements MycatDataSource {
     }) < this.datasourceConfig.getMaxCon();
   }
 
-  public String getInitSQL() {
-    return datasourceConfig.getInitSQL();
+
+  public String getInitSqlForProxy() {
+    List<String> initSqls = datasourceConfig.getInitSqls();
+    if (initSqls.isEmpty()){
+      return null;
+    }else {
+    return   String.join(";",initSqls);
+    }
   }
 
 

@@ -3,6 +3,7 @@ package io.mycat.config;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,11 +27,16 @@ public class DatasourceRootConfig {
         private String dbType;
         private String url;
         private int weight = 0;
-        private String initSQL;
+        private List<String> initSqls;
+        private boolean initSqlsGetConnection;
         private String instanceType;
         private String jdbcDriverClass;
         private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
 
+        public List<String> getInitSqls() {
+            if (initSqls == null) initSqls = Collections.emptyList();
+            return initSqls;
+        }
 
         public boolean isMySQLType() {
             return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
@@ -39,6 +45,7 @@ public class DatasourceRootConfig {
         public boolean isJdbcType() {
             return getUrl() != null;
         }
+
     }
 
 }

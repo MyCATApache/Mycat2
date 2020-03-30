@@ -22,6 +22,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.ToString;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Junwen Chen
  **/
+@ToString
 public class Context {
     public static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Context.class);
     private String name;
