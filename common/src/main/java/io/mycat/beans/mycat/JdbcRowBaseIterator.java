@@ -25,6 +25,8 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.Objects;
 
+import static java.sql.Types.*;
+
 /**
  * @author Junwen Chen
  **/
@@ -32,15 +34,27 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
 
     private final static MycatLogger LOGGER = MycatLoggerFactory
             .getLogger(JdbcRowBaseIterator.class);
+    private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
     private final AutoCloseable closeCallback;
 
     public JdbcRowBaseIterator(Statement statement, ResultSet resultSet) {
-        this(statement, resultSet, null);
+        this(null, statement, resultSet, null);
     }
 
-    private JdbcRowBaseIterator(Statement statement, ResultSet resultSet, AutoCloseable closeCallback) {
+    /**
+     * @param metaData  可空
+     * @param statement
+     * @param resultSet
+     */
+    public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet) {
+        this(metaData, statement, resultSet, null);
+    }
+
+    @SneakyThrows
+    private JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback) {
+        this.metaData = metaData != null ? metaData : new JdbcRowMetaData(resultSet.getMetaData());
         this.statement = statement;
         this.resultSet = Objects.requireNonNull(resultSet);
         this.closeCallback = closeCallback;
@@ -54,7 +68,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public MycatRowMetaData getMetaData() {
         try {
-            return new JdbcRowMetaData(resultSet.getMetaData());
+            return metaData;
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -231,21 +245,80 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     @SneakyThrows
     public Object getObject(int columnIndex) {
-        MycatRowMetaData metaData = getMetaData();
-        int columnType = metaData.getColumnType(columnIndex);
-        Object object = resultSet.getObject(columnIndex);
-        if (object != null) {
+        MycatRowMetaData metaData = getMetaData();//该方法可能被重写
+        if (!resultSet.wasNull()) {
+            int columnType = metaData.getColumnType(columnIndex);
+            switch (columnType) {
+                case BIT:
+                    return resultSet.getBoolean(columnIndex);
+                case TINYINT:
+                    return resultSet.getByte(columnIndex);
+                case SMALLINT:
+                    return resultSet.getShort(columnIndex);
+                case INTEGER:
+                    return resultSet.getInt(columnIndex);
+                case BIGINT:
+                    return resultSet.getLong(columnIndex);
+                case FLOAT:
+                    return resultSet.getFloat(columnIndex);
+                case REAL:
+                    return resultSet.getFloat(columnIndex);
+                case DOUBLE:
+                    return resultSet.getDouble(columnIndex);
+                case NUMERIC:
+                    return resultSet.getBigDecimal(columnIndex);//review
+                case DECIMAL:
+                    return resultSet.getBigDecimal(columnIndex);
+                case CHAR:
+                    return resultSet.getString(columnIndex);
+                case VARCHAR:
+                    return resultSet.getString(columnIndex);
+                case LONGVARCHAR:
+                    return resultSet.getString(columnIndex);
+                case DATE:
+                    return resultSet.getDate(columnIndex);
+                case TIME:
+                    return resultSet.getTime(columnIndex);
+                case TIMESTAMP:
+                    return resultSet.getTimestamp(columnIndex);
+                case BINARY:
+                    return resultSet.getBytes(columnIndex);
+                case VARBINARY:
+                    return resultSet.getBytes(columnIndex);
+                case LONGVARBINARY:
+                    return resultSet.getBytes(columnIndex);
+                case NULL:
+                    return null;
+                case BOOLEAN:
+                    return resultSet.getBoolean(columnIndex);
 
-            if (columnType == Types.INTEGER) {
-                return ((Number) object).intValue();
+                case TIME_WITH_TIMEZONE:
+                    return resultSet.getTime(columnIndex);
+                case TIMESTAMP_WITH_TIMEZONE:
+                    return resultSet.getTimestamp(columnIndex);
+
+                case ROWID:
+                case NCHAR:
+                case NVARCHAR:
+                case LONGNVARCHAR:
+                case NCLOB:
+                case SQLXML:
+                case REF_CURSOR:
+                case OTHER:
+                case JAVA_OBJECT:
+                case DISTINCT:
+                case STRUCT:
+                case ARRAY:
+                case BLOB:
+                case CLOB:
+                case REF:
+                case DATALINK:
+                default:
+                    LOGGER.warn("mat be unsupported type :" + JDBCType.valueOf(columnType));
+                    return resultSet.getObject(columnIndex);
             }
-            if (columnType == Types.BIGINT) {
-                return ((Number) object).longValue();
-            }
-            return object;
         } else {
             return null;
-
         }
     }
 
