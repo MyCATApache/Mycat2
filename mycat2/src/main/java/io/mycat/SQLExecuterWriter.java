@@ -37,7 +37,7 @@ public class SQLExecuterWriter {
     public static void executeQuery(MycatSession session, Connection connection, String sql) {
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
-        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(statement, resultSet);
+        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(null, statement, statement.executeQuery(sql), resultSet, sql);
         writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
     }
 
@@ -50,7 +50,7 @@ public class SQLExecuterWriter {
 
     @NotNull
     public static MycatResponse[] getMycatResponses(Statement statement, ResultSet resultSet) {
-        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(statement, resultSet);
+        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(null, statement,resultSet, null,null);
         return new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)};
     }
     public static void writeToMycatSession(MycatSession session, final MycatResponse... sqlExecuters) {

@@ -37,24 +37,16 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
+    private final String sql;
     private final AutoCloseable closeCallback;
 
-    public JdbcRowBaseIterator(Statement statement, ResultSet resultSet) {
-        this(null, statement, resultSet, null);
-    }
-
-    /**
-     * @param metaData  可空
-     * @param statement
-     * @param resultSet
-     */
-    public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet) {
-        this(metaData, statement, resultSet, null);
-    }
-
     @SneakyThrows
-    private JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback) {
+    public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback,String sql) {
+        this.sql = sql;
         this.metaData = metaData != null ? metaData : new JdbcRowMetaData(resultSet.getMetaData());
+        if (this.metaData.getColumnCount()!=resultSet.getMetaData().getColumnCount()){
+            throw new AssertionError();
+        }
         this.statement = statement;
         this.resultSet = Objects.requireNonNull(resultSet);
         this.closeCallback = closeCallback;
@@ -245,80 +237,143 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     @SneakyThrows
     public Object getObject(int columnIndex) {
+        ResultSetMetaData origin = resultSet.getMetaData();
         MycatRowMetaData metaData = getMetaData();//该方法可能被重写
-        if (!resultSet.wasNull()) {
-            int columnType = metaData.getColumnType(columnIndex);
-            switch (columnType) {
-                case BIT:
-                    return resultSet.getBoolean(columnIndex);
-                case TINYINT:
-                    return resultSet.getByte(columnIndex);
-                case SMALLINT:
-                    return resultSet.getShort(columnIndex);
-                case INTEGER:
-                    return resultSet.getInt(columnIndex);
-                case BIGINT:
-                    return resultSet.getLong(columnIndex);
-                case FLOAT:
-                    return resultSet.getFloat(columnIndex);
-                case REAL:
-                    return resultSet.getFloat(columnIndex);
-                case DOUBLE:
-                    return resultSet.getDouble(columnIndex);
-                case NUMERIC:
-                    return resultSet.getBigDecimal(columnIndex);//review
-                case DECIMAL:
-                    return resultSet.getBigDecimal(columnIndex);
-                case CHAR:
-                    return resultSet.getString(columnIndex);
-                case VARCHAR:
-                    return resultSet.getString(columnIndex);
-                case LONGVARCHAR:
-                    return resultSet.getString(columnIndex);
-                case DATE:
-                    return resultSet.getDate(columnIndex);
-                case TIME:
-                    return resultSet.getTime(columnIndex);
-                case TIMESTAMP:
-                    return resultSet.getTimestamp(columnIndex);
-                case BINARY:
-                    return resultSet.getBytes(columnIndex);
-                case VARBINARY:
-                    return resultSet.getBytes(columnIndex);
-                case LONGVARBINARY:
-                    return resultSet.getBytes(columnIndex);
-                case NULL:
-                    return null;
-                case BOOLEAN:
-                    return resultSet.getBoolean(columnIndex);
-
-                case TIME_WITH_TIMEZONE:
-                    return resultSet.getTime(columnIndex);
-                case TIMESTAMP_WITH_TIMEZONE:
-                    return resultSet.getTimestamp(columnIndex);
-
-                case ROWID:
-                case NCHAR:
-                case NVARCHAR:
-                case LONGNVARCHAR:
-                case NCLOB:
-                case SQLXML:
-                case REF_CURSOR:
-                case OTHER:
-                case JAVA_OBJECT:
-                case DISTINCT:
-                case STRUCT:
-                case ARRAY:
-                case BLOB:
-                case CLOB:
-                case REF:
-                case DATALINK:
-                default:
-                    LOGGER.warn("mat be unsupported type :" + JDBCType.valueOf(columnType));
-                    return resultSet.getObject(columnIndex);
+        int columnType = metaData.getColumnType(columnIndex);
+        switch (columnType) {
+            case BIT: {
+                boolean aBoolean = resultSet.getBoolean(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aBoolean;
             }
-        } else {
-            return null;
+            case TINYINT: {
+                byte aByte = resultSet.getByte(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aByte;
+            }
+            case SMALLINT: {
+                short aShort = resultSet.getShort(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aShort;
+            }
+            case INTEGER: {
+                int anInt = resultSet.getInt(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : anInt;
+            }
+            case BIGINT: {
+                long aLong = resultSet.getLong(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aLong;
+            }
+            case FLOAT: {
+                float aFloat = resultSet.getFloat(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aFloat;
+            }
+            case REAL: {
+                float aFloat = resultSet.getFloat(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aFloat;
+            }
+            case DOUBLE: {
+                double aDouble = resultSet.getDouble(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aDouble;
+            }
+            case NUMERIC: {
+                BigDecimal bigDecimal = resultSet.getBigDecimal(columnIndex);//review
+                boolean b = resultSet.wasNull();
+                return b ? null : bigDecimal;
+            }
+            case DECIMAL: {
+                BigDecimal bigDecimal = resultSet.getBigDecimal(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : bigDecimal;
+            }
+            case CHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case VARCHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case LONGVARCHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case DATE: {
+                Date date = resultSet.getDate(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:date;
+            }
+            case TIME: {
+                Time time = resultSet.getTime(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:time;
+            }
+            case TIMESTAMP: {
+                Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:timestamp;
+            }
+            case BINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:bytes;
+            }
+            case VARBINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:bytes;
+            }
+            case LONGVARBINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:bytes;
+            }
+            case NULL: {
+                return null;
+            }
+            case BOOLEAN: {
+                boolean aBoolean = resultSet.getBoolean(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:aBoolean;
+            }
+
+            case TIME_WITH_TIMEZONE: {
+                Time time = resultSet.getTime(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:time;
+            }
+            case TIMESTAMP_WITH_TIMEZONE: {
+                Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:timestamp;
+            }
+            case ROWID:
+            case NCHAR:
+            case NVARCHAR:
+            case LONGNVARCHAR:
+            case NCLOB:
+            case SQLXML:
+            case REF_CURSOR:
+            case OTHER:
+            case JAVA_OBJECT:
+            case DISTINCT:
+            case STRUCT:
+            case ARRAY:
+            case BLOB:
+            case CLOB:
+            case REF:
+            case DATALINK:
+            default:
+                LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+                return resultSet.getObject(columnIndex);
         }
     }
 

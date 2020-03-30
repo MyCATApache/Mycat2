@@ -29,6 +29,6 @@ public class HBTMappingChecker  extends BaseChecker {
 
     @Override
     public void run() {
-        explainHbt("leftJoin(`$0` eq `$$0`,leftJoin(`$0` eq `$$0`,fromTable(db1,travelrecord), fromTable(db1,travelrecord)),fromTable(db1,company))", "");
+        //explainHbt("leftJoin(`$0` eq `$$0`,leftJoin(`$0` eq `$$0`,fromTable(db1,travelrecord), fromTable(db1,travelrecord)),fromTable(db1,company))", "");
     }
 }

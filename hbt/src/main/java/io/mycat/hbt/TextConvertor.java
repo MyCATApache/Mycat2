@@ -51,7 +51,7 @@ public class TextConvertor {
 
 
     public static void dumpResultSet(ResultSet resultSet, boolean newline, PrintWriter writer) {
-        dumpResultSet(new JdbcRowBaseIterator(null, resultSet), newline, writer);
+        dumpResultSet(new JdbcRowBaseIterator(null, null, resultSet, null,null), newline, writer);
     }
 
     public static void dumpResultSet(RowBaseIterator resultSet, boolean newline, PrintWriter writer) {

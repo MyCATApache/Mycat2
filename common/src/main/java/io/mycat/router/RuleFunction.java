@@ -67,6 +67,14 @@ public abstract class RuleFunction {
         }
     }
 
+    public static int[] calculateAllRange(int count) {
+        int[] ints = new int[count];
+        for (int i = 0; i < count; i++) {
+            ints[i] = i;
+        }
+        return ints;
+    }
+
     public abstract int getPartitionNum();
 
     /**
@@ -78,7 +86,7 @@ public abstract class RuleFunction {
         init(prot, ranges);
     }
 
-    protected  abstract  void init(Map<String, String> prot, Map<String, String> ranges);
+    protected abstract void init(Map<String, String> prot, Map<String, String> ranges);
 
     protected static int[] ints(List<Integer> list) {
         int[] ints = new int[list.size()];

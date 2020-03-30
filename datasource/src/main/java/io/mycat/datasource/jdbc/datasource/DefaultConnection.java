@@ -74,7 +74,7 @@ public class DefaultConnection implements AutoCloseable {
     public RowBaseIterator executeQuery(String sql) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(statement, statement.executeQuery(sql));
+            return new JdbcRowBaseIterator(null, statement, statement.executeQuery(sql), statement.executeQuery(sql), sql);
         } catch (Exception e) {
             throw new MycatException(e);
         }
@@ -140,12 +140,7 @@ public class DefaultConnection implements AutoCloseable {
     public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(statement, statement.executeQuery(sql)){
-                @Override
-                public MycatRowMetaData getMetaData() {
-                    return mycatRowMetaData;
-                }
-            };
+            return new JdbcRowBaseIterator(mycatRowMetaData,statement, statement.executeQuery(sql),null,sql);
         } catch (Exception e) {
             throw new MycatException(e);
         }

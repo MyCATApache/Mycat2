@@ -62,7 +62,14 @@ fromSql(defaultDs2,FIELDS(fieldType(`id0`,`integer`,TRUE),fieldType(`$f1`,`Bigin
 ).map(`$7` AS `EXPR$0`)
          */
 
-        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","");
+        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","(1)");
+        check("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1","(1)");
+        check("select * from db1.travelrecord as t where  EXISTS (select id from db1.company as c where t.id =c.id )","(1,999,null,null,null,null)");
+        check("select * from db1.travelrecord as t where not EXISTS (select id from db1.company as c where t.id =c.id )","(999999999,999,null,null,null,null)");
+
+        check("select * from db1.travelrecord where id in (select id from db1.company);","(1,999,null,null,null,null)");
+        check("select * from db1.travelrecord where id in (1,999);","(1,999,null,null,null,null)");
+
     }
 
     @SneakyThrows

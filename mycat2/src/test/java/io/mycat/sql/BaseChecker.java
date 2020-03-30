@@ -65,7 +65,6 @@ public abstract class BaseChecker implements Runnable {
         ResultSet resultSet = statement.executeQuery(sql);
         String s = TextConvertor.dumpResultSet(resultSet).replaceAll("\n", "").replaceAll("\r", "");
         System.out.println(s);
-        System.out.println(s.replaceAll("\\)\\(",""));
         if (!expectedRes.startsWith("(")) {
             expectedRes = "(" + expectedRes + ")";
         }

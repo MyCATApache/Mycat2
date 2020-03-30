@@ -2,7 +2,6 @@ package io.mycat.calcite.table;
 
 import io.mycat.QueryBackendTask;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
 import org.apache.calcite.DataContext;
@@ -60,7 +59,7 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
         if (preComputation != null) {
             return preComputation;
         }
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, getRowType(MycatCalciteSupport.INSTANCE.TypeFactory), new QueryBackendTask( convention.targetName,sql));
+        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, relDataType, new QueryBackendTask( convention.targetName,sql));
     }
 
 }

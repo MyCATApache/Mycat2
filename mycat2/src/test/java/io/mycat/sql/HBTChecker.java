@@ -20,6 +20,11 @@ public class HBTChecker extends BaseChecker {
         Ok ok;
         //分布式引擎基础测试
         //清除所有数据
+
+        //join
+        checkHbt("innerJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
+                "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)");
+
         check("delete from db1.travelrecord");
         check("select * from db1.travelrecord", "");
 
@@ -84,9 +89,7 @@ public class HBTChecker extends BaseChecker {
         checkHbt("fromTable(db1,travelrecord).limit(0,1)", "(1,999,null,null,null,null)");
         checkHbt("fromTable(db1,travelrecord).limit(1,1)", "(999999999,999,null,null,null,null)");
 
-        //join
-        checkHbt("innerJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
-                "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)");
+
         checkHbt("leftJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
                 "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)(999999999,null,null,null)");
         checkHbt("rightJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
@@ -113,7 +116,7 @@ public class HBTChecker extends BaseChecker {
                         "leftJoin(`$0` eq `$$0`,fromTable(db1,travelrecord), fromTable(db1,travelrecord))" +
                         ",fromTable(db1,company))",
                 "(1,999,null,null,null,null,1,999,null,null,null,null,1,Intel,1)(999999999,999,null,null,null,null,999999999,999,null,null,null,null,null,null,null)");
-
+        checkHbt("filterFromTable(`id` = 1,db1,travelrecord)", "");
 
     }
 

@@ -16,6 +16,7 @@ package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
+import io.mycat.calcite.CalciteConvertors;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -36,6 +37,7 @@ import org.apache.calcite.schema.TranslatableTable;
 
 import java.util.*;
 
+import static io.mycat.calcite.CalciteUtls.getColumnList;
 import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
 
 /**
@@ -89,7 +91,10 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        RelDataType rowType = getRowType(MycatCalciteSupport.INSTANCE.TypeFactory);
+        RelDataType rowType = CalciteConvertors.getRelDataType(getColumnList(table, projects), MycatCalciteSupport.INSTANCE.TypeFactory);
+        if (rowType.getFieldNames().isEmpty()){
+            rowType = getRowType();
+        }
         switch (table.getType()) {
             case SHARDING:
                 List<QueryBackendTask> backendTasks = getQueryBackendTasks((ShardingTableHandler) this.table, filters, projects);
@@ -99,7 +104,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                 BackendTableInfo globalBackendTableInfo =table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
                 String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
                         table.getColumns(),
-                        CalciteUtls.getColumnList(table, projects)
+                        getColumnList(table, projects)
                         , globalBackendTableInfo);
                 return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, rowType, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
             case ER:
