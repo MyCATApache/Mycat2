@@ -69,6 +69,7 @@ public class UserBooster {
     public static void init() {
         for (MycatClient client : ClientRuntime.INSTANCE.getDefaultUsers()) {
             UserBooster userBooster = new UserBooster(client);
+            userMap.put(client.getUser().getUserName(),userBooster);
         }
     }
 
