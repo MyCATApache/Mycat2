@@ -44,7 +44,7 @@ public class ConsistentHashPreSlot extends RuleFunction {
 
     @Override
     public int[] calculateRange(String beginValue, String endValue) {
-        return calculateRange(beginValue, endValue);
+        return null;
     }
 
     @Override

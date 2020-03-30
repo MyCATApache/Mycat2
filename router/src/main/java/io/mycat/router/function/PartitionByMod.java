@@ -50,7 +50,7 @@ public class PartitionByMod extends RuleFunction {
 
   @Override
   public int[] calculateRange(String beginValue, String endValue) {
-    return calculateSequenceRange(this, beginValue, endValue);
+    return null;
   }
 
   @Override

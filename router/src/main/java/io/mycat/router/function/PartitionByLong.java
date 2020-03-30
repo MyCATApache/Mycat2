@@ -52,7 +52,7 @@ public class PartitionByLong extends RuleFunction {
 
   @Override
   public int[] calculateRange(String beginValue, String endValue) {
-    return RuleFunction.calculateSequenceRange(this, beginValue, endValue);
+    return null;
   }
 
   @Override
