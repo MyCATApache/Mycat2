@@ -116,8 +116,9 @@ public class HBTChecker extends BaseChecker {
                         "leftJoin(`$0` eq `$$0`,fromTable(db1,travelrecord), fromTable(db1,travelrecord))" +
                         ",fromTable(db1,company))",
                 "(1,999,null,null,null,null,1,999,null,null,null,null,1,Intel,1)(999999999,999,null,null,null,null,999999999,999,null,null,null,null,null,null,null)");
-        checkHbt("filterFromTable(`id` = 1,db1,travelrecord)", "");
-
+        checkHbt("filterFromTable(`id` = 1,db1,travelrecord)", "(1,999,null,null,null,null)");
+        checkHbt("fromRelToSql(defaultDs,fromTable('db1','travelrecord').filter(`id` = 1).map(`id`))", "(1)");
+        checkHbt("modifyFromSql(defaultDs,'delete from db1.travelrecord3')", "(0,0)");
     }
 
     @SneakyThrows

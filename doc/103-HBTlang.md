@@ -844,8 +844,8 @@ lastInsertId 取mergeModify中最大值
 
 ```sql
 mergeModify(
-    modifyFromSql(targetName,'delete db1.travelrecord1'),
-    modifyFromSql(targetName2,'delete db2.travelrecord1')
+    modifyFromSql(targetName,'delete from db1.travelrecord1'),
+    modifyFromSql(targetName2,'delete from db2.travelrecord1')
     )
 ```
 
