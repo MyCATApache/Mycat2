@@ -286,7 +286,7 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         testText(sugar, text, schema);
         testSchema(schema, "LogicalAggregate(group=[{0, 1}], agg#0=[AVG($0)])  LogicalTableScan(table=[[db1, travelrecord]])");
 
-        testDumpResultSet(schema, "[1,10,1.0, 2,20,2.0]");
+        testDumpResultSet(schema, "(2,20,2.0)(1,10,1.0)");
     }
 
     private Identifier id(String id) {
