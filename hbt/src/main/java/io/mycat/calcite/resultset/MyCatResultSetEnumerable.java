@@ -16,8 +16,7 @@ package io.mycat.calcite.resultset;
 
 import io.mycat.QueryBackendTask;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.calcite.MycatCalciteDataContext;
-import org.apache.calcite.DataContext;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,24 +34,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Junwen Chen
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
-    private final MycatCalciteDataContext dataContext;
+    private final GetRow getRow;
     private final AtomicBoolean CANCEL_FLAG;
     private RelDataType rowType;
     private final List<QueryBackendTask> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, RelDataType rowType, List<QueryBackendTask> res) {
-        this.dataContext = dataContext;
+    public MyCatResultSetEnumerable( GetRow getRow,AtomicBoolean CANCEL_FLAG,RelDataType rowType, List<QueryBackendTask> res) {
+        this.getRow = getRow;
         this.rowType = rowType;
         this.backStoreList = res;
-        this.CANCEL_FLAG = DataContext.Variable.CANCEL_FLAG.get(dataContext);
+        this.CANCEL_FLAG = CANCEL_FLAG;//DataContext.Variable.CANCEL_FLAG.get(dataContext);
         for (QueryBackendTask sql : res) {
             LOGGER.info("prepare querySQL:{}", sql);
         }
     }
 
-    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext,RelDataType rowType, QueryBackendTask res) {
-        this(dataContext,rowType, Collections.singletonList(res));
+    public MyCatResultSetEnumerable(GetRow getRow,AtomicBoolean CANCEL_FLAG,RelDataType rowType, QueryBackendTask res) {
+        this(getRow,CANCEL_FLAG,rowType, Collections.singletonList(res));
+    }
+
+    public interface GetRow{
+        RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql);
     }
 
     @Override
@@ -61,7 +64,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (QueryBackendTask endTableInfo : backStoreList) {
-            iterators.add(dataContext.getUponDBContext().query(new CalciteRowMetaData(rowType.getFieldList()),endTableInfo.getTargetName(), endTableInfo.getSql()));
+            iterators.add(getRow.query(new CalciteRowMetaData(rowType.getFieldList()),endTableInfo.getTargetName(), endTableInfo.getSql()));
             LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
         }
 

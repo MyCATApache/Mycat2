@@ -52,7 +52,12 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
         String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
                 logicTable().getColumns(),
                 CalciteUtls.getColumnList(logicTable(),projects), backendTableInfo);
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root,getRowType(), new QueryBackendTask(backendTableInfo.getTargetName(),backendTaskSQL));
+
+        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
+        MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
+            return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
+        };
+        return new MyCatResultSetEnumerable(getRow,root1.getCancelFlag(),getRowType(), new QueryBackendTask(backendTableInfo.getTargetName(),backendTaskSQL));
     }
 
     public String getTargetName() {

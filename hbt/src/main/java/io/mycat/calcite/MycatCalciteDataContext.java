@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -263,4 +264,10 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
         return null;
     }
     final static Logger log = LoggerFactory.getLogger(MycatCalciteDataContext.class);
+
+   public AtomicBoolean getCancelFlag(){
+    return DataContext.Variable.CANCEL_FLAG.get(this);
+   }
+
+
 }

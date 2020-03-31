@@ -130,7 +130,12 @@ public class CalciteUtls {
                         SqlImplementor.POS);
             }
         };
-        return " where "+context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
+        try {
+            return " where " + context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
+        }catch (Exception e){
+            LOGGER.warn("不能生成对应的sql",e);
+        }
+        return "";
     }
 
     public static boolean addOrRootFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {

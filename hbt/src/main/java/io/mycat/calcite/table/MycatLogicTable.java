@@ -36,6 +36,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.mycat.calcite.CalciteUtls.getColumnList;
 import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
@@ -90,27 +91,35 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        RelDataType rowType = CalciteConvertors.getRelDataType(getColumnList(table, projects), MycatCalciteSupport.INSTANCE.TypeFactory);
-        if (rowType.getFieldNames().isEmpty()){
-            rowType = getRowType();
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+
+        if (root instanceof io.mycat.calcite.MycatCalciteDataContext) {
+            MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
+            MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
+                return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
+            };
+            RelDataType rowType = CalciteConvertors.getRelDataType(getColumnList(table, projects), MycatCalciteSupport.INSTANCE.TypeFactory);
+            if (rowType.getFieldNames().isEmpty()) {
+                rowType = getRowType();
+            }
+            switch (table.getType()) {
+                case SHARDING:
+                    List<QueryBackendTask> backendTasks = getQueryBackendTasks((ShardingTableHandler) this.table, filters, projects);
+                    return new MyCatResultSetEnumerable(getRow, cancelFlag, rowType, backendTasks);
+                case GLOBAL:
+                    GlobalTableHandler table = (GlobalTableHandler) this.table;
+                    BackendTableInfo globalBackendTableInfo = table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
+                    String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
+                            table.getColumns(),
+                            getColumnList(table, projects)
+                            , globalBackendTableInfo);
+                    return new MyCatResultSetEnumerable((mycatRowMetaData, targetName, sql) -> root1.getUponDBContext().query(mycatRowMetaData, targetName, sql), cancelFlag, rowType, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
+                case ER:
+                default:
+                    throw new UnsupportedOperationException();
+            }
         }
-        switch (table.getType()) {
-            case SHARDING:
-                List<QueryBackendTask> backendTasks = getQueryBackendTasks((ShardingTableHandler) this.table, filters, projects);
-                return new MyCatResultSetEnumerable((MycatCalciteDataContext) root,rowType, backendTasks);
-            case GLOBAL:
-                GlobalTableHandler table = (GlobalTableHandler) this.table;
-                BackendTableInfo globalBackendTableInfo =table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
-                String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
-                        table.getColumns(),
-                        getColumnList(table, projects)
-                        , globalBackendTableInfo);
-                return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, rowType, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
-            case ER:
-            default:
-                throw new UnsupportedOperationException();
-        }
+        throw new UnsupportedOperationException("不支持的关系表达式 "+filters);
     }
 
     @Override
@@ -119,10 +128,10 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
     }
 
     public MycatPhysicalTable getMycatGlobalPhysicalTable(Set<String> context) {
-        if (table.getType()!= LogicTableType.GLOBAL){
+        if (table.getType() != LogicTableType.GLOBAL) {
             throw new AssertionError();
         }
-        BackendTableInfo globalBackendTableInfo = ((GlobalTableHandler)table).getMycatGlobalPhysicalBackendTableInfo(context);
+        BackendTableInfo globalBackendTableInfo = ((GlobalTableHandler) table).getMycatGlobalPhysicalBackendTableInfo(context);
         return new MycatPhysicalTable(this, globalBackendTableInfo);
     }
 }

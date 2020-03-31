@@ -275,19 +275,18 @@ public class HBTBaseTest implements HBTBuiltinHelper {
 
     @Test
     public void selectFromGroupByKeyAvg2() throws IOException {
-        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`)))";
-        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`)))";
+        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`,`user_id`)),aggregating(avg(`id`)))";
+        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`,`user_id`)),aggregating(avg(`id`)))";
         Schema schema = groupBy(fromTable("db1", "travelrecord"), Arrays.asList(
-                groupKey(Arrays.asList(id(("id")))),
-                groupKey(Arrays.asList(id(("user_id"))))),
+                groupKey(Arrays.asList(id("id"),id("user_id")))),
                 Arrays.asList(
-                        new AggregateCall("avg", Arrays.asList(id(("id")))),
-                        new AggregateCall("avg", Arrays.asList(id(("user_id"))))
+                        new AggregateCall("avg", Arrays.asList(id(("id"))))
+
                 ));
         testText(sugar, text, schema);
-        testSchema(schema, "LogicalAggregate(group=[{0, 1}], groups=[[{0}, {1}]], agg#0=[AVG($0)], agg#1=[AVG($1)])  LogicalTableScan(table=[[db1, travelrecord]])");
+        testSchema(schema, "LogicalAggregate(group=[{0, 1}], agg#0=[AVG($0)])  LogicalTableScan(table=[[db1, travelrecord]])");
 
-        testDumpResultSet(schema, "(1,null,1.0,10.0)(null,20,2.0,20.0)(2,null,2.0,20.0)(null,10,1.0,10.0)");
+        testDumpResultSet(schema, "[1,10,1.0, 2,20,2.0]");
     }
 
     private Identifier id(String id) {
@@ -404,7 +403,9 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         testDumpResultSet(schema, "(1,10,1,10)\n" +
                 "(2,20,2,20)");
     }
-    @Test
+
+
+    @Test    //不支持
     public void testCorrelateInnerJoCorrelateSchemain() throws IOException {
         String sugar = "correlateInnerJoin(`t`,table(fields(fieldType(id0,integer,false)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
         Schema db0 = table(Arrays.asList(fieldType("id0", HBTTypes.Integer,false)), Arrays.asList(1, 2, 3, 4));
