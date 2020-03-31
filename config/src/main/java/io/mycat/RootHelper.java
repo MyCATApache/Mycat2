@@ -14,7 +14,6 @@
  */
 package io.mycat;
 
-import io.mycat.util.YamlUtil;
 import lombok.SneakyThrows;
 
 import java.net.URI;
@@ -40,10 +39,13 @@ public enum RootHelper {
             }
             String configResourceKeyName = "MYCAT_HOME";
             String path = System.getProperty(configResourceKeyName);
+            System.out.println("path:"+path);
             if (path == null) {
                 URI uri = rootClass.getResource("/mycat.yml").toURI();
+                System.out.println("uri:"+uri);
                 path = Paths.get(uri).toAbsolutePath().toString();
             } else {
+                System.out.println("path:"+path);
                 path = Paths.get(path).resolve("mycat.yml").toAbsolutePath().toString();
             }
             ConfigProvider tmpConfigProvider = null;
@@ -51,7 +53,6 @@ public enum RootHelper {
             Class<?> clazz = Class.forName(className);
             tmpConfigProvider = (ConfigProvider) clazz.getDeclaredConstructor().newInstance();
             HashMap<String, String> config = new HashMap<>();
-            System.out.println(YamlUtil.dump(new MycatConfig()));
             config.put("path", path);
             tmpConfigProvider.init(config);
             return configProvider = tmpConfigProvider;
