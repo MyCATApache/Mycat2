@@ -25,26 +25,26 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
     schemas: [{
                 tables:[ 'db1.travelrecord','db1.company'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
                 sqls: [
-                {sql: 'select id {any}',command: distributedQuery },
+                {sql: 'select {any}',command: distributedQuery },# select id
                 {sql: 'insert {any}',command: distributedInsert},
                 {sql: 'update {any}',command: distributedUpdate},
                 {sql: 'delete {any}',command: distributedDelete},
-                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 0',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
-                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 50',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
-                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 100',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
-                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 150',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
-                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 200',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
-                {sql: 'select *  from db1.travelrecord order by id limit 2 offset 0',
-                 command: executePlan,
-                 explain: "
-                 unionAll(
-                 fromSql(defaultDs2,'SELECT *  FROM `db2`.`travelrecord`'),
-                  fromSql(defaultDs,'SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord2`  UNION ALL  SELECT *  FROM `db1`.`travelrecord3`'))
-                  .orderBy(order(id,ASC)).limit(0,2)
-                 ",
-                 cache: 'initialDelay = 1s,refreshInterval =1m'},
-                {sql: 'select count(*)  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'}
-                  #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
+#                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 0',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
+#                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 50',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
+#                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 100',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
+#                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 150',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
+#                {sql: 'select *  from db1.travelrecord order by id limit 50 offset 200',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'},
+#                {sql: 'select *  from db1.travelrecord order by id limit 2 offset 0',
+#                 command: executePlan,
+#                 explain: "
+#                 unionAll(
+#                 fromSql(defaultDs2,'SELECT *  FROM `db2`.`travelrecord`'),
+#                  fromSql(defaultDs,'SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord2`  UNION ALL  SELECT *  FROM `db1`.`travelrecord3`'))
+#                  .orderBy(order(id,ASC)).limit(0,2)
+#                 ",
+#                 cache: 'initialDelay = 1s,refreshInterval =1m'},
+#                {sql: 'select count(*)  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'}
+#                  #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
                 ],
               },
     ],

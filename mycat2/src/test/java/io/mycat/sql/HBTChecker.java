@@ -21,15 +21,18 @@ public class HBTChecker extends BaseChecker {
         //分布式引擎基础测试
         //清除所有数据
 
-        //join
-        checkHbt("innerJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
-                "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)");
 
         check("delete from db1.travelrecord");
+        check("delete from db1.company");
+        executeUpdate("INSERT INTO `db1`.`company` (`id`, `companyname`, `addressid`) VALUES ('1','Intel','1'),('2','IBM','2'),('3','Dell','3')");
         check("select * from db1.travelrecord", "");
 
         ok = executeUpdate("INSERT INTO `db1`.`travelrecord` (id,`user_id`) VALUES (" + max + ",999)");
         ok = executeUpdate("INSERT INTO `db1`.`travelrecord` (id,`user_id`) VALUES (" + min + ",999)");
+
+        //join
+        checkHbt("innerJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
+                "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)");
 
         //fromTable
         checkHbt("fromTable(db1,travelrecord)", "(1,999,null,null,null,null)(999999999,999,null,null,null,null)");

@@ -761,7 +761,7 @@ public class ContextRunner {
                     if (count == 1) {
                         targetName = stringListEntry.getKey();
                         List<String> value = stringListEntry.getValue();
-                        if (value.size() != 1) {
+                        if (value.size() > 1) {
                             List<String> strings = value.subList(1, value.size());
                             try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(stringListEntry.getKey())) {
                                 for (String s : strings) {

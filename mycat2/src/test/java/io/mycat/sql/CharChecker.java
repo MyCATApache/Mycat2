@@ -14,6 +14,9 @@ public class CharChecker  extends BaseChecker{
     }
     @Override
     public void run() {
+        check("delete from db1.travelrecord");
+        executeUpdate("INSERT INTO `db1`.`travelrecord` (id,`user_id`) VALUES (1,999)");
+
         simplyCheck("ASCII('a')", "(97)");
         simplyCheck("TRIM(' a ')", "(a)");
 //        simplyCheck("RTRIM(' a ')", "(a)");
