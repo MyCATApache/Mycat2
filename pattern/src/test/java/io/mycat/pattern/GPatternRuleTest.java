@@ -28,7 +28,7 @@ public class GPatternRuleTest {
     @Test()
     public void test000() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
-        int id = patternBuilder.addRule("select {any} ");
+        int id = patternBuilder.addRule("select  id {any} ");
         int id1 = patternBuilder.addRule("select 1  from db1.travelrecord");
         int id2 = patternBuilder.addRule("select *  from db1.travelrecord order by id limit 50 offset 0");
         int id3 = patternBuilder.addRule("select *  from db1.travelrecord order by id limit 50 offset 50");
@@ -38,11 +38,10 @@ public class GPatternRuleTest {
 
 
         Assert.assertTrue(matcher.acceptAll());
-        Assert.assertEquals(0, id);
         Assert.assertEquals(matcher.id(),id2);
 
         GPatternMatcher matcher2 = gPattern.matcher("select *  from db1.travelrecord2");
-        Assert.assertTrue(matcher2.acceptAll());
+        Assert.assertFalse(matcher2.acceptAll());
     }
 
     @Test()
