@@ -18,7 +18,6 @@ package io.mycat.config;
 import lombok.Data;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,11 +44,15 @@ public class ServerConfig {
                 Files.createDirectories(target);
             }
             tempDirectory = target.toString();
-        } catch (URISyntaxException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            try {
+                tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         }
+        System.out.println("tempDirectory:"+tempDirectory);
     }
 
     @Data
