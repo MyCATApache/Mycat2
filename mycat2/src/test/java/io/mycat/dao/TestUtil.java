@@ -21,14 +21,14 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);
         mysqlDataSource.setUser(username);
         mysqlDataSource.setPassword(password);
 
-        return DriverManager.getConnection(url, properties);
+        return mysqlDataSource.getConnection();
     }
 
     @SneakyThrows
@@ -42,14 +42,14 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MariaDbDataSource mysqlDataSource = new MariaDbDataSource();
         mysqlDataSource.setUrl(url);
         mysqlDataSource.setUser(username);
         mysqlDataSource.setPassword(password);
 
-        return DriverManager.getConnection(url, properties);
+        return mysqlDataSource.getConnection();
     }
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
