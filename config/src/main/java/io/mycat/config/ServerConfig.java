@@ -45,7 +45,6 @@ public class ServerConfig {
             }
             tempDirectory = target.toString();
         } catch (Throwable e) {
-            e.printStackTrace();
             try {
                 tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
             } catch (IOException e1) {
