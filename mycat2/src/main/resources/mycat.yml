@@ -42,7 +42,7 @@ interceptors: #拦截器,如果拦截不了,尝试use schema,试用explain可以
                   fromSql(defaultDs,'SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord2`  UNION ALL  SELECT *  FROM `db1`.`travelrecord3`'))
                   .orderBy(order(id,ASC)).limit(0,2)
                  ",
-                 cache: 'initialDelay = 1s,refreshInterval = 1m'},
+                 cache: 'initialDelay = 1s,refreshInterval =1m'},
                 {sql: 'select count(*)  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 1m'}
                   #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
                 ],
@@ -76,7 +76,7 @@ datasource:
                 }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
-  timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
+  timer: {initialDelay: 10, period: 5, timeUnit: SECONDS}
 cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
   close: true  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
   clusters: [
