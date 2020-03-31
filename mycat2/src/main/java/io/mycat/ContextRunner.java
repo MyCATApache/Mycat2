@@ -120,7 +120,6 @@ public class ContextRunner {
             this.forceProxy = forceProxy;
             this.needStartTransaction = needStartTransaction;
             this.balance = null;
-            this.globalTableUpdate = false;
         }
 
         public <K, V> Details(ExecuteType executeType, Map<String, List<String>> backendTableInfos, String balance, boolean forceProxy, boolean needStartTransaction) {
