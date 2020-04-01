@@ -14,6 +14,8 @@
  */
 package io.mycat.pattern;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -44,6 +46,9 @@ import java.util.*;
  * @author Junwen Chen
  **/
 public final class TableCollector implements GPatternTokenCollector {
+
+    public static final MycatLogger LOGGER = MycatLoggerFactory
+            .getLogger(TableCollector.class);
     private final int dotHash;
     private final IntObjectHashMap<TableInfo> map;
     private final TableInfo[] tables = new TableInfo[32];
@@ -67,7 +72,7 @@ public final class TableCollector implements GPatternTokenCollector {
         if (intHash != null) {
             currentSchemaHash = intHash;
         }else {
-            throw new IllegalArgumentException("unknown schema:"+schema);
+            LOGGER.warn("unknown schema:"+schema);
         }
     }
 
