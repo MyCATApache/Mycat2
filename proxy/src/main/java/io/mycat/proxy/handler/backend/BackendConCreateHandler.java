@@ -217,7 +217,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         hs.readPayload(mysql.currentProxyPayload());
         mysql.resetCurrentProxyPayload();
         this.mysqlVersion = hs.getServerVersion();
-        this.charsetIndex = hs.getCharacterSet() == -1 ? CharsetUtil.getIndex("utf8mb4") : hs.getCharacterSet();
+        this.charsetIndex = hs.getCharacterSet() == -1 ? CharsetUtil.getIndex("UTF-8") : hs.getCharacterSet();
         AuthPacket packet = new AuthPacket();
         packet.setCapabilities(serverCapabilities);
         packet.setMaxPacketSize(32 * 1024 * 1024);

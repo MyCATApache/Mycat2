@@ -45,6 +45,7 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.runtime.LocalTransactionSession;
 import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.runtime.ProxyTransactionSession;
+import io.mycat.util.CharsetUtil;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
@@ -81,6 +82,7 @@ public enum MycatCore {
         MetadataManager.INSTANCE.load(mycatConfig);
 
         UserBooster.init();
+        CharsetUtil.init(null);
         startProxy(mycatConfig);
     }
 
@@ -122,6 +124,7 @@ public enum MycatCore {
 
 
         HashMap<String, Function<MycatDataContext, TransactionSession>> transcationFactoryMap = new HashMap<>();
+
 
         transcationFactoryMap.put("local", mycatDataContext -> new LocalTransactionSession(mycatDataContext));
         transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> new UserTransactionImp()));
