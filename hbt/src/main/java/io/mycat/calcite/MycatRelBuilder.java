@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -63,7 +64,40 @@ public class MycatRelBuilder extends RelBuilder {
 
     public  RelNode makeTransientSQLScan(String targetName, RelNode input,boolean forUpdate) {
         RelDataType rowType = input.getRowType();
-        MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
+        MycatConvention convention = MycatConvention.of(targetName,  new MysqlSqlDialect(MysqlSqlDialect.DEFAULT_CONTEXT){
+            @Override
+            public SqlNode getCastSpec(RelDataType type) {
+                return super.getCastSpec(type);
+            }
+
+            @Override
+            public String quoteIdentifier(String val) {
+                return super.quoteIdentifier(val);
+            }
+
+            @Override
+            public StringBuilder quoteIdentifier(StringBuilder buf, String val) {
+                return super.quoteIdentifier(buf, val);
+            }
+
+            @Override
+            public StringBuilder quoteIdentifier(StringBuilder buf, List<String> identifiers) {
+                return super.quoteIdentifier(buf, identifiers);
+            }
+
+            @Override
+            public void quoteStringLiteral(StringBuilder buf, String charsetName, String val) {
+                buf.append(literalQuoteString);
+                buf.append(val);
+                buf.append(literalEndQuoteString);
+            }
+
+            @Override
+            public void quoteStringLiteralUnicode(StringBuilder buf, String val) {
+                super.quoteStringLiteralUnicode(buf, val);
+            }
+
+        });
         MycatTransientSQLTable transientTable = new MycatTransientSQLTable(convention, input,forUpdate);
         RelOptTable relOptTable = RelOptTableImpl.create(
                 this.getRelOptSchema(),

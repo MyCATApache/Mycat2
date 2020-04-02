@@ -68,6 +68,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -102,7 +104,12 @@ public enum MycatCalciteSupport implements Context {
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
     public MycatTypeSystem TypeSystem = new MycatTypeSystem();
-    public JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem);
+    public JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem){
+        @Override
+        public Charset getDefaultCharset() {
+            return StandardCharsets.UTF_8;
+        }
+    };
     public RexBuilder RexBuilder = new RexBuilder(TypeFactory);
     public RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
         @Override

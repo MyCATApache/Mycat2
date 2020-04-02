@@ -22,6 +22,7 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
@@ -1175,14 +1176,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     public boolean visit(SQLCharExpr x) {
         String text = x.getText();
         text = text.replaceAll("\\\\", "\\\\\\\\");
-        sqlNode = SqlLiteral.createCharString(text, SqlParserPos.ZERO);
+        sqlNode = SqlLiteral.createCharString(text, StandardCharsets.UTF_8.name(), SqlParserPos.ZERO);
         return false;
     }
 
     public boolean visit(SQLNCharExpr x) {
         String text = x.getText();
         text = text.replaceAll("\\\\", "\\\\\\\\");
-        sqlNode = SqlLiteral.createCharString(text, SqlParserPos.ZERO);
+        sqlNode = SqlLiteral.createCharString(text,StandardCharsets.UTF_8.name(), SqlParserPos.ZERO);
         return false;
     }
 
