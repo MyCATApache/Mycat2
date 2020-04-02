@@ -229,9 +229,10 @@ public interface GPatternDFG {
             this.state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), this);
             if (this.state == null && orign != null && orign.isEnd()&&orign.name!=null) {//通配符匹配
                 this.state = orign;
-            }else if (this.state!=null&&orign!=null&&!this.state.isEnd()&&orign.isEnd()){
-                this.state = orign;
             }
+//            else if (this.state!=null&&orign!=null&&!this.state.isEnd()&&orign.isEnd()){
+//                this.state = orign;
+//            }
             return ((orign) != state);
         }
 

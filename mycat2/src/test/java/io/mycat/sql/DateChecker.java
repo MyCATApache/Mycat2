@@ -36,5 +36,7 @@ public class DateChecker extends BaseChecker{
         simplyCheck("CURDATE()", LocalDate.now().toString());//
         simplyCheck("curdate()", LocalDate.now().toString());//
         simplyCheck("now()");//
+        simplyCheck("DATE_ADD(OrderDate,INTERVAL 2 DAY)", LocalDate.now().toString());//
+
     }
 }

@@ -25,6 +25,24 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class GPatternRuleTest {
+
+    @Test()
+    public void test0000() {
+
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select  {any} ");
+        int id1 = patternBuilder.addRule("select {any} for update");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("select *  from db1.travelrecord order by id limit 50 offset 0");
+
+
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(matcher.id(),id);
+
+        GPatternMatcher matcher2 = gPattern.matcher("SELECT * FROM db1.travelrecord WHERE user_id = '中文' FOR UPDATE");
+        Assert.assertTrue(matcher2.acceptAll());
+        Assert.assertEquals(matcher2.id(),id1);
+    }
     @Test()
     public void test000() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
@@ -44,7 +62,8 @@ public class GPatternRuleTest {
         Assert.assertFalse(matcher2.acceptAll());
     }
 
-    @Test()
+    //不支持
+    //@Test()
     public void test00() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("select {any} ");
@@ -57,7 +76,19 @@ public class GPatternRuleTest {
         Assert.assertEquals(0, id);
         Assert.assertEquals("id FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
     }
+    @Test
+    public void test00000() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select id {any} ");
+        int id1 = patternBuilder.addRule("select 1  from db1.travelrecord");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("SELECT id FROM db1.travelrecord WHERE id = 1;");
 
+
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(0, id);
+        Assert.assertEquals("id FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
+    }
     @Test()
     public void test0() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);

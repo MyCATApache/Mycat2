@@ -887,7 +887,7 @@ public class ContextRunner {
         ;
         private boolean master;
 
-        public static ExecuteType DEFAULT = ExecuteType.QUERY;
+        public static ExecuteType DEFAULT = ExecuteType.QUERY_MASTER;
 
         ExecuteType(boolean master) {
             this.master = master;

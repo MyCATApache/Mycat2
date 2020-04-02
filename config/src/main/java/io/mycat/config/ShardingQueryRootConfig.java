@@ -15,7 +15,9 @@ public class ShardingQueryRootConfig {
     Map<String, LogicSchemaConfig> schemas = new HashMap<>();
     PrototypeServer prototype;
 
-
+    public Map<String, LogicSchemaConfig> getSchemas() {
+        return schemas == null?Collections.emptyMap():schemas;
+    }
 
     @AllArgsConstructor
     @Data

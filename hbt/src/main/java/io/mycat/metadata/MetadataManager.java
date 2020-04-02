@@ -94,29 +94,31 @@ public enum MetadataManager {
 
     public void load(MycatConfig mycatConfig) {
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
-        for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
-            String orignalSchemaName = entry.getKey();
-            ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
-            final String schemaName = orignalSchemaName.toLowerCase();
-            for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
-                String tableName = e.getKey().toLowerCase();
-                ShardingTableConfig tableConfigEntry = e.getValue();
-                addShardingTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
+        if (shardingQueryRootConfig!=null) {
+            for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
+                String orignalSchemaName = entry.getKey();
+                ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
+                final String schemaName = orignalSchemaName.toLowerCase();
+                for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
+                    String tableName = e.getKey().toLowerCase();
+                    ShardingTableConfig tableConfigEntry = e.getValue();
+                    addShardingTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
+                }
+
+                for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
+                    String tableName = e.getKey().toLowerCase();
+                    GlobalTableConfig tableConfigEntry = e.getValue();
+                    addGlobalTable(schemaName, tableName,
+                            tableConfigEntry,
+                            shardingQueryRootConfig.getPrototype(),
+                            getBackendTableInfos(tableConfigEntry.getDataNodes()),
+                            getBackendTableInfos(tableConfigEntry.getDataNodes())
+                    );
+
+                }
+
+
             }
-
-            for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
-                String tableName = e.getKey().toLowerCase();
-                GlobalTableConfig tableConfigEntry = e.getValue();
-                addGlobalTable(schemaName, tableName,
-                        tableConfigEntry,
-                        shardingQueryRootConfig.getPrototype(),
-                        getBackendTableInfos(tableConfigEntry.getDataNodes()),
-                        getBackendTableInfos(tableConfigEntry.getDataNodes())
-                );
-
-            }
-
-
         }
     }
 

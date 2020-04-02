@@ -60,11 +60,20 @@ public class GPattern {
         matcher.reset();
         while (utf8Lexer.nextToken()) {
             GPatternSeq token = idRecorder.toCurToken();
-            if (DEBUG_ENABLED) LOGGER.debug("will:{}", token.getSymbol());
+            if (DEBUG_ENABLED) {
+                LOGGER.debug("will:{}", token.getSymbol());
+                System.out.println("will:"+ token.getSymbol());
+            }
             if (matcher.accept(token)) {
-                if (DEBUG_ENABLED) LOGGER.debug("accept:{}", token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    LOGGER.debug("accept:{}", token.getSymbol());
+                    System.out.println("accept:"+ token.getSymbol());
+                }
             } else {
-                if (DEBUG_ENABLED) LOGGER.debug("reject:{}", token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    LOGGER.debug("reject:{}", token.getSymbol());
+                    System.out.println("accept:"+ token.getSymbol());
+                }
             }
         }
         return matcher;
