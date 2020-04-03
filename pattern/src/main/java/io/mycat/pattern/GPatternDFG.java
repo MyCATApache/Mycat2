@@ -86,6 +86,9 @@ public interface GPatternDFG {
                     } else
                         throw new GPatternException.NameSyntaxException("'{'{0} {1}   The name can only identify one", name, last.getSymbol());
                 } else {
+                    if (lastName != null){
+                        throw new GPatternException.NameSyntaxException("通配符之后不能添加常量");
+                    }
                     state = state.addState(token);
                     nextToken = token;
                     nextState = state;
