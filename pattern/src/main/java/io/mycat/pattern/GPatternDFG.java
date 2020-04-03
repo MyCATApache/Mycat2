@@ -144,7 +144,7 @@ public interface GPatternDFG {
 
             public State addState(GPatternToken next) {
                 if (name != null) {
-                    log.warn(MessageFormat.format("'has {' {0} '}' but try match const token", name, next.getSymbol()));
+                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token ,pos:{1} 通配符{2}和常量 {3} 不能同时存在",name,depth,name,next.getSymbol());
                 }
                 if (success.containsKey(next)) {
                     return success.get(next);
