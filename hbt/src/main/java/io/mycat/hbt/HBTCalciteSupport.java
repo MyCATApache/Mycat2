@@ -33,6 +33,7 @@ public enum HBTCalciteSupport {
     private final HashBiMap<String, SqlAggFunction> sqlAggFunctionMap;
     private final HashBiMap<String, SqlOperator> sqlOperatorMap;
     private final HashBiMap<String, SqlTypeName> typeMap;
+    private final HashBiMap<Integer, SqlTypeName> jdbcValueMap;
     private final HashBiMap<String, Class> type2ClassMap;
     private final HashBiMap<SqlTypeName, Class> sqlType2ClassMap;
      final Map<String, HBTParser.Precedence> operators;
@@ -55,6 +56,9 @@ public enum HBTCalciteSupport {
 
     public SqlTypeName getSqlTypeName(String name) {
         return Objects.requireNonNull(typeMap.get(name.toLowerCase()),""+name);
+    }
+    public SqlTypeName getSqlTypeByJdbcValue(int value) {
+        return Objects.requireNonNull(jdbcValueMap.get(value));
     }
 
     public String getSqlTypeName(SqlTypeName name) {
@@ -84,6 +88,7 @@ public enum HBTCalciteSupport {
         sqlType2ClassMap = HashBiMap.create();
         sqlAggFunctionMap = HashBiMap.create();
         sqlOperatorMap = HashBiMap.create();
+        jdbcValueMap = HashBiMap.create();
 
         sqlAggFunctionMap.put("avg", SqlStdOperatorTable.AVG);
         sqlAggFunctionMap.put("count", SqlStdOperatorTable.COUNT);
@@ -118,7 +123,8 @@ public enum HBTCalciteSupport {
 
 
         for (SqlTypeName value : SqlTypeName.values()) {
-            put(value.getName().toLowerCase(), value);
+            putTypeName(value.getName().toLowerCase(), value);
+            putJdbcValue(value.getJdbcOrdinal(), value);
         }
 
 //        put("long", SqlTypeName.DECIMAL);
@@ -192,7 +198,11 @@ public enum HBTCalciteSupport {
 
     }
 
-    private void put(String name, SqlTypeName sqlTypeName) {
+    private void putJdbcValue(int jdbcOrdinal, SqlTypeName value) {
+        jdbcValueMap.put(jdbcOrdinal,value);
+    }
+
+    private void putTypeName(String name, SqlTypeName sqlTypeName) {
         typeMap.put(name, sqlTypeName);
     }
 

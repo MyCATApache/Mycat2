@@ -114,4 +114,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public String resolveDatasourceTargetName(String targetName);
 
     RowBaseIterator query(String targetName, String sql);
+
+    MycatRowMetaData queryMetaData(String targetName, String sql);
 }

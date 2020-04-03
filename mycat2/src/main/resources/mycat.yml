@@ -135,11 +135,11 @@ sqlGroups:
     sqls: &jdbcAdapter [
     {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL},
     {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan},#执行hbt
-    {name: explainHbt,sql: 'EXPLAIN plan {hbt}' , explain: '{hbt}' ,command: explainPlan},#解释hbt
-    {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
-    {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
-    {name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
-    {name: useStatement ,sql: 'use {schema}',command: useStatement},{name: useStatement; ,sql: 'use {schema};',command: useStatement},
+    {name: explainHbt,sql: 'expainPlan {hbt}' , explain: '{hbt}' ,command: explainPlan},#解释hbt
+    {name: commit,sql: 'commit',command: commit},
+    {name: begin; ,sql: 'begin',command: begin},
+    {name: rollback ,sql: 'rollback',command: rollback},
+    {name: useStatement ,sql: 'use {schema}',command: useStatement},
     {name: setXA ,sql: 'set xa = on',command: onXA},
     {name: setProxy ,sql: 'set xa = off',command: offXA},
     {name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
