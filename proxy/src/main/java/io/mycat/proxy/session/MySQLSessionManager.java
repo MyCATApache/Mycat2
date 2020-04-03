@@ -204,7 +204,7 @@ public class MySQLSessionManager implements
                 return;
             }
             //////////////////////////////////////////////////
-            session.setCursorStatementId(-1);
+//            session.setCursorStatementId(-1);
             session.resetPacket();
             session.setIdle(true);
             session.switchNioHandler(IdleHandler.INSTANCE);
@@ -483,7 +483,7 @@ public class MySQLSessionManager implements
             public void onException(Exception exception, Object sender, Object attr) {
                 long now = System.currentTimeMillis();
                 long maxConnectTimeout = key.getMaxConnectTimeout();
-                if (retryCount > maxRetry || startTime + maxConnectTimeout > now) {
+                if (retryCount >= maxRetry || startTime + maxConnectTimeout > now) {
                     callBack.onException(exception, sender, attr);
                 } else {
                     ++retryCount;

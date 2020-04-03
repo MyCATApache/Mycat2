@@ -5,11 +5,12 @@ import io.mycat.MycatCore;
 import io.mycat.RootHelper;
 import lombok.SneakyThrows;
 
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
 public class ReadWriteSeparation {
     @SneakyThrows
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String resource = Paths.get( ReadWriteSeparation.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
