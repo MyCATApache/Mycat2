@@ -30,10 +30,11 @@ public class SequenceMySQLGenerator implements Supplier<String> {
             JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
             try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
                 try(Statement statement = connection1.createStatement()){
-                    ResultSet resultSet = statement.executeQuery(s2);
-                    while (resultSet.next()){
-                        return resultSet.getString(1);
-                    }
+                   try( ResultSet resultSet = statement.executeQuery(s2)) {
+                       while (resultSet.next()) {
+                           return resultSet.getString(1);
+                       }
+                   }
                 }
             } catch (SQLException e) {
                throw new RuntimeException("can not get queryTargetName:"+s+",sql:"+s2+" e");
