@@ -25,7 +25,7 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class GPatternRuleTest {
-    @Test()
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test000000() {
 
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
@@ -105,7 +105,7 @@ public class GPatternRuleTest {
         Assert.assertEquals(0, id);
         Assert.assertEquals("FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
     }
-    @Test()
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test0() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {any} ");
