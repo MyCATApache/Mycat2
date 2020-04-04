@@ -483,11 +483,12 @@ public class MySQLSessionManager implements
             public void onException(Exception exception, Object sender, Object attr) {
                 long now = System.currentTimeMillis();
                 long maxConnectTimeout = key.getMaxConnectTimeout();
-                if (retryCount >= maxRetry || startTime + maxConnectTimeout > now) {
+                if (retryCount > maxRetry || startTime + maxConnectTimeout > now) {
                     callBack.onException(exception, sender, attr);
                 } else {
                     ++retryCount;
-                    long waitTime = (maxConnectTimeout + startTime - now) / (maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
+                    int retryInterval = (maxRetry - retryCount == 0) ? 1 : maxRetry - retryCount; // 等于1即为最后一次重试
+                    long waitTime = (maxConnectTimeout + startTime - now) / retryInterval; //剩余时间/剩余次数=下次重试间隔
                     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
                     SessionCallBack<MySQLClientSession> sessionCallBack = this;
                     Runnable runnable = (() -> thread.addNIOJob(new NIOJob() {
@@ -503,7 +504,7 @@ public class MySQLSessionManager implements
 
                         @Override
                         public String message() {
-                            return "waitTime";
+                            return "waitTime:" + waitTime;
                         }
                     }));
                     runnable.run();
