@@ -483,7 +483,7 @@ public class MySQLSessionManager implements
             public void onException(Exception exception, Object sender, Object attr) {
                 long now = System.currentTimeMillis();
                 long maxConnectTimeout = key.getMaxConnectTimeout();
-                if (retryCount > maxRetry || startTime + maxConnectTimeout > now) {
+                if (retryCount >= maxRetry || startTime + maxConnectTimeout > now) { // retryCount==maxRetry时，重试次数已经用完
                     callBack.onException(exception, sender, attr);
                 } else {
                     ++retryCount;
