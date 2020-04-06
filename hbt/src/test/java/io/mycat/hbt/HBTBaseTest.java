@@ -314,7 +314,7 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         String text = "map(table(fields(fieldType(id,varchar,false)),values('A')),lower(`id`))";
         Schema map = map(table(Arrays.asList(fieldType("id", "varchar",false)), Arrays.asList("A")), Arrays.asList(new Fun("lower", Arrays.asList(new Identifier("id")))));
         testText(sugar, text, map);
-        testSchema(map, "LogicalProject($f0=[LOWER($0)])  LogicalValues(tuples=[[{ 'A' }]])");
+        testSchema(map, "LogicalProject($f0=[LOWER($0)])  LogicalValues(tuples=[[{ _UTF-8'A' }]])");
 
         testDumpResultSet(map, "(a)");
     }
