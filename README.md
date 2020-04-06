@@ -1266,6 +1266,14 @@ default-character-set=utf8mb4
 
 
 
+## 读写分离配置
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/main/resources/io/mycat/example/readWriteSeparation/mycat.yml
+
+## 分片配置
+
+https://github.com/MyCATApache/Mycat2/tree/master/example/src/main/resources/io/mycat/example/sharding
+
 ##### 更新日志
 
 具体看git记录
