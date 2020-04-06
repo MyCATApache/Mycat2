@@ -171,5 +171,10 @@ public enum JdbcRuntime {
     }
 
     public JdbcConnectionManager getConnectionManager() {
-        return connectionManager;
+        if (connectionManager != null ){
+            return connectionManager;
+        }else {
+            throw new MycatException("jdbc连接管理器没有初始化,请配置jdbc连接");
+        }
+
     }}
