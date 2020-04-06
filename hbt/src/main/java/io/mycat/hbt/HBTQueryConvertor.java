@@ -206,12 +206,17 @@ public class HBTQueryConvertor {
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType = null;
         if (fieldTypes == null || fieldTypes.isEmpty()) {
-            List<FieldType> fieldTypeList = metaDataFetcher.query(targetName, sql);
-            if (fieldTypeList != null) {
-                relDataType = toType(fieldTypeList);
-            }
+
             if (relDataType == null) {
                 relDataType = tryGetRelDataTypeByParse(targetName, sql);
+            }
+
+            if (relDataType==null) {
+                List<FieldType> fieldTypeList = metaDataFetcher.query(targetName, sql);
+                if (  fieldTypeList != null){
+                    relDataType = toType(fieldTypeList);
+                }
+
             }
         } else {
             relDataType = toType(fieldTypes);
