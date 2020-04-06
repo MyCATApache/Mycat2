@@ -86,6 +86,9 @@ public interface GPatternDFG {
                     } else
                         throw new GPatternException.NameSyntaxException("'{'{0} {1}   The name can only identify one", name, last.getSymbol());
                 } else {
+                    if (lastName != null){
+                        throw new GPatternException.NameSyntaxException("通配符{0}之后不能添加常量{1}",lastName,token.getSymbol());
+                    }
                     state = state.addState(token);
                     nextToken = token;
                     nextState = state;
@@ -144,7 +147,7 @@ public interface GPatternDFG {
 
             public State addState(GPatternToken next) {
                 if (name != null) {
-                    log.warn(MessageFormat.format("'has {' {0} '}' but try match const token", name, next.getSymbol()));
+                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token ,pos:{1} 通配符{2}和常量 {3} 不能同时存在",name,depth,name,next.getSymbol());
                 }
                 if (success.containsKey(next)) {
                     return success.get(next);

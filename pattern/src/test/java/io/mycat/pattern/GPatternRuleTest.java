@@ -25,8 +25,30 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class GPatternRuleTest {
+    @Test(expected = GPatternException.NameSyntaxException.class)
+    public void test0000000() {
 
-    @Test()
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select  {any} 1");
+    }
+    @Test(expected = GPatternException.PatternConflictException.class)
+    public void test000000() {
+
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select  {any} ");
+        int id1 = patternBuilder.addRule("select 1");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("select 1");
+
+
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(matcher.id(),id);
+
+        GPatternMatcher matcher2 = gPattern.matcher("SELECT * FROM db1.travelrecord WHERE user_id = '中文' FOR UPDATE");
+        Assert.assertTrue(matcher2.acceptAll());
+        Assert.assertEquals(matcher2.id(),id1);
+    }
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test0000() {
 
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
@@ -87,9 +109,9 @@ public class GPatternRuleTest {
 
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(0, id);
-        Assert.assertEquals("id FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
+        Assert.assertEquals("FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
     }
-    @Test()
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test0() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {any} ");
@@ -118,7 +140,7 @@ public class GPatternRuleTest {
 
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
@@ -129,7 +151,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("travelrecord", gPattern.toContextMap(matcher).get("table"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test1() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
@@ -138,7 +160,7 @@ public class GPatternRuleTest {
         Assert.assertFalse(matcher.acceptAll());
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test2() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
@@ -149,7 +171,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("`travelrecord`", gPattern.toContextMap(matcher).get("table"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test3() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {column} FROM {table} LIMIT 1;");
@@ -224,7 +246,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("select 2;", map.get("other1"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test9() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("select {s1};{s2};{s3};");
@@ -238,7 +260,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("select 3", map.get("s3"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test10() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule(" select {s1};;;;;{s2};{s3};");
@@ -267,7 +289,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("select 3", map.get("s3"));
     }
 
-    @Test(expected = GPatternException.NameLocationAmbiguityException.class)
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test12() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
@@ -335,7 +357,7 @@ public class GPatternRuleTest {
     //warning
     //@Test(expected = GPatternException.NameAmbiguityException.class)
 //@Test(expected = GPatternException.NameAmbiguityException.class)
-    @Test()
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test20() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count2}");
@@ -447,7 +469,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("LIMIT 1", map.get("any3"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test30() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("select {any} FROM");
@@ -508,7 +530,7 @@ public class GPatternRuleTest {
         int id = patternBuilder.addRule(" {n");
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test27() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2} 1");
@@ -536,7 +558,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("LIMIT", map.get("any2"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test28() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2}");
@@ -562,7 +584,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("LIMIT", map.get("any2"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test29() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("travelrecord  {any2}");
@@ -608,7 +630,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("1000", gPattern.toContextMap(matcher).get("limit"));
     }
 
-    @Test
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test222223() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id2 = patternBuilder.addRule("select (a.type,count(a.count),join(a,b,a.id = b.id),where((a.id = {aid}) {op} (b.id = {bid})),group by a.type,order by a.id limit {limit}");

@@ -85,6 +85,11 @@ public class MycatDBs {
             }
 
             @Override
+            public MycatRowMetaData queryMetaData(String targetName, String sql) {
+                return dataContext.queryMetaData(targetName,sql);
+            }
+
+            @Override
             public RowBaseIterator queryDefaultTarget(String sql) {
                 return dataContext.queryDefaultTarget(sql);
             }

@@ -389,6 +389,11 @@ public enum ClientRuntime {
             }
 
             @Override
+            public MycatRowMetaData queryMetaData(String targetName, String sql) {
+                return dataContext.queryMetaData(targetName,sql);
+            }
+
+            @Override
             public <T> T unwrap(Class<T> iface) throws Exception {
                 return dataContext.unwrap(iface);
             }

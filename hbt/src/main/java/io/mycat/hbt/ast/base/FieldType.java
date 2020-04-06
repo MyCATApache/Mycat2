@@ -32,9 +32,9 @@ public class FieldType extends Node {
     final Integer precision;
     final Integer scale;
 
-    public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
+    public FieldType(String columnName, String type,boolean columnNullable,Integer precision,Integer scale) {
         super(HBTOp.FIELD_TYPE);
-        this.columnName = id;
+        this.columnName = columnName;
         this.columnType = type;
         this.nullable = columnNullable;
         this.precision = precision;

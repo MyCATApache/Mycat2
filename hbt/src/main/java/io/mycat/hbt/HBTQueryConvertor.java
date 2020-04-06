@@ -17,6 +17,7 @@ package io.mycat.hbt;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
@@ -27,6 +28,7 @@ import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.TableHandler;
+import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.MycatSqlUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Bindables;
@@ -73,6 +75,7 @@ public class HBTQueryConvertor {
     private int paramIndex = 0;
     private final List<Object> params;
     private MycatCalciteDataContext context;
+    private final MetaDataFetcher metaDataFetcher;
 
     public HBTQueryConvertor(MycatCalciteDataContext context) {
         this(Collections.emptyList(), context);
@@ -83,6 +86,26 @@ public class HBTQueryConvertor {
         this.params = params;
         this.relBuilder.clear();
         this.context = Objects.requireNonNull(context);
+
+        metaDataFetcher = (targetName, sql) -> {
+            try {
+                MycatDBContext uponDBContext = context.getUponDBContext();
+                if (uponDBContext != null) {
+                    MycatRowMetaData mycatRowMetaData = uponDBContext.queryMetaData(targetName, sql);
+                    if (mycatRowMetaData != null) {
+                        return FieldTypes.getFieldTypes(mycatRowMetaData);
+                    }
+                }
+                return null;
+            } catch (Throwable e) {
+                log.warn("{0}", e);
+            }
+            return null;
+        };
+    }
+
+    public interface MetaDataFetcher {
+        List<FieldType> query(String targetName, String sql);
     }
 
     private SqlOperator op(String op) {
@@ -173,7 +196,7 @@ public class HBTQueryConvertor {
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
         Schema rel = input.getRel();
         RelNode handle = handle(rel);
-        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle,false);
+        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle, false);
     }
 
     @SneakyThrows
@@ -181,8 +204,25 @@ public class HBTQueryConvertor {
         String targetName = input.getTargetName();
         String sql = input.getSql();
         List<FieldType> fieldTypes = input.getFieldTypes();
-        RelDataType relDataType;
-        if (fieldTypes == null||fieldTypes.isEmpty()) {
+        RelDataType relDataType = null;
+        if (fieldTypes == null || fieldTypes.isEmpty()) {
+            List<FieldType> fieldTypeList = metaDataFetcher.query(targetName, sql);
+            if (fieldTypeList != null) {
+                relDataType = toType(fieldTypeList);
+            }
+            if (relDataType == null) {
+                relDataType = tryGetRelDataTypeByParse(targetName, sql);
+            }
+        } else {
+            relDataType = toType(fieldTypes);
+        }
+        Objects.requireNonNull(relDataType, "无法推导sql结果集类型");
+        return relBuilder.makeBySql(targetName, relDataType, sql);
+    }
+
+    private RelDataType tryGetRelDataTypeByParse(String targetName, String sql) {
+        try {
+            RelDataType relDataType;
             MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             SqlNode parse = planner.parse(MycatSqlUtil.getCalciteSQL(sqlStatement));
@@ -193,19 +233,21 @@ public class HBTQueryConvertor {
                         String schema = id.names.get(0);
                         String table = id.names.get(1);
                         MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
-                        Objects.requireNonNull(logicTable,"无法推导sql结果集类型");
-                        TableHandler table1 = logicTable.getTable();
-                        return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
+                        if (logicTable!=null) {
+                            TableHandler table1 = logicTable.getTable();
+                            return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
+                        }
                     }
                     return super.visit(id);
                 }
             });
             parse = planner.validate(parse);
             relDataType = planner.convert(parse).getRowType();
-        } else {
-            relDataType = toType(fieldTypes);
+            return relDataType;
+        } catch (Throwable e) {
+            log.warn("", e);
         }
-        return relBuilder.makeBySql(targetName, relDataType, sql);
+        return null;
     }
 
     private RelNode correlate(CorrelateSchema input) {
@@ -386,12 +428,12 @@ public class HBTQueryConvertor {
     private RelNode filter(FilterSchema input) {
         relBuilder.push(handle(input.getSchema()));
         RexNode rexNode = toRex(input.getExpr());
-        if(correlVariableMap.isEmpty()){
+        if (correlVariableMap.isEmpty()) {
             relBuilder.filter(rexNode);
-        }else {
-            relBuilder.filter(correlVariableMap.values().stream().map(i->i.id).collect(Collectors.toList()),rexNode);
+        } else {
+            relBuilder.filter(correlVariableMap.values().stream().map(i -> i.id).collect(Collectors.toList()), rexNode);
         }
-       return relBuilder.build();
+        return relBuilder.build();
     }
 
     private RelNode values(AnonyTableSchema input) {
@@ -451,7 +493,7 @@ public class HBTQueryConvertor {
                     String substring = value.substring(1);
                     if (joinCount > 1) {
                         if (substring.startsWith("$")) {
-                            return relBuilder.field(2,1,Integer.parseInt(substring.substring(1)));
+                            return relBuilder.field(2, 1, Integer.parseInt(substring.substring(1)));
                         }
                         return relBuilder.field(2, 0, Integer.parseInt(substring));
                     }
@@ -467,13 +509,13 @@ public class HBTQueryConvertor {
                                     return relBuilder.field(joinCount, i, indexOf);
                                 } catch (Exception e) {
                                     log.warn("may be a bug");
-                                    log.error("",e);
+                                    log.error("", e);
                                 }
                             }
                         }
                     } catch (Exception e) {
                         log.warn("may be a bug");
-                        log.error("",e);
+                        log.error("", e);
                     }
 
                     try {
@@ -484,7 +526,7 @@ public class HBTQueryConvertor {
                         }
                     } catch (Exception e) {
                         log.warn("may be a bug");
-                        log.error("",e);
+                        log.error("", e);
                     }
                     return relBuilder.field(value);
                 } else {
@@ -553,16 +595,30 @@ public class HBTQueryConvertor {
         SqlTypeName sqlTypeName = HBTCalciteSupport.INSTANCE.getSqlTypeName(typeText);
         RelDataType sqlType = null;
         if (precision != null && scale != null) {
-            sqlType = typeFactory.createSqlType(sqlTypeName, precision, scale);
+            if (sqlTypeName.allowsPrec()&&sqlTypeName.allowsScale()){
+                sqlType = typeFactory.createSqlType(sqlTypeName, precision, scale);
+            }else if (sqlTypeName.allowsPrec()&&!sqlTypeName.allowsScale()){
+                sqlType = typeFactory.createSqlType(sqlTypeName, precision);
+            }else if (sqlTypeName.allowsPrec()&&!sqlTypeName.allowsScale()){
+                sqlType = typeFactory.createSqlType(sqlTypeName, precision);
+            }else if (!sqlTypeName.allowsPrec()&&!sqlTypeName.allowsScale()){
+                sqlType = typeFactory.createSqlType(sqlTypeName);
+            }else {
+                throw new IllegalArgumentException("sqlTypeName:"+sqlTypeName+" precision:"+precision+" scale:"+scale);
+            }
         }
         if (precision != null && scale == null) {
-            sqlType = typeFactory.createSqlType(sqlTypeName, precision);
+            if (sqlTypeName.allowsPrec()){
+                sqlType = typeFactory.createSqlType(sqlTypeName, precision);
+            }else {
+                sqlType = typeFactory.createSqlType(sqlTypeName);
+            }
         }
         if (precision == null && scale == null) {
             sqlType = typeFactory.createSqlType(sqlTypeName);
         }
         if (sqlType == null) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("sqlTypeName:"+sqlTypeName);
         }
 
         return typeFactory.createTypeWithNullability(sqlType, nullable);

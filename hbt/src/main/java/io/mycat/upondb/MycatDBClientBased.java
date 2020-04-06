@@ -32,6 +32,7 @@ public interface MycatDBClientBased {
 
     RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql);
     RowBaseIterator query(String targetName, String sql);
+    MycatRowMetaData queryMetaData(String targetName, String sql);
     RowBaseIterator queryDefaultTarget(String sql);
     UpdateRowIteratorResponse updateDefaultTarget( String sql);
 

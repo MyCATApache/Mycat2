@@ -204,7 +204,7 @@ public class MySQLSessionManager implements
                 return;
             }
             //////////////////////////////////////////////////
-//            session.setCursorStatementId(-1);
+            session.setCursorStatementId(-1);
             session.resetPacket();
             session.setIdle(true);
             session.switchNioHandler(IdleHandler.INSTANCE);
@@ -487,8 +487,12 @@ public class MySQLSessionManager implements
                     callBack.onException(exception, sender, attr);
                 } else {
                     ++retryCount;
+
                     int retryInterval = (maxRetry - retryCount == 0) ? 1 : maxRetry - retryCount; // 等于1即为最后一次重试
                     long waitTime = (maxConnectTimeout + startTime - now) / retryInterval; //剩余时间/剩余次数=下次重试间隔
+
+                   // long waitTime = Math.min(0,maxConnectTimeout + startTime - now) / Math.min(1,maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
+
                     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
                     SessionCallBack<MySQLClientSession> sessionCallBack = this;
                     Runnable runnable = (() -> thread.addNIOJob(new NIOJob() {
