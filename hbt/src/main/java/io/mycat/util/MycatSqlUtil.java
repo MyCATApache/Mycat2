@@ -6,8 +6,12 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MycatSqlUtil {
+    private final static Logger LOGGER = LoggerFactory.getLogger(MycatSqlUtil.class);
+
     public static String getCalciteSQL(SQLStatement sqlStatement) {
         SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
         MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
@@ -15,4 +19,31 @@ public class MycatSqlUtil {
         SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
         return sqlNode.toSqlString(MysqlSqlDialect.DEFAULT).getSql();
     }
+
+
+//    public RowBaseIterator fetchResultSet(MycatRowMetaData mycatMetaData, String targetName, String sql) {
+//        try {
+//            JdbcConnectionManager connectionManager = JdbcRuntime.INSTANCE.getConnectionManager();
+//            ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+//            try (Connection connection = connectionManager.getDatasourceInfo().get(targetName).getDataSource().getConnection()) {
+//                try (Statement statement = connection.createStatement()) {
+//                    try (ResultSet resultSet = statement.executeQuery(sql)) {
+//                        if (mycatMetaData == null) {
+//                            mycatMetaData = new JdbcRowMetaData(resultSet.getMetaData());
+//                        }
+//                        int columnCount = mycatMetaData.getColumnCount();
+//                        resultSetBuilder.
+//                        while (resultSet.next()){
+//                            resultSet.
+//                        }
+//                        for (int i = 0; i < columnCount; i++) {
+//
+//                        }
+//                    }
+//                }
+//            }
+//        } catch (Throwable e) {
+//
+//        }
+//    }
 }
