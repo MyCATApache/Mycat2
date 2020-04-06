@@ -1141,6 +1141,8 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 ## 已知限制
 
+###### 不支持服务器预处理
+
 ###### proxy事务模式
 
 开启事务后的操作只能是同一个分片
@@ -1179,6 +1181,12 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 
 
+
+
+
+
+
+
 ## 内置函数列表
 
 原则上mycat不应该对函数运算,想要更多函数支持请提issue
@@ -1196,6 +1204,65 @@ https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b7395
 https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331765/mycat2/src/test/java/io/mycat/sql/CharChecker.java
 
 ## SQL支持情况
+
+
+
+
+
+## mysql服务器设置参考
+
+### MariaDB 10.3
+
+```ini
+[mysqld]
+local-infile=1
+local-infile = ON
+datadir=xxx/MariaDB 10.3/data
+port=3306
+innodb_buffer_pool_size=2031M
+max_allowed_packet=128MB
+max_connections=10000
+character-set-client-handshake = FALSE 
+character-set-server = utf8mb4 
+collation-server = utf8mb4_unicode_ci 
+init_connect='SET NAMES utf8mb4'
+log_bin_trust_function_creators=1
+[client]
+local-infile = ON
+loose-local-infile= 1
+port=3306
+plugin-dir=xxx/MariaDB 10.3/lib/plugin
+default-character-set = utf8mb4
+[mysql] 
+local_infile = 1
+local-infile = ON
+default-character-set = utf8mb4
+
+```
+
+
+
+### Mysql-8.0.19
+
+```ini
+[mysqld]
+port=3307
+basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
+# 设置mysql数据库的数据的存放目录
+datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
+max_connections=200
+max_connect_errors=10
+character-set-server=utf8mb4
+default-storage-engine=INNODB
+
+#mycat2.0可能不支持其他授权方式
+default_authentication_plugin=mysql_native_password 
+[mysql]
+# 设置mysql客户端默认字符集
+default-character-set=utf8mb4
+
+....
+```
 
 
 
