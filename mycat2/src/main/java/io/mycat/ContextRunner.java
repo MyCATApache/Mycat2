@@ -906,7 +906,7 @@ public class ContextRunner {
         MycatDBClientMediator mycatDb = client.getMycatDb();
         TableHandler tableHandler = mycatDb.config().getTable(schemaName, tableName);
         boolean isGlobal = tableHandler.getType() == LogicTableType.GLOBAL;
-        boolean master = executeType != ExecuteType.QUERY || needStartTransaction;
+        boolean master = executeType != ExecuteType.QUERY || needStartTransaction ||executeType!=null&&executeType.isMaster();
         MycatTextUpdatePrepareObject mycatTextUpdatePrepareObject = mycatDb.getUponDBSharedServer().innerUpdatePrepareObject(explain, mycatDb);
         Map<String, List<String>> routeMap = mycatTextUpdatePrepareObject.getRouteMap();
         return new Details(executeType, resolveDataSourceName(balance, master, routeMap), isGlobal, forceProxy, startTransaction);
