@@ -696,7 +696,7 @@ public class ContextRunner {
                 } else {
                     String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(
                             Objects.requireNonNull(context.getVariable(TARGETS), "can not get " + TARGETS + " of " + context.getName()),
-                            needStartTransaction, balance);
+                            needStartTransaction||executeType.isMaster(), balance);
                     details = new Details(executeType, Collections.singletonMap(replicaName, Collections.singletonList(explain)), balance, forceProxy, needStartTransaction);
                 }
                 return details;
