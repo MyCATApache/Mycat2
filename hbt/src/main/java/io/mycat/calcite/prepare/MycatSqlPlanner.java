@@ -34,15 +34,15 @@ import java.util.function.Supplier;
 /**
  * @author Junwen Chen
  **/
-public class MycatSqlPlanner implements PlanRunner {
+public class MycatSqlPlanner implements PlanRunner,Proxyable {
     private final RelNode relNode;
-    private final MycatCalciteSQLPrepareObject prepare;
+    private final MycatSQLPrepareObject prepare;
     private final MycatCalciteDataContext mycatCalciteDataContext;
     private final DatasourceInfo datasourceInfo;
 
 
     @SneakyThrows
-    public MycatSqlPlanner(MycatCalciteSQLPrepareObject prepare, String sql, MycatDBContext uponDBContext) {
+    public MycatSqlPlanner(MycatSQLPrepareObject prepare, String sql, MycatDBContext uponDBContext) {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);

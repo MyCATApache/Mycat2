@@ -304,9 +304,8 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public RowBaseIterator queryDefaultTarget(String sql) {
-        MycatConfig config = RootHelper.INSTANCE.getConfigProvider().currentConfig();
-        String targetName = config.getMetadata().getPrototype().getTargetName();
-        DefaultConnection connection = transactionSession.getConnection(targetName);
+        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
+        DefaultConnection connection = transactionSession.getConnection(datasourceName);
         Objects.requireNonNull(connection);
         return connection.executeQuery(sql);
     }

@@ -32,14 +32,8 @@ import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -248,7 +242,13 @@ public enum ReplicaSelectorRuntime {
                         writeLB));
     }
 //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
-
+public String getDatasourceNameByRandom() {
+    ArrayList<ReplicaDataSourceSelector> values = new ArrayList<>(map.values());
+    int i = ThreadLocalRandom.current().nextInt(0, values.size());
+    ReplicaDataSourceSelector replicaDataSourceSelector = values.get(i);
+    String name = replicaDataSourceSelector.getName();
+    return getDatasourceNameByReplicaName(name,false,null);
+}
 
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
         BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function = master ? this::getWriteDatasource : this::getDatasource;

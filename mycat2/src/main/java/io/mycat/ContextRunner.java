@@ -25,6 +25,7 @@ import io.mycat.boost.UserBooster;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
+import io.mycat.calcite.prepare.Proxyable;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.datasource.jdbc.JdbcRuntime;
@@ -300,7 +301,7 @@ public class ContextRunner {
                     PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
                     switch (client.getTransactionType()) {
                         case PROXY_TRANSACTION_TYPE: {
-                            if (plan instanceof MycatSqlPlanner) {
+                            if (plan instanceof Proxyable ) {
                                 MycatSqlPlanner plan1 = (MycatSqlPlanner) plan;
                                 ProxyInfo proxyInfo = plan1.tryGetProxyInfo();
                                 if (proxyInfo != null) {
@@ -313,8 +314,7 @@ public class ContextRunner {
                             break;
                         }
                     }
-                    RowBaseIterator query = client1.query(explain);
-                    TextResultSetResponse connection = new TextResultSetResponse(query);
+                    TextResultSetResponse connection = new TextResultSetResponse( plan.run());
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
                     client1.recycleResource();//移除已经关闭的连接,
                 });

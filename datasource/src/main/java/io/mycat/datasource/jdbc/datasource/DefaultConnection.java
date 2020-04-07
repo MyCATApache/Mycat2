@@ -23,6 +23,8 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.sql.*;
 
 /**
@@ -74,7 +76,23 @@ public class DefaultConnection implements AutoCloseable {
     public RowBaseIterator executeQuery(String sql) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(null, statement, statement.executeQuery(sql), statement.executeQuery(sql), sql);
+            ResultSet resultSet = statement.executeQuery(sql);
+            return new JdbcRowBaseIterator(null, statement,resultSet, new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        resultSet.close();
+                    } catch (SQLException e) {
+                        LOGGER.error("",e);
+                    }
+
+                    try {
+                        statement.close();
+                    } catch (SQLException e) {
+                        LOGGER.error("",e);
+                    }
+                }
+            }, sql);
         } catch (Exception e) {
             throw new MycatException(e);
         }

@@ -43,7 +43,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @SneakyThrows
     public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback,String sql) {
         this.sql = sql;
-        this.metaData = metaData;
+        this.metaData = metaData == null?new JdbcRowMetaData(resultSet.getMetaData()):metaData;;
         this.statement = statement;
         this.resultSet = Objects.requireNonNull(resultSet);
         this.closeCallback = closeCallback;
@@ -57,7 +57,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public MycatRowMetaData getMetaData() {
         try {
-            return metaData == null?new JdbcRowMetaData(resultSet.getMetaData()):metaData;
+            return  this.metaData;
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
