@@ -230,7 +230,7 @@
                                         <include name="mycat/lib/wrapper**"/>
                                         <include name="mycat/lib/libwrapper**"/>
                                     </tarfileset>
-                                    <tarfileset dir="${project.parent}/example/src/test/resources/io" filemode="755">
+                                    <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
                                         <include name="**"/>
                                     </tarfileset>
                                 </tar>
