@@ -28,7 +28,7 @@ public class MycatDBClientBasedConfig {
     public TableHandler getTable(String schema, String table) {
         Map<String, TableHandler> stringTableHandlerMap = logicTables.get(schema);
         Objects.requireNonNull(stringTableHandlerMap, "schema is not existed");
-        TableHandler tableHandler = stringTableHandlerMap.get(table);
+        TableHandler tableHandler = stringTableHandlerMap.get(table.toLowerCase());
         return Objects.requireNonNull(tableHandler, "table is not existed");
     }
 }
