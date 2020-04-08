@@ -219,9 +219,20 @@
                                 <echo message="${project.build.directory}"/>
                                 <mkdir dir="${project.build.directory}"/>
                                 <mkdir dir="${project.build.directory}/jsw/mycat/logs"/>
-                                <tar basedir="${project.build.directory}/jsw"
+                                <tar
                                      destfile="${project.build.directory}/mycat2-${project.version}.tar.gz"
-                                     includes="mycat/bin/**,mycat/conf/**,mycat/logs,mycat/lib/mycat2**,mycat/lib/wrapper**,mycat/lib/libwrapper**">
+                                >
+                                    <!--<tarfileset dir="${project.build.directory}/jsw" filemode="755">-->
+                                        <!--<includes name="mycat/bin/**,mycat/conf/**,mycat/logs,mycat/lib/mycat2**,mycat/lib/wrapper**,mycat/lib/libwrapper**"/>-->
+                                    <!--</tarfileset>-->
+                                    <tarfileset dir="${project.build.directory}/jsw" filemode="755">
+                                        <include name="mycat/bin/**"/>
+                                        <include name="mycat/conf/**"/>
+                                        <include name="mycat/logs"/>
+                                        <include name="mycat/lib/mycat2**"/>
+                                        <include name="mycat/lib/wrapper**"/>
+                                        <include name="mycat/lib/libwrapper**"/>
+                                    </tarfileset>
                                 </tar>
                                 <tar basedir="${project.basedir}/src/main/resources"
                                      destfile="${project.build.directory}/mycat2-${project.version}-resources.tar.gz"
