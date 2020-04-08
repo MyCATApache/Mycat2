@@ -3,7 +3,7 @@ interceptors:
   [{user:{username: 'root' ,password: '123456' , ip: '.'},
     defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true}},
      #配置无需处理的sql去往的服务器,一般为主服务器,forceProxy的意思是强制使用mycat自研的协议实现发送sql,该实现实际上不区分executeType,而jdbc的实现query和update要区分
-     #executeType默认值,不配置情况下为QUERY_MASTER
+    #executeType默认值,不配置情况下为QUERY_MASTER
     schemas: [{
                 tables:[ 'db1.company','db1.travelrecord'],
                 sqls: [
@@ -50,7 +50,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
   timer: {initialDelay: 0, period: 1, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口
 server:
   ip: 0.0.0.0
-  port: 8067
+  port: 8066
   reactorNumber: 1
   #用于多线程任务的线程池,
   worker: {close: true, #禁用多线程池,jdbc等功能将不能使用
