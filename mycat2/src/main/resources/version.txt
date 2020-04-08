@@ -1,5 +1,5 @@
-BuildTime  2020-04-16 13:55:56
-GitVersion   5dd34978e9f3af893d002616b92c1c256d60f526
+BuildTime  2020-04-08 08:18:25
+GitVersion   d75000e62ac05eab2f314ab17359a2e6fdcedd49
 MavenVersion 1.0-SNAPSHOT
 GitUrl https://github.com/MyCATApache/Mycat2.git
 MyCatSite http://www.mycat.io/
