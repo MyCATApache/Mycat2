@@ -3,7 +3,7 @@ interceptors:
   [{user:{username: 'root' ,password: '123456' , ip: '.'},
     defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true}},
      #配置无需处理的sql去往的服务器,一般为主服务器,forceProxy的意思是强制使用mycat自研的协议实现发送sql,该实现实际上不区分executeType,而jdbc的实现query和update要区分
-    #executeType默认值,不配置情况下为QUERY_MASTER
+     #executeType默认值,不配置情况下为QUERY_MASTER
     schemas: [{
                 tables:[ 'db1.company','db1.travelrecord'],
                 sqls: [
@@ -20,10 +20,12 @@ datasource:
                  maxRetryCount: 3, #连接重试次数
                  maxConnectTimeout: 10000, #连接超时时间 毫秒
                  dbType: mysql, #
+                 initSqls: ['use db1'],
                  weight: 1, #负载均衡权重
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写,
                 },
                 {name: defaultDs2, ip: 0.0.0.0,port: 3307,user: root,password: 123456,maxCon: 10000,
+                 initSqls: ['use db1'],
                  minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,weight: 1,instanceType:,#READ,WRITE,READ_WRITE
                 }
   ]
