@@ -1,4 +1,4 @@
-package io.mycat.example.sharding;
+package io.mycat.example.shardingRw;
 
 import io.mycat.ConfigProvider;
 import io.mycat.MycatCore;
@@ -17,13 +17,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class ShardingExample {
+public class ShardingRwExample {
     @SneakyThrows
     public static void main(String[] args) {
-        String resource = Paths.get( ShardingExample.class.getResource("").toURI()).toAbsolutePath().toString();
+        String resource = Paths.get(ShardingRwExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
-        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(ShardingExample.class);
+        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(ShardingRwExample.class);
         MycatCore.INSTANCE.init(bootConfig);
     }
 
@@ -55,9 +55,8 @@ public class ShardingExample {
             statement.execute(
                     "delete from travelrecord"
             );
-            statement.execute("select next_value_for('db1_travelrecord')");
-            statement.execute("select next_value_for('db1_address')");
-            statement.execute("INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('1'); ");
+
+            statement.execute("insert db1.travelrecordWrite (`id`,`user_id`) values(1,1)");
             {
 
                 Set<String> set = new HashSet<>();
@@ -66,14 +65,20 @@ public class ShardingExample {
                             " select * from travelrecord"
                     )));
                 }
-                Assert.assertEquals(1, set.size());//验证没有事务的情况下,可以读写分离
+                Assert.assertTrue(set.size() > 1);//验证没有事务的情况下,可以读写分离
             }
+            statement.executeUpdate("delete from db1.travelrecordWrite");
 
             Set<String> set2 = new HashSet<>();
             for (int i = 0; i < 10; i++) {
                 statement.execute("INSERT INTO `db1`.`travelrecord` (`id`, `user_id`) VALUES ('1', '1'); ");
             }
-
+          Assert.assertNotEquals("",TestUtil.getString(statement.executeQuery(
+                    " select * from db1.travelrecordWrite"
+            )));
+            Assert.assertEquals("",TestUtil.getString(statement.executeQuery(
+                    " select * from db1.travelrecordRead"
+            )));
 
             //验证能返回自增序列
             String lastInsertId = null;
@@ -123,12 +128,15 @@ public class ShardingExample {
              */
                 {
                     Set<String> set = new HashSet<>();
+                    statement.execute("delete from db1.travelrecordWrite");
+                    statement.execute("delete from db1.travelrecordRead");
+                    statement.execute("insert db1.travelrecordWrite (`id`,`user_id`) values(1,1)");
                     for (int i = 0; i < 10; i++) {
                         set.add(TestUtil.getString(statement.executeQuery(
                                 " select * from travelrecord"
                         )));
                     }
-                    Assert.assertEquals(1, set.size());//验证无事务的情况下但是set autocommit = 1,读写分离
+                    Assert.assertTrue(set.size() > 1);//验证无事务的情况下但是set autocommit = 1,读写分离
                 }
 
             }

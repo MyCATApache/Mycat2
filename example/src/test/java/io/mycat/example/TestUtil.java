@@ -9,9 +9,11 @@ import java.sql.*;
 import java.util.Properties;
 
 public class TestUtil {
-
-    @SneakyThrows
     public static Connection getMySQLConnection() {
+       return getMySQLConnection(8066);
+    }
+    @SneakyThrows
+    public static Connection getMySQLConnection(int port) {
         String username = "root";
         String password = "123456";
 
@@ -21,7 +23,9 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://0.0.0.0:" +
+                port +
+                "/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);

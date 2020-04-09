@@ -9,7 +9,6 @@ public class NetUtil {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port));
         } catch (IOException e) {
-            e.printStackTrace();
             return false;
         }
         return true;
