@@ -201,14 +201,6 @@ limit/order下推
 
 
 
-###### HBT对于fromSql中的sql可以尝试自动生成字段信息
-
-
-
-###### 完善匹配器,再次使用ac自动机实现匹配器
-
-
-
 ###### HBT提供完善的语法错误提示
 
 
@@ -219,7 +211,27 @@ limit/order下推
 
 
 
-##### 2020.4.1 -> 2020.4.5开发计划
+##### 2020.4.12 -> 2020.4.18开发计划
+
+以schema为根设计拦截器,默认不需要配置命令,实现自动化路由,但可以使用正则完全覆盖自动的路由的功能
+
+
+
+##### 2020.4.6 -> 2020.4.11开发日志
+
+修复若干bug
+
+[修复客户端偶然不能登录](https://github.com/MyCATApache/Mycat2/commit/d75000e62ac05eab2f314ab17359a2e6fdcedd49)
+
+[添加小型正则表达式实现](https://github.com/MyCATApache/Mycat2/commit/103a8dee2e8fa6f26f82d6fc86e8b6b08c51261d)
+
+[提交读写分离测试](https://github.com/MyCATApache/Mycat2/commit/7ef024e067bc53bf7a096de3028897cb921ce019)
+
+[修复单独使用SELECT next_value_for('db1_travelrecord')无法获得全局序列号](https://github.com/MyCATApache/Mycat2/commit/6f34d8eea1a77d372fb0ab2f864380f2fce8beee)
+
+[修复读写分离,executeType query master路由到非主节点](https://github.com/MyCATApache/Mycat2/commit/292ed2fdfbfd75517e9f9781b421e97b85d72bb9)
+
+##### 2020.4.1 -> 2020.4.5开发日志
 
 1.完善mysql内部函数,主要是与分片算法相关的函数,便于生成分片值
 
@@ -227,13 +239,13 @@ limit/order下推
 
 3.为常见的业务场景建立例子文件夹,便于学习
 
-4.编写HBT新手教程
+4.编写HBT新手教程(未完成)
 
 5.修复hbt关联连接生成sql错误的问题,暂定关联连接无法下推
 
 
 
-##### 2020.3.27 -> 2020.3.31开发计划
+##### 2020.3.27 -> 2020.3.31开发日志
 
 1.完善文档
 
