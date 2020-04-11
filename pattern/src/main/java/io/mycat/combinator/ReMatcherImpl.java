@@ -2,6 +2,10 @@ package io.mycat.combinator;
 
 import java.nio.CharBuffer;
 
+
+/**
+ * https://github.com/xt0fer/RegExpGuts
+ */
 public final class ReMatcherImpl {
 
     private final char[] regex;

@@ -74,21 +74,91 @@ ide安装lombok插件
 ## 打包
 
 ```shell
+mycat模块下
+
 mvn package
+mvn package -Dmaven.test.skip=false
+mvn package -Dmaven.test.skip=true
 ```
 
-## 执行
 
-只要使用2.0,都需要备份程序对应的源码,便于查找问题
+
+
+
+## 设置版本
+
+```
+versions:set -DnewVersion=1.xxx-SNAPSHOT
+```
+
+
+
+## 安装执行
+
+db1.sql,db2.sql,db3.sql是测试用的表
+
+
+
+#### 安装包执行
+
+出现权限不足请提升到管理员权限
+
+
+
+###### linux
 
 ```shell
-.db1.sql,db2.sql,db3.sql是测试用的表
+下载安装包
+wget http://dl.mycat.io/2.0-release/1.01/mycat2-1.01-SNAPSHOT.tar.gz
+tar -xvf mycat2-1.01-SNAPSHOT.tar.gz
+修改/root/mycat/conf/mycat.yml文件
+cd mycat/bin
+./mycat start
+./mycat status
+```
+
+
+
+```shell
+./mycat start 启动
+./mycat stop 停止
+./mycat console 前台运行
+./mycat install 添加到系统自动启动（暂未实现）
+./mycat remove 取消随系统自动启动（暂未实现）
+./mycat restart 重启服务
+./mycat pause 暂停
+./mycat status 查看启动状态
+```
+
+
+
+###### windows
+
+```shell
+下载安装包
+http://dl.mycat.io/2.0-release/1.01/mycat2-1.01-SNAPSHOT.tar.gz
+tar -xvf mycat2-1.01-SNAPSHOT.tar.gz
+修改/root/mycat/conf/mycat.yml文件
+cd mycat/bin
+./mycat insatll
+./mycat start
+./mycat status
+```
+
+
+
+#### jar包执行
+
+```shell
+
 java -Dfile.encoding=UTF-8 -DMYCAT_HOME=mycat2\src\main\resources  -jar mycat2-0.5-SNAPSHOP.jar
 
 Mycat2\mycat2\src\main\resources 是mycat.yml所在的文件夹
 配置加载可以通过替换
 io.mycat.ConfigProvider实现不同的配置加载方式
 ```
+
+
 
 
 
@@ -1268,11 +1338,11 @@ default-character-set=utf8mb4
 
 ## 读写分离配置
 
-https://github.com/MyCATApache/Mycat2/blob/master/example/src/main/resources/io/mycat/example/readWriteSeparation/mycat.yml
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/readWriteSeparation/mycat.yml
 
 ## 分片配置
 
-https://github.com/MyCATApache/Mycat2/tree/master/example/src/main/resources/io/mycat/example/sharding
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/sharding/mycat.yml
 
 ##### 更新日志
 
