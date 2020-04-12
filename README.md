@@ -163,17 +163,23 @@ io.mycat.ConfigProvider实现不同的配置加载方式
 #### 日志配置
 
 ```ini
-#log4j.rootLogger=debug,console
-log4j.rootLogger=debug,console,fileAppender
+log4j.rootLogger=debug,console,rollingFile
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.layout=org.apache.log4j.PatternLayout
 log4j.appender.console.layout.ConversionPattern=%d{HH:mm:ss} T=%t [%c %M at %L]-[%p] %m%n
 
 
-log4j.appender.fileAppender=org.apache.log4j.RollingFileAppender
-log4j.appender.fileAppender.layout=org.apache.log4j.PatternLayout
-log4j.appender.fileAppender.layout.ConversionPattern=[%t] %-5p %c %x - %m%n
-log4j.appender.fileAppender.File=../logs/mycat.log
+log4j.appender.rollingFile=org.apache.log4j.rolling.RollingFileAppender
+log4j.appender.rollingFile.RollingPolicy=org.apache.log4j.rolling.TimeBasedRollingPolicy
+log4j.appender.rollingFile.RollingPolicy.ActiveFileName=../logs/mycat.log
+log4j.appender.rollingFile.RollingPolicy.FileNamePattern=../logs/mycat-%d{yyyy-MM-dd}.%i.log.gz
+log4j.appender.rollingFile.triggeringPolicy=org.apache.log4j.rolling.SizeBasedTriggeringPolicy
+#100MB
+log4j.appender.rollingFile.triggeringPolicy.MaxFileSize=104857600 
+log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+log4j.appender.rollingFile.layout.ConversionPattern=%d{HH:mm:ss} T=%t [%c %M at %L]-[%p] %m%n
+
+
 ```
 
 
