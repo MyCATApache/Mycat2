@@ -64,6 +64,58 @@ EXECUTE plan fromSql(repli,'SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` =
 
 
 
+## 适用场景
+
+### 精准分片
+
+DML具有明确的分片条件,而且同一个事务内的操作,结合分片算法,总能在同一个分片之内.这是第1大类SQL.
+
+这个场景下,mycat2能提供最佳的执行方式支撑业务
+
+第1大类使用proxy方式处理请求,mycat2自动对sql进行改写,透传响应,客户端操作mycat2几乎与直接操作一个mysql没有区别,事务特性等都没有任何改变
+
+##### 配置关键点
+
+开启proxy事务特性
+
+
+
+### 精准分片+分布式查询
+
+在精准分片基础上,有部分DML不具有明确的分片条件,但是对数据一致性没有要求.
+
+这种是第2大类SQL,当分布式查询引擎把查询逻辑表的sql转换成物理表的sql的时候,发现仅仅一个分片就可以完成查询,那么就使用透传处理,此时也能达到与一个mysql的操作特性,如果不能,则使用分布式查询引擎通过jdbc拉取数据.后者可以建立定时预读的缓存结果集,把客户端的多个查询请求转化成对相同的结果集对象查询,大大减少重复的计算量和内存使用.
+
+##### 配置关键点
+
+开启proxy事务特性
+
+使用拦截器配置sql设置缓存
+
+
+
+### 分布式事务+分布式查询
+
+在精准分片+分布式查询的基础上开启XA事务,使单一分片事务升级为XA事务,此时事务隔离级别与事务特性受到XA特性约束,mycat基本上会把所有请求都转化成jdbc接口的操作,不再使用透传.可结合结果集缓存特性提高查询性能
+
+##### 配置关键点
+
+开启xa事务特性
+
+
+
+### 基于sql后端的大数据查询工具
+
+mycat2支持HBT语言方式向后端数据库发送sql拉取数据,然后使用特定语法聚合结果,并建立缓存
+
+
+
+### 嵌入式数据库客户端接口(正在完善)
+
+mycat2支持不启动网络层的方式,以api方式操作mycat,实现执行sql
+
+
+
 ## 开发环境
 参考src\main\resources\sql中的sql和src\main\resources\mycat.yml建立数据库环境
 ide安装lombok插件
@@ -172,11 +224,39 @@ io.mycat.ConfigProvider实现不同的配置加载方式
 
 测试mycat与测试mysql完全一致，mysql怎么连接，mycat就怎么连接。
 
+在mysqld下面设置
+
+default_authentication_plugin = mysql_native_password
+
+客户端登录参数
+
+--default-auth-password=mysql_native_password
+
 推荐先采用命令行测试：
 
 ```
 mysql -uroot -proot -P8066 -h127.0.0.1
 ```
+
+
+
+Mysql连接问题
+
+0.0.0.0 
+
+localhost 
+
+127.0.0.1没有权限可能出现连接不上的现象
+
+
+
+#### 客户端要求
+
+关闭SSL
+
+启用客户端预处理,关闭服务器预处理
+
+mysql_native_password授权
 
 
 
