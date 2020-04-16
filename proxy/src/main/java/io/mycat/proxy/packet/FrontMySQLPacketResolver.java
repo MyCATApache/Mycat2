@@ -99,7 +99,6 @@ public class FrontMySQLPacketResolver {
   }
 
   public MySQLPacket getPayload(BufferPool bufferPool) {
-    assert !head.hasRemaining();
     head.position(0);
     payload = null;
     try {
