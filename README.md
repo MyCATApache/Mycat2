@@ -104,6 +104,12 @@ DML具有明确的分片条件,而且同一个事务内的操作,结合分片算
 
 
 
+### 读写分离
+
+见往下的配置
+
+
+
 ### 基于sql后端的大数据查询工具
 
 mycat2支持HBT语言方式向后端数据库发送sql拉取数据,然后使用特定语法聚合结果,并建立缓存
@@ -148,7 +154,7 @@ mvn package -Dmaven.test.skip=true
 ## 设置版本
 
 ```
-versions:set -DnewVersion=1.xxx-SNAPSHOT
+versions:setVariable -DnewVersion=1.xxx-SNAPSHOT
 ```
 
 
@@ -797,7 +803,7 @@ sql中的参数的优先级比tags高
 #### SQL再生成
 
 ```yaml
-  {name: 'mysql set names utf8', sql: 'SET NAMES {utf8}',explian: 'SET NAMES utf8mb4'  command: execute , tags: {targets: defaultDs,forceProxy: true}}
+  {name: 'mysql setVariable names utf8', sql: 'SET NAMES {utf8}',explian: 'SET NAMES utf8mb4'  command: execute , tags: {targets: defaultDs,forceProxy: true}}
 ```
 
 SQL被'SET NAMES utf8mb4'替换
@@ -967,7 +973,7 @@ name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
 ##### 开启XA事务
 
 ```yaml
-{name: setXA ,sql: 'set xa = on',command: onXA},
+{name: setXA ,sql: 'setVariable xa = on',command: onXA},
 ```
 
 
@@ -975,7 +981,7 @@ name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
 ##### 关闭XA事务
 
 ```yaml
-{name: setProxy ,sql: 'set xa = off',command: offXA},
+{name: setProxy ,sql: 'setVariable xa = off',command: offXA},
 ```
 
 
@@ -985,7 +991,7 @@ name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
 关闭自动提交后,在下一次sql将会自动开启事务,并不会释放后端连接
 
 ```yaml
-{name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
+{name: setAutoCommitOff ,sql: 'setVariable autocommit=off',command: setAutoCommitOff},
 ```
 
 
@@ -993,7 +999,7 @@ name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
 ##### 开启自动提交
 
 ```yaml
-{name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
+{name: setAutoCommitOn ,sql: 'setVariable autocommit=on',command: setAutoCommitOn},
 ```
 
 
@@ -1052,7 +1058,7 @@ QUERY_MASTER执行查询语句,当目标是集群的时候路由到主节点
 
 INSERT执行插入语句
 
-UPDATE执行其他的更新语句,例如delete,update,set
+UPDATE执行其他的更新语句,例如delete,update,setVariable
 
 
 
@@ -1484,8 +1490,8 @@ port=3306
 innodb_buffer_pool_size=2031M
 max_allowed_packet=128MB
 max_connections=10000
-character-set-client-handshake = FALSE 
-character-set-server = utf8mb4 
+character-setVariable-client-handshake = FALSE 
+character-setVariable-server = utf8mb4 
 collation-server = utf8mb4_unicode_ci 
 init_connect='SET NAMES utf8mb4'
 log_bin_trust_function_creators=1
@@ -1494,11 +1500,11 @@ local-infile = ON
 loose-local-infile= 1
 port=3306
 plugin-dir=xxx/MariaDB 10.3/lib/plugin
-default-character-set = utf8mb4
+default-character-setVariable = utf8mb4
 [mysql] 
 local_infile = 1
 local-infile = ON
-default-character-set = utf8mb4
+default-character-setVariable = utf8mb4
 
 ```
 
@@ -1514,14 +1520,14 @@ basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
 datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
 max_connections=200
 max_connect_errors=10
-character-set-server=utf8mb4
+character-setVariable-server=utf8mb4
 default-storage-engine=INNODB
 
 #mycat2.0可能不支持其他授权方式
 default_authentication_plugin=mysql_native_password 
 [mysql]
 # 设置mysql客户端默认字符集
-default-character-set=utf8mb4
+default-character-setVariable=utf8mb4
 
 ....
 ```
@@ -1530,7 +1536,30 @@ default-character-set=utf8mb4
 
 ## 读写分离配置
 
+例子1
+
 https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/readWriteSeparation/mycat.yml
+
+该配置需要把使用的表都配置上,并且配置发往从节点的sql
+
+
+
+例子2
+
+```yml
+interceptors:
+  [{user:{username: 'root' ,password: '123456' , ip: '.'},
+    defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true,executeType: QUERY}},
+    sqls:[
+    {sql: 'insert {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: INSERT }} ,
+      {sql: 'delete {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: UPDATE} } ,
+    ] ,
+    sqlsGroup: [*jdbcAdapter],
+    transactionType: proxy  #xa.proxy
+   }]
+```
+
+该配置需要把发往主节点的sql配置不需要配置表名,同时开启事务的情况下发往主节点
 
 ## 分片配置
 
