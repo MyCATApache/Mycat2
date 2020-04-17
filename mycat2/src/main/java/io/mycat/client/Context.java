@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Context {
     public static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Context.class);
     private String name;
-    private final String sql;
+    private String sql;
     private final java.util.Map<String, Collection<String>> tables;
     private final Map<String, String> names;
     private final Map<String, String> tags;
@@ -214,5 +214,13 @@ public class Context {
     public static class SchemaTableObject{
         String schema;
         String table;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql;
     }
 }

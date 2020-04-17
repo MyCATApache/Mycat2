@@ -72,9 +72,6 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                 }
                 break;
             }
-            case ER: {
-                break;
-            }
         }
 
     }
@@ -114,7 +111,6 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                             getColumnList(table, projects)
                             , globalBackendTableInfo);
                     return new MyCatResultSetEnumerable((mycatRowMetaData, targetName, sql) -> root1.getUponDBContext().query(mycatRowMetaData, targetName, sql), cancelFlag, rowType, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
-                case ER:
                 default:
                     throw new UnsupportedOperationException();
             }

@@ -17,10 +17,12 @@ package io.mycat;
 import java.util.Map;
 
 public interface ConfigProvider {
-    void init(Map<String,String> config) throws Exception;
+    void init(Class rootClass,Map<String,String> config) throws Exception;
     void fetchConfig(String path) throws Exception;
     void fetchConfig() throws Exception;
     void report(MycatConfig changed);
 
     public MycatConfig currentConfig();
+
+    public Map<String, Object>  globalVariables();
 }

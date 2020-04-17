@@ -5,5 +5,5 @@ public interface MySQLFunction {
 
     int getArgumentSize();
 
-    Object eval(Object[] args);
+    Object eval(SQLContext context,Object[] args);
 }

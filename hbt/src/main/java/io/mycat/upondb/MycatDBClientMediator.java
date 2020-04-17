@@ -3,15 +3,12 @@ package io.mycat.upondb;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public abstract class MycatDBClientMediator implements MycatDBContext {
     private String schema;
     private long maxRow;
-    private final Map<String, Object> varbables = new HashMap<>();
 
 
     @Override
@@ -79,20 +76,11 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
         maxRow = value;
     }
 
-    @Override
-    public void set(String target, Object value) {
-        varbables.put(target, value);
-    }
 
-    @Override
-    public Object get(String target) {
-        Object o = varbables.get(target);
-        if (o == null) {
-            return getUponDBSharedServer().get(target);
-        } else {
-            return o;
-        }
-    }
+    public abstract void setVariable(String target, Object value);
+
+
+    public abstract Object getVariable(String target);
 
     @Override
     public void closePrepare(Long id) {

@@ -201,4 +201,19 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     public SQLContext sqlContext() {
         return null;
     }
+
+    @Override
+    public long lastInsertId() {
+        return 0;
+    }
+
+    @Override
+    public void setVariable(String target, Object value) {
+
+    }
+
+    @Override
+    public Object getVariable(String target) {
+        return null;
+    }
 }

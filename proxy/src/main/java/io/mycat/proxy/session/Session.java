@@ -23,6 +23,8 @@ import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
 
@@ -47,7 +49,9 @@ public interface Session<T extends Session> extends Wrapper {
   NIOHandler getCurNIOHandler();
 
   static String getThrowableString(Throwable e) {
-    return MessageFormat.format("{0}",e);
+    StringWriter errors = new StringWriter();
+    e.printStackTrace(new PrintWriter(errors));
+    return MessageFormat.format("{0} \n {1}",e,errors.toString());
   }
 
   /**
