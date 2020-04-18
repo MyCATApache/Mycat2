@@ -1169,7 +1169,11 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS} #心跳定时器
 ```
 
-只有GARELA_CLUSTER能在masters属性配置多个数据源的名字
+只有MASTER_SLAVE,GARELA_CLUSTER能在masters属性配置多个数据源的名字
+
+MASTER_SLAVE中的masters的意思是主从切换顺序
+
+GARELA_CLUSTER的masters意思是这些节点同时成为主节点,负载均衡算法可以选择主节点
 
 reuqestType是进行心跳的实现方式,使用mysql意味着使用proxy方式进行,能异步地进行心跳,而jdbc方式会占用线程池
 
