@@ -21,6 +21,7 @@ import io.mycat.command.AbstractCommandHandler;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.util.SQLHanlder;
 
 /**
  * @author chen junwen
@@ -55,7 +56,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------tirm-right-semi(;)--------------------");
             }
             Context analysis = client.analysis(sql);
-            ContextRunner.run(client, analysis, session);
+            SQLHanlder sqlHanlder = new SQLHanlder(client.getMycatDb().sqlContext());
+            ReceiverImpl receiver = new ReceiverImpl(session, client, analysis);
+            sqlHanlder.parse(sql, receiver);
+
+//            ContextRunner.run(client, analysis, session);
         } catch (Throwable e) {
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();

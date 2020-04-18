@@ -1,28 +1,52 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public interface SQLContext {
-    Object getSQLVariantRef(String toString);
+    Object getSQLVariantRef(String target);
 
-    List<Object> getParameters();
+    Map<String, Object> getParameters();
 
-    void setParameters(List<Object> parameters);
+    void setParameters(Map<String, Object> parameters);
 
     Map<String, MySQLFunction> functions();
 
-    default String simplySql(String sqlStatement) {
-        SQLStatement sqlStatement1 = SQLUtils.parseSingleMysqlStatement(sqlStatement);
-        sqlStatement1.accept(new ContextExecuter(this));
-        return sqlStatement1.toString();
-    }
+    String getDefaultSchema();
 
     default void clearParameters() {
-        setParameters(Collections.emptyList());
+        setParameters(Collections.emptyMap());
     }
+
+    SelectStatementHandler selectStatementHandler();
+
+    InsertStatementHandler insertStatementHandler();
+
+    DeleteStatementHandler deleteStatementHandler();
+
+    LoaddataStatementHandler loaddataStatementHandler();
+
+    SetStatementHandler setStatementHandler();
+
+    TCLStatementHandler tclStatementHandler();
+
+    void setDefaultSchema(String simpleName);
+
+    UtilityStatementHandler utilityStatementHandler();
+    ReplaceStatementHandler replaceStatementHandler();
+    DDLStatementHandler ddlStatementHandler();
+
+    ShowStatementHandler showStatementHandler();
+
+    UpdateStatementHandler updateStatementHandler();
+
+   default String simplySql(String explain){
+       return explain;
+   }
+
+    long lastInsertId();
+
+    TruncateStatementHandler truncateStatementHandler();
+
+    HintStatementHanlder hintStatementHanlder();
 }

@@ -26,7 +26,9 @@ public enum MySQLVariablesEnum {
 //    tx_isolation(Type.BOTH),
 //    max_execution_time(Type.BOTH),
 //    innodb_lock_wait_timeout(Type.BOTH),
-
+    license(Type.GLOBAL),
+    lower_case_table_names(Type.GLOBAL),
+    system_time_zone(Type.GLOBAL),
     // 注意:不包含 new		Both
     audit_log_connection_policy(Type.GLOBAL),
     audit_log_exclude_accounts(Type.GLOBAL),
@@ -930,16 +932,20 @@ public enum MySQLVariablesEnum {
         }
     }
 
-    public MySQLVariablesEnum parseFromColumnName(String text) {
+   static public MySQLVariablesEnum parseFromColumnName(String text) {
         String sessionPre = "@@session.";
-        if (text.toLowerCase().startsWith(sessionPre)) {
+         text = text.toLowerCase();
+        if (text.startsWith(sessionPre)) {
             return MySQLVariablesEnum.valueOf(text.substring(sessionPre.length()));
         }
         String globalPre = "@@global.";
-        if (text.toLowerCase().startsWith(globalPre)) {
+        if (text.startsWith(globalPre)) {
             return MySQLVariablesEnum.valueOf(text.substring(globalPre.length()));
         }
-        throw new UnsupportedOperationException();
+        if (text.startsWith("@@")){
+            return MySQLVariablesEnum.valueOf(text.substring("@@".length()));
+        }
+        return null;
     }
 
     public enum Type {

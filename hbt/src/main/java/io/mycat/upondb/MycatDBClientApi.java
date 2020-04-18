@@ -54,9 +54,9 @@ public interface MycatDBClientApi  {
 
     void setAutoCommit(boolean autocommit);
 
-    void set(String target, Object value);
+    void setVariable(String target, Object value);
 
-    Object get(String target);
+    Object getVariable(String target);
 
     public void close();
 
@@ -65,4 +65,6 @@ public interface MycatDBClientApi  {
     int getServerStatus();
 
     SQLContext sqlContext();
+
+    long lastInsertId();
 }

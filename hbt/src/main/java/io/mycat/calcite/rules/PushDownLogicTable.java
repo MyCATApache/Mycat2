@@ -82,8 +82,6 @@ public class PushDownLogicTable extends RelOptRule {
                     break;
                 case GLOBAL:
                     value = global(cluster,bindableTableScan, relOptSchema, logicTable);
-                case ER:
-                    break;
             }
 
         } else {

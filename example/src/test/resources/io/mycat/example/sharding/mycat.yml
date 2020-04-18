@@ -2,6 +2,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
   prototype: {targetName: defaultDs } #从该数据源获取元数据,该功能未开放
   schemas:
     db1: #逻辑库名
+      targetName: defaultDs
       shadingTables:
         travelrecord: #逻辑表名
           columns:
