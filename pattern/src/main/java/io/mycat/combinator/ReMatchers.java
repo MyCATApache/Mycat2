@@ -7,7 +7,7 @@ import org.eclipse.collections.impl.tuple.Tuples;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,27 +33,27 @@ public class ReMatchers {
         return s -> charBufferPredicate.test(charset.decode(s));
     }
 
-    public static <T> Function<ByteBuffer, Pair<Predicate<CharBuffer>, T>> asByteBufferPredicateMap(Map<String, T> map, final Charset charset) {
+    public static <T> Function<ByteBuffer, Pair<Predicate<CharBuffer>, T>> asByteBufferPredicateMap(List<Pair<String, T>> map, final Charset charset) {
         Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> charBufferPairFunction =
                 asCharBufferPredicateMap(map);
         return byteBuffer -> charBufferPairFunction.apply(charset.decode(byteBuffer));
     }
 
-    public static <T> Function<String, Pair<Predicate<CharBuffer>, T>> asStringPredicateMap(Map<String, T> map) {
+    public static <T> Function<String, Pair<Predicate<CharBuffer>, T>> asStringPredicateMap(List<Pair<String, T>> map) {
         Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> charBufferPairFunction =
                 asCharBufferPredicateMap(map);
         return s -> charBufferPairFunction.apply(CharBuffer.wrap(s));
     }
-    public static <T> Function<char[], Pair<Predicate<CharBuffer>, T>> asCharArrayPredicateMap(Map<String, T> map) {
+    public static <T> Function<char[], Pair<Predicate<CharBuffer>, T>> asCharArrayPredicateMap(List<Pair<String, T>> map) {
         Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> charBufferPairFunction =
                 asCharBufferPredicateMap(map);
         return s -> charBufferPairFunction.apply(CharBuffer.wrap(s));
     }
-    public static <T> Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> asCharBufferPredicateMap(Map<String, T> map) {
+    public static <T> Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> asCharBufferPredicateMap(List<Pair<String, T>> list) {
         ImmutableList.Builder<Pair<Predicate<CharBuffer>, T>> builder = ImmutableList.builder();
-        for (Map.Entry<String, T> stringTEntry : map.entrySet()) {
-            String key = stringTEntry.getKey();
-            T value = stringTEntry.getValue();
+        for (Pair<String, T> stringTEntry : list) {
+            String key = stringTEntry.getOne();
+            T value = stringTEntry.getTwo();
             Predicate<CharBuffer> charBufferPredicate = asPredicateForCharBuffer(key);
             builder.add(Tuples.pair(charBufferPredicate, value));
         }
