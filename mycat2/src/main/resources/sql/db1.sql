@@ -23,7 +23,6 @@ CREATE TABLE `travelrecord` (
   `fee` decimal(10,0) DEFAULT NULL,
   `days` int(11) DEFAULT NULL,
   `blob` longblob DEFAULT NULL
-  KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,NULL,NULL,NULL,NULL,NULL);
