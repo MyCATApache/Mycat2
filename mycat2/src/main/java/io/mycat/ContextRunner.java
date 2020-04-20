@@ -547,7 +547,7 @@ public class ContextRunner {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
-                    session.setInTranscation(true);
+                    session.getDataContext().getTransactionSession().begin();
                     LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
                     session.writeOkEndPacket();
                 };

@@ -1,17 +1,11 @@
 metadata: #读写分离无需配置
 interceptors:
   [{user:{username: 'root' ,password: '123456' , ip: '.'},
-    defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true}},
-     #配置无需处理的sql去往的服务器,一般为主服务器,forceProxy的意思是强制使用mycat自研的协议实现发送sql,该实现实际上不区分executeType,而jdbc的实现query和update要区分
-     #executeType默认值,不配置情况下为QUERY_MASTER
-    schemas: [{
-                tables:[ 'db1.company','db1.travelrecord'],
-                sqls: [
-                {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}}
-                ],
-              },
-    ],
-    sqls:[] ,
+    defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true,executeType: QUERY}},
+    sqls:[
+    {sql: 'insert {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: INSERT }} ,
+    {sql: 'delete {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: UPDATE} } ,
+    ] ,
     sqlsGroup: [*jdbcAdapter],
     transactionType: proxy  #xa.proxy
    }]
