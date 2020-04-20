@@ -25,6 +25,7 @@ import io.mycat.hbt.HBTRunners;
 import io.mycat.hbt.TextUpdateInfo;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ParseContext;
+import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -138,8 +139,8 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     @NotNull
     private TableHandler getLogicTable(String schema, String tableName) {
-        Map<String, Map<String, TableHandler>> logicTableMap = MetadataManager.INSTANCE.getLogicTableMap();
-        return Objects.requireNonNull(Objects.requireNonNull(logicTableMap.get(schema), "schema is not existed").get(tableName), "table is not existed");
+        SchemaHandler schemaHandler = MetadataManager.INSTANCE.getSchemaMap().get(schema);
+        return Objects.requireNonNull(Objects.requireNonNull(schemaHandler, "schema is not existed").logicTables().get(tableName), "table is not existed");
     }
 
     @AllArgsConstructor
@@ -318,7 +319,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
                 for (SQLAssignItem item : sqlStatement.getItems()) {
                     String target = Objects.toString(item.getTarget());
                     SQLExpr value = item.getValue();
-                    uponDBContext.set(target, value);
+                    uponDBContext.setVariable(target, value);
                 }
             }
 

@@ -59,7 +59,21 @@ import static io.mycat.SQLExecuterWriter.writeToMycatSession;
  * @author chen junwen
  */
 public class ContextRunner {
+    static  final Function<ExecuteType, Command> executeSupplier = (ExecuteType executeType) -> new Command() {
+        @Override
+        public Runnable apply(MycatClient client, Context context, MycatSession session) {
+            boolean startTransaction = !session.isAutocommit() || session.isInTransaction();
+            Details details = getDetails(client, true, null, context.getTableForUpdateOpt(), executeType, context.getExplain(), false, startTransaction);
+            return execute(client, session, details);
+        }
 
+        @Override
+        public Runnable explain(MycatClient client, Context context, MycatSession session) {
+            boolean startTransaction = !session.isAutocommit() || session.isInTransaction();
+            Details details = getDetails(client, true, null, context.getTableForUpdateOpt(), executeType, context.getExplain(), false, startTransaction);
+            return () -> writePlan(session, details.toExplain());
+        }
+    };
     public static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ContextRunner.class);
     //item
     public static final String SCHEMA_NAME = "schema";
@@ -710,21 +724,7 @@ public class ContextRunner {
         };
         COMMANDS.put(EXECUTE, execute);
 
-        Function<ExecuteType, Command> executeSupplier = (ExecuteType executeType) -> new Command() {
-            @Override
-            public Runnable apply(MycatClient client, Context context, MycatSession session) {
-                boolean startTransaction = !session.isAutocommit() || session.isInTransaction();
-                Details details = getDetails(client, true, null, context.getTableForUpdateOpt(), executeType, context.getExplain(), false, startTransaction);
-                return execute(client, session, details);
-            }
 
-            @Override
-            public Runnable explain(MycatClient client, Context context, MycatSession session) {
-                boolean startTransaction = !session.isAutocommit() || session.isInTransaction();
-                Details details = getDetails(client, true, null, context.getTableForUpdateOpt(), executeType, context.getExplain(), false, startTransaction);
-                return () -> writePlan(session, details.toExplain());
-            }
-        };
         COMMANDS.put(DISTRIBUTED_DELETE, executeSupplier.apply(ExecuteType.UPDATE));
         COMMANDS.put(DISTRIBUTED_UPDATE, executeSupplier.apply(ExecuteType.INSERT));
         COMMANDS.put(DISTRIBUTED_INSERT, executeSupplier.apply(ExecuteType.UPDATE));
@@ -922,4 +922,5 @@ public class ContextRunner {
         }
         return map;
     }
+
 }

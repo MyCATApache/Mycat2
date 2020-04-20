@@ -14,13 +14,17 @@
  */
 package io.mycat;
 
+import com.alibaba.fastjson.JSONObject;
+import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
 import lombok.extern.log4j.Log4j;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -31,11 +35,32 @@ public class FileConfigProvider implements ConfigProvider {
     volatile MycatConfig config;
     private String defaultPath;
     final AtomicInteger count = new AtomicInteger();
+    private  HashMap<String, Object> globalVariables;
 
     @Override
-    public void init(Map<String, String> config) throws Exception {
-        this.defaultPath = config.get("path");
+    public void init(Class rootClass, Map<String, String> config) throws Exception {
+        String path = config.get("path");
+
+        if (path == null) {
+            URI uri = rootClass.getResource("/mycat.yml").toURI();
+            System.out.println("uri:" + uri);
+            path = Paths.get(uri).toAbsolutePath().toString();
+        } else {
+            System.out.println("path:" + path);
+            path = Paths.get(path).resolve("mycat.yml").toAbsolutePath().toString();
+        }
+        this.defaultPath = path;
         fetchConfig(this.defaultPath);
+
+        Path resolve = Paths.get(path).getParent().resolve("globalVariables.json");
+        Map from = JsonUtil.from(new String(Files.readAllBytes(resolve)), Map.class);
+        JSONObject map = (JSONObject) from.get("map");
+        this. globalVariables = new HashMap<>();
+        map.forEach((key,v)->{
+            JSONObject jsonObject = (JSONObject) v;
+            globalVariables.put(key,jsonObject.get("value"));
+        });
+
     }
 
     @Override
@@ -46,13 +71,13 @@ public class FileConfigProvider implements ConfigProvider {
     @Override
     public synchronized void report(MycatConfig changed) {
         backup();
-        YamlUtil.dumpToFile(defaultPath,YamlUtil.dump(changed));
+        YamlUtil.dumpToFile(defaultPath, YamlUtil.dump(changed));
         config = changed;
     }
 
     private void backup() {
         try {
-            YamlUtil.dumpBackupToFile(defaultPath,count.getAndIncrement(),YamlUtil.dump(config));
+            YamlUtil.dumpBackupToFile(defaultPath, count.getAndIncrement(), YamlUtil.dump(config));
         } catch (Exception e) {
             log.error(e);
         }
@@ -65,20 +90,20 @@ public class FileConfigProvider implements ConfigProvider {
             throw new IllegalArgumentException(MessageFormat.format("path not found: {0}", Objects.toString(asbPath)));
         }
         Iterator<String> iterator = Files.lines(asbPath).iterator();
-        StringBuilder sqlGroups  = new StringBuilder();
-        StringBuilder full  = new StringBuilder();
-        boolean in= false;
-        while (iterator.hasNext()){
+        StringBuilder sqlGroups = new StringBuilder();
+        StringBuilder full = new StringBuilder();
+        boolean in = false;
+        while (iterator.hasNext()) {
             String next = iterator.next();
-            if (next.startsWith("#lib start")){
+            if (next.startsWith("#lib start")) {
                 sqlGroups.append(next).append('\n');
                 in = true;
-            }else if (in){
+            } else if (in) {
                 sqlGroups.append(next).append('\n');
-            }else if (next.startsWith("#lib end")){
+            } else if (next.startsWith("#lib end")) {
                 sqlGroups.append(next).append('\n');
-                in =false;
-            }else {
+                in = false;
+            } else {
                 full.append(next).append('\n');
             }
         }
@@ -91,5 +116,10 @@ public class FileConfigProvider implements ConfigProvider {
     @Override
     public MycatConfig currentConfig() {
         return config;
+    }
+
+    @Override
+    public Map<String, Object> globalVariables() {
+        return globalVariables;
     }
 }

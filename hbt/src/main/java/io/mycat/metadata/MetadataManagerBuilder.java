@@ -28,7 +28,7 @@ import java.util.*;
 public class MetadataManagerBuilder {
 
     public static void exampleBuild(MetadataManager m) {
-        m.addSchema("db1");
+        m.addSchema("db1","defaultDs");
         ShardingQueryRootConfig.BackEndTableInfoConfig.BackEndTableInfoConfigBuilder builder = backEndBuilder();
         List<ShardingQueryRootConfig.BackEndTableInfoConfig> tableInfos = Arrays.asList(
                 backEndBuilder().targetName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD").build(),

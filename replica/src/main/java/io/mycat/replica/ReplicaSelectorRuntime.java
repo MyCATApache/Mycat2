@@ -50,6 +50,7 @@ public enum ReplicaSelectorRuntime {
     final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(ReplicaSelectorRuntime.class);
 
     public synchronized void load(MycatConfig config) {
+        Objects.requireNonNull(config);
         if (this.config == config) {
             return;
         }
@@ -364,5 +365,14 @@ public String getDatasourceNameByRandom() {
 
     public boolean isReplicaName(String targetName) {
         return map.containsKey(targetName);
+    }
+
+
+    public String getFirstReplicaDataSource(){
+    return   Optional.ofNullable(  config)
+              .map(c->c.getCluster())
+              .filter(c->c.getClusters()!=null&&c.getClusters().isEmpty())
+              .map(c->c.getClusters().get(0)).map(c->getDatasourceNameByReplicaName(c.getName(),false,null))
+              .orElseGet(()->config.getDatasource().getDatasources().get(0).getName());
     }
 }

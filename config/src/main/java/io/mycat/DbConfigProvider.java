@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class DbConfigProvider implements ConfigProvider {
     @Override
-    public void init(Map<String, String> config) throws Exception {
+    public void init(Class rootClass,Map<String, String> config) throws Exception {
 
     }
 
@@ -26,6 +26,11 @@ public class DbConfigProvider implements ConfigProvider {
 
     @Override
     public MycatConfig currentConfig() {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> globalVariables() {
         return null;
     }
 }

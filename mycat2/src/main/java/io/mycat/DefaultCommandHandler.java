@@ -14,6 +14,10 @@
  */
 package io.mycat;
 
+import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.parser.SQLParserUtils;
+import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import io.mycat.client.ClientRuntime;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
@@ -21,12 +25,19 @@ import io.mycat.command.AbstractCommandHandler;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.sqlhandler.SQLHandler;
+import io.mycat.util.*;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author chen junwen
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
     private MycatClient client;
+    private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
 
     @Override
@@ -55,10 +66,80 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------tirm-right-semi(;)--------------------");
             }
             Context analysis = client.analysis(sql);
-            ContextRunner.run(client, analysis, session);
+//            SQLHanlder sqlHanlder = new SQLHanlder(client.getMycatDb().sqlContext());
+//            ReceiverImpl receiver = new ReceiverImpl(session, client, analysis);
+//            sqlHanlder.parse(sql, receiver);
+            executeQuery(sql,new ReceiverImpl(session, client, analysis),client.getMycatDb().sqlContext(),session);
+
+//            ContextRunner.run(client, analysis, session);
         } catch (Throwable e) {
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
+        }
+    }
+
+    private void executeQuery(String sql, Receiver receiver, SQLContext context, MycatSession session){
+        int totalSqlMaxCode = 0;
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql, false);
+        LinkedList<SQLStatement> statementList = new LinkedList<SQLStatement>();
+        parser.parseStatementList(statementList, -1, null);
+
+        List<SQLHandler> sqlHandlers = applicationContext.getBeanForType(SQLHandler.class);
+        Iterator<SQLStatement> iterator = statementList.iterator();
+        while (iterator.hasNext()) {
+            SQLStatement statement = iterator.next();
+            statement.accept(new ContextExecuter(context));
+            receiver.setHasMore(iterator.hasNext());
+            SQLHandler.SQLRequest<SQLStatement> request = new SQLHandler.SQLRequest<>(statement,context);
+            try {
+                int code = 0;
+                int executeCount = 0;
+                for (SQLHandler sqlHandler : sqlHandlers) {
+                    int returnCode = sqlHandler.execute(request,receiver,session);
+                    code |= returnCode;
+                    if(code != SQLHandler.CODE_0){
+                        executeCount++;
+                    }
+                }
+                totalSqlMaxCode |= code;
+                if(code == SQLHandler.CODE_0){
+                    //程序未执行
+                }if(code < SQLHandler.CODE_100){
+                    //1到99区间, 预留系统内部状态
+                }else if(code < SQLHandler.CODE_200){
+                    //100到199区间, 未执行完,等待下次请求继续执行
+                }else if(code < SQLHandler.CODE_300){
+                    //200到299区间, 执行正常
+                }else if(code < SQLHandler.CODE_400){
+                    //300到399区间, 代理错误
+                }else if(code < SQLHandler.CODE_500){
+                    //400到499区间,客户端错误
+                }else {
+                    //500以上, 服务端错误
+                }
+            } catch (Throwable e) {
+                receiver.sendError(e);
+                return;
+            } finally {
+                iterator.remove();//help gc
+            }
+        }
+
+        if(totalSqlMaxCode == SQLHandler.CODE_0){
+            //程序未执行
+            receiver.sendError(new MycatException("no support query. sql={0}",sql));
+        }if(totalSqlMaxCode < SQLHandler.CODE_100){
+            //1到99区间, 预留系统内部状态
+        }else if(totalSqlMaxCode < SQLHandler.CODE_200){
+            //100到199区间, 未执行完,等待下次请求继续执行
+        }else if(totalSqlMaxCode < SQLHandler.CODE_300){
+            //200到299区间, 执行正常
+        }else if(totalSqlMaxCode < SQLHandler.CODE_400){
+            //300到399区间, 代理错误
+        }else if(totalSqlMaxCode < SQLHandler.CODE_500){
+            //400到499区间,客户端错误
+        }else {
+            //500以上, 服务端错误
         }
     }
 

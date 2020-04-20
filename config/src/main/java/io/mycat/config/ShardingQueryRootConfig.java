@@ -34,6 +34,7 @@ public class ShardingQueryRootConfig {
 
     @Data
     public static final class LogicSchemaConfig {
+        String targetName;
         Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
         Map<String, GlobalTableConfig> globalTables = new HashMap<>();
     }
