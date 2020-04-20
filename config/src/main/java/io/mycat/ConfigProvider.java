@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import java.util.List;
 import java.util.Map;
 
 public interface ConfigProvider {
@@ -23,4 +24,6 @@ public interface ConfigProvider {
     void report(MycatConfig changed);
 
     public MycatConfig currentConfig();
+
+    void reportReplica(String replicaName, List<String> dataSourceList);
 }

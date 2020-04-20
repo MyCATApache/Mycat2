@@ -1,5 +1,6 @@
 package io.mycat;
 
+import java.util.List;
 import java.util.Map;
 
 public class DbConfigProvider implements ConfigProvider {
@@ -27,5 +28,10 @@ public class DbConfigProvider implements ConfigProvider {
     @Override
     public MycatConfig currentConfig() {
         return null;
+    }
+
+    @Override
+    public void reportReplica(String replicaName, List<String> dataSourceList) {
+
     }
 }

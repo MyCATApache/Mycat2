@@ -14,23 +14,30 @@
  */
 package io.mycat;
 
+import com.alibaba.fastjson.JSONObject;
+import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.file.*;
 import java.text.MessageFormat;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Log4j
+
 public class FileConfigProvider implements ConfigProvider {
     volatile MycatConfig config;
     private String defaultPath;
     final AtomicInteger count = new AtomicInteger();
+   static final Logger logger = LoggerFactory.getLogger(FileConfigProvider.class);
 
     @Override
     public void init(Map<String, String> config) throws Exception {
@@ -45,16 +52,20 @@ public class FileConfigProvider implements ConfigProvider {
 
     @Override
     public synchronized void report(MycatConfig changed) {
-        backup();
-        YamlUtil.dumpToFile(defaultPath,YamlUtil.dump(changed));
-        config = changed;
+        try {
+            backup();
+            YamlUtil.dumpToFile(defaultPath, YamlUtil.dump(changed));
+            config = changed;
+        }catch (Throwable e){
+            logger.error("",e);
+        }
     }
 
     private void backup() {
         try {
             YamlUtil.dumpBackupToFile(defaultPath,count.getAndIncrement(),YamlUtil.dump(config));
         } catch (Exception e) {
-            log.error(e);
+            logger.error("",e);
         }
     }
 
@@ -91,5 +102,26 @@ public class FileConfigProvider implements ConfigProvider {
     @Override
     public MycatConfig currentConfig() {
         return config;
+    }
+
+    @Override
+    public synchronized void reportReplica(String replicaName, List<String> dataSourceList) {
+        try{
+        Path resolve = Paths.get(defaultPath).getParent().resolve("replica.log");
+        StringBuilder outputStreamWriter = new StringBuilder();
+        outputStreamWriter.append(ReplicaInfo.builder().replicaName(replicaName).dataSourceList(dataSourceList));
+        outputStreamWriter.append("\n");
+        logger.error("switch log: ",outputStreamWriter);
+        Files.write(resolve,outputStreamWriter.toString().getBytes(), StandardOpenOption.APPEND,StandardOpenOption.CREATE);
+        }catch (Throwable e){
+            logger.error("",e);
+        }
+    }
+
+    @Getter
+    @Builder
+    static class ReplicaInfo{
+        String    replicaName;
+        List<String> dataSourceList;
     }
 }
