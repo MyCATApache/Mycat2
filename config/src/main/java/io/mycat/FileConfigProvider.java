@@ -19,6 +19,7 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ public class FileConfigProvider implements ConfigProvider {
         try{
         Path resolve = Paths.get(defaultPath).getParent().resolve("replica.log");
         StringBuilder outputStreamWriter = new StringBuilder();
-        outputStreamWriter.append(ReplicaInfo.builder().replicaName(replicaName).dataSourceList(dataSourceList));
+        outputStreamWriter.append(ReplicaInfo.builder().replicaName(replicaName).dataSourceList(dataSourceList).build());
         outputStreamWriter.append("\n");
         logger.error("switch log: ",outputStreamWriter);
         Files.write(resolve,outputStreamWriter.toString().getBytes(), StandardOpenOption.APPEND,StandardOpenOption.CREATE);
@@ -120,6 +121,7 @@ public class FileConfigProvider implements ConfigProvider {
 
     @Getter
     @Builder
+    @ToString
     static class ReplicaInfo{
         String    replicaName;
         List<String> dataSourceList;
