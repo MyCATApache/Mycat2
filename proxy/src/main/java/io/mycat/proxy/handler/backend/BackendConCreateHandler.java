@@ -209,6 +209,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             ErrorPacketImpl errorPacket = new ErrorPacketImpl();
             errorPacket.readPayload(payload);
             String errorMessage = new String(errorPacket.getErrorMessage());
+            LOGGER.error(" {} {}",this.datasource.getName(),errorMessage);
             mysql.setLastMessage(errorMessage);
             onClear(mysql);
             mysql.close(false, errorMessage);

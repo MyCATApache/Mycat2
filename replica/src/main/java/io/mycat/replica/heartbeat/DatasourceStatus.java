@@ -36,6 +36,9 @@ public class DatasourceStatus {
   private boolean isSlaveBehindMaster = false; //同步延时
   private DatasourceState dbSynStatus = DB_SYN_NORMAL; //同步状态
 
+  public DatasourceStatus() {
+  }
+
   public boolean isError() {
     return !isAlive();
   }
