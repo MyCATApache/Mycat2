@@ -233,9 +233,6 @@
                                     <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
                                         <include name="**"/>
                                     </tarfileset>
-                                    <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
-                                        <include name="**"/>
-                                    </tarfileset>
                                     <tarfileset dir="${project.basedir}/..">
                                         <include name="README.md"/>
                                     </tarfileset>
