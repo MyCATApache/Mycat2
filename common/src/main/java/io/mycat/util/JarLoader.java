@@ -1,7 +1,11 @@
 package io.mycat.util;
 
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -16,38 +20,26 @@ public class JarLoader {
    * Unpack a jar file into a directory.
    */
   public static void unJar(File jarFile, File toDir) throws IOException {
-    JarFile jar = new JarFile(jarFile);
-    try {
+    try (JarFile jar = new JarFile(jarFile)) {
       Enumeration entries = jar.entries();
       while (entries.hasMoreElements()) {
         JarEntry entry = (JarEntry) entries.nextElement();
         if (!entry.isDirectory()) {
-          InputStream in = jar.getInputStream(entry);
-          try {
+          try (InputStream in = jar.getInputStream(entry)) {
             File file = new File(toDir, entry.getName());
             if (!file.getParentFile().mkdirs() && !file.getParentFile().isDirectory()) {
-
-              throw new IOException("Mkdirs failed to create " +
-                                        file.getParentFile().toString());
-
+              throw new IOException("Mkdirs failed to create " + file.getParentFile().toString());
             }
-            OutputStream out = new FileOutputStream(file);
-            try {
+            try (OutputStream out = new FileOutputStream(file)) {
               byte[] buffer = new byte[8192];
               int i;
               while ((i = in.read(buffer)) != -1) {
                 out.write(buffer, 0, i);
               }
-            } finally {
-              out.close();
             }
-          } finally {
-            in.close();
           }
         }
       }
-    } finally {
-      jar.close();
     }
   }
 
