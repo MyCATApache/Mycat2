@@ -268,6 +268,16 @@ mysql_native_password授权
 
 #### 日志配置
 
+wrapper.conf
+
+```ini
+wrapper.java.additional.10=-Dlog4j.configuration=file:/root/mycat/conf/log4j.properties
+```
+
+
+
+log4j.properties
+
 ```ini
 log4j.rootLogger=debug,console,rollingFile
 log4j.appender.console=org.apache.log4j.ConsoleAppender

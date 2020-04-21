@@ -180,6 +180,7 @@
                                 </systemProperties>
                                 <extraArguments>
                                     <extraArgument>-Dlog4j.debug</extraArgument>
+                                    <extraArgument>-Dlog4j.configuration=file:./conf/log4j.properties</extraArgument>
                                     <extraArgument>-server</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
