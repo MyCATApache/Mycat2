@@ -228,6 +228,10 @@ io.mycat.ConfigProvider实现不同的配置加载方式
 
 #### Mycat连接测试
 
+
+
+##### 客户端连接mycat
+
 测试mycat与测试mysql完全一致，mysql怎么连接，mycat就怎么连接。
 
 在mysqld下面设置
@@ -246,23 +250,86 @@ mysql -uroot -proot -P8066 -h127.0.0.1
 
 
 
-Mysql连接问题
-
-0.0.0.0 
-
-localhost 
-
-127.0.0.1没有权限可能出现连接不上的现象
-
-
-
-#### 客户端要求
+##### 客户端要求
 
 关闭SSL
 
 启用客户端预处理,关闭服务器预处理
 
 mysql_native_password授权
+
+
+
+##### Mycat连接MySql
+
+Mycat连接不上Mysql的问题
+
+ip配置错误,无法连通,例如本地ip
+
+0.0.0.0 
+
+localhost 
+
+127.0.0.1
+
+没有权限可能出现连接不上的现象
+
+
+
+##### mysql服务器设置参考
+
+###### MariaDB 10.3
+
+```ini
+[mysqld]
+local-infile=1
+local-infile = ON
+datadir=xxx/MariaDB 10.3/data
+port=3306
+innodb_buffer_pool_size=2031M
+max_allowed_packet=128MB
+max_connections=10000
+character-setVariable-client-handshake = FALSE 
+character-setVariable-server = utf8mb4 
+collation-server = utf8mb4_unicode_ci 
+init_connect='SET NAMES utf8mb4'
+log_bin_trust_function_creators=1
+[client]
+local-infile = ON
+loose-local-infile= 1
+port=3306
+plugin-dir=xxx/MariaDB 10.3/lib/plugin
+default-character-setVariable = utf8mb4
+[mysql] 
+local_infile = 1
+local-infile = ON
+default-character-setVariable = utf8mb4
+
+```
+
+
+
+###### Mysql-8.0.19
+
+```ini
+[mysqld]
+port=3307
+basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
+# 设置mysql数据库的数据的存放目录
+datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
+max_connections=200
+max_connect_errors=10
+character-setVariable-server=utf8mb4
+default-storage-engine=INNODB
+
+#mycat2.0可能不支持其他授权方式
+default_authentication_plugin=mysql_native_password 
+[mysql]
+# 设置mysql客户端默认字符集
+default-character-setVariable=utf8mb4
+
+....
+```
 
 
 
@@ -421,7 +488,21 @@ INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('2');
 
 
 
-##### XA事物
+##### XA事务
+
+https://www.atomikos.com/
+
+
+
+##### 其他支持
+
+Mycat2提供的事务执行环境
+
+一个事务绑定一个线程
+
+一个事务根据标记绑定线程
+
+支持以便方便支持不同的事务框架
 
 
 
@@ -1491,61 +1572,6 @@ https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331
 
 
 
-
-## mysql服务器设置参考
-
-### MariaDB 10.3
-
-```ini
-[mysqld]
-local-infile=1
-local-infile = ON
-datadir=xxx/MariaDB 10.3/data
-port=3306
-innodb_buffer_pool_size=2031M
-max_allowed_packet=128MB
-max_connections=10000
-character-setVariable-client-handshake = FALSE 
-character-setVariable-server = utf8mb4 
-collation-server = utf8mb4_unicode_ci 
-init_connect='SET NAMES utf8mb4'
-log_bin_trust_function_creators=1
-[client]
-local-infile = ON
-loose-local-infile= 1
-port=3306
-plugin-dir=xxx/MariaDB 10.3/lib/plugin
-default-character-setVariable = utf8mb4
-[mysql] 
-local_infile = 1
-local-infile = ON
-default-character-setVariable = utf8mb4
-
-```
-
-
-
-### Mysql-8.0.19
-
-```ini
-[mysqld]
-port=3307
-basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
-# 设置mysql数据库的数据的存放目录
-datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
-max_connections=200
-max_connect_errors=10
-character-setVariable-server=utf8mb4
-default-storage-engine=INNODB
-
-#mycat2.0可能不支持其他授权方式
-default_authentication_plugin=mysql_native_password 
-[mysql]
-# 设置mysql客户端默认字符集
-default-character-setVariable=utf8mb4
-
-....
-```
 
 
 
