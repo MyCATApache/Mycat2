@@ -166,8 +166,24 @@
                                     </includes>
                                     <configuration>
                                         <property>
+                                            <name>wrapper.ping.timeout</name>
+                                            <value>120</value>
+                                        </property>
+                                        <property>
+                                            <name>set.default.REPO_DIR</name>
+                                            <value>lib</value>
+                                        </property>
+                                        <property>
+                                            <name>wrapper.logfile.maxsize</name>
+                                            <value>512m</value>
+                                        </property>
+                                        <property>
+                                            <name>wrapper.logfile.maxfiles</name>
+                                            <value>30</value>
+                                        </property>
+                                        <property>
                                             <name>wrapper.logfile</name>
-                                            <valueStartIndex>logs/wrapper.log</valueStartIndex>
+                                            <value>logs/wrapper.log</value>
                                         </property>
                                     </configuration>
                                 </generatorConfiguration>
