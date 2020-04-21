@@ -179,6 +179,7 @@
                                     <systemProperty>MYCAT_HOME=./conf</systemProperty>
                                 </systemProperties>
                                 <extraArguments>
+                                    <extraArgument>-Dlog4j.debug</extraArgument>
                                     <extraArgument>-server</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>

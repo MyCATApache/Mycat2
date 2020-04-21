@@ -277,6 +277,7 @@ log4j.appender.console.layout.ConversionPattern=%d{HH:mm:ss} T=%t [%c %M at %L]-
 
 log4j.appender.rollingFile=org.apache.log4j.rolling.RollingFileAppender
 log4j.appender.rollingFile.RollingPolicy=org.apache.log4j.rolling.TimeBasedRollingPolicy
+#此处修改日志路径
 log4j.appender.rollingFile.RollingPolicy.ActiveFileName=../logs/mycat.log
 log4j.appender.rollingFile.RollingPolicy.FileNamePattern=../logs/mycat-%d{yyyy-MM-dd}.%i.log.gz
 log4j.appender.rollingFile.triggeringPolicy=org.apache.log4j.rolling.SizeBasedTriggeringPolicy
