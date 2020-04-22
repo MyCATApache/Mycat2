@@ -48,11 +48,12 @@ public class PartitionByDate extends RuleFunction {
     beginDate = getTime(startBeginDate);
     endDate = 0L;
     nCount = 0;
+    partionTime = Long.parseLong(startPartionDay) * ONE_DAY;
     if (!StringUtil.isEmpty(startEndDate)) {
       endDate = getTime(startEndDate);
       nCount = (int) ((endDate - beginDate) / partionTime) + 1;
     }
-    partionTime = Long.parseLong(startPartionDay) * ONE_DAY;
+
   }
 
   private long getTime(String startBeginDate) {
