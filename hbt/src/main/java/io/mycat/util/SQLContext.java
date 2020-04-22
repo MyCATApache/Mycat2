@@ -1,9 +1,12 @@
 package io.mycat.util;
 
+import io.mycat.upondb.MycatDBContext;
+
 import java.util.Collections;
 import java.util.Map;
 
 public interface SQLContext {
+    MycatDBContext getMycatDBContext();
     Object getSQLVariantRef(String target);
 
     Map<String, Object> getParameters();

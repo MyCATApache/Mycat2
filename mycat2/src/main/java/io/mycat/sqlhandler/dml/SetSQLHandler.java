@@ -4,12 +4,17 @@ import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSetStatement;
+import io.mycat.MycatConfig;
+import io.mycat.RootHelper;
 import io.mycat.meta.MetadataService;
 import io.mycat.meta.MetadataService.BackendMetadata;
 import io.mycat.meta.MetadataService.FrontendMetadata;
 import io.mycat.meta.MetadataService.ProxyMetadata;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.SessionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.util.Receiver;
 
@@ -18,6 +23,7 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * set语法的实现
@@ -39,6 +45,10 @@ import java.util.List;
  *   select @@autocommit,@@auto_increment_increment;
  *   show variables like 'auto_increment_increment';
  *
+ * MycatCore.INSTANCE.datasourceMap
+ * MycatCore.INSTANCE.config
+ * RootHelper.INSTANCE.getConfigProvider().globalVariables()
+ *
  * @author wangzihaogithub 2020年4月19日 21:18:11
  */
 @Resource
@@ -53,6 +63,13 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
 
     @Override
     protected int onExecute(SQLRequest<SQLSetStatement> request, Receiver response, MycatSession session) {
+        MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+        MySQLSessionManager mySQLSessionManager = thread.getMySQLSessionManager();
+        SessionManager.FrontSessionManager<MycatSession> frontManager = thread.getFrontManager();
+
+        Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
+        MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
+
         int sessionId = session.sessionId();
         SQLSetStatement ast = request.getAst();
         List<SQLAssignItem> unknowItemList = new ArrayList<>();
