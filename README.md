@@ -25,6 +25,10 @@ EXPLAIN SELECT id FROM db1.travelrecord WHERE id = 1;
 EXECUTE plan fromSql(repli,'SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` = 1')
 ```
 
+## 安装包下载
+
+https://github.com/MyCATApache/Mycat2/releases
+
 
 
 
