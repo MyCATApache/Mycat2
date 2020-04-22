@@ -26,6 +26,11 @@ public class SQLContextImpl implements SQLContext {
     }
 
     @Override
+    public MycatDBContext getMycatDBContext() {
+        return mycatDBClientMediator;
+    }
+
+    @Override
     public Object getSQLVariantRef(String target) {
         return mycatDBClientMediator.getVariable(target);
     }
@@ -77,6 +82,14 @@ public class SQLContextImpl implements SQLContext {
                 TableCollector tableCollector = new TableCollector();
                 tableSource.accept(tableCollector);
                 SQLExprTableSource someTables = tableCollector.getSomeTables();
+                if(someTables.getSchema() == null) {
+                    receiver.sendError(new MycatException("unknown schema. sql={}",statement));
+                    return;
+                }
+                if(someTables.getTableName() == null) {
+                    receiver.sendError(new MycatException("unknown tableName. sql={}",statement));
+                    return;
+                }
                 String schemaName = SQLUtils.normalize(someTables.getSchema().toLowerCase());
                 String tableName = SQLUtils.normalize(someTables.getTableName().toLowerCase());
 

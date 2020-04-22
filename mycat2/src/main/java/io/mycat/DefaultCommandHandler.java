@@ -27,10 +27,9 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.util.*;
+import io.mycat.util.ApplicationContext.*;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author chen junwen
@@ -39,6 +38,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     private MycatClient client;
     private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+    private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
@@ -52,6 +52,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     public void initRuntime(MycatSession session) {
         this.client = ClientRuntime.INSTANCE.login((MycatDataContext) session.unwrap(MycatDataContext.class), true);
         this.client.useSchema(session.getSchema());
+        this.sqlHandlers.addAll(applicationContext.getBeanForType(SQLHandler.class));
     }
 
     @Override
@@ -84,7 +85,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         LinkedList<SQLStatement> statementList = new LinkedList<SQLStatement>();
         parser.parseStatementList(statementList, -1, null);
 
-        List<SQLHandler> sqlHandlers = applicationContext.getBeanForType(SQLHandler.class);
         Iterator<SQLStatement> iterator = statementList.iterator();
         while (iterator.hasNext()) {
             SQLStatement statement = iterator.next();
@@ -104,7 +104,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 totalSqlMaxCode |= code;
                 if(code == SQLHandler.CODE_0){
                     //程序未执行
-                }if(code < SQLHandler.CODE_100){
+                }else if(code < SQLHandler.CODE_100){
                     //1到99区间, 预留系统内部状态
                 }else if(code < SQLHandler.CODE_200){
                     //100到199区间, 未执行完,等待下次请求继续执行
@@ -127,7 +127,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
         if(totalSqlMaxCode == SQLHandler.CODE_0){
             //程序未执行
-            receiver.sendError(new MycatException("no support query. sql={0}",sql));
+            receiver.sendError(new MycatException("no support query. sql={}",sql));
         }if(totalSqlMaxCode < SQLHandler.CODE_100){
             //1到99区间, 预留系统内部状态
         }else if(totalSqlMaxCode < SQLHandler.CODE_200){

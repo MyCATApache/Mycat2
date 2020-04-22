@@ -4,6 +4,7 @@ import io.mycat.meta.MetadataService;
 
 import javax.annotation.Resource;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -69,13 +70,25 @@ public class MetadataServiceImpl implements MetadataService {
         }
     }
 
-    private static class SessionProxyMetadataImpl extends AbstractMetadata implements ProxyMetadata{
+    protected static abstract class AbstractSessionMetadata extends WeakHashMap<String,Object> implements Metadata{
+        @Override
+        public <T> T getValue(String key) {
+            return (T) get(key);
+        }
+
+        @Override
+        public <T> T setValue(String key, T value) {
+            return (T) put(key,value);
+        }
+    }
+
+    private static class SessionProxyMetadataImpl extends AbstractSessionMetadata implements ProxyMetadata{
 
     }
-    private static class SessionFrontendMetadataImpl extends AbstractMetadata implements FrontendMetadata{
+    private static class SessionFrontendMetadataImpl extends AbstractSessionMetadata implements FrontendMetadata{
 
     }
-    private static class SessionBackendMetadataImpl extends AbstractMetadata implements BackendMetadata {
+    private static class SessionBackendMetadataImpl extends AbstractSessionMetadata implements BackendMetadata {
 
     }
 
