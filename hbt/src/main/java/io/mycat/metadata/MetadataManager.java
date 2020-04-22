@@ -166,7 +166,8 @@ public enum MetadataManager {
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
         //////////////////////////////////////////////
-        Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(schemaName.toLowerCase() + "_" + orignalTableName.toLowerCase());
+        String s = schemaName.toLowerCase() + "_" + orignalTableName.toLowerCase();
+        Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(s);
         if (sequence == null) {
             sequence = SequenceGenerator.INSTANCE.getSequence(orignalTableName.toUpperCase());
         }
@@ -322,7 +323,9 @@ public enum MetadataManager {
         } else {
             simpleColumnInfos = new ArrayList<>(logicTable.getColumns().size());
             for (SQLExpr column : columns) {
-                simpleColumnInfos.add(logicTable.getColumnByName(SQLUtils.normalize(column.toString()).toLowerCase()));
+                String s1 = SQLUtils.normalize(column.toString());
+                SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(s1));
+                simpleColumnInfos.add(columnByName);
             }
         }
         Supplier<String> stringSupplier = logicTable.nextSequence();
