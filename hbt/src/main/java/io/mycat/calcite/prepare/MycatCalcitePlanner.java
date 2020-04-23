@@ -213,7 +213,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         cache.put(other, distinct.isEmpty() || distinct.size() == 1);
                     }
                 } else {
-                    MycatPhysicalTable mycatPhysicalTable = other.getTable().unwrap(MycatPhysicalTable.class);
+                    MycatPhysicalTable mycatPhysicalTable =Optional.ofNullable(other.getTable()).map(i->i.unwrap(MycatPhysicalTable.class)).orElse(null);
                     if (mycatPhysicalTable != null) {
                         margeList.put(other, Collections.singletonList(mycatPhysicalTable.getTargetName()));
                     } else {
