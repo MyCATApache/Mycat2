@@ -191,8 +191,8 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         final RelNode bestExp1 = planner.findBestExp();
 
         //子节点运算的节点是同一个目标的,就把它们的父节点标记为可以变成SQL
-        IdentityHashMap<RelNode, Boolean> cache = new IdentityHashMap<>();
-        IdentityHashMap<RelNode, List<String>> margeList = new IdentityHashMap<>();
+        IdentityHashMap<RelNode, Boolean> cache = new IdentityHashMap<>();//value为true表示可以下推
+        IdentityHashMap<RelNode, List<String>> margeList = new IdentityHashMap<>();//value为数据源名字
         RelHomogeneousShuttle relHomogeneousShuttle = new RelHomogeneousShuttle() {
             @Override
             public RelNode visit(RelNode other) {
@@ -210,7 +210,8 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                     if (other instanceof Correlate) {
                         cache.put(other, false);//关联子查询不能下推
                     }else {
-                        cache.put(other, distinct.isEmpty() || distinct.size() == 1);
+                        boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
+                        cache.put(other,distinctValue);
                     }
                 } else {
                     MycatPhysicalTable mycatPhysicalTable =Optional.ofNullable(other.getTable()).map(i->i.unwrap(MycatPhysicalTable.class)).orElse(null);
@@ -241,7 +242,9 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                             if (cache.get(input)) {
                                 res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
                                 cache.put(res, Boolean.TRUE);
-                                margeList.put(res, margeList.get(input));
+                                List<String> strings = margeList.get(input);
+                                Objects.requireNonNull(strings);
+                                margeList.put(res,strings );
                             } else {
                                 res = input;
                             }
@@ -262,8 +265,12 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             public RelNode visit(RelNode other) {
                 if (cache.get(other) == Boolean.TRUE) {
                     List<String> strings = margeList.get(other);
-                    String targetName = strings.get(0);
-                    return relBuilder.makeTransientSQLScan(targetName, other,forUpdate);
+                    if (strings == null||strings!=null&&strings.isEmpty()){
+                        //不翻译无表sql
+                    }else {
+                        String targetName = strings.get(0);
+                        return relBuilder.makeTransientSQLScan(targetName, other, forUpdate);
+                    }
                 }
                 return super.visit(other);
             }
