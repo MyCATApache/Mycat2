@@ -102,7 +102,7 @@ public class JdbcLib {
 //    }
 
     public static void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-        if (!mycat.isIOThreadMode()){
+        if (mycat.isIOThreadMode()){
             mycat.getDataContext().block(()->consumer.accept(mycat));
         }else {
             consumer.accept(mycat);
