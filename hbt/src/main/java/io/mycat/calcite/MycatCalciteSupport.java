@@ -121,6 +121,7 @@ public enum MycatCalciteSupport implements Context {
     public final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
             .withConfig(SqlToRelConverter.Config.DEFAULT)
             .withTrimUnusedFields(true)
+            .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderFactory(relBuilderFactory).build();
 
 

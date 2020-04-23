@@ -81,7 +81,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         if (reader == null) {
             List<String> path = Collections.emptyList();
             SchemaPlus defaultSchema = dataContext.getDefaultSchema();
-            if (defaultSchema!=null){
+            if (defaultSchema != null) {
                 String name = defaultSchema.getName();
                 path = Collections.singletonList(name);
             }
@@ -177,11 +177,11 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return relShuttle.visit(bestExp2);
     }
 
-    public RelNode pushDownBySQL(RelNode bestExp,boolean forUpdate) {
-        return pushDownBySQL(createRelBuilder(bestExp.getCluster()), bestExp,forUpdate);
+    public RelNode pushDownBySQL(RelNode bestExp, boolean forUpdate) {
+        return pushDownBySQL(createRelBuilder(bestExp.getCluster()), bestExp, forUpdate);
     }
 
-    public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0,boolean forUpdate) {
+    public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0, boolean forUpdate) {
         HepProgram build = new HepProgramBuilder().build();
 
         RelOptPlanner planner = new HepPlanner(build);
@@ -189,85 +189,21 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
 
         planner.setRoot(bestExp0);
         final RelNode bestExp1 = planner.findBestExp();
+        ComputePushDownInfo computePushDownInfo = new ComputePushDownInfo(bestExp1).invoke();
+        IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
+        IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
+        RelNode bestExp2 = computePushDownInfo.getBestExp2();
 
-        //子节点运算的节点是同一个目标的,就把它们的父节点标记为可以变成SQL
-        IdentityHashMap<RelNode, Boolean> cache = new IdentityHashMap<>();//value为true表示可以下推
-        IdentityHashMap<RelNode, List<String>> margeList = new IdentityHashMap<>();//value为数据源名字
-        RelHomogeneousShuttle relHomogeneousShuttle = new RelHomogeneousShuttle() {
-            @Override
-            public RelNode visit(RelNode other) {
-                RelNode res = super.visit(other);//后续遍历
-                List<RelNode> inputs = other.getInputs();
-                boolean isLeftNode = inputs == null || other.getInputs() != null && other.getInputs().isEmpty();
-
-                if (!isLeftNode) {
-                    ArrayList<String> targetList = new ArrayList<>();
-                    for (RelNode input : inputs) {
-                        targetList.addAll(margeList.getOrDefault(input, Collections.emptyList()));
-                    }
-                    Set<String> distinct = new HashSet<>(targetList);
-                    margeList.put(other, targetList);
-                    if (other instanceof Correlate) {
-                        cache.put(other, false);//关联子查询不能下推
-                    }else {
-                        boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
-                        cache.put(other,distinctValue);
-                    }
-                } else {
-                    MycatPhysicalTable mycatPhysicalTable =Optional.ofNullable(other.getTable()).map(i->i.unwrap(MycatPhysicalTable.class)).orElse(null);
-                    if (mycatPhysicalTable != null) {
-                        margeList.put(other, Collections.singletonList(mycatPhysicalTable.getTargetName()));
-                    } else {
-                        margeList.put(other, Collections.emptyList());
-                    }
-                    cache.put(other, Boolean.TRUE);
-                }
-                return res;
-            }
-        };
-        final RelNode bestExp2 = relHomogeneousShuttle.visit(bestExp1);
-
-        final RelNode bestExp3 = new RelShuttleImpl() {
-            @Override
-            protected RelNode visitChild(RelNode parent, int i, RelNode child) {
-                if (parent instanceof Aggregate && child instanceof Union) {
-                    Aggregate aggregate = (Aggregate) parent;
-                    List<AggregateCall> aggCallList = aggregate.getAggCallList();
-                    boolean allMatch = aggCallList.stream().allMatch(aggregateCall -> SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false));
-                    if (allMatch) {
-                        List<RelNode> inputs = child.getInputs();
-                        List<RelNode> resList = new ArrayList<>(inputs.size());
-                        for (RelNode input : inputs) {
-                            RelNode res;
-                            if (cache.get(input)) {
-                                res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
-                                cache.put(res, Boolean.TRUE);
-                                List<String> strings = margeList.get(input);
-                                Objects.requireNonNull(strings);
-                                margeList.put(res,strings );
-                            } else {
-                                res = input;
-                            }
-                            resList.add(res);
-                        }
-                        LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
-                        return LogicalAggregate.create(logicalUnion, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
-                    }
-                }
-                return super.visitChild(parent, i, child);
-            }
-        }.visit(bestExp2);
-
-
+        final RelNode bestExp3 = simplyAggreate(cache, margeList, bestExp2);
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
             public RelNode visit(RelNode other) {
                 if (cache.get(other) == Boolean.TRUE) {
                     List<String> strings = margeList.get(other);
-                    if (strings == null||strings!=null&&strings.isEmpty()){
+                    if (strings == null || strings != null && strings.isEmpty()) {
                         //不翻译无表sql
-                    }else {
+                    } else {
                         String targetName = strings.get(0);
                         return relBuilder.makeTransientSQLScan(targetName, other, forUpdate);
                     }
@@ -276,9 +212,54 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             }
         };
         final RelNode bestExp4 = relHomogeneousShuttle1.visit(bestExp3);
-
-
         return bestExp4;
+    }
+
+    private RelNode simplyAggreate(IdentityHashMap<RelNode, Boolean> cache, IdentityHashMap<RelNode, List<String>> margeList, RelNode bestExp2) {
+        RelNode parent = bestExp2;
+        RelNode child = bestExp2 instanceof Aggregate ? bestExp2.getInput(0) : null;
+        RelNode bestExp3 = parent;
+        if (parent instanceof Aggregate && child instanceof Union) {
+            Aggregate aggregate = (Aggregate) parent;
+            List<AggregateCall> aggCallList = aggregate.getAggCallList();
+            boolean allMatch = aggCallList.stream().allMatch(aggregateCall -> SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false));
+            if (allMatch) {
+                List<RelNode> inputs = child.getInputs();
+                List<RelNode> resList = new ArrayList<>(inputs.size());
+                boolean allCanPush = true;
+                String target = null;
+                for (RelNode input : inputs) {
+                    RelNode res;
+                    if (cache.get(input)) {
+                        res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
+                        cache.put(res, Boolean.TRUE);
+                        List<String> strings = margeList.getOrDefault(input, Collections.emptyList());
+                        Objects.requireNonNull(strings);
+                        if (strings.size() > 0 & target == null) {
+                            target = strings.get(0);
+                        }
+                        margeList.put(res, strings);
+                    } else {
+                        res = input;
+                        allCanPush = false;
+                    }
+                    resList.add(res);
+                }
+                LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
+                bestExp3 = LogicalAggregate.create(logicalUnion, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
+
+                if (allCanPush) {
+                    cache.put(logicalUnion, Boolean.TRUE);
+                    cache.put(bestExp3, Boolean.TRUE);
+                    if (target != null) {
+                        List<String> targetSingelList = Collections.singletonList(target);
+                        margeList.put(logicalUnion, targetSingelList);
+                        margeList.put(bestExp3, targetSingelList);
+                    }
+                }
+            }
+        }
+        return bestExp3;
     }
 
 
@@ -404,7 +385,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 preSeq.add(value.get(i));
             }
         }
-        return new DatasourceInfo(preSeq,map);
+        return new DatasourceInfo(preSeq, map);
     }
 
 
@@ -419,5 +400,69 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 return super.visit(scan);
             }
         });
+    }
+
+    private class ComputePushDownInfo {
+        private RelNode bestExp1;
+        private IdentityHashMap<RelNode, Boolean> cache;
+        private IdentityHashMap<RelNode, List<String>> margeList;
+        private RelNode bestExp2;
+
+        public ComputePushDownInfo(RelNode bestExp1) {
+            this.bestExp1 = bestExp1;
+        }
+
+        public IdentityHashMap<RelNode, Boolean> getCache() {
+            return cache;
+        }
+
+        public IdentityHashMap<RelNode, List<String>> getMargeList() {
+            return margeList;
+        }
+
+        public RelNode getBestExp2() {
+            return bestExp2;
+        }
+
+        public ComputePushDownInfo invoke() {
+            RelNode root = bestExp1;
+            //子节点运算的节点是同一个目标的,就把它们的父节点标记为可以变成SQL
+            cache = new IdentityHashMap<>();
+            margeList = new IdentityHashMap<>();
+            RelHomogeneousShuttle relHomogeneousShuttle = new RelHomogeneousShuttle() {
+                @Override
+                public RelNode visit(RelNode other) {
+                    RelNode res = super.visit(other);//后续遍历
+                    List<RelNode> inputs = other.getInputs();
+                    boolean isLeftNode = inputs == null || other.getInputs() != null && other.getInputs().isEmpty();
+
+                    if (!isLeftNode) {
+                        ArrayList<String> targetList = new ArrayList<>();
+                        for (RelNode input : inputs) {
+                            targetList.addAll(margeList.getOrDefault(input, Collections.emptyList()));
+                        }
+                        Set<String> distinct = new HashSet<>(targetList);
+                        margeList.put(other, targetList);
+                        if (other instanceof Correlate || (other instanceof Aggregate && other == root)) {
+                            cache.put(other, false);//关联子查询(mycat不支持)和聚合操作(mysql不支持)不能下推
+                        } else {
+                            boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
+                            cache.put(other, distinctValue);
+                        }
+                    } else {
+                        MycatPhysicalTable mycatPhysicalTable = Optional.ofNullable(other.getTable()).map(i -> i.unwrap(MycatPhysicalTable.class)).orElse(null);
+                        if (mycatPhysicalTable != null) {
+                            margeList.put(other, Collections.singletonList(mycatPhysicalTable.getTargetName()));
+                        } else {
+                            margeList.put(other, Collections.emptyList());
+                        }
+                        cache.put(other, Boolean.TRUE);
+                    }
+                    return other;
+                }
+            };
+            bestExp2 = relHomogeneousShuttle.visit(bestExp1);
+            return this;
+        }
     }
 }
