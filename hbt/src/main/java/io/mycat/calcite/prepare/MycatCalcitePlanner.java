@@ -199,19 +199,19 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
             public RelNode visit(RelNode other) {
-//                if (cache.get(other) == Boolean.TRUE) {
-//                    List<String> strings = margeList.get(other);
-//                    if (strings == null || strings != null && strings.isEmpty()) {
-//                        //不翻译无表sql
-//                    } else {
-//                        String targetName = strings.get(0);
-//                        return relBuilder.makeTransientSQLScan(targetName, other, forUpdate);
-//                    }
-//                }
+                if (cache.get(other) == Boolean.TRUE) {
+                    List<String> strings = margeList.get(other);
+                    if (strings == null || strings != null && strings.isEmpty()) {
+                        //不翻译无表sql
+                    } else {
+                        String targetName = strings.get(0);
+                        return relBuilder.makeTransientSQLScan(targetName, other, forUpdate);
+                    }
+                }
                 return super.visit(other);
             }
         };
-        final RelNode bestExp4 = bestExp3;
+        final RelNode bestExp4 = bestExp3.accept(relHomogeneousShuttle1);
         return bestExp4;
     }
 

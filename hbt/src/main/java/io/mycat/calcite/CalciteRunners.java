@@ -40,13 +40,13 @@ public class CalciteRunners {
 
     public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
         RelNode relNode1 = planner.eliminateLogicTable(relNode);
-//        relNode = planner.pushDownBySQL(relNode1, forUpdate);
-//
-//        RelNode phy = toPhysical(relNode, relOptPlanner -> {
-//            RelOptUtil.registerDefaultRules(relOptPlanner, false, false);
-//        });
+        relNode = planner.pushDownBySQL(relNode1, forUpdate);
+
+        RelNode phy = toPhysical(relNode, relOptPlanner -> {
+            RelOptUtil.registerDefaultRules(relOptPlanner, false, false);
+        });
         //修复变成物理表达式后无法运行,所以重新编译成逻辑表达式
-        return new ToLogicalConverter(planner.createRelBuilder(relNode.getCluster())).visit(relNode1);
+        return new ToLogicalConverter(planner.createRelBuilder(relNode.getCluster())).visit(phy);
     }
 
     @SneakyThrows
