@@ -37,6 +37,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -44,9 +45,7 @@ import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
@@ -303,7 +302,14 @@ public enum MycatCalciteSupport implements Context {
         input= RelOptUtil.createCastRel(input,input.getRowType(),true);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
-        String sql = sqlNode.toSqlString(dialect, false).getSql();
+        String sql = sqlNode.toSqlString(dialect, true).getSql();
+        sql = sql.trim();
+        if (sql.startsWith("(")){
+            sql  =sql.substring(1);
+        }
+        if (sql.endsWith(")")){
+            sql  =sql.substring(0,sql.length()-1);
+        }
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
         return sql + (forUpdate ? " for update" : "");
