@@ -302,7 +302,7 @@ public enum MycatCalciteSupport implements Context {
         input= RelOptUtil.createCastRel(input,input.getRowType(),true);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
-        String sql = sqlNode.toSqlString(dialect, true).getSql();
+        String sql = sqlNode.toSqlString(dialect, false).getSql();
         sql = sql.trim();
         if (sql.startsWith("(")){
             sql  =sql.substring(1);

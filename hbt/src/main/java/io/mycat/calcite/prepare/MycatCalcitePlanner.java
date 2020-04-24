@@ -193,7 +193,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
         IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
 
-        final RelNode bestExp3 = simplyAggreate(relBuilder,cache, margeList, bestExp1);
+        final RelNode bestExp3 = bestExp1;
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
