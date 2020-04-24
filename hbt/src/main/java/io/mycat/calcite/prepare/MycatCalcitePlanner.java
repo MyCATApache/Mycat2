@@ -193,7 +193,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
         IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
 
-        final RelNode bestExp3 = simplyAggreate(cache, margeList, bestExp1);
+        final RelNode bestExp3 = simplyAggreate(relBuilder,cache, margeList, bestExp1);
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
@@ -214,7 +214,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return bestExp4;
     }
 
-    private RelNode simplyAggreate(IdentityHashMap<RelNode, Boolean> cache, IdentityHashMap<RelNode, List<String>> margeList, RelNode bestExp2) {
+    private RelNode simplyAggreate(MycatRelBuilder relBuilder, IdentityHashMap<RelNode, Boolean> cache, IdentityHashMap<RelNode, List<String>> margeList, RelNode bestExp2) {
         RelNode parent = bestExp2;
         RelNode child = bestExp2 instanceof Aggregate ? bestExp2.getInput(0) : null;
         RelNode bestExp3 = parent;
@@ -245,6 +245,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                     resList.add(res);
                 }
                 LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
+                relBuilder.clear();
                 bestExp3 = LogicalAggregate.create(logicalUnion, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
 
                 if (allCanPush) {
