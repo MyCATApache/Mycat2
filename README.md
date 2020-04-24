@@ -262,6 +262,24 @@ mysql -uroot -proot -P8066 -h127.0.0.1
 
 mysql_native_password授权
 
+开启自动重连
+
+开启闲置连接检查,心跳
+
+```
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+Can not read response from server. Expected to read 4 bytes, read 0 bytes before connection was unexpectedly lost.
+```
+
+关闭允许多语句
+
+jdbc客户端设置useLocalSessionState解决
+
+```
+Could not retrieve transation read-only status server
+```
+
 
 
 ##### Mycat连接MySql
@@ -1293,7 +1311,7 @@ GARELA_CLUSTER的masters意思是这些节点同时成为主节点,负载均衡�
 
 reuqestType是进行心跳的实现方式,使用mysql意味着使用proxy方式进行,能异步地进行心跳,而jdbc方式会占用线程池
 
-当配置是主从的时候,发生主从切换,mycat会备份原来的配置(文件名带有版本号)然后使用更新配置
+当配置是主从的时候,发生主从切换,mycat会备份原来的配置(文件名带有版本号)然后使用更新的配置
 
 
 
@@ -1527,7 +1545,7 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 
 
-## 已知限制
+## 已知限制问题
 
 ###### 不支持服务器预处理
 
@@ -1566,6 +1584,12 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 10. 非查询语句,mycat暂时不会自动处理函数表达式调用,会路由到mysql中调用,所以按日期分表的情况,需要sql中写清楚日期
 
 11. 部分关联子查询暂时不支持
+
+
+
+分布式查询引擎(calcite)检查项
+
+in表达式会编译成多个or表达式,默认情况下会把超过20个常量值变成内联表,mycat2要对此不处理,保持or表达式,因为内联表(LogicalValues)会被进一步'优化为'带有groupby的
 
 
 

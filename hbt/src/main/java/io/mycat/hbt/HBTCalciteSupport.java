@@ -120,7 +120,7 @@ public enum HBTCalciteSupport {
         sqlOperatorMap.put("nullif", SqlStdOperatorTable.NULLIF);
         sqlOperatorMap.put("isnotnull", SqlStdOperatorTable.IS_NOT_NULL);
         sqlOperatorMap.put("cast", SqlStdOperatorTable.CAST);
-
+        sqlOperatorMap.put("substring", SqlStdOperatorTable.SUBSTRING);
 
         for (SqlTypeName value : SqlTypeName.values()) {
             putTypeName(value.getName().toLowerCase(), value);

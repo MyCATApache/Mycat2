@@ -24,6 +24,8 @@ import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -77,7 +79,7 @@ import java.util.stream.Collectors;
  **/
 public enum MycatCalciteSupport implements Context {
     INSTANCE;
-
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCalciteSupport.class);
     public static final Driver DRIVER = new Driver();//触发驱动注册
     public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
@@ -139,6 +141,7 @@ public enum MycatCalciteSupport implements Context {
             final HashMap<String, SqlOperator> map = new HashMap<>();
             final HashMap<String, SqlOperator> build = new HashMap<>();
             {
+                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
                 build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
                 build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
                 build.put("LOG", SqlStdOperatorTable.LOG10);
@@ -216,7 +219,14 @@ public enum MycatCalciteSupport implements Context {
 
     public String convertToHBTText(RelNode relNode, MycatCalciteDataContext dataContext) {
         MycatCalcitePlanner planner = createPlanner(dataContext);
-        Schema schema = RelNodeConvertor.convertRelNode(planner.convertToMycatRel(relNode));
+        Schema schema;
+        try {
+            schema  = RelNodeConvertor.convertRelNode(planner.convertToMycatRel(relNode));
+        }catch (Throwable e){
+            String message = "hbt无法生成";
+            LOGGER.warn(message,e);
+            return message;
+        }
         return convertToHBTText(schema);
     }
 
