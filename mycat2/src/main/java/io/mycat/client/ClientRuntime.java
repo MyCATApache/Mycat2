@@ -15,6 +15,12 @@
 
 package io.mycat.client;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRecoverDDLJob;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
@@ -37,6 +43,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -164,14 +171,30 @@ public enum ClientRuntime {
                 RuntimeInfo runtime = this.runtime;
                 GPattern tableCollectorPattern = this.runtime.tableCollector.get();
 
-                TableCollector tableMatcher = tableCollectorPattern.getCollector();
-                if (dataContext.getDefaultSchema() != null) {
-                    tableMatcher.useSchema(dataContext.getDefaultSchema());
-                }
-                tableCollectorPattern.collect(sql);
-                boolean tableMatch = tableMatcher.isMatch();
-                Map<String, Collection<String>> collectionMap = tableMatcher.geTableMap();
-                if (tableMatch) {
+//                TableCollector tableMatcher = tableCollectorPattern.getCollector();
+//                if (dataContext.getDefaultSchema() != null) {
+//                    tableMatcher.useSchema(dataContext.getDefaultSchema());
+//                }
+//                tableCollectorPattern.collect(sql);
+                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+                Map<String, Collection<String>> collectionMap = new HashMap<>();
+
+                sqlStatement.accept(new MySqlASTVisitorAdapter(){
+                    @Override
+                    public boolean visit(SQLExprTableSource x) {
+                        String schema = x.getSchema();
+                        String tableName = x.getTableName();
+                        if (schema == null){
+                            schema = dataContext.getDefaultSchema();
+                        }
+                        schema = SQLUtils.normalize(schema.toLowerCase());
+                        tableName = SQLUtils.normalize(tableName.toLowerCase());
+                        Collection<String> strings = collectionMap.computeIfAbsent(schema, s -> new HashSet<>());
+                        strings.add(tableName);
+                        return super.visit(x);
+                    }
+                });
+                if (!collectionMap.isEmpty()) {
                     for (Map.Entry<String, Collection<String>> stringCollectionEntry : collectionMap.entrySet()) {
                         for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
                             Set<String> tableConfigs = mapListEntry.getKey().get(stringCollectionEntry.getKey());
