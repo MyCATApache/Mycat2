@@ -192,9 +192,8 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         ComputePushDownInfo computePushDownInfo = new ComputePushDownInfo(bestExp1).invoke();
         IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
         IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
-        RelNode bestExp2 = computePushDownInfo.getBestExp2();
 
-        final RelNode bestExp3 = simplyAggreate(cache, margeList, bestExp2);
+        final RelNode bestExp3 = simplyAggreate(cache, margeList, bestExp1);
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
@@ -443,7 +442,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         }
                         Set<String> distinct = new HashSet<>(targetList);
                         margeList.put(other, targetList);
-                        if (other instanceof Correlate || (other instanceof Aggregate && other == root)) {
+                        if (other instanceof Correlate || (other instanceof Aggregate && other != root)) {
                             cache.put(other, false);//关联子查询(mycat不支持)和聚合操作(mysql不支持)不能下推
                         } else {
                             boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
