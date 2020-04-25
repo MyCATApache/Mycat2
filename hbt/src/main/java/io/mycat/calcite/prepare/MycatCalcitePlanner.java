@@ -47,6 +47,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -58,6 +59,7 @@ import org.apache.calcite.util.Pair;
 import java.io.Reader;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.plan.RelOptRule.none;
@@ -230,56 +232,64 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         RelNode bestExp3 = parent;
         if (parent instanceof Aggregate && child instanceof Union) {
             Aggregate aggregate = (Aggregate) parent;
-            List<AggregateCall> aggCallList = aggregate.getAggCallList();
-            boolean allMatch = aggCallList.stream().allMatch(aggregateCall -> SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false));
-            if (allMatch) {
-                List<RelNode> inputs = child.getInputs();
-                List<RelNode> resList = new ArrayList<>(inputs.size());
-                boolean allCanPush = true;//是否聚合节点涉及不同分片
-                String target = null;
-                for (RelNode input : inputs) {
-                    RelNode res;
-                    if (cache.get(input)) {
-                        res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
-                        cache.put(res, Boolean.TRUE);
-                        List<String> strings = margeList.getOrDefault(input, Collections.emptyList());
-                        Objects.requireNonNull(strings);
-                        if (target == null && strings.size() > 0) {
-                            target = strings.get(0);
-                        } else if (target != null && strings.size() > 0) {
-                            if (!target.equals(strings.get(0))) {
-                                allCanPush = false;
-                            }
-                        }
-                        margeList.put(res, strings);
-                    } else {
-                        res = input;
-                        allCanPush = false;
+            if (aggregate.getAggCallList() != null&&!aggregate.getAggCallList().isEmpty()) {//distinct会没有参数
+                List<AggregateCall> aggCallList = aggregate.getAggCallList();
+                boolean allMatch = aggCallList.stream().allMatch(new Predicate<AggregateCall>() {
+                    @Override
+                    public boolean test(AggregateCall aggregateCall) {
+                        return SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false)
+                                && aggregateCall.getAggregation().getParamTypes().stream().allMatch(i -> i.getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC);
                     }
-                    resList.add(res);
-                }
+                });
+                if (allMatch) {
+                    List<RelNode> inputs = child.getInputs();
+                    List<RelNode> resList = new ArrayList<>(inputs.size());
+                    boolean allCanPush = true;//是否聚合节点涉及不同分片
+                    String target = null;
+                    for (RelNode input : inputs) {
+                        RelNode res;
+                        if (cache.get(input)) {
+                            res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
+                            cache.put(res, Boolean.TRUE);
+                            List<String> strings = margeList.getOrDefault(input, Collections.emptyList());
+                            Objects.requireNonNull(strings);
+                            if (target == null && strings.size() > 0) {
+                                target = strings.get(0);
+                            } else if (target != null && strings.size() > 0) {
+                                if (!target.equals(strings.get(0))) {
+                                    allCanPush = false;
+                                }
+                            }
+                            margeList.put(res, strings);
+                        } else {
+                            res = input;
+                            allCanPush = false;
+                        }
+                        resList.add(res);
+                    }
 
-                LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
+                    LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
 
-                //构造sum
-                relBuilder.clear();
-                relBuilder.push(logicalUnion);
-                List<RexNode> fields = relBuilder.fields();
-                if (fields == null) {
-                    fields = Collections.emptyList();
-                }
+                    //构造sum
+                    relBuilder.clear();
+                    relBuilder.push(logicalUnion);
+                    List<RexNode> fields = relBuilder.fields();
+                    if (fields == null) {
+                        fields = Collections.emptyList();
+                    }
 
-                RelBuilder.GroupKey groupKey = relBuilder.groupKey();
-                List<RelBuilder.AggCall> aggCalls = fields.stream().map(i -> relBuilder.sum(i)).collect(Collectors.toList());
-                relBuilder.aggregate(groupKey, aggCalls);
-                bestExp3 = relBuilder.build();
+                    RelBuilder.GroupKey groupKey = relBuilder.groupKey();
+                    List<RelBuilder.AggCall> aggCalls = fields.stream().map(i -> relBuilder.sum(i)).collect(Collectors.toList());
+                    relBuilder.aggregate(groupKey, aggCalls);
+                    bestExp3 = relBuilder.build();
 
-                cache.put(logicalUnion, allCanPush);
-                cache.put(bestExp3, allCanPush);
-                if (target != null) {//是否聚合节点涉及不同分片
-                    List<String> targetSingelList = Collections.singletonList(target);
-                    margeList.put(logicalUnion, targetSingelList);
-                    margeList.put(bestExp3, targetSingelList);
+                    cache.put(logicalUnion, allCanPush);
+                    cache.put(bestExp3, allCanPush);
+                    if (target != null) {//是否聚合节点涉及不同分片
+                        List<String> targetSingelList = Collections.singletonList(target);
+                        margeList.put(logicalUnion, targetSingelList);
+                        margeList.put(bestExp3, targetSingelList);
+                    }
                 }
             }
         }

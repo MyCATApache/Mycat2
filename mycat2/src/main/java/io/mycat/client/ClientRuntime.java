@@ -176,27 +176,30 @@ public enum ClientRuntime {
 //                    tableMatcher.useSchema(dataContext.getDefaultSchema());
 //                }
 //                tableCollectorPattern.collect(sql);
-                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
                 Map<String, Collection<String>> collectionMap = new HashMap<>();
+                try {
+                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+                    sqlStatement.accept(new MySqlASTVisitorAdapter() {
+                        @Override
+                        public boolean visit(SQLExprTableSource x) {
+                            String schema = x.getSchema();
+                            String tableName = x.getTableName();
+                            if (schema == null) {
+                                schema = dataContext.getDefaultSchema();
+                            }
+                            if (schema == null) {
+                                throw new UnsupportedOperationException("please use schema");
+                            }
+                            schema = SQLUtils.normalize(schema.toLowerCase());
+                            tableName = SQLUtils.normalize(tableName.toLowerCase());
+                            Collection<String> strings = collectionMap.computeIfAbsent(schema, s -> new HashSet<>());
+                            strings.add(tableName);
+                            return super.visit(x);
+                        }
+                    });
+                }catch (Throwable t){
 
-                sqlStatement.accept(new MySqlASTVisitorAdapter(){
-                    @Override
-                    public boolean visit(SQLExprTableSource x) {
-                        String schema = x.getSchema();
-                        String tableName = x.getTableName();
-                        if (schema == null){
-                            schema = dataContext.getDefaultSchema();
-                        }
-                        if (schema == null){
-                            throw new UnsupportedOperationException("please use schema");
-                        }
-                        schema = SQLUtils.normalize(schema.toLowerCase());
-                        tableName = SQLUtils.normalize(tableName.toLowerCase());
-                        Collection<String> strings = collectionMap.computeIfAbsent(schema, s -> new HashSet<>());
-                        strings.add(tableName);
-                        return super.visit(x);
-                    }
-                });
+                }
                 if (!collectionMap.isEmpty()) {
                     for (Map.Entry<String, Collection<String>> stringCollectionEntry : collectionMap.entrySet()) {
                         for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
