@@ -41,6 +41,7 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -57,6 +58,7 @@ import org.apache.calcite.util.Pair;
 import java.io.Reader;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.apache.calcite.plan.RelOptRule.none;
 import static org.apache.calcite.plan.RelOptRule.operand;
@@ -193,7 +195,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
         IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
 
-        final RelNode bestExp3 = bestExp1;
+        final RelNode bestExp3 = simplyAggreate(relBuilder, cache, margeList, bestExp1);
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
@@ -214,6 +216,14 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return bestExp4;
     }
 
+    /**
+     * 测试单库分表与不同分片两个情况
+     * @param relBuilder
+     * @param cache
+     * @param margeList
+     * @param bestExp2
+     * @return
+     */
     private RelNode simplyAggreate(MycatRelBuilder relBuilder, IdentityHashMap<RelNode, Boolean> cache, IdentityHashMap<RelNode, List<String>> margeList, RelNode bestExp2) {
         RelNode parent = bestExp2;
         RelNode child = bestExp2 instanceof Aggregate ? bestExp2.getInput(0) : null;
@@ -225,7 +235,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             if (allMatch) {
                 List<RelNode> inputs = child.getInputs();
                 List<RelNode> resList = new ArrayList<>(inputs.size());
-                boolean allCanPush = true;
+                boolean allCanPush = true;//是否聚合节点涉及不同分片
                 String target = null;
                 for (RelNode input : inputs) {
                     RelNode res;
@@ -234,8 +244,12 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         cache.put(res, Boolean.TRUE);
                         List<String> strings = margeList.getOrDefault(input, Collections.emptyList());
                         Objects.requireNonNull(strings);
-                        if (strings.size() > 0 & target == null) {
+                        if (target == null && strings.size() > 0) {
                             target = strings.get(0);
+                        } else if (target != null && strings.size() > 0) {
+                            if (!target.equals(strings.get(0))) {
+                                allCanPush = false;
+                            }
                         }
                         margeList.put(res, strings);
                     } else {
@@ -244,18 +258,28 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                     }
                     resList.add(res);
                 }
-                LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
-                relBuilder.clear();
-                bestExp3 = LogicalAggregate.create(logicalUnion, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
 
-                if (allCanPush) {
-                    cache.put(logicalUnion, Boolean.TRUE);
-                    cache.put(bestExp3, Boolean.TRUE);
-                    if (target != null) {
-                        List<String> targetSingelList = Collections.singletonList(target);
-                        margeList.put(logicalUnion, targetSingelList);
-                        margeList.put(bestExp3, targetSingelList);
-                    }
+                LogicalUnion logicalUnion = LogicalUnion.create(resList, ((Union) child).all);
+
+                //构造sum
+                relBuilder.clear();
+                relBuilder.push(logicalUnion);
+                List<RexNode> fields = relBuilder.fields();
+                if (fields == null) {
+                    fields = Collections.emptyList();
+                }
+
+                RelBuilder.GroupKey groupKey = relBuilder.groupKey();
+                List<RelBuilder.AggCall> aggCalls = fields.stream().map(i -> relBuilder.sum(i)).collect(Collectors.toList());
+                relBuilder.aggregate(groupKey, aggCalls);
+                bestExp3 = relBuilder.build();
+
+                cache.put(logicalUnion, allCanPush);
+                cache.put(bestExp3, allCanPush);
+                if (target != null) {//是否聚合节点涉及不同分片
+                    List<String> targetSingelList = Collections.singletonList(target);
+                    margeList.put(logicalUnion, targetSingelList);
+                    margeList.put(bestExp3, targetSingelList);
                 }
             }
         }
@@ -443,8 +467,9 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         }
                         Set<String> distinct = new HashSet<>(targetList);
                         margeList.put(other, targetList);
-                        if (other instanceof Correlate || (other instanceof Aggregate && other != root)) {
-                            cache.put(other, false);//关联子查询(mycat不支持)和聚合操作(mysql不支持)不能下推
+                        boolean b = other instanceof Aggregate && other != root;//控制深度为2的关系表达式节点是否是Aggregate
+                        if (other instanceof Correlate) {
+                            cache.put(other, false);//关联子查询(mycat不支持)和
                         } else {
                             boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
                             cache.put(other, distinctValue);
