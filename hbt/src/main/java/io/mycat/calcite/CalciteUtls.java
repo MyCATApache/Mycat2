@@ -163,7 +163,7 @@ public class CalciteUtls {
                 RexNode left = operands.get(i);
                 RexNode right = operands.get(j);
                 if (left instanceof RexCall && right instanceof RexCall) {
-                    if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
+                    if ((left.isA(SqlKind.GREATER_THAN_OR_EQUAL)||left.isA(SqlKind.GREATER_THAN))  && (right.isA(SqlKind.LESS_THAN_OR_EQUAL)||right.isA(SqlKind.LESS_THAN))) {
                         RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
                         RexNode secondExpr = ((RexCall) right).getOperands().get(0);
                         if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
