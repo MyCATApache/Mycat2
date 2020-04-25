@@ -234,11 +234,12 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             Aggregate aggregate = (Aggregate) parent;
             if (aggregate.getAggCallList() != null&&!aggregate.getAggCallList().isEmpty()) {//distinct会没有参数
                 List<AggregateCall> aggCallList = aggregate.getAggCallList();
-                boolean allMatch = aggCallList.stream().allMatch(new Predicate<AggregateCall>() {
+                boolean allMatch = aggregate.getRowType().getFieldCount()==1&&aggCallList.stream().allMatch(new Predicate<AggregateCall>() {
                     @Override
                     public boolean test(AggregateCall aggregateCall) {
                         return SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false)
-                                && aggregateCall.getAggregation().getParamTypes().stream().allMatch(i -> i.getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC);
+                                &&
+                                aggregate.getRowType().getFieldList().stream().allMatch(i->i.getType().getSqlTypeName().getFamily()== SqlTypeFamily.NUMERIC);
                     }
                 });
                 if (allMatch) {

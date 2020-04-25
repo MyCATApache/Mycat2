@@ -190,8 +190,8 @@ public enum ClientRuntime {
                             if (schema == null) {
                                 throw new UnsupportedOperationException("please use schema");
                             }
-                            schema = SQLUtils.normalize(schema.toLowerCase());
-                            tableName = SQLUtils.normalize(tableName.toLowerCase());
+                            schema = SQLUtils.normalize(schema);
+                            tableName = SQLUtils.normalize(tableName);
                             Collection<String> strings = collectionMap.computeIfAbsent(schema, s -> new HashSet<>());
                             strings.add(tableName);
                             return super.visit(x);
