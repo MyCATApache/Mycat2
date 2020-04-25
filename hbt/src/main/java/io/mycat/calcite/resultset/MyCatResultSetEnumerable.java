@@ -109,7 +109,9 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
             @Override
             public void close() {
-                currentrs.close();
+                if (currentrs!=null) {
+                    currentrs.close();
+                }
             }
         };
     }

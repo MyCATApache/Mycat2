@@ -316,12 +316,6 @@ public enum MycatCalciteSupport implements Context {
         SqlNode sqlNode = implement.asStatement();
         String sql = sqlNode.toSqlString(dialect, false).getSql();
         sql = sql.trim();
-        if (sql.startsWith("(")){
-            sql  =sql.substring(1);
-        }
-        if (sql.endsWith(")")){
-            sql  =sql.substring(0,sql.length()-1);
-        }
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
         return sql + (forUpdate ? " for update" : "");
