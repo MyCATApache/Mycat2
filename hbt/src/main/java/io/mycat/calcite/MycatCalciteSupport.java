@@ -52,6 +52,7 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -141,6 +142,7 @@ public enum MycatCalciteSupport implements Context {
             final HashMap<String, SqlOperator> map = new HashMap<>();
             final HashMap<String, SqlOperator> build = new HashMap<>();
             {
+                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
                 build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
                 build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
                 build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
