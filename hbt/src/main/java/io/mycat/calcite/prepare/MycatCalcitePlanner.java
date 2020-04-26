@@ -260,7 +260,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
             public RelNode visit(RelNode other) {
-                if (cache.get(other) == Boolean.TRUE) {
+                if (Boolean.TRUE.equals(cache.get(other))) {
                     List<String> strings = margeList.get(other);
                     String targetName = strings.get(0);
                     return relBuilder.makeTransientSQLScan(targetName, other,forUpdate);
