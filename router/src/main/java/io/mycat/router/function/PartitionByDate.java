@@ -58,7 +58,7 @@ public class PartitionByDate extends RuleFunction {
 
   private long getTime(String startBeginDate) {
     try {
-      return formatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR);
+      return formatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR)* ONE_DAY;
     } catch (DateTimeParseException e) {
       throw new IllegalArgumentException(
           "columnValue:" + startBeginDate + " Please check if the format satisfied.", e);
