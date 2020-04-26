@@ -350,13 +350,13 @@ public class ExplainVisitor implements NodeVisitor {
         if (alias != null) {
             res += ".alias(" + alias + ")";
         }
-        if (distinct == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(distinct)) {
             res += ".distinct(" + ")";
         }
-        if (approximate == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(approximate)) {
             res += ".approximate(" + ")";
         }
-        if (ignoreNulls == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(ignoreNulls)) {
             res += ".ignoreNulls(" + ")";
         }
         if (filter != null) {

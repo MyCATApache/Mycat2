@@ -192,7 +192,7 @@ public class Context {
     }
 
     public boolean isSimply() {
-        return simply == Boolean.TRUE;
+        return Boolean.TRUE.equals(simply);
     }
 
     public SchemaTableObject getTableForUpdateOpt(){
