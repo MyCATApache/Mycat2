@@ -100,7 +100,6 @@ public class MySQLTaskUtil {
                                                 MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
                                                 TransactionSyncType transactionType,
                                                 MySQLIsolation isolation) {
-        assert (Thread.currentThread() instanceof MycatReactorThread);
         Objects.requireNonNull(datasourceName);
         mycat.switchProxyWriteHandler();
         mycat.getIOThread().addNIOJob(new NIOJob() {

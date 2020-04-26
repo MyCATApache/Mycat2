@@ -175,8 +175,13 @@ public class ExplainVisitor implements NodeVisitor {
         Integer precision = fieldSchema.getPrecision();
         Integer scale = fieldSchema.getScale();
         if (precision != null && precision > 0) {
-            append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
-                    toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+            if (scale != null) {
+                append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                        toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+            }else {
+                append(MessageFormat.format("fieldType({0},{1},{2},{3})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                        toId(Integer.toString(precision))));
+            }
         } else {
             append(MessageFormat.format("fieldType({0},{1},{2})", toId(id), toId(type), toId(Boolean.toString(nullable))));
         }

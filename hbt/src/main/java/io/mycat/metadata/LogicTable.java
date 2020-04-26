@@ -6,11 +6,10 @@ import io.mycat.queryCondition.SimpleColumnInfo;
 import lombok.Getter;
 import lombok.NonNull;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Getter
 public class LogicTable {
@@ -40,7 +39,11 @@ public class LogicTable {
         /////////////////////////////////////////
         this.autoIncrementColumn = rawColumns.stream().filter(i -> i.isAutoIncrement()).findFirst().orElse(null);
         /////////////////////////////////////////
-        this.map = rawColumns.stream().collect(Collectors.toMap(k -> k.getColumnName(), Function.identity()));
+        Map<String, SimpleColumnInfo> result = new HashMap<>();
+        for (SimpleColumnInfo k : rawColumns) {
+            result.put(k.getColumnName(), k);
+        }
+        this.map = result;
     }
 
     public static TableHandler createShardingTable(String schemaName,
@@ -48,9 +51,9 @@ public class LogicTable {
                                                    List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,
                                                    Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo,
                                                    String createTableSQL,
-                                                  Supplier<String> sequence) {
+                                                   Supplier<String> sequence) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, name, rawColumns, createTableSQL);
-        ShardingTable shardingTable = new ShardingTable(logicTable, backends, shardingInfo,sequence);
+        ShardingTable shardingTable = new ShardingTable(logicTable, backends, shardingInfo, sequence);
         return shardingTable;
     }
 
@@ -61,7 +64,17 @@ public class LogicTable {
     }
 
     public SimpleColumnInfo getColumnByName(String name) {
-        return this.map.get(name);
+        SimpleColumnInfo simpleColumnInfo = this.map.get(name);
+        if (simpleColumnInfo == null) {
+            SimpleColumnInfo simpleColumnInfo1 = this.map.get(name.toLowerCase());
+            if (simpleColumnInfo1 == null) {
+                return this.map.get(name.toUpperCase());
+            } else {
+                return simpleColumnInfo1;
+            }
+        } else {
+            return simpleColumnInfo;
+        }
     }
 
     public String getUniqueName() {
