@@ -17,6 +17,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
+Dockerfile:https://github.com/MyCATApache/Mycat2/blob/master/mycat2/Dockerfile
+
 执行hbt的两组命令是
 
 ```sql
