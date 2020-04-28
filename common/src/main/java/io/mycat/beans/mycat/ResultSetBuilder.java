@@ -3,6 +3,7 @@ package io.mycat.beans.mycat;
 import io.mycat.api.collector.DefObjectRowIteratorImpl;
 import io.mycat.api.collector.RowBaseIterator;
 
+import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,9 @@ public class ResultSetBuilder {
         columnInfos.add(new ColumnInfo(tableName, tableName, columnName, columnType, precision, scale, columnName, false, true, true, true, columnName.length()));
     }
 
+    public void addColumnInfo(String columnName, JDBCType columnType) {
+        addColumnInfo(columnName,columnType.getVendorTypeNumber());
+    }
     public void addColumnInfo(String columnName, int columnType) {
         columnInfos.add(new ColumnInfo(columnName, columnType));
     }
@@ -36,7 +40,7 @@ public class ResultSetBuilder {
     }
 
 
-    public void addObjectRowPayload(Object[]... row) {
+    public void addObjectRowPayload(Object... row) {
         objectList.add(row);
     }
 

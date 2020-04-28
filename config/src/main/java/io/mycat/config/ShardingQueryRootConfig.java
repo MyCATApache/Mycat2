@@ -1,22 +1,20 @@
 package io.mycat.config;
 
+import io.mycat.util.YamlUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Data
 public class ShardingQueryRootConfig {
-    Map<String, LogicSchemaConfig> schemas = new HashMap<>();
+    List<LogicSchemaConfig> schemas = new ArrayList<>();
     PrototypeServer prototype;
 
-    public Map<String, LogicSchemaConfig> getSchemas() {
-        return schemas == null?Collections.emptyMap():schemas;
+    public List<LogicSchemaConfig> getSchemas() {
+        return schemas;
     }
 
     @AllArgsConstructor
@@ -34,6 +32,7 @@ public class ShardingQueryRootConfig {
 
     @Data
     public static final class LogicSchemaConfig {
+        String schemaName;
         String targetName;
         Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
         Map<String, GlobalTableConfig> globalTables = new HashMap<>();
@@ -65,6 +64,15 @@ public class ShardingQueryRootConfig {
         String user = "root";
         String password = "123456";
         String targetName = "defaultDs";
+    }
+
+    public static void main(String[] args) {
+        ShardingQueryRootConfig rootConfig = new ShardingQueryRootConfig();
+        LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
+        logicSchemaConfig.setTargetName("db1");
+        logicSchemaConfig.setTargetName("defaultDs");
+        rootConfig.getSchemas().add(logicSchemaConfig);
+        System.out.println(YamlUtil.dump(rootConfig));
     }
 
 }

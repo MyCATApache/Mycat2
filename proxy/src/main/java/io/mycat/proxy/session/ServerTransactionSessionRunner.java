@@ -1,6 +1,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.*;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
@@ -18,11 +19,11 @@ import java.util.function.Function;
  * @MySQLServerSession
  */
 public class ServerTransactionSessionRunner implements TransactionSessionRunner {
-    final Map<String, Function<MycatDataContext, TransactionSession>> map;
+    final Map<TransactionType, Function<MycatDataContext, TransactionSession>> map;
     final MycatSession session;
     private final GThreadPool threadPool;
 
-    public ServerTransactionSessionRunner(Map<String, Function<MycatDataContext, TransactionSession>> map, GThreadPool threadPool, MycatSession session) {
+    public ServerTransactionSessionRunner(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map, GThreadPool threadPool, MycatSession session) {
         this.map = map;
         this.threadPool = threadPool;
         this.session = session;
@@ -34,8 +35,8 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
             TransactionSession transactionSession;
 
             @Override
-            public String transactionType() {
-                return TransactionSession.LOCAL;
+            public TransactionType transactionType() {
+                return transactionSession.transactionType();
             }
 
             @Override
@@ -86,11 +87,11 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
     public void run(MycatDataContext container, BindThreadCallback runner) {
         TransactionSession transactionSession = container.getTransactionSession();
         if (transactionSession == null) {
-            String transactionType = container.transactionType();
+            TransactionType transactionType = container.transactionType();
             Objects.requireNonNull(transactionType);
             container.setTransactionSession(transactionSession = map.get(transactionType).apply(container));
         } else {
-            if (!transactionSession.name().equals(container.transactionType())) {
+            if (!transactionSession.name().equals(container.transactionType().getName())) {
                 if (transactionSession.isInTransaction()) {
                     throw new IllegalArgumentException("正在处于事务状态,不能切换事务模式");
                 } else {

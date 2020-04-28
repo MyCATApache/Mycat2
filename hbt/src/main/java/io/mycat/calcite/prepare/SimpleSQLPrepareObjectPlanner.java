@@ -1,12 +1,12 @@
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.EmptyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 
 import java.util.Arrays;
 import java.util.List;

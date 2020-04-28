@@ -195,10 +195,10 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
     private synchronized boolean switchNode(List<PhysicsInstanceImpl> newWriteDataSource, List< PhysicsInstanceImpl> oldWriteDataSource, String message) {
-        if (new ArrayList<>(this.writeDataSourceList).equals(new ArrayList<>(newWriteDataSource))) {
+        if (new ArrayList<>(oldWriteDataSource).equals(new ArrayList<>(newWriteDataSource))) {
             return false;
         }
-        List< PhysicsInstanceImpl> backup = new ArrayList<>(this.writeDataSourceList);
+        List< PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
         oldWriteDataSource.clear();
         oldWriteDataSource.addAll(newWriteDataSource);
         LOGGER.info(message, backup, newWriteDataSource);

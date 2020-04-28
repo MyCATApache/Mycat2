@@ -14,13 +14,13 @@
  */
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import io.mycat.upondb.ProxyInfo;
 import io.mycat.util.Explains;
 import lombok.SneakyThrows;

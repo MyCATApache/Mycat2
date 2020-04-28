@@ -1,5 +1,7 @@
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
+import io.mycat.TextUpdateInfo;
 import io.mycat.api.collector.MergeUpdateRowIterator;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
@@ -7,11 +9,9 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.PrepareMycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.hbt.TextUpdateInfo;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import io.mycat.upondb.PrepareObject;
 import io.mycat.util.Explains;
 import org.jetbrains.annotations.NotNull;

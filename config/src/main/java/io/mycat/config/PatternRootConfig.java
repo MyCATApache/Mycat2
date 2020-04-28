@@ -1,75 +1,83 @@
 package io.mycat.config;
 
+import io.mycat.util.YamlUtil;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Data
+@Builder
 public class PatternRootConfig {
     private UserConfig user;
-    private List<SchemaConfig> schemas = new ArrayList<>();
-    private List<TextItemConfig> sqls = new ArrayList<>();
-    private List<List<TextItemConfig>> sqlsGroup = new ArrayList<>();
-    private Handler defaultHanlder;
+    private List<Map<String,Object>> sqls = new ArrayList<>();
+    private List<List<Map<String,Object>>> sqlsGroup = new ArrayList<>();
+    private Map<String,Object> defaultHanlder;
     private String transactionType;
+    private String matcherClazz;
 
-    public List<TextItemConfig> getSqls() {//注意去重
+    public PatternRootConfig() {
+    }
+
+    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String transactionType, String matcherClazz) {
+        this.user = user;
+        this.sqls = sqls;
+        this.sqlsGroup = sqlsGroup;
+        this.defaultHanlder = defaultHanlder;
+        this.transactionType = transactionType;
+        this.matcherClazz = matcherClazz;
+    }
+
+    public List<Map<String,Object>> getSqls() {//注意去重
+        if (sqlsGroup == null){
+            sqlsGroup = Collections.emptyList();
+        }
+        if (sqls == null){
+            sqls = Collections.emptyList();
+        }
         return Stream.concat(sqlsGroup.stream().flatMap(i -> i.stream()), sqls.stream()).distinct().collect(Collectors.toList());
     }
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Builder
     public static class UserConfig {
         private String username;
         private String password;
         private String ip;
     }
 
-    @Data
-    @ToString
-    public static class TextItemConfig {
-        String name;
-        String sql;
-        //handler
-        List<String> hints = new ArrayList<>();
-        Map<String, String> tags = new HashMap<>();
-        String command;
-        String explain;
-        String cache;
-        Boolean simply;
-//        String transactionType;
-    }
-
-
-    @Data
-    public static class Handler {
-        List<String> hints = new ArrayList<>();
-        Map<String, String> tags;
-        String command;
-        String explain;
-        String cache;
-        Boolean simply;
-//         String transactionType;
-    }
-
-
-    @Data
-    public static class SchemaConfig {
-        String name;
-        List<String> tables = new ArrayList<>();
-        List<TextItemConfig> sqls = new ArrayList<>();
-        private Handler defaultHanlder;
-    }
+//    @Data
+//    @ToString
+//    public static class TextItemConfig {
+//        String name;
+//        String sql;
+//        //handler
+//        List<String> hints = new ArrayList<>();
+//        Map<String, String> tags = new HashMap<>();
+//        String command;
+//        String explain;
+//        String cache;
+//    }
 
     public static void main(String[] args) {
+        PatternRootConfig config = PatternRootConfig.builder().user(
+                UserConfig.builder()
+                        .ip(".")
+                        .password("123456")
+                        .username("root")
+                        .build()
+        )
+                .build();
+        String dump = YamlUtil.dump(config);
+        System.out.println(dump);
     }
 }

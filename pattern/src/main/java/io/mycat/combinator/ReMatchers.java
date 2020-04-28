@@ -1,8 +1,7 @@
 package io.mycat.combinator;
 
 import com.google.common.collect.ImmutableList;
-import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.tuple.Tuples;
+import io.mycat.util.Pair;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -52,15 +51,15 @@ public class ReMatchers {
     public static <T> Function<CharBuffer, Pair<Predicate<CharBuffer>, T>> asCharBufferPredicateMap(List<Pair<String, T>> list) {
         ImmutableList.Builder<Pair<Predicate<CharBuffer>, T>> builder = ImmutableList.builder();
         for (Pair<String, T> stringTEntry : list) {
-            String key = stringTEntry.getOne();
-            T value = stringTEntry.getTwo();
+            String key = stringTEntry.getKey();
+            T value = stringTEntry.getValue();
             Predicate<CharBuffer> charBufferPredicate = asPredicateForCharBuffer(key);
-            builder.add(Tuples.pair(charBufferPredicate, value));
+            builder.add(Pair.of(charBufferPredicate, value));
         }
         ImmutableList<Pair<Predicate<CharBuffer>, T>> build = builder.build();
         return t -> {
             for (Pair<Predicate<CharBuffer>, T> predicateTPair : build) {
-                if (predicateTPair.getOne().test(t)) {
+                if (predicateTPair.getKey().test(t)) {
                     return predicateTPair;
                 }
             }

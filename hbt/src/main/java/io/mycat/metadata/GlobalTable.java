@@ -8,7 +8,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
-import io.mycat.hbt.TextUpdateInfo;
+import io.mycat.TextUpdateInfo;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.queryCondition.SimpleColumnInfo;

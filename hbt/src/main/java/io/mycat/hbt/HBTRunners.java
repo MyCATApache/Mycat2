@@ -1,5 +1,7 @@
 package io.mycat.hbt;
 
+import io.mycat.PlanRunner;
+import io.mycat.TextUpdateInfo;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ColumnInfo;
 import io.mycat.beans.mycat.DefMycatRowMetaData;
@@ -15,7 +17,6 @@ import io.mycat.hbt.ast.query.CommandSchema;
 import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import io.mycat.upondb.PrepareObject;
 import org.jetbrains.annotations.NotNull;
 

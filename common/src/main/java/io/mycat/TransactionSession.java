@@ -14,6 +14,8 @@
  */
 package io.mycat;
 
+import io.mycat.beans.mycat.TransactionType;
+
 /**
  * @author Junwen Chen
  **/
@@ -58,4 +60,6 @@ public interface TransactionSession {
     void close();
 
     String resolveFinalTargetName(String targetName);
+
+    TransactionType transactionType();
 }

@@ -12,55 +12,55 @@ public class DDLStatementHandlerImpl implements DDLStatementHandler {
     }
 
     @Override
-    public void handleMySqlRenameTable(MySqlRenameTableStatement statement, Receiver receiver) {
+    public void handleMySqlRenameTable(MySqlRenameTableStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
 
     @Override
-    public void handleDropViewStatement(SQLDropViewStatement statement, Receiver receiver) {
+    public void handleDropViewStatement(SQLDropViewStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleDropTableStatement(SQLDropTableStatement statement, Receiver receiver) {
-        receiver.proxyDDL(statement);
-    }
-
-
-    @Override
-    public void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Receiver receiver) {
+    public void handleDropTableStatement(SQLDropTableStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
 
     @Override
-    public void handleCreateView(SQLCreateViewStatement statement, Receiver receiver) {
+    public void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Response receiver) {
+        receiver.proxyDDL(statement);
+    }
+
+
+    @Override
+    public void handleCreateView(SQLCreateViewStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleCreateTable(SQLCreateTableStatement statement, Receiver receiver) {
+    public void handleCreateTable(SQLCreateTableStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleCreateIndex(SQLCreateIndexStatement statement, Receiver receiver) {
+    public void handleCreateIndex(SQLCreateIndexStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Receiver receiver) {
+    public void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleAlterTable(SQLAlterTableStatement statement, Receiver receiver) {
+    public void handleAlterTable(SQLAlterTableStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 
     @Override
-    public void handleAlterDatabase(SQLAlterDatabaseStatement statement, Receiver receiver) {
+    public void handleAlterDatabase(SQLAlterDatabaseStatement statement, Response receiver) {
         receiver.proxyDDL(statement);
     }
 }

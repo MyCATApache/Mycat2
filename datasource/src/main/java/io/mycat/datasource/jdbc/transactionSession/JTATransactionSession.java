@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc.transactionSession;
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.logTip.MycatLogger;
@@ -102,6 +103,11 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
             this.bindThread = null;
         }
         super.close();
+    }
+
+    @Override
+    public TransactionType transactionType() {
+        return TransactionType.JDBC_TRANSACTION_TYPE;
     }
 
     @Override

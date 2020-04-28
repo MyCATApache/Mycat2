@@ -1,4 +1,4 @@
-package io.mycat.upondb;
+package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 

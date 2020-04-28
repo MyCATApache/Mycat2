@@ -3,6 +3,7 @@ package io.mycat;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 
@@ -11,14 +12,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
 
-    String transactionType();
+    TransactionType transactionType();
 
     TransactionSession getTransactionSession();
 
 
     void setTransactionSession(TransactionSession transactionSession);
 
-    void switchTransaction(String transactionSessionType);
+    void switchTransaction(TransactionType transactionSessionType);
 
     <T> T getVariable(MycatDataContextEnum name);
 

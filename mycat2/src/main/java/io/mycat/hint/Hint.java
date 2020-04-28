@@ -1,10 +1,10 @@
 package io.mycat.hint;
 
-import io.mycat.client.Context;
+import java.nio.CharBuffer;
+import java.util.Map;
 
-import java.util.function.Consumer;
 
-
-public interface Hint extends Consumer<Context> {
+public interface Hint {
     String getName();
+    void accept(CharBuffer buffer, Map<String, Object> t);
 }

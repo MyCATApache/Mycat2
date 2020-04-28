@@ -12,7 +12,7 @@
  * the License.
  */
 
-package io.mycat.boost;
+package io.mycat.util;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
