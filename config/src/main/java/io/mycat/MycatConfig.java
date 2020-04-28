@@ -30,7 +30,6 @@ public class MycatConfig {
     ShardingQueryRootConfig metadata = new ShardingQueryRootConfig();
     DatasourceRootConfig datasource = new DatasourceRootConfig();
     ClusterRootConfig cluster = new ClusterRootConfig();
-    //    SecurityConfig security = new SecurityConfig();
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
     Map<String, Object> properties;
@@ -48,6 +47,6 @@ public class MycatConfig {
     @Data
     @NoArgsConstructor
     public static class SqlsGroup {
-        List<PatternRootConfig.TextItemConfig> sqls = new ArrayList<>();
+        List<PatternRootConfig> sqls = new ArrayList<>();
     }
 }

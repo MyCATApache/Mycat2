@@ -6,13 +6,17 @@ import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.MycatException;
+import io.mycat.PlanRunner;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.metadata.ParseContext;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
-import io.mycat.upondb.*;
+import io.mycat.upondb.MycatDBClientMediator;
+import io.mycat.upondb.MycatDBSharedServer;
+import io.mycat.upondb.MysqlFunctions;
+import io.mycat.upondb.ProxyInfo;
 import lombok.Data;
 
 import java.util.*;
@@ -116,7 +120,7 @@ public class SQLContextImpl implements SQLContext {
                         return;
                     }
                 }
-                receiver.eval(plan);
+                receiver.sendResultSet(plan.run());
             } else {
                 receiver.evalSimpleSql(statement);
             }
@@ -127,13 +131,13 @@ public class SQLContextImpl implements SQLContext {
     public InsertStatementHandler insertStatementHandler() {
         return new InsertStatementHandler() {
             @Override
-            public void handleInsert(MySqlInsertStatement statement, Receiver receiver) {
+            public void handleInsert(MySqlInsertStatement statement, Response receiver) {
                 SQLExprTableSource tableSource = statement.getTableSource();
                 updateHandler(statement, tableSource, receiver);
             }
 
             @Override
-            public void handleReplace(SQLReplaceStatement statement, Receiver receiver) {
+            public void handleReplace(SQLReplaceStatement statement, Response receiver) {
                 SQLExprTableSource tableSource = statement.getTableSource();
                 updateHandler(statement, tableSource, receiver);
             }
@@ -141,7 +145,7 @@ public class SQLContextImpl implements SQLContext {
     }
 
 
-    private void updateHandler(SQLStatement sql, SQLExprTableSource tableSource, Receiver receiver) {
+    private void updateHandler(SQLStatement sql, SQLExprTableSource tableSource, Response receiver) {
         String schemaName = tableSource.getSchema();
         String tableName = tableSource.getTableName();
 
@@ -210,25 +214,25 @@ public class SQLContextImpl implements SQLContext {
     public TCLStatementHandler tclStatementHandler() {
         return new TCLStatementHandler() {
             @Override
-            public void handleSQLStartTransaction(SQLStartTransactionStatement statement, Receiver receiver) {
+            public void handleSQLStartTransaction(SQLStartTransactionStatement statement, Response receiver) {
                 mycatDBClientMediator.begin();
                 receiver.sendOk();
             }
 
             @Override
-            public void handleRollback(SQLRollbackStatement statement, Receiver receiver) {
+            public void handleRollback(SQLRollbackStatement statement, Response receiver) {
                 mycatDBClientMediator.rollback();
                 receiver.sendOk();
             }
 
             @Override
-            public void handleCommit(SQLCommitStatement statement, Receiver receiver) {
+            public void handleCommit(SQLCommitStatement statement, Response receiver) {
                 mycatDBClientMediator.commit();
                 receiver.sendOk();
             }
 
             @Override
-            public void handleSetTransaction(MySqlSetTransactionStatement statement, Receiver receiver) {
+            public void handleSetTransaction(MySqlSetTransactionStatement statement, Response receiver) {
                 String isolationLevel = statement.getIsolationLevel();
                 MySQLIsolation mySQLIsolation = MySQLIsolation.parse(isolationLevel);
                 if (mySQLIsolation == null) {
@@ -253,7 +257,7 @@ public class SQLContextImpl implements SQLContext {
     public UtilityStatementHandler utilityStatementHandler() {
         return new UtilityStatementHandler() {
             @Override
-            public void handleExplain(MySqlExplainStatement statement, Receiver receiver) {
+            public void handleExplain(MySqlExplainStatement statement, Response receiver) {
                 SQLStatement explainStatement = statement.getStatement();
                 SQLHanlder sqlHanlder = new SQLHanlder(SQLContextImpl.this);
                // sqlHanlder.parse(explainStatement.toString(),);
@@ -261,19 +265,19 @@ public class SQLContextImpl implements SQLContext {
             }
 
             @Override
-            public void handleKill(MySqlKillStatement statement, Receiver receiver) {
+            public void handleKill(MySqlKillStatement statement, Response receiver) {
                 receiver.sendOk();
             }
 
             @Override
-            public void handleUse(SQLUseStatement statement, Receiver receiver) {
+            public void handleUse(SQLUseStatement statement, Response receiver) {
                 String simpleName = statement.getDatabase().getSimpleName();
                 mycatDBClientMediator.useSchema(simpleName);
                 receiver.sendOk();
             }
 
             @Override
-            public void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Receiver receiver) {
+            public void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Response receiver) {
                 receiver.proxyShow(statement);
             }
         };
@@ -314,7 +318,7 @@ public class SQLContextImpl implements SQLContext {
     public HintStatementHanlder hintStatementHanlder() {
         return new HintStatementHanlder() {
             @Override
-            public void handlehintStatement(MySqlHintStatement statement1, Receiver receiver) {
+            public void handlehintStatement(MySqlHintStatement statement1, Response receiver) {
                 List<SQLStatement> hintStatements = statement1.getHintStatements();
                 if (hintStatements.size()>1){
                     receiver.sendError(new MycatException("unsupport multi statements"));

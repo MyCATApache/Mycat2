@@ -2,6 +2,7 @@ package io.mycat.runtime;
 
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import lombok.SneakyThrows;
 
@@ -22,6 +23,11 @@ public class ProxyTransactionSession extends LocalTransactionSession {
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
         return ThreadUsageEnum.THIS_THREADING;
+    }
+
+    @Override
+    public TransactionType transactionType() {
+        return TransactionType.PROXY_TRANSACTION_TYPE;
     }
 
     @Override

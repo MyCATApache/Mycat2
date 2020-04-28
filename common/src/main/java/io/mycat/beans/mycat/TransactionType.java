@@ -33,7 +33,7 @@ public enum TransactionType {
         this.name = name;
     }
 
-    public static final TransactionType DEFAULT = TransactionType.JDBC_TRANSACTION_TYPE;
+    public static final TransactionType DEFAULT = TransactionType.PROXY_TRANSACTION_TYPE;
 
     public static TransactionType parse(String name) {
         return TransactionType.JDBC_TRANSACTION_TYPE.name.equalsIgnoreCase(name) ? TransactionType.JDBC_TRANSACTION_TYPE : TransactionType.PROXY_TRANSACTION_TYPE;

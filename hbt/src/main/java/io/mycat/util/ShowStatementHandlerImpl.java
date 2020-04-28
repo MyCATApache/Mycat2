@@ -15,69 +15,69 @@ public class ShowStatementHandlerImpl implements ShowStatementHandler {
     }
 
     @Override
-    public void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Receiver receiver) {
+    public void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Receiver receiver) {
+    public void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowCollation(MySqlShowCollationStatement statement, Receiver receiver) {
+    public void handleMySqlShowCollation(MySqlShowCollationStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Receiver receiver) {
-        receiver.proxyShow(statement);
-    }
-
-
-    @Override
-    public void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Receiver receiver) {
-        receiver.proxyShow(statement);
-    }
-
-    @Override
-    public void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Receiver receiver) {
-        receiver.proxyShow(statement);
-    }
-
-    @Override
-    public void handleMySqlShowColumns(SQLShowColumnsStatement statement, Receiver receiver) {
+    public void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
 
     @Override
-    public void handleShowIndexes(SQLShowIndexesStatement statement, Receiver receiver) {
+    public void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Receiver receiver) {
+    public void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Receiver receiver) {
+    public void handleMySqlShowColumns(SQLShowColumnsStatement statement, Response receiver) {
+        receiver.proxyShow(statement);
+    }
+
+
+    @Override
+    public void handleShowIndexes(SQLShowIndexesStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Receiver receiver) {
+    public void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleShowTableStatus(MySqlShowTableStatusStatement statement, Receiver receiver) {
+    public void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 
     @Override
-    public void handleShowTables(SQLShowTablesStatement statement, Receiver receiver) {
+    public void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Response receiver) {
+        receiver.proxyShow(statement);
+    }
+
+    @Override
+    public void handleShowTableStatus(MySqlShowTableStatusStatement statement, Response receiver) {
+        receiver.proxyShow(statement);
+    }
+
+    @Override
+    public void handleShowTables(SQLShowTablesStatement statement, Response receiver) {
         receiver.proxyShow(statement);
     }
 

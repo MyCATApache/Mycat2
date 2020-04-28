@@ -10,6 +10,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.nio.CharBuffer;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -20,7 +21,8 @@ public class ReMatchersBenchmark {
         ImmutableList.Builder<Pair<String, String>> builder = ImmutableList.builder();
         add(builder, "select 1 from db1.travelrecord");
         add(builder, "select 2 from db1.travelrecord");
-        function = ReMatchers.asStringPredicateMap(builder.build());
+        ImmutableList<Pair<String, String>> pairs = builder.build();
+        function = ReMatchers.asStringPredicateMap((List)pairs);
     }
 
     private static void add(ImmutableList.Builder<Pair<String, String>> builder, String s) {

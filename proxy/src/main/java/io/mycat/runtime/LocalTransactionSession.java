@@ -3,6 +3,7 @@ package io.mycat.runtime;
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
@@ -24,6 +25,11 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
         return ThreadUsageEnum.MULTI_THREADING;
+    }
+
+    @Override
+    public TransactionType transactionType() {
+        return TransactionType.JDBC_TRANSACTION_TYPE;
     }
 
     @Override

@@ -1,7 +1,4 @@
-package io.mycat.hbt;
-
-import io.mycat.hbt.ast.modify.MergeModify;
-import io.mycat.hbt.ast.modify.ModifyFromSql;
+package io.mycat;
 
 import java.util.List;
 
@@ -12,11 +9,6 @@ public interface TextUpdateInfo {
 
     public static TextUpdateInfo create(String targetName, List<String> sqls) {
         return new TextUpdateInfoImpl(targetName, sqls);
-    }
-
-    default MergeModify convertToModifyFromSql() {
-        String s = targetName();
-        return new MergeModify(() -> sqls().stream().map(i -> new ModifyFromSql(s, i)).iterator());
     }
 
     public class TextUpdateInfoImpl implements TextUpdateInfo {

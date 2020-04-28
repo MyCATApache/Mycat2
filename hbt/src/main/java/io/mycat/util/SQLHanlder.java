@@ -10,12 +10,12 @@ public class SQLHanlder implements SQLDispatcher {
    final SQLContext context;
 
     @Override
-    public void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Receiver receiver) {
+    public void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Response receiver) {
         context.utilityStatementHandler().handleSQLShowDatabasesStatement(statement,receiver);
     }
 
     @Override
-    public void handleMySqlHintStatement(MySqlHintStatement statement1, Receiver receiver) {
+    public void handleMySqlHintStatement(MySqlHintStatement statement1, Response receiver) {
         context.hintStatementHanlder().handlehintStatement(statement1,receiver);
     }
 
@@ -26,196 +26,196 @@ public class SQLHanlder implements SQLDispatcher {
     }
 
     @Override
-    public void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Receiver receiver) {
+    public void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowCharacterSet(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Receiver receiver) {
+    public void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowEngines(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowCollation(MySqlShowCollationStatement statement, Receiver receiver) {
+    public void handleMySqlShowCollation(MySqlShowCollationStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowCollation(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Receiver receiver) {
+    public void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowCreateTable(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Receiver receiver) {
+    public void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowDatabaseStatus(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Receiver receiver) {
+    public void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowErrors(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowColumns(SQLShowColumnsStatement statement, Receiver receiver) {
+    public void handleMySqlShowColumns(SQLShowColumnsStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowColumns(statement, receiver);
     }
 
     @Override
-    public void handleShowIndexes(SQLShowIndexesStatement statement, Receiver receiver) {
+    public void handleShowIndexes(SQLShowIndexesStatement statement, Response receiver) {
         context.showStatementHandler().handleShowIndexes(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Receiver receiver) {
+    public void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowProcessList(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Receiver receiver) {
+    public void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowWarnings(statement, receiver);
     }
 
     @Override
-    public void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Receiver receiver) {
+    public void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Response receiver) {
         context.showStatementHandler().handleMySqlShowVariants(statement, receiver);
     }
 
     @Override
-    public void handleShowTableStatus(MySqlShowTableStatusStatement statement, Receiver receiver) {
+    public void handleShowTableStatus(MySqlShowTableStatusStatement statement, Response receiver) {
         context.showStatementHandler().handleShowTableStatus(statement, receiver);
     }
 
     @Override
-    public void handleShowTables(SQLShowTablesStatement statement, Receiver receiver) {
+    public void handleShowTables(SQLShowTablesStatement statement, Response receiver) {
         context.showStatementHandler().handleShowTables(statement, receiver);
     }
 
     @Override
-    public void handleMySqlRenameTable(MySqlRenameTableStatement statement, Receiver receiver) {
+    public void handleMySqlRenameTable(MySqlRenameTableStatement statement, Response receiver) {
         context.ddlStatementHandler().handleMySqlRenameTable(statement, receiver);
     }
 
     @Override
-    public void handleDropViewStatement(SQLDropViewStatement statement, Receiver receiver) {
+    public void handleDropViewStatement(SQLDropViewStatement statement, Response receiver) {
         context.ddlStatementHandler().handleDropViewStatement(statement, receiver);
     }
 
     @Override
-    public void handleDropTableStatement(SQLDropTableStatement statement, Receiver receiver) {
+    public void handleDropTableStatement(SQLDropTableStatement statement, Response receiver) {
         context.ddlStatementHandler().handleDropTableStatement(statement, receiver);
     }
 
 
 
     @Override
-    public void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Receiver receiver) {
+    public void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Response receiver) {
         context.ddlStatementHandler().handleDropDatabaseStatement(statement, receiver);
     }
 
 
     @Override
-    public void handleCreateView(SQLCreateViewStatement statement, Receiver receiver) {
+    public void handleCreateView(SQLCreateViewStatement statement, Response receiver) {
         context.ddlStatementHandler().handleCreateView(statement, receiver);
     }
 
     @Override
-    public void handleCreateTable(SQLCreateTableStatement statement, Receiver receiver) {
+    public void handleCreateTable(SQLCreateTableStatement statement, Response receiver) {
         context.ddlStatementHandler().handleCreateTable(statement, receiver);
     }
 
     @Override
-    public void handleCreateIndex(SQLCreateIndexStatement statement, Receiver receiver) {
+    public void handleCreateIndex(SQLCreateIndexStatement statement, Response receiver) {
         context.ddlStatementHandler().handleCreateIndex(statement, receiver);
     }
 
     @Override
-    public void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Receiver receiver) {
+    public void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Response receiver) {
         context.ddlStatementHandler().handleCreateDatabaseStatement(statement, receiver);
     }
 
     @Override
-    public void handleAlterTable(SQLAlterTableStatement statement, Receiver receiver) {
+    public void handleAlterTable(SQLAlterTableStatement statement, Response receiver) {
         context.ddlStatementHandler().handleAlterTable(statement, receiver);
     }
 
     @Override
-    public void handleAlterDatabase(SQLAlterDatabaseStatement statement, Receiver receiver) {
+    public void handleAlterDatabase(SQLAlterDatabaseStatement statement, Response receiver) {
         context.ddlStatementHandler().handleAlterDatabase(statement, receiver);
     }
 
 
     @Override
-    public void handleExplain(MySqlExplainStatement statement, Receiver receiver) {
+    public void handleExplain(MySqlExplainStatement statement, Response receiver) {
         context.utilityStatementHandler().handleExplain(statement, receiver);
     }
 
     @Override
-    public void handleKill(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlKillStatement statement, Receiver receiver) {
+    public void handleKill(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlKillStatement statement, Response receiver) {
         context.utilityStatementHandler().handleKill(statement, receiver);
     }
 
     @Override
-    public void handleSQLStartTransaction(SQLStartTransactionStatement statement, Receiver receiver) {
+    public void handleSQLStartTransaction(SQLStartTransactionStatement statement, Response receiver) {
         context.tclStatementHandler().handleSQLStartTransaction(statement, receiver);
     }
 
     @Override
-    public void handleRollback(SQLRollbackStatement statement, Receiver receiver) {
+    public void handleRollback(SQLRollbackStatement statement, Response receiver) {
         context.tclStatementHandler().handleRollback(statement, receiver);
     }
 
     @Override
-    public void handleCommit(SQLCommitStatement statement, Receiver receiver) {
+    public void handleCommit(SQLCommitStatement statement, Response receiver) {
         context.tclStatementHandler().handleCommit(statement, receiver);
     }
 
     @Override
-    public void handleUse(SQLUseStatement statement, Receiver receiver) {
+    public void handleUse(SQLUseStatement statement, Response receiver) {
         context.utilityStatementHandler().handleUse(statement, receiver);
     }
 
     @Override
-    public void handleSetTransaction(MySqlSetTransactionStatement statement, Receiver receiver) {
+    public void handleSetTransaction(MySqlSetTransactionStatement statement, Response receiver) {
         context.tclStatementHandler().handleSetTransaction(statement, receiver);
     }
 
     @Override
-    public void handleSet(SQLSetStatement statement, Receiver receiver) {
+    public void handleSet(SQLSetStatement statement, Response receiver) {
         context.setStatementHandler().handleSet(statement, receiver);
     }
 
     @Override
-    public void handleTruncate(SQLTruncateStatement statement, Receiver receiver) {
+    public void handleTruncate(SQLTruncateStatement statement, Response receiver) {
         context.truncateStatementHandler().handleTruncate(statement, receiver);
     }
 
     @Override
-    public void handleLoaddata(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement statement, Receiver receiver) {
+    public void handleLoaddata(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement statement, Response receiver) {
         context.loaddataStatementHandler().handleLoaddata(statement, receiver);
     }
 
     @Override
-    public void handleUpdate(MySqlUpdateStatement statement, Receiver receiver) {
+    public void handleUpdate(MySqlUpdateStatement statement, Response receiver) {
         context.updateStatementHandler().handleUpdate(statement, receiver);
     }
 
     @Override
-    public void handleDelete(MySqlDeleteStatement statement, Receiver receiver) {
+    public void handleDelete(MySqlDeleteStatement statement, Response receiver) {
         context.deleteStatementHandler().handleDelete(statement, receiver);
     }
 
     @Override
-    public void handleReplace(SQLReplaceStatement statement, Receiver receiver) {
+    public void handleReplace(SQLReplaceStatement statement, Response receiver) {
         context.replaceStatementHandler().handleReplace(statement, receiver);
     }
 
     @Override
-    public void handleInsert(MySqlInsertStatement statement, Receiver receiver) {
+    public void handleInsert(MySqlInsertStatement statement, Response receiver) {
         context.insertStatementHandler().handleInsert(statement, receiver);
     }
 
     @Override
-    public void handleSelect(SQLSelectStatement statement, Receiver receiver) {
+    public void handleSelect(SQLSelectStatement statement, Response receiver) {
         context.selectStatementHandler().handleSelect(statement, receiver);
     }
 }

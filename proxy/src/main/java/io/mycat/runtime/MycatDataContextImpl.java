@@ -5,6 +5,7 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Setter
 public class MycatDataContextImpl implements MycatDataContext {
     final static Logger log = LoggerFactory.getLogger(MycatDataContextImpl.class);
-    private String transactionType;
+    private TransactionType transactionType;
     private String defaultSchema;
     private String lastMessage;
     private long affectedRows;
@@ -65,7 +66,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
 
     @Override
-    public String transactionType() {
+    public TransactionType transactionType() {
         return transactionType;
     }
 
@@ -81,7 +82,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
 
     @Override
-    public void switchTransaction(String transactionSessionType) {
+    public void switchTransaction(TransactionType transactionSessionType) {
         this.transactionType = transactionSessionType;
     }
 

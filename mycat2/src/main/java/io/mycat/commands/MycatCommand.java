@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2020>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -12,22 +12,20 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-
-package io.mycat.client;
+package io.mycat.commands;
 
 import io.mycat.MycatDataContext;
-import io.mycat.beans.mycat.TransactionType;
-import io.mycat.upondb.MycatDBClientMediator;
+import io.mycat.client.SQLRequest;
+import io.mycat.util.Response;
 
 /**
- * @author Junwen Chen
- **/
-public interface MycatClient extends MycatDataContext {
-    public Context analysis(String sql) ;
-    public void useSchema(String schemaName);
-    public TransactionType getTransactionType();
-    public void useTransactionType(TransactionType transactionType);
-    public String getDefaultSchema();
+ * @author chen junwen
+ */
+public interface MycatCommand {
 
-    public MycatDBClientMediator getMycatDb();
+    boolean run(SQLRequest request, MycatDataContext context, Response response);
+
+    boolean explain(SQLRequest request,MycatDataContext context, Response response);
+
+    String getName();
 }

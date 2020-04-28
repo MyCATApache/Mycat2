@@ -14,9 +14,9 @@
  */
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import lombok.Getter;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlLiteral;

@@ -1,5 +1,6 @@
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CalciteRunners;
@@ -9,7 +10,6 @@ import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import io.mycat.util.Explains;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;

@@ -16,7 +16,7 @@ public interface SQLDispatcher {
 
      static final MycatLogger LOGGER = MycatLoggerFactory
             .getLogger(SQLDispatcher.class);
-    default public void parse(String sql, Receiver receiver) {
+    default public void parse(String sql, Response receiver) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql, false);
         LinkedList<SQLStatement> statementList = new LinkedList<SQLStatement>();
         parser.parseStatementList(statementList, -1, null);
@@ -35,7 +35,7 @@ public interface SQLDispatcher {
         }
     }
 
-    default void handleStatement( SQLStatement statement,Receiver receiver) {
+    default void handleStatement(SQLStatement statement, Response receiver) {
         if (statement instanceof SQLSelectStatement) {
             handleSelect((SQLSelectStatement) statement, receiver);
         } else if (statement instanceof MySqlInsertStatement) {
@@ -125,9 +125,9 @@ public interface SQLDispatcher {
         }
     }
 
-    void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Receiver receiver);
+    void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Response receiver);
 
-    void handleMySqlHintStatement(MySqlHintStatement statement1, Receiver receiver);
+    void handleMySqlHintStatement(MySqlHintStatement statement1, Response receiver);
 
     public abstract SQLStatement preHandle(SQLStatement statement);
 
@@ -135,81 +135,81 @@ public interface SQLDispatcher {
 
     }
 
-    public abstract void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowCharacterSet(MySqlShowCharacterSetStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowEngines(MySqlShowEnginesStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowCollation(MySqlShowCollationStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowCollation(MySqlShowCollationStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowCreateTable(SQLShowCreateTableStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowDatabaseStatus(MySqlShowDatabaseStatusStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowErrors(MySqlShowErrorsStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowColumns(SQLShowColumnsStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowColumns(SQLShowColumnsStatement statement, Response receiver);
 
-    public abstract void handleShowIndexes(SQLShowIndexesStatement statement, Receiver receiver);
+    public abstract void handleShowIndexes(SQLShowIndexesStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowProcessList(MySqlShowProcessListStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowWarnings(MySqlShowWarningsStatement statement, Response receiver);
 
-    public abstract void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Receiver receiver);
+    public abstract void handleMySqlShowVariants(MySqlShowVariantsStatement statement, Response receiver);
 
-    public abstract void handleShowTableStatus(MySqlShowTableStatusStatement statement, Receiver receiver);
+    public abstract void handleShowTableStatus(MySqlShowTableStatusStatement statement, Response receiver);
 
-    public abstract void handleShowTables(SQLShowTablesStatement statement, Receiver receiver);
+    public abstract void handleShowTables(SQLShowTablesStatement statement, Response receiver);
 
-    public abstract void handleMySqlRenameTable(MySqlRenameTableStatement statement, Receiver receiver);
+    public abstract void handleMySqlRenameTable(MySqlRenameTableStatement statement, Response receiver);
 
-    public abstract void handleDropViewStatement(SQLDropViewStatement statement, Receiver receiver);
+    public abstract void handleDropViewStatement(SQLDropViewStatement statement, Response receiver);
 
-    public abstract void handleDropTableStatement(SQLDropTableStatement statement, Receiver receiver);
+    public abstract void handleDropTableStatement(SQLDropTableStatement statement, Response receiver);
 
 
-    public abstract void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Receiver receiver);
+    public abstract void handleDropDatabaseStatement(SQLDropDatabaseStatement statement, Response receiver);
 
-    public abstract void handleCreateView(SQLCreateViewStatement statement, Receiver receiver);
+    public abstract void handleCreateView(SQLCreateViewStatement statement, Response receiver);
 
-    public abstract void handleCreateTable(SQLCreateTableStatement statement, Receiver receiver);
+    public abstract void handleCreateTable(SQLCreateTableStatement statement, Response receiver);
 
-    public abstract void handleCreateIndex(SQLCreateIndexStatement statement, Receiver receiver);
+    public abstract void handleCreateIndex(SQLCreateIndexStatement statement, Response receiver);
 
-    public abstract void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Receiver receiver);
+    public abstract void handleCreateDatabaseStatement(SQLCreateDatabaseStatement statement, Response receiver);
 
-    public abstract void handleAlterTable(SQLAlterTableStatement statement, Receiver receiver);
+    public abstract void handleAlterTable(SQLAlterTableStatement statement, Response receiver);
 
-    public abstract void handleAlterDatabase(SQLAlterDatabaseStatement statement, Receiver receiver);
+    public abstract void handleAlterDatabase(SQLAlterDatabaseStatement statement, Response receiver);
 
-    public abstract void handleExplain(MySqlExplainStatement statement, Receiver receiver);
+    public abstract void handleExplain(MySqlExplainStatement statement, Response receiver);
 
-    public abstract void handleKill(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlKillStatement statement, Receiver receiver);
+    public abstract void handleKill(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlKillStatement statement, Response receiver);
 
-    public abstract void handleSQLStartTransaction(SQLStartTransactionStatement statement, Receiver receiver);
+    public abstract void handleSQLStartTransaction(SQLStartTransactionStatement statement, Response receiver);
 
-    public abstract void handleRollback(SQLRollbackStatement statement, Receiver receiver);
+    public abstract void handleRollback(SQLRollbackStatement statement, Response receiver);
 
-    public abstract void handleCommit(SQLCommitStatement statement, Receiver receiver);
+    public abstract void handleCommit(SQLCommitStatement statement, Response receiver);
 
-    public abstract void handleUse(SQLUseStatement statement, Receiver receiver);
+    public abstract void handleUse(SQLUseStatement statement, Response receiver);
 
-    public abstract void handleSetTransaction(MySqlSetTransactionStatement statement, Receiver receiver);
+    public abstract void handleSetTransaction(MySqlSetTransactionStatement statement, Response receiver);
 
-    public abstract void handleSet(SQLSetStatement statement, Receiver receiver);
+    public abstract void handleSet(SQLSetStatement statement, Response receiver);
 
-    public abstract void handleTruncate(SQLTruncateStatement statement, Receiver receiver);
+    public abstract void handleTruncate(SQLTruncateStatement statement, Response receiver);
 
-    public abstract void handleLoaddata(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement statement, Receiver receiver);
+    public abstract void handleLoaddata(com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement statement, Response receiver);
 
-    public abstract void handleUpdate(MySqlUpdateStatement statement, Receiver receiver);
+    public abstract void handleUpdate(MySqlUpdateStatement statement, Response receiver);
 
-    public abstract void handleDelete(MySqlDeleteStatement statement, Receiver receiver);
+    public abstract void handleDelete(MySqlDeleteStatement statement, Response receiver);
 
-    public abstract void handleReplace(SQLReplaceStatement statement, Receiver receiver);
+    public abstract void handleReplace(SQLReplaceStatement statement, Response receiver);
 
-    public abstract void handleInsert(MySqlInsertStatement statement, Receiver receiver);
+    public abstract void handleInsert(MySqlInsertStatement statement, Response receiver);
 
-    public abstract void handleSelect(SQLSelectStatement statement, Receiver receiver);
+    public abstract void handleSelect(SQLSelectStatement statement, Response receiver);
 
 }

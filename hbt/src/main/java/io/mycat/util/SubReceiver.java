@@ -2,8 +2,10 @@ package io.mycat.util;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import io.mycat.hbt.TextUpdateInfo;
-import io.mycat.upondb.PlanRunner;
+import io.mycat.ExplainDetail;
+import io.mycat.TextUpdateInfo;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.resultset.MycatResponse;
 import lombok.Builder;
 import lombok.ToString;
 
@@ -14,7 +16,7 @@ import java.util.List;
 
 @ToString
 @Builder
-public class SubReceiver implements Receiver {
+public class SubReceiver implements Response {
     boolean setHasMore;
     Throwable e;
     boolean sendOk;
@@ -60,11 +62,6 @@ public class SubReceiver implements Receiver {
     }
 
     @Override
-    public void eval(PlanRunner plan) {
-        this.plan = plan.explain();
-    }
-
-    @Override
     public void proxyUpdate(String defaultTargetName, String statement) {
         this.update = MessageFormat.format("defaultTargetName:{0},statement:{1}",
                 defaultTargetName, statement);
@@ -85,6 +82,45 @@ public class SubReceiver implements Receiver {
         multiUpdate(string,apply);
     }
 
+    @Override
+    public void sendError(String errorMessage, int errorCode) {
+
+    }
+
+    @Override
+    public void sendExplain(Class defErrorCommandClass, Object map) {
+
+    }
+
+    @Override
+    public void sendResultSet(RowBaseIterator rowBaseIterator) {
+
+    }
+
+    @Override
+    public void sendResponse(MycatResponse[] mycatResponses) {
+
+    }
+
+    @Override
+    public void rollback() {
+
+    }
+
+    @Override
+    public void begin() {
+
+    }
+
+    @Override
+    public void commit() {
+
+    }
+
+    @Override
+    public void execute(ExplainDetail detail) {
+
+    }
 
 
     @Override

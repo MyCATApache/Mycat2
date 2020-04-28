@@ -1,8 +1,8 @@
 package io.mycat.calcite.prepare;
 
+import io.mycat.PlanRunner;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.PlanRunner;
 import io.mycat.upondb.PrepareObject;
 import lombok.Getter;
 

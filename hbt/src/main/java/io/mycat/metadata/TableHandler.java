@@ -1,6 +1,6 @@
 package io.mycat.metadata;
 
-import io.mycat.hbt.TextUpdateInfo;
+import io.mycat.TextUpdateInfo;
 import io.mycat.queryCondition.SimpleColumnInfo;
 
 import java.util.Iterator;

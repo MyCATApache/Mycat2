@@ -65,8 +65,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
     ReplicaSelectorRuntime.INSTANCE
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),
             instance.asSelectRead());
-    if (switchType.equals(ReplicaSwitchType.SWITCH)
-        && instance.isMaster() && dsStatus.isError()
+    if (switchType.equals(ReplicaSwitchType.SWITCH) && dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
       if (ReplicaSelectorRuntime.INSTANCE.notifySwitchReplicaDataSource(replicaName)) {
