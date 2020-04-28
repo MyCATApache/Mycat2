@@ -44,7 +44,9 @@ import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.runtime.ProxyTransactionSession;
+import io.mycat.util.ApplicationContext;
 import io.mycat.util.CharsetUtil;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
@@ -64,6 +66,8 @@ public enum MycatCore {
     private ConfigProvider config;
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCore.class);
     private ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
+    @Getter
+    private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期
 
     @SneakyThrows
     public void init(ConfigProvider config) {
@@ -81,6 +85,7 @@ public enum MycatCore {
         MetadataManager.INSTANCE.load(mycatConfig);
 
         CharsetUtil.init(null);
+        context.scanner("io.mycat").inject();
         startProxy(mycatConfig);
     }
 
