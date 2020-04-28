@@ -326,7 +326,7 @@ public class ReceiverImpl implements Response {
         }));
     }
 
-    private static String[] checkThenGetOne(Map<String, List<String>> backendTableInfos) {
+    public static String[] checkThenGetOne(Map<String, List<String>> backendTableInfos) {
         if (backendTableInfos.size() != 1) {
             throw new IllegalArgumentException();
         }
@@ -338,7 +338,7 @@ public class ReceiverImpl implements Response {
         return new String[]{next.getKey(), list.get(0)};
     }
 
-    private static boolean isOne(Map<String, List<String>> backendTableInfos) {
+    public static boolean isOne(Map<String, List<String>> backendTableInfos) {
         if (backendTableInfos.size() != 1) {
             return false;
         }
@@ -347,11 +347,15 @@ public class ReceiverImpl implements Response {
         return list.size() == 1;
     }
 
-    private static void writePlan(MycatSession session, String message) {
+    public void writePlan(String message) {
         writePlan(session, Collections.singletonList(message));
     }
 
-    private static void writePlan(MycatSession session, List<String> messages) {
+    public static void writePlan(MycatSession session, String message) {
+        writePlan(session, Collections.singletonList(message));
+    }
+
+    public static void writePlan(MycatSession session, List<String> messages) {
         MycatResultSet defaultResultSet = ResultSetProvider.INSTANCE.createDefaultResultSet(1, 33, Charset.defaultCharset());
         defaultResultSet.addColumnDef(0, "plan", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
         messages.stream().map(i -> i.replaceAll("\n", " ")).forEach(defaultResultSet::addTextRowPayload);

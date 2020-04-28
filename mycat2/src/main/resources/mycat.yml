@@ -1,19 +1,8 @@
 metadata: #读写分离无需配置
+  schemas: [{ schemaName: 'db1' ,   targetName: 'defaultDs', shadingTables: {},globalTables: {}}]
 interceptors:
-  [{user:{username: 'root' ,password: '123456' , ip: '.'},
-    defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true}},
-     #配置无需处理的sql去往的服务器,一般为主服务器,forceProxy的意思是强制使用mycat自研的协议实现发送sql,该实现实际上不区分executeType,而jdbc的实现query和update要区分
-     #executeType默认值,不配置情况下为QUERY_MASTER
-    schemas: [{
-                tables:[ 'db1.company','db1.travelrecord'],
-                sqls: [
-                {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}}
-                ],
-              },
-    ],
-    sqls:[] ,
-    sqlsGroup: [*jdbcAdapter],
-    transactionType: proxy  #xa.proxy
+  [{
+     user: {ip: '.', password: '123456', username: root}
    }]
 datasource:
   datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
@@ -74,41 +63,6 @@ plug:
     {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
     ]
 #lib start
-sqlGroups:
-  jdbcAdapter:
-    sqls: &jdbcAdapter [
-    {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL},
-    {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan},#执行hbt
-    {name: explainHbt,sql: 'explainPlan {hbt}' , explain: '{hbt}' ,command: explainPlan},#解释hbt
-    {name: commit,sql: 'commit',command: commit},
-    {name: begin; ,sql: 'begin',command: begin},
-    {name: rollback ,sql: 'rollback',command: rollback},
-    {name: useStatement ,sql: 'use {schema}',command: useStatement},
-    {name: setXA ,sql: 'set xa = on',command: onXA},
-    {name: setProxy ,sql: 'set xa = off',command: offXA},
-    {name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
-    {name: start transaction ,sql: ' START TRANSACTION ',command: begin},
-    {name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
-    {name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
-    {name: mariadb-setAutoCommitOn,sql: 'set autocommit=1',command: setAutoCommitOn},
-    {name: mariadb-variables,sql: 'SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment',command: execute , tags: {targets: defaultDs}},
-    {name: mariadb-setAutoCommitOff,sql: 'set autocommit=0',command: setAutoCommitOff },
-    {  name: mysql-variables,
-       sql: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
-       explain: 'SELECT @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
-      ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
-    {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
-    {name: 'mysql SELECT @@session.tx_read_only',sql: 'SELECT @@session.tx_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.tx_read_only'}},
-    {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
-    {name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
-    {name: 'mysql set names', sql: 'set names {any}',command: ok },
-    {name: 'mysql set character_set_results', sql: 'set character_set_results {any}',command: ok },
-    {name: 'mysql set GLOBAL TRANSACTION', sql: 'set GLOBAL TRANSACTION {any}',command: ok },
-    {name: 'mysql set session transaction', sql: 'set session transaction READ ONLY',command: ok },
-    {name: 'mysql SET SQL_SELECT_LIMIT', sql: 'SET SQL_SELECT_LIMIT {any}',command: ok },
-    {name: 'mysql SET net_write_timeout', sql: 'SET net_write_timeout {any}',command: ok },
-    {name: 'mycat SELECT next_value_for', sql: 'SELECT next_value_for{xxx}',command: distributedQuery },
-    ]
 #lib end
 
 

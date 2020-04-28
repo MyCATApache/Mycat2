@@ -95,7 +95,9 @@ public enum MetadataManager {
     public void load(MycatConfig mycatConfig) {
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
         if (shardingQueryRootConfig!=null) {
-            for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
+            for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas()
+                    .stream()
+                    .collect(Collectors.toMap(k->k.getSchemaName(),v->v)).entrySet()) {
                 String orignalSchemaName = entry.getKey();
                 ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
                 String targetName = value.getTargetName();

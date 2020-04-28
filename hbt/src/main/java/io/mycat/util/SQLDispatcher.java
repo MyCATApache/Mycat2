@@ -6,16 +6,16 @@ import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public interface SQLDispatcher {
 
-     static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(SQLDispatcher.class);
+    final static Logger logger = LoggerFactory.getLogger(SQLDispatcher.class);
+
     default public void parse(String sql, Response receiver) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql, false);
         LinkedList<SQLStatement> statementList = new LinkedList<SQLStatement>();
@@ -25,15 +25,27 @@ public interface SQLDispatcher {
             SQLStatement statement = preHandle(iterator.next());
             receiver.setHasMore(iterator.hasNext());
             try {
-                handleStatement(statement,receiver );
+                handleStatement(statement, receiver);
             } catch (Throwable e) {
-                receiver.sendError(e);
+                boolean isRun = false;
+                try {
+                    tryHandleHbt(sql);
+                    isRun = true;
+                } catch (Throwable e1) {
+                    logger.error("",e1);
+                }finally {
+                    if (!isRun) {
+                        receiver.sendError(e);
+                    }
+                }
                 return;
             } finally {
                 iterator.remove();//help gc
             }
         }
     }
+
+    void tryHandleHbt(String sql);
 
     default void handleStatement(SQLStatement statement, Response receiver) {
         if (statement instanceof SQLSelectStatement) {
@@ -66,7 +78,7 @@ public interface SQLDispatcher {
             handleKill((MySqlKillStatement) statement, receiver);
         } else if (statement instanceof MySqlExplainStatement) {
             handleExplain((MySqlExplainStatement) statement, receiver);
-        }  else if (statement instanceof SQLAlterDatabaseStatement) {
+        } else if (statement instanceof SQLAlterDatabaseStatement) {
             handleAlterDatabase((SQLAlterDatabaseStatement) statement, receiver);
         } else if (statement instanceof SQLAlterTableStatement) {
             handleAlterTable((SQLAlterTableStatement) statement, receiver);
@@ -78,7 +90,7 @@ public interface SQLDispatcher {
             handleCreateTable((SQLCreateTableStatement) statement, receiver);
         } else if (statement instanceof SQLCreateViewStatement) {
             handleCreateView((SQLCreateViewStatement) statement, receiver);
-        }else if (statement instanceof SQLDropDatabaseStatement) {
+        } else if (statement instanceof SQLDropDatabaseStatement) {
             handleDropDatabaseStatement((SQLDropDatabaseStatement) statement, receiver);
         } else if (statement instanceof SQLDropTableStatement) {
             handleDropTableStatement((SQLDropTableStatement) statement, receiver);
@@ -110,18 +122,16 @@ public interface SQLDispatcher {
             handleMySqlShowCollation((MySqlShowCollationStatement) statement, receiver);
         } else if (statement instanceof MySqlShowCharacterSetStatement) {
             handleMySqlShowCharacterSet((MySqlShowCharacterSetStatement) statement, receiver);
-        }else if (statement instanceof MySqlShowDatabaseStatusStatement) {
+        } else if (statement instanceof MySqlShowDatabaseStatusStatement) {
             handleMySqlShowDatabaseStatus((MySqlShowDatabaseStatusStatement) statement, receiver);
-        }else if (statement instanceof MySqlHintStatement) {
+        } else if (statement instanceof MySqlHintStatement) {
             MySqlHintStatement statement1 = (MySqlHintStatement) statement;
             handleMySqlHintStatement(statement1, receiver);
-        } else if (statement instanceof com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement)
-
-        {
-            handleSQLShowDatabasesStatement((com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement)statement, receiver);
-        }else {
-            LOGGER.warn(" ---------statement:"+statement.getClass());
-          //  throw new UnsupportedOperationException("UnsupportedStatement:" + statement.getClass().getSimpleName());
+        } else if (statement instanceof com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement) {
+            handleSQLShowDatabasesStatement((com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement) statement, receiver);
+        } else {
+            logger.warn(" ---------statement:" + statement.getClass());
+            //  throw new UnsupportedOperationException("UnsupportedStatement:" + statement.getClass().getSimpleName());
         }
     }
 

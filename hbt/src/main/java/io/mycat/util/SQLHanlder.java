@@ -10,6 +10,11 @@ public class SQLHanlder implements SQLDispatcher {
    final SQLContext context;
 
     @Override
+    public void tryHandleHbt(String sql) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void handleSQLShowDatabasesStatement(SQLShowDatabasesStatement statement, Response receiver) {
         context.utilityStatementHandler().handleSQLShowDatabasesStatement(statement,receiver);
     }

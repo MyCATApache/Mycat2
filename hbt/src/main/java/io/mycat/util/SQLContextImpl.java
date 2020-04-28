@@ -259,8 +259,7 @@ public class SQLContextImpl implements SQLContext {
             @Override
             public void handleExplain(MySqlExplainStatement statement, Response receiver) {
                 SQLStatement explainStatement = statement.getStatement();
-                SQLHanlder sqlHanlder = new SQLHanlder(SQLContextImpl.this);
-               // sqlHanlder.parse(explainStatement.toString(),);
+                String sql = explainStatement.toString();
                 receiver.sendOk();
             }
 

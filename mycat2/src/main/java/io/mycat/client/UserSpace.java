@@ -10,6 +10,7 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.boost.CacheConfig;
 import io.mycat.boost.Task;
 import io.mycat.commands.MycatCommand;
+import io.mycat.commands.MycatdbCommand;
 import io.mycat.hint.Hint;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
@@ -109,7 +110,7 @@ public class UserSpace {
                 text = Template.formatByName(explain, (Map) tags);
             }
             //////////////////////////////////command/////////////////////////////////
-            MycatCommand commandHanlder = Objects.requireNonNull(commandMap.get(command));
+            MycatCommand commandHanlder = Objects.requireNonNull(commandMap.getOrDefault(command, MycatdbCommand.INSTANCE));
             SQLRequest sqlRequest = new SQLRequest(sessionId,text, context, this);
             if (explainCommand) {
                 return commandHanlder.explain(sqlRequest, dataContext,response);
