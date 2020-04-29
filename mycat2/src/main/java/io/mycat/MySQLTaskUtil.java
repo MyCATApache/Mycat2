@@ -137,10 +137,8 @@ public class MySQLTaskUtil {
                         };
                         if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
                             sessionCallBack.onSession(session, this, null);
-                            return;
                         } else {
                             syncState(session, transactionType, isolation, sessionCallBack);
-                            return;
                         }
                     }
 
