@@ -18,9 +18,7 @@ package io.mycat.client;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRecoverDDLJob;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
@@ -43,7 +41,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -457,7 +454,7 @@ public enum ClientRuntime {
             for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
                 itemMap.put(noTablesPatternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
             }
-            Supplier<GPattern> noTablesPattern = () -> noTablesPatternBuilder.createGroupPattern();
+            Supplier<GPattern> noTablesPattern = noTablesPatternBuilder::createGroupPattern;
             Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new ConcurrentHashMap<>();
             for (PatternRootConfig.SchemaConfig schema : schemas) {
                 ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> map = new ConcurrentHashMap<>();
@@ -466,7 +463,7 @@ public enum ClientRuntime {
                     map.put(tablesPatternBuilder.addRule(sql.getSql()), sql);
                 }
                 List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new CopyOnWriteArrayList<>());
-                tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(), () -> tablesPatternBuilder.createGroupPattern()));
+                tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(), tablesPatternBuilder::createGroupPattern));
             }
             GPatternIdRecorderImpl gPatternIdRecorder = new GPatternIdRecorderImpl(false);
             TableCollectorBuilder tableCollectorBuilder = new TableCollectorBuilder(gPatternIdRecorder, (Map) getTableMap(schemas));
@@ -478,13 +475,12 @@ public enum ClientRuntime {
     }
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
-        return schemaConfigs.stream().flatMap(i -> {
-            return i.getTables().stream().map(commonTableName -> splitSchemaTable(commonTableName));
-        }).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
+        return schemaConfigs.stream().flatMap(i -> i.getTables().stream().map(ClientRuntime::splitSchemaTable))
+                .collect(Collectors.groupingBy(SchemaTable::getSchemaName, Collectors.mapping(SchemaTable::getTableName, Collectors.toSet())));
     }
 
     private Map<String, Set<String>> getTableMap(PatternRootConfig.SchemaConfig schemaConfig) {
-        return schemaConfig.getTables().stream().map(ClientRuntime::splitSchemaTable).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
+        return schemaConfig.getTables().stream().map(ClientRuntime::splitSchemaTable).collect(Collectors.groupingBy(SchemaTable::getSchemaName, Collectors.mapping(SchemaTable::getTableName, Collectors.toSet())));
 
     }
 
