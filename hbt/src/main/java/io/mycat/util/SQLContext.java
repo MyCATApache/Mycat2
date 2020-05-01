@@ -21,27 +21,27 @@ public interface SQLContext {
         setParameters(Collections.emptyMap());
     }
 
-    SelectStatementHandler selectStatementHandler();
-
-    InsertStatementHandler insertStatementHandler();
-
-    DeleteStatementHandler deleteStatementHandler();
-
-    LoaddataStatementHandler loaddataStatementHandler();
-
-    SetStatementHandler setStatementHandler();
-
-    TCLStatementHandler tclStatementHandler();
+//    SelectStatementHandler selectStatementHandler();
+//
+//    InsertStatementHandler insertStatementHandler();
+//
+//    DeleteStatementHandler deleteStatementHandler();
+//
+//    LoaddataStatementHandler loaddataStatementHandler();
+//
+//    SetStatementHandler setStatementHandler();
+//
+//    TCLStatementHandler tclStatementHandler();
 
     void setDefaultSchema(String simpleName);
 
-    UtilityStatementHandler utilityStatementHandler();
-    ReplaceStatementHandler replaceStatementHandler();
-    DDLStatementHandler ddlStatementHandler();
-
-    ShowStatementHandler showStatementHandler();
-
-    UpdateStatementHandler updateStatementHandler();
+//    UtilityStatementHandler utilityStatementHandler();
+//    ReplaceStatementHandler replaceStatementHandler();
+//    DDLStatementHandler ddlStatementHandler();
+//
+//    ShowStatementHandler showStatementHandler();
+//
+//    UpdateStatementHandler updateStatementHandler();
 
    default String simplySql(String explain){
        return explain;
@@ -49,7 +49,7 @@ public interface SQLContext {
 
     long lastInsertId();
 
-    TruncateStatementHandler truncateStatementHandler();
-
-    HintStatementHanlder hintStatementHanlder();
+//    TruncateStatementHandler truncateStatementHandler();
+//
+//    HintStatementHanlder hintStatementHanlder();
 }

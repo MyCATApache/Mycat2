@@ -15,7 +15,7 @@
 package io.mycat.commands;
 
 import io.mycat.MycatDataContext;
-import io.mycat.client.SQLRequest;
+import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 
 /**
@@ -23,9 +23,9 @@ import io.mycat.util.Response;
  */
 public interface MycatCommand {
 
-    boolean run(SQLRequest request, MycatDataContext context, Response response);
+    boolean run(MycatRequest request, MycatDataContext context, Response response);
 
-    boolean explain(SQLRequest request,MycatDataContext context, Response response);
+    boolean explain(MycatRequest request, MycatDataContext context, Response response);
 
     String getName();
 }

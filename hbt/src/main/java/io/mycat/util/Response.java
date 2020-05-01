@@ -8,6 +8,8 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.resultset.MycatResponse;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.Supplier;
 
 public interface Response {
 
@@ -17,7 +19,7 @@ public interface Response {
 
     void sendOk();
 
-    void evalSimpleSql(SQLSelectStatement evalSimpleSql);
+    void evalSimpleSql(SQLStatement  evalSimpleSql);
 
     default void proxySelect(String defaultTargetName, SQLSelectStatement statement) {
         proxySelect(defaultTargetName, statement.toString());
@@ -39,9 +41,9 @@ public interface Response {
 
     void sendExplain(Class defErrorCommandClass, Object map);
 
-    void sendResultSet(RowBaseIterator rowBaseIterator);
+    void sendResultSet(RowBaseIterator rowBaseIterator, Supplier<List<String>> explainSupplier);
 
-    void sendResponse(MycatResponse[] mycatResponses);
+    void sendResponse(MycatResponse[] mycatResponses, Supplier<List<String>> explainSupplier);
 
     void rollback();
 

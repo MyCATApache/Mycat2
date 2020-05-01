@@ -2,7 +2,7 @@ package io.mycat.commands;
 
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.client.SQLRequest;
+import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 public class OnXACommand implements MycatCommand{
     final static Logger LOGGER = LoggerFactory.getLogger(OnXACommand.class);
     @Override
-    public boolean run(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         if (context.isInTransaction()) throw new IllegalArgumentException();
         context.switchTransaction(TransactionType.JDBC_TRANSACTION_TYPE);
         LOGGER.debug("session id:{} action:{}", request.getSessionId(), "set xa = 1 exe success");
@@ -19,7 +19,7 @@ public class OnXACommand implements MycatCommand{
     }
 
     @Override
-    public boolean explain(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         response.sendExplain(OnXACommand.class,TransactionType.JDBC_TRANSACTION_TYPE);
         return true;
     }

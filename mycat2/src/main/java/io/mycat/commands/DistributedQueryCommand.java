@@ -3,7 +3,7 @@ package io.mycat.commands;
 import io.mycat.MycatDataContext;
 import io.mycat.PlanRunner;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
-import io.mycat.client.SQLRequest;
+import io.mycat.client.MycatRequest;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
@@ -15,17 +15,17 @@ import java.util.Collections;
 public class DistributedQueryCommand implements MycatCommand{
     final static Logger logger = LoggerFactory.getLogger(DistributedQueryCommand.class);
     @Override
-    public boolean run(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String sql = request.getText();
         MycatDBClientMediator client = MycatDBs.createClient(context);
         MycatSQLPrepareObject mycatSQLPrepareObject = client.getUponDBSharedServer().innerQueryPrepareObject(client.sqlContext().simplySql(sql), client);
         PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
-        response.sendResultSet(plan.run());
+        response.sendResultSet(plan.run(), () -> plan.explain());
         return true;
     }
 
     @Override
-    public boolean explain(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         String sql = request.getText();
         MycatDBClientMediator client = MycatDBs.createClient(context);
         MycatSQLPrepareObject mycatSQLPrepareObject = client.getUponDBSharedServer().innerQueryPrepareObject(client.sqlContext().simplySql(sql), client);

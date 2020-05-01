@@ -5,7 +5,7 @@ import io.mycat.ExplainDetail;
 import io.mycat.MycatDataContext;
 import io.mycat.TableCollector;
 import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
-import io.mycat.client.SQLRequest;
+import io.mycat.client.MycatRequest;
 import io.mycat.metadata.LogicTableType;
 import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -30,7 +30,7 @@ public class ExecuteCommand implements MycatCommand {
      * needTransaction:true|false
      */
     @Override
-    public boolean run(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String balanceConfig = request.getOrDefault("balance", null);
         String targetsConfig = request.getOrDefault("targets", null);
         boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));
@@ -43,7 +43,7 @@ public class ExecuteCommand implements MycatCommand {
     }
 
     @Override
-    public boolean explain(SQLRequest request, MycatDataContext context, Response response) {
+    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         String balanceConfig = request.getOrDefault("balance", null);
         String targetsConfig = request.getOrDefault("targets", null);
         boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));
@@ -60,7 +60,7 @@ public class ExecuteCommand implements MycatCommand {
         return "execute";
     }
 
-    public static ExplainDetail getDetails( SQLRequest request, MycatDataContext context,ExecuteType executeType){
+    public static ExplainDetail getDetails(MycatRequest request, MycatDataContext context, ExecuteType executeType){
       return getDetails(true, null, context, true, null, request.getText(), executeType, false);
 
     }

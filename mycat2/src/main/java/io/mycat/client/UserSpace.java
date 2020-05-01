@@ -93,7 +93,7 @@ public class UserSpace {
                 Optional<MycatResultSetResponse> mycatResultSetResponse = Optional.ofNullable(cacheMap.get(name)).map(i -> i.get());
                 if (mycatResultSetResponse.isPresent()) {
                     logger.info("\n" + context + "\n hit cache");
-                    response.sendResponse(new MycatResponse[]{mycatResultSetResponse.get()});
+                    response.sendResponse(new MycatResponse[]{mycatResultSetResponse.get()}, () -> Arrays.asList("cache :"+context));
                     return true;
                 }
             }
@@ -111,7 +111,7 @@ public class UserSpace {
             }
             //////////////////////////////////command/////////////////////////////////
             MycatCommand commandHanlder = Objects.requireNonNull(commandMap.getOrDefault(command, MycatdbCommand.INSTANCE));
-            SQLRequest sqlRequest = new SQLRequest(sessionId,text, context, this);
+            MycatRequest sqlRequest = new MycatRequest(sessionId,text, context, this);
             if (explainCommand) {
                 return commandHanlder.explain(sqlRequest, dataContext,response);
             } else {

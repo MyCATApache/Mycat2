@@ -85,7 +85,7 @@ public enum MycatCore {
         MetadataManager.INSTANCE.load(mycatConfig);
 
         CharsetUtil.init(null);
-        context.scanner("io.mycat").inject();
+        //context.scanner("io.mycat.sqlHandler").inject();
         startProxy(mycatConfig);
     }
 

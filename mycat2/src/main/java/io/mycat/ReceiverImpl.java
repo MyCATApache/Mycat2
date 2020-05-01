@@ -1,7 +1,6 @@
 package io.mycat;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLFieldsType;
@@ -23,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static io.mycat.SQLExecuterWriter.writeToMycatSession;
 
@@ -58,7 +58,7 @@ public class ReceiverImpl implements Response {
 
 
     @Override
-    public void evalSimpleSql(SQLSelectStatement sql) {
+    public void evalSimpleSql(SQLStatement  sql) {
         //没有处理的sql,例如没有替换事务状态,自动提交状态的sql,随机发到后端会返回该随机的服务器状态
         String target = session.isBindMySQLSession() ? session.getMySQLSession().getDatasource().getName() : ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
         ExplainDetail detail = ExplainDetail.builder()
@@ -154,12 +154,12 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void sendResultSet(RowBaseIterator rowBaseIterator) {
-        sendResponse(new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
+    public void sendResultSet(RowBaseIterator rowBaseIterator, Supplier<List<String>> explainSupplier) {
+        sendResponse(new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)},explainSupplier);
     }
 
     @Override
-    public void sendResponse(MycatResponse[] mycatResponses) {
+    public void sendResponse(MycatResponse[] mycatResponses,Supplier<List<String>> explainSupplier) {
         SQLExecuterWriter.writeToMycatSession(session, mycatResponses);
     }
 
