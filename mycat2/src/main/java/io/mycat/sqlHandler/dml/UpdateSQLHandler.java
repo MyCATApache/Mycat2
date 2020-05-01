@@ -6,7 +6,6 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
-import io.mycat.ReceiverImpl;
 import io.mycat.RootHelper;
 import io.mycat.metadata.ParseContext;
 import io.mycat.metadata.SchemaHandler;
@@ -79,9 +78,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override
     public ExecuteCode explain(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
-        updateHandler(request.getAst(),dataContext,(SQLExprTableSource) request.getAst().getTableSource(),new ReceiverImpl(response.){
 
-        });
         return ExecuteCode.PERFORMED;
     }
 }
