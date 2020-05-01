@@ -3,7 +3,10 @@ package io.mycat.sqlHandler.dql;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.*;
+import io.mycat.MycatDataContext;
+import io.mycat.MycatException;
+import io.mycat.PlanRunner;
+import io.mycat.RootHelper;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.metadata.SchemaHandler;
@@ -142,5 +145,11 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             someTables = x;
             return super.visit(x);
         }
+    }
+
+    @Override
+    protected ExecuteCode onExplain(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+        response.setExplainMode(true);
+        return  onExecute(request, dataContext,response);
     }
 }

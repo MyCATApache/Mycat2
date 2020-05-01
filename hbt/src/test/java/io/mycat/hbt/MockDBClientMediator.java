@@ -123,12 +123,22 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
+    public String getSchema() {
+        return null;
+    }
+
+    @Override
     public void begin() {
 
     }
 
     @Override
     public void rollback() {
+
+    }
+
+    @Override
+    public void useSchema(String normalize) {
 
     }
 
@@ -165,6 +175,16 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     @Override
     public boolean isInTransaction() {
         return false;
+    }
+
+    @Override
+    public long getMaxRow() {
+        return 0;
+    }
+
+    @Override
+    public void setMaxRow(long value) {
+
     }
 
     @Override

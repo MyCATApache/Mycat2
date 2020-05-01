@@ -1,6 +1,7 @@
 package io.mycat;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.ToString;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 @ToString
 @Builder
+@Data
 public class ExplainDetail {
     ExecuteType executeType;
     Map<String, List<String>> targets;

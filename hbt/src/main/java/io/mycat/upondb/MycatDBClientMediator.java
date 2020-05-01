@@ -7,8 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public abstract class MycatDBClientMediator implements MycatDBContext {
-    private String schema;
-    private long maxRow;
 
 
     @Override
@@ -54,26 +52,6 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
     @Override
     public RowBaseIterator executeRel(String text) {
         return getUponDBSharedServer().executeRel(text,(MycatDBContext) this);
-    }
-
-    @Override
-    public String getSchema() {
-        return schema;
-    }
-
-    @Override
-    public void useSchema(String normalize) {
-        schema = normalize;
-    }
-
-    @Override
-    public long getMaxRow() {
-        return maxRow;
-    }
-
-    @Override
-    public void setMaxRow(long value) {
-        maxRow = value;
     }
 
 

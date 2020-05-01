@@ -7,6 +7,7 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
+import io.mycat.commands.ExecuteCommand;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.proxy.ResultSetProvider;
@@ -30,10 +31,17 @@ import static io.mycat.SQLExecuterWriter.writeToMycatSession;
 public class ReceiverImpl implements Response {
     static final Logger LOGGER = LoggerFactory.getLogger(ReceiverImpl.class);
 
-   protected final MycatSession session;
+    protected final MycatSession session;
+    private boolean explainMode = false;
 
     public ReceiverImpl(MycatSession session) {
         this.session = session;
+    }
+
+
+    @Override
+    public void setExplainMode(boolean bool) {
+        this.explainMode = bool;
     }
 
     @Override
@@ -46,59 +54,71 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void sendError(Throwable e) {
-        session.setLastMessage(e);
-        session.writeErrorEndPacketBySyncInProcessError();
-
+        if (!this.explainMode) {
+            session.setLastMessage(e);
+            session.writeErrorEndPacketBySyncInProcessError();
+        } else {
+            sendExplain(null, "sendError=" + e);
+        }
     }
 
     @Override
     public void sendOk() {
-        session.writeOkEndPacket();
+        if (!this.explainMode) {
+            session.writeOkEndPacket();
+        } else {
+            sendExplain(null, "sendOk");
+        }
     }
 
 
     @Override
-    public void evalSimpleSql(SQLStatement  sql) {
+    public void evalSimpleSql(SQLStatement sql) {
         //没有处理的sql,例如没有替换事务状态,自动提交状态的sql,随机发到后端会返回该随机的服务器状态
         String target = session.isBindMySQLSession() ? session.getMySQLSession().getDatasource().getName() : ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.QUERY)
-                .needStartTransaction(true)
-                .targets(Collections.singletonMap(target, Collections.singletonList(Objects.toString(sql))))
-                .build();
-        execute(detail);
+        ExplainDetail detail = getExplainDetail(target, sql.toString(), ExecuteType.QUERY);
+        if (this.explainMode){
+            sendExplain(null,detail.toExplain());
+        }else {
+            if (detail.needStartTransaction){//需要事务就开启事务
+                session.getDataContext().getTransactionSession().begin();
+            }
+            block(session -> {
+                try(DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(target)){
+                    try(RowBaseIterator rowBaseIterator = connection.executeQuery(sql.toString())) {
+                        sendResultSet(rowBaseIterator, () -> {
+                            throw new UnsupportedOperationException();
+                        });
+                    }
+                }
+            });
+        }
     }
 
     @Override
     public void proxySelect(String defaultTargetName, String statement) {
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.QUERY)
-                .needStartTransaction(true)
-                .targets(Collections.singletonMap(defaultTargetName, Collections.singletonList(statement)))
-                .build();
+        ExplainDetail detail = getExplainDetail(defaultTargetName, statement, ExecuteType.QUERY);
         execute(detail);
     }
 
 
     @Override
     public void proxyUpdate(String defaultTargetName, String sql) {
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.UPDATE)
-                .needStartTransaction(true)
-                .targets(Collections.singletonMap(defaultTargetName, Collections.singletonList(sql)))
-                .build();
+        String text = sql;
+        ExecuteType executeType = ExecuteType.UPDATE;
+        ExplainDetail detail = getExplainDetail(defaultTargetName, text, executeType);
         this.execute(detail);
+    }
+
+    public ExplainDetail getExplainDetail(String defaultTargetName, String text, ExecuteType executeType) {
+        return ExecuteCommand.getDetails(false, defaultTargetName, session.getDataContext(), null, text, executeType, false);
     }
 
 
     @Override
     public void proxyDDL(SQLStatement statement) {
         String datasourceNameByRandom = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.UPDATE)
-                .needStartTransaction(true)
-                .targets(Collections.singletonMap(datasourceNameByRandom, Collections.singletonList(Objects.toString(statement))))
-                .build();
+        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), ExecuteType.UPDATE);
         this.execute(detail);
     }
 
@@ -109,26 +129,20 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void multiUpdate(String string, Iterator<TextUpdateInfo> apply) {
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.UPDATE)
-                .needStartTransaction(true)
-                .targets(toMap(apply))
-                .build();
+        ExplainDetail detail = getExplainDetail(string, "", ExecuteType.UPDATE);
+        detail.setTargets(toMap(apply));
         this.execute(detail);
     }
 
     @Override
     public void multiInsert(String string, Iterator<TextUpdateInfo> apply) {
-        ExplainDetail detail = ExplainDetail.builder()
-                .executeType(ExecuteType.INSERT)
-                .needStartTransaction(true)
-                .targets(toMap(apply))
-                .build();
+        ExplainDetail detail = getExplainDetail(string, "", ExecuteType.INSERT);
+        detail.setTargets(toMap(apply));
         this.execute(detail);
     }
 
     @NotNull
-    public static   Map<String, List<String>> toMap(Iterator<TextUpdateInfo> apply) {
+    public static Map<String, List<String>> toMap(Iterator<TextUpdateInfo> apply) {
         Map<String, List<String>> map = new HashMap<>();
         while (apply.hasNext()) {
             TextUpdateInfo next = apply.next();
@@ -142,34 +156,49 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void sendError(String errorMessage, int errorCode) {
-        session.setLastMessage(errorMessage);
-        session.setLastErrorCode(errorCode);
-        session.writeErrorEndPacketBySyncInProcessError();
+        if (!this.explainMode) {
+            session.setLastMessage(errorMessage);
+            session.setLastErrorCode(errorCode);
+            session.writeErrorEndPacketBySyncInProcessError();
+        } else {
+            sendExplain(null, "sendError:" + errorMessage + " errorCode:" + errorCode);
+        }
     }
 
     /**
-     *
      * @param defErrorCommandClass 可空
      * @param map
      */
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
-        String message = defErrorCommandClass==null?"":Objects.toString(defErrorCommandClass)+":"+Objects.toString(map);
+        String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session, message);
     }
 
     @Override
     public void sendResultSet(RowBaseIterator rowBaseIterator, Supplier<List<String>> explainSupplier) {
-        sendResponse(new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)},explainSupplier);
+        if (!this.explainMode) {
+            sendResponse(new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)}, explainSupplier);
+        } else {
+            sendExplain(null, explainSupplier.get());
+        }
     }
 
     @Override
-    public void sendResponse(MycatResponse[] mycatResponses,Supplier<List<String>> explainSupplier) {
-        SQLExecuterWriter.writeToMycatSession(session, mycatResponses);
+    public void sendResponse(MycatResponse[] mycatResponses, Supplier<List<String>> explainSupplier) {
+        if (!this.explainMode) {
+            SQLExecuterWriter.writeToMycatSession(session, mycatResponses);
+        } else {
+            sendExplain(null, explainSupplier.get());
+        }
     }
 
     @Override
     public void rollback() {
+        if (this.explainMode) {
+            sendExplain(null, "rollback");
+            return;
+        }
         MycatDataContext dataContext = session.getDataContext();
         TransactionType transactionType = dataContext.transactionType();
         TransactionSession transactionSession = dataContext.getTransactionSession();
@@ -196,6 +225,10 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void begin() {
+        if (this.explainMode) {
+            sendExplain(null, "begin");
+            return;
+        }
         MycatDataContext dataContext = session.getDataContext();
         TransactionType transactionType = dataContext.transactionType();
         TransactionSession transactionSession = dataContext.getTransactionSession();
@@ -216,6 +249,10 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void commit() {
+        if (this.explainMode) {
+            sendExplain(null, "commit");
+            return;
+        }
         MycatDataContext dataContext = session.getDataContext();
         TransactionType transactionType = dataContext.transactionType();
         TransactionSession transactionSession = dataContext.getTransactionSession();
@@ -243,12 +280,22 @@ public class ReceiverImpl implements Response {
     @Override
     public void execute(ExplainDetail details) {
         MycatDataContext client = Objects.requireNonNull(session.unwrap(MycatDataContext.class));
-        Map<String, List<String>> tasks = details.targets;
+        Map<String, List<String>> tasks = Objects.requireNonNull(details.targets);
         String balance = details.balance;
         ExecuteType executeType = details.executeType;
         MySQLIsolation isolation = session.getIsolation();
+//        boolean isMaster = executeType.isMaster() || (!session.isAutocommit() || session.isInTransaction()) || details.globalTableUpdate;
+//        details.setTargets(resolveDataSourceName(balance, isMaster, tasks));
+        if (this.explainMode) {
+            sendExplain(null, "execute:"+ details);
+            return;
+        }
 
         LOGGER.debug("session id:{} execute :{}", session.sessionId(), details.toString());
+        if ("SELECT 0 AS `@@session.transaction_read_only`".equalsIgnoreCase(details.getTargets().values().iterator().next().get(0))
+        &&details.needStartTransaction){
+            System.out.println();
+        }
 
         if (details.globalTableUpdate & (client.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE || details.forceProxy)) {
             executeGlobalUpdateByProxy(details);
@@ -373,5 +420,16 @@ public class ReceiverImpl implements Response {
         } else {
             consumer.accept(session);
         }
+    }
+
+    @NotNull
+    private static HashMap<String, List<String>> resolveDataSourceName(String balance, boolean master, Map<String, List<String>> routeMap) {
+        HashMap<String, List<String>> map = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : routeMap.entrySet()) {
+            String datasourceNameByReplicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey(), master, balance);
+            List<String> list = map.computeIfAbsent(datasourceNameByReplicaName, s -> new ArrayList<>(1));
+            list.addAll(entry.getValue());
+        }
+        return map;
     }
 }

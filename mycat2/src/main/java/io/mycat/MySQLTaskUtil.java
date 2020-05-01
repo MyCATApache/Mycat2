@@ -100,7 +100,6 @@ public class MySQLTaskUtil {
                                                 MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
                                                 TransactionSyncType transactionType,
                                                 MySQLIsolation isolation) {
-        assert (Thread.currentThread() instanceof MycatReactorThread);
         Objects.requireNonNull(datasourceName);
         mycat.switchProxyWriteHandler();
         mycat.getIOThread().addNIOJob(new NIOJob() {
@@ -113,8 +112,10 @@ public class MySQLTaskUtil {
                         MySQLClientSession mySQLSession = mycat.getMySQLSession();
                         if (datasourceName.equals(mySQLSession.getDatasourceName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
                             mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
+                            return;
                         } else {
                             mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
+                            return;
                         }
                     } else {
                         mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
@@ -200,7 +201,7 @@ public class MySQLTaskUtil {
                 if (!inTransaction) {
                     return SET_AUTOCOMMIT_OFF;
                 } else {
-                   return SET_AUTOCOMMIT_ON_BEGIN;
+                    return SET_AUTOCOMMIT_ON_BEGIN;
                 }
             }
         }

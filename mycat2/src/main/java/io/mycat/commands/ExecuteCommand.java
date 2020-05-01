@@ -37,7 +37,7 @@ public class ExecuteCommand implements MycatCommand {
         boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("forceProxy", Boolean.FALSE.toString()));
         boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("metaData", Boolean.FALSE.toString()));
         ExecuteType executeType = ExecuteType.valueOf(request.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
-        ExplainDetail detail = getDetails(metaData, targetsConfig, context,needTransaction,balanceConfig,request.getText(),executeType,forceProxy);
+        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy);
         response.execute(detail);
         return true;
     }
@@ -46,12 +46,11 @@ public class ExecuteCommand implements MycatCommand {
     public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         String balanceConfig = request.getOrDefault("balance", null);
         String targetsConfig = request.getOrDefault("targets", null);
-        boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));
         boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("forceProxy", Boolean.FALSE.toString()));
         boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("metaData", Boolean.FALSE.toString()));
         ExecuteType executeType = ExecuteType.valueOf(request.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
-        ExplainDetail detail = getDetails(metaData,targetsConfig,context,needTransaction,balanceConfig,request.getText(),executeType,forceProxy);
-        response.sendExplain(ExecuteCommand.class,detail);
+        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy);
+        response.sendExplain(ExecuteCommand.class, detail);
         return true;
     }
 
@@ -60,19 +59,18 @@ public class ExecuteCommand implements MycatCommand {
         return "execute";
     }
 
-    public static ExplainDetail getDetails(MycatRequest request, MycatDataContext context, ExecuteType executeType){
-      return getDetails(true, null, context, true, null, request.getText(), executeType, false);
+    public static ExplainDetail getDetails(MycatRequest request, MycatDataContext context, ExecuteType executeType) {
+        return getDetails(true, null, context, null, request.getText(), executeType, false);
 
     }
 
     public static ExplainDetail getDetails(boolean metaData,
-                                    String targetsConfig,
-                                    MycatDataContext context,
-                                    boolean needStartTransaction,
-                                    String balance,
-                                    String sql,
-                                    ExecuteType executeType, boolean forceProxy) {
-        needStartTransaction = needStartTransaction && (!context.isAutocommit() || context.isInTransaction());
+                                           String targetsConfig,
+                                           MycatDataContext context,
+                                           String balance,
+                                           String sql,
+                                           ExecuteType executeType, boolean forceProxy) {
+        boolean needStartTransaction = (!context.isAutocommit() || context.isInTransaction());
         if (metaData) {
             Map<String, Collection<String>> tableMap = TableCollector.collect(context.getDefaultSchema(), sql);
             Iterator<Map.Entry<String, Collection<String>>> iterator = tableMap.entrySet().iterator();
@@ -92,18 +90,18 @@ public class ExecuteCommand implements MycatCommand {
             Map<String, List<String>> routeMap = mycatTextUpdatePrepareObject.getRouteMap();
             return ExplainDetail.builder()
                     .executeType(executeType)
-                    .targets( resolveDataSourceName(balance, master, routeMap))
+                    .targets(resolveDataSourceName(balance, master, routeMap))
                     .globalTableUpdate(isGlobal)
                     .forceProxy(forceProxy)
                     .needStartTransaction(needStartTransaction)
                     .build();
-        }else {
+        } else {
             String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(
                     Objects.requireNonNull(targetsConfig, "can not get " + targetsConfig + " of " + "targets"),
-                    needStartTransaction||executeType.isMaster(), balance);
+                    needStartTransaction || executeType.isMaster(), balance);
             return ExplainDetail.builder()
                     .executeType(executeType)
-                    .targets( Collections.singletonMap(replicaName, Collections.singletonList(sql)))
+                    .targets(Collections.singletonMap(replicaName, Collections.singletonList(sql)))
                     .balance(balance)
                     .forceProxy(forceProxy)
                     .needStartTransaction(needStartTransaction)

@@ -317,5 +317,7 @@ public class SQLContextImpl implements SQLContext {
 
     static void addFunction(MySQLFunction function) {
         functions.put(function.getFunctionName(), function);
+        functions.put(function.getFunctionName().toUpperCase(), function);
+        functions.put(function.getFunctionName().toLowerCase(), function);
     }
 }

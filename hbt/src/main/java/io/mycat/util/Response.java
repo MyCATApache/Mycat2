@@ -13,6 +13,8 @@ import java.util.function.Supplier;
 
 public interface Response {
 
+    void setExplainMode(boolean bool);
+
     void setHasMore(boolean more);
 
     void sendError(Throwable e);

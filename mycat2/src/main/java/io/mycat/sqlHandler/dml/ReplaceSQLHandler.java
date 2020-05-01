@@ -2,7 +2,6 @@ package io.mycat.sqlHandler.dml;
 
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLReplaceStatement;
-import io.mycat.ExplainResponse;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
@@ -23,9 +22,10 @@ public class ReplaceSQLHandler extends AbstractSQLHandler<SQLReplaceStatement> {
         return ExecuteCode.PERFORMED;
     }
     @Override
-    public ExecuteCode explain(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
+    public ExecuteCode onExplain(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
+        response.setExplainMode(true);
         SQLExprTableSource tableSource = (SQLExprTableSource)request.getAst().getTableSource();
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,new ExplainResponse(ReplaceSQLHandler.class,response) );
+        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,response );
         return ExecuteCode.PERFORMED;
     }
 }

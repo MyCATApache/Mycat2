@@ -76,8 +76,9 @@ public enum MySQLPacketExchanger {
     private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
         mycatSession.resetPacket();
         mysql.resetPacket();
-        LOGGER.debug("unbind mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
+
         if (!mysql.isMonopolized()) {
+            LOGGER.debug("unbind mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
             mycatSession.setMySQLSession(null);
             mysql.setMycatSession(null);
             MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);

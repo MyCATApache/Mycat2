@@ -8,6 +8,7 @@ import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -62,12 +63,22 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
     @Override
     public boolean visit(SQLVariantRefExpr x) {
         SQLObject parent = x.getParent();
+        if (parent instanceof  SQLAssignItem ||parent.getParent() instanceof SQLAssignItem){//set 语句不处理
+            return super.visit(x);
+        }
         if (parent instanceof SQLPropertyExpr) {
             SQLObject replacePointer = parent.getParent();
             if (replacePointer instanceof SQLReplaceable) {
                 String alias = replacePointer.toString();
                 Object sqlVariantRef = context.getSQLVariantRef(parent.toString().toLowerCase());
                 if (sqlVariantRef != null) {
+                    if (sqlVariantRef instanceof Boolean){
+                        if (Boolean.TRUE.equals(sqlVariantRef)){
+                            sqlVariantRef = 1;
+                        }else {
+                            sqlVariantRef = 0;
+                        }
+                    }
                     SQLExpr sqlExpr = SQLExprUtils.fromJavaObject(sqlVariantRef);
                     sqlExpr.setParent(parent);
                     ((SQLReplaceable) replacePointer).replace((SQLPropertyExpr) parent, sqlExpr);

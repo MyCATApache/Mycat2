@@ -157,6 +157,11 @@ public class MycatDBs {
             }
 
             @Override
+            public String getSchema() {
+                return dataContext.getDefaultSchema();
+            }
+
+            @Override
             public void begin() {
                 dataContext.getTransactionSession().begin();
             }
@@ -164,6 +169,11 @@ public class MycatDBs {
             @Override
             public void rollback() {
                 dataContext.getTransactionSession().rollback();
+            }
+
+            @Override
+            public void useSchema(String normalize) {
+                dataContext.useShcema(normalize);
             }
 
             @Override
@@ -199,6 +209,16 @@ public class MycatDBs {
             @Override
             public boolean isInTransaction() {
                 return dataContext.isInTransaction();
+            }
+
+            @Override
+            public long getMaxRow() {
+                return Integer.MAX_VALUE;
+            }
+
+            @Override
+            public void setMaxRow(long value) {
+
             }
 
             @Override

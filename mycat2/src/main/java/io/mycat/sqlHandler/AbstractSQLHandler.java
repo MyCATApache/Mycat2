@@ -34,9 +34,24 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
 
     protected void onExecuteBefore(SQLRequest<Statement> request, MycatDataContext dataContext, Response respons){}
     protected abstract ExecuteCode onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response);
+    protected  ExecuteCode onExplain(SQLRequest<Statement> request, MycatDataContext dataContext, Response response){
+        return ExecuteCode.NOT_PERFORMED;
+    }
     protected void onExecuteAfter(SQLRequest<Statement> request,MycatDataContext dataContext,  Response response){
 
-    }
 
+
+    }
+    @Override
+    public ExecuteCode explain(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
+        if(!statementClass.isInstance(request.getAst())){
+            return ExecuteCode.NOT_PERFORMED;
+        }
+        try {
+            return onExplain(request,dataContext,response);
+        } finally {
+
+        }
+    }
 
 }

@@ -33,7 +33,7 @@ public interface SQLHandler<Statement extends SQLStatement> {
     }
 
     default ExecuteCode explain(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
-        throw new UnsupportedOperationException();
+       return ExecuteCode.NOT_PERFORMED;
     }
 
 
