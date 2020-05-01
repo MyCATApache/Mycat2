@@ -74,7 +74,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         if (sql instanceof MySqlInsertStatement) {
             receiver.multiInsert(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
         } else {
-            receiver.multiUpdate(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
+            receiver.multiUpdate(string, tableHandler.updateHandler().apply(new ParseContext(sql.toString())));
         }
 
     }
