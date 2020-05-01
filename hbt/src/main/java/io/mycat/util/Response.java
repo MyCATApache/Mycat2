@@ -39,6 +39,11 @@ public interface Response {
 
     void sendError(String errorMessage, int errorCode);
 
+    /**
+     *
+     * @param defErrorCommandClass 可空
+     * @param map
+     */
     void sendExplain(Class defErrorCommandClass, Object map);
 
     void sendResultSet(RowBaseIterator rowBaseIterator, Supplier<List<String>> explainSupplier);

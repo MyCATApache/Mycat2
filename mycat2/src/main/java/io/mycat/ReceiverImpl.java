@@ -30,7 +30,7 @@ import static io.mycat.SQLExecuterWriter.writeToMycatSession;
 public class ReceiverImpl implements Response {
     static final Logger LOGGER = LoggerFactory.getLogger(ReceiverImpl.class);
 
-    final MycatSession session;
+   protected final MycatSession session;
 
     public ReceiverImpl(MycatSession session) {
         this.session = session;
@@ -128,7 +128,7 @@ public class ReceiverImpl implements Response {
     }
 
     @NotNull
-    public Map<String, List<String>> toMap(Iterator<TextUpdateInfo> apply) {
+    public static   Map<String, List<String>> toMap(Iterator<TextUpdateInfo> apply) {
         Map<String, List<String>> map = new HashMap<>();
         while (apply.hasNext()) {
             TextUpdateInfo next = apply.next();
@@ -147,9 +147,14 @@ public class ReceiverImpl implements Response {
         session.writeErrorEndPacketBySyncInProcessError();
     }
 
+    /**
+     *
+     * @param defErrorCommandClass 可空
+     * @param map
+     */
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
-        String message = Objects.toString(map);
+        String message = defErrorCommandClass==null?"":Objects.toString(defErrorCommandClass)+":"+Objects.toString(map);
         writePlan(session, message);
     }
 

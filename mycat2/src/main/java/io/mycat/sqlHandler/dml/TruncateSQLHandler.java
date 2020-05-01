@@ -2,6 +2,7 @@ package io.mycat.sqlHandler.dml;
 
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLTruncateStatement;
+import io.mycat.ExplainResponse;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
@@ -20,6 +21,12 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
     protected ExecuteCode onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) {
         SQLExprTableSource tableSource = request.getAst().getTableSources().get(0);
         updateHandler(request.getAst(), dataContext, tableSource, response);
+        return ExecuteCode.PERFORMED;
+    }
+    @Override
+    public ExecuteCode explain(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) {
+        SQLExprTableSource tableSource = request.getAst().getTableSources().get(0);
+        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,new ExplainResponse(TruncateSQLHandler.class,response) );
         return ExecuteCode.PERFORMED;
     }
 }

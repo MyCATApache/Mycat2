@@ -2,6 +2,7 @@ package io.mycat.sqlHandler.dml;
 
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import io.mycat.ExplainResponse;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
@@ -21,5 +22,10 @@ public class InsertSQLHandler extends AbstractSQLHandler<MySqlInsertStatement> {
         updateHandler(request.getAst(),dataContext,tableSource,response);
         return ExecuteCode.PERFORMED;
     }
-
+    @Override
+    public ExecuteCode explain(SQLRequest<MySqlInsertStatement> request, MycatDataContext dataContext, Response response) {
+        SQLExprTableSource tableSource = (SQLExprTableSource)request.getAst().getTableSource();
+        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,new ExplainResponse(DeleteSQLHandler.class,response) );
+        return ExecuteCode.PERFORMED;
+    }
 }
