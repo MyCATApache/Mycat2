@@ -96,6 +96,11 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
             if (sqlVariantRef != null) {
                 SQLExpr sqlExpr = SQLExprUtils.fromJavaObject(sqlVariantRef);
                 sqlExpr.setParent(parent);
+                //查询变量的替换,mycat内部保留原始名称 wangzihaogithub. 2020年5月2日19:15:12
+                if(parent instanceof SQLSelectItem && ((SQLSelectItem) parent).getAlias() == null){
+                    ((SQLSelectItem) parent).setAlias(x.toString());
+                }
+                //-----------------------
                 ((SQLReplaceable) parent).replace(x, sqlExpr);
             }
         }

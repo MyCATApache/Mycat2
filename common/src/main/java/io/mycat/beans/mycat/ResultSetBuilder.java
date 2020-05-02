@@ -49,7 +49,7 @@ public class ResultSetBuilder {
         objectList.add(new Object[]{row});
     }
 
-    public void addObjectRowPayload(List<Object> row) {
+    public void addObjectRowPayload(List row) {
         objectList.add(row.toArray());
     }
 
