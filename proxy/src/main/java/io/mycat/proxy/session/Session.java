@@ -51,7 +51,8 @@ public interface Session<T extends Session> extends Wrapper {
   static String getThrowableString(Throwable e) {
     StringWriter errors = new StringWriter();
     e.printStackTrace(new PrintWriter(errors));
-    return MessageFormat.format("{0} \n {1}",e,errors.toString());
+    //去掉重复提示的消息 return MessageFormat.format("{0} \n {1}",e,errors.toString());
+    return errors.toString();
   }
 
   /**
