@@ -1,18 +1,20 @@
 package io.mycat.sqlHandler.dql;
 
+import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.interpreter.TypeCalculation;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
-import io.mycat.PlanRunner;
-import io.mycat.RootHelper;
+import io.mycat.*;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
+import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -42,52 +44,62 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
     protected ExecuteCode onSelectNoTable(SQLSelectQueryBlock sqlSelectQueryBlock,
                                           SQLRequest<SQLSelectStatement> request, Response receiver) {
-        SQLContext sqlContext = request.getContext();
-        SQLSelectStatement statement = request.getAst();
-        receiver.evalSimpleSql(statement);
-        return ExecuteCode.PERFORMED;
+//        SQLContext sqlContext = request.getContext();
+//        SQLSelectStatement statement = request.getAst();
+//        receiver.evalSimpleSql(statement);
+//        return ExecuteCode.PERFORMED;
+        return onSelectDual(sqlSelectQueryBlock,request,receiver);
     }
 
     protected ExecuteCode onSelectDual(SQLSelectQueryBlock sqlSelectQueryBlock,
-                                       SQLRequest<SQLSelectStatement> request, Response receiver,ASTCheckCollector collector) {
+                                       SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLSelectQueryBlock queryBlock = (SQLSelectQueryBlock)(request.getAst().getSelect().getQuery());
         List<SQLSelectItem> selectItems =  queryBlock.getSelectList();
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        List<String> payloadList = new ArrayList<>();
-        List<String> explainList = new ArrayList<>();
-//        resultSetBuilder.addObjectRowPayload((Object[]) null);
+        List<Object> payloadList = new ArrayList<>();
         for (SQLSelectItem selectItem : selectItems) {
             SQLExpr expr = selectItem.getExpr();
             SQLDataType dataType = expr.computeDataType();
             if(expr instanceof SQLIdentifierExpr){
                 receiver.sendError(new MycatException("no support field query. field={} ",expr));
                 return ExecuteCode.PROXY_ERROR;
+            }else if(expr instanceof SQLVariantRefExpr){
+                receiver.sendError(new MycatException("no support variable. field={} ",expr));
+                return ExecuteCode.PROXY_ERROR;
             }
 
             boolean isNull = dataType == null;
             int dataTypeInt;
-            String payload;
+            Object payload;
+            String column = normalize(selectItem.getAlias());
             if(isNull){
                 dataTypeInt = JDBCType.NULL.getVendorTypeNumber();
                 payload = null;
+            }else if((dataType.isInt() || dataType.isNumberic()) && expr instanceof SQLBinaryOpExpr){//数学计算
+                dataTypeInt = dataType.jdbcType();
+                if(column == null) {
+                    column = expr.toString();
+                }
+                try {
+                    payload = TypeCalculation.calculateLiteralValue(expr.toString(), Collections.emptyMap());
+                }catch (java.lang.UnsupportedOperationException e){
+                    receiver.sendError(new MycatException("no support variable calculate. field={} ",expr));
+                    return ExecuteCode.PROXY_ERROR;
+                }
             }else {
                 dataTypeInt = dataType.jdbcType();
-                payload = SQLUtils.normalize(expr.toString());
+                payload = normalize(expr.toString());
             }
 
-            String column = SQLUtils.normalize(selectItem.getAlias());
             if(column == null){
-                column = payload;
+                column = payload == null? "NULL" : payload.toString();
             }
-
             resultSetBuilder.addColumnInfo(column,dataTypeInt);
-            explainList.add(column+"="+payload);
             payloadList.add(payload);
-
         }
-        resultSetBuilder.addObjectRowPayload((List)payloadList);
-        receiver.sendResultSet(resultSetBuilder.build(),()->explainList);
+        resultSetBuilder.addObjectRowPayload(payloadList);
+        receiver.sendResultSet(resultSetBuilder.build(), Collections::emptyList);
         return ExecuteCode.PERFORMED;
     }
 
@@ -111,8 +123,8 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         if(collector.isDual()){
-            /*select 1 from dual; 空表*/
-            return onSelectDual(sqlSelectQueryBlock, request, receiver,collector);
+            /*select 1 from dual; select 1; 空表查询*/
+            return onSelectDual(sqlSelectQueryBlock, request, receiver);
         }
 
         ///////////////////////////////common///////////////////////////////
@@ -126,11 +138,11 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 schemaHandler = schemaMap.get(defaultSchema);
             } else if (schemaName != null) {
                 Optional<String> targetNameOptional = Optional.of(RootHelper.INSTANCE)
-                        .map(i -> i.getConfigProvider())
-                        .map(i -> i.currentConfig())
-                        .map(i->i.getMetadata())
-                        .map(i->i.getPrototype())
-                        .map(i->i.getTargetName());
+                        .map(RootHelper::getConfigProvider)
+                        .map(ConfigProvider::currentConfig)
+                        .map(MycatConfig::getMetadata)
+                        .map(ShardingQueryRootConfig::getPrototype)
+                        .map(ShardingQueryRootConfig.PrototypeServer::getTargetName);
                 if (targetNameOptional.isPresent()) {
                     receiver.proxySelect(targetNameOptional.get(), statement);
                     return ExecuteCode.PERFORMED;
@@ -164,7 +176,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 return ExecuteCode.PERFORMED;
             }
         }
-        receiver.sendResultSet(plan.run(), () -> plan.explain());
+        receiver.sendResultSet(plan.run(), plan::explain);
         return ExecuteCode.PERFORMED;
     }
 
@@ -206,9 +218,9 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         public void endVisit(){
-            if(this.schema == null || this.schema.isEmpty()){
-                this.errors.add(new MycatException("unknown schema. sql={};\n", statement));
-            }
+//            if(this.schema == null || this.schema.isEmpty()){
+//                this.errors.add(new MycatException("unknown schema. sql={};\n", statement));
+//            }
             if(this.dual && tables.size() > 1){
                 this.errors.add(new MycatException("only support one simple dual. no support multiple table. sql={};\n", statement));
             }
@@ -238,7 +250,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             if(str == null){
                 return null;
             }
-            return SQLUtils.normalize(str).toLowerCase();
+            return normalize(str).toLowerCase();
         }
     }
 
@@ -246,5 +258,15 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     protected ExecuteCode onExplain(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
         response.setExplainMode(true);
         return  onExecute(request, dataContext,response);
+    }
+
+    public static String normalize(String sql){
+        if(sql == null){
+            return null;
+        }
+        if("''".equals(sql)){
+            return "";
+        }
+        return SQLUtils.normalize(sql, DbType.mysql);
     }
 }
