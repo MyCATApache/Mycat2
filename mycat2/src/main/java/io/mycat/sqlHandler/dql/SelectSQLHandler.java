@@ -5,8 +5,8 @@ import com.alibaba.fastsql.interpreter.TypeCalculation;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLNumericLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -34,13 +34,16 @@ import java.util.*;
 
 @Resource
 public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
+//    public static String NULL = new String(new char[]{(char)0XFB});
+//    public static int NULL = 0XFB;
+    public static String NULL = "NULL";
+
     public SelectSQLHandler() {
     }
 
     public SelectSQLHandler(Class statementClass) {
         super(statementClass);
     }
-
 
     protected ExecuteCode onSelectNoTable(SQLSelectQueryBlock sqlSelectQueryBlock,
                                           SQLRequest<SQLSelectStatement> request, Response receiver) {
@@ -51,6 +54,14 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         return onSelectDual(sqlSelectQueryBlock,request,receiver);
     }
 
+    /**
+     * impl example
+     * select @@last_insert_id, max(1+1),1+2 as b ,'' as b, '3' as c , null as d from dual;
+     * @param sqlSelectQueryBlock
+     * @param request
+     * @param receiver
+     * @return
+     */
     protected ExecuteCode onSelectDual(SQLSelectQueryBlock sqlSelectQueryBlock,
                                        SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLSelectQueryBlock queryBlock = (SQLSelectQueryBlock)(request.getAst().getSelect().getQuery());
@@ -76,7 +87,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             if(isNull){
                 dataTypeInt = JDBCType.NULL.getVendorTypeNumber();
                 payload = null;
-            }else if((dataType.isInt() || dataType.isNumberic()) && expr instanceof SQLBinaryOpExpr){//数学计算
+            }else if((dataType.isInt() || dataType.isNumberic()) && !(expr instanceof SQLNumericLiteralExpr)){//数学计算
                 dataTypeInt = dataType.jdbcType();
                 if(column == null) {
                     column = expr.toString();
@@ -93,7 +104,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
 
             if(column == null){
-                column = payload == null? "NULL" : payload.toString();
+                column = payload == null? NULL : payload.toString();
             }
             resultSetBuilder.addColumnInfo(column,dataTypeInt);
             payloadList.add(payload);
