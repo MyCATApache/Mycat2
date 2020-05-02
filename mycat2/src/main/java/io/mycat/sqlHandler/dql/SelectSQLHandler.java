@@ -56,7 +56,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         List<String> payloadList = new ArrayList<>();
         List<String> explainList = new ArrayList<>();
-        resultSetBuilder.addObjectRowPayload((Object[]) null);
+//        resultSetBuilder.addObjectRowPayload((Object[]) null);
         for (SQLSelectItem selectItem : selectItems) {
             SQLExpr expr = selectItem.getExpr();
             SQLDataType dataType = expr.computeDataType();
@@ -85,9 +85,8 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             explainList.add(column+"="+payload);
             payloadList.add(payload);
 
-            resultSetBuilder.addObjectRowPayload(payload);
         }
-
+        resultSetBuilder.addObjectRowPayload((List)payloadList);
         receiver.sendResultSet(resultSetBuilder.build(),()->explainList);
         return ExecuteCode.PERFORMED;
     }

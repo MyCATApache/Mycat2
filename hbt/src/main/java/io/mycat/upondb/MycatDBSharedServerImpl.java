@@ -388,7 +388,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("plan", Types.VARCHAR);
         for (String s : explain) {
-            resultSetBuilder.addObjectRowPayload(new Object[]{s});
+            resultSetBuilder.addObjectRowPayload(s);
         }
         return resultSetBuilder.build();
     }

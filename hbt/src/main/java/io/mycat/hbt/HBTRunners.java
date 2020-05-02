@@ -3,10 +3,7 @@ package io.mycat.hbt;
 import io.mycat.PlanRunner;
 import io.mycat.TextUpdateInfo;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.ColumnInfo;
-import io.mycat.beans.mycat.DefMycatRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.UpdateRowMetaData;
+import io.mycat.beans.mycat.*;
 import io.mycat.calcite.prepare.MycatHbtCalcitePrepareObject;
 import io.mycat.calcite.prepare.MycatHbtPrepareObject;
 import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
@@ -98,7 +95,9 @@ public class HBTRunners implements HBTRunner {
 
             @Override
             public MycatRowMetaData resultSetRowType() {
-               return new DefMycatRowMetaData(Collections.singletonList(new ColumnInfo("plan", Types.VARCHAR)));
+                ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                resultSetBuilder.addColumnInfo("plan", Types.VARCHAR);
+                return resultSetBuilder.build().getMetaData();
             }
 
             @Override
