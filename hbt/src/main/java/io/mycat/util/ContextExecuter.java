@@ -33,7 +33,7 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
                 MySQLFunction mySQLFunction = functions.get(methodName);
                 if (mySQLFunction != null) {
                     String[] strings = arguments.stream().map(i -> SQLUtils.normalize(Objects.toString(i))).toArray(i -> new String[i]);
-                    Object res = mySQLFunction.eval(context,strings);
+                    Object res = mySQLFunction.eval(context, strings);
                     SQLExpr sqlExpr = SQLExprUtils.fromJavaObject(res);
                     sqlExpr.setParent(parent);
                     ((SQLReplaceable) parent).replace(x, sqlExpr);
@@ -61,9 +61,17 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
     }
 
     @Override
+    public boolean visit(SQLAssignItem x) {
+        SQLExpr target = x.getTarget();//不处理
+        SQLExpr value = x.getValue();
+        value.accept(this);
+        return false;//不需要再次遍历
+    }
+
+    @Override
     public boolean visit(SQLVariantRefExpr x) {
         SQLObject parent = x.getParent();
-        if (parent instanceof  SQLAssignItem ||parent.getParent() instanceof SQLAssignItem){//set 语句不处理
+        if (parent instanceof SQLAssignItem || parent.getParent() instanceof SQLAssignItem) {//set 语句不处理
             return super.visit(x);
         }
         if (parent instanceof SQLPropertyExpr) {
@@ -72,10 +80,10 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
                 String alias = replacePointer.toString();
                 Object sqlVariantRef = context.getSQLVariantRef(parent.toString().toLowerCase());
                 if (sqlVariantRef != null) {
-                    if (sqlVariantRef instanceof Boolean){
-                        if (Boolean.TRUE.equals(sqlVariantRef)){
+                    if (sqlVariantRef instanceof Boolean) {
+                        if (Boolean.TRUE.equals(sqlVariantRef)) {
                             sqlVariantRef = 1;
-                        }else {
+                        } else {
                             sqlVariantRef = 0;
                         }
                     }
