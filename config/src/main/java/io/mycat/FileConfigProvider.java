@@ -17,24 +17,28 @@ package io.mycat;
 import com.alibaba.fastjson.JSONObject;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.log4j.Log4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Log4j
+
 public class FileConfigProvider implements ConfigProvider {
     volatile MycatConfig config;
     private String defaultPath;
     final AtomicInteger count = new AtomicInteger();
+   static final Logger logger = LoggerFactory.getLogger(FileConfigProvider.class);
     private  HashMap<String, Object> globalVariables;
 
     @Override
@@ -70,18 +74,24 @@ public class FileConfigProvider implements ConfigProvider {
 
     @Override
     public synchronized void report(MycatConfig changed) {
-        backup();
-        YamlUtil.dumpToFile(defaultPath, YamlUtil.dump(changed));
-        config = changed;
+        try {
+            backup();
+            YamlUtil.dumpToFile(defaultPath, YamlUtil.dump(changed));
+            config = changed;
+        }catch (Throwable e){
+            logger.error("",e);
+        }
     }
 
     private void backup() {
         try {
-            YamlUtil.dumpBackupToFile(defaultPath, count.getAndIncrement(), YamlUtil.dump(config));
+            YamlUtil.dumpBackupToFile(defaultPath,count.getAndIncrement(),YamlUtil.dump(config));
         } catch (Exception e) {
-            log.error(e);
+            logger.error("",e);
         }
     }
+
+
 
     @Override
     public void fetchConfig(String url) throws Exception {
@@ -90,20 +100,20 @@ public class FileConfigProvider implements ConfigProvider {
             throw new IllegalArgumentException(MessageFormat.format("path not found: {0}", Objects.toString(asbPath)));
         }
         Iterator<String> iterator = Files.lines(asbPath).iterator();
-        StringBuilder sqlGroups = new StringBuilder();
-        StringBuilder full = new StringBuilder();
-        boolean in = false;
-        while (iterator.hasNext()) {
+        StringBuilder sqlGroups  = new StringBuilder();
+        StringBuilder full  = new StringBuilder();
+        boolean in= false;
+        while (iterator.hasNext()){
             String next = iterator.next();
-            if (next.startsWith("#lib start")) {
+            if (next.startsWith("#lib start")){
                 sqlGroups.append(next).append('\n');
                 in = true;
-            } else if (in) {
+            }else if (in){
                 sqlGroups.append(next).append('\n');
-            } else if (next.startsWith("#lib end")) {
+            }else if (next.startsWith("#lib end")){
                 sqlGroups.append(next).append('\n');
-                in = false;
-            } else {
+                in =false;
+            }else {
                 full.append(next).append('\n');
             }
         }
@@ -121,5 +131,27 @@ public class FileConfigProvider implements ConfigProvider {
     @Override
     public Map<String, Object> globalVariables() {
         return globalVariables;
+    }
+
+    @Override
+    public synchronized void reportReplica(String replicaName, List<String> dataSourceList) {
+        try{
+        Path resolve = Paths.get(defaultPath).getParent().resolve("replica.log");
+        StringBuilder outputStreamWriter = new StringBuilder();
+        outputStreamWriter.append(ReplicaInfo.builder().replicaName(replicaName).dataSourceList(dataSourceList).build());
+        outputStreamWriter.append("\n");
+        logger.error("switch log: ",outputStreamWriter);
+        Files.write(resolve,outputStreamWriter.toString().getBytes(), StandardOpenOption.APPEND,StandardOpenOption.CREATE);
+        }catch (Throwable e){
+            logger.error("",e);
+        }
+    }
+
+    @Getter
+    @Builder
+    @ToString
+    static class ReplicaInfo{
+        String    replicaName;
+        List<String> dataSourceList;
     }
 }

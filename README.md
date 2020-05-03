@@ -17,6 +17,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
+Dockerfile:https://github.com/MyCATApache/Mycat2/blob/master/mycat2/Dockerfile
+
 执行hbt的两组命令是
 
 ```sql
@@ -24,6 +26,10 @@ EXPLAIN SELECT id FROM db1.travelrecord WHERE id = 1;
 
 EXECUTE plan fromSql(repli,'SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` = 1')
 ```
+
+## 安装包下载
+
+https://github.com/MyCATApache/Mycat2/releases
 
 
 
@@ -228,6 +234,10 @@ io.mycat.ConfigProvider实现不同的配置加载方式
 
 #### Mycat连接测试
 
+
+
+##### 客户端连接mycat
+
 测试mycat与测试mysql完全一致，mysql怎么连接，mycat就怎么连接。
 
 在mysqld下面设置
@@ -246,17 +256,7 @@ mysql -uroot -proot -P8066 -h127.0.0.1
 
 
 
-Mysql连接问题
-
-0.0.0.0 
-
-localhost 
-
-127.0.0.1没有权限可能出现连接不上的现象
-
-
-
-#### 客户端要求
+##### 客户端要求
 
 关闭SSL
 
@@ -264,9 +264,130 @@ localhost
 
 mysql_native_password授权
 
+开启自动重连
+
+开启闲置连接检查,心跳
+
+```
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+Can not read response from server. Expected to read 4 bytes, read 0 bytes before connection was unexpectedly lost.
+```
+
+关闭允许多语句
+
+jdbc客户端设置useLocalSessionState解决
+
+```
+Could not retrieve transation read-only status server
+```
+
+
+
+##### Mycat连接MySql
+
+Mycat连接不上Mysql的问题
+
+ip配置错误,无法连通,例如本地ip
+
+0.0.0.0 
+
+localhost 
+
+127.0.0.1
+
+没有权限可能出现连接不上的现象
+
+
+
+##### 连接状态问题
+
+数据源的initSqls属性可以设置连接初始化的变量
+
+如果mysql的编码是utf8mb4,那么请写上
+
+```
+set names utf8mb4;
+```
+
+如果要初始化默认库,请写上
+
+```
+use db1;
+```
+
+jdbc的连接属性建议使用连接字符串设置
+
+
+
+##### mysql服务器设置参考
+
+###### MariaDB 10.3
+
+```ini
+[mysqld]
+local-infile=1
+local-infile = ON
+datadir=xxx/MariaDB 10.3/data
+port=3306
+innodb_buffer_pool_size=2031M
+max_allowed_packet=128MB
+max_connections=10000
+character-setVariable-client-handshake = FALSE 
+character-setVariable-server = utf8mb4 
+collation-server = utf8mb4_unicode_ci 
+init_connect='SET NAMES utf8mb4'
+log_bin_trust_function_creators=1
+[client]
+local-infile = ON
+loose-local-infile= 1
+port=3306
+plugin-dir=xxx/MariaDB 10.3/lib/plugin
+default-character-setVariable = utf8mb4
+[mysql] 
+local_infile = 1
+local-infile = ON
+default-character-setVariable = utf8mb4
+
+```
+
+
+
+###### Mysql-8.0.19
+
+```ini
+[mysqld]
+port=3307
+basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
+# 设置mysql数据库的数据的存放目录
+datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
+max_connections=200
+max_connect_errors=10
+character-setVariable-server=utf8mb4
+default-storage-engine=INNODB
+
+#mycat2.0可能不支持其他授权方式
+default_authentication_plugin=mysql_native_password 
+[mysql]
+# 设置mysql客户端默认字符集
+default-character-setVariable=utf8mb4
+
+....
+```
+
 
 
 #### 日志配置
+
+wrapper.conf
+
+```ini
+wrapper.java.additional.10=-Dlog4j.configuration=file:/root/mycat/conf/log4j.properties
+```
+
+
+
+log4j.properties
 
 ```ini
 log4j.rootLogger=debug,console,rollingFile
@@ -277,6 +398,7 @@ log4j.appender.console.layout.ConversionPattern=%d{HH:mm:ss} T=%t [%c %M at %L]-
 
 log4j.appender.rollingFile=org.apache.log4j.rolling.RollingFileAppender
 log4j.appender.rollingFile.RollingPolicy=org.apache.log4j.rolling.TimeBasedRollingPolicy
+#此处修改日志路径
 log4j.appender.rollingFile.RollingPolicy.ActiveFileName=../logs/mycat.log
 log4j.appender.rollingFile.RollingPolicy.FileNamePattern=../logs/mycat-%d{yyyy-MM-dd}.%i.log.gz
 log4j.appender.rollingFile.triggeringPolicy=org.apache.log4j.rolling.SizeBasedTriggeringPolicy
@@ -410,7 +532,21 @@ INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('2');
 
 
 
-##### XA事物
+##### XA事务
+
+https://www.atomikos.com/
+
+
+
+##### 其他支持
+
+Mycat2提供的事务执行环境
+
+一个事务绑定一个线程
+
+一个事务根据标记绑定线程
+
+支持以便方便支持不同的事务框架
 
 
 
@@ -1169,11 +1305,15 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS} #心跳定时器
 ```
 
-只有GARELA_CLUSTER能在masters属性配置多个数据源的名字
+只有MASTER_SLAVE,GARELA_CLUSTER能在masters属性配置多个数据源的名字
+
+MASTER_SLAVE中的masters的意思是主从切换顺序
+
+GARELA_CLUSTER的masters意思是这些节点同时成为主节点,负载均衡算法可以选择主节点
 
 reuqestType是进行心跳的实现方式,使用mysql意味着使用proxy方式进行,能异步地进行心跳,而jdbc方式会占用线程池
 
-当配置是主从的时候,发生主从切换,mycat会备份原来的配置(文件名带有版本号)然后使用更新配置
+当配置是主从的时候,发生主从切换,mycat会备份原来的配置(文件名带有版本号)然后使用更新的配置
 
 
 
@@ -1328,37 +1468,6 @@ groupItem:
 
 
 
-## 常见优化
-
-```sql
-USE db1;
-
-EXPLAIN SELECT id  FROM travelrecord WHERE id =1;
-
-MycatTransientSQLTableScan(sql=[SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` = 1])
-
-
-EXPLAIN SELECT COUNT(*)  FROM travelrecord WHERE id >=0;
-
-LogicalAggregate(group=[{}], EXPR$0=[COUNT()])
-  LogicalUnion(all=[true])
-    MycatTransientSQLTableScan(sql=[SELECT COUNT(*)  FROM `db2`.`travelrecord`  WHERE `id` >= 0])
-    MycatTransientSQLTableScan(sql=[SELECT COUNT(*)  FROM (SELECT *  FROM `db1`.`travelrecord`  WHERE `id` >= 0  UNION ALL  SELECT *  FROM `db1`.`travelrecord2`  WHERE `id` >= 0  UNION ALL  SELECT *  FROM `db1`.`travelrecord3`  WHERE `id` >= 0) AS `t2`])
-    
-
-EXPLAIN SELECT COUNT(*)  FROM travelrecord WHERE id >=0;
-
-LogicalProject(sm=[$0], EXPR$1=[CASE(=($2, 0), null:BIGINT, $1)], EXPR$2=[/(CAST(CASE(=($2, 0), null:BIGINT, $1)):DOUBLE, $2)])
-  LogicalAggregate(group=[{}], sm=[COUNT()], EXPR$1=[$SUM0($0)], agg#2=[COUNT($0)])
-    LogicalUnion(all=[true])
-      MycatTransientSQLTableScan(sql=[SELECT `id`  FROM `db2`.`travelrecord`  WHERE `id` >= 0])
-      MycatTransientSQLTableScan(sql=[SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` >= 0  UNION ALL  SELECT `id`  FROM `db1`.`travelrecord2`  WHERE `id` >= 0  UNION ALL  SELECT `id`  FROM `db1`.`travelrecord3`  WHERE `id` >= 0])
-
-
-```
-
-
-
 ## HBT(Human Brain Tech)
 
 HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
@@ -1407,7 +1516,7 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 
 
-## 已知限制
+## 已知限制问题
 
 ###### 不支持服务器预处理
 
@@ -1449,6 +1558,30 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 
 
+分布式查询引擎(calcite)检查项
+
+in表达式会编译成多个or表达式,默认情况下会把超过20个常量值变成内联表,mycat2要对此不处理,保持or表达式,因为内联表(LogicalValues)会被进一步'优化为'带有groupby的sql.
+
+
+
+生成的sql遇上异常
+
+```
+SELECT list is not in GROUP BY clause and contains nonaggregated column 'xxx' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+```
+
+
+
+mysql设置,即不带only_full_group_by属性
+
+```sql
+SET GLOBAL sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+ SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+```
+
+
+
 
 
 
@@ -1476,61 +1609,6 @@ https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331
 
 
 
-
-## mysql服务器设置参考
-
-### MariaDB 10.3
-
-```ini
-[mysqld]
-local-infile=1
-local-infile = ON
-datadir=xxx/MariaDB 10.3/data
-port=3306
-innodb_buffer_pool_size=2031M
-max_allowed_packet=128MB
-max_connections=10000
-character-setVariable-client-handshake = FALSE 
-character-setVariable-server = utf8mb4 
-collation-server = utf8mb4_unicode_ci 
-init_connect='SET NAMES utf8mb4'
-log_bin_trust_function_creators=1
-[client]
-local-infile = ON
-loose-local-infile= 1
-port=3306
-plugin-dir=xxx/MariaDB 10.3/lib/plugin
-default-character-setVariable = utf8mb4
-[mysql] 
-local_infile = 1
-local-infile = ON
-default-character-setVariable = utf8mb4
-
-```
-
-
-
-### Mysql-8.0.19
-
-```ini
-[mysqld]
-port=3307
-basedir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64
-# 设置mysql数据库的数据的存放目录
-datadir=xx/mysql-8.0.19-winx64/mysql-8.0.19-winx64/Database
-max_connections=200
-max_connect_errors=10
-character-setVariable-server=utf8mb4
-default-storage-engine=INNODB
-
-#mycat2.0可能不支持其他授权方式
-default_authentication_plugin=mysql_native_password 
-[mysql]
-# 设置mysql客户端默认字符集
-default-character-setVariable=utf8mb4
-
-....
-```
 
 
 

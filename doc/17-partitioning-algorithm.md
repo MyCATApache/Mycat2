@@ -184,13 +184,15 @@ count是dataNode的数量
     dateFormat: yyyy-MM-dd
     beginDate: 2014-01-01
     endDate: 2014-01-02
-    parttionDay: 10
+    partionDay: 10
 ```
 
 dateFormat ：日期格式
 beginDate ：开始日期
 endDate：结束日期
 partionDay ：分区天数，即默认从开始日期算起，分隔 10 天一个分区 
+
+分片数量=(endDate - beginDate)/partionDay
 
 如果配置了 endDate 则代表数据达到了这个日期的分片后后循环从开始分片插入 
 

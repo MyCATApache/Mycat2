@@ -103,7 +103,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 }
             } else {
                 MySQLPacket mySQLPacket = mycat.currentProxyPayload();
-                password = mySQLPacket.readNULStringBytes();
+                password = mySQLPacket.readEOFStringBytes();
             }
 
             int capabilities = auth.getCapabilities();

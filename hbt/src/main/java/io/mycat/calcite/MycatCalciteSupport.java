@@ -24,6 +24,8 @@ import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -37,6 +39,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -44,13 +47,12 @@ import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -78,7 +80,7 @@ import java.util.stream.Collectors;
  **/
 public enum MycatCalciteSupport implements Context {
     INSTANCE;
-
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCalciteSupport.class);
     public static final Driver DRIVER = new Driver();//触发驱动注册
     public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
@@ -121,6 +123,7 @@ public enum MycatCalciteSupport implements Context {
     public final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
             .withConfig(SqlToRelConverter.Config.DEFAULT)
             .withTrimUnusedFields(true)
+            .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderFactory(relBuilderFactory).build();
 
 
@@ -139,6 +142,8 @@ public enum MycatCalciteSupport implements Context {
             final HashMap<String, SqlOperator> map = new HashMap<>();
             final HashMap<String, SqlOperator> build = new HashMap<>();
             {
+                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
+                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
                 build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
                 build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
                 build.put("LOG", SqlStdOperatorTable.LOG10);
@@ -216,7 +221,14 @@ public enum MycatCalciteSupport implements Context {
 
     public String convertToHBTText(RelNode relNode, MycatCalciteDataContext dataContext) {
         MycatCalcitePlanner planner = createPlanner(dataContext);
-        Schema schema = RelNodeConvertor.convertRelNode(planner.convertToMycatRel(relNode));
+        Schema schema;
+        try {
+            schema  = RelNodeConvertor.convertRelNode(planner.convertToMycatRel(relNode));
+        }catch (Throwable e){
+            String message = "hbt无法生成";
+            LOGGER.warn(message,e);
+            return message;
+        }
         return convertToHBTText(schema);
     }
 
@@ -303,6 +315,7 @@ public enum MycatCalciteSupport implements Context {
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         String sql = sqlNode.toSqlString(dialect, false).getSql();
+        sql = sql.trim();
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
         return sql + (forUpdate ? " for update" : "");

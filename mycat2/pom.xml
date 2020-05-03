@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.02-SNAPSHOT</version>
+        <version>1.04-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -15,29 +15,29 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.02-SNAPSHOT</version>
+            <version>1.04-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.02-SNAPSHOT</version>
+            <version>1.04-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.02-SNAPSHOT</version>
+            <version>1.04-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>pattern</artifactId>
-            <version>1.02-SNAPSHOT</version>
+            <version>1.04-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.02-SNAPSHOT</version>
+            <version>1.04-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.collections</groupId>
@@ -166,8 +166,24 @@
                                     </includes>
                                     <configuration>
                                         <property>
+                                            <name>wrapper.ping.timeout</name>
+                                            <value>120</value>
+                                        </property>
+                                        <property>
+                                            <name>set.default.REPO_DIR</name>
+                                            <value>lib</value>
+                                        </property>
+                                        <property>
+                                            <name>wrapper.logfile.maxsize</name>
+                                            <value>512m</value>
+                                        </property>
+                                        <property>
+                                            <name>wrapper.logfile.maxfiles</name>
+                                            <value>30</value>
+                                        </property>
+                                        <property>
                                             <name>wrapper.logfile</name>
-                                            <valueStartIndex>logs/wrapper.log</valueStartIndex>
+                                            <value>logs/wrapper.log</value>
                                         </property>
                                     </configuration>
                                 </generatorConfiguration>
@@ -179,6 +195,8 @@
                                     <systemProperty>MYCAT_HOME=./conf</systemProperty>
                                 </systemProperties>
                                 <extraArguments>
+                                    <extraArgument>-Dlog4j.debug</extraArgument>
+                                    <extraArgument>-Dlog4j.configuration=file:./conf/log4j.properties</extraArgument>
                                     <extraArgument>-server</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
@@ -232,6 +250,9 @@
                                     </tarfileset>
                                     <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
                                         <include name="**"/>
+                                    </tarfileset>
+                                    <tarfileset dir="${project.basedir}/..">
+                                        <include name="README.md"/>
                                     </tarfileset>
                                 </tar>
                                 <tar basedir="${project.basedir}/src/main/resources"

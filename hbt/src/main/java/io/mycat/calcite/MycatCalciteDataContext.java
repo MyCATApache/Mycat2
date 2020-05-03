@@ -183,7 +183,9 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     public RexExecutor getExecutor() {
         return (rexBuilder, constExps, reducedValues) -> {
             RexExecutor executor = MycatCalciteSupport.INSTANCE.config.getExecutor();
-            executor.reduce(rexBuilder, constExps, reducedValues);
+            if (executor!=null) {
+                executor.reduce(rexBuilder, constExps, reducedValues);
+            }
         };
     }
 

@@ -150,11 +150,15 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     private synchronized boolean switchWriteDataSource() {
         switch (type) {
             case SINGLE_NODE:
-                return switchMaster(this.writeDataSourceList.stream()
-                        .filter(c -> c.getType().isWriteType() && c.isAlive()).collect(Collectors.toList()));
             case MASTER_SLAVE:
-                return switchMaster((this.writeDataSourceList.stream()
-                        .filter(c -> c.getType().isWriteType() && c.isAlive()).collect(Collectors.toList())));
+                Map<Boolean, List<PhysicsInstanceImpl>> map = this.writeDataSourceList.stream()
+                        .filter(c -> c.getType().isWriteType()).collect(Collectors.groupingBy(k -> k.isAlive()));
+                List<PhysicsInstanceImpl> first = map.getOrDefault(Boolean.TRUE, Collections.emptyList());
+                List<PhysicsInstanceImpl> tail = map.getOrDefault(Boolean.FALSE, Collections.emptyList());
+                ArrayList<PhysicsInstanceImpl> objects = new ArrayList<>();
+                objects.addAll(first);
+                objects.addAll(tail);
+                return switchMaster(objects);
             case GARELA_CLUSTER:
                 return switchMultiMaster();
             case NONE:
@@ -183,22 +187,22 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
     private synchronized boolean switchReadDatasource(List<PhysicsInstanceImpl> newReadDataSource) {
-        return switchNode(newReadDataSource, (List)this.readDataSource, "{} switch replica to {}");
+        return switchNode(newReadDataSource, (List) this.readDataSource, "{} switch replica to {}");
     }
 
     private synchronized boolean switchMaster(List<PhysicsInstanceImpl> newWriteDataSource) {
-        boolean b = switchNode(newWriteDataSource, (List)this.writeDataSourceList, "{} switch master to {}");
+        boolean b = switchNode(newWriteDataSource, (List) this.writeDataSourceList, "{} switch master to {}");
         if (b) {
             updateFile(newWriteDataSource);
         }
         return b;
     }
 
-    private synchronized boolean switchNode(List<PhysicsInstanceImpl> newWriteDataSource, List< PhysicsInstanceImpl> oldWriteDataSource, String message) {
+    private synchronized boolean switchNode(List<PhysicsInstanceImpl> newWriteDataSource, List<PhysicsInstanceImpl> oldWriteDataSource, String message) {
         if (new ArrayList<>(oldWriteDataSource).equals(new ArrayList<>(newWriteDataSource))) {
             return false;
         }
-        List< PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
+        List<PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
         oldWriteDataSource.clear();
         oldWriteDataSource.addAll(newWriteDataSource);
         LOGGER.info(message, backup, newWriteDataSource);
@@ -209,8 +213,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         ConfigProvider configProvider = RootHelper.INSTANCE.getConfigProvider();
         MycatConfig config = Cloner.standard().deepClone(configProvider.currentConfig());
         ClusterRootConfig.ClusterConfig clusterConfig = config.getCluster().getClusters().stream().filter(i -> getName().equals(i.getName())).findFirst().get();
-        clusterConfig.setMasters(newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toList()));
-        configProvider.report(config);
+        List<String> collect = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toList());
+        clusterConfig.setMasters(collect);
+        configProvider.reportReplica(clusterConfig.getName(),collect);
     }
 
     @Override
@@ -229,7 +234,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
     public void unregister(String datasourceName) {
         datasourceMap.remove(datasourceName);
-        writeDataSourceList.removeIf((i)->i.getName().equals(datasourceName));
-        readDataSource.removeIf((i)->i.getName().equals(datasourceName));
+        writeDataSourceList.removeIf((i) -> i.getName().equals(datasourceName));
+        readDataSource.removeIf((i) -> i.getName().equals(datasourceName));
     }
 }

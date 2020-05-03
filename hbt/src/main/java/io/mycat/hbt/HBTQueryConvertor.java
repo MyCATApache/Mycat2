@@ -402,9 +402,9 @@ public class HBTQueryConvertor {
         return relBuilder.aggregateCall(toSqlAggFunction(expr.getFunction()),
                 toRex(expr.getOperands() == null ? Collections.emptyList() : expr.getOperands()))
                 .sort(expr.getOrderKeys() == null ? Collections.emptyList() : toSortRex(expr.getOrderKeys()))
-                .distinct(expr.getDistinct() == Boolean.TRUE)
-                .approximate(expr.getApproximate() == Boolean.TRUE)
-                .ignoreNulls(expr.getIgnoreNulls() == Boolean.TRUE)
+                .distinct(Boolean.TRUE.equals(expr.getDistinct()))
+                .approximate(Boolean.TRUE.equals(expr.getApproximate()))
+                .ignoreNulls(Boolean.TRUE.equals(expr.getIgnoreNulls()))
                 .filter(expr.getFilter() == null ? null : toRex(expr.getFilter()));
     }
 

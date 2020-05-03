@@ -46,7 +46,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public void commit() {
-        if (isInTransaction()) {//真正开启事务才提交
+        if (isInTransaction()&&!updateConnectionMap.isEmpty()) {//真正开启事务才提交
             callBackCommit();
         }
         setInTranscation(false);
@@ -55,7 +55,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public void rollback() {
-        if (isInTransaction()) {
+        if (isInTransaction()&&!updateConnectionMap.isEmpty()) {
             callBackRollback();
         }
         setInTranscation(false);

@@ -51,8 +51,11 @@ public final class ProxyBufferPoolMonitor implements BufferPool {
     }
 
     public Session getSession() {
-        SessionThread thread = (SessionThread) Thread.currentThread();
-        return thread.getCurSession();
+        Thread thread1 = Thread.currentThread();
+        if (thread1 instanceof SessionThread){
+            return ((SessionThread) thread1).getCurSession();
+        }
+        return null;
     }
 
     @Override

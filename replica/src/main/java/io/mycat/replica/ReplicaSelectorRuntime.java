@@ -292,14 +292,14 @@ public String getDatasourceNameByRandom() {
 
     public PhysicsInstanceImpl getDatasource(LoadBalanceStrategy balanceStrategy,
                                              ReplicaDataSourceSelector selector, LoadBalanceStrategy defaultWriteLoadBalanceStrategy,
-                                             List writeDataSource) {
-        Objects.requireNonNull(writeDataSource);
+                                             List element) {
+        Objects.requireNonNull(element);
         Objects.requireNonNull(selector);
         if (balanceStrategy == null) {
             balanceStrategy = defaultWriteLoadBalanceStrategy;
         }
-        LoadBalanceElement select = balanceStrategy.select(selector, writeDataSource);
-        Objects.requireNonNull(select);
+        LoadBalanceElement select = balanceStrategy.select(selector, element);
+        Objects.requireNonNull(select,"No data source available");
         return (PhysicsInstanceImpl) select;
     }
 
@@ -326,19 +326,21 @@ public String getDatasourceNameByRandom() {
     public synchronized void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer) {
         MycatConfig config = this.config;
         Objects.requireNonNull(config);
+        String name = replicaName + "." + datasourceName;
+        if (!heartbeatDetectorMap.containsKey(name)){
+            config.getCluster().getClusters().stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
+                ClusterRootConfig.HeartbeatConfig heartbeat = c.getHeartbeat();
+                ReplicaDataSourceSelector selector = map.get(replicaName);
+                PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);
+                DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(physicsInstance, replicaName, datasourceName,
+                        heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
+                        ReplicaSwitchType.valueOf(c.getSwitchType()),
+                        heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getReplicaType()),
+                        executer);
 
-        config.getCluster().getClusters().stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
-            ClusterRootConfig.HeartbeatConfig heartbeat = c.getHeartbeat();
-            ReplicaDataSourceSelector selector = map.get(replicaName);
-            PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);
-            DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(physicsInstance, replicaName, datasourceName,
-                    heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
-                    ReplicaSwitchType.valueOf(c.getSwitchType()),
-                    heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getReplicaType()),
-                    executer);
-
-            heartbeatDetectorMap.put(replicaName + "." + datasourceName, heartbeatFlow);
-        });
+                heartbeatDetectorMap.put(name, heartbeatFlow);
+            });
+        }
     }
 
     public void removeHeartFlow(String replicaName, String datasourceName) {

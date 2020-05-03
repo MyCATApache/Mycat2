@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,6 +57,19 @@ public class ClusterRootConfig {
         private Integer maxCon;
 
         public ClusterConfig() {
+        }
+
+        public List<String>  getAllDatasources(){
+            if (masters == null){
+                masters = Collections.emptyList();
+            }
+            if (replicas == null){
+                replicas = Collections.emptyList();
+            }
+            ArrayList<String> nodes = new ArrayList<>(masters.size() + replicas.size());
+            nodes.addAll(masters);
+            nodes.addAll(replicas);
+            return nodes;
         }
 
     }
