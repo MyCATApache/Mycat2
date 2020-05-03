@@ -10,7 +10,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class DefaultMatcherFactory<T> implements Matcher.Factory<T> {
+public class RobPikeMatcherFactory<T> implements Matcher.Factory<T> {
+    @Override
+    public String getName() {
+        return "Rob Pike";
+    }
+
     @Override
     public Matcher<T> create(List<Pair<String, T>> pairs, Pair<String, T> defaultPattern) {
         Objects.requireNonNull(pairs);

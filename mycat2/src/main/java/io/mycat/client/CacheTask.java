@@ -3,6 +3,8 @@ package io.mycat.client;
 import io.mycat.boost.CacheConfig;
 import lombok.Getter;
 
+import java.util.Objects;
+
 @Getter
 public class CacheTask {
     final String name;
@@ -11,9 +13,9 @@ public class CacheTask {
     final CacheConfig cacheConfig;
 
     public CacheTask(String name, String text, Type type, CacheConfig cacheConfig) {
-        this.name = name;
-        this.text = text;
-        this.type = type;
-        this.cacheConfig = cacheConfig;
+        this.name = Objects.requireNonNull(name);
+        this.text = Objects.requireNonNull(text);
+        this.type = Objects.requireNonNull(type);
+        this.cacheConfig =Objects.requireNonNull(cacheConfig);
     }
 }

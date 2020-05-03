@@ -10,6 +10,8 @@ public interface Matcher<T>  {
 
     public static  interface Factory<T>{
 
+        String getName();
+
         Matcher<T> create(List<Pair<String, T>> pairs,Pair<String, T> defaultPattern);
     }
 

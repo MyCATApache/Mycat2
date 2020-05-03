@@ -4,12 +4,18 @@ import io.mycat.util.Pair;
 
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class PatternFactory<T> implements Matcher.Factory<T> {
+
+    @Override
+    public String getName() {
+        return "JSR-51";
+    }
 
     @Override
     public Matcher<T> create(List<Pair<String, T>> pairs, Pair<String, T> defaultPattern) {
@@ -27,7 +33,7 @@ public class PatternFactory<T> implements Matcher.Factory<T> {
                         list.add(pairs.get(i).getValue());
                     }
                 }
-                return list;
+                return Collections.singletonList(defaultPattern.getValue());
             }
         };
     }

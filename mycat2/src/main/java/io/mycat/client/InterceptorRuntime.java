@@ -62,7 +62,7 @@ public enum InterceptorRuntime {
             if (defaultHanlder == null) defaultHanlder = MYCAT_DB_COMMAND;
             List<Map<String, Object>> sqls = interceptor.getSqls();
             if (sqls == null) sqls = Collections.emptyList();
-            if (matcherClazz == null) matcherClazz = DefaultMatcherFactory.class.getName();
+            if (matcherClazz == null) matcherClazz = StringEqualsFactory.class.getName();
             Class<?> aClass = Class.forName(matcherClazz);
             Matcher.Factory factory = (Matcher.Factory) aClass.newInstance();
             List<Pair> allItems = sqls.stream().map(i -> Pair.of(i.get("sql"), i)).collect(Collectors.toList());
@@ -70,6 +70,10 @@ public enum InterceptorRuntime {
             List<CacheTask> cacheTasks = new ArrayList<>();
             for (Map<String, Object> sql : sqls) {
                 String name = (String) sql.get("name");
+                if (name == null){
+                    name = Objects.toString(sql);
+                    sql.put("name",name);
+                }
                 String command = (String) sql.get("command");
                 Type type = null;
                 String cache;

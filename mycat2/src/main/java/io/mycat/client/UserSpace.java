@@ -54,7 +54,9 @@ public class UserSpace {
         cacheTaskList.forEach(cacheTask -> {
             MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
             MycatDBClientMediator db = MycatDBs.createClient(context);
-            cacheMap.put(cacheTask.getName(), getTask(cacheTask.getText(), cacheTask.getType(), db, timer, cacheTask.getCacheConfig()));
+            Task task = getTask(cacheTask.getText(), cacheTask.getType(), db, timer, cacheTask.getCacheConfig());
+            cacheMap.put(cacheTask.getName(),task );
+            task.start();
         });
     }
 
@@ -67,7 +69,9 @@ public class UserSpace {
         final CharBuffer charBuffer = StandardCharsets.UTF_8.decode(buffer);
         final Map<String, Object> extractor = new HashMap<>();
         List<Map<String, Object>> matchList = matcher.match(charBuffer, extractor);
-        if (matchList == null) matchList = Collections.emptyList();
+        if (matchList == null) {
+            matchList = Collections.emptyList();
+        }
         MycatDataContext dataContext = session.getDataContext();
         int sessionId = session.sessionId();
         for (Map<String, Object> item : matchList) {
