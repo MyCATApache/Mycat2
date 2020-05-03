@@ -28,37 +28,39 @@ import java.util.concurrent.TimeUnit;
 
 @Data
 public class ServerConfig {
-    private String ip = "0.0.0.0";
+    private String ip = "127.0.0.1";
     private int port = 8066;
-    private int reactorNumber = 1;
+    private int reactorNumber = Runtime.getRuntime().availableProcessors();
     private String handlerName;
     private Worker worker = new Worker();
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
-    private TimerConfig timer = new TimerConfig(3, 3, TimeUnit.SECONDS.name());
+    private TimerConfig timer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
 
     {
-        try {
-            Path target = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).resolve("target");
-            if (!Files.exists(target)) {
-                Files.createDirectories(target);
-            }
-            tempDirectory = target.toString();
-        } catch (Throwable e) {
+        if (tempDirectory == null) {
             try {
-                tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
-            } catch (IOException e1) {
-                e1.printStackTrace();
+                Path target = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).resolve("target");
+                if (!Files.exists(target)) {
+                    Files.createDirectories(target);
+                }
+                tempDirectory = target.toString();
+            } catch (Throwable e) {
+                try {
+                    tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
+            System.out.println("tempDirectory:" + tempDirectory);
         }
-        System.out.println("tempDirectory:"+tempDirectory);
     }
 
     @Data
     public static class Worker {
         private int minThread = 2;
-        private int maxThread = 2;
-        private int waitTaskTimeout = 5;
+        private int maxThread = 1024;
+        private int waitTaskTimeout = 60;
         private String timeUnit = TimeUnit.SECONDS.toString();
         private int maxPengdingLimit = 65535;
         private boolean close = false;

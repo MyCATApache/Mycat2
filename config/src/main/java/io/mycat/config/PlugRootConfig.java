@@ -1,6 +1,8 @@
 package io.mycat.config;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,14 @@ public class PlugRootConfig {
     public static class LoadBalanceConfig {
         String name;
         String clazz;
+
+        public LoadBalanceConfig() {
+        }
+
+        public LoadBalanceConfig(String name, String clazz) {
+            this.name = name;
+            this.clazz = clazz;
+        }
     }
 
     @Data

@@ -22,9 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author jamie12221 date 2019-05-20 12:21
@@ -53,12 +52,33 @@ public class LoadBalanceManager {
         Objects.requireNonNull(rootConfig.getLoadBalances(), "loadBalances list is empty");
         ////////////////////////////////////check/////////////////////////////////////////////////
 
-        for (PlugRootConfig.LoadBalanceConfig loadBalance : rootConfig.getLoadBalances()) {
+        List<PlugRootConfig.LoadBalanceConfig> loadBalances = new ArrayList<>();
+
+        List<PlugRootConfig.LoadBalanceConfig> buildin = Arrays.asList(
+                BalanceLeastActive.class,
+                BalanceRandom.class,
+                BalanceRoundRobin.class,
+                BalanceRunOnMaster.class,
+                BalanceRunOnRandomMaster.class,
+                BalanceRunOnReplica.class
+        ).stream().map(i -> getLoadBalanceConfig(i)).collect(Collectors.toList());
+
+
+        loadBalances.addAll(buildin);
+        loadBalances.addAll(rootConfig.getLoadBalances() == null ? Collections.emptyList() : rootConfig.getLoadBalances());
+
+
+        for (PlugRootConfig.LoadBalanceConfig loadBalance :loadBalances) {
             String name = loadBalance.getName();
             String clazz = loadBalance.getClazz();
             addLoadBalanceStrategy(name, clazz);
         }
         setDefaultLoadBalanceStrategy(rootConfig.getDefaultLoadBalance());
+    }
+
+    private static PlugRootConfig.LoadBalanceConfig getLoadBalanceConfig(Class instance) {
+        String canonicalName = instance.getCanonicalName();
+        return new PlugRootConfig.LoadBalanceConfig(instance.getSimpleName(),canonicalName);
     }
 
     public void setDefaultLoadBalanceStrategy(String name) {

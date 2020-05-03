@@ -547,4 +547,9 @@ public enum MetadataManager {
 
     public Map<String, SchemaHandler> getSchemaMap() {
         return (Map) schemaMap;
-    }}
+    }
+
+    public List<String> showDatabases(){
+        return schemaMap.keySet().stream().map(i->SQLUtils.normalize(i)).distinct().sorted(Comparator.comparing(s->s)).collect(Collectors.toList());
+    }
+}
