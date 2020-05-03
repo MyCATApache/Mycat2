@@ -76,15 +76,14 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
 
     @Override
     public long getLong(int columnIndex) {
-        if (wasNull){
-            return 0;
-        }
-        Object o = getObject(currentRow[columnIndex - 1]);
-        if(o instanceof Number){
+        try {
+            Number o = (Number) getObject(currentRow[columnIndex - 1]);
+            if (wasNull) return 0;
             return ((Number) o).longValue();
-        }else {
-            return Long.parseLong(o.toString());
+        }catch (java.lang.ClassCastException e){
+            e.printStackTrace();
         }
+        return 0;
     }
 
     @Override

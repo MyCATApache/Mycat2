@@ -5,9 +5,7 @@ import com.alibaba.fastsql.interpreter.TypeCalculation;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLNumericLiteralExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
@@ -100,7 +98,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 }
             }else {
                 dataTypeInt = dataType.jdbcType();
-                payload = normalize(expr.toString());
+                payload =( (SQLValuableExpr)expr).getValue();
             }
 
             if(column == null){

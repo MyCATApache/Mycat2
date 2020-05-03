@@ -25,7 +25,10 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 public enum MycatdbCommand implements MycatCommand {
     INSTANCE;
@@ -156,12 +159,18 @@ public enum MycatdbCommand implements MycatCommand {
                     iterator.remove();//help gc
                 }
             }
-            receiver.sendError(new MycatException("no support query. sql={} class={}", req.getText(), statement.getClass()));
+            if (!(statement instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExecuteStatement)) {
+                receiver.sendError(new MycatException("no support query. sql={} class={}", req.getText(), statement.getClass()));
+            }else {
+                throw new RuntimeException("may be hbt");
+            }
         } catch (Throwable e) {
             boolean isRun = false;
             try {
-                final String finalSql = req.getText().trim();
-                if (finalSql.startsWith("execute ")) {
+                String trim = req.getText().trim();
+                String pre = "execute plan ";
+                if (trim.startsWith(pre)) {
+                    final String finalSql = trim.substring(pre.length());
                     receiver.sendResultSet(db.executeRel(finalSql), () -> db.explainRel(finalSql));
                     isRun = true;
                 }
@@ -178,10 +187,11 @@ public enum MycatdbCommand implements MycatCommand {
 
     @NotNull
     private Iterator<SQLStatement> parse(String text) {
-        if (text.startsWith("begin")){
+        if (text.startsWith("begin")) {
             SQLStartTransactionStatement sqlStartTransactionStatement = new SQLStartTransactionStatement();
             return new Iterator<SQLStatement>() {
                 boolean hasNext = true;
+
                 @Override
                 public void remove() {
 
@@ -191,8 +201,8 @@ public enum MycatdbCommand implements MycatCommand {
                 public boolean hasNext() {
                     try {
                         return hasNext;
-                    }finally {
-                        hasNext =false;
+                    } finally {
+                        hasNext = false;
                     }
                 }
 

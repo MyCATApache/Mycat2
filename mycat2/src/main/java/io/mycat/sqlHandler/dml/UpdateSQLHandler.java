@@ -33,7 +33,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     public static void updateHandler(SQLStatement sql, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         MycatDBClientMediator mycatDBClientMediator = MycatDBs.createClient(dataContext);
-        String schemaName = tableSource.getSchema()==null?dataContext.getDefaultSchema():tableSource.getSchema();
+        String schemaName = tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema();
         String tableName = tableSource.getTableName();
         SchemaHandler schemaHandler;
         Optional<Map<String, SchemaHandler>> handlerMapOptional = Optional.ofNullable(mycatDBClientMediator)
@@ -73,8 +73,12 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         String string = sql.toString();
         if (sql instanceof MySqlInsertStatement) {
             receiver.multiInsert(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
-        } else {
+        } else if (sql instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement) {
+            receiver.multiUpdate(string, tableHandler.deleteHandler().apply(new ParseContext(sql.toString())));
+        } else if (sql instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement) {
             receiver.multiUpdate(string, tableHandler.updateHandler().apply(new ParseContext(sql.toString())));
+        } else {
+            throw new UnsupportedOperationException("unsupported statement:"+sql);
         }
 
     }
@@ -82,7 +86,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
     @Override
     public ExecuteCode onExplain(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
         response.setExplainMode(true);
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(),response);
+        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
         return ExecuteCode.PERFORMED;
     }
 }
