@@ -110,7 +110,8 @@ public class MySQLTaskUtil {
                 BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
                     if (mycat.isBindMySQLSession()) {
                         MySQLClientSession mySQLSession = mycat.getMySQLSession();
-                        if (datasourceName.equals(mySQLSession.getDatasourceName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
+                        String currentDataSource = mySQLSession.getDatasourceName();
+                        if (datasourceName.equals( currentDataSource)&& mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
                             mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
                             return;
                         } else {

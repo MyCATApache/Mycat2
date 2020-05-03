@@ -30,7 +30,13 @@ public class MycatDBs {
                 if (target.contains("autocommit")) {
                     this.setAutoCommit(toInt(value) == 1);
                 } else if (target.equalsIgnoreCase("xa")) {
-                    dataContext.switchTransaction(TransactionType.parse(value));
+                    int i = toInt(value);
+                    if (i == 1) {
+                        dataContext.switchTransaction(TransactionType.JDBC_TRANSACTION_TYPE);
+                    }
+                    if (i == 0) {
+                        dataContext.switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
+                    }
                 } else if (target.contains("net_write_timeout")) {
                     dataContext.setVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT, Long.parseLong(value));
                 } else if ("SQL_SELECT_LIMIT".equalsIgnoreCase(target)) {
