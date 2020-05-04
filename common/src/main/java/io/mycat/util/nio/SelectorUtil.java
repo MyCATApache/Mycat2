@@ -2,6 +2,9 @@ package io.mycat.util.nio;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -14,7 +17,7 @@ import java.util.ConcurrentModificationException;
  */
 public class SelectorUtil {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(SelectorUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectorUtil.class);
 
     public static final int REBUILD_COUNT_THRESHOLD = 512;
 

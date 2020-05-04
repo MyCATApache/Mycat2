@@ -28,6 +28,8 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -40,8 +42,7 @@ import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_OK;
 public enum MySQLPacketExchanger {
     INSTANCE;
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(MySQLPacketExchanger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLPacketExchanger.class);
     public final static PacketExchangerCallback DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK = (mycat, e, attr) -> {
         mycat.setLastMessage(e.getMessage());
         mycat.writeErrorEndPacketBySyncInProcessError();
@@ -171,8 +172,7 @@ public enum MySQLPacketExchanger {
     public static class MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
 
         public static final MySQLProxyNIOHandler INSTANCE = new MySQLProxyNIOHandler();
-        protected final static MycatLogger LOGGER = MycatLoggerFactory
-                .getLogger(MySQLProxyNIOHandler.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
         static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
 

@@ -29,6 +29,8 @@ import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
@@ -42,7 +44,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     MySQLPacketCallback {
 
   byte[] EMPTY = new byte[]{};
-  MycatLogger LOGGER = MycatLoggerFactory.getLogger(BackendConCreateHandler.class);
+   static final Logger LOGGER = LoggerFactory.getLogger(ResultSetHandler.class);
   ResultSetHandler DEFAULT = new ResultSetHandler() {
 
   };

@@ -3,11 +3,14 @@ package io.mycat.boost;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.mycat.MySQLTaskUtil;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.util.Duration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -15,7 +18,7 @@ import java.util.function.Consumer;
 @Data
 @EqualsAndHashCode
 public class CacheConfig {
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(CacheConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheConfig.class);
     private Duration refreshInterval;
     private Duration initialDelay;
     private static final Splitter KEYS_SPLITTER = Splitter.on(',').trimResults();

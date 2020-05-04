@@ -18,10 +18,13 @@ import io.mycat.command.CommandResolver;
 import io.mycat.command.ThreadModeCommandHanlderImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ProcessState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -35,7 +38,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
      * PhysicsInstanceImpl mycat handlerName.
      */
     INSTANCE;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatHandler.class);
 
     final
     @Override

@@ -15,10 +15,13 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.MycatException;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.buffer.BufferPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -27,7 +30,7 @@ import java.nio.ByteBuffer;
  */
 public class CrossSwapThreadBufferPool {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(CrossSwapThreadBufferPool.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CrossSwapThreadBufferPool.class);
   private volatile SessionThread source;
   private BufferPool bufferPool;
 

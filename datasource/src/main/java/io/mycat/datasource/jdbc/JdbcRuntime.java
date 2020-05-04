@@ -30,6 +30,9 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
+import io.mycat.util.nio.SelectorUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +48,7 @@ import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
  **/
 public enum JdbcRuntime {
     INSTANCE;
-    private final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRuntime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcRuntime.class);
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;

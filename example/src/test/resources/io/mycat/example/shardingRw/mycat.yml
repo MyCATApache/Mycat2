@@ -46,13 +46,12 @@ datasource:
                  weight: 1, #负载均衡权重
                  initSqls: []
                   , #建立连接后执行的sql,在此可以写上use xxx初始化默认database
-                 jdbcDriverClass:, #jdbc驱动
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写,
                  initSqlsGetConnection: true
                 },
                 {name: defaultDs2, ip: 0.0.0.0,port: 3307,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
                  url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSqls: []
-                  ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
+                 ,instanceType:,#READ,WRITE,READ_WRITE
                   initSqlsGetConnection: true
                 }
   ]

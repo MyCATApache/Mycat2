@@ -18,6 +18,8 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 public abstract class MySQLDatasource implements MycatDataSource {
 
-  protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
   protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
   protected final AtomicInteger connectionCounter = new AtomicInteger(0);
 

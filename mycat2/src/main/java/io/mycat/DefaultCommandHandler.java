@@ -16,6 +16,7 @@ package io.mycat;
 
 
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.client.Interceptor;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
@@ -23,6 +24,8 @@ import io.mycat.command.AbstractCommandHandler;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -35,7 +38,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
     private Interceptor interceptor;
 
 

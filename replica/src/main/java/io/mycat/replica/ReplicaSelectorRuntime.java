@@ -31,6 +31,8 @@ import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -47,7 +49,7 @@ public enum ReplicaSelectorRuntime {
     final ConcurrentMap<String, ReplicaDataSourceSelector> map = new ConcurrentHashMap<>();
     volatile ScheduledFuture<?> schedule;
     volatile MycatConfig config;
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(ReplicaSelectorRuntime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaSelectorRuntime.class);
 
     public synchronized void load(MycatConfig config) {
         Objects.requireNonNull(config);

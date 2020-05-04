@@ -20,6 +20,9 @@ import io.mycat.beans.mysql.packet.*;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -32,7 +35,7 @@ import static io.mycat.proxy.packet.MySQLPayloadType.*;
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
-  MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLPacketResolver.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(MySQLPacketResolver.class);
 
   /**
    * 判断一个结果集结束时候,eof/ok 包 是否后续还有结果集

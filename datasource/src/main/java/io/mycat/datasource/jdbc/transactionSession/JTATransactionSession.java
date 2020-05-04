@@ -23,6 +23,8 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.transaction.UserTransaction;
 import java.util.function.Supplier;
@@ -32,8 +34,7 @@ import java.util.function.Supplier;
  **/
 public class JTATransactionSession extends TransactionSessionTemplate implements TransactionSession {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(JTATransactionSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JTATransactionSession.class);
     private final Supplier<UserTransaction> userTransactionProvider;
     private UserTransaction userTransaction;
     private Thread bindThread;

@@ -23,6 +23,8 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
@@ -30,8 +32,7 @@ import io.mycat.proxy.session.MySQLClientSession;
  **/
 public enum RequestHandler implements NIOHandler<MySQLClientSession> {
   INSTANCE;
-  protected final static MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(BackendConCreateHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RequestHandler.class);
   public void request(MySQLClientSession session, byte[] packet, RequestCallback callback) {
     session.setCallBack(callback);
     try {

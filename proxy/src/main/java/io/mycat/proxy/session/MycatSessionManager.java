@@ -20,8 +20,11 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -42,7 +45,7 @@ import java.util.function.Function;
  **/
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatSessionManager.class);
     final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
     private final Authenticator authenticator;

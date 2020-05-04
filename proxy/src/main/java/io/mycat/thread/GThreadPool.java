@@ -21,6 +21,8 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +31,7 @@ import java.util.concurrent.TimeUnit;
  **/
 public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, BindThread> {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(GThreadPool.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GThreadPool.class);
   public GThreadPool(JdbcRuntime runtime) {
     super(runtime.getMaxPengdingLimit(), runtime.getWaitTaskTimeout(),
         TimeUnit.valueOf(runtime.getTimeUnit()), runtime.getMaxThread(), runtime.getMaxThread(),

@@ -49,6 +49,8 @@ import io.mycat.util.CharsetUtil;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -64,7 +66,7 @@ import java.util.stream.Collectors;
 public enum MycatCore {
     INSTANCE;
     private ConfigProvider config;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCore.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
     private ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
     @Getter
     private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期

@@ -20,6 +20,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceState;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +33,7 @@ import java.util.Map;
  */
 public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
-      MySQLGaleraHeartBeatStrategy.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MySQLGaleraHeartBeatStrategy.class);
 
   public String getSql() {
     return GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL;

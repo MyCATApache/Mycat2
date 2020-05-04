@@ -1,8 +1,8 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -14,15 +14,13 @@ import java.sql.Types;
 import java.util.Iterator;
 
 /**
- *
  * chen junwen
- *
+ * <p>
  * a iterator,transform text to object
  */
 public abstract class AbstractStringRowIterator implements RowBaseIterator {
-    final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(AbstractStringRowIterator.class);
 
+    private static final Logger logger = LoggerFactory.getLogger(AbstractStringRowIterator.class);
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Iterator<String[]> iterator;
     private String[] currentRow;
@@ -160,6 +158,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
         if (wasNull) return null;
         return new BigDecimal(o);
     }
+
     @Override
     public Object getObject(int columnIndex) {
         int columnType = mycatRowMetaData.getColumnType(columnIndex);

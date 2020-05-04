@@ -19,9 +19,12 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.util.nio.SelectorUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -43,8 +46,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
      * 定时唤醒selector的时间 1.防止写入事件得不到处理 2.处理pending队列
      */
     protected final static long SELECTOR_TIMEOUT = 500L;
-    protected final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(ProxyReactorThread.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyReactorThread.class);
     protected final FrontSessionManager<T> frontManager;
     protected Selector selector;
     protected final BufferPool bufPool;

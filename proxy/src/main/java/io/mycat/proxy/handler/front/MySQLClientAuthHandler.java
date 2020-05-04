@@ -27,6 +27,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.MycatSession;
@@ -34,6 +35,8 @@ import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.Map;
@@ -47,8 +50,7 @@ import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
  **/
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(MySQLClientAuthHandler.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
     public byte[] seed;
     public MycatSession mycat;
     private boolean finished = false;

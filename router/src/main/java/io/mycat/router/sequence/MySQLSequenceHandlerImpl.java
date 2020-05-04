@@ -24,6 +24,9 @@ import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.router.function.PartitionByFileMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,8 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class MySQLSequenceHandlerImpl implements SequenceHandler<MySQLAPIRuntime> {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(MySQLSequenceHandlerImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MySQLSequenceHandlerImpl.class);
   private MySQLAPIRuntime mySQLAPIRuntime;
   private long timeout;
   private final Map<SeqInfoKey, SeqInfoValue> map = new HashMap<>();

@@ -4,10 +4,13 @@ import io.mycat.RootHelper;
 import io.mycat.ScheduleUtil;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
+import io.mycat.client.InterceptorRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,9 +26,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author chen junwen
  */
-@Log4j
+
 public class ResultSetCacheImpl implements ResultSetCacheRecorder {
-    static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ResultSetCacheImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResultSetCacheImpl.class);
     FileChannel channel;
     MappedByteBuffer buffer;
 
@@ -46,7 +49,7 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
         try {
             tempDirectory = RootHelper.INSTANCE.getConfigProvider().currentConfig().getServer().getTempDirectory();
         } catch (Exception e) {
-            log.warn(e);
+            LOGGER.warn("",e);
         }
         return tempDirectory;
     }

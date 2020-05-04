@@ -17,6 +17,8 @@ package io.mycat.replica.heartbeat;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,7 +27,7 @@ import java.util.function.Function;
  * @author : zhangwy date Date : 2019年05月15日 21:34
  */
 public class DefaultHeartbeatFlow extends HeartbeatFlow {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
   private final String replicaName;
   private final String datasouceName;
   private final ReplicaSwitchType switchType;

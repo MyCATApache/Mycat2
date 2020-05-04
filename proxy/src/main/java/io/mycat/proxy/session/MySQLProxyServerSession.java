@@ -13,6 +13,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.replica.heartbeat.HeartbeatFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +29,7 @@ import java.util.Queue;
  * mysql server session 该接口实现服务器模式
  **/
 public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T>, Session<T> {
-    final static Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
-    MycatLogger MY_SQL_PROXY_SERVER_SESSION_LOGGER = MycatLoggerFactory
-            .getLogger(MySQLProxyServerSession.class);
-
+     static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
     CrossSwapThreadBufferPool writeBufferPool();
 
     /**
@@ -81,7 +79,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 if (session.isIOThreadMode()) {
                     writeToChannel();
                 } else {
-                    MY_SQL_PROXY_SERVER_SESSION_LOGGER.debug("onLastPacket sessionId:{}", sessionId());
+                    LOGGER.debug("onLastPacket sessionId:{}", sessionId());
                     session.addDelayedNioJob(new NIOJob() {
                         @Override
                         public void run(ReactorEnvThread reactor) throws Exception {
@@ -227,7 +225,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         while (writeMySQLPacket(mycat, byteBuffers)) {
 
         }
-        MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------has response--------------:" + mycat.sessionId());
+        LOGGER.info("------------has response--------------:" + mycat.sessionId());
         byteBuffers.clear();
         mycat.writeFinished(mycat);
         mycat.change2ReadOpts();

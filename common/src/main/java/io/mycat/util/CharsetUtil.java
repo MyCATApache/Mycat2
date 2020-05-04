@@ -23,8 +23,11 @@
  */
 package io.mycat.util;
 
+import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.nio.file.Paths;
@@ -37,8 +40,7 @@ import java.util.Properties;
  */
 public class CharsetUtil {
 
-  public static final MycatLogger LOGGER = MycatLoggerFactory
-                                          .getLogger(CharsetUtil.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(CharsetUtil.class);
   private static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
   private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 

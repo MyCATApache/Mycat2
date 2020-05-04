@@ -19,6 +19,8 @@ import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 
@@ -37,8 +39,7 @@ import java.math.BigDecimal;
  */
 public class BinaryResultSetTransforCollector implements ResultSetTransfor {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(BinaryResultSetTransforCollector.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BinaryResultSetTransforCollector.class);
 
   final ResultSetCollector collector;
 

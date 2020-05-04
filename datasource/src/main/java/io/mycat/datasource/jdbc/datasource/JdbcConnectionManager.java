@@ -20,6 +20,8 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,8 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 public class JdbcConnectionManager implements ConnectionManager {
 
-    private final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(JdbcConnectionManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;
 

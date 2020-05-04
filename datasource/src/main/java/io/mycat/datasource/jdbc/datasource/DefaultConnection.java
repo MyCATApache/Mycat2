@@ -19,9 +19,12 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,8 +35,7 @@ import java.sql.*;
  **/
 public class DefaultConnection implements AutoCloseable {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(DefaultConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultConnection.class);
     final Connection connection;
     private final JdbcDataSource jdbcDataSource;
     private volatile boolean isClosed = false;

@@ -23,6 +23,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
+import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
@@ -34,6 +35,8 @@ import io.mycat.proxy.session.SessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -47,8 +50,7 @@ import java.util.Objects;
  **/
 public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 
-    protected final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(BackendConCreateHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackendConCreateHandler.class);
     final CommandCallBack callback;
     final String STR_CACHING_AUTH_STAGE = "FULL_AUTH";
     final MySQLDatasource datasource;

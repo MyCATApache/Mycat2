@@ -20,6 +20,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.PreComputationSQLTable;
+import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
@@ -66,6 +67,8 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -80,7 +83,7 @@ import java.util.stream.Collectors;
  **/
 public enum MycatCalciteSupport implements Context {
     INSTANCE;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCalciteSupport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatCalciteSupport.class);
     public static final Driver DRIVER = new Driver();//触发驱动注册
     public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;

@@ -27,6 +27,8 @@ import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +39,7 @@ import java.util.stream.Collectors;
  **/
 public enum InterceptorRuntime {
     INSTANCE;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(InterceptorRuntime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InterceptorRuntime.class);
     final Map<String, UserSpace> wapper = new ConcurrentHashMap<>();
     volatile MycatConfig mycatConfig;
     public static final String DISTRIBUTED_QUERY = "distributedQuery";

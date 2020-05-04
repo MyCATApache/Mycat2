@@ -19,7 +19,11 @@ import io.mycat.bindThread.BindThreadPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
+import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Junwen Chen
  **/
@@ -27,8 +31,7 @@ public class GThread extends BindThread implements SessionThread {
 
   protected Session session;
 
-  private static MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(GThread.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GThread.class);
 
   public GThread( BindThreadPool manager) {
     super(manager);

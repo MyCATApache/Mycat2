@@ -23,6 +23,8 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +36,7 @@ import java.util.stream.Collectors;
  */
 public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
-    protected static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(ReplicaDataSourceSelector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaDataSourceSelector.class);
     protected final String name;
     protected final ConcurrentHashMap<String, PhysicsInstanceImpl> datasourceMap = new ConcurrentHashMap<>();
     protected final BalanceType balanceType;

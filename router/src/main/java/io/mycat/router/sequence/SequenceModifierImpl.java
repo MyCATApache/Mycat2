@@ -20,14 +20,15 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.sequenceModifier.ModifyCallback;
 import io.mycat.sequenceModifier.SequenceModifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SequenceModifierImpl implements SequenceModifier<MySQLAPIRuntime> {
-  private static final MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(SequenceModifierImpl.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SequenceModifierImpl.class);
   private Pattern pattern;
   private SequenceHandler sequenceHandler;
 

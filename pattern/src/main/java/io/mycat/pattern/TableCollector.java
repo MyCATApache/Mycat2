@@ -19,6 +19,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -47,8 +49,7 @@ import java.util.*;
  **/
 public final class TableCollector implements GPatternTokenCollector {
 
-    public static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(TableCollector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TableCollector.class);
     private final int dotHash;
     private final IntObjectHashMap<TableInfo> map;
     private final TableInfo[] tables = new TableInfo[32];

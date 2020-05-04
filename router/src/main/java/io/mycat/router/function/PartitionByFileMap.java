@@ -18,6 +18,8 @@ import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.router.RuleFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,7 +31,7 @@ import java.util.function.Function;
 
 public class PartitionByFileMap extends RuleFunction {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(PartitionByFileMap.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByFileMap.class);
   /**
    * 默认节点在map中的key
    */

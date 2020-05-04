@@ -21,8 +21,6 @@ import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.callback.ResultSetCallBack;
@@ -35,6 +33,8 @@ import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.util.StringUtil;
 import io.mycat.util.nio.NIOUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -50,7 +50,7 @@ import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
 public class MySQLSessionManager implements
         BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLSessionManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
     final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
     final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
     final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
@@ -86,7 +86,7 @@ public class MySQLSessionManager implements
         try {
             for (; ; ) {//禁止循环里没有return
                 MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
-                if (mySQLSession == null ) {
+                if (mySQLSession == null) {
                     createSession(datasource, asyncTaskCallBack);
                     return;
                 }
@@ -491,7 +491,7 @@ public class MySQLSessionManager implements
                     int retryInterval = (maxRetry - retryCount == 0) ? 1 : maxRetry - retryCount; // 等于1即为最后一次重试
                     long waitTime = (maxConnectTimeout + startTime - now) / retryInterval; //剩余时间/剩余次数=下次重试间隔
 
-                   // long waitTime = Math.min(0,maxConnectTimeout + startTime - now) / Math.min(1,maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
+                    // long waitTime = Math.min(0,maxConnectTimeout + startTime - now) / Math.min(1,maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
 
                     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
                     SessionCallBack<MySQLClientSession> sessionCallBack = this;

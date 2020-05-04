@@ -2,6 +2,9 @@ package io.mycat.router.util;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.router.sequence.SequenceModifierImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -14,7 +17,7 @@ import java.util.List;
  */
 public class RouterUtil {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(RouterUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
 
   /**
    * 移除执行语句中的数据库名xxxx

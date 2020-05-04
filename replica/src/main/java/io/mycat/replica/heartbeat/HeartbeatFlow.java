@@ -17,6 +17,9 @@ package io.mycat.replica.heartbeat;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.PhysicsInstance;
+import io.mycat.replica.ReplicaSelectorRuntime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.mycat.replica.heartbeat.DatasourceState.*;
 
@@ -25,7 +28,7 @@ import static io.mycat.replica.heartbeat.DatasourceState.*;
  */
 public abstract class HeartbeatFlow {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(HeartbeatFlow.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
   protected final HeartBeatStatus hbStatus;
   protected final long heartbeatTimeout;
   protected final long slaveThreshold;

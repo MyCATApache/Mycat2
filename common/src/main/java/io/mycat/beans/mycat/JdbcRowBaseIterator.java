@@ -15,10 +15,13 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -32,8 +35,7 @@ import static java.sql.Types.*;
  **/
 public class JdbcRowBaseIterator implements RowBaseIterator {
 
-    private final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(JdbcRowBaseIterator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcRowBaseIterator.class);
     private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
