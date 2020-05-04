@@ -18,7 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class ExecuteCommand implements MycatCommand {
+public enum ExecuteCommand implements MycatCommand {
+    INSTANCE;
     final static Logger logger = LoggerFactory.getLogger(ExecuteCommand.class);
 
     /*

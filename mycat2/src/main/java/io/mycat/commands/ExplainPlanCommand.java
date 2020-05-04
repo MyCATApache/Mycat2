@@ -6,7 +6,8 @@ import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
-public class ExplainPlanCommand implements MycatCommand{
+public enum ExplainPlanCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String text = request.getText();

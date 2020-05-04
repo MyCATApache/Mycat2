@@ -6,7 +6,8 @@ import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SetAutoCommitOnCommand implements MycatCommand {
+public enum SetAutoCommitOnCommand implements MycatCommand {
+    INSTANCE;
     final static Logger LOGGER = LoggerFactory.getLogger(SetAutoCommitOnCommand.class);
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {

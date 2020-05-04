@@ -47,8 +47,7 @@ public class LoadBalanceManager {
     public void load(PlugRootConfig.LoadBalance rootConfig) {
         ////////////////////////////////////check/////////////////////////////////////////////////
         Objects.requireNonNull(rootConfig);
-        Objects
-                .requireNonNull(rootConfig.getDefaultLoadBalance(), "defaultLoadBalance can not be empty");
+        Objects.requireNonNull(rootConfig.getDefaultLoadBalance(), "defaultLoadBalance can not be empty");
         Objects.requireNonNull(rootConfig.getLoadBalances(), "loadBalances list is empty");
         ////////////////////////////////////check/////////////////////////////////////////////////
 

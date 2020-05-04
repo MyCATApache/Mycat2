@@ -4,7 +4,8 @@ import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 
-public class CommitCommand implements MycatCommand{
+public enum CommitCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         response.commit();

@@ -19,10 +19,11 @@ import com.google.common.collect.ImmutableMap;
 import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.boost.CacheConfig;
-import io.mycat.commands.MycatdbCommand;
+import io.mycat.commands.*;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 import lombok.SneakyThrows;
@@ -52,6 +53,30 @@ public enum InterceptorRuntime {
 
     @SneakyThrows
     private synchronized void flash() {
+
+        addCommand(BeginCommand.INSTANCE);
+        addCommand(CommitCommand.INSTANCE);
+        addCommand(DefErrorCommand.INSTANCE);
+        addCommand(DistributedDeleteCommand.INSTANCE);
+        addCommand(DistributedInsertCommand.INSTANCE);
+        addCommand(DistributedQueryCommand.INSTANCE);
+        addCommand(DistributedUpdateCommand.INSTANCE);
+        addCommand(ExecuteCommand.INSTANCE);
+        addCommand(ExplainPlanCommand.INSTANCE);
+        addCommand(ExplainSqlCommand.INSTANCE);
+        addCommand(MycatdbCommand.INSTANCE);
+        addCommand(OffXACommand.INSTANCE);
+        addCommand(OkCommand.INSTANCE);
+        addCommand(OnXACommand.INSTANCE);
+        addCommand(RollbackCommand.INSTANCE);
+        addCommand(SelectAutocommitCommand.INSTANCE);
+        addCommand(SelectLastInsertIdCommand.INSTANCE);
+        addCommand(SelectTransactionReadOnlyCommand.INSTANCE);
+        addCommand(SetAutoCommitOffCommand.INSTANCE);
+        addCommand(SetAutoCommitOnCommand.INSTANCE);
+        addCommand(SetTransactionIsolationCommand.INSTANCE);
+        addCommand(UseStatementCommand.INSTANCE);
+
         //config
         this.wapper.clear();
         for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
@@ -70,9 +95,9 @@ public enum InterceptorRuntime {
             List<CacheTask> cacheTasks = new ArrayList<>();
             for (Map<String, Object> sql : sqls) {
                 String name = (String) sql.get("name");
-                if (name == null){
+                if (name == null) {
                     name = Objects.toString(sql);
-                    sql.put("name",name);
+                    sql.put("name", name);
                 }
                 String command = (String) sql.get("command");
                 Type type = null;
@@ -97,6 +122,10 @@ public enum InterceptorRuntime {
             TransactionType transactionType = TransactionType.parse(interceptor.getTransactionType());
             this.wapper.put(username, new UserSpace(username, transactionType, apply, cacheTasks));
         }
+    }
+
+    private void addCommand(MycatCommand instance) {
+        MycatCommandLoader.INSTANCE.registerIfAbsent(instance.getName(), instance);
     }
 
     public synchronized void load(MycatConfig config) {

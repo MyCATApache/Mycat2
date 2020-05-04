@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-public class SetTransactionIsolationCommand implements MycatCommand{
+public enum SetTransactionIsolationCommand implements MycatCommand{
+    INSTANCE;
     final static Logger LOGGER = LoggerFactory.getLogger(SetAutoCommitOffCommand.class);
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {

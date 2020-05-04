@@ -7,7 +7,8 @@ import io.mycat.util.Response;
 import java.nio.CharBuffer;
 import java.util.Map;
 
-public class ExplainSqlCommand implements MycatCommand{
+public enum ExplainSqlCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String statement = (String) request.getContext().get("statement");

@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DefErrorCommand implements MycatCommand {
+public enum DefErrorCommand implements MycatCommand {
+    INSTANCE;
     final static Logger logger = LoggerFactory.getLogger(DefErrorCommand.class);
 
     @Override

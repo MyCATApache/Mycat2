@@ -11,7 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class SelectTransactionReadOnlyCommand implements MycatCommand{
+public enum SelectTransactionReadOnlyCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String columnName = request.get("columnName");

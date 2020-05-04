@@ -8,7 +8,8 @@ import io.mycat.util.Response;
 
 import static io.mycat.commands.ExecuteCommand.getDetails;
 
-public class DistributedUpdateCommand implements MycatCommand{
+public enum DistributedUpdateCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         ExplainDetail details = getDetails(request,context, ExecuteType.UPDATE);

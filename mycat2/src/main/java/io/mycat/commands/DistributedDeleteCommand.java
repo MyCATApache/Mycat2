@@ -6,7 +6,10 @@ import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 
-public class DistributedDeleteCommand extends ExecuteCommand{
+import static io.mycat.commands.ExecuteCommand.getDetails;
+
+public enum DistributedDeleteCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         ExplainDetail details = getDetails(request,context, ExecuteType.UPDATE);

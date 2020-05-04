@@ -9,7 +9,8 @@ import io.mycat.util.Response;
 import java.sql.JDBCType;
 import java.util.Arrays;
 
-public class SelectAutocommitCommand implements MycatCommand{
+public enum SelectAutocommitCommand implements MycatCommand{
+    INSTANCE;
     String columnName = "@@session.autocommit";
 
     @Override

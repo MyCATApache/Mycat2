@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
-public class DistributedQueryCommand implements MycatCommand{
+public enum DistributedQueryCommand implements MycatCommand{
+    INSTANCE;
     final static Logger logger = LoggerFactory.getLogger(DistributedQueryCommand.class);
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {

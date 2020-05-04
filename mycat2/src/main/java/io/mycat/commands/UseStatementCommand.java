@@ -4,7 +4,8 @@ import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 
-public class UseStatementCommand implements MycatCommand{
+public enum UseStatementCommand implements MycatCommand{
+    INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         context.useShcema(request.get("schema"));

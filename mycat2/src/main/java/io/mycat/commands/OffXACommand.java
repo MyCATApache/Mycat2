@@ -7,7 +7,8 @@ import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OffXACommand implements MycatCommand{
+public enum OffXACommand implements MycatCommand{
+    INSTANCE;
     final static Logger LOGGER = LoggerFactory.getLogger(OffXACommand.class);
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {

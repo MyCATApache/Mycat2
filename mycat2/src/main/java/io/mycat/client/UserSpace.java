@@ -10,10 +10,10 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.boost.CacheConfig;
 import io.mycat.boost.Task;
 import io.mycat.commands.MycatCommand;
-import io.mycat.commands.MycatdbCommand;
-import io.mycat.hint.Hint;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
+import io.mycat.plug.command.MycatCommandLoader;
+import io.mycat.plug.hint.HintLoader;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.resultset.TextResultSetResponse;
@@ -40,10 +40,8 @@ public class UserSpace {
     private static final Logger logger = LoggerFactory.getLogger(UserSpace.class);
     private final String userName;
     private final TransactionType defaultTransactionType;
-    private final Matcher<Map<String,Object>> matcher;
+    private final Matcher<Map<String, Object>> matcher;
     private final Map<String, Task> cacheMap = new ConcurrentHashMap<>();
-    private final Map<String, Hint> hintMap = new HashMap<>();
-    private final Map<String, MycatCommand> commandMap = new HashMap<>();
     final static private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public UserSpace(String userName, TransactionType defaultTransactionType, Matcher matcher, List<CacheTask> cacheTaskList) {
@@ -55,7 +53,7 @@ public class UserSpace {
             MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
             MycatDBClientMediator db = MycatDBs.createClient(context);
             Task task = getTask(cacheTask.getText(), cacheTask.getType(), db, timer, cacheTask.getCacheConfig());
-            cacheMap.put(cacheTask.getName(),task );
+            cacheMap.put(cacheTask.getName(), task);
             task.start();
         });
     }
@@ -77,19 +75,25 @@ public class UserSpace {
         for (Map<String, Object> item : matchList) {
             HashMap<String, Object> context = new HashMap<>(item);
             context.putAll(extractor);
-            if (execute( sessionId,dataContext, charBuffer, context, response)) return;
+            if (execute(sessionId, dataContext, charBuffer, context, response)) return;
         }
         response.sendError(new MycatException("No matching commands"));
     }
 
-    public boolean execute(int sessionId,MycatDataContext dataContext, CharBuffer charBuffer, Map<String, Object> context, Response response) {
+    public boolean execute(int sessionId, MycatDataContext dataContext, CharBuffer charBuffer, Map<String, Object> context, Response response) {
         try {
             final String name = Objects.requireNonNull((String) context.get("name"), "command is not allowed null");
             final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null").toLowerCase();
             final List<String> hints = (List<String>) context.getOrDefault("hints", Collections.emptyList());
             final boolean explainCommand = "true".equalsIgnoreCase(Objects.toString(context.getOrDefault("doExplain", "")));
             //////////////////////////////////hints/////////////////////////////////
-            hints.forEach(hintName -> Objects.requireNonNull(hintMap.get(hintName)).accept(charBuffer, context));
+            String text = null;
+            if (!hints.isEmpty()) {
+                text = charBuffer.toString();
+                for (String hintName : hints) {
+                    Objects.requireNonNull(HintLoader.INSTANCE.get(hintName)).accept(text, context);
+                }
+            }
             //////////////////////////////////hints/////////////////////////////////
             final boolean cache = !StringUtil.isEmpty((String) context.get("cache"));
             ///////////////////////////////////cache//////////////////////////////////
@@ -97,7 +101,7 @@ public class UserSpace {
                 Optional<MycatResultSetResponse> mycatResultSetResponse = Optional.ofNullable(cacheMap.get(name)).map(i -> i.get());
                 if (mycatResultSetResponse.isPresent()) {
                     logger.info("\n" + context + "\n hit cache");
-                    response.sendResponse(new MycatResponse[]{mycatResultSetResponse.get()}, () -> Arrays.asList("cache :"+context));
+                    response.sendResponse(new MycatResponse[]{mycatResultSetResponse.get()}, () -> Arrays.asList("cache :" + context));
                     return true;
                 }
             }
@@ -105,21 +109,26 @@ public class UserSpace {
             //////////////////////////////////tags/////////////////////////////////
             final Map<String, Object> tags = (Map<String, Object>) context.getOrDefault("tags", Collections.emptyMap());
             //////////////////////////////////tags/////////////////////////////////
-            final String text;
             //////////////////////////////////explain/////////////////////////////////
             String explain = (String) context.get("explain");
             if (StringUtil.isEmpty(explain)) {
-                text = charBuffer.toString();
+                if (text == null) {
+                    text = charBuffer.toString();
+                }
             } else {
                 text = Template.formatByName(explain, (Map) tags);
             }
+            if (text != null) {
+                text = charBuffer.toString();
+            }
+            Objects.requireNonNull(text);
             //////////////////////////////////command/////////////////////////////////
-            MycatCommand commandHanlder = Objects.requireNonNull(commandMap.getOrDefault(command, MycatdbCommand.INSTANCE));
-            MycatRequest sqlRequest = new MycatRequest(sessionId,text, context, this);
+            MycatCommand commandHanlder = Objects.requireNonNull(MycatCommandLoader.INSTANCE.get(command));
+            MycatRequest sqlRequest = new MycatRequest(sessionId, text, context, this);
             if (explainCommand) {
-                return commandHanlder.explain(sqlRequest, dataContext,response);
+                return commandHanlder.explain(sqlRequest, dataContext, response);
             } else {
-                return commandHanlder.run(sqlRequest,dataContext, response);
+                return commandHanlder.run(sqlRequest, dataContext, response);
             }
             //////////////////////////////////command/////////////////////////////////
         } catch (Throwable e) {

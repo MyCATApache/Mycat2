@@ -6,8 +6,8 @@ import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RollbackCommand implements MycatCommand {
-
+public enum RollbackCommand implements MycatCommand {
+    INSTANCE;
    private static final Logger LOGGER = LoggerFactory.getLogger(RollbackCommand.class);
 
     @Override

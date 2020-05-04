@@ -15,6 +15,7 @@
 package io.mycat;
 
 
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.client.Interceptor;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
@@ -30,10 +31,10 @@ import java.nio.ByteBuffer;
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
 
-  //  private MycatClient client;
-  //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
-  //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
-  //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
+    //  private MycatClient client;
+    //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
+    //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+    //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     private Interceptor interceptor;
 
@@ -47,44 +48,29 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MycatSession session) {
-
-   //     this.client = ClientRuntime.INSTANCE.login((MycatDataContext) session.unwrap(MycatDataContext.class), true);
-   //     this.client.useSchema(session.getSchema());
-   //     this.sqlHandlers.addAll(applicationContext.getBeanForType(SQLHandler.class));
-
         this.interceptor = InterceptorRuntime.INSTANCE.login(session.getUser().getUserName());
+        TransactionType defaultTransactionType = interceptor.getUserSpace().getDefaultTransactionType();
+        if (defaultTransactionType != null) {
+            session.getDataContext().switchTransaction(defaultTransactionType);
+        }
     }
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
         try {
-// 1.02-future-metadata-2020-4-12
-     //       LOGGER.debug("-----------------reveice--------------------");
-     //       String sql = new String(bytes);
-    //        LOGGER.debug(sql);
-    //        sql = sql.trim();
-    //        if (sql.endsWith(";")) {
-    //            sql = sql.substring(0, sql.length() - 1);
-   ////             LOGGER.debug("-----------------tirm-right-semi(;)--------------------");
-  //          }
-  //          Context analysis = client.analysis(sql);
-//            SQLHanlder sqlHanlder = new SQLHanlder(client.getMycatDb().sqlContext());
-//            ReceiverImpl receiver = new ReceiverImpl(session, client, analysis);
-//            sqlHanlder.parse(sql, receiver);
-  //          executeQuery(sql,new ReceiverImpl(session, client, analysis),client.getMycatDb().sqlContext(),session);
-
-//            ContextRunner.run(client, analysis, session);
-
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("-----------------reveice--------------------");
+                LOGGER.debug(new String(bytes));
+            }
             UserSpace userSpace = this.interceptor.getUserSpace();
-            userSpace.execute(ByteBuffer.wrap(bytes), session,new ReceiverImpl(session));
+            userSpace.execute(ByteBuffer.wrap(bytes), session, new ReceiverImpl(session));
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
         }
-}
-
+    }
 
 
     @Override
