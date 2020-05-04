@@ -58,5 +58,6 @@ public class ProxyTransactionSession extends LocalTransactionSession {
             value.close();
         }
         updateConnectionMap.clear();
+        dataSourceNearness.clear();
     }
 }
