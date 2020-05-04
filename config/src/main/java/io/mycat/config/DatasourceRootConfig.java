@@ -30,7 +30,6 @@ public class DatasourceRootConfig {
         private List<String> initSqls;
         private boolean initSqlsGetConnection;
         private String instanceType;
-        private String jdbcDriverClass;
         private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
 
         public List<String> getInitSqls() {

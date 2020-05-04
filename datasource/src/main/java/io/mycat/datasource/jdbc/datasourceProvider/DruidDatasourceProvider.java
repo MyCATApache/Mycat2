@@ -35,7 +35,6 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     int maxRetryCount = config.getMaxRetryCount();
     List<String> initSQLs = config.getInitSqls();
 
-    String jdbcDriver = config.getJdbcDriverClass();
     int maxCon = config.getMaxCon();
     int minCon = config.getMinCon();
 
@@ -55,9 +54,6 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     }
     if (initSQLs != null) {
       datasource.setConnectionInitSqls(initSQLs);
-    }
-    if (jdbcDriver != null) {
-      datasource.setDriverClassName(jdbcDriver);
     }
 
     return new JdbcDataSource(config,datasource);

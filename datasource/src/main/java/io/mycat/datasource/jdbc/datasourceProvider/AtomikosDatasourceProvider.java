@@ -39,8 +39,6 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     String dbType = config.getDbType();
     int maxRetryCount = config.getMaxRetryCount();
     List<String> initSQL = config.getInitSqls();
-
-    String jdbcDriver = config.getJdbcDriverClass();
     int maxCon = config.getMaxCon();
     int minCon = config.getMinCon();
 
