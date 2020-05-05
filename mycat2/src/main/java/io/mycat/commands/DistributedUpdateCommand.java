@@ -8,6 +8,9 @@ import io.mycat.util.Response;
 
 import static io.mycat.commands.ExecuteCommand.getDetails;
 
+/**
+ * @author Junwen Chen
+ **/
 public enum DistributedUpdateCommand implements MycatCommand{
     INSTANCE;
     @Override

@@ -1,10 +1,9 @@
 package io.mycat.client;
 
-
-
-
-
-    public enum Type {
-        HBT,
-        SQL
-    }
+/**
+ * @author Junwen Chen
+ **/
+public enum Type {
+    HBT,
+    SQL
+}

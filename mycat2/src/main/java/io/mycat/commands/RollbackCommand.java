@@ -5,7 +5,9 @@ import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum RollbackCommand implements MycatCommand {
     INSTANCE;
    private static final Logger LOGGER = LoggerFactory.getLogger(RollbackCommand.class);

@@ -1,2881 +1,2880 @@
 package io.mycat.beans.mysql;
 
 
-import java.lang.Double;
-import java.lang.Integer;
-import java.lang.Iterable;
-import java.lang.Long;
-import java.lang.Short;
-import java.lang.String;
 import java.math.BigDecimal;
+import java.util.List;
 
+/**
+ * @author Junwen Chen
+ **/
 public class InformationSchema {
-  public Iterable TABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_TABLESPACES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_INDEX_TABLE = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_TABLESPACES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable CHECK_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_INDEX_TABLE = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable PARTITIONS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List CHECK_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable TABLE_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List PARTITIONS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable TRIGGERS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TABLE_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable GEOMETRY_COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TRIGGERS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable EVENTS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List GEOMETRY_COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable PARAMETERS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List EVENTS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_DEFAULT_STOPWORD = new java.util.concurrent.CopyOnWriteArrayList();
+    public List PARAMETERS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_TABLESPACES_SCRUBBING = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_DEFAULT_STOPWORD = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_LOCK_WAITS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_TABLESPACES_SCRUBBING = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable FILES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_LOCK_WAITS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable PLUGINS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List FILES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable GLOBAL_STATUS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List PLUGINS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable ALL_PLUGINS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List GLOBAL_STATUS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable USER_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List ALL_PLUGINS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_TABLESTATS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List USER_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_SEMAPHORE_WAITS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_TABLESTATS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMP_PER_INDEX_RESET = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_SEMAPHORE_WAITS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable TABLE_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMP_PER_INDEX_RESET = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable COLLATION_CHARACTER_SET_APPLICABILITY = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TABLE_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable ENGINES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List COLLATION_CHARACTER_SET_APPLICABILITY = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable KEY_COLUMN_USAGE = new java.util.concurrent.CopyOnWriteArrayList();
+    public List ENGINES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable GLOBAL_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List KEY_COLUMN_USAGE = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_LOCKS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List GLOBAL_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_FOREIGN_COLS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_LOCKS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_BUFFER_PAGE = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_FOREIGN_COLS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SESSION_STATUS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_BUFFER_PAGE = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_DATAFILES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SESSION_STATUS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMP = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_DATAFILES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable KEY_CACHES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMP = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMPMEM_RESET = new java.util.concurrent.CopyOnWriteArrayList();
+    public List KEY_CACHES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_VIRTUAL = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMPMEM_RESET = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable APPLICABLE_ROLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_VIRTUAL = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_FIELDS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List APPLICABLE_ROLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable TABLESPACES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_FIELDS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable REFERENTIAL_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TABLESPACES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_TABLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List REFERENTIAL_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SCHEMATA = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_TABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_BEING_DELETED = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SCHEMATA = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable ENABLED_ROLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_BEING_DELETED = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List ENABLED_ROLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_BUFFER_POOL_STATS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List COLUMNS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMP_PER_INDEX = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_BUFFER_POOL_STATS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_MUTEXES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMP_PER_INDEX = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_BUFFER_PAGE_LRU = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_MUTEXES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_CONFIG = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_BUFFER_PAGE_LRU = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SYSTEM_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_CONFIG = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable TABLE_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SYSTEM_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable CLIENT_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List TABLE_CONSTRAINTS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable PROFILING = new java.util.concurrent.CopyOnWriteArrayList();
+    public List CLIENT_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_TABLESPACES_ENCRYPTION = new java.util.concurrent.CopyOnWriteArrayList();
+    public List PROFILING = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_FOREIGN = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_TABLESPACES_ENCRYPTION = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable COLLATIONS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_FOREIGN = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMPMEM = new java.util.concurrent.CopyOnWriteArrayList();
+    public List COLLATIONS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_TRX = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMPMEM = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable CHARACTER_SETS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_TRX = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INDEX_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List CHARACTER_SETS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_DELETED = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INDEX_STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_DELETED = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable VIEWS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List STATISTICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable COLUMN_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List VIEWS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable user_variables = new java.util.concurrent.CopyOnWriteArrayList();
+    public List COLUMN_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SESSION_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List user_variables = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_METRICS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SESSION_VARIABLES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SPATIAL_REF_SYS = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_METRICS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_CMP_RESET = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SPATIAL_REF_SYS = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_FT_INDEX_CACHE = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_CMP_RESET = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable INNODB_SYS_INDEXES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_FT_INDEX_CACHE = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable USER_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List INNODB_SYS_INDEXES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable PROCESSLIST = new java.util.concurrent.CopyOnWriteArrayList();
+    public List USER_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable SCHEMA_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List PROCESSLIST = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public Iterable ROUTINES = new java.util.concurrent.CopyOnWriteArrayList();
+    public List SCHEMA_PRIVILEGES = new java.util.concurrent.CopyOnWriteArrayList();
 
-  public static class TABLES {
-    public static final String createTableSQL = "CREATE TABLE `TABLES` (\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tENGINE varchar(64) DEFAULT NULL,\n"
-        + "\tVERSION bigint(21) DEFAULT NULL,\n"
-        + "\tROW_FORMAT varchar(10) DEFAULT NULL,\n"
-        + "\tTABLE_ROWS bigint(21) DEFAULT NULL,\n"
-        + "\tAVG_ROW_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tDATA_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tINDEX_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tDATA_FREE bigint(21) DEFAULT NULL,\n"
-        + "\tAUTO_INCREMENT bigint(21) DEFAULT NULL,\n"
-        + "\tCREATE_TIME datetime DEFAULT NULL,\n"
-        + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
-        + "\tCHECK_TIME datetime DEFAULT NULL,\n"
-        + "\tTABLE_COLLATION varchar(32) DEFAULT NULL,\n"
-        + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
-        + "\tCREATE_OPTIONS varchar(2048) DEFAULT NULL,\n"
-        + "\tTABLE_COMMENT varchar(2048) DEFAULT '' NOT NULL,\n"
-        + "\tMAX_INDEX_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tTEMPORARY varchar(1) DEFAULT NULL\n"
-        + ")";
+    public List ROUTINES = new java.util.concurrent.CopyOnWriteArrayList();
 
-    public String TABLE_CATALOG;
+    public static class TABLES {
+        public static final String createTableSQL = "CREATE TABLE `TABLES` (\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tENGINE varchar(64) DEFAULT NULL,\n"
+                + "\tVERSION bigint(21) DEFAULT NULL,\n"
+                + "\tROW_FORMAT varchar(10) DEFAULT NULL,\n"
+                + "\tTABLE_ROWS bigint(21) DEFAULT NULL,\n"
+                + "\tAVG_ROW_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tDATA_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tINDEX_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tDATA_FREE bigint(21) DEFAULT NULL,\n"
+                + "\tAUTO_INCREMENT bigint(21) DEFAULT NULL,\n"
+                + "\tCREATE_TIME datetime DEFAULT NULL,\n"
+                + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
+                + "\tCHECK_TIME datetime DEFAULT NULL,\n"
+                + "\tTABLE_COLLATION varchar(32) DEFAULT NULL,\n"
+                + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
+                + "\tCREATE_OPTIONS varchar(2048) DEFAULT NULL,\n"
+                + "\tTABLE_COMMENT varchar(2048) DEFAULT '' NOT NULL,\n"
+                + "\tMAX_INDEX_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tTEMPORARY varchar(1) DEFAULT NULL\n"
+                + ")";
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String TABLE_TYPE;
+        public String TABLE_NAME;
 
-    public String ENGINE;
+        public String TABLE_TYPE;
 
-    public Long VERSION;
+        public String ENGINE;
 
-    public String ROW_FORMAT;
+        public Long VERSION;
 
-    public Long TABLE_ROWS;
+        public String ROW_FORMAT;
 
-    public Long AVG_ROW_LENGTH;
+        public Long TABLE_ROWS;
 
-    public Long DATA_LENGTH;
+        public Long AVG_ROW_LENGTH;
 
-    public Long MAX_DATA_LENGTH;
+        public Long DATA_LENGTH;
 
-    public Long INDEX_LENGTH;
+        public Long MAX_DATA_LENGTH;
 
-    public Long DATA_FREE;
+        public Long INDEX_LENGTH;
 
-    public Long AUTO_INCREMENT;
+        public Long DATA_FREE;
 
-    public Long CREATE_TIME;
+        public Long AUTO_INCREMENT;
 
-    public Long UPDATE_TIME;
+        public Long CREATE_TIME;
 
-    public Long CHECK_TIME;
+        public Long UPDATE_TIME;
 
-    public String TABLE_COLLATION;
+        public Long CHECK_TIME;
 
-    public Long CHECKSUM;
+        public String TABLE_COLLATION;
 
-    public String CREATE_OPTIONS;
+        public Long CHECKSUM;
 
-    public String TABLE_COMMENT;
+        public String CREATE_OPTIONS;
 
-    public Long MAX_INDEX_LENGTH;
+        public String TABLE_COMMENT;
 
-    public String TEMPORARY;
-  }
+        public Long MAX_INDEX_LENGTH;
 
-  public static class INNODB_SYS_COLUMNS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_COLUMNS` (\n"
-        + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tPOS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMTYPE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tPRTYPE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tLEN int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String TEMPORARY;
+    }
 
-    public Long TABLE_ID;
+    public static class INNODB_SYS_COLUMNS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_COLUMNS` (\n"
+                + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tPOS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMTYPE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tPRTYPE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tLEN int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long TABLE_ID;
 
-    public Long POS;
+        public String NAME;
 
-    public Integer MTYPE;
+        public Long POS;
 
-    public Integer PRTYPE;
+        public Integer MTYPE;
 
-    public Integer LEN;
-  }
+        public Integer PRTYPE;
 
-  public static class INNODB_SYS_TABLESPACES {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLESPACES` (\n"
-        + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(655) DEFAULT '' NOT NULL,\n"
-        + "\tFLAG int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tROW_FORMAT varchar(22) DEFAULT NULL,\n"
-        + "\tPAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tZIP_PAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE_TYPE varchar(10) DEFAULT NULL,\n"
-        + "\tFS_BLOCK_SIZE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tFILE_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tALLOCATED_SIZE bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer LEN;
+    }
 
-    public Integer SPACE;
+    public static class INNODB_SYS_TABLESPACES {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLESPACES` (\n"
+                + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(655) DEFAULT '' NOT NULL,\n"
+                + "\tFLAG int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tROW_FORMAT varchar(22) DEFAULT NULL,\n"
+                + "\tPAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tZIP_PAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE_TYPE varchar(10) DEFAULT NULL,\n"
+                + "\tFS_BLOCK_SIZE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tFILE_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tALLOCATED_SIZE bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Integer SPACE;
 
-    public Integer FLAG;
+        public String NAME;
 
-    public String ROW_FORMAT;
+        public Integer FLAG;
 
-    public Integer PAGE_SIZE;
+        public String ROW_FORMAT;
 
-    public Integer ZIP_PAGE_SIZE;
+        public Integer PAGE_SIZE;
 
-    public String SPACE_TYPE;
+        public Integer ZIP_PAGE_SIZE;
 
-    public Integer FS_BLOCK_SIZE;
+        public String SPACE_TYPE;
 
-    public Long FILE_SIZE;
+        public Integer FS_BLOCK_SIZE;
 
-    public Long ALLOCATED_SIZE;
-  }
+        public Long FILE_SIZE;
 
-  public static class INNODB_FT_INDEX_TABLE {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_INDEX_TABLE` (\n"
-        + "\tWORD varchar(337) DEFAULT '' NOT NULL,\n"
-        + "\tFIRST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLAST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDOC_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPOSITION bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long ALLOCATED_SIZE;
+    }
 
-    public String WORD;
+    public static class INNODB_FT_INDEX_TABLE {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_INDEX_TABLE` (\n"
+                + "\tWORD varchar(337) DEFAULT '' NOT NULL,\n"
+                + "\tFIRST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLAST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDOC_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPOSITION bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long FIRST_DOC_ID;
+        public String WORD;
 
-    public Long LAST_DOC_ID;
+        public Long FIRST_DOC_ID;
 
-    public Long DOC_COUNT;
+        public Long LAST_DOC_ID;
 
-    public Long DOC_ID;
+        public Long DOC_COUNT;
 
-    public Long POSITION;
-  }
+        public Long DOC_ID;
 
-  public static class CHECK_CONSTRAINTS {
-    public static final String createTableSQL = "CREATE TABLE `CHECK_CONSTRAINTS` (\n"
-        + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCHECK_CLAUSE varchar(64) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long POSITION;
+    }
 
-    public String CONSTRAINT_CATALOG;
+    public static class CHECK_CONSTRAINTS {
+        public static final String createTableSQL = "CREATE TABLE `CHECK_CONSTRAINTS` (\n"
+                + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCHECK_CLAUSE varchar(64) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String CONSTRAINT_SCHEMA;
+        public String CONSTRAINT_CATALOG;
 
-    public String CONSTRAINT_NAME;
+        public String CONSTRAINT_SCHEMA;
 
-    public String TABLE_NAME;
+        public String CONSTRAINT_NAME;
 
-    public String CHECK_CLAUSE;
-  }
+        public String TABLE_NAME;
 
-  public static class PARTITIONS {
-    public static final String createTableSQL = "CREATE TABLE `PARTITIONS` (\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPARTITION_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tSUBPARTITION_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tPARTITION_ORDINAL_POSITION bigint(21) DEFAULT NULL,\n"
-        + "\tSUBPARTITION_ORDINAL_POSITION bigint(21) DEFAULT NULL,\n"
-        + "\tPARTITION_METHOD varchar(18) DEFAULT NULL,\n"
-        + "\tSUBPARTITION_METHOD varchar(12) DEFAULT NULL,\n"
-        + "\tPARTITION_EXPRESSION longtext DEFAULT NULL,\n"
-        + "\tSUBPARTITION_EXPRESSION longtext DEFAULT NULL,\n"
-        + "\tPARTITION_DESCRIPTION longtext DEFAULT NULL,\n"
-        + "\tTABLE_ROWS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tAVG_ROW_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDATA_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tINDEX_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDATA_FREE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCREATE_TIME datetime DEFAULT NULL,\n"
-        + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
-        + "\tCHECK_TIME datetime DEFAULT NULL,\n"
-        + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
-        + "\tPARTITION_COMMENT varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tNODEGROUP varchar(12) DEFAULT '' NOT NULL,\n"
-        + "\tTABLESPACE_NAME varchar(64) DEFAULT NULL\n"
-        + ")";
+        public String CHECK_CLAUSE;
+    }
 
-    public String TABLE_CATALOG;
+    public static class PARTITIONS {
+        public static final String createTableSQL = "CREATE TABLE `PARTITIONS` (\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPARTITION_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tSUBPARTITION_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tPARTITION_ORDINAL_POSITION bigint(21) DEFAULT NULL,\n"
+                + "\tSUBPARTITION_ORDINAL_POSITION bigint(21) DEFAULT NULL,\n"
+                + "\tPARTITION_METHOD varchar(18) DEFAULT NULL,\n"
+                + "\tSUBPARTITION_METHOD varchar(12) DEFAULT NULL,\n"
+                + "\tPARTITION_EXPRESSION longtext DEFAULT NULL,\n"
+                + "\tSUBPARTITION_EXPRESSION longtext DEFAULT NULL,\n"
+                + "\tPARTITION_DESCRIPTION longtext DEFAULT NULL,\n"
+                + "\tTABLE_ROWS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tAVG_ROW_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDATA_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tINDEX_LENGTH bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDATA_FREE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCREATE_TIME datetime DEFAULT NULL,\n"
+                + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
+                + "\tCHECK_TIME datetime DEFAULT NULL,\n"
+                + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
+                + "\tPARTITION_COMMENT varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tNODEGROUP varchar(12) DEFAULT '' NOT NULL,\n"
+                + "\tTABLESPACE_NAME varchar(64) DEFAULT NULL\n"
+                + ")";
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String PARTITION_NAME;
+        public String TABLE_NAME;
 
-    public String SUBPARTITION_NAME;
+        public String PARTITION_NAME;
 
-    public Long PARTITION_ORDINAL_POSITION;
+        public String SUBPARTITION_NAME;
 
-    public Long SUBPARTITION_ORDINAL_POSITION;
+        public Long PARTITION_ORDINAL_POSITION;
 
-    public String PARTITION_METHOD;
+        public Long SUBPARTITION_ORDINAL_POSITION;
 
-    public String SUBPARTITION_METHOD;
+        public String PARTITION_METHOD;
 
-    public String PARTITION_EXPRESSION;
+        public String SUBPARTITION_METHOD;
 
-    public String SUBPARTITION_EXPRESSION;
+        public String PARTITION_EXPRESSION;
 
-    public String PARTITION_DESCRIPTION;
+        public String SUBPARTITION_EXPRESSION;
 
-    public Long TABLE_ROWS;
+        public String PARTITION_DESCRIPTION;
 
-    public Long AVG_ROW_LENGTH;
+        public Long TABLE_ROWS;
 
-    public Long DATA_LENGTH;
+        public Long AVG_ROW_LENGTH;
 
-    public Long MAX_DATA_LENGTH;
+        public Long DATA_LENGTH;
 
-    public Long INDEX_LENGTH;
+        public Long MAX_DATA_LENGTH;
 
-    public Long DATA_FREE;
+        public Long INDEX_LENGTH;
 
-    public Long CREATE_TIME;
+        public Long DATA_FREE;
 
-    public Long UPDATE_TIME;
+        public Long CREATE_TIME;
 
-    public Long CHECK_TIME;
+        public Long UPDATE_TIME;
 
-    public Long CHECKSUM;
+        public Long CHECK_TIME;
 
-    public String PARTITION_COMMENT;
+        public Long CHECKSUM;
 
-    public String NODEGROUP;
+        public String PARTITION_COMMENT;
 
-    public String TABLESPACE_NAME;
-  }
+        public String NODEGROUP;
 
-  public static class TABLE_PRIVILEGES {
-    public static final String createTableSQL = "CREATE TABLE `TABLE_PRIVILEGES` (\n"
-        + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String TABLESPACE_NAME;
+    }
 
-    public String GRANTEE;
+    public static class TABLE_PRIVILEGES {
+        public static final String createTableSQL = "CREATE TABLE `TABLE_PRIVILEGES` (\n"
+                + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_CATALOG;
+        public String GRANTEE;
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String PRIVILEGE_TYPE;
+        public String TABLE_NAME;
 
-    public String IS_GRANTABLE;
-  }
+        public String PRIVILEGE_TYPE;
 
-  public static class TRIGGERS {
-    public static final String createTableSQL = "CREATE TABLE `TRIGGERS` (\n"
-        + "\tTRIGGER_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTRIGGER_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTRIGGER_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_MANIPULATION varchar(6) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_OBJECT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_OBJECT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_OBJECT_TABLE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tACTION_ORDER bigint(4) DEFAULT 0 NOT NULL,\n"
-        + "\tACTION_CONDITION longtext DEFAULT NULL,\n"
-        + "\tACTION_STATEMENT longtext DEFAULT '' NOT NULL,\n"
-        + "\tACTION_ORIENTATION varchar(9) DEFAULT '' NOT NULL,\n"
-        + "\tACTION_TIMING varchar(6) DEFAULT '' NOT NULL,\n"
-        + "\tACTION_REFERENCE_OLD_TABLE varchar(64) DEFAULT NULL,\n"
-        + "\tACTION_REFERENCE_NEW_TABLE varchar(64) DEFAULT NULL,\n"
-        + "\tACTION_REFERENCE_OLD_ROW varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tACTION_REFERENCE_NEW_ROW varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tCREATED datetime(2) DEFAULT NULL,\n"
-        + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
-        + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String IS_GRANTABLE;
+    }
 
-    public String TRIGGER_CATALOG;
+    public static class TRIGGERS {
+        public static final String createTableSQL = "CREATE TABLE `TRIGGERS` (\n"
+                + "\tTRIGGER_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTRIGGER_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTRIGGER_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_MANIPULATION varchar(6) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_OBJECT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_OBJECT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_OBJECT_TABLE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tACTION_ORDER bigint(4) DEFAULT 0 NOT NULL,\n"
+                + "\tACTION_CONDITION longtext DEFAULT NULL,\n"
+                + "\tACTION_STATEMENT longtext DEFAULT '' NOT NULL,\n"
+                + "\tACTION_ORIENTATION varchar(9) DEFAULT '' NOT NULL,\n"
+                + "\tACTION_TIMING varchar(6) DEFAULT '' NOT NULL,\n"
+                + "\tACTION_REFERENCE_OLD_TABLE varchar(64) DEFAULT NULL,\n"
+                + "\tACTION_REFERENCE_NEW_TABLE varchar(64) DEFAULT NULL,\n"
+                + "\tACTION_REFERENCE_OLD_ROW varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tACTION_REFERENCE_NEW_ROW varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tCREATED datetime(2) DEFAULT NULL,\n"
+                + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
+                + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TRIGGER_SCHEMA;
+        public String TRIGGER_CATALOG;
 
-    public String TRIGGER_NAME;
+        public String TRIGGER_SCHEMA;
 
-    public String EVENT_MANIPULATION;
+        public String TRIGGER_NAME;
 
-    public String EVENT_OBJECT_CATALOG;
+        public String EVENT_MANIPULATION;
 
-    public String EVENT_OBJECT_SCHEMA;
+        public String EVENT_OBJECT_CATALOG;
 
-    public String EVENT_OBJECT_TABLE;
+        public String EVENT_OBJECT_SCHEMA;
 
-    public Long ACTION_ORDER;
+        public String EVENT_OBJECT_TABLE;
 
-    public String ACTION_CONDITION;
+        public Long ACTION_ORDER;
 
-    public String ACTION_STATEMENT;
+        public String ACTION_CONDITION;
 
-    public String ACTION_ORIENTATION;
+        public String ACTION_STATEMENT;
 
-    public String ACTION_TIMING;
+        public String ACTION_ORIENTATION;
 
-    public String ACTION_REFERENCE_OLD_TABLE;
+        public String ACTION_TIMING;
 
-    public String ACTION_REFERENCE_NEW_TABLE;
+        public String ACTION_REFERENCE_OLD_TABLE;
 
-    public String ACTION_REFERENCE_OLD_ROW;
+        public String ACTION_REFERENCE_NEW_TABLE;
 
-    public String ACTION_REFERENCE_NEW_ROW;
+        public String ACTION_REFERENCE_OLD_ROW;
 
-    public Long CREATED;
+        public String ACTION_REFERENCE_NEW_ROW;
 
-    public String SQL_MODE;
+        public Long CREATED;
 
-    public String DEFINER;
+        public String SQL_MODE;
 
-    public String CHARACTER_SET_CLIENT;
+        public String DEFINER;
 
-    public String COLLATION_CONNECTION;
+        public String CHARACTER_SET_CLIENT;
 
-    public String DATABASE_COLLATION;
-  }
+        public String COLLATION_CONNECTION;
 
-  public static class GEOMETRY_COLUMNS {
-    public static final String createTableSQL = "CREATE TABLE `GEOMETRY_COLUMNS` (\n"
-        + "\tF_TABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tF_TABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tF_TABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tF_GEOMETRY_COLUMN varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tG_TABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tG_TABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tG_TABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tG_GEOMETRY_COLUMN varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSTORAGE_TYPE tinyint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tGEOMETRY_TYPE int(7) DEFAULT 0 NOT NULL,\n"
-        + "\tCOORD_DIMENSION tinyint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_PPR tinyint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tSRID smallint(5) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String DATABASE_COLLATION;
+    }
 
-    public String F_TABLE_CATALOG;
+    public static class GEOMETRY_COLUMNS {
+        public static final String createTableSQL = "CREATE TABLE `GEOMETRY_COLUMNS` (\n"
+                + "\tF_TABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tF_TABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tF_TABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tF_GEOMETRY_COLUMN varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tG_TABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tG_TABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tG_TABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tG_GEOMETRY_COLUMN varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSTORAGE_TYPE tinyint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tGEOMETRY_TYPE int(7) DEFAULT 0 NOT NULL,\n"
+                + "\tCOORD_DIMENSION tinyint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_PPR tinyint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tSRID smallint(5) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String F_TABLE_SCHEMA;
+        public String F_TABLE_CATALOG;
 
-    public String F_TABLE_NAME;
+        public String F_TABLE_SCHEMA;
 
-    public String F_GEOMETRY_COLUMN;
+        public String F_TABLE_NAME;
 
-    public String G_TABLE_CATALOG;
+        public String F_GEOMETRY_COLUMN;
 
-    public String G_TABLE_SCHEMA;
+        public String G_TABLE_CATALOG;
 
-    public String G_TABLE_NAME;
+        public String G_TABLE_SCHEMA;
 
-    public String G_GEOMETRY_COLUMN;
+        public String G_TABLE_NAME;
 
-    public Short STORAGE_TYPE;
+        public String G_GEOMETRY_COLUMN;
 
-    public Integer GEOMETRY_TYPE;
+        public Short STORAGE_TYPE;
 
-    public Short COORD_DIMENSION;
+        public Integer GEOMETRY_TYPE;
 
-    public Short MAX_PPR;
+        public Short COORD_DIMENSION;
 
-    public Short SRID;
-  }
+        public Short MAX_PPR;
 
-  public static class EVENTS {
-    public static final String createTableSQL = "CREATE TABLE `EVENTS` (\n"
-        + "\tEVENT_CATALOG varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
-        + "\tTIME_ZONE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_BODY varchar(8) DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_DEFINITION longtext DEFAULT '' NOT NULL,\n"
-        + "\tEVENT_TYPE varchar(9) DEFAULT '' NOT NULL,\n"
-        + "\tEXECUTE_AT datetime DEFAULT NULL,\n"
-        + "\tINTERVAL_VALUE varchar(256) DEFAULT NULL,\n"
-        + "\tINTERVAL_FIELD varchar(18) DEFAULT NULL,\n"
-        + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
-        + "\tSTARTS datetime DEFAULT NULL,\n"
-        + "\tENDS datetime DEFAULT NULL,\n"
-        + "\tSTATUS varchar(18) DEFAULT '' NOT NULL,\n"
-        + "\tON_COMPLETION varchar(12) DEFAULT '' NOT NULL,\n"
-        + "\tCREATED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
-        + "\tLAST_ALTERED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
-        + "\tLAST_EXECUTED datetime DEFAULT NULL,\n"
-        + "\tEVENT_COMMENT varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tORIGINATOR bigint(10) DEFAULT 0 NOT NULL,\n"
-        + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Short SRID;
+    }
 
-    public String EVENT_CATALOG;
+    public static class EVENTS {
+        public static final String createTableSQL = "CREATE TABLE `EVENTS` (\n"
+                + "\tEVENT_CATALOG varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
+                + "\tTIME_ZONE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_BODY varchar(8) DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_DEFINITION longtext DEFAULT '' NOT NULL,\n"
+                + "\tEVENT_TYPE varchar(9) DEFAULT '' NOT NULL,\n"
+                + "\tEXECUTE_AT datetime DEFAULT NULL,\n"
+                + "\tINTERVAL_VALUE varchar(256) DEFAULT NULL,\n"
+                + "\tINTERVAL_FIELD varchar(18) DEFAULT NULL,\n"
+                + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
+                + "\tSTARTS datetime DEFAULT NULL,\n"
+                + "\tENDS datetime DEFAULT NULL,\n"
+                + "\tSTATUS varchar(18) DEFAULT '' NOT NULL,\n"
+                + "\tON_COMPLETION varchar(12) DEFAULT '' NOT NULL,\n"
+                + "\tCREATED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
+                + "\tLAST_ALTERED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
+                + "\tLAST_EXECUTED datetime DEFAULT NULL,\n"
+                + "\tEVENT_COMMENT varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tORIGINATOR bigint(10) DEFAULT 0 NOT NULL,\n"
+                + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String EVENT_SCHEMA;
+        public String EVENT_CATALOG;
 
-    public String EVENT_NAME;
+        public String EVENT_SCHEMA;
 
-    public String DEFINER;
+        public String EVENT_NAME;
 
-    public String TIME_ZONE;
+        public String DEFINER;
 
-    public String EVENT_BODY;
+        public String TIME_ZONE;
 
-    public String EVENT_DEFINITION;
+        public String EVENT_BODY;
 
-    public String EVENT_TYPE;
+        public String EVENT_DEFINITION;
 
-    public Long EXECUTE_AT;
+        public String EVENT_TYPE;
 
-    public String INTERVAL_VALUE;
+        public Long EXECUTE_AT;
 
-    public String INTERVAL_FIELD;
+        public String INTERVAL_VALUE;
 
-    public String SQL_MODE;
+        public String INTERVAL_FIELD;
 
-    public Long STARTS;
+        public String SQL_MODE;
 
-    public Long ENDS;
+        public Long STARTS;
 
-    public String STATUS;
+        public Long ENDS;
 
-    public String ON_COMPLETION;
+        public String STATUS;
 
-    public Long CREATED;
+        public String ON_COMPLETION;
 
-    public Long LAST_ALTERED;
+        public Long CREATED;
 
-    public Long LAST_EXECUTED;
+        public Long LAST_ALTERED;
 
-    public String EVENT_COMMENT;
+        public Long LAST_EXECUTED;
 
-    public Long ORIGINATOR;
+        public String EVENT_COMMENT;
 
-    public String CHARACTER_SET_CLIENT;
+        public Long ORIGINATOR;
 
-    public String COLLATION_CONNECTION;
+        public String CHARACTER_SET_CLIENT;
 
-    public String DATABASE_COLLATION;
-  }
+        public String COLLATION_CONNECTION;
 
-  public static class PARAMETERS {
-    public static final String createTableSQL = "CREATE TABLE `PARAMETERS` (\n"
-        + "\tSPECIFIC_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tSPECIFIC_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSPECIFIC_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tORDINAL_POSITION int(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPARAMETER_MODE varchar(5) DEFAULT NULL,\n"
-        + "\tPARAMETER_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_MAXIMUM_LENGTH int(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_OCTET_LENGTH int(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_PRECISION int(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_SCALE int(21) DEFAULT NULL,\n"
-        + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tCOLLATION_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tDTD_IDENTIFIER longtext DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_TYPE varchar(9) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String DATABASE_COLLATION;
+    }
 
-    public String SPECIFIC_CATALOG;
+    public static class PARAMETERS {
+        public static final String createTableSQL = "CREATE TABLE `PARAMETERS` (\n"
+                + "\tSPECIFIC_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tSPECIFIC_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSPECIFIC_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tORDINAL_POSITION int(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPARAMETER_MODE varchar(5) DEFAULT NULL,\n"
+                + "\tPARAMETER_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_MAXIMUM_LENGTH int(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_OCTET_LENGTH int(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_PRECISION int(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_SCALE int(21) DEFAULT NULL,\n"
+                + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tCOLLATION_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tDTD_IDENTIFIER longtext DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_TYPE varchar(9) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String SPECIFIC_SCHEMA;
+        public String SPECIFIC_CATALOG;
 
-    public String SPECIFIC_NAME;
+        public String SPECIFIC_SCHEMA;
 
-    public Integer ORDINAL_POSITION;
+        public String SPECIFIC_NAME;
 
-    public String PARAMETER_MODE;
+        public Integer ORDINAL_POSITION;
 
-    public String PARAMETER_NAME;
+        public String PARAMETER_MODE;
 
-    public String DATA_TYPE;
+        public String PARAMETER_NAME;
 
-    public Integer CHARACTER_MAXIMUM_LENGTH;
+        public String DATA_TYPE;
 
-    public Integer CHARACTER_OCTET_LENGTH;
+        public Integer CHARACTER_MAXIMUM_LENGTH;
 
-    public Integer NUMERIC_PRECISION;
+        public Integer CHARACTER_OCTET_LENGTH;
 
-    public Integer NUMERIC_SCALE;
+        public Integer NUMERIC_PRECISION;
 
-    public Long DATETIME_PRECISION;
+        public Integer NUMERIC_SCALE;
 
-    public String CHARACTER_SET_NAME;
+        public Long DATETIME_PRECISION;
 
-    public String COLLATION_NAME;
+        public String CHARACTER_SET_NAME;
 
-    public String DTD_IDENTIFIER;
+        public String COLLATION_NAME;
 
-    public String ROUTINE_TYPE;
-  }
+        public String DTD_IDENTIFIER;
 
-  public static class INNODB_FT_DEFAULT_STOPWORD {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_DEFAULT_STOPWORD` (\n"
-        + "\tvalue varchar(18) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String ROUTINE_TYPE;
+    }
 
-    public String value;
-  }
+    public static class INNODB_FT_DEFAULT_STOPWORD {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_DEFAULT_STOPWORD` (\n"
+                + "\tvalue varchar(18) DEFAULT '' NOT NULL\n"
+                + ")";
 
-  public static class INNODB_TABLESPACES_SCRUBBING {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_TABLESPACES_SCRUBBING` (\n"
-        + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(655) DEFAULT NULL,\n"
-        + "\tCOMPRESSED int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tLAST_SCRUB_COMPLETED datetime DEFAULT NULL,\n"
-        + "\tCURRENT_SCRUB_STARTED datetime DEFAULT NULL,\n"
-        + "\tCURRENT_SCRUB_ACTIVE_THREADS int(11) DEFAULT NULL,\n"
-        + "\tCURRENT_SCRUB_PAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCURRENT_SCRUB_MAX_PAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String value;
+    }
 
-    public Long SPACE;
+    public static class INNODB_TABLESPACES_SCRUBBING {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_TABLESPACES_SCRUBBING` (\n"
+                + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(655) DEFAULT NULL,\n"
+                + "\tCOMPRESSED int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tLAST_SCRUB_COMPLETED datetime DEFAULT NULL,\n"
+                + "\tCURRENT_SCRUB_STARTED datetime DEFAULT NULL,\n"
+                + "\tCURRENT_SCRUB_ACTIVE_THREADS int(11) DEFAULT NULL,\n"
+                + "\tCURRENT_SCRUB_PAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCURRENT_SCRUB_MAX_PAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long SPACE;
 
-    public Integer COMPRESSED;
+        public String NAME;
 
-    public Long LAST_SCRUB_COMPLETED;
+        public Integer COMPRESSED;
 
-    public Long CURRENT_SCRUB_STARTED;
+        public Long LAST_SCRUB_COMPLETED;
 
-    public Integer CURRENT_SCRUB_ACTIVE_THREADS;
+        public Long CURRENT_SCRUB_STARTED;
 
-    public Long CURRENT_SCRUB_PAGE_NUMBER;
+        public Integer CURRENT_SCRUB_ACTIVE_THREADS;
 
-    public Long CURRENT_SCRUB_MAX_PAGE_NUMBER;
-  }
+        public Long CURRENT_SCRUB_PAGE_NUMBER;
 
-  public static class INNODB_LOCK_WAITS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_LOCK_WAITS` (\n"
-        + "\trequesting_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
-        + "\trequested_lock_id varchar(81) DEFAULT '' NOT NULL,\n"
-        + "\tblocking_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
-        + "\tblocking_lock_id varchar(81) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long CURRENT_SCRUB_MAX_PAGE_NUMBER;
+    }
 
-    public String requesting_trx_id;
+    public static class INNODB_LOCK_WAITS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_LOCK_WAITS` (\n"
+                + "\trequesting_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
+                + "\trequested_lock_id varchar(81) DEFAULT '' NOT NULL,\n"
+                + "\tblocking_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
+                + "\tblocking_lock_id varchar(81) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String requested_lock_id;
+        public String requesting_trx_id;
 
-    public String blocking_trx_id;
+        public String requested_lock_id;
 
-    public String blocking_lock_id;
-  }
+        public String blocking_trx_id;
 
-  public static class FILES {
-    public static final String createTableSQL = "CREATE TABLE `FILES` (\n"
-        + "\tFILE_ID bigint(4) DEFAULT 0 NOT NULL,\n"
-        + "\tFILE_NAME varchar(512) DEFAULT NULL,\n"
-        + "\tFILE_TYPE varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tTABLESPACE_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tTABLE_CATALOG varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tLOGFILE_GROUP_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tLOGFILE_GROUP_NUMBER bigint(4) DEFAULT NULL,\n"
-        + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tFULLTEXT_KEYS varchar(64) DEFAULT NULL,\n"
-        + "\tDELETED_ROWS bigint(4) DEFAULT NULL,\n"
-        + "\tUPDATE_COUNT bigint(4) DEFAULT NULL,\n"
-        + "\tFREE_EXTENTS bigint(4) DEFAULT NULL,\n"
-        + "\tTOTAL_EXTENTS bigint(4) DEFAULT NULL,\n"
-        + "\tEXTENT_SIZE bigint(4) DEFAULT 0 NOT NULL,\n"
-        + "\tINITIAL_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tMAXIMUM_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tAUTOEXTEND_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tCREATION_TIME datetime DEFAULT NULL,\n"
-        + "\tLAST_UPDATE_TIME datetime DEFAULT NULL,\n"
-        + "\tLAST_ACCESS_TIME datetime DEFAULT NULL,\n"
-        + "\tRECOVER_TIME bigint(4) DEFAULT NULL,\n"
-        + "\tTRANSACTION_COUNTER bigint(4) DEFAULT NULL,\n"
-        + "\tVERSION bigint(21) DEFAULT NULL,\n"
-        + "\tROW_FORMAT varchar(10) DEFAULT NULL,\n"
-        + "\tTABLE_ROWS bigint(21) DEFAULT NULL,\n"
-        + "\tAVG_ROW_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tDATA_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tINDEX_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tDATA_FREE bigint(21) DEFAULT NULL,\n"
-        + "\tCREATE_TIME datetime DEFAULT NULL,\n"
-        + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
-        + "\tCHECK_TIME datetime DEFAULT NULL,\n"
-        + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
-        + "\tSTATUS varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tEXTRA varchar(255) DEFAULT NULL\n"
-        + ")";
+        public String blocking_lock_id;
+    }
 
-    public Long FILE_ID;
+    public static class FILES {
+        public static final String createTableSQL = "CREATE TABLE `FILES` (\n"
+                + "\tFILE_ID bigint(4) DEFAULT 0 NOT NULL,\n"
+                + "\tFILE_NAME varchar(512) DEFAULT NULL,\n"
+                + "\tFILE_TYPE varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tTABLESPACE_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tTABLE_CATALOG varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tLOGFILE_GROUP_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tLOGFILE_GROUP_NUMBER bigint(4) DEFAULT NULL,\n"
+                + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tFULLTEXT_KEYS varchar(64) DEFAULT NULL,\n"
+                + "\tDELETED_ROWS bigint(4) DEFAULT NULL,\n"
+                + "\tUPDATE_COUNT bigint(4) DEFAULT NULL,\n"
+                + "\tFREE_EXTENTS bigint(4) DEFAULT NULL,\n"
+                + "\tTOTAL_EXTENTS bigint(4) DEFAULT NULL,\n"
+                + "\tEXTENT_SIZE bigint(4) DEFAULT 0 NOT NULL,\n"
+                + "\tINITIAL_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tMAXIMUM_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tAUTOEXTEND_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tCREATION_TIME datetime DEFAULT NULL,\n"
+                + "\tLAST_UPDATE_TIME datetime DEFAULT NULL,\n"
+                + "\tLAST_ACCESS_TIME datetime DEFAULT NULL,\n"
+                + "\tRECOVER_TIME bigint(4) DEFAULT NULL,\n"
+                + "\tTRANSACTION_COUNTER bigint(4) DEFAULT NULL,\n"
+                + "\tVERSION bigint(21) DEFAULT NULL,\n"
+                + "\tROW_FORMAT varchar(10) DEFAULT NULL,\n"
+                + "\tTABLE_ROWS bigint(21) DEFAULT NULL,\n"
+                + "\tAVG_ROW_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tDATA_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tMAX_DATA_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tINDEX_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tDATA_FREE bigint(21) DEFAULT NULL,\n"
+                + "\tCREATE_TIME datetime DEFAULT NULL,\n"
+                + "\tUPDATE_TIME datetime DEFAULT NULL,\n"
+                + "\tCHECK_TIME datetime DEFAULT NULL,\n"
+                + "\tCHECKSUM bigint(21) DEFAULT NULL,\n"
+                + "\tSTATUS varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tEXTRA varchar(255) DEFAULT NULL\n"
+                + ")";
 
-    public String FILE_NAME;
+        public Long FILE_ID;
 
-    public String FILE_TYPE;
+        public String FILE_NAME;
 
-    public String TABLESPACE_NAME;
+        public String FILE_TYPE;
 
-    public String TABLE_CATALOG;
+        public String TABLESPACE_NAME;
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String LOGFILE_GROUP_NAME;
+        public String TABLE_NAME;
 
-    public Long LOGFILE_GROUP_NUMBER;
+        public String LOGFILE_GROUP_NAME;
 
-    public String ENGINE;
+        public Long LOGFILE_GROUP_NUMBER;
 
-    public String FULLTEXT_KEYS;
+        public String ENGINE;
 
-    public Long DELETED_ROWS;
+        public String FULLTEXT_KEYS;
 
-    public Long UPDATE_COUNT;
+        public Long DELETED_ROWS;
 
-    public Long FREE_EXTENTS;
+        public Long UPDATE_COUNT;
 
-    public Long TOTAL_EXTENTS;
+        public Long FREE_EXTENTS;
 
-    public Long EXTENT_SIZE;
+        public Long TOTAL_EXTENTS;
 
-    public Long INITIAL_SIZE;
+        public Long EXTENT_SIZE;
 
-    public Long MAXIMUM_SIZE;
+        public Long INITIAL_SIZE;
 
-    public Long AUTOEXTEND_SIZE;
+        public Long MAXIMUM_SIZE;
 
-    public Long CREATION_TIME;
+        public Long AUTOEXTEND_SIZE;
 
-    public Long LAST_UPDATE_TIME;
+        public Long CREATION_TIME;
 
-    public Long LAST_ACCESS_TIME;
+        public Long LAST_UPDATE_TIME;
 
-    public Long RECOVER_TIME;
+        public Long LAST_ACCESS_TIME;
 
-    public Long TRANSACTION_COUNTER;
+        public Long RECOVER_TIME;
 
-    public Long VERSION;
+        public Long TRANSACTION_COUNTER;
 
-    public String ROW_FORMAT;
+        public Long VERSION;
 
-    public Long TABLE_ROWS;
+        public String ROW_FORMAT;
 
-    public Long AVG_ROW_LENGTH;
+        public Long TABLE_ROWS;
 
-    public Long DATA_LENGTH;
+        public Long AVG_ROW_LENGTH;
 
-    public Long MAX_DATA_LENGTH;
+        public Long DATA_LENGTH;
 
-    public Long INDEX_LENGTH;
+        public Long MAX_DATA_LENGTH;
 
-    public Long DATA_FREE;
+        public Long INDEX_LENGTH;
 
-    public Long CREATE_TIME;
+        public Long DATA_FREE;
 
-    public Long UPDATE_TIME;
+        public Long CREATE_TIME;
 
-    public Long CHECK_TIME;
+        public Long UPDATE_TIME;
 
-    public Long CHECKSUM;
+        public Long CHECK_TIME;
 
-    public String STATUS;
+        public Long CHECKSUM;
 
-    public String EXTRA;
-  }
+        public String STATUS;
 
-  public static class PLUGINS {
-    public static final String createTableSQL = "CREATE TABLE `PLUGINS` (\n"
-        + "\tPLUGIN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_STATUS varchar(16) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_TYPE varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_TYPE_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_LIBRARY varchar(64) DEFAULT NULL,\n"
-        + "\tPLUGIN_LIBRARY_VERSION varchar(20) DEFAULT NULL,\n"
-        + "\tPLUGIN_AUTHOR varchar(64) DEFAULT NULL,\n"
-        + "\tPLUGIN_DESCRIPTION longtext DEFAULT NULL,\n"
-        + "\tPLUGIN_LICENSE varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tLOAD_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_MATURITY varchar(12) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_AUTH_VERSION varchar(80) DEFAULT NULL\n"
-        + ")";
+        public String EXTRA;
+    }
 
-    public String PLUGIN_NAME;
+    public static class PLUGINS {
+        public static final String createTableSQL = "CREATE TABLE `PLUGINS` (\n"
+                + "\tPLUGIN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_STATUS varchar(16) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_TYPE varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_TYPE_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_LIBRARY varchar(64) DEFAULT NULL,\n"
+                + "\tPLUGIN_LIBRARY_VERSION varchar(20) DEFAULT NULL,\n"
+                + "\tPLUGIN_AUTHOR varchar(64) DEFAULT NULL,\n"
+                + "\tPLUGIN_DESCRIPTION longtext DEFAULT NULL,\n"
+                + "\tPLUGIN_LICENSE varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tLOAD_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_MATURITY varchar(12) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_AUTH_VERSION varchar(80) DEFAULT NULL\n"
+                + ")";
 
-    public String PLUGIN_VERSION;
+        public String PLUGIN_NAME;
 
-    public String PLUGIN_STATUS;
+        public String PLUGIN_VERSION;
 
-    public String PLUGIN_TYPE;
+        public String PLUGIN_STATUS;
 
-    public String PLUGIN_TYPE_VERSION;
+        public String PLUGIN_TYPE;
 
-    public String PLUGIN_LIBRARY;
+        public String PLUGIN_TYPE_VERSION;
 
-    public String PLUGIN_LIBRARY_VERSION;
+        public String PLUGIN_LIBRARY;
 
-    public String PLUGIN_AUTHOR;
+        public String PLUGIN_LIBRARY_VERSION;
 
-    public String PLUGIN_DESCRIPTION;
+        public String PLUGIN_AUTHOR;
 
-    public String PLUGIN_LICENSE;
+        public String PLUGIN_DESCRIPTION;
 
-    public String LOAD_OPTION;
+        public String PLUGIN_LICENSE;
 
-    public String PLUGIN_MATURITY;
+        public String LOAD_OPTION;
 
-    public String PLUGIN_AUTH_VERSION;
-  }
+        public String PLUGIN_MATURITY;
 
-  public static class GLOBAL_STATUS {
-    public static final String createTableSQL = "CREATE TABLE `GLOBAL_STATUS` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String PLUGIN_AUTH_VERSION;
+    }
 
-    public String VARIABLE_NAME;
+    public static class GLOBAL_STATUS {
+        public static final String createTableSQL = "CREATE TABLE `GLOBAL_STATUS` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String VARIABLE_VALUE;
-  }
+        public String VARIABLE_NAME;
 
-  public static class ALL_PLUGINS {
-    public static final String createTableSQL = "CREATE TABLE `ALL_PLUGINS` (\n"
-        + "\tPLUGIN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_STATUS varchar(16) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_TYPE varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_TYPE_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_LIBRARY varchar(64) DEFAULT NULL,\n"
-        + "\tPLUGIN_LIBRARY_VERSION varchar(20) DEFAULT NULL,\n"
-        + "\tPLUGIN_AUTHOR varchar(64) DEFAULT NULL,\n"
-        + "\tPLUGIN_DESCRIPTION longtext DEFAULT NULL,\n"
-        + "\tPLUGIN_LICENSE varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tLOAD_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_MATURITY varchar(12) DEFAULT '' NOT NULL,\n"
-        + "\tPLUGIN_AUTH_VERSION varchar(80) DEFAULT NULL\n"
-        + ")";
+        public String VARIABLE_VALUE;
+    }
 
-    public String PLUGIN_NAME;
+    public static class ALL_PLUGINS {
+        public static final String createTableSQL = "CREATE TABLE `ALL_PLUGINS` (\n"
+                + "\tPLUGIN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_STATUS varchar(16) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_TYPE varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_TYPE_VERSION varchar(20) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_LIBRARY varchar(64) DEFAULT NULL,\n"
+                + "\tPLUGIN_LIBRARY_VERSION varchar(20) DEFAULT NULL,\n"
+                + "\tPLUGIN_AUTHOR varchar(64) DEFAULT NULL,\n"
+                + "\tPLUGIN_DESCRIPTION longtext DEFAULT NULL,\n"
+                + "\tPLUGIN_LICENSE varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tLOAD_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_MATURITY varchar(12) DEFAULT '' NOT NULL,\n"
+                + "\tPLUGIN_AUTH_VERSION varchar(80) DEFAULT NULL\n"
+                + ")";
 
-    public String PLUGIN_VERSION;
+        public String PLUGIN_NAME;
 
-    public String PLUGIN_STATUS;
+        public String PLUGIN_VERSION;
 
-    public String PLUGIN_TYPE;
+        public String PLUGIN_STATUS;
 
-    public String PLUGIN_TYPE_VERSION;
+        public String PLUGIN_TYPE;
 
-    public String PLUGIN_LIBRARY;
+        public String PLUGIN_TYPE_VERSION;
 
-    public String PLUGIN_LIBRARY_VERSION;
+        public String PLUGIN_LIBRARY;
 
-    public String PLUGIN_AUTHOR;
+        public String PLUGIN_LIBRARY_VERSION;
 
-    public String PLUGIN_DESCRIPTION;
+        public String PLUGIN_AUTHOR;
 
-    public String PLUGIN_LICENSE;
+        public String PLUGIN_DESCRIPTION;
 
-    public String LOAD_OPTION;
+        public String PLUGIN_LICENSE;
 
-    public String PLUGIN_MATURITY;
+        public String LOAD_OPTION;
 
-    public String PLUGIN_AUTH_VERSION;
-  }
+        public String PLUGIN_MATURITY;
 
-  public static class USER_STATISTICS {
-    public static final String createTableSQL = "CREATE TABLE `USER_STATISTICS` (\n"
-        + "\tUSER varchar(128) DEFAULT '' NOT NULL,\n"
-        + "\tTOTAL_CONNECTIONS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tCONCURRENT_CONNECTIONS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tCONNECTED_TIME int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tBUSY_TIME double DEFAULT 0 NOT NULL,\n"
-        + "\tCPU_TIME double DEFAULT 0 NOT NULL,\n"
-        + "\tBYTES_RECEIVED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBYTES_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBINLOG_BYTES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_DELETED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_INSERTED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_UPDATED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tSELECT_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUPDATE_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOTHER_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOMMIT_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROLLBACK_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDENIED_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLOST_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tACCESS_DENIED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tEMPTY_QUERIES bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tTOTAL_SSL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_STATEMENT_TIME_EXCEEDED bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String PLUGIN_AUTH_VERSION;
+    }
 
-    public String USER;
+    public static class USER_STATISTICS {
+        public static final String createTableSQL = "CREATE TABLE `USER_STATISTICS` (\n"
+                + "\tUSER varchar(128) DEFAULT '' NOT NULL,\n"
+                + "\tTOTAL_CONNECTIONS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tCONCURRENT_CONNECTIONS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tCONNECTED_TIME int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tBUSY_TIME double DEFAULT 0 NOT NULL,\n"
+                + "\tCPU_TIME double DEFAULT 0 NOT NULL,\n"
+                + "\tBYTES_RECEIVED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBYTES_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBINLOG_BYTES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_DELETED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_INSERTED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_UPDATED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tSELECT_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUPDATE_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOTHER_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOMMIT_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROLLBACK_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDENIED_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLOST_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tACCESS_DENIED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tEMPTY_QUERIES bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tTOTAL_SSL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_STATEMENT_TIME_EXCEEDED bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer TOTAL_CONNECTIONS;
+        public String USER;
 
-    public Integer CONCURRENT_CONNECTIONS;
+        public Integer TOTAL_CONNECTIONS;
 
-    public Integer CONNECTED_TIME;
+        public Integer CONCURRENT_CONNECTIONS;
 
-    public Double BUSY_TIME;
+        public Integer CONNECTED_TIME;
 
-    public Double CPU_TIME;
+        public Double BUSY_TIME;
 
-    public Long BYTES_RECEIVED;
+        public Double CPU_TIME;
 
-    public Long BYTES_SENT;
+        public Long BYTES_RECEIVED;
 
-    public Long BINLOG_BYTES_WRITTEN;
+        public Long BYTES_SENT;
 
-    public Long ROWS_READ;
+        public Long BINLOG_BYTES_WRITTEN;
 
-    public Long ROWS_SENT;
+        public Long ROWS_READ;
 
-    public Long ROWS_DELETED;
+        public Long ROWS_SENT;
 
-    public Long ROWS_INSERTED;
+        public Long ROWS_DELETED;
 
-    public Long ROWS_UPDATED;
+        public Long ROWS_INSERTED;
 
-    public Long SELECT_COMMANDS;
+        public Long ROWS_UPDATED;
 
-    public Long UPDATE_COMMANDS;
+        public Long SELECT_COMMANDS;
 
-    public Long OTHER_COMMANDS;
+        public Long UPDATE_COMMANDS;
 
-    public Long COMMIT_TRANSACTIONS;
+        public Long OTHER_COMMANDS;
 
-    public Long ROLLBACK_TRANSACTIONS;
+        public Long COMMIT_TRANSACTIONS;
 
-    public Long DENIED_CONNECTIONS;
+        public Long ROLLBACK_TRANSACTIONS;
 
-    public Long LOST_CONNECTIONS;
+        public Long DENIED_CONNECTIONS;
 
-    public Long ACCESS_DENIED;
+        public Long LOST_CONNECTIONS;
 
-    public Long EMPTY_QUERIES;
+        public Long ACCESS_DENIED;
 
-    public Long TOTAL_SSL_CONNECTIONS;
+        public Long EMPTY_QUERIES;
 
-    public Long MAX_STATEMENT_TIME_EXCEEDED;
-  }
+        public Long TOTAL_SSL_CONNECTIONS;
 
-  public static class INNODB_SYS_TABLESTATS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLESTATS` (\n"
-        + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tSTATS_INITIALIZED varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tNUM_ROWS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCLUST_INDEX_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOTHER_INDEX_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMODIFIED_COUNTER bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tAUTOINC bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tREF_COUNT int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long MAX_STATEMENT_TIME_EXCEEDED;
+    }
 
-    public Long TABLE_ID;
+    public static class INNODB_SYS_TABLESTATS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLESTATS` (\n"
+                + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tSTATS_INITIALIZED varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tNUM_ROWS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCLUST_INDEX_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOTHER_INDEX_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMODIFIED_COUNTER bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tAUTOINC bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tREF_COUNT int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long TABLE_ID;
 
-    public String STATS_INITIALIZED;
+        public String NAME;
 
-    public Long NUM_ROWS;
+        public String STATS_INITIALIZED;
 
-    public Long CLUST_INDEX_SIZE;
+        public Long NUM_ROWS;
 
-    public Long OTHER_INDEX_SIZE;
+        public Long CLUST_INDEX_SIZE;
 
-    public Long MODIFIED_COUNTER;
+        public Long OTHER_INDEX_SIZE;
 
-    public Long AUTOINC;
+        public Long MODIFIED_COUNTER;
 
-    public Integer REF_COUNT;
-  }
+        public Long AUTOINC;
 
-  public static class INNODB_SYS_SEMAPHORE_WAITS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_SEMAPHORE_WAITS` (\n"
-        + "\tTHREAD_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOBJECT_NAME varchar(4000) DEFAULT NULL,\n"
-        + "\tFILE varchar(4000) DEFAULT NULL,\n"
-        + "\tLINE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tWAIT_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tWAIT_OBJECT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tWAIT_TYPE varchar(16) DEFAULT NULL,\n"
-        + "\tHOLDER_THREAD_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tHOLDER_FILE varchar(4000) DEFAULT NULL,\n"
-        + "\tHOLDER_LINE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tCREATED_FILE varchar(4000) DEFAULT NULL,\n"
-        + "\tCREATED_LINE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tWRITER_THREAD bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tRESERVATION_MODE varchar(16) DEFAULT NULL,\n"
-        + "\tREADERS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tWAITERS_FLAG bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLOCK_WORD bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLAST_WRITER_FILE varchar(4000) DEFAULT NULL,\n"
-        + "\tLAST_WRITER_LINE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tOS_WAIT_COUNT int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer REF_COUNT;
+    }
 
-    public Long THREAD_ID;
+    public static class INNODB_SYS_SEMAPHORE_WAITS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_SEMAPHORE_WAITS` (\n"
+                + "\tTHREAD_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOBJECT_NAME varchar(4000) DEFAULT NULL,\n"
+                + "\tFILE varchar(4000) DEFAULT NULL,\n"
+                + "\tLINE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tWAIT_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tWAIT_OBJECT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tWAIT_TYPE varchar(16) DEFAULT NULL,\n"
+                + "\tHOLDER_THREAD_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tHOLDER_FILE varchar(4000) DEFAULT NULL,\n"
+                + "\tHOLDER_LINE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tCREATED_FILE varchar(4000) DEFAULT NULL,\n"
+                + "\tCREATED_LINE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tWRITER_THREAD bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tRESERVATION_MODE varchar(16) DEFAULT NULL,\n"
+                + "\tREADERS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tWAITERS_FLAG bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLOCK_WORD bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLAST_WRITER_FILE varchar(4000) DEFAULT NULL,\n"
+                + "\tLAST_WRITER_LINE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tOS_WAIT_COUNT int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String OBJECT_NAME;
+        public Long THREAD_ID;
 
-    public String FILE;
+        public String OBJECT_NAME;
 
-    public Integer LINE;
+        public String FILE;
 
-    public Long WAIT_TIME;
+        public Integer LINE;
 
-    public Long WAIT_OBJECT;
+        public Long WAIT_TIME;
 
-    public String WAIT_TYPE;
+        public Long WAIT_OBJECT;
 
-    public Long HOLDER_THREAD_ID;
+        public String WAIT_TYPE;
 
-    public String HOLDER_FILE;
+        public Long HOLDER_THREAD_ID;
 
-    public Integer HOLDER_LINE;
+        public String HOLDER_FILE;
 
-    public String CREATED_FILE;
+        public Integer HOLDER_LINE;
 
-    public Integer CREATED_LINE;
+        public String CREATED_FILE;
 
-    public Long WRITER_THREAD;
+        public Integer CREATED_LINE;
 
-    public String RESERVATION_MODE;
+        public Long WRITER_THREAD;
 
-    public Integer READERS;
+        public String RESERVATION_MODE;
 
-    public Long WAITERS_FLAG;
+        public Integer READERS;
 
-    public Long LOCK_WORD;
+        public Long WAITERS_FLAG;
 
-    public String LAST_WRITER_FILE;
+        public Long LOCK_WORD;
 
-    public Integer LAST_WRITER_LINE;
+        public String LAST_WRITER_FILE;
 
-    public Integer OS_WAIT_COUNT;
-  }
+        public Integer LAST_WRITER_LINE;
 
-  public static class INNODB_CMP_PER_INDEX_RESET {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_PER_INDEX_RESET` (\n"
-        + "\tdatabase_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\ttable_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tindex_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer OS_WAIT_COUNT;
+    }
 
-    public String database_name;
+    public static class INNODB_CMP_PER_INDEX_RESET {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_PER_INDEX_RESET` (\n"
+                + "\tdatabase_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\ttable_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tindex_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String table_name;
+        public String database_name;
 
-    public String index_name;
+        public String table_name;
 
-    public Integer compress_ops;
+        public String index_name;
 
-    public Integer compress_ops_ok;
+        public Integer compress_ops;
 
-    public Integer compress_time;
+        public Integer compress_ops_ok;
 
-    public Integer uncompress_ops;
+        public Integer compress_time;
 
-    public Integer uncompress_time;
-  }
+        public Integer uncompress_ops;
 
-  public static class TABLE_STATISTICS {
-    public static final String createTableSQL = "CREATE TABLE `TABLE_STATISTICS` (\n"
-        + "\tTABLE_SCHEMA varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_CHANGED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_CHANGED_X_INDEXES bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer uncompress_time;
+    }
 
-    public String TABLE_SCHEMA;
+    public static class TABLE_STATISTICS {
+        public static final String createTableSQL = "CREATE TABLE `TABLE_STATISTICS` (\n"
+                + "\tTABLE_SCHEMA varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_CHANGED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_CHANGED_X_INDEXES bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public Long ROWS_READ;
+        public String TABLE_NAME;
 
-    public Long ROWS_CHANGED;
+        public Long ROWS_READ;
 
-    public Long ROWS_CHANGED_X_INDEXES;
-  }
+        public Long ROWS_CHANGED;
 
-  public static class COLLATION_CHARACTER_SET_APPLICABILITY {
-    public static final String createTableSQL = "CREATE TABLE `COLLATION_CHARACTER_SET_APPLICABILITY` (\n"
-        + "\tCOLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long ROWS_CHANGED_X_INDEXES;
+    }
 
-    public String COLLATION_NAME;
+    public static class COLLATION_CHARACTER_SET_APPLICABILITY {
+        public static final String createTableSQL = "CREATE TABLE `COLLATION_CHARACTER_SET_APPLICABILITY` (\n"
+                + "\tCOLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String CHARACTER_SET_NAME;
-  }
+        public String COLLATION_NAME;
 
-  public static class ENGINES {
-    public static final String createTableSQL = "CREATE TABLE `ENGINES` (\n"
-        + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSUPPORT varchar(8) DEFAULT '' NOT NULL,\n"
-        + "\tCOMMENT varchar(160) DEFAULT '' NOT NULL,\n"
-        + "\tTRANSACTIONS varchar(3) DEFAULT NULL,\n"
-        + "\tXA varchar(3) DEFAULT NULL,\n"
-        + "\tSAVEPOINTS varchar(3) DEFAULT NULL\n"
-        + ")";
+        public String CHARACTER_SET_NAME;
+    }
 
-    public String ENGINE;
+    public static class ENGINES {
+        public static final String createTableSQL = "CREATE TABLE `ENGINES` (\n"
+                + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSUPPORT varchar(8) DEFAULT '' NOT NULL,\n"
+                + "\tCOMMENT varchar(160) DEFAULT '' NOT NULL,\n"
+                + "\tTRANSACTIONS varchar(3) DEFAULT NULL,\n"
+                + "\tXA varchar(3) DEFAULT NULL,\n"
+                + "\tSAVEPOINTS varchar(3) DEFAULT NULL\n"
+                + ")";
 
-    public String SUPPORT;
+        public String ENGINE;
 
-    public String COMMENT;
+        public String SUPPORT;
 
-    public String TRANSACTIONS;
+        public String COMMENT;
 
-    public String XA;
+        public String TRANSACTIONS;
 
-    public String SAVEPOINTS;
-  }
+        public String XA;
 
-  public static class KEY_COLUMN_USAGE {
-    public static final String createTableSQL = "CREATE TABLE `KEY_COLUMN_USAGE` (\n"
-        + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tORDINAL_POSITION bigint(10) DEFAULT 0 NOT NULL,\n"
-        + "\tPOSITION_IN_UNIQUE_CONSTRAINT bigint(10) DEFAULT NULL,\n"
-        + "\tREFERENCED_TABLE_SCHEMA varchar(64) DEFAULT NULL,\n"
-        + "\tREFERENCED_TABLE_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tREFERENCED_COLUMN_NAME varchar(64) DEFAULT NULL\n"
-        + ")";
+        public String SAVEPOINTS;
+    }
 
-    public String CONSTRAINT_CATALOG;
+    public static class KEY_COLUMN_USAGE {
+        public static final String createTableSQL = "CREATE TABLE `KEY_COLUMN_USAGE` (\n"
+                + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tORDINAL_POSITION bigint(10) DEFAULT 0 NOT NULL,\n"
+                + "\tPOSITION_IN_UNIQUE_CONSTRAINT bigint(10) DEFAULT NULL,\n"
+                + "\tREFERENCED_TABLE_SCHEMA varchar(64) DEFAULT NULL,\n"
+                + "\tREFERENCED_TABLE_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tREFERENCED_COLUMN_NAME varchar(64) DEFAULT NULL\n"
+                + ")";
 
-    public String CONSTRAINT_SCHEMA;
+        public String CONSTRAINT_CATALOG;
 
-    public String CONSTRAINT_NAME;
+        public String CONSTRAINT_SCHEMA;
 
-    public String TABLE_CATALOG;
+        public String CONSTRAINT_NAME;
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String COLUMN_NAME;
+        public String TABLE_NAME;
 
-    public Long ORDINAL_POSITION;
+        public String COLUMN_NAME;
 
-    public Long POSITION_IN_UNIQUE_CONSTRAINT;
+        public Long ORDINAL_POSITION;
 
-    public String REFERENCED_TABLE_SCHEMA;
+        public Long POSITION_IN_UNIQUE_CONSTRAINT;
 
-    public String REFERENCED_TABLE_NAME;
+        public String REFERENCED_TABLE_SCHEMA;
 
-    public String REFERENCED_COLUMN_NAME;
-  }
+        public String REFERENCED_TABLE_NAME;
 
-  public static class GLOBAL_VARIABLES {
-    public static final String createTableSQL = "CREATE TABLE `GLOBAL_VARIABLES` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String REFERENCED_COLUMN_NAME;
+    }
 
-    public String VARIABLE_NAME;
+    public static class GLOBAL_VARIABLES {
+        public static final String createTableSQL = "CREATE TABLE `GLOBAL_VARIABLES` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String VARIABLE_VALUE;
-  }
+        public String VARIABLE_NAME;
 
-  public static class INNODB_LOCKS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_LOCKS` (\n"
-        + "\tlock_id varchar(81) DEFAULT '' NOT NULL,\n"
-        + "\tlock_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
-        + "\tlock_mode varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tlock_type varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tlock_table varchar(1024) DEFAULT '' NOT NULL,\n"
-        + "\tlock_index varchar(1024) DEFAULT NULL,\n"
-        + "\tlock_space bigint(21) DEFAULT NULL,\n"
-        + "\tlock_page bigint(21) DEFAULT NULL,\n"
-        + "\tlock_rec bigint(21) DEFAULT NULL,\n"
-        + "\tlock_data varchar(8192) DEFAULT NULL\n"
-        + ")";
+        public String VARIABLE_VALUE;
+    }
 
-    public String lock_id;
+    public static class INNODB_LOCKS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_LOCKS` (\n"
+                + "\tlock_id varchar(81) DEFAULT '' NOT NULL,\n"
+                + "\tlock_trx_id varchar(18) DEFAULT '' NOT NULL,\n"
+                + "\tlock_mode varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tlock_type varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tlock_table varchar(1024) DEFAULT '' NOT NULL,\n"
+                + "\tlock_index varchar(1024) DEFAULT NULL,\n"
+                + "\tlock_space bigint(21) DEFAULT NULL,\n"
+                + "\tlock_page bigint(21) DEFAULT NULL,\n"
+                + "\tlock_rec bigint(21) DEFAULT NULL,\n"
+                + "\tlock_data varchar(8192) DEFAULT NULL\n"
+                + ")";
 
-    public String lock_trx_id;
+        public String lock_id;
 
-    public String lock_mode;
+        public String lock_trx_id;
 
-    public String lock_type;
+        public String lock_mode;
 
-    public String lock_table;
+        public String lock_type;
 
-    public String lock_index;
+        public String lock_table;
 
-    public Long lock_space;
+        public String lock_index;
 
-    public Long lock_page;
+        public Long lock_space;
 
-    public Long lock_rec;
+        public Long lock_page;
 
-    public String lock_data;
-  }
+        public Long lock_rec;
 
-  public static class INNODB_SYS_FOREIGN_COLS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FOREIGN_COLS` (\n"
-        + "\tID varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tFOR_COL_NAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tREF_COL_NAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tPOS int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String lock_data;
+    }
 
-    public String ID;
+    public static class INNODB_SYS_FOREIGN_COLS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FOREIGN_COLS` (\n"
+                + "\tID varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tFOR_COL_NAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tREF_COL_NAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tPOS int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String FOR_COL_NAME;
+        public String ID;
 
-    public String REF_COL_NAME;
+        public String FOR_COL_NAME;
 
-    public Integer POS;
-  }
+        public String REF_COL_NAME;
 
-  public static class INNODB_BUFFER_PAGE {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_PAGE` (\n"
-        + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBLOCK_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_TYPE varchar(64) DEFAULT NULL,\n"
-        + "\tFLUSH_TYPE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tFIX_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tIS_HASHED varchar(3) DEFAULT NULL,\n"
-        + "\tNEWEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOLDEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tACCESS_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tTABLE_NAME varchar(1024) DEFAULT NULL,\n"
-        + "\tINDEX_NAME varchar(1024) DEFAULT NULL,\n"
-        + "\tNUMBER_RECORDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDATA_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOMPRESSED_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_STATE varchar(64) DEFAULT NULL,\n"
-        + "\tIO_FIX varchar(64) DEFAULT NULL,\n"
-        + "\tIS_OLD varchar(3) DEFAULT NULL,\n"
-        + "\tFREE_PAGE_CLOCK bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer POS;
+    }
 
-    public Long POOL_ID;
+    public static class INNODB_BUFFER_PAGE {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_PAGE` (\n"
+                + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBLOCK_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_TYPE varchar(64) DEFAULT NULL,\n"
+                + "\tFLUSH_TYPE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tFIX_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tIS_HASHED varchar(3) DEFAULT NULL,\n"
+                + "\tNEWEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOLDEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tACCESS_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tTABLE_NAME varchar(1024) DEFAULT NULL,\n"
+                + "\tINDEX_NAME varchar(1024) DEFAULT NULL,\n"
+                + "\tNUMBER_RECORDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDATA_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOMPRESSED_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_STATE varchar(64) DEFAULT NULL,\n"
+                + "\tIO_FIX varchar(64) DEFAULT NULL,\n"
+                + "\tIS_OLD varchar(3) DEFAULT NULL,\n"
+                + "\tFREE_PAGE_CLOCK bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long BLOCK_ID;
+        public Long POOL_ID;
 
-    public Long SPACE;
+        public Long BLOCK_ID;
 
-    public Long PAGE_NUMBER;
+        public Long SPACE;
 
-    public String PAGE_TYPE;
+        public Long PAGE_NUMBER;
 
-    public Long FLUSH_TYPE;
+        public String PAGE_TYPE;
 
-    public Long FIX_COUNT;
+        public Long FLUSH_TYPE;
 
-    public String IS_HASHED;
+        public Long FIX_COUNT;
 
-    public Long NEWEST_MODIFICATION;
+        public String IS_HASHED;
 
-    public Long OLDEST_MODIFICATION;
+        public Long NEWEST_MODIFICATION;
 
-    public Long ACCESS_TIME;
+        public Long OLDEST_MODIFICATION;
 
-    public String TABLE_NAME;
+        public Long ACCESS_TIME;
 
-    public String INDEX_NAME;
+        public String TABLE_NAME;
 
-    public Long NUMBER_RECORDS;
+        public String INDEX_NAME;
 
-    public Long DATA_SIZE;
+        public Long NUMBER_RECORDS;
 
-    public Long COMPRESSED_SIZE;
+        public Long DATA_SIZE;
 
-    public String PAGE_STATE;
+        public Long COMPRESSED_SIZE;
 
-    public String IO_FIX;
+        public String PAGE_STATE;
 
-    public String IS_OLD;
+        public String IO_FIX;
 
-    public Long FREE_PAGE_CLOCK;
-  }
+        public String IS_OLD;
 
-  public static class SESSION_STATUS {
-    public static final String createTableSQL = "CREATE TABLE `SESSION_STATUS` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long FREE_PAGE_CLOCK;
+    }
 
-    public String VARIABLE_NAME;
+    public static class SESSION_STATUS {
+        public static final String createTableSQL = "CREATE TABLE `SESSION_STATUS` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String VARIABLE_VALUE;
-  }
+        public String VARIABLE_NAME;
 
-  public static class INNODB_SYS_DATAFILES {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_DATAFILES` (\n"
-        + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tPATH varchar(4000) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String VARIABLE_VALUE;
+    }
 
-    public Integer SPACE;
+    public static class INNODB_SYS_DATAFILES {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_DATAFILES` (\n"
+                + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tPATH varchar(4000) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String PATH;
-  }
+        public Integer SPACE;
 
-  public static class INNODB_CMP {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMP` (\n"
-        + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String PATH;
+    }
 
-    public Integer page_size;
+    public static class INNODB_CMP {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMP` (\n"
+                + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer compress_ops;
+        public Integer page_size;
 
-    public Integer compress_ops_ok;
+        public Integer compress_ops;
 
-    public Integer compress_time;
+        public Integer compress_ops_ok;
 
-    public Integer uncompress_ops;
+        public Integer compress_time;
 
-    public Integer uncompress_time;
-  }
+        public Integer uncompress_ops;
 
-  public static class KEY_CACHES {
-    public static final String createTableSQL = "CREATE TABLE `KEY_CACHES` (\n"
-        + "\tKEY_CACHE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tSEGMENTS int(3) DEFAULT NULL,\n"
-        + "\tSEGMENT_NUMBER int(3) DEFAULT NULL,\n"
-        + "\tFULL_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBLOCK_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUSED_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUNUSED_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDIRTY_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tREAD_REQUESTS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tREADS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tWRITE_REQUESTS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tWRITES bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer uncompress_time;
+    }
 
-    public String KEY_CACHE_NAME;
+    public static class KEY_CACHES {
+        public static final String createTableSQL = "CREATE TABLE `KEY_CACHES` (\n"
+                + "\tKEY_CACHE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tSEGMENTS int(3) DEFAULT NULL,\n"
+                + "\tSEGMENT_NUMBER int(3) DEFAULT NULL,\n"
+                + "\tFULL_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBLOCK_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUSED_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUNUSED_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDIRTY_BLOCKS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tREAD_REQUESTS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tREADS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tWRITE_REQUESTS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tWRITES bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer SEGMENTS;
+        public String KEY_CACHE_NAME;
 
-    public Integer SEGMENT_NUMBER;
+        public Integer SEGMENTS;
 
-    public Long FULL_SIZE;
+        public Integer SEGMENT_NUMBER;
 
-    public Long BLOCK_SIZE;
+        public Long FULL_SIZE;
 
-    public Long USED_BLOCKS;
+        public Long BLOCK_SIZE;
 
-    public Long UNUSED_BLOCKS;
+        public Long USED_BLOCKS;
 
-    public Long DIRTY_BLOCKS;
+        public Long UNUSED_BLOCKS;
 
-    public Long READ_REQUESTS;
+        public Long DIRTY_BLOCKS;
 
-    public Long READS;
+        public Long READ_REQUESTS;
 
-    public Long WRITE_REQUESTS;
+        public Long READS;
 
-    public Long WRITES;
-  }
+        public Long WRITE_REQUESTS;
 
-  public static class INNODB_CMPMEM_RESET {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMPMEM_RESET` (\n"
-        + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
-        + "\tbuffer_pool_instance int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tpages_used int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tpages_free int(11) DEFAULT 0 NOT NULL,\n"
-        + "\trelocation_ops bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\trelocation_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long WRITES;
+    }
 
-    public Integer page_size;
+    public static class INNODB_CMPMEM_RESET {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMPMEM_RESET` (\n"
+                + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
+                + "\tbuffer_pool_instance int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tpages_used int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tpages_free int(11) DEFAULT 0 NOT NULL,\n"
+                + "\trelocation_ops bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\trelocation_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer buffer_pool_instance;
+        public Integer page_size;
 
-    public Integer pages_used;
+        public Integer buffer_pool_instance;
 
-    public Integer pages_free;
+        public Integer pages_used;
 
-    public Long relocation_ops;
+        public Integer pages_free;
 
-    public Integer relocation_time;
-  }
+        public Long relocation_ops;
 
-  public static class INNODB_SYS_VIRTUAL {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_VIRTUAL` (\n"
-        + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPOS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tBASE_POS int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer relocation_time;
+    }
 
-    public Long TABLE_ID;
+    public static class INNODB_SYS_VIRTUAL {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_VIRTUAL` (\n"
+                + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPOS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tBASE_POS int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer POS;
+        public Long TABLE_ID;
 
-    public Integer BASE_POS;
-  }
+        public Integer POS;
 
-  public static class APPLICABLE_ROLES {
-    public static final String createTableSQL = "CREATE TABLE `APPLICABLE_ROLES` (\n"
-        + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
-        + "\tROLE_NAME varchar(128) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tIS_DEFAULT varchar(3) DEFAULT NULL\n"
-        + ")";
+        public Integer BASE_POS;
+    }
 
-    public String GRANTEE;
+    public static class APPLICABLE_ROLES {
+        public static final String createTableSQL = "CREATE TABLE `APPLICABLE_ROLES` (\n"
+                + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
+                + "\tROLE_NAME varchar(128) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tIS_DEFAULT varchar(3) DEFAULT NULL\n"
+                + ")";
 
-    public String ROLE_NAME;
+        public String GRANTEE;
 
-    public String IS_GRANTABLE;
+        public String ROLE_NAME;
 
-    public String IS_DEFAULT;
-  }
+        public String IS_GRANTABLE;
 
-  public static class INNODB_SYS_FIELDS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FIELDS` (\n"
-        + "\tINDEX_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tPOS int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String IS_DEFAULT;
+    }
 
-    public Long INDEX_ID;
+    public static class INNODB_SYS_FIELDS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FIELDS` (\n"
+                + "\tINDEX_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tPOS int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long INDEX_ID;
 
-    public Integer POS;
-  }
+        public String NAME;
 
-  public static class TABLESPACES {
-    public static final String createTableSQL = "CREATE TABLE `TABLESPACES` (\n"
-        + "\tTABLESPACE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLESPACE_TYPE varchar(64) DEFAULT NULL,\n"
-        + "\tLOGFILE_GROUP_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tEXTENT_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tAUTOEXTEND_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tMAXIMUM_SIZE bigint(21) DEFAULT NULL,\n"
-        + "\tNODEGROUP_ID bigint(21) DEFAULT NULL,\n"
-        + "\tTABLESPACE_COMMENT varchar(2048) DEFAULT NULL\n"
-        + ")";
+        public Integer POS;
+    }
 
-    public String TABLESPACE_NAME;
+    public static class TABLESPACES {
+        public static final String createTableSQL = "CREATE TABLE `TABLESPACES` (\n"
+                + "\tTABLESPACE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tENGINE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLESPACE_TYPE varchar(64) DEFAULT NULL,\n"
+                + "\tLOGFILE_GROUP_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tEXTENT_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tAUTOEXTEND_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tMAXIMUM_SIZE bigint(21) DEFAULT NULL,\n"
+                + "\tNODEGROUP_ID bigint(21) DEFAULT NULL,\n"
+                + "\tTABLESPACE_COMMENT varchar(2048) DEFAULT NULL\n"
+                + ")";
 
-    public String ENGINE;
+        public String TABLESPACE_NAME;
 
-    public String TABLESPACE_TYPE;
+        public String ENGINE;
 
-    public String LOGFILE_GROUP_NAME;
+        public String TABLESPACE_TYPE;
 
-    public Long EXTENT_SIZE;
+        public String LOGFILE_GROUP_NAME;
 
-    public Long AUTOEXTEND_SIZE;
+        public Long EXTENT_SIZE;
 
-    public Long MAXIMUM_SIZE;
+        public Long AUTOEXTEND_SIZE;
 
-    public Long NODEGROUP_ID;
+        public Long MAXIMUM_SIZE;
 
-    public String TABLESPACE_COMMENT;
-  }
+        public Long NODEGROUP_ID;
 
-  public static class REFERENTIAL_CONSTRAINTS {
-    public static final String createTableSQL = "CREATE TABLE `REFERENTIAL_CONSTRAINTS` (\n"
-        + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tUNIQUE_CONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tUNIQUE_CONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tUNIQUE_CONSTRAINT_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tMATCH_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tUPDATE_RULE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tDELETE_RULE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tREFERENCED_TABLE_NAME varchar(64) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String TABLESPACE_COMMENT;
+    }
 
-    public String CONSTRAINT_CATALOG;
+    public static class REFERENTIAL_CONSTRAINTS {
+        public static final String createTableSQL = "CREATE TABLE `REFERENTIAL_CONSTRAINTS` (\n"
+                + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tUNIQUE_CONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tUNIQUE_CONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tUNIQUE_CONSTRAINT_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tMATCH_OPTION varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tUPDATE_RULE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tDELETE_RULE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tREFERENCED_TABLE_NAME varchar(64) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String CONSTRAINT_SCHEMA;
+        public String CONSTRAINT_CATALOG;
 
-    public String CONSTRAINT_NAME;
+        public String CONSTRAINT_SCHEMA;
 
-    public String UNIQUE_CONSTRAINT_CATALOG;
+        public String CONSTRAINT_NAME;
 
-    public String UNIQUE_CONSTRAINT_SCHEMA;
+        public String UNIQUE_CONSTRAINT_CATALOG;
 
-    public String UNIQUE_CONSTRAINT_NAME;
+        public String UNIQUE_CONSTRAINT_SCHEMA;
 
-    public String MATCH_OPTION;
+        public String UNIQUE_CONSTRAINT_NAME;
 
-    public String UPDATE_RULE;
+        public String MATCH_OPTION;
 
-    public String DELETE_RULE;
+        public String UPDATE_RULE;
 
-    public String TABLE_NAME;
+        public String DELETE_RULE;
 
-    public String REFERENCED_TABLE_NAME;
-  }
+        public String TABLE_NAME;
 
-  public static class INNODB_SYS_TABLES {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLES` (\n"
-        + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(655) DEFAULT '' NOT NULL,\n"
-        + "\tFLAG int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tN_COLS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tROW_FORMAT varchar(12) DEFAULT NULL,\n"
-        + "\tZIP_PAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE_TYPE varchar(10) DEFAULT NULL\n"
-        + ")";
+        public String REFERENCED_TABLE_NAME;
+    }
 
-    public Long TABLE_ID;
+    public static class INNODB_SYS_TABLES {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_TABLES` (\n"
+                + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(655) DEFAULT '' NOT NULL,\n"
+                + "\tFLAG int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tN_COLS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tROW_FORMAT varchar(12) DEFAULT NULL,\n"
+                + "\tZIP_PAGE_SIZE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE_TYPE varchar(10) DEFAULT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long TABLE_ID;
 
-    public Integer FLAG;
+        public String NAME;
 
-    public Integer N_COLS;
+        public Integer FLAG;
 
-    public Integer SPACE;
+        public Integer N_COLS;
 
-    public String ROW_FORMAT;
+        public Integer SPACE;
 
-    public Integer ZIP_PAGE_SIZE;
+        public String ROW_FORMAT;
 
-    public String SPACE_TYPE;
-  }
+        public Integer ZIP_PAGE_SIZE;
 
-  public static class SCHEMATA {
-    public static final String createTableSQL = "CREATE TABLE `SCHEMATA` (\n"
-        + "\tCATALOG_NAME varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tSCHEMA_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tDEFAULT_CHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDEFAULT_COLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tSQL_PATH varchar(512) DEFAULT NULL\n"
-        + ")";
+        public String SPACE_TYPE;
+    }
 
-    public String CATALOG_NAME;
+    public static class SCHEMATA {
+        public static final String createTableSQL = "CREATE TABLE `SCHEMATA` (\n"
+                + "\tCATALOG_NAME varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tSCHEMA_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tDEFAULT_CHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDEFAULT_COLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tSQL_PATH varchar(512) DEFAULT NULL\n"
+                + ")";
 
-    public String SCHEMA_NAME;
+        public String CATALOG_NAME;
 
-    public String DEFAULT_CHARACTER_SET_NAME;
+        public String SCHEMA_NAME;
 
-    public String DEFAULT_COLLATION_NAME;
+        public String DEFAULT_CHARACTER_SET_NAME;
 
-    public String SQL_PATH;
-  }
+        public String DEFAULT_COLLATION_NAME;
 
-  public static class INNODB_FT_BEING_DELETED {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_BEING_DELETED` (\n"
-        + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String SQL_PATH;
+    }
 
-    public Long DOC_ID;
-  }
+    public static class INNODB_FT_BEING_DELETED {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_BEING_DELETED` (\n"
+                + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-  public static class ENABLED_ROLES {
-    public static final String createTableSQL = "CREATE TABLE `ENABLED_ROLES` (\n"
-        + "\tROLE_NAME varchar(128) DEFAULT NULL\n"
-        + ")";
+        public Long DOC_ID;
+    }
 
-    public String ROLE_NAME;
-  }
+    public static class ENABLED_ROLES {
+        public static final String createTableSQL = "CREATE TABLE `ENABLED_ROLES` (\n"
+                + "\tROLE_NAME varchar(128) DEFAULT NULL\n"
+                + ")";
 
-  public static class COLUMNS {
-    public static final String createTableSQL = "CREATE TABLE `COLUMNS` (\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tORDINAL_POSITION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOLUMN_DEFAULT longtext DEFAULT NULL,\n"
-        + "\tIS_NULLABLE varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_MAXIMUM_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_OCTET_LENGTH bigint(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_PRECISION bigint(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_SCALE bigint(21) DEFAULT NULL,\n"
-        + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(32) DEFAULT NULL,\n"
-        + "\tCOLLATION_NAME varchar(32) DEFAULT NULL,\n"
-        + "\tCOLUMN_TYPE longtext DEFAULT '' NOT NULL,\n"
-        + "\tCOLUMN_KEY varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tEXTRA varchar(30) DEFAULT '' NOT NULL,\n"
-        + "\tPRIVILEGES varchar(80) DEFAULT '' NOT NULL,\n"
-        + "\tCOLUMN_COMMENT varchar(1024) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GENERATED varchar(6) DEFAULT '' NOT NULL,\n"
-        + "\tGENERATION_EXPRESSION longtext DEFAULT NULL\n"
-        + ")";
+        public String ROLE_NAME;
+    }
 
-    public String TABLE_CATALOG;
+    public static class COLUMNS {
+        public static final String createTableSQL = "CREATE TABLE `COLUMNS` (\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tORDINAL_POSITION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOLUMN_DEFAULT longtext DEFAULT NULL,\n"
+                + "\tIS_NULLABLE varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_MAXIMUM_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_OCTET_LENGTH bigint(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_PRECISION bigint(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_SCALE bigint(21) DEFAULT NULL,\n"
+                + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(32) DEFAULT NULL,\n"
+                + "\tCOLLATION_NAME varchar(32) DEFAULT NULL,\n"
+                + "\tCOLUMN_TYPE longtext DEFAULT '' NOT NULL,\n"
+                + "\tCOLUMN_KEY varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tEXTRA varchar(30) DEFAULT '' NOT NULL,\n"
+                + "\tPRIVILEGES varchar(80) DEFAULT '' NOT NULL,\n"
+                + "\tCOLUMN_COMMENT varchar(1024) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GENERATED varchar(6) DEFAULT '' NOT NULL,\n"
+                + "\tGENERATION_EXPRESSION longtext DEFAULT NULL\n"
+                + ")";
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String COLUMN_NAME;
+        public String TABLE_NAME;
 
-    public Long ORDINAL_POSITION;
+        public String COLUMN_NAME;
 
-    public String COLUMN_DEFAULT;
+        public Long ORDINAL_POSITION;
 
-    public String IS_NULLABLE;
+        public String COLUMN_DEFAULT;
 
-    public String DATA_TYPE;
+        public String IS_NULLABLE;
 
-    public Long CHARACTER_MAXIMUM_LENGTH;
+        public String DATA_TYPE;
 
-    public Long CHARACTER_OCTET_LENGTH;
+        public Long CHARACTER_MAXIMUM_LENGTH;
 
-    public Long NUMERIC_PRECISION;
+        public Long CHARACTER_OCTET_LENGTH;
 
-    public Long NUMERIC_SCALE;
+        public Long NUMERIC_PRECISION;
 
-    public Long DATETIME_PRECISION;
+        public Long NUMERIC_SCALE;
 
-    public String CHARACTER_SET_NAME;
+        public Long DATETIME_PRECISION;
 
-    public String COLLATION_NAME;
+        public String CHARACTER_SET_NAME;
 
-    public String COLUMN_TYPE;
+        public String COLLATION_NAME;
 
-    public String COLUMN_KEY;
+        public String COLUMN_TYPE;
 
-    public String EXTRA;
+        public String COLUMN_KEY;
 
-    public String PRIVILEGES;
+        public String EXTRA;
 
-    public String COLUMN_COMMENT;
+        public String PRIVILEGES;
 
-    public String IS_GENERATED;
+        public String COLUMN_COMMENT;
 
-    public String GENERATION_EXPRESSION;
-  }
+        public String IS_GENERATED;
 
-  public static class INNODB_BUFFER_POOL_STATS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_POOL_STATS` (\n"
-        + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPOOL_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tFREE_BUFFERS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOLD_DATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMODIFIED_DATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPENDING_DECOMPRESS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPENDING_READS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPENDING_FLUSH_LRU bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPENDING_FLUSH_LIST bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_MADE_YOUNG bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_NOT_MADE_YOUNG bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_MADE_YOUNG_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_MADE_NOT_YOUNG_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_PAGES_READ bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_PAGES_CREATED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_PAGES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_READ_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_CREATE_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tPAGES_WRITTEN_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_PAGES_GET bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tHIT_RATE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tYOUNG_MAKE_PER_THOUSAND_GETS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNOT_YOUNG_MAKE_PER_THOUSAND_GETS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_PAGES_READ_AHEAD bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNUMBER_READ_AHEAD_EVICTED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tREAD_AHEAD_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tREAD_AHEAD_EVICTED_RATE double DEFAULT 0 NOT NULL,\n"
-        + "\tLRU_IO_TOTAL bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLRU_IO_CURRENT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUNCOMPRESS_TOTAL bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUNCOMPRESS_CURRENT bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String GENERATION_EXPRESSION;
+    }
 
-    public Long POOL_ID;
+    public static class INNODB_BUFFER_POOL_STATS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_POOL_STATS` (\n"
+                + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPOOL_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tFREE_BUFFERS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOLD_DATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMODIFIED_DATABASE_PAGES bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPENDING_DECOMPRESS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPENDING_READS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPENDING_FLUSH_LRU bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPENDING_FLUSH_LIST bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_MADE_YOUNG bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_NOT_MADE_YOUNG bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_MADE_YOUNG_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_MADE_NOT_YOUNG_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_PAGES_READ bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_PAGES_CREATED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_PAGES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_READ_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_CREATE_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tPAGES_WRITTEN_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_PAGES_GET bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tHIT_RATE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tYOUNG_MAKE_PER_THOUSAND_GETS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNOT_YOUNG_MAKE_PER_THOUSAND_GETS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_PAGES_READ_AHEAD bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNUMBER_READ_AHEAD_EVICTED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tREAD_AHEAD_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tREAD_AHEAD_EVICTED_RATE double DEFAULT 0 NOT NULL,\n"
+                + "\tLRU_IO_TOTAL bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLRU_IO_CURRENT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUNCOMPRESS_TOTAL bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUNCOMPRESS_CURRENT bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long POOL_SIZE;
+        public Long POOL_ID;
 
-    public Long FREE_BUFFERS;
+        public Long POOL_SIZE;
 
-    public Long DATABASE_PAGES;
+        public Long FREE_BUFFERS;
 
-    public Long OLD_DATABASE_PAGES;
+        public Long DATABASE_PAGES;
 
-    public Long MODIFIED_DATABASE_PAGES;
+        public Long OLD_DATABASE_PAGES;
 
-    public Long PENDING_DECOMPRESS;
+        public Long MODIFIED_DATABASE_PAGES;
 
-    public Long PENDING_READS;
+        public Long PENDING_DECOMPRESS;
 
-    public Long PENDING_FLUSH_LRU;
+        public Long PENDING_READS;
 
-    public Long PENDING_FLUSH_LIST;
+        public Long PENDING_FLUSH_LRU;
 
-    public Long PAGES_MADE_YOUNG;
+        public Long PENDING_FLUSH_LIST;
 
-    public Long PAGES_NOT_MADE_YOUNG;
+        public Long PAGES_MADE_YOUNG;
 
-    public Double PAGES_MADE_YOUNG_RATE;
+        public Long PAGES_NOT_MADE_YOUNG;
 
-    public Double PAGES_MADE_NOT_YOUNG_RATE;
+        public Double PAGES_MADE_YOUNG_RATE;
 
-    public Long NUMBER_PAGES_READ;
+        public Double PAGES_MADE_NOT_YOUNG_RATE;
 
-    public Long NUMBER_PAGES_CREATED;
+        public Long NUMBER_PAGES_READ;
 
-    public Long NUMBER_PAGES_WRITTEN;
+        public Long NUMBER_PAGES_CREATED;
 
-    public Double PAGES_READ_RATE;
+        public Long NUMBER_PAGES_WRITTEN;
 
-    public Double PAGES_CREATE_RATE;
+        public Double PAGES_READ_RATE;
 
-    public Double PAGES_WRITTEN_RATE;
+        public Double PAGES_CREATE_RATE;
 
-    public Long NUMBER_PAGES_GET;
+        public Double PAGES_WRITTEN_RATE;
 
-    public Long HIT_RATE;
+        public Long NUMBER_PAGES_GET;
 
-    public Long YOUNG_MAKE_PER_THOUSAND_GETS;
+        public Long HIT_RATE;
 
-    public Long NOT_YOUNG_MAKE_PER_THOUSAND_GETS;
+        public Long YOUNG_MAKE_PER_THOUSAND_GETS;
 
-    public Long NUMBER_PAGES_READ_AHEAD;
+        public Long NOT_YOUNG_MAKE_PER_THOUSAND_GETS;
 
-    public Long NUMBER_READ_AHEAD_EVICTED;
+        public Long NUMBER_PAGES_READ_AHEAD;
 
-    public Double READ_AHEAD_RATE;
+        public Long NUMBER_READ_AHEAD_EVICTED;
 
-    public Double READ_AHEAD_EVICTED_RATE;
+        public Double READ_AHEAD_RATE;
 
-    public Long LRU_IO_TOTAL;
+        public Double READ_AHEAD_EVICTED_RATE;
 
-    public Long LRU_IO_CURRENT;
+        public Long LRU_IO_TOTAL;
 
-    public Long UNCOMPRESS_TOTAL;
+        public Long LRU_IO_CURRENT;
 
-    public Long UNCOMPRESS_CURRENT;
-  }
+        public Long UNCOMPRESS_TOTAL;
 
-  public static class INNODB_CMP_PER_INDEX {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_PER_INDEX` (\n"
-        + "\tdatabase_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\ttable_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tindex_name varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long UNCOMPRESS_CURRENT;
+    }
 
-    public String database_name;
+    public static class INNODB_CMP_PER_INDEX {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_PER_INDEX` (\n"
+                + "\tdatabase_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\ttable_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tindex_name varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String table_name;
+        public String database_name;
 
-    public String index_name;
+        public String table_name;
 
-    public Integer compress_ops;
+        public String index_name;
 
-    public Integer compress_ops_ok;
+        public Integer compress_ops;
 
-    public Integer compress_time;
+        public Integer compress_ops_ok;
 
-    public Integer uncompress_ops;
+        public Integer compress_time;
 
-    public Integer uncompress_time;
-  }
+        public Integer uncompress_ops;
 
-  public static class INNODB_MUTEXES {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_MUTEXES` (\n"
-        + "\tNAME varchar(4000) DEFAULT '' NOT NULL,\n"
-        + "\tCREATE_FILE varchar(4000) DEFAULT '' NOT NULL,\n"
-        + "\tCREATE_LINE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tOS_WAITS bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer uncompress_time;
+    }
 
-    public String NAME;
+    public static class INNODB_MUTEXES {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_MUTEXES` (\n"
+                + "\tNAME varchar(4000) DEFAULT '' NOT NULL,\n"
+                + "\tCREATE_FILE varchar(4000) DEFAULT '' NOT NULL,\n"
+                + "\tCREATE_LINE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tOS_WAITS bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String CREATE_FILE;
+        public String NAME;
 
-    public Integer CREATE_LINE;
+        public String CREATE_FILE;
 
-    public Long OS_WAITS;
-  }
+        public Integer CREATE_LINE;
 
-  public static class INNODB_BUFFER_PAGE_LRU {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_PAGE_LRU` (\n"
-        + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLRU_POSITION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_TYPE varchar(64) DEFAULT NULL,\n"
-        + "\tFLUSH_TYPE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tFIX_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tIS_HASHED varchar(3) DEFAULT NULL,\n"
-        + "\tNEWEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOLDEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tACCESS_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tTABLE_NAME varchar(1024) DEFAULT NULL,\n"
-        + "\tINDEX_NAME varchar(1024) DEFAULT NULL,\n"
-        + "\tNUMBER_RECORDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDATA_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOMPRESSED_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOMPRESSED varchar(3) DEFAULT NULL,\n"
-        + "\tIO_FIX varchar(64) DEFAULT NULL,\n"
-        + "\tIS_OLD varchar(3) DEFAULT NULL,\n"
-        + "\tFREE_PAGE_CLOCK bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long OS_WAITS;
+    }
 
-    public Long POOL_ID;
+    public static class INNODB_BUFFER_PAGE_LRU {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_BUFFER_PAGE_LRU` (\n"
+                + "\tPOOL_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLRU_POSITION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_NUMBER bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_TYPE varchar(64) DEFAULT NULL,\n"
+                + "\tFLUSH_TYPE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tFIX_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tIS_HASHED varchar(3) DEFAULT NULL,\n"
+                + "\tNEWEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOLDEST_MODIFICATION bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tACCESS_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tTABLE_NAME varchar(1024) DEFAULT NULL,\n"
+                + "\tINDEX_NAME varchar(1024) DEFAULT NULL,\n"
+                + "\tNUMBER_RECORDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDATA_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOMPRESSED_SIZE bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOMPRESSED varchar(3) DEFAULT NULL,\n"
+                + "\tIO_FIX varchar(64) DEFAULT NULL,\n"
+                + "\tIS_OLD varchar(3) DEFAULT NULL,\n"
+                + "\tFREE_PAGE_CLOCK bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long LRU_POSITION;
+        public Long POOL_ID;
 
-    public Long SPACE;
+        public Long LRU_POSITION;
 
-    public Long PAGE_NUMBER;
+        public Long SPACE;
 
-    public String PAGE_TYPE;
+        public Long PAGE_NUMBER;
 
-    public Long FLUSH_TYPE;
+        public String PAGE_TYPE;
 
-    public Long FIX_COUNT;
+        public Long FLUSH_TYPE;
 
-    public String IS_HASHED;
+        public Long FIX_COUNT;
 
-    public Long NEWEST_MODIFICATION;
+        public String IS_HASHED;
 
-    public Long OLDEST_MODIFICATION;
+        public Long NEWEST_MODIFICATION;
 
-    public Long ACCESS_TIME;
+        public Long OLDEST_MODIFICATION;
 
-    public String TABLE_NAME;
+        public Long ACCESS_TIME;
 
-    public String INDEX_NAME;
+        public String TABLE_NAME;
 
-    public Long NUMBER_RECORDS;
+        public String INDEX_NAME;
 
-    public Long DATA_SIZE;
+        public Long NUMBER_RECORDS;
 
-    public Long COMPRESSED_SIZE;
+        public Long DATA_SIZE;
 
-    public String COMPRESSED;
+        public Long COMPRESSED_SIZE;
 
-    public String IO_FIX;
+        public String COMPRESSED;
 
-    public String IS_OLD;
+        public String IO_FIX;
 
-    public Long FREE_PAGE_CLOCK;
-  }
+        public String IS_OLD;
 
-  public static class INNODB_FT_CONFIG {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_CONFIG` (\n"
-        + "\tKEY varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tVALUE varchar(193) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long FREE_PAGE_CLOCK;
+    }
 
-    public String KEY;
+    public static class INNODB_FT_CONFIG {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_CONFIG` (\n"
+                + "\tKEY varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tVALUE varchar(193) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String VALUE;
-  }
+        public String KEY;
 
-  public static class SYSTEM_VARIABLES {
-    public static final String createTableSQL = "CREATE TABLE `SYSTEM_VARIABLES` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSESSION_VALUE varchar(2048) DEFAULT NULL,\n"
-        + "\tGLOBAL_VALUE varchar(2048) DEFAULT NULL,\n"
-        + "\tGLOBAL_VALUE_ORIGIN varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tDEFAULT_VALUE varchar(2048) DEFAULT NULL,\n"
-        + "\tVARIABLE_SCOPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_COMMENT varchar(2048) DEFAULT '' NOT NULL,\n"
-        + "\tNUMERIC_MIN_VALUE varchar(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_MAX_VALUE varchar(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_BLOCK_SIZE varchar(21) DEFAULT NULL,\n"
-        + "\tENUM_VALUE_LIST longtext DEFAULT NULL,\n"
-        + "\tREAD_ONLY varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tCOMMAND_LINE_ARGUMENT varchar(64) DEFAULT NULL\n"
-        + ")";
+        public String VALUE;
+    }
 
-    public String VARIABLE_NAME;
+    public static class SYSTEM_VARIABLES {
+        public static final String createTableSQL = "CREATE TABLE `SYSTEM_VARIABLES` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSESSION_VALUE varchar(2048) DEFAULT NULL,\n"
+                + "\tGLOBAL_VALUE varchar(2048) DEFAULT NULL,\n"
+                + "\tGLOBAL_VALUE_ORIGIN varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tDEFAULT_VALUE varchar(2048) DEFAULT NULL,\n"
+                + "\tVARIABLE_SCOPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_COMMENT varchar(2048) DEFAULT '' NOT NULL,\n"
+                + "\tNUMERIC_MIN_VALUE varchar(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_MAX_VALUE varchar(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_BLOCK_SIZE varchar(21) DEFAULT NULL,\n"
+                + "\tENUM_VALUE_LIST longtext DEFAULT NULL,\n"
+                + "\tREAD_ONLY varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tCOMMAND_LINE_ARGUMENT varchar(64) DEFAULT NULL\n"
+                + ")";
 
-    public String SESSION_VALUE;
+        public String VARIABLE_NAME;
 
-    public String GLOBAL_VALUE;
+        public String SESSION_VALUE;
 
-    public String GLOBAL_VALUE_ORIGIN;
+        public String GLOBAL_VALUE;
 
-    public String DEFAULT_VALUE;
+        public String GLOBAL_VALUE_ORIGIN;
 
-    public String VARIABLE_SCOPE;
+        public String DEFAULT_VALUE;
 
-    public String VARIABLE_TYPE;
+        public String VARIABLE_SCOPE;
 
-    public String VARIABLE_COMMENT;
+        public String VARIABLE_TYPE;
 
-    public String NUMERIC_MIN_VALUE;
+        public String VARIABLE_COMMENT;
 
-    public String NUMERIC_MAX_VALUE;
+        public String NUMERIC_MIN_VALUE;
 
-    public String NUMERIC_BLOCK_SIZE;
+        public String NUMERIC_MAX_VALUE;
 
-    public String ENUM_VALUE_LIST;
+        public String NUMERIC_BLOCK_SIZE;
 
-    public String READ_ONLY;
+        public String ENUM_VALUE_LIST;
 
-    public String COMMAND_LINE_ARGUMENT;
-  }
+        public String READ_ONLY;
 
-  public static class TABLE_CONSTRAINTS {
-    public static final String createTableSQL = "CREATE TABLE `TABLE_CONSTRAINTS` (\n"
-        + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCONSTRAINT_TYPE varchar(64) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String COMMAND_LINE_ARGUMENT;
+    }
 
-    public String CONSTRAINT_CATALOG;
+    public static class TABLE_CONSTRAINTS {
+        public static final String createTableSQL = "CREATE TABLE `TABLE_CONSTRAINTS` (\n"
+                + "\tCONSTRAINT_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCONSTRAINT_TYPE varchar(64) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String CONSTRAINT_SCHEMA;
+        public String CONSTRAINT_CATALOG;
 
-    public String CONSTRAINT_NAME;
+        public String CONSTRAINT_SCHEMA;
 
-    public String TABLE_SCHEMA;
+        public String CONSTRAINT_NAME;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String CONSTRAINT_TYPE;
-  }
+        public String TABLE_NAME;
 
-  public static class CLIENT_STATISTICS {
-    public static final String createTableSQL = "CREATE TABLE `CLIENT_STATISTICS` (\n"
-        + "\tCLIENT varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTOTAL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCONCURRENT_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCONNECTED_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBUSY_TIME double DEFAULT 0 NOT NULL,\n"
-        + "\tCPU_TIME double DEFAULT 0 NOT NULL,\n"
-        + "\tBYTES_RECEIVED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBYTES_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tBINLOG_BYTES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_DELETED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_INSERTED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROWS_UPDATED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tSELECT_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tUPDATE_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tOTHER_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tCOMMIT_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tROLLBACK_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDENIED_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLOST_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tACCESS_DENIED bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tEMPTY_QUERIES bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tTOTAL_SSL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_STATEMENT_TIME_EXCEEDED bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String CONSTRAINT_TYPE;
+    }
 
-    public String CLIENT;
+    public static class CLIENT_STATISTICS {
+        public static final String createTableSQL = "CREATE TABLE `CLIENT_STATISTICS` (\n"
+                + "\tCLIENT varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTOTAL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCONCURRENT_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCONNECTED_TIME bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBUSY_TIME double DEFAULT 0 NOT NULL,\n"
+                + "\tCPU_TIME double DEFAULT 0 NOT NULL,\n"
+                + "\tBYTES_RECEIVED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBYTES_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tBINLOG_BYTES_WRITTEN bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_SENT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_DELETED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_INSERTED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROWS_UPDATED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tSELECT_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tUPDATE_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tOTHER_COMMANDS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tCOMMIT_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tROLLBACK_TRANSACTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDENIED_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLOST_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tACCESS_DENIED bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tEMPTY_QUERIES bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tTOTAL_SSL_CONNECTIONS bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_STATEMENT_TIME_EXCEEDED bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long TOTAL_CONNECTIONS;
+        public String CLIENT;
 
-    public Long CONCURRENT_CONNECTIONS;
+        public Long TOTAL_CONNECTIONS;
 
-    public Long CONNECTED_TIME;
+        public Long CONCURRENT_CONNECTIONS;
 
-    public Double BUSY_TIME;
+        public Long CONNECTED_TIME;
 
-    public Double CPU_TIME;
+        public Double BUSY_TIME;
 
-    public Long BYTES_RECEIVED;
+        public Double CPU_TIME;
 
-    public Long BYTES_SENT;
+        public Long BYTES_RECEIVED;
 
-    public Long BINLOG_BYTES_WRITTEN;
+        public Long BYTES_SENT;
 
-    public Long ROWS_READ;
+        public Long BINLOG_BYTES_WRITTEN;
 
-    public Long ROWS_SENT;
+        public Long ROWS_READ;
 
-    public Long ROWS_DELETED;
+        public Long ROWS_SENT;
 
-    public Long ROWS_INSERTED;
+        public Long ROWS_DELETED;
 
-    public Long ROWS_UPDATED;
+        public Long ROWS_INSERTED;
 
-    public Long SELECT_COMMANDS;
+        public Long ROWS_UPDATED;
 
-    public Long UPDATE_COMMANDS;
+        public Long SELECT_COMMANDS;
 
-    public Long OTHER_COMMANDS;
+        public Long UPDATE_COMMANDS;
 
-    public Long COMMIT_TRANSACTIONS;
+        public Long OTHER_COMMANDS;
 
-    public Long ROLLBACK_TRANSACTIONS;
+        public Long COMMIT_TRANSACTIONS;
 
-    public Long DENIED_CONNECTIONS;
+        public Long ROLLBACK_TRANSACTIONS;
 
-    public Long LOST_CONNECTIONS;
+        public Long DENIED_CONNECTIONS;
 
-    public Long ACCESS_DENIED;
+        public Long LOST_CONNECTIONS;
 
-    public Long EMPTY_QUERIES;
+        public Long ACCESS_DENIED;
 
-    public Long TOTAL_SSL_CONNECTIONS;
+        public Long EMPTY_QUERIES;
 
-    public Long MAX_STATEMENT_TIME_EXCEEDED;
-  }
+        public Long TOTAL_SSL_CONNECTIONS;
 
-  public static class PROFILING {
-    public static final String createTableSQL = "CREATE TABLE `PROFILING` (\n"
-        + "\tQUERY_ID int(20) DEFAULT 0 NOT NULL,\n"
-        + "\tSEQ int(20) DEFAULT 0 NOT NULL,\n"
-        + "\tSTATE varchar(30) DEFAULT '' NOT NULL,\n"
-        + "\tDURATION decimal(9, 6) DEFAULT 0.000000 NOT NULL,\n"
-        + "\tCPU_USER decimal(9, 6) DEFAULT NULL,\n"
-        + "\tCPU_SYSTEM decimal(9, 6) DEFAULT NULL,\n"
-        + "\tCONTEXT_VOLUNTARY int(20) DEFAULT NULL,\n"
-        + "\tCONTEXT_INVOLUNTARY int(20) DEFAULT NULL,\n"
-        + "\tBLOCK_OPS_IN int(20) DEFAULT NULL,\n"
-        + "\tBLOCK_OPS_OUT int(20) DEFAULT NULL,\n"
-        + "\tMESSAGES_SENT int(20) DEFAULT NULL,\n"
-        + "\tMESSAGES_RECEIVED int(20) DEFAULT NULL,\n"
-        + "\tPAGE_FAULTS_MAJOR int(20) DEFAULT NULL,\n"
-        + "\tPAGE_FAULTS_MINOR int(20) DEFAULT NULL,\n"
-        + "\tSWAPS int(20) DEFAULT NULL,\n"
-        + "\tSOURCE_FUNCTION varchar(30) DEFAULT NULL,\n"
-        + "\tSOURCE_FILE varchar(20) DEFAULT NULL,\n"
-        + "\tSOURCE_LINE int(20) DEFAULT NULL\n"
-        + ")";
+        public Long MAX_STATEMENT_TIME_EXCEEDED;
+    }
 
-    public Integer QUERY_ID;
+    public static class PROFILING {
+        public static final String createTableSQL = "CREATE TABLE `PROFILING` (\n"
+                + "\tQUERY_ID int(20) DEFAULT 0 NOT NULL,\n"
+                + "\tSEQ int(20) DEFAULT 0 NOT NULL,\n"
+                + "\tSTATE varchar(30) DEFAULT '' NOT NULL,\n"
+                + "\tDURATION decimal(9, 6) DEFAULT 0.000000 NOT NULL,\n"
+                + "\tCPU_USER decimal(9, 6) DEFAULT NULL,\n"
+                + "\tCPU_SYSTEM decimal(9, 6) DEFAULT NULL,\n"
+                + "\tCONTEXT_VOLUNTARY int(20) DEFAULT NULL,\n"
+                + "\tCONTEXT_INVOLUNTARY int(20) DEFAULT NULL,\n"
+                + "\tBLOCK_OPS_IN int(20) DEFAULT NULL,\n"
+                + "\tBLOCK_OPS_OUT int(20) DEFAULT NULL,\n"
+                + "\tMESSAGES_SENT int(20) DEFAULT NULL,\n"
+                + "\tMESSAGES_RECEIVED int(20) DEFAULT NULL,\n"
+                + "\tPAGE_FAULTS_MAJOR int(20) DEFAULT NULL,\n"
+                + "\tPAGE_FAULTS_MINOR int(20) DEFAULT NULL,\n"
+                + "\tSWAPS int(20) DEFAULT NULL,\n"
+                + "\tSOURCE_FUNCTION varchar(30) DEFAULT NULL,\n"
+                + "\tSOURCE_FILE varchar(20) DEFAULT NULL,\n"
+                + "\tSOURCE_LINE int(20) DEFAULT NULL\n"
+                + ")";
 
-    public Integer SEQ;
+        public Integer QUERY_ID;
 
-    public String STATE;
+        public Integer SEQ;
 
-    public BigDecimal DURATION;
+        public String STATE;
 
-    public BigDecimal CPU_USER;
+        public BigDecimal DURATION;
 
-    public BigDecimal CPU_SYSTEM;
+        public BigDecimal CPU_USER;
 
-    public Integer CONTEXT_VOLUNTARY;
+        public BigDecimal CPU_SYSTEM;
 
-    public Integer CONTEXT_INVOLUNTARY;
+        public Integer CONTEXT_VOLUNTARY;
 
-    public Integer BLOCK_OPS_IN;
+        public Integer CONTEXT_INVOLUNTARY;
 
-    public Integer BLOCK_OPS_OUT;
+        public Integer BLOCK_OPS_IN;
 
-    public Integer MESSAGES_SENT;
+        public Integer BLOCK_OPS_OUT;
 
-    public Integer MESSAGES_RECEIVED;
+        public Integer MESSAGES_SENT;
 
-    public Integer PAGE_FAULTS_MAJOR;
+        public Integer MESSAGES_RECEIVED;
 
-    public Integer PAGE_FAULTS_MINOR;
+        public Integer PAGE_FAULTS_MAJOR;
 
-    public Integer SWAPS;
+        public Integer PAGE_FAULTS_MINOR;
 
-    public String SOURCE_FUNCTION;
+        public Integer SWAPS;
 
-    public String SOURCE_FILE;
+        public String SOURCE_FUNCTION;
 
-    public Integer SOURCE_LINE;
-  }
+        public String SOURCE_FILE;
 
-  public static class INNODB_TABLESPACES_ENCRYPTION {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_TABLESPACES_ENCRYPTION` (\n"
-        + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(655) DEFAULT NULL,\n"
-        + "\tENCRYPTION_SCHEME int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tKEYSERVER_REQUESTS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tMIN_KEY_VERSION int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tCURRENT_KEY_VERSION int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tKEY_ROTATION_PAGE_NUMBER bigint(21) DEFAULT NULL,\n"
-        + "\tKEY_ROTATION_MAX_PAGE_NUMBER bigint(21) DEFAULT NULL,\n"
-        + "\tCURRENT_KEY_ID int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tROTATING_OR_FLUSHING int(1) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer SOURCE_LINE;
+    }
 
-    public Integer SPACE;
+    public static class INNODB_TABLESPACES_ENCRYPTION {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_TABLESPACES_ENCRYPTION` (\n"
+                + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(655) DEFAULT NULL,\n"
+                + "\tENCRYPTION_SCHEME int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tKEYSERVER_REQUESTS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tMIN_KEY_VERSION int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tCURRENT_KEY_VERSION int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tKEY_ROTATION_PAGE_NUMBER bigint(21) DEFAULT NULL,\n"
+                + "\tKEY_ROTATION_MAX_PAGE_NUMBER bigint(21) DEFAULT NULL,\n"
+                + "\tCURRENT_KEY_ID int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tROTATING_OR_FLUSHING int(1) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Integer SPACE;
 
-    public Integer ENCRYPTION_SCHEME;
+        public String NAME;
 
-    public Integer KEYSERVER_REQUESTS;
+        public Integer ENCRYPTION_SCHEME;
 
-    public Integer MIN_KEY_VERSION;
+        public Integer KEYSERVER_REQUESTS;
 
-    public Integer CURRENT_KEY_VERSION;
+        public Integer MIN_KEY_VERSION;
 
-    public Long KEY_ROTATION_PAGE_NUMBER;
+        public Integer CURRENT_KEY_VERSION;
 
-    public Long KEY_ROTATION_MAX_PAGE_NUMBER;
+        public Long KEY_ROTATION_PAGE_NUMBER;
 
-    public Integer CURRENT_KEY_ID;
+        public Long KEY_ROTATION_MAX_PAGE_NUMBER;
 
-    public Integer ROTATING_OR_FLUSHING;
-  }
+        public Integer CURRENT_KEY_ID;
 
-  public static class INNODB_SYS_FOREIGN {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FOREIGN` (\n"
-        + "\tID varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tFOR_NAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tREF_NAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tN_COLS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tTYPE int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer ROTATING_OR_FLUSHING;
+    }
 
-    public String ID;
+    public static class INNODB_SYS_FOREIGN {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_FOREIGN` (\n"
+                + "\tID varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tFOR_NAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tREF_NAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tN_COLS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tTYPE int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String FOR_NAME;
+        public String ID;
 
-    public String REF_NAME;
+        public String FOR_NAME;
 
-    public Integer N_COLS;
+        public String REF_NAME;
 
-    public Integer TYPE;
-  }
+        public Integer N_COLS;
 
-  public static class COLLATIONS {
-    public static final String createTableSQL = "CREATE TABLE `COLLATIONS` (\n"
-        + "\tCOLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tID bigint(11) DEFAULT 0 NOT NULL,\n"
-        + "\tIS_DEFAULT varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tIS_COMPILED varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tSORTLEN bigint(3) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer TYPE;
+    }
 
-    public String COLLATION_NAME;
+    public static class COLLATIONS {
+        public static final String createTableSQL = "CREATE TABLE `COLLATIONS` (\n"
+                + "\tCOLLATION_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tID bigint(11) DEFAULT 0 NOT NULL,\n"
+                + "\tIS_DEFAULT varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tIS_COMPILED varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tSORTLEN bigint(3) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String CHARACTER_SET_NAME;
+        public String COLLATION_NAME;
 
-    public Long ID;
+        public String CHARACTER_SET_NAME;
 
-    public String IS_DEFAULT;
+        public Long ID;
 
-    public String IS_COMPILED;
+        public String IS_DEFAULT;
 
-    public Long SORTLEN;
-  }
+        public String IS_COMPILED;
 
-  public static class INNODB_CMPMEM {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMPMEM` (\n"
-        + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
-        + "\tbuffer_pool_instance int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tpages_used int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tpages_free int(11) DEFAULT 0 NOT NULL,\n"
-        + "\trelocation_ops bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\trelocation_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long SORTLEN;
+    }
 
-    public Integer page_size;
+    public static class INNODB_CMPMEM {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMPMEM` (\n"
+                + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
+                + "\tbuffer_pool_instance int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tpages_used int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tpages_free int(11) DEFAULT 0 NOT NULL,\n"
+                + "\trelocation_ops bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\trelocation_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer buffer_pool_instance;
+        public Integer page_size;
 
-    public Integer pages_used;
+        public Integer buffer_pool_instance;
 
-    public Integer pages_free;
+        public Integer pages_used;
 
-    public Long relocation_ops;
+        public Integer pages_free;
 
-    public Integer relocation_time;
-  }
+        public Long relocation_ops;
 
-  public static class INNODB_TRX {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_TRX` (\n"
-        + "\ttrx_id varchar(18) DEFAULT '' NOT NULL,\n"
-        + "\ttrx_state varchar(13) DEFAULT '' NOT NULL,\n"
-        + "\ttrx_started datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
-        + "\ttrx_requested_lock_id varchar(81) DEFAULT NULL,\n"
-        + "\ttrx_wait_started datetime DEFAULT NULL,\n"
-        + "\ttrx_weight bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_mysql_thread_id bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_query varchar(1024) DEFAULT NULL,\n"
-        + "\ttrx_operation_state varchar(64) DEFAULT NULL,\n"
-        + "\ttrx_tables_in_use bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_tables_locked bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_lock_structs bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_lock_memory_bytes bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_rows_locked bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_rows_modified bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_concurrency_tickets bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_isolation_level varchar(16) DEFAULT '' NOT NULL,\n"
-        + "\ttrx_unique_checks int(1) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_foreign_key_checks int(1) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_last_foreign_key_error varchar(256) DEFAULT NULL,\n"
-        + "\ttrx_is_read_only int(1) DEFAULT 0 NOT NULL,\n"
-        + "\ttrx_autocommit_non_locking int(1) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer relocation_time;
+    }
 
-    public String trx_id;
+    public static class INNODB_TRX {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_TRX` (\n"
+                + "\ttrx_id varchar(18) DEFAULT '' NOT NULL,\n"
+                + "\ttrx_state varchar(13) DEFAULT '' NOT NULL,\n"
+                + "\ttrx_started datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
+                + "\ttrx_requested_lock_id varchar(81) DEFAULT NULL,\n"
+                + "\ttrx_wait_started datetime DEFAULT NULL,\n"
+                + "\ttrx_weight bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_mysql_thread_id bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_query varchar(1024) DEFAULT NULL,\n"
+                + "\ttrx_operation_state varchar(64) DEFAULT NULL,\n"
+                + "\ttrx_tables_in_use bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_tables_locked bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_lock_structs bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_lock_memory_bytes bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_rows_locked bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_rows_modified bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_concurrency_tickets bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_isolation_level varchar(16) DEFAULT '' NOT NULL,\n"
+                + "\ttrx_unique_checks int(1) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_foreign_key_checks int(1) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_last_foreign_key_error varchar(256) DEFAULT NULL,\n"
+                + "\ttrx_is_read_only int(1) DEFAULT 0 NOT NULL,\n"
+                + "\ttrx_autocommit_non_locking int(1) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String trx_state;
+        public String trx_id;
 
-    public Long trx_started;
+        public String trx_state;
 
-    public String trx_requested_lock_id;
+        public Long trx_started;
 
-    public Long trx_wait_started;
+        public String trx_requested_lock_id;
 
-    public Long trx_weight;
+        public Long trx_wait_started;
 
-    public Long trx_mysql_thread_id;
+        public Long trx_weight;
 
-    public String trx_query;
+        public Long trx_mysql_thread_id;
 
-    public String trx_operation_state;
+        public String trx_query;
 
-    public Long trx_tables_in_use;
+        public String trx_operation_state;
 
-    public Long trx_tables_locked;
+        public Long trx_tables_in_use;
 
-    public Long trx_lock_structs;
+        public Long trx_tables_locked;
 
-    public Long trx_lock_memory_bytes;
+        public Long trx_lock_structs;
 
-    public Long trx_rows_locked;
+        public Long trx_lock_memory_bytes;
 
-    public Long trx_rows_modified;
+        public Long trx_rows_locked;
 
-    public Long trx_concurrency_tickets;
+        public Long trx_rows_modified;
 
-    public String trx_isolation_level;
+        public Long trx_concurrency_tickets;
 
-    public Integer trx_unique_checks;
+        public String trx_isolation_level;
 
-    public Integer trx_foreign_key_checks;
+        public Integer trx_unique_checks;
 
-    public String trx_last_foreign_key_error;
+        public Integer trx_foreign_key_checks;
 
-    public Integer trx_is_read_only;
+        public String trx_last_foreign_key_error;
 
-    public Integer trx_autocommit_non_locking;
-  }
+        public Integer trx_is_read_only;
 
-  public static class CHARACTER_SETS {
-    public static final String createTableSQL = "CREATE TABLE `CHARACTER_SETS` (\n"
-        + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDEFAULT_COLLATE_NAME varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDESCRIPTION varchar(60) DEFAULT '' NOT NULL,\n"
-        + "\tMAXLEN bigint(3) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer trx_autocommit_non_locking;
+    }
 
-    public String CHARACTER_SET_NAME;
+    public static class CHARACTER_SETS {
+        public static final String createTableSQL = "CREATE TABLE `CHARACTER_SETS` (\n"
+                + "\tCHARACTER_SET_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDEFAULT_COLLATE_NAME varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDESCRIPTION varchar(60) DEFAULT '' NOT NULL,\n"
+                + "\tMAXLEN bigint(3) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String DEFAULT_COLLATE_NAME;
+        public String CHARACTER_SET_NAME;
 
-    public String DESCRIPTION;
+        public String DEFAULT_COLLATE_NAME;
 
-    public Long MAXLEN;
-  }
+        public String DESCRIPTION;
 
-  public static class INDEX_STATISTICS {
-    public static final String createTableSQL = "CREATE TABLE `INDEX_STATISTICS` (\n"
-        + "\tTABLE_SCHEMA varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tINDEX_NAME varchar(192) DEFAULT '' NOT NULL,\n"
-        + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long MAXLEN;
+    }
 
-    public String TABLE_SCHEMA;
+    public static class INDEX_STATISTICS {
+        public static final String createTableSQL = "CREATE TABLE `INDEX_STATISTICS` (\n"
+                + "\tTABLE_SCHEMA varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tINDEX_NAME varchar(192) DEFAULT '' NOT NULL,\n"
+                + "\tROWS_READ bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String INDEX_NAME;
+        public String TABLE_NAME;
 
-    public Long ROWS_READ;
-  }
+        public String INDEX_NAME;
 
-  public static class INNODB_FT_DELETED {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_DELETED` (\n"
-        + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long ROWS_READ;
+    }
 
-    public Long DOC_ID;
-  }
+    public static class INNODB_FT_DELETED {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_DELETED` (\n"
+                + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-  public static class STATISTICS {
-    public static final String createTableSQL = "CREATE TABLE `STATISTICS` (\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tNON_UNIQUE bigint(1) DEFAULT 0 NOT NULL,\n"
-        + "\tINDEX_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tINDEX_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSEQ_IN_INDEX bigint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCOLLATION varchar(1) DEFAULT NULL,\n"
-        + "\tCARDINALITY bigint(21) DEFAULT NULL,\n"
-        + "\tSUB_PART bigint(3) DEFAULT NULL,\n"
-        + "\tPACKED varchar(10) DEFAULT NULL,\n"
-        + "\tNULLABLE varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tINDEX_TYPE varchar(16) DEFAULT '' NOT NULL,\n"
-        + "\tCOMMENT varchar(16) DEFAULT NULL,\n"
-        + "\tINDEX_COMMENT varchar(1024) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long DOC_ID;
+    }
 
-    public String TABLE_CATALOG;
+    public static class STATISTICS {
+        public static final String createTableSQL = "CREATE TABLE `STATISTICS` (\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tNON_UNIQUE bigint(1) DEFAULT 0 NOT NULL,\n"
+                + "\tINDEX_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tINDEX_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSEQ_IN_INDEX bigint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCOLLATION varchar(1) DEFAULT NULL,\n"
+                + "\tCARDINALITY bigint(21) DEFAULT NULL,\n"
+                + "\tSUB_PART bigint(3) DEFAULT NULL,\n"
+                + "\tPACKED varchar(10) DEFAULT NULL,\n"
+                + "\tNULLABLE varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tINDEX_TYPE varchar(16) DEFAULT '' NOT NULL,\n"
+                + "\tCOMMENT varchar(16) DEFAULT NULL,\n"
+                + "\tINDEX_COMMENT varchar(1024) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public Long NON_UNIQUE;
+        public String TABLE_NAME;
 
-    public String INDEX_SCHEMA;
+        public Long NON_UNIQUE;
 
-    public String INDEX_NAME;
+        public String INDEX_SCHEMA;
 
-    public Long SEQ_IN_INDEX;
+        public String INDEX_NAME;
 
-    public String COLUMN_NAME;
+        public Long SEQ_IN_INDEX;
 
-    public String COLLATION;
+        public String COLUMN_NAME;
 
-    public Long CARDINALITY;
+        public String COLLATION;
 
-    public Long SUB_PART;
+        public Long CARDINALITY;
 
-    public String PACKED;
+        public Long SUB_PART;
 
-    public String NULLABLE;
+        public String PACKED;
 
-    public String INDEX_TYPE;
+        public String NULLABLE;
 
-    public String COMMENT;
+        public String INDEX_TYPE;
 
-    public String INDEX_COMMENT;
-  }
+        public String COMMENT;
 
-  public static class VIEWS {
-    public static final String createTableSQL = "CREATE TABLE `VIEWS` (\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVIEW_DEFINITION longtext DEFAULT '' NOT NULL,\n"
-        + "\tCHECK_OPTION varchar(8) DEFAULT '' NOT NULL,\n"
-        + "\tIS_UPDATABLE varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
-        + "\tSECURITY_TYPE varchar(7) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tALGORITHM varchar(10) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String INDEX_COMMENT;
+    }
 
-    public String TABLE_CATALOG;
+    public static class VIEWS {
+        public static final String createTableSQL = "CREATE TABLE `VIEWS` (\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVIEW_DEFINITION longtext DEFAULT '' NOT NULL,\n"
+                + "\tCHECK_OPTION varchar(8) DEFAULT '' NOT NULL,\n"
+                + "\tIS_UPDATABLE varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
+                + "\tSECURITY_TYPE varchar(7) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tALGORITHM varchar(10) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String VIEW_DEFINITION;
+        public String TABLE_NAME;
 
-    public String CHECK_OPTION;
+        public String VIEW_DEFINITION;
 
-    public String IS_UPDATABLE;
+        public String CHECK_OPTION;
 
-    public String DEFINER;
+        public String IS_UPDATABLE;
 
-    public String SECURITY_TYPE;
+        public String DEFINER;
 
-    public String CHARACTER_SET_CLIENT;
+        public String SECURITY_TYPE;
 
-    public String COLLATION_CONNECTION;
+        public String CHARACTER_SET_CLIENT;
 
-    public String ALGORITHM;
-  }
+        public String COLLATION_CONNECTION;
 
-  public static class COLUMN_PRIVILEGES {
-    public static final String createTableSQL = "CREATE TABLE `COLUMN_PRIVILEGES` (\n"
-        + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String ALGORITHM;
+    }
 
-    public String GRANTEE;
+    public static class COLUMN_PRIVILEGES {
+        public static final String createTableSQL = "CREATE TABLE `COLUMN_PRIVILEGES` (\n"
+                + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCOLUMN_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_CATALOG;
+        public String GRANTEE;
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String TABLE_NAME;
+        public String TABLE_SCHEMA;
 
-    public String COLUMN_NAME;
+        public String TABLE_NAME;
 
-    public String PRIVILEGE_TYPE;
+        public String COLUMN_NAME;
 
-    public String IS_GRANTABLE;
-  }
+        public String PRIVILEGE_TYPE;
 
-  public static class user_variables {
-    public static final String createTableSQL = "CREATE TABLE `user_variables` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_VALUE varchar(2048) DEFAULT NULL,\n"
-        + "\tVARIABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(32) DEFAULT NULL\n"
-        + ")";
+        public String IS_GRANTABLE;
+    }
 
-    public String VARIABLE_NAME;
+    public static class user_variables {
+        public static final String createTableSQL = "CREATE TABLE `user_variables` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_VALUE varchar(2048) DEFAULT NULL,\n"
+                + "\tVARIABLE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(32) DEFAULT NULL\n"
+                + ")";
 
-    public String VARIABLE_VALUE;
+        public String VARIABLE_NAME;
 
-    public String VARIABLE_TYPE;
+        public String VARIABLE_VALUE;
 
-    public String CHARACTER_SET_NAME;
-  }
+        public String VARIABLE_TYPE;
 
-  public static class SESSION_VARIABLES {
-    public static final String createTableSQL = "CREATE TABLE `SESSION_VARIABLES` (\n"
-        + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String CHARACTER_SET_NAME;
+    }
 
-    public String VARIABLE_NAME;
+    public static class SESSION_VARIABLES {
+        public static final String createTableSQL = "CREATE TABLE `SESSION_VARIABLES` (\n"
+                + "\tVARIABLE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tVARIABLE_VALUE varchar(2048) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String VARIABLE_VALUE;
-  }
+        public String VARIABLE_NAME;
 
-  public static class INNODB_METRICS {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_METRICS` (\n"
-        + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tSUBSYSTEM varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tCOUNT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_COUNT bigint(21) DEFAULT NULL,\n"
-        + "\tMIN_COUNT bigint(21) DEFAULT NULL,\n"
-        + "\tAVG_COUNT double DEFAULT NULL,\n"
-        + "\tCOUNT_RESET bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_COUNT_RESET bigint(21) DEFAULT NULL,\n"
-        + "\tMIN_COUNT_RESET bigint(21) DEFAULT NULL,\n"
-        + "\tAVG_COUNT_RESET double DEFAULT NULL,\n"
-        + "\tTIME_ENABLED datetime DEFAULT NULL,\n"
-        + "\tTIME_DISABLED datetime DEFAULT NULL,\n"
-        + "\tTIME_ELAPSED bigint(21) DEFAULT NULL,\n"
-        + "\tTIME_RESET datetime DEFAULT NULL,\n"
-        + "\tSTATUS varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tTYPE varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tCOMMENT varchar(193) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String VARIABLE_VALUE;
+    }
 
-    public String NAME;
+    public static class INNODB_METRICS {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_METRICS` (\n"
+                + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tSUBSYSTEM varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tCOUNT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_COUNT bigint(21) DEFAULT NULL,\n"
+                + "\tMIN_COUNT bigint(21) DEFAULT NULL,\n"
+                + "\tAVG_COUNT double DEFAULT NULL,\n"
+                + "\tCOUNT_RESET bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_COUNT_RESET bigint(21) DEFAULT NULL,\n"
+                + "\tMIN_COUNT_RESET bigint(21) DEFAULT NULL,\n"
+                + "\tAVG_COUNT_RESET double DEFAULT NULL,\n"
+                + "\tTIME_ENABLED datetime DEFAULT NULL,\n"
+                + "\tTIME_DISABLED datetime DEFAULT NULL,\n"
+                + "\tTIME_ELAPSED bigint(21) DEFAULT NULL,\n"
+                + "\tTIME_RESET datetime DEFAULT NULL,\n"
+                + "\tSTATUS varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tTYPE varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tCOMMENT varchar(193) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String SUBSYSTEM;
+        public String NAME;
 
-    public Long COUNT;
+        public String SUBSYSTEM;
 
-    public Long MAX_COUNT;
+        public Long COUNT;
 
-    public Long MIN_COUNT;
+        public Long MAX_COUNT;
 
-    public Double AVG_COUNT;
+        public Long MIN_COUNT;
 
-    public Long COUNT_RESET;
+        public Double AVG_COUNT;
 
-    public Long MAX_COUNT_RESET;
+        public Long COUNT_RESET;
 
-    public Long MIN_COUNT_RESET;
+        public Long MAX_COUNT_RESET;
 
-    public Double AVG_COUNT_RESET;
+        public Long MIN_COUNT_RESET;
 
-    public Long TIME_ENABLED;
+        public Double AVG_COUNT_RESET;
 
-    public Long TIME_DISABLED;
+        public Long TIME_ENABLED;
 
-    public Long TIME_ELAPSED;
+        public Long TIME_DISABLED;
 
-    public Long TIME_RESET;
+        public Long TIME_ELAPSED;
 
-    public String STATUS;
+        public Long TIME_RESET;
 
-    public String TYPE;
+        public String STATUS;
 
-    public String COMMENT;
-  }
+        public String TYPE;
 
-  public static class SPATIAL_REF_SYS {
-    public static final String createTableSQL = "CREATE TABLE `SPATIAL_REF_SYS` (\n"
-        + "\tSRID smallint(5) DEFAULT 0 NOT NULL,\n"
-        + "\tAUTH_NAME varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tAUTH_SRID int(5) DEFAULT 0 NOT NULL,\n"
-        + "\tSRTEXT varchar(2048) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String COMMENT;
+    }
 
-    public Short SRID;
+    public static class SPATIAL_REF_SYS {
+        public static final String createTableSQL = "CREATE TABLE `SPATIAL_REF_SYS` (\n"
+                + "\tSRID smallint(5) DEFAULT 0 NOT NULL,\n"
+                + "\tAUTH_NAME varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tAUTH_SRID int(5) DEFAULT 0 NOT NULL,\n"
+                + "\tSRTEXT varchar(2048) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String AUTH_NAME;
+        public Short SRID;
 
-    public Integer AUTH_SRID;
+        public String AUTH_NAME;
 
-    public String SRTEXT;
-  }
+        public Integer AUTH_SRID;
 
-  public static class INNODB_CMP_RESET {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_RESET` (\n"
-        + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String SRTEXT;
+    }
 
-    public Integer page_size;
+    public static class INNODB_CMP_RESET {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_CMP_RESET` (\n"
+                + "\tpage_size int(5) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_ops_ok int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tcompress_time int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_ops int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tuncompress_time int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Integer compress_ops;
+        public Integer page_size;
 
-    public Integer compress_ops_ok;
+        public Integer compress_ops;
 
-    public Integer compress_time;
+        public Integer compress_ops_ok;
 
-    public Integer uncompress_ops;
+        public Integer compress_time;
 
-    public Integer uncompress_time;
-  }
+        public Integer uncompress_ops;
 
-  public static class INNODB_FT_INDEX_CACHE {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_FT_INDEX_CACHE` (\n"
-        + "\tWORD varchar(337) DEFAULT '' NOT NULL,\n"
-        + "\tFIRST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tLAST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDOC_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tPOSITION bigint(21) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Integer uncompress_time;
+    }
 
-    public String WORD;
+    public static class INNODB_FT_INDEX_CACHE {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_FT_INDEX_CACHE` (\n"
+                + "\tWORD varchar(337) DEFAULT '' NOT NULL,\n"
+                + "\tFIRST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tLAST_DOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDOC_COUNT bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tDOC_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tPOSITION bigint(21) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public Long FIRST_DOC_ID;
+        public String WORD;
 
-    public Long LAST_DOC_ID;
+        public Long FIRST_DOC_ID;
 
-    public Long DOC_COUNT;
+        public Long LAST_DOC_ID;
 
-    public Long DOC_ID;
+        public Long DOC_COUNT;
 
-    public Long POSITION;
-  }
+        public Long DOC_ID;
 
-  public static class INNODB_SYS_INDEXES {
-    public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_INDEXES` (\n"
-        + "\tINDEX_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
-        + "\tTYPE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tN_FIELDS int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tPAGE_NO int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
-        + "\tMERGE_THRESHOLD int(11) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public Long POSITION;
+    }
 
-    public Long INDEX_ID;
+    public static class INNODB_SYS_INDEXES {
+        public static final String createTableSQL = "CREATE TABLE `INNODB_SYS_INDEXES` (\n"
+                + "\tINDEX_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tNAME varchar(193) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_ID bigint(21) DEFAULT 0 NOT NULL,\n"
+                + "\tTYPE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tN_FIELDS int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tPAGE_NO int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tSPACE int(11) DEFAULT 0 NOT NULL,\n"
+                + "\tMERGE_THRESHOLD int(11) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String NAME;
+        public Long INDEX_ID;
 
-    public Long TABLE_ID;
+        public String NAME;
 
-    public Integer TYPE;
+        public Long TABLE_ID;
 
-    public Integer N_FIELDS;
+        public Integer TYPE;
 
-    public Integer PAGE_NO;
+        public Integer N_FIELDS;
 
-    public Integer SPACE;
+        public Integer PAGE_NO;
 
-    public Integer MERGE_THRESHOLD;
-  }
+        public Integer SPACE;
 
-  public static class USER_PRIVILEGES {
-    public static final String createTableSQL = "CREATE TABLE `USER_PRIVILEGES` (\n"
-        + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Integer MERGE_THRESHOLD;
+    }
 
-    public String GRANTEE;
+    public static class USER_PRIVILEGES {
+        public static final String createTableSQL = "CREATE TABLE `USER_PRIVILEGES` (\n"
+                + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_CATALOG;
+        public String GRANTEE;
 
-    public String PRIVILEGE_TYPE;
+        public String TABLE_CATALOG;
 
-    public String IS_GRANTABLE;
-  }
+        public String PRIVILEGE_TYPE;
 
-  public static class PROCESSLIST {
-    public static final String createTableSQL = "CREATE TABLE `PROCESSLIST` (\n"
-        + "\tID bigint(4) DEFAULT 0 NOT NULL,\n"
-        + "\tUSER varchar(128) DEFAULT '' NOT NULL,\n"
-        + "\tHOST varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tDB varchar(64) DEFAULT NULL,\n"
-        + "\tCOMMAND varchar(16) DEFAULT '' NOT NULL,\n"
-        + "\tTIME int(7) DEFAULT 0 NOT NULL,\n"
-        + "\tSTATE varchar(64) DEFAULT NULL,\n"
-        + "\tINFO longtext DEFAULT NULL,\n"
-        + "\tTIME_MS decimal(22, 3) DEFAULT 0.000 NOT NULL,\n"
-        + "\tSTAGE tinyint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_STAGE tinyint(2) DEFAULT 0 NOT NULL,\n"
-        + "\tPROGRESS decimal(7, 3) DEFAULT 0.000 NOT NULL,\n"
-        + "\tMEMORY_USED bigint(7) DEFAULT 0 NOT NULL,\n"
-        + "\tMAX_MEMORY_USED bigint(7) DEFAULT 0 NOT NULL,\n"
-        + "\tEXAMINED_ROWS int(7) DEFAULT 0 NOT NULL,\n"
-        + "\tQUERY_ID bigint(4) DEFAULT 0 NOT NULL,\n"
-        + "\tINFO_BINARY blob DEFAULT NULL,\n"
-        + "\tTID bigint(4) DEFAULT 0 NOT NULL\n"
-        + ")";
+        public String IS_GRANTABLE;
+    }
 
-    public Long ID;
+    public static class PROCESSLIST {
+        public static final String createTableSQL = "CREATE TABLE `PROCESSLIST` (\n"
+                + "\tID bigint(4) DEFAULT 0 NOT NULL,\n"
+                + "\tUSER varchar(128) DEFAULT '' NOT NULL,\n"
+                + "\tHOST varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tDB varchar(64) DEFAULT NULL,\n"
+                + "\tCOMMAND varchar(16) DEFAULT '' NOT NULL,\n"
+                + "\tTIME int(7) DEFAULT 0 NOT NULL,\n"
+                + "\tSTATE varchar(64) DEFAULT NULL,\n"
+                + "\tINFO longtext DEFAULT NULL,\n"
+                + "\tTIME_MS decimal(22, 3) DEFAULT 0.000 NOT NULL,\n"
+                + "\tSTAGE tinyint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_STAGE tinyint(2) DEFAULT 0 NOT NULL,\n"
+                + "\tPROGRESS decimal(7, 3) DEFAULT 0.000 NOT NULL,\n"
+                + "\tMEMORY_USED bigint(7) DEFAULT 0 NOT NULL,\n"
+                + "\tMAX_MEMORY_USED bigint(7) DEFAULT 0 NOT NULL,\n"
+                + "\tEXAMINED_ROWS int(7) DEFAULT 0 NOT NULL,\n"
+                + "\tQUERY_ID bigint(4) DEFAULT 0 NOT NULL,\n"
+                + "\tINFO_BINARY blob DEFAULT NULL,\n"
+                + "\tTID bigint(4) DEFAULT 0 NOT NULL\n"
+                + ")";
 
-    public String USER;
+        public Long ID;
 
-    public String HOST;
+        public String USER;
 
-    public String DB;
+        public String HOST;
 
-    public String COMMAND;
+        public String DB;
 
-    public Integer TIME;
+        public String COMMAND;
 
-    public String STATE;
+        public Integer TIME;
 
-    public String INFO;
+        public String STATE;
 
-    public BigDecimal TIME_MS;
+        public String INFO;
 
-    public Short STAGE;
+        public BigDecimal TIME_MS;
 
-    public Short MAX_STAGE;
+        public Short STAGE;
 
-    public BigDecimal PROGRESS;
+        public Short MAX_STAGE;
 
-    public Long MEMORY_USED;
+        public BigDecimal PROGRESS;
 
-    public Long MAX_MEMORY_USED;
+        public Long MEMORY_USED;
 
-    public Integer EXAMINED_ROWS;
+        public Long MAX_MEMORY_USED;
 
-    public Long QUERY_ID;
+        public Integer EXAMINED_ROWS;
 
-    public byte[] INFO_BINARY;
+        public Long QUERY_ID;
 
-    public Long TID;
-  }
+        public byte[] INFO_BINARY;
 
-  public static class SCHEMA_PRIVILEGES {
-    public static final String createTableSQL = "CREATE TABLE `SCHEMA_PRIVILEGES` (\n"
-        + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
-        + ")";
+        public Long TID;
+    }
 
-    public String GRANTEE;
+    public static class SCHEMA_PRIVILEGES {
+        public static final String createTableSQL = "CREATE TABLE `SCHEMA_PRIVILEGES` (\n"
+                + "\tGRANTEE varchar(190) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tTABLE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tPRIVILEGE_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tIS_GRANTABLE varchar(3) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String TABLE_CATALOG;
+        public String GRANTEE;
 
-    public String TABLE_SCHEMA;
+        public String TABLE_CATALOG;
 
-    public String PRIVILEGE_TYPE;
+        public String TABLE_SCHEMA;
 
-    public String IS_GRANTABLE;
-  }
+        public String PRIVILEGE_TYPE;
 
-  public static class ROUTINES {
-    public static final String createTableSQL = "CREATE TABLE `ROUTINES` (\n"
-        + "\tSPECIFIC_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_TYPE varchar(13) DEFAULT '' NOT NULL,\n"
-        + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_MAXIMUM_LENGTH int(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_OCTET_LENGTH int(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_PRECISION int(21) DEFAULT NULL,\n"
-        + "\tNUMERIC_SCALE int(21) DEFAULT NULL,\n"
-        + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
-        + "\tCHARACTER_SET_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tCOLLATION_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tDTD_IDENTIFIER longtext DEFAULT NULL,\n"
-        + "\tROUTINE_BODY varchar(8) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_DEFINITION longtext DEFAULT NULL,\n"
-        + "\tEXTERNAL_NAME varchar(64) DEFAULT NULL,\n"
-        + "\tEXTERNAL_LANGUAGE varchar(64) DEFAULT NULL,\n"
-        + "\tPARAMETER_STYLE varchar(8) DEFAULT '' NOT NULL,\n"
-        + "\tIS_DETERMINISTIC varchar(3) DEFAULT '' NOT NULL,\n"
-        + "\tSQL_DATA_ACCESS varchar(64) DEFAULT '' NOT NULL,\n"
-        + "\tSQL_PATH varchar(64) DEFAULT NULL,\n"
-        + "\tSECURITY_TYPE varchar(7) DEFAULT '' NOT NULL,\n"
-        + "\tCREATED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
-        + "\tLAST_ALTERED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
-        + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
-        + "\tROUTINE_COMMENT longtext DEFAULT '' NOT NULL,\n"
-        + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
-        + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
-        + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
-        + ")";
+        public String IS_GRANTABLE;
+    }
 
-    public String SPECIFIC_NAME;
+    public static class ROUTINES {
+        public static final String createTableSQL = "CREATE TABLE `ROUTINES` (\n"
+                + "\tSPECIFIC_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_CATALOG varchar(512) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_SCHEMA varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_NAME varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_TYPE varchar(13) DEFAULT '' NOT NULL,\n"
+                + "\tDATA_TYPE varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_MAXIMUM_LENGTH int(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_OCTET_LENGTH int(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_PRECISION int(21) DEFAULT NULL,\n"
+                + "\tNUMERIC_SCALE int(21) DEFAULT NULL,\n"
+                + "\tDATETIME_PRECISION bigint(21) DEFAULT NULL,\n"
+                + "\tCHARACTER_SET_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tCOLLATION_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tDTD_IDENTIFIER longtext DEFAULT NULL,\n"
+                + "\tROUTINE_BODY varchar(8) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_DEFINITION longtext DEFAULT NULL,\n"
+                + "\tEXTERNAL_NAME varchar(64) DEFAULT NULL,\n"
+                + "\tEXTERNAL_LANGUAGE varchar(64) DEFAULT NULL,\n"
+                + "\tPARAMETER_STYLE varchar(8) DEFAULT '' NOT NULL,\n"
+                + "\tIS_DETERMINISTIC varchar(3) DEFAULT '' NOT NULL,\n"
+                + "\tSQL_DATA_ACCESS varchar(64) DEFAULT '' NOT NULL,\n"
+                + "\tSQL_PATH varchar(64) DEFAULT NULL,\n"
+                + "\tSECURITY_TYPE varchar(7) DEFAULT '' NOT NULL,\n"
+                + "\tCREATED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
+                + "\tLAST_ALTERED datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,\n"
+                + "\tSQL_MODE varchar(8192) DEFAULT '' NOT NULL,\n"
+                + "\tROUTINE_COMMENT longtext DEFAULT '' NOT NULL,\n"
+                + "\tDEFINER varchar(189) DEFAULT '' NOT NULL,\n"
+                + "\tCHARACTER_SET_CLIENT varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tCOLLATION_CONNECTION varchar(32) DEFAULT '' NOT NULL,\n"
+                + "\tDATABASE_COLLATION varchar(32) DEFAULT '' NOT NULL\n"
+                + ")";
 
-    public String ROUTINE_CATALOG;
+        public String SPECIFIC_NAME;
 
-    public String ROUTINE_SCHEMA;
+        public String ROUTINE_CATALOG;
 
-    public String ROUTINE_NAME;
+        public String ROUTINE_SCHEMA;
 
-    public String ROUTINE_TYPE;
+        public String ROUTINE_NAME;
 
-    public String DATA_TYPE;
+        public String ROUTINE_TYPE;
 
-    public Integer CHARACTER_MAXIMUM_LENGTH;
+        public String DATA_TYPE;
 
-    public Integer CHARACTER_OCTET_LENGTH;
+        public Integer CHARACTER_MAXIMUM_LENGTH;
 
-    public Integer NUMERIC_PRECISION;
+        public Integer CHARACTER_OCTET_LENGTH;
 
-    public Integer NUMERIC_SCALE;
+        public Integer NUMERIC_PRECISION;
 
-    public Long DATETIME_PRECISION;
+        public Integer NUMERIC_SCALE;
 
-    public String CHARACTER_SET_NAME;
+        public Long DATETIME_PRECISION;
 
-    public String COLLATION_NAME;
+        public String CHARACTER_SET_NAME;
 
-    public String DTD_IDENTIFIER;
+        public String COLLATION_NAME;
 
-    public String ROUTINE_BODY;
+        public String DTD_IDENTIFIER;
 
-    public String ROUTINE_DEFINITION;
+        public String ROUTINE_BODY;
 
-    public String EXTERNAL_NAME;
+        public String ROUTINE_DEFINITION;
 
-    public String EXTERNAL_LANGUAGE;
+        public String EXTERNAL_NAME;
 
-    public String PARAMETER_STYLE;
+        public String EXTERNAL_LANGUAGE;
 
-    public String IS_DETERMINISTIC;
+        public String PARAMETER_STYLE;
 
-    public String SQL_DATA_ACCESS;
+        public String IS_DETERMINISTIC;
 
-    public String SQL_PATH;
+        public String SQL_DATA_ACCESS;
 
-    public String SECURITY_TYPE;
+        public String SQL_PATH;
 
-    public Long CREATED;
+        public String SECURITY_TYPE;
 
-    public Long LAST_ALTERED;
+        public Long CREATED;
 
-    public String SQL_MODE;
+        public Long LAST_ALTERED;
 
-    public String ROUTINE_COMMENT;
+        public String SQL_MODE;
 
-    public String DEFINER;
+        public String ROUTINE_COMMENT;
 
-    public String CHARACTER_SET_CLIENT;
+        public String DEFINER;
 
-    public String COLLATION_CONNECTION;
+        public String CHARACTER_SET_CLIENT;
 
-    public String DATABASE_COLLATION;
-  }
+        public String COLLATION_CONNECTION;
+
+        public String DATABASE_COLLATION;
+    }
 }

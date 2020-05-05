@@ -5,7 +5,9 @@ import io.mycat.client.MycatRequest;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum ExplainPlanCommand implements MycatCommand{
     INSTANCE;
     @Override

@@ -1,6 +1,5 @@
 package io.mycat.matcher;
 
-import io.mycat.matcher.Matcher;
 import io.mycat.pattern.GPattern;
 import io.mycat.pattern.GPatternBuilder;
 import io.mycat.pattern.GPatternMatcher;
@@ -10,7 +9,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * @author Junwen Chen
+ **/
 public class GPatternFactory<T> implements Matcher.Factory<T> {
     @Override
     public String getName() {

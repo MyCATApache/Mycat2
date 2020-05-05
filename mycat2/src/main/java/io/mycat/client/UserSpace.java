@@ -35,7 +35,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
-
+/**
+ * @author Junwen Chen
+ **/
 @Getter
 public class UserSpace {
     private static final Logger logger = LoggerFactory.getLogger(UserSpace.class);

@@ -6,7 +6,9 @@ import io.mycat.util.Response;
 
 import java.nio.CharBuffer;
 import java.util.Map;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum ExplainSqlCommand implements MycatCommand{
     INSTANCE;
     @Override

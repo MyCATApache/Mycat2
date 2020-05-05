@@ -10,6 +10,9 @@ import java.util.Map;
 @Getter
 @ToString
 @Builder
+/**
+ * @author Junwen Chen
+ **/
 public class MycatRequest {
     final int sessionId;
     final String text;

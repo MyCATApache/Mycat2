@@ -15,6 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+/**
+ * @author Junwen Chen
+ **/
 @Data
 @EqualsAndHashCode
 public class CacheConfig {

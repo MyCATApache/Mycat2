@@ -8,7 +8,9 @@ import io.mycat.util.Response;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum SelectLastInsertIdCommand implements MycatCommand{
     INSTANCE;
    final String columnName = "last_insert_id()";

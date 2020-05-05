@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum MycatdbCommand implements MycatCommand {
     INSTANCE;
     final static Logger logger = LoggerFactory.getLogger(SQLDispatcher.class);

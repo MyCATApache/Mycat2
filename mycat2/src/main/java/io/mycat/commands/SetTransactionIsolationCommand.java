@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum SetTransactionIsolationCommand implements MycatCommand{
     INSTANCE;
     final static Logger LOGGER = LoggerFactory.getLogger(SetAutoCommitOffCommand.class);

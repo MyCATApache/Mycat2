@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
+/**
+ * @author Junwen Chen
+ **/
 public class RobPikeMatcherFactory<T> implements Matcher.Factory<T> {
     @Override
     public String getName() {

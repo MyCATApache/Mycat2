@@ -2,6 +2,9 @@ package io.mycat.boost;
 
 import lombok.AllArgsConstructor;
 
+/**
+ * @author Junwen Chen
+ **/
 @AllArgsConstructor
 public abstract class Task {
     final CacheConfig cacheConfig;

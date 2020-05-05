@@ -1,5 +1,7 @@
 package io.mycat;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum ThreadUsageEnum {
     THIS_THREADING,
     BINDING_THREADING,

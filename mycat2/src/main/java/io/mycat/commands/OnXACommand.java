@@ -6,7 +6,9 @@ import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum OnXACommand implements MycatCommand{
     INSTANCE;
     final static Logger LOGGER = LoggerFactory.getLogger(OnXACommand.class);

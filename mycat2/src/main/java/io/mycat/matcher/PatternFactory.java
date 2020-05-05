@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+/**
+ * @author Junwen Chen
+ **/
 public class PatternFactory<T> implements Matcher.Factory<T> {
 
     @Override

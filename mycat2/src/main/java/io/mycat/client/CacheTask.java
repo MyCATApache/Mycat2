@@ -4,7 +4,9 @@ import io.mycat.boost.CacheConfig;
 import lombok.Getter;
 
 import java.util.Objects;
-
+/**
+ * @author Junwen Chen
+ **/
 @Getter
 public class CacheTask {
     final String name;

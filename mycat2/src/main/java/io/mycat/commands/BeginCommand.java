@@ -3,7 +3,9 @@ package io.mycat.commands;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum BeginCommand implements MycatCommand{
     INSTANCE;
     @Override

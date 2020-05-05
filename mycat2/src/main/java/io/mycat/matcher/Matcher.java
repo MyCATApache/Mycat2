@@ -5,7 +5,9 @@ import io.mycat.util.Pair;
 import java.nio.CharBuffer;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * @author Junwen Chen
+ **/
 public interface Matcher<T>  {
 
     public static  interface Factory<T>{

@@ -7,7 +7,9 @@ import io.mycat.client.MycatRequest;
 import io.mycat.util.Response;
 
 import static io.mycat.commands.ExecuteCommand.getDetails;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum DistributedInsertCommand  implements MycatCommand{
     INSTANCE;
     @Override
