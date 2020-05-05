@@ -1,4 +1,4 @@
-package io.mycat.client;
+package io.mycat.matcher;
 
 import io.mycat.matcher.Matcher;
 import io.mycat.pattern.GPattern;

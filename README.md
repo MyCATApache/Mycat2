@@ -550,6 +550,19 @@ Mycat2提供的事务执行环境
 
 
 
+#### 读写分离
+
+```yaml
+metadata: 
+  schemas: [{
+              schemaName: 'db1' ,   targetName: 'repli',
+            }]
+```
+
+mycatdb命令可以自动完成sql分析,进行读写分离
+
+
+
 #### 分片类型
 
 ##### 自然分片
@@ -607,16 +620,41 @@ tableName:物理表名
 ###### 基本配置模板
 
 ```yaml
-metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免去繁琐配置,
-  prototype: {targetName: defaultDs } #从该数据源名字获取配置,该功能未开放
-  schemas:
-    db1: #逻辑库名
-      shadingTables: #分片表信息
-        travelrecord: #此处写配置的表信息
-        address: #此处写配置的表信息
-      globalTables: #全局表信息
-        company: #此处写配置的表信息
+metadata: 
+  prototype: {targetName: defaultDs }
+  schemas: [{
+              schemaName: 'db1' ,   targetName: 'repli', #读写分离集群
+              shadingTables: {
+                travelrecord: { #表配置
+                }
+              },
+              globalTables: { #表配置
+                company: {
+
+                }
+              }
+            }]
 ```
+
+
+
+prototype: {targetName: defaultDs } 
+
+可不配置
+
+ 配置全局默认的数据源,一般可能是无表sql,或者从此处获取表的配置,该数据源配置的意义是代理架构下,后端可能需要存在一个与mycat相同库,相同表的数据源处理mycat无法处理的sql
+
+
+
+schemaName
+
+库名
+
+
+
+targetName
+
+如果不配置库,表的信息,无法路由的表发往该目标
 
 
 
@@ -789,7 +827,7 @@ datasource:
    weight: 1, #负载均衡权重
    initSqls: ['use db1'], #建立连接后执行的sql,在此可以写上use xxx初始化默认database,该配置可能无效
    instanceType: ,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
-   initSqlsGetConnection: true
+   initSqlsGetConnection: false
   }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
@@ -801,6 +839,24 @@ datasource:
 maxConnectTimeout:单位millis
 
 配置中的定时器主要作用是定时检查闲置连接
+
+
+
+initSqlsGetConnection
+
+true|false
+
+默认:false
+
+对于jdbc每次获取连接是否都执行initSqls
+
+
+
+datasourceProviderClass
+
+数据源提供者
+
+涉及jdbc,xa需要特定配置的DataSource,可以实现这个类,暂时mycat只支持mysql的数据源配置,使用mysql的xa数据源
 
 
 
@@ -848,12 +904,12 @@ server:
   port: 8066
   reactorNumber: 1
   #用于多线程任务的线程池,
-  worker: {close: false, #禁用多线程池,jdbc等功能将不能使用
+  worker: {
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
-           maxThread: 2,
+           maxThread: 1024,
            minThread: 2,
            timeUnit: SECONDS, #超时单位
-           waitTaskTimeout: 5 #超时后将结束闲置的线程
+           waitTaskTimeout: 30 #超时后将结束闲置的线程
   }
 ```
 
@@ -1660,17 +1716,41 @@ UPDATE执行其他的更新语句,例如delete,update,setVariable
 
 #### 匹配器实现
 
-io.mycat.matcher.StringEqualsFactory
+###### io.mycat.matcher.StringEqualsFactory
 
-该实现使用java String.
+该实现使用字符串比较,没有文本提取功能
 
-#### 模式语法参考
+
+
+###### io.mycat.matcher.RobPikeMatcherFactory
+
+RobPike的正则表达式实现,具体查看资料,没有文本提取功能
+
+
+
+###### io.mycat.matcher.GPatternFactory
+
+可以完成匹配提取参数功能,但是使用有较大限制,具体看资料
+
+模式语法参考
 
 https://github.com/MyCATApache/Mycat2/blob/master/doc/29-mycat-gpattern.md
 
 
 
-#### 模板参数提取
+
+
+
+
+##### 匹配器提取的文本的使用
+
+提取是匹配器实现的,引用是mycat内置实现的,与匹配器没有关系
+
+
+
+以io.mycat.matcher.GPatternFactory为例
+
+###### 模板参数提取
 
 sql中{name}是通配符,基于mysql的词法单元上匹配
 
@@ -1686,9 +1766,7 @@ sql中的参数的优先级比tags高
 
 
 
-#### SQL再生成
-
-
+###### SQL再生成
 
 ```yaml
   {name: 'mysql setVariable names utf8', sql: 'SET NAMES {utf8}',explian: 'SET NAMES utf8mb4'  command: execute , tags: {targets: defaultDs,forceProxy: true}}
@@ -1702,11 +1780,7 @@ SQL被'SET NAMES utf8mb4'替换
   {name: 'select n', sql: 'select {n}',explain: 'select {n}+1' command: execute , tags: {targets: defaultDs,forceProxy: true}},
 ```
 
-
-
-拦截器会对use {schema}语句处理,得出不带schema的sql的table是属于哪一个schema.当mycat2发生错误的时候,会关闭连接,此时保存的schema失效,重新连接的时候请重新执行use schema语句
-
-
+{}的模板是使用MessageFormat实现的
 
 
 
