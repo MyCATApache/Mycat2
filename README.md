@@ -1226,6 +1226,48 @@ https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/
 
 ## 高级内容
 
+### 多配置文件
+
+-DMYCAT_HOME=mycat2\src\main\resources 指向的是配置文件夹
+
+mycat.yml是主配置文件
+
+而该文件夹下其他以yml为结尾的文件,mycat也会尝试加载并合拼到主配置对象里
+
+合拼的单元是
+
+```
+metadata:
+  schemas:[]
+```
+
+
+
+```
+datasource:
+  datasources:[]
+```
+
+
+
+```
+interceptors:
+  []
+```
+
+
+
+```
+cluster: 
+  clusters: []
+```
+
+
+
+能看到它们的配置都是以列表方式配置的,如果这些单元配置在副配置文件里,也会被合拼到主配置文件
+
+
+
 ### 拦截器与命令
 
 #### SQL匹配
