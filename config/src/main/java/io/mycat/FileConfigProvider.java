@@ -52,6 +52,9 @@ public class FileConfigProvider implements ConfigProvider {
         String path = config.get("path");
 
         if (path == null) {
+            if (rootClass == null){
+                rootClass = FileConfigProvider.class;
+            }
             URI uri = rootClass.getResource("/mycat.yml").toURI();
             System.out.println("uri:" + uri);
             path = Paths.get(uri).toAbsolutePath().toString();

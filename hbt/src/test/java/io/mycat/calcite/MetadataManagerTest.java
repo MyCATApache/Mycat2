@@ -40,17 +40,18 @@ public class MetadataManagerTest {
         Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord WHERE id = 1");
         Map.Entry<String, List<String>> next = rs.entrySet().iterator().next();
         List<String> sql = next.getValue();
-        Assert.assertTrue(sql.get(0).contains("db1.travelrecord"));
+        Assert.assertTrue(sql.get(0).toLowerCase().contains("db1.travelrecord"));
     }
 
+    /**
+     * 测试无区分大小写
+     */
     @Test
     public void test1() {
         Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord WHERE user_id = '2' ");
         List<String> collect = getStrings(rs);
-        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord3\n" +
-                "WHERE user_id = '2'"));
-        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord2\n" +
-                "WHERE user_id = '2'"));
+        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord3\nWHERE user_id = '2'".toLowerCase()));
+        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord2\nWHERE user_id = '2'".toLowerCase()));
         assertEquals(9, collect.size());
     }
 
@@ -62,21 +63,19 @@ public class MetadataManagerTest {
     }
 
     private List<String> getStrings(Map<String, List<String>> rs) {
-        return rs.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
+        return rs.values().stream().flatMap(i -> i.stream()).map(i->i.toLowerCase()).collect(Collectors.toList());
     }
 
     @Test
     public void test3() {
         List<String> strings = getStrings(routeInsertFlat("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); "));
-        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\n" +
-                "VALUES ('4');"));
+        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\nVALUES ('4');".toLowerCase()));
     }
 
     @Test
     public void test4() {
         List<String> strings = getStrings(routeInsertFlat("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); "));
-        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\n" +
-                "VALUES ('4');"));
+        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\nVALUES ('4');".toLowerCase()));
     }
 
     @Test
@@ -91,11 +90,10 @@ public class MetadataManagerTest {
         Iterator<Map<String, List<String>>> iterator = iterable.iterator();
         Map<String, List<String>> next = iterator.next();
         Map<String, List<String>> next2 = iterator.next();
-        assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\n" +
-                "VALUES ('999');, INSERT INTO db1.travelrecord (`id`)\n" +
-                "VALUES ('4');]}", next.toString());
-        assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\n" +
-                "VALUES ('2000');]}", next2.toString());
+        assertEquals(("{defaultdatasourcename=[insert into db1.travelrecord (`id`)\n" +
+                "values ('4');, insert into db1.travelrecord3 (`id`)\n" +
+                "values ('999');]}").toLowerCase(), next.toString().toLowerCase());
+        assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\nVALUES ('2000');]}".toLowerCase(), next2.toString().toLowerCase());
     }
 
     @Test
