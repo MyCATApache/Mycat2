@@ -291,11 +291,8 @@ public class ReceiverImpl implements Response {
             return;
         }
 
-        LOGGER.debug("session id:{} execute :{}", session.sessionId(), details.toString());
-        if ("SELECT 0 AS `@@session.transaction_read_only`".equalsIgnoreCase(details.getTargets().values().iterator().next().get(0))
-        &&details.needStartTransaction){
-            System.out.println();
-        }
+        TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+        transactionSession.doAction();
 
         if (details.globalTableUpdate & (client.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE || details.forceProxy)) {
             executeGlobalUpdateByProxy(details);
@@ -312,7 +309,6 @@ public class ReceiverImpl implements Response {
             //return
         } else {
             block(mycat -> {
-                        TransactionSession transactionSession = session.getDataContext().getTransactionSession();
                         if (details.needStartTransaction) {
                             LOGGER.debug("session id:{} startTransaction", session.sessionId());
                             // TransactionSessionUtil.reset();

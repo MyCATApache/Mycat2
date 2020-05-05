@@ -12,6 +12,7 @@ import io.mycat.boost.Task;
 import io.mycat.commands.MycatCommand;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
+import io.mycat.matcher.Matcher;
 import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.plug.hint.HintLoader;
 import io.mycat.proxy.session.MycatSession;

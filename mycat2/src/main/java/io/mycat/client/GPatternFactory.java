@@ -1,5 +1,6 @@
 package io.mycat.client;
 
+import io.mycat.matcher.Matcher;
 import io.mycat.pattern.GPattern;
 import io.mycat.pattern.GPatternBuilder;
 import io.mycat.pattern.GPatternMatcher;

@@ -750,497 +750,21 @@ ip:用户连接的远程ip接收的格式是
 
 
 
-#### SQL匹配
-
-##### 匹配模式
-
-以SQL词法token为分词单元,前缀匹配唯一项为基础,Mysql关键字为分隔符,设计的匹配器,设计上不支持多语句
-
-##### 目的
-
-在非支持所有情况的情况下(需要支持复杂情况请定制代码)
-
-1. 为了简化一部分SQL改写需求,减少mycat解析命令的混乱情况
-
-2. 迅速把不同的SQL交给不同的处理器执行
-
-3. 自动处理use 语句和sql中的不带库的表信息的匹配
-
-4. 显式的配置,明确哪些sql是怎样被mycat处理
-
-   
-
-##### 处理器基本形式
-
-该配置同时也是默认处理器的配置
-
-```yml
-{command: 命令名 , tags: {参数名: 值,...}} #参数,键值对
-//扩展
-{command: 命令名 , tags: {参数名: 值,...},explain: 生成模板 , cache: 缓存配置 }
-```
-
-###### 
-
-带sql匹配模式的配置
+###### 默认配置
 
 ```yaml
-{name: sql匹配器名字,
-sql: 匹配模式 ,
-command: 命令名, 
-tags: {参数名: 值,...},
-explain: 生成模板 , 
-cache: 缓存配置
-}
-```
-
-
-
-##### SQL匹配配置模板
-
-拦截器配置模板
-
-```yaml
-interceptors: 
-  [{拦截器},{拦截器}]
-```
-
-
-
-```yml
 interceptors:
-  [{user:{username: 'root' ,password: '123456' , ip: '.'},
-    defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}},
-    schemas: [{
-                tables:[ 'db1.travelrecord','db1.address','db1.company'],
-                sqls: [
-                {sql: 'select {any}',command: distributedQuery }, #带表sql匹配Hanlder
-                {sql: 'insert {any}',command: distributedInsert},
-                {sql: 'update {any}',command: distributedUpdate},
-                {sql: 'delete {any}',command: distributedDelete},
-                ],
-              },
-    ],
-    sqls: [] , #不带表名匹配域
-    sqlsGroup: [*jdbcAdapter],
-    transactionType: proxy  #xa,proxy 该用户连接时候使用的事务模式 
+  [{
+     user: {ip: '.', password: '123456', username: root},
+     transactionType: proxy
    }]
 ```
 
-###### 表名匹配
+此配置使用内置默认的mycatdb命令,根据分片配置进行处理,无需配置任何命令,默认事务是proxy
 
-```
-tables:[ '库名.表名',...]
-```
 
-中的表名只要在sql中出现,就会进入对应sqls的匹配流程
 
-###### 默认Hanlder
-
-当上述两种匹配器无法匹配的时候,走该分支
-
-###### 不带表名匹配域
-
-sqls与sqlsGroup实际上是同一个配置
-
-sqls: `List<TextItemConfig>`
-
-sqlsGroup:`List<List<TextItemConfig>>`
-
-sqlsGroup 的存在是为了简化无表SQL的配置,这些SQL一般是客户端发出的事务控制语句等,繁琐,一般用户无需理会,所以可以利用yaml的锚标记把别处的配置引用至此
-
-配置加载器会把sqlsGroup append到sqls
-
-
-
-无表sql样例
-
-```yaml
-#lib start
-sqlGroups:
-  jdbcAdapter:
-    sqls: &jdbcAdapter [
-    {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}, #explain一定要写库名
-    {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan},#执行hbt
-    {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
-```
-
-可以看出&jdbcAdapter对应上述*jdbcAdapter,不清楚的同学请看yaml的语法
-
-
-
-###### lib域
-
-```yaml
-#lib start
-
-#lib end
-```
-
-mycat的yaml配置加载器会在转换配置之前把这部分复制到文本头部,便于使用锚语法,原则上该域不应该有实际的语法单元,应该全是被用于锚的内容
-
-
-
-###### transactionType
-
- txa,proxy 该用户连接时候使用的事务模式 
-
-默认应该为proxy,此为mycat2.0最高性能的模式,但有一定使用约束
-
-
-
-```yaml
-interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
-  defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
-  schemas: [{
-              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名,就进入该匹配流程
-              sqls: [
-              {sql: 'select {selectItems} from {any}',command: distributedQuery },
-              {sql: 'delete {any}',command: execute,....}
-              ],
-            },
-            {
-              tables:[ 'db1.company'],
-              sqls: [
-              {sql: 'select {selectItems} from {any}',command: execute ,....}
-              ],
-            },
-  ]
-  sqls: [
-  {name: useStatement; ,sql: 'use {schema};',command: useStatement}
-  ]
-  transactionType: xa #xa.proxy
-```
-
-
-
-#### 模式语法参考
-
-https://github.com/MyCATApache/Mycat2/blob/master/doc/29-mycat-gpattern.md
-
-
-
-#### 模板参数提取
-
-sql中{name}是通配符,基于mysql的词法单元上匹配
-
-同时把name保存在上下文中,作为命令的参数,所以命令的参数是可以从SQL中获得
-
-```yaml
-tags: {targets: defaultDs,forceProxy: true}
-```
-
-tags是配置文件中定下的命令参数
-
-sql中的参数的优先级比tags高
-
-
-
-#### SQL再生成
-
-```yaml
-  {name: 'mysql setVariable names utf8', sql: 'SET NAMES {utf8}',explian: 'SET NAMES utf8mb4'  command: execute , tags: {targets: defaultDs,forceProxy: true}}
-```
-
-SQL被'SET NAMES utf8mb4'替换
-
-
-
-```yaml
-  {name: 'select n', sql: 'select {n}',explain: 'select {n}+1' command: execute , tags: {targets: defaultDs,forceProxy: true}},
-```
-
-
-
-拦截器会对use {schema}语句处理,得出不带schema的sql的table是属于哪一个schema.当mycat2发生错误的时候,会关闭连接,此时保存的schema失效,重新连接的时候请重新执行use schema语句
-
-
-
-#### 缓存
-
-```yaml
-  {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
-```
-
-initialDelay:mycat启动后多久开始预读
-
-refreshInterval:刷新时间
-
-单位:d,h,m,s
-
-缓存的sql不能是带有通配符的
-
-仅支持distributedQuery,executePlan
-
-一个用户的配置对应一个拦截器,一个缓存对象管理器,一个拦截器对应多个sql匹配器,此缓存对象管理该用户配置下的sql缓存.也就是说即使是同一个sql,他们在不同的用户下,他的缓存配置是可以不同的.
-
-
-
-## 命令
-
-##### distributedQuery
-
-使用metaData配置的信息处理查询语句
-
-该命令的目标是自动分布式查询
-
-支持for update语句
-
-next_value_for('全局序列号名字')函数查询全局序列号
-
-```yaml
-{sql: 'select {any}',command: distributedQuery }
-```
-
-
-
-##### distributedInsert
-
-使用metaData配置的信息处理insert语句
-
-当建表语句的字段有自增信息,同时配置有全局序列号,将自动生成自增id
-
-```
-{sql: 'insert {any}',command: distributedInsert}
-```
-
-等价于
-
-```yaml
-{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,getMetaData: true,needTransaction: true }},
-```
-
-
-
-##### distributedUpdate
-
-使用metaData配置的信息处理update语句,注意的是,不能修改分片表的分片值
-
-```yaml
-{sql: 'update {any}',command: distributedUpdate}
-```
-
-等价于
-
-```yaml
-{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true ,needTransaction: true }},
-```
-
-
-
-##### distributedDelete
-
-使用metaData配置的信息处理update语句,注意的是,不能修改分片表的分片值
-
-```
-{sql: 'delete {any}',command: distributedDelete}
-```
-
-等价于
-
-```yaml
-{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true,needTransaction: true  }}
-```
-
-
-
-##### explain
-
-查看sql执行计划
-
-```yaml
-{name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}
-```
-
-
-
-##### executePlan
-
-执行hbt
-
-```yaml
-name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
-```
-
-
-
-##### explainHbt
-
-解释hbt
-
-```yaml
-{name: explainHbt,sql: 'EXPLAIN plan {hbt}' , explain: '{hbt}' ,command: explainPlan}
-```
-
-
-
-##### commit
-
-```yaml
-{name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
-```
-
-
-
-##### begin
-
-```yaml
-{name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
-```
-
-
-
-##### rollback
-
-```yaml
-{name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
-```
-
-
-
-##### 切换数据库
-
-```yaml
-{name: useStatement ,sql: 'use {schema}',command: useStatement},
-```
-
-
-
-##### 开启XA事务
-
-```yaml
-{name: setXA ,sql: 'setVariable xa = on',command: onXA},
-```
-
-
-
-##### 关闭XA事务
-
-```yaml
-{name: setProxy ,sql: 'setVariable xa = off',command: offXA},
-```
-
-
-
-##### 关闭自动提交
-
-关闭自动提交后,在下一次sql将会自动开启事务,并不会释放后端连接
-
-```yaml
-{name: setAutoCommitOff ,sql: 'setVariable autocommit=off',command: setAutoCommitOff},
-```
-
-
-
-##### 开启自动提交
-
-```yaml
-{name: setAutoCommitOn ,sql: 'setVariable autocommit=on',command: setAutoCommitOn},
-```
-
-
-
-##### 设置事务隔离级别
-
-```
-READ UNCOMMITTED,READ COMMITTED,REPEATABLE READ,SERIALIZABLE
-```
-
-```yaml
-{name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
-```
-
-
-
-##### execute执行SQL
-
-forceProxy:true|false
-
-强制SQL以proxy上运行,忽略当前事务
-
-
-
-needTransaction:true|false
-
-根据上下文(关闭自动提交)自动开启事务
-
-
-
-metaData:true|false
-
-true的时候不需要配置targets,自动根据sql路由
-
-false的时候要配置targets
-
-
-
-targets
-
-sql发送的目标:集群或者数据源的名字
-
-
-
-balance
-
-当targets是集群名字的时候生效,使用该负载均衡策略
-
-
-
-executeType
-
-QUERY执行查询语句,在proxy透传下支持多语句,否则不支持
-
-QUERY_MASTER执行查询语句,当目标是集群的时候路由到主节点
-
-INSERT执行插入语句
-
-UPDATE执行其他的更新语句,例如delete,update,setVariable
-
-
-
-##### 返回ok packet
-
-该命令主要是忽略该sql的处理,如果是查询语句,返回ok packet,客户端就会收到空的结果集,如果是非查询语句,则会收到正常的处理结果.
-
-无参数
-
-```yaml
-{command: ok }
-```
-
-
-
-##### 返回error信息
-
-```yaml
-{command: error , tags: {errorMessage: "错误!",errorCode: -1}}
-```
-
-
-
-##### selectTransactionReadOnly
-
-```yaml
-{name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
-```
-
-
-
-##### selectAutocommit
-
-```yaml
-{name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
-```
-
-
-
-##### selectLastInsertId
-
-用于返回自增主键(全局表,全局序列号)
-
-```yaml
-{name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
-```
+SQL匹配,命令是高级内容,见后几章
 
 ## 事务
 
@@ -1642,6 +1166,552 @@ interceptors:
 
 https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/sharding/mycat.yml
 
+
+
+## 高级内容
+
+### 拦截器与命令
+
+#### SQL匹配
+
+##### 匹配模式
+
+以SQL词法token为分词单元,前缀匹配唯一项为基础,Mysql关键字为分隔符,设计的匹配器,设计上不支持多语句
+
+##### 目的
+
+在非支持所有情况的情况下(需要支持复杂情况请定制代码)
+
+1. 为了简化一部分SQL改写需求,减少mycat解析命令的混乱情况
+
+2. 迅速把不同的SQL交给不同的处理器执行
+
+3. 自动处理use 语句和sql中的不带库的表信息的匹配
+
+4. 显式的配置,明确哪些sql是怎样被mycat处理
+
+   
+
+##### 处理器基本形式
+
+该配置同时也是默认处理器的配置
+
+```yml
+{command: 命令名 , tags: {参数名: 值,...}} #参数,键值对
+//扩展
+{command: 命令名 , tags: {参数名: 值,...},explain: 生成模板 , cache: 缓存配置 }
+```
+
+
+
+带sql匹配模式的配置
+
+```yaml
+{name: sql匹配器名字,
+sql: 匹配模式 ,
+command: 命令名, 
+tags: {参数名: 值,...},
+explain: 生成模板 , 
+cache: 缓存配置
+}
+```
+
+
+
+##### SQL匹配配置模板
+
+
+
+拦截器配置模板
+
+```yaml
+interceptors: 
+  [{拦截器},{拦截器}]
+```
+
+
+
+```yml
+interceptors:
+  [{user:{username: 'root' ,password: '123456' , ip: '.'},
+    defaultHanlder: {command: mycatdb},
+    sqls: [] , 
+    sqlsGroup: [], #使用yaml语法引用一组匹配域
+    transactionType: proxy  #xa,proxy 该用户连接时候使用的事务模式,
+    matcherClazz: #匹配器的类名字
+   }]
+```
+
+
+
+###### 默认Hanlder
+
+当上述两种匹配器无法匹配的时候,走该分支
+
+###### 匹配域
+
+sqls与sqlsGroup实际上是同一个配置
+
+sqls: `List<TextItemConfig>`
+
+sqlsGroup:`List<List<TextItemConfig>>`
+
+sqlsGroup 的存在是为了简化无表SQL的配置,这些SQL一般是客户端发出的事务控制语句等,繁琐,一般用户无需理会,所以可以利用yaml的锚标记把别处的配置引用至此
+
+配置加载器会把sqlsGroup append到sqls
+
+
+
+sql样例
+
+```yaml
+#lib start
+sqlGroups:
+  jdbcAdapter:
+    sqls: &jdbcAdapter [
+    {name: explain,sql: 'select 1' ,command: 'mycatdb' }, #explain一定要写库名
+```
+
+可以看出&jdbcAdapter对应上述*jdbcAdapter,不清楚的同学请看yaml的语法
+
+
+
+###### lib域
+
+```yaml
+#lib start
+
+#lib end
+```
+
+mycat的yaml配置加载器会在转换配置之前把这部分复制到文本头部,便于使用锚语法,原则上该域不应该有实际的语法单元,应该全是被用于锚的内容
+
+
+
+###### transactionType
+
+ txa,proxy 该用户连接时候使用的事务模式 
+
+默认应该为proxy,此为mycat2.0最高性能的模式,但有一定使用约束
+
+
+
+```yaml
+interceptor: #拦截器,试用explain可以看到执行计划,查看路由
+  defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
+  sqls: [
+  {name: useStatement; ,sql: 'use {schema};',command: useStatement}
+  ]
+  transactionType: xa #xa.proxy
+```
+
+
+
+
+
+#### 缓存
+
+```yaml
+  {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
+```
+
+initialDelay:mycat启动后多久开始预读
+
+refreshInterval:刷新时间
+
+单位:d,h,m,s
+
+缓存的sql不能是带有通配符的
+
+仅支持distributedQuery,executePlan
+
+一个用户的配置对应一个拦截器,一个缓存对象管理器,一个拦截器对应多个sql匹配器,此缓存对象管理该用户配置下的sql缓存.也就是说即使是同一个sql,他们在不同的用户下,他的缓存配置是可以不同的.
+
+
+
+## 命令
+
+##### mycatdb
+
+该命令是根据分片配置自动处理sql
+
+
+
+##### distributedQuery
+
+使用metaData配置的信息处理查询语句
+
+该命令的目标是自动分布式查询
+
+支持for update语句
+
+next_value_for('全局序列号名字')函数查询全局序列号
+
+```yaml
+{sql: 'select {any}',command: distributedQuery }
+```
+
+
+
+##### distributedInsert
+
+使用metaData配置的信息处理insert语句
+
+当建表语句的字段有自增信息,同时配置有全局序列号,将自动生成自增id
+
+```
+{sql: 'insert {any}',command: distributedInsert}
+```
+
+等价于
+
+```yaml
+{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,getMetaData: true,needTransaction: true }},
+```
+
+
+
+##### distributedUpdate
+
+使用metaData配置的信息处理update语句,注意的是,不能修改分片表的分片值
+
+```yaml
+{sql: 'update {any}',command: distributedUpdate}
+```
+
+等价于
+
+```yaml
+{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true ,needTransaction: true }},
+```
+
+
+
+##### distributedDelete
+
+使用metaData配置的信息处理update语句,注意的是,不能修改分片表的分片值
+
+```
+{sql: 'delete {any}',command: distributedDelete}
+```
+
+等价于
+
+```yaml
+{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true,needTransaction: true  }}
+```
+
+
+
+##### explain
+
+查看sql执行计划
+
+```yaml
+{name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}
+```
+
+
+
+##### executePlan
+
+执行hbt
+
+```yaml
+name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan
+```
+
+
+
+##### explainHbt
+
+解释hbt
+
+```yaml
+{name: explainHbt,sql: 'EXPLAIN plan {hbt}' , explain: '{hbt}' ,command: explainPlan}
+```
+
+
+
+##### commit
+
+```yaml
+{name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
+```
+
+
+
+##### begin
+
+```yaml
+{name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
+```
+
+
+
+##### rollback
+
+```yaml
+{name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
+```
+
+
+
+##### 切换数据库
+
+```yaml
+{name: useStatement ,sql: 'use {schema}',command: useStatement},
+```
+
+
+
+##### 开启XA事务
+
+```yaml
+{name: setXA ,sql: 'setVariable xa = on',command: onXA},
+```
+
+
+
+##### 关闭XA事务
+
+```yaml
+{name: setProxy ,sql: 'setVariable xa = off',command: offXA},
+```
+
+
+
+##### 关闭自动提交
+
+关闭自动提交后,在下一次sql将会自动开启事务,并不会释放后端连接
+
+```yaml
+{name: setAutoCommitOff ,sql: 'setVariable autocommit=off',command: setAutoCommitOff},
+```
+
+
+
+##### 开启自动提交
+
+```yaml
+{name: setAutoCommitOn ,sql: 'setVariable autocommit=on',command: setAutoCommitOn},
+```
+
+
+
+##### 设置事务隔离级别
+
+```
+READ UNCOMMITTED,READ COMMITTED,REPEATABLE READ,SERIALIZABLE
+```
+
+```yaml
+{name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
+```
+
+
+
+##### 执行SQL
+
+##### execute
+
+##### 
+
+###### forceProxy
+
+true|false
+
+默认值:false
+
+强制SQL以proxy上运行,忽略当前事务
+
+
+
+背景:
+
+mycat有两种执行sql的形式,jdbc与native实现与mysql通讯
+
+
+
+使用场景:
+
+当处于使用jdbc事务的情况下,使用该属性可以忽略jdbc事务,使用native方式与mysql通讯.
+
+
+
+###### needTransaction
+
+true|false
+
+默认值:true
+
+根据上下文(关闭自动提交)自动开启事务
+
+
+
+背景:
+
+```
+set autocommit = 0; 
+此处select/delete/insert/update开启自动事务,这里称为首次操作语句
+```
+
+在分库分表结合透传的情况下,有技术限制
+
+透传要求一个前端一个时刻对应一个后端,不论有没有通讯,此处限制绑定一个后端是为了简化后端状态管理.
+
+如果用户或者客户端在首次操作语句的位置发了无法确定的数据源目标的sql,比如无表的sql,将会导致该随机获得的后端会话与前端的会话绑定直到事务消失。
+
+而该needTransaction为false的时候，遇上autocommit = 0也不会自动开启事务，而needTransaction为true的时候，则自动开启事务
+
+
+
+###### metaData
+
+true|false
+
+默认：false
+
+true的时候不需要配置targets,自动根据分库分表配置路由sql
+
+false的时候要配置targets，
+
+
+
+###### targets
+
+根据其他属性选择配置
+
+sql发送的目标:集群或者数据源的名字
+
+暂时targets只能配置一个值
+
+
+
+###### balance
+
+可空
+
+当targets是集群名字的时候生效,使用该负载均衡策略
+
+
+
+###### executeType
+
+默认值:QUERY_MASTER
+
+
+
+QUERY执行查询语句,在proxy透传下支持多语句,否则不支持
+
+QUERY_MASTER执行查询语句,当目标是集群的时候路由到主节点
+
+INSERT执行插入语句
+
+UPDATE执行其他的更新语句,例如delete,update,setVariable
+
+
+
+##### 返回ok packet
+
+该命令主要是忽略该sql的处理,如果是查询语句,返回ok packet,客户端就会收到空的结果集,如果是非查询语句,则会收到正常的处理结果.
+
+无参数
+
+```yaml
+{command: ok }
+```
+
+
+
+##### 返回error信息
+
+```yaml
+{command: error , tags: {errorMessage: "错误!",errorCode: -1}}
+```
+
+
+
+##### selectTransactionReadOnly
+
+```yaml
+{name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',command: selectTransactionReadOnly , tags: {columnName: '@@session.transaction_read_only'}},
+```
+
+
+
+##### selectAutocommit
+
+```yaml
+{name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: selectAutocommit},
+```
+
+
+
+##### selectLastInsertId
+
+用于返回自增主键(全局表,全局序列号)
+
+```yaml
+{name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
+```
+
+## 
+
+#### 匹配器实现
+
+io.mycat.matcher.StringEqualsFactory
+
+该实现使用java String.
+
+#### 模式语法参考
+
+https://github.com/MyCATApache/Mycat2/blob/master/doc/29-mycat-gpattern.md
+
+
+
+#### 模板参数提取
+
+sql中{name}是通配符,基于mysql的词法单元上匹配
+
+同时把name保存在上下文中,作为命令的参数,所以命令的参数是可以从SQL中获得
+
+```yaml
+tags: {targets: defaultDs,forceProxy: true}
+```
+
+tags是配置文件中定下的命令参数
+
+sql中的参数的优先级比tags高
+
+
+
+#### SQL再生成
+
+
+
+```yaml
+  {name: 'mysql setVariable names utf8', sql: 'SET NAMES {utf8}',explian: 'SET NAMES utf8mb4'  command: execute , tags: {targets: defaultDs,forceProxy: true}}
+```
+
+SQL被'SET NAMES utf8mb4'替换
+
+
+
+```yaml
+  {name: 'select n', sql: 'select {n}',explain: 'select {n}+1' command: execute , tags: {targets: defaultDs,forceProxy: true}},
+```
+
+
+
+拦截器会对use {schema}语句处理,得出不带schema的sql的table是属于哪一个schema.当mycat2发生错误的时候,会关闭连接,此时保存的schema失效,重新连接的时候请重新执行use schema语句
+
+
+
+
+
 ##### 更新日志
 
 具体看git记录
+
+2020-5-5拦截器,元数据配置发生变更

@@ -62,4 +62,9 @@ public interface TransactionSession {
     String resolveFinalTargetName(String targetName);
 
     TransactionType transactionType();
+
+    /**
+     * 模拟autocommit = 0 时候自动开启事务
+     */
+    public void doAction();
 }

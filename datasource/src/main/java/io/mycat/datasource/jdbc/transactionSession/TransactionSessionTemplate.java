@@ -66,13 +66,20 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     @Override
     public <T> T getConnection(
             String targetName) {
+        doAction();
+        String dataSourceByTargetName = Objects.requireNonNull(dataSourceNearness.getDataSourceByTargetName(targetName));
+        return (T) callBackConnection( dataSourceByTargetName, isAutocommit(), getTransactionIsolation(), isReadOnly());
+    }
+
+    /**
+     * 模拟autocommit = 0 时候自动开启事务
+     */
+    public void doAction() {
         if (!isAutocommit()) {
             begin();
         }
 
         dataSourceNearness.setUpdate(isInTransaction());
-        String dataSourceByTargetName = Objects.requireNonNull(dataSourceNearness.getDataSourceByTargetName(targetName));
-        return (T) callBackConnection( dataSourceByTargetName, isAutocommit(), getTransactionIsolation(), isReadOnly());
     }
 
     abstract protected void callBackBegin();
@@ -155,4 +162,5 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.updateConnectionMap.clear();
         this.dataSourceNearness.clear();
     }
+
 }
