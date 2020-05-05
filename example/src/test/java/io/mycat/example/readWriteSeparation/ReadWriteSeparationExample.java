@@ -30,6 +30,7 @@ public class ReadWriteSeparationExample {
         MycatCore.INSTANCE.init(bootConfig);
     }
 
+    @Test
     public void test() throws Exception {
         Thread thread = null;
         if (!NetUtil.isHostConnectable("0.0.0.0", 8066)) {

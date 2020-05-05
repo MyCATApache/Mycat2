@@ -114,21 +114,21 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatement;
             SchemaObject schemaObject = (insertStatement).getTableSource().getSchemaObject();
             String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
-            String tableName = SQLUtils.normalize(insertStatement.getTableName().getSimpleName()).toLowerCase();
+            String tableName = SQLUtils.normalize(insertStatement.getTableName().getSimpleName());
             TableHandler logicTable = getLogicTable(schema, tableName);
             handler = logicTable.insertHandler();
         } else if (sqlStatement instanceof MySqlUpdateStatement) {
             SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlUpdateStatement) sqlStatement).getTableSource();
             SchemaObject schemaObject = tableSource.getSchemaObject();
             String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
-            String tableName = SQLUtils.normalize(((MySqlUpdateStatement) sqlStatement).getTableName().getSimpleName().toLowerCase());
+            String tableName = SQLUtils.normalize(((MySqlUpdateStatement) sqlStatement).getTableName().getSimpleName());
             TableHandler logicTable = getLogicTable(schema, tableName);
             handler = logicTable.updateHandler();
         } else if (sqlStatement instanceof MySqlDeleteStatement) {
             SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlDeleteStatement) sqlStatement).getTableSource();
             SchemaObject schemaObject = tableSource.getSchemaObject();
             String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
-            String tableName = SQLUtils.normalize(((MySqlDeleteStatement) sqlStatement).getTableName().getSimpleName().toLowerCase());
+            String tableName = SQLUtils.normalize(((MySqlDeleteStatement) sqlStatement).getTableName().getSimpleName());
             TableHandler logicTable = getLogicTable(schema, tableName);
             handler = logicTable.deleteHandler();
         }

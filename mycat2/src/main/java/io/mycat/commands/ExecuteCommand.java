@@ -38,7 +38,7 @@ public enum ExecuteCommand implements MycatCommand {
         boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("forceProxy", Boolean.FALSE.toString()));
         boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("metaData", Boolean.FALSE.toString()));
         ExecuteType executeType = ExecuteType.valueOf(request.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
-        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy);
+        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy,needTransaction);
         response.execute(detail);
         return true;
     }
@@ -47,10 +47,11 @@ public enum ExecuteCommand implements MycatCommand {
     public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         String balanceConfig = request.getOrDefault("balance", null);
         String targetsConfig = request.getOrDefault("targets", null);
+        boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));
         boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("forceProxy", Boolean.FALSE.toString()));
         boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("metaData", Boolean.FALSE.toString()));
         ExecuteType executeType = ExecuteType.valueOf(request.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
-        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy);
+        ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy,needTransaction);
         response.sendExplain(ExecuteCommand.class, detail);
         return true;
     }
@@ -64,14 +65,21 @@ public enum ExecuteCommand implements MycatCommand {
         return getDetails(true, null, context, null, request.getText(), executeType, false);
 
     }
-
     public static ExplainDetail getDetails(boolean metaData,
                                            String targetsConfig,
                                            MycatDataContext context,
                                            String balance,
                                            String sql,
-                                           ExecuteType executeType, boolean forceProxy) {
-        boolean needStartTransaction = (!context.isAutocommit() || context.isInTransaction());
+                                           ExecuteType executeType, boolean forceProxy){
+        return getDetails(metaData, targetsConfig, context, balance, sql, executeType, forceProxy,true);
+    }
+    public static ExplainDetail getDetails(boolean metaData,
+                                           String targetsConfig,
+                                           MycatDataContext context,
+                                           String balance,
+                                           String sql,
+                                           ExecuteType executeType, boolean forceProxy,boolean needTransaction) {
+        boolean needStartTransaction = needTransaction && (!context.isAutocommit() || context.isInTransaction());
         if (metaData) {
             Map<String, Collection<String>> tableMap = TableCollector.collect(context.getDefaultSchema(), sql);
             Iterator<Map.Entry<String, Collection<String>>> iterator = tableMap.entrySet().iterator();
@@ -86,7 +94,7 @@ public enum ExecuteCommand implements MycatCommand {
             MycatDBClientMediator mycatDb = MycatDBs.createClient(context);
             TableHandler tableHandler = mycatDb.config().getTable(schemaName, tableName);
             boolean isGlobal = tableHandler.getType() == LogicTableType.GLOBAL;
-            boolean master = executeType != ExecuteType.QUERY || needStartTransaction || executeType != null && executeType.isMaster();
+            boolean master = executeType != ExecuteType.QUERY || needStartTransaction || executeType != null && executeType.isMaster()||context.isInTransaction();
             MycatTextUpdatePrepareObject mycatTextUpdatePrepareObject = mycatDb.getUponDBSharedServer().innerUpdatePrepareObject(sql, mycatDb);
             Map<String, List<String>> routeMap = mycatTextUpdatePrepareObject.getRouteMap();
             return ExplainDetail.builder()
@@ -99,7 +107,7 @@ public enum ExecuteCommand implements MycatCommand {
         } else {
             String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(
                     Objects.requireNonNull(targetsConfig, "can not get " + targetsConfig + " of " + "targets"),
-                    needStartTransaction || executeType.isMaster(), balance);
+                    needStartTransaction || executeType.isMaster()||context.isInTransaction(), balance);
             return ExplainDetail.builder()
                     .executeType(executeType)
                     .targets(Collections.singletonMap(replicaName, Collections.singletonList(sql)))

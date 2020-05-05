@@ -66,8 +66,8 @@ public class TableCollectorBuilder {
     }
 
     private Set<Integer> record(GPatternIdRecorder recorder, String text) {
-        String lowerCase = text.toLowerCase();
-        String upperCase = text.toUpperCase();
+        String lowerCase = text;
+        String upperCase = text;
 
 
         int hash ;

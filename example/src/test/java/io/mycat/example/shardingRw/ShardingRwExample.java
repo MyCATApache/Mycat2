@@ -60,9 +60,9 @@ public class ShardingRwExample {
             {
 
                 Set<String> set = new HashSet<>();
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 100; i++) {
                     set.add(TestUtil.getString(statement.executeQuery(
-                            " select * from travelrecord"
+                            "explain select * from travelrecord"
                     )));
                 }
                 Assert.assertTrue(set.size() > 1);//验证没有事务的情况下,可以读写分离

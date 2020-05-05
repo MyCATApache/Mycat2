@@ -47,7 +47,7 @@ public class CalciteConvertors {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteConvertors.class);
 
     final static List<SimpleColumnInfo> convertfromDatabaseMetaData(DatabaseMetaData databaseMetaData, String catalog, String schema, String tableName) {
-        try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema.toLowerCase(), tableName.toLowerCase(), null)) {
+        try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema, tableName, null)) {
             ArrayList<SimpleColumnInfo> res = new ArrayList<>();
             while (resultSet.next()) {
                 final String columnName = resultSet.getString(4).toLowerCase();

@@ -230,7 +230,7 @@ public class SQLContextImpl implements SQLContext {
     @Override
     public void setDefaultSchema(String simpleName) {
         if (simpleName != null) {
-            mycatDBClientMediator.useSchema(simpleName.toLowerCase());
+            mycatDBClientMediator.useSchema(simpleName);
         }
     }
 

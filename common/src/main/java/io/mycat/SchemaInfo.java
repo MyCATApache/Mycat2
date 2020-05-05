@@ -31,8 +31,8 @@ public class SchemaInfo {
     final String targetSchemaTable;
 
     public SchemaInfo(String targetSchema, String targetTable) {
-        this.targetSchema = Objects.requireNonNull(targetSchema).toLowerCase();
-        this.targetTable = Objects.requireNonNull(targetTable).toLowerCase();
+        this.targetSchema = Objects.requireNonNull(targetSchema);
+        this.targetTable = Objects.requireNonNull(targetTable);
         this.targetSchemaTable = this.targetSchema + "." + this.targetTable;
     }
 

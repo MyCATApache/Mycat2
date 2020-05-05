@@ -60,8 +60,8 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
    replicaType: MASTER_SLAVE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
    switchType: SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
    readBalanceType: BALANCE_ALL  , #对于查询请求的负载均衡类型
-   readBalanceName: BalanceRoundRobin , #对于查询请求的负载均衡类型
-   writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
+   readBalanceName:  , #对于查询请求的负载均衡类型
+   writeBalanceName:  ,  #对于修改请求的负载均衡类型
    masters:[defaultDs , defaultDs2], #主节点列表,普通主从,当主失去连接后,依次选择列表中存活的作为主节点
    replicas:[ defaultDs2],#从节点列表
    maxCon:, #集群最占用大连接限制

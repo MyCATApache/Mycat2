@@ -30,7 +30,7 @@ public class LogicTable {
                       List<SimpleColumnInfo> rawColumns,
                       String createTableSQL) {
         /////////////////////////////////////////
-        this.uniqueName = schemaName.toLowerCase() + "_" + tableName.toLowerCase();
+        this.uniqueName = schemaName + "_" + tableName;
         this.type = type;
         this.schemaName = schemaName;
         this.tableName = tableName;

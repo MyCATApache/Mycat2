@@ -118,7 +118,7 @@ public class ReceiverImpl implements Response {
     @Override
     public void proxyDDL(SQLStatement statement) {
         String datasourceNameByRandom = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
-        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), ExecuteType.UPDATE);
+        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), ExecuteType.QUERY_MASTER);
         this.execute(detail);
     }
 
@@ -172,7 +172,7 @@ public class ReceiverImpl implements Response {
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
-        writePlan(session, message);
+        writePlan(session,    Arrays.asList(message.split("\n")));
     }
 
     @Override

@@ -166,7 +166,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         ///////////////////////////////common///////////////////////////////
-        Map.Entry<String, TableHandler> tableHandlerEntry = chooseTableHandler(schemaHandler.logicTables(), tables);
+        TableHandler  tableHandlerEntry = chooseTableHandler(schemaHandler.logicTables(), tables);
         if (tableHandlerEntry == null) {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
@@ -189,11 +189,11 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         return ExecuteCode.PERFORMED;
     }
 
-    private Map.Entry<String, TableHandler> chooseTableHandler(Map<String, TableHandler> tableMap, Set<String> tables){
+    private TableHandler chooseTableHandler(Map<String, TableHandler> tableMap, Set<String> tables){
         for (String table : tables) {
             TableHandler tableHandler = tableMap.get(table);
             if(tableHandler != null){
-                return new AbstractMap.SimpleEntry<>(table,tableHandler);
+                return tableHandler;
             }
         }
         return null;
@@ -259,7 +259,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             if(str == null){
                 return null;
             }
-            return normalize(str).toLowerCase();
+            return normalize(str);
         }
     }
 

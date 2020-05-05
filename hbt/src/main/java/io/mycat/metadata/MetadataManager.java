@@ -101,16 +101,16 @@ public enum MetadataManager {
                 String orignalSchemaName = entry.getKey();
                 ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
                 String targetName = value.getTargetName();
-                final String schemaName = orignalSchemaName.toLowerCase();
+                final String schemaName = orignalSchemaName;
                 addSchema(schemaName,targetName);
                 for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
-                    String tableName = e.getKey().toLowerCase();
+                    String tableName = e.getKey();
                     ShardingTableConfig tableConfigEntry = e.getValue();
                     addShardingTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
                 }
 
                 for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
-                    String tableName = e.getKey().toLowerCase();
+                    String tableName = e.getKey();
                     GlobalTableConfig tableConfigEntry = e.getValue();
                     addGlobalTable(schemaName, tableName,
                             tableConfigEntry,
@@ -133,7 +133,7 @@ public enum MetadataManager {
                                 List<BackendTableInfo> backendTableInfos,
                                 List<BackendTableInfo> readOnly) {
         //////////////////////////////////////////////
-        final String tableName = orignalTableName.toLowerCase();
+        final String tableName = orignalTableName;
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
         //////////////////////////////////////////////
@@ -166,11 +166,11 @@ public enum MetadataManager {
 
     private void addShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
         //////////////////////////////////////////////
-        final String tableName = orignalTableName.toLowerCase();
+        final String tableName = orignalTableName;
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
         //////////////////////////////////////////////
-        String s = schemaName.toLowerCase() + "_" + orignalTableName.toLowerCase();
+        String s = schemaName + "_" + orignalTableName;
         Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(s);
         if (sequence == null) {
             sequence = SequenceGenerator.INSTANCE.getSequence(orignalTableName.toUpperCase());
@@ -245,7 +245,7 @@ public enum MetadataManager {
     }
 
     public Iterable<Map<String, List<String>>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
-        final String currentSchemaName = currentSchemaNameText.toLowerCase();
+        final String currentSchemaName = currentSchemaNameText;
         return () -> new Iterator<Map<String, List<String>>>() {
             @Override
             public boolean hasNext() {
@@ -313,7 +313,7 @@ public enum MetadataManager {
     public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, MySqlInsertStatement statement) {
         String s = statement.getTableSource().getSchema();
         String schema = s == null ? currentSchemaName : s;
-        String tableName = SQLUtils.normalize(statement.getTableSource().getTableName()).toLowerCase();
+        String tableName = SQLUtils.normalize(statement.getTableSource().getTableName());
         TableHandler logicTable = schemaMap.get(Objects.requireNonNull(schema)).logicTables().get(tableName);
         if (!(logicTable instanceof ShardingTableHandler)) {
             throw new AssertionError();
@@ -420,8 +420,8 @@ public enum MetadataManager {
         if (queryDataRange.getTableSource() != null) {
             table = queryDataRange.getTableSource();
             SchemaObject schemaObject = Objects.requireNonNull(table.getSchemaObject(), "meet unknown table " + table);
-            schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
-            tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
+            schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
+            tableName = SQLUtils.normalize(schemaObject.getName());
         }
 
 
@@ -432,8 +432,8 @@ public enum MetadataManager {
                 if (tableSource instanceof SQLExprTableSource) {
                     table = (SQLExprTableSource) tableSource;
                     SchemaObject schemaObject = table.getSchemaObject();
-                    schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
-                    tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
+                    schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
+                    tableName = SQLUtils.normalize(schemaObject.getName());
 
                     if (fail) {
                         break;
@@ -459,8 +459,8 @@ public enum MetadataManager {
                     if (tableSource instanceof SQLExprTableSource) {
                         table = (SQLExprTableSource) tableSource;
                         SchemaObject schemaObject = table.getSchemaObject();
-                        schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
-                        tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
+                        schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
+                        tableName = SQLUtils.normalize(schemaObject.getName());
 
                         if (fail) {
                             break;
@@ -484,8 +484,8 @@ public enum MetadataManager {
 
     public List<BackendTableInfo> getMapBackEndTableInfo(String schemaName, String tableName, Map<String, String> map) {
         try {
-            schemaName = schemaName.toLowerCase();
-            tableName = tableName.toLowerCase();
+            schemaName = schemaName;
+            tableName = tableName;
             ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             for (Map.Entry<String, String> entry : map.entrySet()) {
@@ -500,8 +500,8 @@ public enum MetadataManager {
 
     public BackendTableInfo getNatrueBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
         try {
-            schemaName = schemaName.toLowerCase();
-            tableName = tableName.toLowerCase();
+            schemaName = schemaName;
+            tableName = tableName;
             ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
             return getBackendTableInfo(partitionValue, logicTable);
         } catch (Exception e) {
@@ -518,8 +518,8 @@ public enum MetadataManager {
 
     public List<BackendTableInfo> getNatrueBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
         try {
-            schemaName = schemaName.toLowerCase();
-            tableName = tableName.toLowerCase();
+            schemaName = schemaName;
+            tableName = tableName;
             ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             dataMappingEvaluator.assignment(false, startValue, endValue);

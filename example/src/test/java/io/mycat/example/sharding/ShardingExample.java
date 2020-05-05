@@ -27,7 +27,7 @@ public class ShardingExample {
         MycatCore.INSTANCE.init(bootConfig);
     }
 
-//    @Test
+    @Test
     public void test() throws Exception {
         Thread thread = null;
         if (!NetUtil.isHostConnectable("0.0.0.0", 8066)) {
