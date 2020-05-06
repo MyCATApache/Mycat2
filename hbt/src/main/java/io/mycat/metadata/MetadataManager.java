@@ -72,7 +72,7 @@ public enum MetadataManager {
     }
 
     public void addSchema(String schemaName,String dataNode) {
-        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(dataNode);
+        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName,dataNode);
         schemaMap.computeIfAbsent(schemaName, s -> schemaHandler);
         schemaMap.computeIfAbsent("`" + schemaName + "`", s -> schemaHandler);
     }
