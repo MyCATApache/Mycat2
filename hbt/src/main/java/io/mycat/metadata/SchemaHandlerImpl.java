@@ -5,10 +5,17 @@ import java.util.Map;
 
 public class SchemaHandlerImpl implements SchemaHandler {
     final Map<String, TableHandler> tableMap = new HashMap<>();
+    private String name;
     final String defaultTargetName;
 
-    public SchemaHandlerImpl(String defaultTargetName) {
+    public SchemaHandlerImpl(String name,String defaultTargetName) {
+        this.name = name;
         this.defaultTargetName = defaultTargetName;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     @Override

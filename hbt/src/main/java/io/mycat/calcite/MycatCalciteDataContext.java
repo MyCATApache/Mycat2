@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatReflectiveSchema;
 import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
@@ -155,7 +156,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
                 schemaPlus.add(entry.getKey(), mycatLogicTable);
             }
         }
-        config.getReflectiveSchemas().forEach((key, value) -> plus.add(key, new ReflectiveSchema(value)));
+        config.getReflectiveSchemas().forEach((key, value) -> plus.add(key, new MycatReflectiveSchema(value)));
         return plus;
     }
 

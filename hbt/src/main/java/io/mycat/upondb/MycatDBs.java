@@ -8,7 +8,9 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.beans.mysql.MySQLVariablesEnum;
+import io.mycat.calcite.table.MycatReflectiveSchema;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.util.SQLContext;
 import io.mycat.util.SQLContextImpl;
@@ -81,7 +83,9 @@ public class MycatDBs {
 
             @Override
             public MycatDBClientBasedConfig config() {
-                MycatDBClientBasedConfig mycatDBClientBasedConfig = new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getSchemaMap(), null);
+                MycatDBClientBasedConfig mycatDBClientBasedConfig = new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getSchemaMap(),
+                        Collections.singletonMap("information_schema",InformationSchemaRuntime.INSTANCE.get()
+                        ));
                 return mycatDBClientBasedConfig;
             }
 
