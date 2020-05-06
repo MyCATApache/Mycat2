@@ -112,7 +112,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         return ExecuteCode.PERFORMED;
     }
 
-    protected ExecuteCode onSelectTable(SQLTableSource tableSource, SQLSelectQueryBlock sqlSelectQueryBlock,
+    protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource, SQLSelectQueryBlock sqlSelectQueryBlock,
                                         SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLContext sqlContext = request.getContext();
         SQLSelectStatement statement = request.getAst();
@@ -171,21 +171,25 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
         }
-        MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
-        MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
-                .innerQueryPrepareObject(statement.toString(), mycatDBContext);
-        PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
-        if (plan instanceof MycatSqlPlanner) {
-            ProxyInfo proxyInfo = ((MycatSqlPlanner) plan).tryGetProxyInfo();
-            if (proxyInfo != null) {
-                String sql = proxyInfo.getSql();
-                String targetName = proxyInfo.getTargetName();
-                boolean updateOpt = proxyInfo.isUpdateOpt();
-                receiver.proxySelect(targetName, sql);
-                return ExecuteCode.PERFORMED;
+        dataContext.block(()->{
+            MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
+
+            MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
+                    .innerQueryPrepareObject(statement.toString(), mycatDBContext);
+            PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
+            if (plan instanceof MycatSqlPlanner) {
+                ProxyInfo proxyInfo = ((MycatSqlPlanner) plan).tryGetProxyInfo();
+                if (proxyInfo != null) {
+                    String sql = proxyInfo.getSql();
+                    String targetName = proxyInfo.getTargetName();
+                    boolean updateOpt = proxyInfo.isUpdateOpt();
+                    receiver.proxySelect(targetName, sql);
+                    return ;
+                }
             }
-        }
-        receiver.sendResultSet(plan.run(), plan::explain);
+            receiver.sendResultSet(plan.run(), plan::explain);
+        });
+
         return ExecuteCode.PERFORMED;
     }
 
@@ -202,13 +206,14 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
         //直接调用已实现好的
+
         SQLSelectStatement ast = request.getAst();
         Optional<SQLSelectQueryBlock> sqlSelectQueryBlockMaybe = Optional.ofNullable(ast)
                 .map(SQLSelectStatement::getSelect)
                 .map(SQLSelect::getQueryBlock);
         Optional<SQLTableSource> sqlTableSource = sqlSelectQueryBlockMaybe.map(SQLSelectQueryBlock::getFrom);
         ExecuteCode returnCode = sqlTableSource
-                .map(tableSource -> onSelectTable(tableSource, sqlSelectQueryBlockMaybe.get(), request, response))
+                .map(tableSource -> onSelectTable(dataContext,tableSource, sqlSelectQueryBlockMaybe.get(), request, response))
                 .orElseGet(() -> onSelectNoTable(sqlSelectQueryBlockMaybe.orElse(null), request, response));
         return returnCode;
     }
