@@ -1736,7 +1736,7 @@ UPDATE执行其他的更新语句,例如delete,update,setVariable
 {name: 'mysql SELECT  LAST_INSERT_ID()', sql: 'SELECT  LAST_INSERT_ID()',command: selectLastInsertId },
 ```
 
-## 
+
 
 #### 匹配器实现
 
