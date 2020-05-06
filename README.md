@@ -1175,30 +1175,11 @@ https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331
 
 ## 读写分离配置
 
-例子1
+自动路由
 
 https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/readWriteSeparation/mycat.yml
 
-该配置需要把使用的表都配置上,并且配置发往从节点的sql
 
-
-
-例子2
-
-```yml
-interceptors:
-  [{user:{username: 'root' ,password: '123456' , ip: '.'},
-    defaultHanlder: {command: execute , tags: {targets: repli,needTransaction: true,executeType: QUERY}},
-    sqls:[
-    {sql: 'insert {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: INSERT }} ,
-      {sql: 'delete {any}',command: execute , tags: {targets: defaultDs,needTransaction: true,executeType: UPDATE} } ,
-    ] ,
-    sqlsGroup: [*jdbcAdapter],
-    transactionType: proxy  #xa.proxy
-   }]
-```
-
-该配置需要把发往主节点的sql配置不需要配置表名,同时开启事务的情况下发往主节点
 
 ## 分片配置
 
