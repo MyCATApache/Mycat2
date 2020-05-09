@@ -247,7 +247,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
 
             String table = normalizeAndLowerCase(tableSource.getTableName());
-            if(!this.dual && "dual".equals(table)){
+            if(!this.dual && "dual".equalsIgnoreCase(table)){
                 this.dual = true;
             }
             this.tables.add(table);
