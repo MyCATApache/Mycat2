@@ -26,6 +26,7 @@ public enum MySQLVariablesEnum {
 //    tx_isolation(Type.BOTH),
 //    max_execution_time(Type.BOTH),
 //    innodb_lock_wait_timeout(Type.BOTH),
+    version_comment(Type.GLOBAL),
     version(Type.GLOBAL),
     license(Type.GLOBAL),
     lower_case_table_names(Type.GLOBAL),

@@ -1,5 +1,12 @@
 {
   "map": {
+    "@@global.version_comment": {
+      "clazz": "java.lang.String",
+      "columnName": "@@version_comment",
+      "enumObject": "version_comment",
+      "jdbcType": "VARCHAR",
+      "value": "MySQL Community Server - GPL"
+    },
     "@@session.lc_messages": {
       "clazz": "java.lang.String",
       "columnName": "@@session.lc_messages",

@@ -34,12 +34,13 @@ public enum ExecuteCommand implements MycatCommand {
      */
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
-        String balanceConfig = request.getOrDefault("balance", null);
-        String targetsConfig = request.getOrDefault("targets", null);
-        boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));
-        boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("forceProxy", Boolean.FALSE.toString()));
-        boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("metaData", Boolean.FALSE.toString()));
-        ExecuteType executeType = ExecuteType.valueOf(request.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
+        Map<String,String> tags = request.get("tags");
+        String balanceConfig = tags.getOrDefault("balance", null);
+        String targetsConfig = tags.getOrDefault("targets", null);
+        boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(tags.getOrDefault("needTransaction", Boolean.TRUE.toString()));
+        boolean forceProxy = Boolean.TRUE.toString().equalsIgnoreCase(tags.getOrDefault("forceProxy", Boolean.FALSE.toString()));
+        boolean metaData = Boolean.TRUE.toString().equalsIgnoreCase(tags.getOrDefault("metaData", Boolean.FALSE.toString()));
+        ExecuteType executeType = ExecuteType.valueOf(tags.getOrDefault("executeType", ExecuteType.DEFAULT.name()));
         ExplainDetail detail = getDetails(metaData, targetsConfig, context, balanceConfig, request.getText(), executeType, forceProxy,needTransaction);
         response.execute(detail);
         return true;
