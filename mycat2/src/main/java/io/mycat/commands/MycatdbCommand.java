@@ -108,7 +108,8 @@ public enum MycatdbCommand implements MycatCommand {
                     return true;
                 }
             }
-            response.sendError(new MycatException("no support query. sql={} class={}", request.getText(), statement.getClass()));
+            logger.error("no support query. sql={} class={}", request.getText(), statement.getClass());
+            response.proxyShow(statement);
         } catch (Throwable e) {
             boolean isRun = false;
             try {
