@@ -171,7 +171,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
         }
-        dataContext.block(()->{
+        Runnable runnable = () -> {
             MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
 
             MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
@@ -184,12 +184,16 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                     String targetName = proxyInfo.getTargetName();
                     boolean updateOpt = proxyInfo.isUpdateOpt();
                     receiver.proxySelect(targetName, sql);
-                    return ;
+                    return;
                 }
             }
             receiver.sendResultSet(plan.run(), plan::explain);
-        });
-
+        };
+       if (!receiver.isExplainMode()){
+           dataContext.block(runnable);
+       }else {
+           runnable.run();
+       }
         return ExecuteCode.PERFORMED;
     }
 

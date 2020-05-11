@@ -376,7 +376,9 @@ public String getDatasourceNameByRandom() {
     public boolean isReplicaName(String targetName) {
         return replicaMap.containsKey(targetName);
     }
-
+    public boolean isDatasource(String targetName) {
+        return this.physicsInstanceMap.containsKey(targetName);
+    }
 
     public String getFirstReplicaDataSource(){
     return   Optional.ofNullable(  config)

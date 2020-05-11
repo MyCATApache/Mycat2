@@ -57,51 +57,34 @@ import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSIO
  **/
 public class MySQLTaskUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLTaskUtil.class);
-//    public static void proxyBackend(MycatSession mycat, String sql, String targetName,String databaseName,
-//                                    MySQLDataSourceQuery query) {
-//        MycatMonitor.onRouteSQL(mycat, targetName,databaseName, sql);
-//        MySQLPacketExchanger.INSTANCE
-//                .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), targetName,databaseName, query, ResponseType.QUERY);
-//    }
-
-    //todo
-    public static void proxyBackendByTargetName(MycatSession mycat,
-                                                String target,
-                                                String sql,
-                                                TransactionSyncType transaction,
-                                                MySQLIsolation isolation,
-                                                boolean master,
-                                                String loadBalanceStrategy) {
-        //todo fix the log
-        if (transaction.inTransaction) {
-            master = true;
-        }
-        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(target, master, loadBalanceStrategy);
-        if (datasourceName == null) throw new MycatException("{} is not existed", target);
-        LOGGER.debug("session id:{} proxy target:{},sql:{},transaction:{},isolation:{},master:{},balance:{}",
-                mycat.sessionId(), target, sql, transaction, isolation, master, loadBalanceStrategy);
-        proxyBackendByDatasourceName(mycat, sql, datasourceName, transaction, isolation);
-    }
 
     public static void proxyBackendByDatasourceName(MycatSession mycat,
-                                                    String sql,
                                                     String datasourceName,
+                                                    String sql,
                                                     TransactionSyncType transaction,
                                                     MySQLIsolation isolation) {
-        //todo fix the log
-        proxyBackendByDataSource(mycat,
-                MySQLPacketUtil.generateComQueryPacket(sql),
+        if (ReplicaSelectorRuntime.INSTANCE.isDatasource(datasourceName)) {
+            throw new AssertionError("target must be datasource:" + datasourceName);
+        }
+        proxyBackendByDatasourceName(mycat, sql,
                 datasourceName,
                 DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
                 transaction, isolation);
     }
 
-    public static void proxyBackendByDataSource(MycatSession mycat,
-                                                byte[] packetData,
+    public static void proxyBackendByDatasourceName(MycatSession mycat,
                                                 String datasourceName,
+                                                String sql,
                                                 MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
                                                 TransactionSyncType transactionType,
                                                 MySQLIsolation isolation) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("session id:{} proxy target:{},sql:{},transaction:{},isolation:{}",
+                    mycat.sessionId(), datasourceName, sql, transactionType, isolation);
+        }
+
+        byte[] packetData = MySQLPacketUtil.generateComQueryPacket(sql);
+
         Objects.requireNonNull(datasourceName);
         mycat.switchProxyWriteHandler();
         mycat.getIOThread().addNIOJob(new NIOJob() {
@@ -113,7 +96,7 @@ public class MySQLTaskUtil {
                     if (mycat.isBindMySQLSession()) {
                         MySQLClientSession mySQLSession = mycat.getMySQLSession();
                         String currentDataSource = mySQLSession.getDatasourceName();
-                        if (datasourceName.equals( currentDataSource)&& mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
+                        if (datasourceName.equals(currentDataSource) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
                             mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
                             return;
                         } else {
@@ -208,77 +191,7 @@ public class MySQLTaskUtil {
         }
     }
 
-    //todo
-    public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-                                    MySQLDataSourceQuery query, ResponseType responseType) {
-//        MySQLPacketExchanger.INSTANCE
-//                .proxyBackend(mycat, payload, dataNodeName, query, responseType);
-    }
 
-    public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
-                                                 String dataNodeName,
-                                                 MySQLDataSourceQuery query, ResponseType responseType,
-                                                 MySQLPacketCallback callback) {
-//        MySQLPacketExchanger.INSTANCE
-//                .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback);
-    }
-
-    public static void withBackend(MycatSession mycat, byte[] payload,
-                                   String dataNodeName,
-                                   MySQLDataSourceQuery query,
-                                   ResponseType responseType,
-                                   MySQLPacketCallback callback) {
-//        MySQLPacketExchanger.INSTANCE
-//                .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback);
-    }
-
-    public static void withBackend(MycatSession mycat, String replicaName, String databaseName,
-                                   MySQLDataSourceQuery query,
-                                   SessionSyncCallback finallyCallBack) {
-//        mycat.currentProxyBuffer().reset();
-//        if (mycat.getMySQLSession() != null) {
-//            if ((mycat.getMySQLSession().getDefaultDatabase().expect(databaseName))) {
-//                //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
-//                finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
-//                return;
-//            } else {
-//                finallyCallBack.onException(new MycatException("in bound state"), MySQLPacketExchanger.INSTANCE, null);
-//                return;
-//            }
-//        }
-//        MySQLSynContext mycatSynContext = mycat.getRuntime().getProviders()
-//                .createMySQLSynContext(mycat);
-//        MySQLTaskUtil
-//                .getMySQLSession(mycatSynContext, query, finallyCallBack);
-    }
-
-    /**
-     * 用户在非mycat reactor 线程获取 session
-     * <p>
-     * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
-     */
-    public static void getMySQLSessionFromUserThread(MySQLSynContextImpl synContext,
-                                                     MySQLDataSourceQuery query,
-                                                     SessionSyncCallback asynTaskCallBack) {
-//        MycatReactorThread[] threads = runtime.getMycatReactorThreads();
-//        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-//        threads[i].addNIOJob(new NIOJob() {
-//            @Override
-//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
-//                getMySQLSession(synContext, query, asynTaskCallBack);
-//            }
-//
-//            @Override
-//            public void stop(ReactorEnvThread reactor, Exception reason) {
-//                asynTaskCallBack.onException(reason, this, null);
-//            }
-//
-//            @Override
-//            public String message() {
-//                return "getMySQLSessionFromUserThread";
-//            }
-//        });
-    }
 
     private static void syncState(MySQLClientSession session, TransactionSyncType transactionType, MySQLIsolation isolation, SessionCallBack<MySQLClientSession> callBack) {
         ResultSetHandler.DEFAULT.request(session, MySQLCommandType.COM_QUERY, isolation.getCmd() + transactionType.text, new ResultSetCallBack<MySQLClientSession>() {
@@ -351,124 +264,10 @@ public class MySQLTaskUtil {
         }
     }
 
-    public static void getMySQLSessionForTryConnectFromUserThread(
-            MySQLDatasource datasource,
-            List<SessionIdAble> ids,
-            PartialType partialType,
-            SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-//        MycatReactorThread[] threads = runtime.getMycatReactorThreads();
-//        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-//        threads[i].addNIOJob(new NIOJob() {
-//            @Override
-//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
-//                getMySQLSessionForTryConnect(datasource, ids, partialType, asynTaskCallBack);
-//            }
-//
-//            @Override
-//            public void stop(ReactorEnvThread reactor, Exception reason) {
-//                asynTaskCallBack.onException(reason, this, null);
-//            }
-//
-//            @Override
-//            public String message() {
-//                return "getMySQLSessionForTryConnectFromUserThread";
-//            }
-//        });
-    }
-
-    public static void getMySQLSessionForTryConnectFromUserThreadByPartialSessionId(
-            PartialType partialType,
-            MySQLDatasource datasource,
-            SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-//        MycatReactorThread[] threads = runtime.getMycatReactorThreads();
-//        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-//        threads[i].addNIOJob(new NIOJob() {
-//            @Override
-//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
-//                getMySQLSessionForTryConnect(datasource, null, partialType, asynTaskCallBack);
-//            }
-//
-//            @Override
-//            public void stop(ReactorEnvThread reactor, Exception reason) {
-//                asynTaskCallBack.onException(reason, this, null);
-//            }
-//
-//            @Override
-//            public String message() {
-//                return "getMySQLSessionForTryConnectFromUserThread";
-//            }
-//        });
-    }
-
     public static void proxyBackend(MycatSession session, String sql) {
         MySQLClientSession mySQLSession = session.getMySQLSession();
         MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.
                 proxyBackend(mySQLSession, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK, ResponseType.QUERY, session, MySQLPacketUtil.generateComQueryPacket(sql));
-    }
-//    public void proxyBackend(MycatSession mycat, byte[] payload, String targetName,String defaultDatabase,
-//                             MySQLDataSourceQuery query, ResponseType responseType) {
-//        proxyBackend(mycat, payload, targetName,defaultDatabase, query, responseType,
-//                DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
-//
-//    }
-
-    //    public void proxyBackend(MycatSession mycat, byte[] payload, String targetName,String defaultDatabase,
-//                             MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketExchanger.PacketExchangerCallback finallyCallBack) {
-//        byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-//        MySQLPacketExchanger.MySQLProxyNIOHandler
-//                .INSTANCE.proxyBackend(mycat, bytes, targetName,defaultDatabase, query, responseType,
-//                MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE, finallyCallBack
-//        );
-//    }
-//
-//    public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String targetName,String defaultDatabase,
-//                                          MySQLDataSourceQuery query, ResponseType responseType) {
-//        MySQLPacketExchanger.MySQLProxyNIOHandler
-//                .INSTANCE.proxyBackend(mycat, packet, targetName,defaultDatabase, query, responseType,
-//                MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
-//        );
-//    }
-//
-//    public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String targetName,String defaultDatabase,
-//                                           MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback) {
-//        proxyWithCollectorCallback(mycat, payload, targetName,defaultDatabase, query, responseType, callback,
-//                DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
-//    }
-//
-//    public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String targetName,String defaultDatabase,
-//                                           MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback,
-//                                           MySQLPacketExchanger.PacketExchangerCallback finallyCallBack) {
-//        byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-//        MySQLPacketExchanger.MySQLProxyNIOHandler
-//                .INSTANCE.proxyBackend(mycat, bytes, targetName,defaultDatabase, query, responseType,
-//                new MySQLPacketExchanger.MySQLCollectorExchanger(callback), finallyCallBack
-//        );
-//    }
-//
-    public void proxyBackend(MycatSession mycat, byte[] packetData, String replicaName, String defaultDatabaseName,
-                             MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketExchanger.MySQLProxyNIOHandler proxyNIOHandler,
-                             MySQLPacketExchanger.PacketExchangerCallback finallyCallBack) {
-        MySQLTaskUtil.withBackend(mycat, replicaName, defaultDatabaseName, query, new SessionSyncCallback() {
-            @Override
-            public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-                MySQLDatasource datasource = mysql.getDatasource();
-                MycatMonitor.onRouteResult(mycat, replicaName, defaultDatabaseName, datasource.getName(), packetData);
-                proxyNIOHandler.proxyBackend(mysql, finallyCallBack, responseType, mycat, packetData);
-            }
-
-            @Override
-            public void onException(Exception exception, Object sender, Object attr) {
-                MycatMonitor.onGettingBackendException(mycat, replicaName, defaultDatabaseName, exception);
-                finallyCallBack.onRequestMySQLException(mycat, exception, attr);
-            }
-
-            @Override
-            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                                      MySQLClientSession mysql, Object sender, Object attr) {
-                finallyCallBack.onRequestMySQLException(mycat,
-                        new MycatException(errorPacket.getErrorMessageString()), attr);
-            }
-        });
     }
 
 }

@@ -2,9 +2,9 @@ package io.mycat;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLFieldsType;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.commands.ExecuteCommand;
@@ -77,15 +77,15 @@ public class ReceiverImpl implements Response {
         //没有处理的sql,例如没有替换事务状态,自动提交状态的sql,随机发到后端会返回该随机的服务器状态
         String target = session.isBindMySQLSession() ? session.getMySQLSession().getDatasource().getName() : ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
         ExplainDetail detail = getExplainDetail(target, sql.toString(), ExecuteType.QUERY);
-        if (this.explainMode){
-            sendExplain(null,detail.toExplain());
-        }else {
-            if (detail.needStartTransaction){//需要事务就开启事务
+        if (this.explainMode) {
+            sendExplain(null, detail.toExplain());
+        } else {
+            if (detail.needStartTransaction) {//需要事务就开启事务
                 session.getDataContext().getTransactionSession().begin();
             }
             block(session -> {
-                try(DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(target)){
-                    try(RowBaseIterator rowBaseIterator = connection.executeQuery(sql.toString())) {
+                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(target)) {
+                    try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql.toString())) {
                         sendResultSet(rowBaseIterator, () -> {
                             throw new UnsupportedOperationException();
                         });
@@ -172,7 +172,7 @@ public class ReceiverImpl implements Response {
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
-        writePlan(session,    Arrays.asList(message.split("\n")));
+        writePlan(session, Arrays.asList(message.split("\n")));
     }
 
     @Override
@@ -281,59 +281,50 @@ public class ReceiverImpl implements Response {
     public void execute(ExplainDetail details) {
         MycatDataContext client = Objects.requireNonNull(session.unwrap(MycatDataContext.class));
         Map<String, List<String>> tasks = Objects.requireNonNull(details.targets);
-        String balance = details.balance;
         ExecuteType executeType = details.executeType;
-        MySQLIsolation isolation = session.getIsolation();
-//        boolean isMaster = executeType.isMaster() || (!session.isAutocommit() || session.isInTransaction()) || details.globalTableUpdate;
-//        details.setTargets(resolveDataSourceName(balance, isMaster, tasks));
         if (this.explainMode) {
-            sendExplain(null, "execute:"+ details);
+            sendExplain(null, "execute:" + details);
             return;
         }
-
         TransactionSession transactionSession = session.getDataContext().getTransactionSession();
         transactionSession.doAction();
-
-        if (details.globalTableUpdate & (client.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE || details.forceProxy)) {
+        boolean runOnProxy = (client.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE || details.forceProxy);
+        boolean globalTableUpdate = details.globalTableUpdate;
+        if (globalTableUpdate && runOnProxy) {
             executeGlobalUpdateByProxy(details);
             return;
         }
-        boolean runOnProxy = isOne(tasks) && client.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE || details.forceProxy;
-        //return
-        if (runOnProxy) {
-            if (tasks.size() != 1) throw new IllegalArgumentException();
-            String[] strings = checkThenGetOne(tasks);
-            MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
+        String[] strings = checkThenGetOne(tasks);
+        String datasourceName = strings[0];
+        String sql = strings[1];
+        if (runOnProxy && MycatDatasourceUtil.isProxyDatasource(datasourceName)) {
+            MySQLTaskUtil.proxyBackendByDatasourceName(session, datasourceName, sql,
                     MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
-                    session.getIsolation(), details.executeType.isMaster(), balance);
-            //return
-        } else {
-            block(mycat -> {
-                        if (details.needStartTransaction) {
-                            LOGGER.debug("session id:{} startTransaction", session.sessionId());
-                            // TransactionSessionUtil.reset();
-                            transactionSession.setTransactionIsolation(isolation.getJdbcValue());
-                            transactionSession.begin();
-                            session.setInTranscation(true);
-                        }
-                        switch (executeType) {
-                            case QUERY_MASTER:
-                            case QUERY: {
-                                Map<String, List<String>> backendTableInfos = details.targets;
-                                String[] infos = checkThenGetOne(backendTableInfos);
-                                writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession, infos[0], infos[1]));
-                                return;
-                            }
-                            case INSERT:
-                            case UPDATE:
-                                writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true, details.globalTableUpdate));
-                                return;
-                        }
-                        throw new IllegalArgumentException();
-                    }
-            );
+                    session.getIsolation());
+            return;
         }
+        block(mycat -> {
+                    switch (executeType) {
+                        case QUERY_MASTER:
+                        case QUERY: {
+                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession, datasourceName, sql));
+                            return;
+                        }
+                        case INSERT:
+                        case UPDATE:
+                            UpdateRowIteratorResponse updateRowIteratorResponse = TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true, globalTableUpdate);
+                            client.setLastInsertId(updateRowIteratorResponse.getLastInsertId());
+                            writeToMycatSession(session, updateRowIteratorResponse);
+                            return;
+                    }
+                    throw new IllegalArgumentException();
+                }
+        );
+    }
 
+    @Override
+    public boolean isExplainMode() {
+        return explainMode;
     }
 
     public void executeGlobalUpdateByProxy(ExplainDetail details) {
@@ -368,9 +359,13 @@ public class ReceiverImpl implements Response {
                     count--;
                 }
             }
-            MySQLTaskUtil.proxyBackendByTargetName(session, targetName, sql,
-                    MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
-                    session.getIsolation(), details.executeType.isMaster(), details.balance);
+            if (MycatDatasourceUtil.isProxyDatasource(targetName)) {
+                MySQLTaskUtil.proxyBackendByDatasourceName(session, targetName, sql,
+                        MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
+                        session.getIsolation());
+                return;
+            }
+            throw new IllegalArgumentException();
         }));
     }
 
@@ -386,14 +381,6 @@ public class ReceiverImpl implements Response {
         return new String[]{next.getKey(), list.get(0)};
     }
 
-    public static boolean isOne(Map<String, List<String>> backendTableInfos) {
-        if (backendTableInfos.size() != 1) {
-            return false;
-        }
-        Map.Entry<String, List<String>> next = backendTableInfos.entrySet().iterator().next();
-        List<String> list = next.getValue();
-        return list.size() == 1;
-    }
 
     public void writePlan(String message) {
         writePlan(session, Collections.singletonList(message));

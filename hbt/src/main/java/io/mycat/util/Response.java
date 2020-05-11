@@ -59,4 +59,6 @@ public interface Response {
     void commit();
 
     void execute(ExplainDetail detail);
+
+    boolean isExplainMode();
 }
