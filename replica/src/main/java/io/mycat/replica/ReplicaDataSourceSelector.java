@@ -19,10 +19,9 @@ import io.mycat.ConfigProvider;
 import io.mycat.MycatConfig;
 import io.mycat.RootHelper;
 import io.mycat.config.ClusterRootConfig;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,8 +203,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
             return false;
         }
         List<PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
-        oldWriteDataSource.clear();
-        oldWriteDataSource.addAll(newWriteDataSource);
+        CollectionUtil.safeUpdate(oldWriteDataSource,backup);
         LOGGER.info(message, backup, newWriteDataSource);
         return true;
     }
