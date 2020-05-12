@@ -1,9 +1,8 @@
 package io.mycat.calcite.table;
 
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.MycatCalciteDataContext;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.MycatConvention;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
@@ -21,6 +20,7 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
     final RelDataType relDataType;
     final String sql;
     final MycatConvention convention;
+
 
     public MycatSQLTableScan(MycatConvention convention, RelDataType relDataType, String sql) {
         this.relDataType = relDataType;
@@ -53,16 +53,13 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
     }
 
     @Override
+    public MycatRowMetaData getMetaData() {
+        return new CalciteRowMetaData(relDataType.getFieldList());
+    }
+
+    @Override
     public Enumerable<Object[]> scan(DataContext root) {
-        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        Enumerable<Object[]> preComputation = root1.getPreComputation(this);
-        if (preComputation != null) {
-            return preComputation;
-        }
-        MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
-            return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
-        };
-        return new MyCatResultSetEnumerable(getRow,root1.getCancelFlag(), relDataType, new QueryBackendTask( convention.targetName,sql));
+        return enumerable;
     }
 
 }

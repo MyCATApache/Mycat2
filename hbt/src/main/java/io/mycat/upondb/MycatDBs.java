@@ -10,7 +10,10 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.beans.mysql.MySQLVariablesEnum;
-import io.mycat.calcite.table.MycatReflectiveSchema;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.ParallelQueryUtil;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.future.Future;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.util.SQLContext;
 import io.mycat.util.SQLContextImpl;
@@ -24,6 +27,19 @@ public class MycatDBs {
 
     public static MycatDBClientMediator createClient(MycatDataContext dataContext) {
         return new MycatDBClientMediator() {
+            @Override
+            public <T> T unwrap(Class<T> iface) {
+                if (iface==MycatDataContext.class){
+                    return (T)dataContext;
+                }
+                return null;
+            }
+
+            @Override
+            public boolean isWrapperFor(Class<?> iface) {
+                return MycatDataContext.class == iface;
+            }
+
             final HashMap<String, Object> cache = new HashMap<>();
 
             @Override
@@ -84,7 +100,7 @@ public class MycatDBs {
             @Override
             public MycatDBClientBasedConfig config() {
                 MycatDBClientBasedConfig mycatDBClientBasedConfig = new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getSchemaMap(),
-                        Collections.singletonMap("information_schema",InformationSchemaRuntime.INSTANCE.get()
+                        Collections.singletonMap("information_schema", InformationSchemaRuntime.INSTANCE.get()
                         ));
                 return mycatDBClientBasedConfig;
             }
@@ -106,7 +122,7 @@ public class MycatDBs {
 
             @Override
             public void cache(Identical key, String targetName, String sql, List<Object> params, Supplier<Object> o) {
-                Object o1 = cache.computeIfAbsent(targetName + sql, s -> o.get());
+
             }
 
             @Override
@@ -164,6 +180,16 @@ public class MycatDBs {
                     lastInsertId = Math.max(mycatUpdateResponse.getLastInsertId(), lastInsertId);
                 }
                 return new UpdateRowIteratorResponse(updateCount, lastInsertId, dataContext.getTransactionSession().getServerStatus());
+            }
+
+            @Override
+            public Future<RowBaseIterator> queryByParallel(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+                try {
+                    DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName);
+                    return ParallelQueryUtil.query(connection, sql, mycatRowMetaData);
+                } catch (Throwable e) {
+                    return Future.failedFuture(e);
+                }
             }
 
             @Override

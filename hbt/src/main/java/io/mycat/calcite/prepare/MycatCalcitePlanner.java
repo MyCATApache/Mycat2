@@ -412,6 +412,13 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 return super.visit(scan);
             }
         });
+
+        if(uponDBContext.isInTransaction()){
+
+        }else {
+
+        }
+
         List<PreComputationSQLTable> preSeq = new ArrayList<>();
         for (Map.Entry<String, List<PreComputationSQLTable>> stringListEntry : map.entrySet()) {
             List<PreComputationSQLTable> value = stringListEntry.getValue();
@@ -428,7 +435,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-                MycatTransientSQLTable unwrap = scan.getTable().unwrap(MycatTransientSQLTable.class);
+                MycatSQLTableScan unwrap = scan.getTable().unwrap(MycatSQLTableScan.class);
                 if (unwrap != null) {
                     return unwrap.toRel(ViewExpanders.toRelContext(planner, MycatCalcitePlanner.this.newCluster()), scan.getTable());
                 }

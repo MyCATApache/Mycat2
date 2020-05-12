@@ -14,19 +14,15 @@
  */
 package io.mycat.calcite.resultset;
 
-import io.mycat.QueryBackendTask;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.MycatCalciteDataContext;
+import io.mycat.future.Future;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.rel.type.RelDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -34,48 +30,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Junwen Chen
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
-    private final GetRow getRow;
-    private final AtomicBoolean CANCEL_FLAG;
-    private RelDataType rowType;
-    private final List<QueryBackendTask> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
+    private final MycatCalciteDataContext context;
+    private final Future<RowBaseIterator> rowBaseIteratorFuture;
+    private final AtomicBoolean CANCEL_FLAG;
 
-    public MyCatResultSetEnumerable( GetRow getRow,AtomicBoolean CANCEL_FLAG,RelDataType rowType, List<QueryBackendTask> res) {
-        this.getRow = getRow;
-        this.rowType = rowType;
-        this.backStoreList = res;
-        this.CANCEL_FLAG = CANCEL_FLAG;//DataContext.Variable.CANCEL_FLAG.get(dataContext);
-        for (QueryBackendTask sql : res) {
-            LOGGER.info("prepare querySQL:{}", sql);
-        }
-    }
 
-    public MyCatResultSetEnumerable(GetRow getRow,AtomicBoolean CANCEL_FLAG,RelDataType rowType, QueryBackendTask res) {
-        this(getRow,CANCEL_FLAG,rowType, Collections.singletonList(res));
-    }
-
-    public interface GetRow{
-        RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql);
+    public MyCatResultSetEnumerable(MycatCalciteDataContext context, Future<RowBaseIterator> rowBaseIteratorFuture) {
+        this.context = context;
+        this.rowBaseIteratorFuture = rowBaseIteratorFuture;
+        this. CANCEL_FLAG = context.getCancelFlag();
     }
 
     @Override
     public Enumerator<T> enumerator() {
-        int length = backStoreList.size();
-
-        ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
-        for (QueryBackendTask endTableInfo : backStoreList) {
-            iterators.add(getRow.query(new CalciteRowMetaData(rowType.getFieldList()),endTableInfo.getTargetName(), endTableInfo.getSql()));
-            LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
+        if (!rowBaseIteratorFuture.isComplete()) {
+            throw new AssertionError("rowBaseIteratorFuture is not completed");
         }
 
-        return new Enumerator<T>() {
-            RowBaseIterator currentrs;
-
+        final RowBaseIterator rowBaseIterator = rowBaseIteratorFuture.result();
+        final int columnCount = rowBaseIterator.getMetaData().getColumnCount();
+        Enumerator<T> enumerator = new Enumerator<T>() {
+            @Override
             public T current() {
-                final int columnCount = currentrs.getMetaData().getColumnCount();
                 Object[] res = new Object[columnCount];
                 for (int i = 0, j = 1; i < columnCount; i++, j++) {
-                    Object object = currentrs.getObject(j);
+                    Object object = rowBaseIterator.getObject(j);
                     if (object instanceof Date) {
                         res[i] = ((Date) object).getTime();
                     } else {
@@ -90,14 +70,9 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 if (CANCEL_FLAG.get()) {
                     return false;
                 }
-                boolean result = false;
-                while (!iterators.isEmpty()) {
-                    currentrs = iterators.get(0);
-                    result = currentrs.next();
-                    if (result) {
-                        return result;
-                    }
-                    iterators.remove(0);
+                boolean result = rowBaseIterator.next();
+                if (result) {
+                    return result;
                 }
                 return result;
             }
@@ -109,10 +84,11 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
             @Override
             public void close() {
-                if (currentrs!=null) {
-                    currentrs.close();
+                if (rowBaseIterator != null) {
+                    rowBaseIterator.close();
                 }
             }
         };
+        return enumerator;
     }
 }

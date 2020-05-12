@@ -13,6 +13,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-mysql-client</artifactId>
+      <version>3.9.0</version>
+    </dependency>
+    <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>config</artifactId>
       <version>1.05-SNAPSHOT</version>

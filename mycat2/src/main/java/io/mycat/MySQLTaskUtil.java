@@ -66,8 +66,8 @@ public class MySQLTaskUtil {
         if (ReplicaSelectorRuntime.INSTANCE.isDatasource(datasourceName)) {
             throw new AssertionError("target must be datasource:" + datasourceName);
         }
-        proxyBackendByDatasourceName(mycat, sql,
-                datasourceName,
+        proxyBackendByDatasourceName(mycat, datasourceName,sql
+                ,
                 DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
                 transaction, isolation);
     }

@@ -15,10 +15,6 @@
 package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.CalciteUtls;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
 import io.mycat.metadata.TableHandler;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
@@ -53,15 +49,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
-                logicTable().getColumns(),
-                CalciteUtls.getColumnList(logicTable(),projects), backendTableInfo);
-
-        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
-            return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
-        };
-        return new MyCatResultSetEnumerable(getRow,root1.getCancelFlag(),getRowType(), new QueryBackendTask(backendTableInfo.getTargetName(),backendTaskSQL));
+        throw new UnsupportedOperationException();
     }
 
     public String getTargetName() {
@@ -70,6 +58,6 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(),relOptTable);
+        return LogicalTableScan.create(context.getCluster(), relOptTable);
     }
 }

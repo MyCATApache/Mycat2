@@ -1,4 +1,6 @@
 package io.mycat.upondb;
 
-public interface MycatDBContext extends MycatDBClientApi, MycatDBClientBased {
+import io.mycat.Wrapper;
+
+public interface MycatDBContext extends MycatDBClientApi, MycatDBClientBased, Wrapper {
 }

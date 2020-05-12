@@ -50,7 +50,7 @@ public class JdbcDataSource implements MycatDataSource {
     }
 
     public boolean isMySQLType() {
-        return datasourceConfig.isMySQLType();
+        return datasourceConfig.computeType().isNative();
     }
 
 

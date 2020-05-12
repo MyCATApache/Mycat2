@@ -19,9 +19,6 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,19 +76,19 @@ public class DefaultConnection implements AutoCloseable {
         try {
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
-            return new JdbcRowBaseIterator(null, statement,resultSet, new Closeable() {
+            return new JdbcRowBaseIterator(null, statement, resultSet, new Closeable() {
                 @Override
                 public void close() throws IOException {
                     try {
                         resultSet.close();
                     } catch (SQLException e) {
-                        LOGGER.error("",e);
+                        LOGGER.error("", e);
                     }
 
                     try {
                         statement.close();
                     } catch (SQLException e) {
-                        LOGGER.error("",e);
+                        LOGGER.error("", e);
                     }
                 }
             }, sql);
@@ -158,10 +155,15 @@ public class DefaultConnection implements AutoCloseable {
     }
 
     public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
+        return executeQuery(mycatRowMetaData, sql, false);
+    }
+
+    public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql, boolean autoClose) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(mycatRowMetaData,statement, statement.executeQuery(sql),null,sql);
+            return new JdbcRowBaseIterator(mycatRowMetaData, statement, statement.executeQuery(sql), autoClose ? connection : null, sql);
         } catch (Exception e) {
+            close();
             throw new MycatException(e);
         }
     }

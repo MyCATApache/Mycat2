@@ -171,8 +171,12 @@ public class ReceiverImpl implements Response {
      */
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
-        String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
-        writePlan(session, Arrays.asList(message.split("\n")));
+        if (map instanceof List){
+            writePlan(session, (List)map);
+        }else {
+            String message = defErrorCommandClass == null ? Objects.toString(map) : defErrorCommandClass + ":" + map;
+            writePlan(session, message);
+        }
     }
 
     @Override
@@ -403,16 +407,5 @@ public class ReceiverImpl implements Response {
         } else {
             consumer.accept(session);
         }
-    }
-
-    @NotNull
-    private static HashMap<String, List<String>> resolveDataSourceName(String balance, boolean master, Map<String, List<String>> routeMap) {
-        HashMap<String, List<String>> map = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : routeMap.entrySet()) {
-            String datasourceNameByReplicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey(), master, balance);
-            List<String> list = map.computeIfAbsent(datasourceNameByReplicaName, s -> new ArrayList<>(1));
-            list.addAll(entry.getValue());
-        }
-        return map;
     }
 }

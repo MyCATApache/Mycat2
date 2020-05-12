@@ -7,6 +7,7 @@ import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.future.Future;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.upondb.MycatDBClientBasedConfig;
 import io.mycat.upondb.MycatDBClientMediator;
@@ -123,6 +124,11 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
+    public Future<RowBaseIterator> queryByParallel(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+        return null;
+    }
+
+    @Override
     public String getSchema() {
         return null;
     }
@@ -235,5 +241,15 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     @Override
     public Object getVariable(String target) {
         return null;
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> iface) {
+        return null;
+    }
+
+    @Override
+    public boolean isWrapperFor(Class<?> iface) {
+        return false;
     }
 }

@@ -25,12 +25,9 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
-import io.mycat.util.nio.SelectorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +49,8 @@ public enum JdbcRuntime {
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;
-    private  ExecutorService executorService;
-
+    private ExecutorService heartbeatExecutor;
+    private ExecutorService parallelExecutor;
 
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
         connectionManager.addDatasource(key);
@@ -78,8 +75,8 @@ public enum JdbcRuntime {
     public synchronized void load(MycatConfig config) {
         ServerConfig.Worker worker = config.getServer().getWorker();
         int maxThread = worker.getMaxThread();
-        executorService  = ExecutorUtil.create("heartBeatExecutor", 1);
-
+        heartbeatExecutor = ExecutorUtil.create("heartBeatExecutor", 1);
+        parallelExecutor = ExecutorUtil.create("parallelExecutor", maxThread);
         if (!config.getServer().getWorker().isClose()) {
             PlugRuntime.INSTCANE.load(config);
             ReplicaSelectorRuntime.INSTANCE.load(config);
@@ -96,7 +93,7 @@ public enum JdbcRuntime {
 
 
             for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
-                if (datasource.isJdbcType()) {
+                if (datasource.computeType().isJdbc()) {
                     addDatasource(datasource);
                 }
             }
@@ -119,7 +116,7 @@ public enum JdbcRuntime {
         ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                executorService.submit(() -> {
+                heartbeatExecutor.submit(() -> {
                     try {
                         heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
@@ -174,10 +171,14 @@ public enum JdbcRuntime {
     }
 
     public JdbcConnectionManager getConnectionManager() {
-        if (connectionManager != null ){
+        if (connectionManager != null) {
             return connectionManager;
-        }else {
+        } else {
             throw new MycatException("jdbc连接管理器没有初始化,请配置jdbc连接");
         }
+    }
 
-    }}
+    public ExecutorService getParallelExecutor() {
+        return parallelExecutor;
+    }
+}
