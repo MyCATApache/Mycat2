@@ -43,7 +43,7 @@ public class ReMatchersBenchmark {
 
     }
 
-    @Benchmark
+//    @Benchmark
     public void testMethod() {
         Pair<Predicate<CharBuffer>, String> apply = function.apply("select 2 from db1.travelrecord");
         if (apply == null){
