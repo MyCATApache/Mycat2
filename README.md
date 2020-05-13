@@ -776,7 +776,7 @@ address:
 
 用户名:区分大小写
 
-密码:区分大小写
+密码:区分大小写,不写密码就是忽略密码
 
 ip:用户连接的远程ip接收的格式是
 
@@ -1736,6 +1736,14 @@ RobPike的正则表达式实现,具体查看资料,没有文本提取功能
 ###### io.mycat.matcher.GPatternFactory
 
 可以完成匹配提取参数功能,但是使用有较大限制,具体看资料
+
+
+
+###### io.mycat.matcher.PatternFactory
+
+java.util.regex.Pattern的匹配器实现
+
+
 
 模式语法参考
 
