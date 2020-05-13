@@ -340,6 +340,23 @@ public class ReceiverImpl implements Response {
 
     }
 
+    @Override
+    public void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply) {
+        ExplainDetail detail = getExplainDetail(string, "", ExecuteType.INSERT);
+        detail.globalTableUpdate = true;
+        detail.setTargets(toMap(apply));
+        this.execute(detail);
+    }
+
+    @Override
+    public void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply) {
+        ExplainDetail detail = getExplainDetail(string, "", ExecuteType.UPDATE);
+        detail.globalTableUpdate = true;
+        detail.setTargets(toMap(apply));
+        this.execute(detail);
+    }
+
+
     public void executeGlobalUpdateByProxy(ExplainDetail details) {
         block((mycat -> {
             Map<String, List<String>> targets = details.targets;

@@ -59,4 +59,9 @@ public interface Response {
     void commit();
 
     void execute(ExplainDetail detail);
+
+    void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply);
+
+    void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply);
+
 }

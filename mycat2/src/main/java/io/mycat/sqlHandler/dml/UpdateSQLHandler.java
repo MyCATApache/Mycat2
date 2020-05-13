@@ -7,6 +7,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.RootHelper;
+import io.mycat.metadata.LogicTableType;
 import io.mycat.metadata.ParseContext;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
@@ -72,11 +73,34 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         }
         String string = sql.toString();
         if (sql instanceof MySqlInsertStatement) {
-            receiver.multiInsert(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
+            switch (tableHandler.getType()) {
+                case SHARDING:
+                    receiver.multiInsert(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
+                    break;
+                case GLOBAL:
+                    receiver.multiGlobalInsert(string, tableHandler.insertHandler().apply(new ParseContext(sql.toString())));
+                    break;
+            }
+
         } else if (sql instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement) {
-            receiver.multiUpdate(string, tableHandler.deleteHandler().apply(new ParseContext(sql.toString())));
+            switch (tableHandler.getType()) {
+                case SHARDING:
+                    receiver.multiUpdate(string, tableHandler.deleteHandler().apply(new ParseContext(sql.toString())));
+                    break;
+                case GLOBAL:
+                    receiver.multiGlobalUpdate(string, tableHandler.deleteHandler().apply(new ParseContext(sql.toString())));
+                    break;
+            }
+
         } else if (sql instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement) {
-            receiver.multiUpdate(string, tableHandler.updateHandler().apply(new ParseContext(sql.toString())));
+            switch (tableHandler.getType()) {
+                case SHARDING:
+                    receiver.multiUpdate(string, tableHandler.updateHandler().apply(new ParseContext(sql.toString())));
+                    break;
+                case GLOBAL:
+                    receiver.multiGlobalUpdate(string, tableHandler.deleteHandler().apply(new ParseContext(sql.toString())));
+                    break;
+            }
         } else {
             throw new UnsupportedOperationException("unsupported statement:"+sql);
         }
