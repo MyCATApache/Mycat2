@@ -171,6 +171,10 @@ public class ReceiverImpl implements Response {
      */
     @Override
     public void sendExplain(Class defErrorCommandClass, Object map) {
+        if (map instanceof  List){
+            writePlan(session,   (List)map);
+            return;
+        }
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session,    Arrays.asList(message.split("\n")));
     }
