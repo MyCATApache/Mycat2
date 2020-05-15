@@ -387,4 +387,9 @@ public String getDatasourceNameByRandom() {
     public PhysicsInstance getPhysicsInstanceByName(String name){
         return physicsInstanceMap.get(name);
     }
+
+    public boolean isDatasource(String targetName) {
+        return this.physicsInstanceMap.containsKey(targetName);
+    }
+
 }
