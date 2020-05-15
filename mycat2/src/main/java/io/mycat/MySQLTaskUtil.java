@@ -64,25 +64,6 @@ public class MySQLTaskUtil {
 //                .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), targetName,databaseName, query, ResponseType.QUERY);
 //    }
 
-    //todo
-    public static void proxyBackendByTargetName(MycatSession mycat,
-                                                String target,
-                                                String sql,
-                                                TransactionSyncType transaction,
-                                                MySQLIsolation isolation,
-                                                boolean master,
-                                                String loadBalanceStrategy) {
-        //todo fix the log
-        if (transaction.inTransaction) {
-            master = true;
-        }
-        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(target, master, loadBalanceStrategy);
-        if (datasourceName == null) throw new MycatException("{} is not existed", target);
-        LOGGER.debug("session id:{} proxy target:{},sql:{},transaction:{},isolation:{},master:{},balance:{}",
-                mycat.sessionId(), target, sql, transaction, isolation, master, loadBalanceStrategy);
-        proxyBackendByDatasourceName(mycat, sql, datasourceName, transaction, isolation);
-    }
-
     public static void proxyBackendByDatasourceName(MycatSession mycat,
                                                     String sql,
                                                     String datasourceName,
