@@ -32,18 +32,43 @@ public class DatasourceRootConfig {
         private String instanceType;
         private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
         private String jdbcDriverClass;//保留属性
+        private String type = DatasourceType.NATIVE_JDBC.name();
 
         public List<String> getInitSqls() {
             if (initSqls == null) initSqls = Collections.emptyList();
             return initSqls;
         }
+//
+//        public boolean isMySQLType() {
+//            return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
+//        }
+//
+//        public boolean isJdbcType() {
+//            return getUrl() != null;
+//        }
 
-        public boolean isMySQLType() {
-            return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
+        public DatasourceType computeType() {
+            return DatasourceType.valueOf(type);
         }
 
-        public boolean isJdbcType() {
-            return getUrl() != null;
+        public static enum DatasourceType {
+            NATIVE(true,false),
+            JDBC(false,true),
+            NATIVE_JDBC(true,true);
+            boolean isJdbc;
+            boolean isNative;
+            DatasourceType(boolean isNative,boolean isJdbc) {
+                this.isNative = isNative;
+                this.isJdbc = isJdbc;
+
+            }
+            public boolean isNative(){
+                return this.isNative;
+            }
+
+            public  boolean isJdbc(){
+                return this.isJdbc;
+            }
         }
 
     }

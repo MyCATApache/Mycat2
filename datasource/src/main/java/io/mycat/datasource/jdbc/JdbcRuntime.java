@@ -96,7 +96,7 @@ public enum JdbcRuntime {
 
 
             for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
-                if (datasource.isJdbcType()) {
+                if (datasource.computeType().isJdbc()) {
                     addDatasource(datasource);
                 }
             }
