@@ -275,7 +275,7 @@ public enum MycatCore {
                 });
             }
         }
-        throw new IllegalArgumentException();
+       return null;
     }
 
     public void removeDatasource(String name) {

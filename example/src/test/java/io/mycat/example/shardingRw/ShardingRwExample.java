@@ -68,6 +68,7 @@ public class ShardingRwExample {
                 Assert.assertTrue(set.size() > 1);//验证没有事务的情况下,可以读写分离
             }
             statement.executeUpdate("delete from db1.travelrecordWrite");
+            statement.executeUpdate("delete from db1.travelrecordRead");
 
             Set<String> set2 = new HashSet<>();
             for (int i = 0; i < 10; i++) {
