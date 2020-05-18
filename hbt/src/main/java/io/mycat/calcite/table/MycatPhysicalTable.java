@@ -15,14 +15,18 @@
 package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
+import io.mycat.MycatConnection;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
+import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.metadata.TableHandler;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -55,13 +59,19 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
                 logicTable().getColumns(),
-                CalciteUtls.getColumnList(logicTable(),projects), backendTableInfo);
+                CalciteUtls.getColumnList(logicTable(), projects), backendTableInfo);
 
         MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
-            return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
+        MycatConnection connection = root1.getUponDBContext().getConnection(backendTableInfo.getTargetName());
+        RowBaseIterator rowBaseIterator = connection.executeQuery(null, backendTaskSQL);
+        return new AbstractEnumerable<Object[]>() {
+            @Override
+            @SneakyThrows
+            public Enumerator<Object[]> enumerator() {
+                return new MyCatResultSetEnumerator(root1.getCancelFlag(),rowBaseIterator);
+            }
         };
-        return new MyCatResultSetEnumerable(getRow,root1.getCancelFlag(),getRowType(), new QueryBackendTask(backendTableInfo.getTargetName(),backendTaskSQL));
+
     }
 
     public String getTargetName() {

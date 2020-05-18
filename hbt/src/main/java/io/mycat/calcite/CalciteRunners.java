@@ -1,31 +1,32 @@
 package io.mycat.calcite;
 
+import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
-import io.mycat.calcite.table.PreComputationSQLTable;
+import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
+import io.mycat.calcite.table.SingeTargetSQLTable;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Interpreters;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.ToLogicalConverter;
+import org.apache.calcite.rel.RelShuttleImpl;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.tools.RelRunners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.function.Supplier;
-
-import static io.mycat.calcite.prepare.MycatCalcitePlanner.toPhysical;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CalciteRunners {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteRunners.class);
@@ -39,51 +40,88 @@ public class CalciteRunners {
     }
 
     public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
-        RelNode relNode1 = planner.eliminateLogicTable(relNode);
-        relNode = planner.pushDownBySQL(relNode1, forUpdate);
-
-        RelNode phy = toPhysical(relNode, relOptPlanner -> {
-            RelOptUtil.registerDefaultRules(relOptPlanner, false, false);
-        });
-        //修复变成物理表达式后无法运行,所以重新编译成逻辑表达式
-        return new ToLogicalConverter(planner.createRelBuilder(relNode.getCluster())).visit(phy);
+        return planner.pushDownBySQL(planner.eliminateLogicTable(relNode), forUpdate);
     }
 
+
     @SneakyThrows
-    public static Supplier<RowBaseIterator> run(MycatCalciteDataContext dataContext, List<PreComputationSQLTable> preComputationSQLTables, RelNode relNode) {
-        try {
-            MycatRowMetaData mycatRowMetaData = CalciteConvertors.getMycatRowMetaData(relNode.getRowType());
-            ArrayBindable bindable1 = Interpreters.bindable(relNode);
-            Enumerator<Object[]> enumerator = bindable1.bind(dataContext).enumerator();
-            return () -> {
-                if (preComputationSQLTables != null) {
-                    for (PreComputationSQLTable preComputationSQLTable : preComputationSQLTables) {
-                        dataContext.preComputation(preComputationSQLTable);
+    public static RowBaseIterator run(MycatCalciteDataContext calciteDataContext, RelNode relNode) {
+        MycatRowMetaData mycatRowMetaData = CalciteConvertors.getMycatRowMetaData(relNode.getRowType());
+        Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
+        relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(TableScan scan) {
+                SingeTargetSQLTable unwrap = scan.getTable().unwrap(SingeTargetSQLTable.class);
+                if (unwrap != null && !unwrap.existsEnumerable()) {
+                    List<SingeTargetSQLTable> tables = map.computeIfAbsent(unwrap.getTargetName(), s -> new ArrayList<>(2));
+                    tables.add(unwrap);
+                }
+                return super.visit(scan);
+            }
+        });
+        MycatDBContext uponDBContext = calciteDataContext.getUponDBContext();
+        AtomicBoolean cancelFlag = uponDBContext.cancelFlag();
+        if (uponDBContext.isInTransaction()) {
+            for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
+                String k = entry.getKey();
+                List<SingeTargetSQLTable> list = entry.getValue();
+                MycatConnection connection = uponDBContext.getConnection(k);
+                if (list.size() > 1) {
+                    throw new IllegalAccessException("该执行计划重复拉取同一个数据源的数据");
+                }
+                SingeTargetSQLTable table = list.get(0);
+
+                if (table.existsEnumerable()) {
+                    continue;
+                }
+                Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
+                        .submit(() -> connection.executeQuery(table.getMetaData(), table.getSql()));
+                table.setEnumerable(new AbstractEnumerable<Object[]>() {
+                    @Override
+                    @SneakyThrows
+                    public Enumerator<Object[]> enumerator() {
+                        return new MyCatResultSetEnumerator(cancelFlag, submit.get(1, TimeUnit.MINUTES));
                     }
-                }
-                return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
-            };
-        } catch (Throwable e) {
-            e.printStackTrace();
-            LOGGER.info("该关系表达式不被支持的" + relNode);
-            LOGGER.error("", e);
-            PreparedStatement run = RelRunners.run(relNode);
-            return new Supplier<RowBaseIterator>() {
-                @Override
-                @SneakyThrows
-                public RowBaseIterator get() {
-                    return new JdbcRowBaseIterator(null, run, run.executeQuery(), new Closeable() {
+                });
+            }
+
+        } else {
+            Iterator<String> iterator = map.entrySet().stream()
+                    .flatMap(i -> i.getValue().stream())
+                    .filter(i -> !i.existsEnumerable())
+                    .map(i -> i.getTargetName()).iterator();
+            Map<String, Deque<MycatConnection>> nameMap = JdbcRuntime.INSTANCE.getConnection(iterator);
+            for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
+                for (SingeTargetSQLTable v : entry.getValue()) {
+                    MycatConnection connection = nameMap.get(v.getTargetName()).remove();
+                    uponDBContext.addCloseResource(connection);
+                    Future<RowBaseIterator> c = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
+                            .submit(() -> {
+                                if (LOGGER.isDebugEnabled()) {
+                                    LOGGER.debug(" --------------------------jdbc fetch data getTargetName:" + v.getTargetName());
+                                }
+                                return connection.executeQuery(v.getMetaData(), v.getSql());
+                            });
+                    v.setEnumerable(new AbstractEnumerable<Object[]>() {
                         @Override
-                        public void close() throws IOException {
-                            try {
-                                run.close();
-                            } catch (SQLException e1) {
-                                LOGGER.error("", e1);
-                            }
+                        @SneakyThrows
+                        public Enumerator<Object[]> enumerator() {
+                            return new MyCatResultSetEnumerator(cancelFlag, c.get());
                         }
-                    }, null);
+                    });
+
                 }
-            };
+            }
         }
+        ArrayBindable bindable1 = Interpreters.bindable(relNode);
+
+        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
+        Enumerator<Object[]> enumerator = bind.enumerator();
+        return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
+    }
+
+    private static synchronized void c(AtomicBoolean cancelFlag, ExecutorService parallelExecutor, SingeTargetSQLTable v, MycatConnection connection) {
+
+
     }
 }

@@ -16,7 +16,6 @@ package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.table.MycatSQLTableScan;
-import io.mycat.calcite.table.MycatTransientSQLTable;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
@@ -103,10 +102,6 @@ public class RelNodeConvertor {
         if (relNode instanceof TableScan) {
             List<FieldType> fields = getFields(relNode);
             TableScan relNode1 = (TableScan) relNode;
-            MycatTransientSQLTable table1 = relNode1.getTable().unwrap(MycatTransientSQLTable.class);
-            if (table1 != null) {
-                return new FromSqlSchema(fields, table1.getTargetName(), table1.getExplainSQL());
-            }
             MycatSQLTableScan unwrap = relNode1.getTable().unwrap(MycatSQLTableScan.class);
             if (unwrap != null) {
                 return new FromSqlSchema(fields, unwrap.getTargetName(), unwrap.getSql());

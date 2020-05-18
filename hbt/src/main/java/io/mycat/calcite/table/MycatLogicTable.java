@@ -15,12 +15,6 @@
 package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.CalciteConvertors;
-import io.mycat.calcite.CalciteUtls;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.LogicTableType;
 import io.mycat.metadata.ShardingTableHandler;
@@ -31,15 +25,10 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.mycat.calcite.CalciteUtls.getColumnList;
-import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
 
 /**
  * @author Junwen Chen
@@ -88,34 +77,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
-
-        if (root instanceof io.mycat.calcite.MycatCalciteDataContext) {
-            MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-            MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
-                return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
-            };
-            RelDataType rowType = CalciteConvertors.getRelDataType(getColumnList(table, projects), MycatCalciteSupport.INSTANCE.TypeFactory);
-            if (rowType.getFieldNames().isEmpty()) {
-                rowType = getRowType();
-            }
-            switch (table.getType()) {
-                case SHARDING:
-                    List<QueryBackendTask> backendTasks = getQueryBackendTasks((ShardingTableHandler) this.table, filters, projects);
-                    return new MyCatResultSetEnumerable(getRow, cancelFlag, rowType, backendTasks);
-                case GLOBAL:
-                    GlobalTableHandler table = (GlobalTableHandler) this.table;
-                    BackendTableInfo globalBackendTableInfo = table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
-                    String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
-                            table.getColumns(),
-                            getColumnList(table, projects)
-                            , globalBackendTableInfo);
-                    return new MyCatResultSetEnumerable((mycatRowMetaData, targetName, sql) -> root1.getUponDBContext().query(mycatRowMetaData, targetName, sql), cancelFlag, rowType, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
-                default:
-                    throw new UnsupportedOperationException();
-            }
-        }
-        throw new UnsupportedOperationException("不支持的关系表达式 "+filters);
+        throw new UnsupportedOperationException();
     }
 
     @Override

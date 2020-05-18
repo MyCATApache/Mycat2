@@ -13,6 +13,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
+import io.mycat.MycatConnection;
 import io.mycat.PlanRunner;
 import io.mycat.TextUpdateInfo;
 import io.mycat.api.collector.RowBaseIterator;
@@ -28,6 +29,7 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ParseContext;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -144,21 +146,21 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         return Objects.requireNonNull(Objects.requireNonNull(schemaHandler, "schema is not existed").logicTables().get(tableName), "table is not existed");
     }
 
-    @AllArgsConstructor
-    static class P implements PlanRunner {
-        final MycatDBContext dbContext;
-        final String sql;
-
-        @Override
-        public List<String> explain() {
-            return Arrays.asList("direct query sql:", sql);
-        }
-
-        @Override
-        public RowBaseIterator run() {
-            return dbContext.queryDefaultTarget(sql);
-        }
-    }
+//    @AllArgsConstructor
+//    static class P implements PlanRunner {
+//        final MycatDBContext dbContext;
+//        final String sql;
+//
+//        @Override
+//        public List<String> explain() {
+//            return Arrays.asList("direct query sql:", sql);
+//        }
+//
+//        @Override
+//        public RowBaseIterator run() {
+//            return dbContext.queryDefaultTarget(sql);
+//        }
+//    }
 
     @NotNull
     private MycatSQLPrepareObject getPrepareObject(String templateSql, MycatDBContext dbContext) {
@@ -185,7 +187,9 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
                     @Override
                     public RowBaseIterator run() {
-                        return dbContext.queryDefaultTarget(templateSql);
+                        String firstReplicaDataSource = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
+                        MycatConnection connection = dbContext.getConnection(firstReplicaDataSource);
+                        return connection.executeQuery(null,templateSql);
                     }
                 };
             }

@@ -1,5 +1,6 @@
 package io.mycat.calcite.prepare;
 
+import io.mycat.MycatConnection;
 import io.mycat.PlanRunner;
 import io.mycat.TextUpdateInfo;
 import io.mycat.api.collector.MergeUpdateRowIterator;
@@ -66,7 +67,17 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
                     @Override
                     public UpdateRowIteratorResponse next() {
                         TextUpdateInfo next = iterator.next();
-                        return dbContext.update(next.targetName(),next.sqls());
+                        String targetName = next.targetName();
+                        MycatConnection connection = dbContext.getConnection(targetName);
+                        long updateCount = 0;
+                        long lastInsertId = 0;
+                        for (String sql :          next.sqls()) {
+                            UpdateRowIteratorResponse mycatUpdateResponse =connection.executeUpdate(sql,true,dbContext.getServerStatus());
+                            updateCount += mycatUpdateResponse.getUpdateCount();
+                            lastInsertId = Math.max(mycatUpdateResponse.getLastInsertId(), lastInsertId);
+                        }
+                        return new UpdateRowIteratorResponse(updateCount, lastInsertId,dbContext.getServerStatus());
+
                     }
                 },dbContext.getServerStatus());
             }

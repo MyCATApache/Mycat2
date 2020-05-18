@@ -16,20 +16,15 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatReflectiveSchema;
-import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
 import io.mycat.upondb.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.materialize.SqlStatisticProvider;
 import org.apache.calcite.plan.Context;
@@ -127,23 +122,23 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     }
 
 
-    public void preComputation(PreComputationSQLTable preComputationSQLTable) {
-        uponDBContext.cache(preComputationSQLTable, preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),
-                Collections.emptyList(),()->preComputationSQLTable.scan(this).toList());
-    }
-
-    public Enumerable<Object[]> getPreComputation(PreComputationSQLTable preComputationSQLTable) {
-        Object o = uponDBContext.getCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
-        if (o != null) {
-            return Linq4j.asEnumerable((List<Object[]>) o);
-        } else {
-            return null;
-        }
-    }
-
-    public UpdateRowIteratorResponse getUpdateRowIterator(String targetName, List<String> sqls) {
-        return uponDBContext.update(targetName, sqls);
-    }
+//    public void preComputation(PreComputationSQLTable preComputationSQLTable) {
+//        uponDBContext.cache(preComputationSQLTable, preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),
+//                Collections.emptyList(),()->preComputationSQLTable.scan(this).toList());
+//    }
+//
+//    public Enumerable<Object[]> getPreComputation(PreComputationSQLTable preComputationSQLTable) {
+//        Object o = uponDBContext.getCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
+//        if (o != null) {
+//            return Linq4j.asEnumerable((List<Object[]>) o);
+//        } else {
+//            return null;
+//        }
+//    }
+//
+//    public UpdateRowIteratorResponse getUpdateRowIterator(String targetName, List<String> sqls) {
+//        return uponDBContext.update(targetName, sqls);
+//    }
 
     public static SchemaPlus getSchema(MycatDBClientBased based) {
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();

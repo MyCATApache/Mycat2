@@ -19,7 +19,7 @@ import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.table.PreComputationSQLTable;
+import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
@@ -344,7 +344,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
 
-    public String convertToHBTText(List<PreComputationSQLTable> tables) {
+    public String convertToHBTText(List<SingeTargetSQLTable> tables) {
         return tables.stream()
                 .map(preComputationSQLTable ->
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));

@@ -41,7 +41,7 @@ public interface TransactionSession {
 
     boolean isAutocommit();
 
-    <T> T getConnection(String targetName);
+    MycatConnection getConnection(String targetName);
 
     void reset();
 
@@ -67,4 +67,6 @@ public interface TransactionSession {
      * 模拟autocommit = 0 时候自动开启事务
      */
     public void doAction();
+
+    public void addCloseResource(AutoCloseable closeable);
 }

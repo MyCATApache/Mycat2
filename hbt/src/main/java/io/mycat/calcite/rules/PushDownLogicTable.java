@@ -114,13 +114,14 @@ public class PushDownLogicTable extends RelOptRule {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////
 
-        HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
+        TreeMap<String, List<RelNode>> bindTableGroupMapByTargetName = new TreeMap<>(Comparator.comparing(x->x));
         for (BackendTableInfo backendTableInfo : backendTableInfos) {
             String targetName = backendTableInfo.getTargetName();
             List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
             queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
         }
-        HashMap<String, RelNode> relNodeGroup = new HashMap<>();
+
+        TreeMap<String, RelNode> relNodeGroup = new TreeMap<>(Comparator.comparing(x->x));
         context.addAll(relNodeGroup.keySet());
         for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
             String targetName = entry.getKey();

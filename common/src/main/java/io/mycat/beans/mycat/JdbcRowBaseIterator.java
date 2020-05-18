@@ -41,6 +41,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     private final ResultSet resultSet;
     private final String sql;
     private final AutoCloseable closeCallback;
+    private boolean hasNext = true;
 
     @SneakyThrows
     public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback,String sql) {
@@ -67,9 +68,12 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
 
     @Override
     public boolean next() {
-        MycatRowMetaData metaData = getMetaData();
         try {
-            return resultSet.next();
+            if (hasNext) {
+              return   hasNext = resultSet.next();
+            }else {
+                return false;
+            }
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }

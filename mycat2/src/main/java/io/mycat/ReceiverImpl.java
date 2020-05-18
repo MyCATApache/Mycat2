@@ -14,7 +14,7 @@ import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.runtime.TransactionSessionUtil;
+import io.mycat.datasource.jdbc.TransactionSessionUtil;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -317,7 +317,9 @@ public class ReceiverImpl implements Response {
                     switch (executeType) {
                         case QUERY_MASTER:
                         case QUERY: {
-                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession, datasourceName, sql));
+                            MycatConnection connection = transactionSession.getConnection(datasourceName);
+                            TextResultSetResponse textResultSetResponse = new TextResultSetResponse(connection.executeQuery(null, sql));
+                            writeToMycatSession(session, textResultSetResponse);
                             return;
                         }
                         default:

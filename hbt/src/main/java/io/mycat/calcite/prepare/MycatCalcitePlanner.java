@@ -400,21 +400,21 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
 
     public DatasourceInfo preComputeSeq(RelNode relNode) {
         MycatDBContext uponDBContext = dataContext.getUponDBContext();
-        Map<String, List<PreComputationSQLTable>> map = new HashMap<>();
+        Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-                PreComputationSQLTable unwrap = scan.getTable().unwrap(PreComputationSQLTable.class);
+                SingeTargetSQLTable unwrap = scan.getTable().unwrap(SingeTargetSQLTable.class);
                 if (unwrap != null) {
-                    List<PreComputationSQLTable> preComputationSQLTables = map.computeIfAbsent(uponDBContext.resolveFinalTargetName(unwrap.getTargetName()), s -> new ArrayList<>(1));
+                    List<SingeTargetSQLTable> preComputationSQLTables = map.computeIfAbsent(uponDBContext.resolveFinalTargetName(unwrap.getTargetName()), s -> new ArrayList<>(1));
                     preComputationSQLTables.add(unwrap);
                 }
                 return super.visit(scan);
             }
         });
-        List<PreComputationSQLTable> preSeq = new ArrayList<>();
-        for (Map.Entry<String, List<PreComputationSQLTable>> stringListEntry : map.entrySet()) {
-            List<PreComputationSQLTable> value = stringListEntry.getValue();
+        List<SingeTargetSQLTable> preSeq = new ArrayList<>();
+        for (Map.Entry<String, List<SingeTargetSQLTable>> stringListEntry : map.entrySet()) {
+            List<SingeTargetSQLTable> value = stringListEntry.getValue();
             int size = value.size() - 1;
             for (int i = 0; i < size; i++) {
                 preSeq.add(value.get(i));
@@ -428,7 +428,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-                MycatTransientSQLTable unwrap = scan.getTable().unwrap(MycatTransientSQLTable.class);
+                MycatSQLTableScan unwrap = scan.getTable().unwrap(MycatSQLTableScan.class);
                 if (unwrap != null) {
                     return unwrap.toRel(ViewExpanders.toRelContext(planner, MycatCalcitePlanner.this.newCluster()), scan.getTable());
                 }

@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     final Schema schema;
     private final MycatCalciteDataContext mycatCalciteDataContext;
-    private  DatasourceInfo  datasourceInfo;
 
     public MycatHbtCalcitePrepareObject(Long id, int paramCount, Schema schema, MycatDBContext uponDBContext) {
         super(id, paramCount);
@@ -38,17 +37,17 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     @Override
     public PlanRunner plan(List<Object> params) {
         RelNode relNode = getRelNode(params);
-        Supplier<RowBaseIterator> run = CalciteRunners.run(mycatCalciteDataContext, datasourceInfo.preSeq, relNode);
+       RowBaseIterator run = CalciteRunners.run(mycatCalciteDataContext, relNode);
         return new PlanRunner() {
             @Override
             public RowBaseIterator run() {
-                return run.get();
+                return run;
             }
 
             @Override
             public List<String> explain() {
                 return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT,false),
-                        MycatCalciteSupport.INSTANCE.convertToHBTText(datasourceInfo.preSeq),
+                        null,
                         MycatCalciteSupport.INSTANCE.dumpMetaData(relNode.getRowType()),
                         MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
                         MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode, mycatCalciteDataContext));
@@ -58,12 +57,8 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     }
 
     public RelNode getRelNode(List<Object> params) {
-        MycatCalcitePlanner planner1 = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
         HBTQueryConvertor hbtConvertor = new HBTQueryConvertor( params,mycatCalciteDataContext);
-
-        RelNode handle = hbtConvertor.handle(schema);
-        this.datasourceInfo = planner1.preComputeSeq(handle);
-        return handle;
+        return hbtConvertor.handle(schema);
     }
 
 }

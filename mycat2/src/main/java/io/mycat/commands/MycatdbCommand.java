@@ -172,7 +172,7 @@ public enum MycatdbCommand implements MycatCommand {
             try {
                 String trim = req.getText().trim();
                 String pre = "execute plan ";
-                if (trim.startsWith(pre)) {
+                if (trim.toLowerCase().startsWith(pre)) {
                     final String finalSql = trim.substring(pre.length());
                     receiver.sendResultSet(db.executeRel(finalSql), () -> db.explainRel(finalSql));
                     isRun = true;

@@ -269,47 +269,47 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void run(Runnable runnable) {
         runner.run(this, runnable);
     }
-
-    @Override
-    public UpdateRowIteratorResponse update(String targetName, String sql) {
-        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, true, null, transactionSession);
-        return defaultConnection.executeUpdate(sql, true, transactionSession.getServerStatus());
-    }
-    @Override
-    public RowBaseIterator query(String targetName, String sql){
-        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
-        return defaultConnection.executeQuery(sql);
-    }
-
-    @Override
-    public MycatRowMetaData queryMetaData(String targetName, String sql) {
-        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, false, null);
-        JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
-        try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
-            try(Statement statement = connection1.createStatement()){
-                try( ResultSet resultSet = statement.executeQuery(sql)) {
-                  return new JdbcRowMetaData(resultSet.getMetaData());
-                }
-            }
-        } catch (Throwable e) {
-            log.warn("",e);
-        }
-        return null;
-    }
-
-    @Override
-    public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
-        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
-        return defaultConnection.executeQuery(mycatRowMetaData,sql);
-    }
-
-    @Override
-    public RowBaseIterator queryDefaultTarget(String sql) {
-        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
-        DefaultConnection connection = transactionSession.getConnection(datasourceName);
-        Objects.requireNonNull(connection);
-        return connection.executeQuery(sql);
-    }
+//
+//    @Override
+//    public UpdateRowIteratorResponse update(String targetName, String sql) {
+//        MycatConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, true, null, transactionSession);
+//        return defaultConnection.executeUpdate(sql, true, transactionSession.getServerStatus());
+//    }
+//    @Override
+//    public RowBaseIterator query(String targetName, String sql){
+//        MycatConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
+//        return defaultConnection.executeQuery(null,sql);
+//    }
+//
+//    @Override
+//    public MycatRowMetaData queryMetaData(String targetName, String sql) {
+//        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, false, null);
+//        JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+//        try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
+//            try(Statement statement = connection1.createStatement()){
+//                try( ResultSet resultSet = statement.executeQuery(sql)) {
+//                  return new JdbcRowMetaData(resultSet.getMetaData());
+//                }
+//            }
+//        } catch (Throwable e) {
+//            log.warn("",e);
+//        }
+//        return null;
+//    }
+//
+//    @Override
+//    public RowBaseIterator query(MycatRowMetaData mycatRowMetaData, String targetName, String sql) {
+//        MycatConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
+//        return defaultConnection.executeQuery(mycatRowMetaData,sql);
+//    }
+//
+//    @Override
+//    public RowBaseIterator queryDefaultTarget(String sql) {
+//        String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
+//        MycatConnection connection = transactionSession.getConnection(datasourceName);
+//        Objects.requireNonNull(connection);
+//        return connection.executeQuery(null,sql);
+//    }
 
     public String resolveDatasourceTargetName(String targetName) {
         return transactionSession.resolveFinalTargetName(targetName);

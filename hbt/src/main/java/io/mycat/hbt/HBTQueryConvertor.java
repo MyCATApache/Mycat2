@@ -17,6 +17,7 @@ package io.mycat.hbt;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -24,10 +25,14 @@ import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.rules.PushDownLogicTable;
 import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.TableHandler;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.MycatSqlUtil;
 import lombok.SneakyThrows;
@@ -57,6 +62,10 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -91,9 +100,17 @@ public class HBTQueryConvertor {
             try {
                 MycatDBContext uponDBContext = context.getUponDBContext();
                 if (uponDBContext != null) {
-                    MycatRowMetaData mycatRowMetaData = uponDBContext.queryMetaData(targetName, sql);
-                    if (mycatRowMetaData != null) {
-                        return FieldTypes.getFieldTypes(mycatRowMetaData);
+                    String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+                    JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+                    try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
+                        try(Statement statement = connection1.createStatement()){
+                            statement.setMaxRows(0);
+                            try(ResultSet resultSet = statement.executeQuery(sql)){
+                                return FieldTypes.getFieldTypes(new JdbcRowMetaData(resultSet.getMetaData()));
+                            }
+                        }
+                    } catch (SQLException e) {
+                        log.warn("{}",e);
                     }
                 }
                 return null;
@@ -418,7 +435,16 @@ public class HBTQueryConvertor {
 
     private RelNode fromTable(FromTableSchema input) {
         List<String> collect = new ArrayList<>(input.getNames());
-        return relBuilder.scan(collect).as(collect.get(collect.size() - 1)).build();
+        RelNode build = relBuilder.scan(collect).as(collect.get(collect.size() - 1)).build();
+        MycatLogicTable unwrap = build.getTable().unwrap(MycatLogicTable.class);
+
+        //消除逻辑表,变成物理表
+        if (unwrap!= null){
+            PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
+          return   pushDownLogicTable.toPhyTable(relBuilder,(TableScan)build);
+        }
+
+        return build;
     }
 
     private RelNode map(MapSchema input) {

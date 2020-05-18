@@ -1,11 +1,6 @@
 package io.mycat.calcite.table;
 
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatConvention;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -17,7 +12,7 @@ import org.apache.calcite.schema.TranslatableTable;
 import java.util.Collections;
 import java.util.List;
 
-public class MycatSQLTableScan extends PreComputationSQLTable implements ScannableTable, TransientTable, TranslatableTable {
+public class MycatSQLTableScan extends SingeTargetSQLTable implements ScannableTable, TransientTable, TranslatableTable {
     final RelDataType relDataType;
     final String sql;
     final MycatConvention convention;
@@ -27,7 +22,6 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
         this.sql = sql;
         this.convention = convention;
     }
-
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
@@ -50,19 +44,6 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
     @Override
     public List<Object> params() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public Enumerable<Object[]> scan(DataContext root) {
-        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        Enumerable<Object[]> preComputation = root1.getPreComputation(this);
-        if (preComputation != null) {
-            return preComputation;
-        }
-        MyCatResultSetEnumerable.GetRow getRow = (mycatRowMetaData, targetName, sql) -> {
-            return root1.getUponDBContext().query(mycatRowMetaData, targetName, sql);
-        };
-        return new MyCatResultSetEnumerable(getRow,root1.getCancelFlag(), relDataType, new QueryBackendTask( convention.targetName,sql));
     }
 
 }
