@@ -62,6 +62,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     mysqlXaDataSource.setUrl(url);
     mysqlXaDataSource.setPinGlobalTxToPhysicalConnection(true);
     mysqlXaDataSource.setMaxReconnects(maxRetryCount);
+    mysqlXaDataSource.setConnectTimeout((int) config.getMaxConnectTimeout());
 //    DruidXADataSource   datasource = new DruidXADataSource();
 //
 //    if (maxRetryCount > 0) {

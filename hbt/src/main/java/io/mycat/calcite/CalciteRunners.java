@@ -2,7 +2,6 @@ package io.mycat.calcite;
 
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
@@ -46,7 +45,23 @@ public class CalciteRunners {
 
     @SneakyThrows
     public static RowBaseIterator run(MycatCalciteDataContext calciteDataContext, RelNode relNode) {
-        MycatRowMetaData mycatRowMetaData = CalciteConvertors.getMycatRowMetaData(relNode.getRowType());
+        Future<?> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService().submit(new Runnable() {
+            @Override
+            @SneakyThrows
+            public void run() {
+                fork(calciteDataContext, relNode);
+            }
+        });
+
+        ArrayBindable bindable1 = Interpreters.bindable(relNode);
+        submit.get(1,TimeUnit.MINUTES);
+        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
+
+        Enumerator<Object[]> enumerator = bind.enumerator();
+        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator);
+    }
+
+    private static void fork(MycatCalciteDataContext calciteDataContext, RelNode relNode) throws IllegalAccessException {
         Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
             @Override
@@ -92,7 +107,8 @@ public class CalciteRunners {
                     .map(i -> i.getTargetName()).iterator();
             Map<String, Deque<MycatConnection>> nameMap = JdbcRuntime.INSTANCE.getConnection(iterator);
             for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
-                for (SingeTargetSQLTable v : entry.getValue()) {
+                List<SingeTargetSQLTable> value = entry.getValue();
+                for (SingeTargetSQLTable v : value) {
                     MycatConnection connection = nameMap.get(v.getTargetName()).remove();
                     uponDBContext.addCloseResource(connection);
                     Future<RowBaseIterator> c = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
@@ -102,26 +118,16 @@ public class CalciteRunners {
                                 }
                                 return connection.executeQuery(v.getMetaData(), v.getSql());
                             });
-                    v.setEnumerable(new AbstractEnumerable<Object[]>() {
+                    AbstractEnumerable enumerable = new AbstractEnumerable<Object[]>() {
                         @Override
                         @SneakyThrows
                         public Enumerator<Object[]> enumerator() {
                             return new MyCatResultSetEnumerator(cancelFlag, c.get());
                         }
-                    });
-
+                    };
+                    v.setEnumerable(enumerable);
                 }
             }
         }
-        ArrayBindable bindable1 = Interpreters.bindable(relNode);
-
-        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-        Enumerator<Object[]> enumerator = bind.enumerator();
-        return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
-    }
-
-    private static synchronized void c(AtomicBoolean cancelFlag, ExecutorService parallelExecutor, SingeTargetSQLTable v, MycatConnection connection) {
-
-
     }
 }
