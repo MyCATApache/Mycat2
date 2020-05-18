@@ -160,7 +160,7 @@ mvn package -Dmaven.test.skip=true
 ## 设置版本
 
 ```
-versions:setVariable -DnewVersion=1.xxx-SNAPSHOT
+versions:set -DnewVersion=1.xxx-SNAPSHOT
 ```
 
 
