@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.ExecutorUtil;
 import io.mycat.MycatConfig;
+import io.mycat.MycatConnection;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterRootConfig;
@@ -25,19 +26,13 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
-import io.mycat.util.nio.SelectorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -52,8 +47,8 @@ public enum JdbcRuntime {
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;
-    private  ExecutorService executorService;
-
+    private ExecutorService executorService;
+    private ExecutorService fetchDataExecutorService;
 
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
         connectionManager.addDatasource(key);
@@ -71,6 +66,16 @@ public enum JdbcRuntime {
         return connectionManager.getConnection(name, true, TRANSACTION_REPEATABLE_READ, false);
     }
 
+    public synchronized Map<String, Deque<MycatConnection>> getConnection(Iterator<String> targets) {
+        Map<String, Deque<MycatConnection>> map = new HashMap<>();
+        while (targets.hasNext()) {
+            String targetName = targets.next();
+            Deque<MycatConnection> mycatConnections = map.computeIfAbsent(targetName, s -> new LinkedList<>());
+            mycatConnections.add(getConnection(targetName));
+        }
+        return map;
+    }
+
     public void closeConnection(DefaultConnection connection) {
         connectionManager.closeConnection(connection);
     }
@@ -78,8 +83,8 @@ public enum JdbcRuntime {
     public synchronized void load(MycatConfig config) {
         ServerConfig.Worker worker = config.getServer().getWorker();
         int maxThread = worker.getMaxThread();
-        executorService  = ExecutorUtil.create("heartBeatExecutor", 1);
-
+        executorService = ExecutorUtil.create("heartBeatExecutor", 1);
+        fetchDataExecutorService = ExecutorUtil.create("fetchDataExecutorService", maxThread);
         if (!config.getServer().getWorker().isClose()) {
             PlugRuntime.INSTCANE.load(config);
             ReplicaSelectorRuntime.INSTANCE.load(config);
@@ -174,10 +179,20 @@ public enum JdbcRuntime {
     }
 
     public JdbcConnectionManager getConnectionManager() {
-        if (connectionManager != null ){
+        if (connectionManager != null) {
             return connectionManager;
-        }else {
+        } else {
             throw new MycatException("jdbc连接管理器没有初始化,请配置jdbc连接");
         }
 
-    }}
+    }
+
+    /**
+     * Getter for property 'fetchDataExecutorService'.
+     *
+     * @return Value for property 'fetchDataExecutorService'.
+     */
+    public ExecutorService getFetchDataExecutorService() {
+        return fetchDataExecutorService;
+    }
+}
