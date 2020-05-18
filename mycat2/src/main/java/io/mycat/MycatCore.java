@@ -270,7 +270,7 @@ public enum MycatCore {
         }
         List<DatasourceRootConfig.DatasourceConfig> datasources = config.currentConfig().getDatasource().getDatasources();
         for (DatasourceRootConfig.DatasourceConfig datasourceConfig : datasources) {
-            if (name.equals(datasourceConfig.getName())) {
+            if (datasourceConfig.computeType().isNative() && name.equals(datasourceConfig.getName())) {
                 return datasourceMap.computeIfAbsent(name, s -> new MySQLDatasource(datasourceConfig) {
                 });
             }
