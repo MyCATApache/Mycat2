@@ -78,16 +78,15 @@ public class CalciteRunners {
         AtomicBoolean cancelFlag = uponDBContext.cancelFlag();
         if (uponDBContext.isInTransaction()) {
             for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
-                String k = entry.getKey();
+                String datasource = entry.getKey();
                 List<SingeTargetSQLTable> list = entry.getValue();
-                MycatConnection connection = uponDBContext.getConnection(k);
-                if (list.size() > 1) {
-                    throw new IllegalAccessException("该执行计划重复拉取同一个数据源的数据");
-                }
                 SingeTargetSQLTable table = list.get(0);
-
                 if (table.existsEnumerable()) {
                     continue;
+                }
+                MycatConnection connection = uponDBContext.getConnection(datasource);
+                if (list.size() > 1) {
+                    throw new IllegalAccessException("该执行计划重复拉取同一个数据源的数据");
                 }
                 Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
                         .submit(() -> connection.executeQuery(table.getMetaData(), table.getSql()));
