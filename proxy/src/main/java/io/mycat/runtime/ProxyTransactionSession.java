@@ -45,19 +45,4 @@ public class ProxyTransactionSession extends LocalTransactionSession {
 
     }
 
-    @Override
-    @SneakyThrows
-    public void check() {
-        Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
-        for (Map.Entry<String, DefaultConnection> entry : entries) {
-            DefaultConnection value = entry.getValue();
-            Connection rawConnection = value.getRawConnection();
-            if(!rawConnection.getAutoCommit()){
-                rawConnection.rollback();
-            }
-            value.close();
-        }
-        updateConnectionMap.clear();
-        dataSourceNearness.clear();
-    }
 }
