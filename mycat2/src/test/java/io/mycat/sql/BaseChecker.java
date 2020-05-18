@@ -1,19 +1,19 @@
 package io.mycat.sql;
 
+import com.google.common.base.Splitter;
 import io.mycat.dao.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public abstract class BaseChecker implements Runnable {
     final Statement statement;
@@ -71,7 +71,24 @@ public abstract class BaseChecker implements Runnable {
         if (!s.startsWith("(")) {
             s = "(" + s + ")";
         }
-        Assert.assertEquals(expectedRes, s);
+        Splitter on = Splitter.on(")(");
+        List<String> expected =  on.splitToList(expectedRes);
+        List<String> result = on.splitToList(s);
+        if (!expectedRes.equals(s)){
+            HashSet<String> x = toCollection(expected);
+            HashSet<String> y = toCollection(result);
+            Assert.assertEquals(x, y);
+        }
+    }
+    private HashSet<String> toCollection(List<String> split) {
+        return toCollection(split.toArray(new String[]{}));
+    }
+    @NotNull
+    private HashSet<String> toCollection(String[] split) {
+        split[0] = split[0].substring(1);
+        String s = split[split.length - 1];
+        split[split.length - 1]= s.substring(0,s.length() - 1);
+        return new HashSet<>(Arrays.asList(split));
     }
 
     @SneakyThrows

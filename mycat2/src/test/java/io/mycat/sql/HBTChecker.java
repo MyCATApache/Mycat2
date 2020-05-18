@@ -35,7 +35,7 @@ public class HBTChecker extends BaseChecker {
                 "          .map(`id` as `id0`),fromTable(db1,company))", "(1,1,Intel,1)");
 
         //fromTable
-        checkHbt("fromTable(db1,travelrecord)", "(1,999,null,null,null,null)(999999999,999,null,null,null,null)");
+        checkHbt("fromTable(db1,travelrecord).orderBy(order(id,ASC))", "(1,999,null,null,null,null)(999999999,999,null,null,null,null)");
 
         //table
         checkHbt("table(fields(fieldType(id,integer)),values(1,2,3))", "(1)(2)(3)");
@@ -89,8 +89,8 @@ public class HBTChecker extends BaseChecker {
         checkHbt("fromTable(db1,travelrecord).orderBy(order(id,DESC))", "(999999999,999,null,null,null,null)(1,999,null,null,null,null)");
 
         //limit
-        checkHbt("fromTable(db1,travelrecord).limit(0,1)", "(1,999,null,null,null,null)");
-        checkHbt("fromTable(db1,travelrecord).limit(1,1)", "(999999999,999,null,null,null,null)");
+        checkHbt("fromTable(db1,travelrecord).orderBy(order(id,ASC)).limit(0,1)", "(1,999,null,null,null,null)");
+        checkHbt("fromTable(db1,travelrecord).orderBy(order(id,ASC)).limit(1,1)", "(999999999,999,null,null,null,null)");
 
 
         checkHbt("leftJoin(`id0` = `id`,fromTable(db1,travelrecord)\n" +
