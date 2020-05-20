@@ -42,7 +42,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
               minSwitchTimeInterval: 120000 , #最小主从切换间隔
               heartbeatTimeout: 100000 , #心跳超时值,毫秒
               slaveThreshold: 0 , # mysql binlog延迟值
-              reuqestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
+              requestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
    }}
   ]
   timer: {initialDelay: 0, period: 1, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口

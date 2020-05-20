@@ -878,7 +878,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
               minSwitchTimeInterval: 12000 , #最小主从切换间隔
               heartbeatTimeout: 12000 , #心跳超时值,毫秒
               slaveThreshold: 0 , # mysql binlog延迟值
-              reuqestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
+              requestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
    }}
   ]
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS} #心跳定时器
@@ -890,7 +890,7 @@ MASTER_SLAVE中的masters的意思是主从切换顺序
 
 GARELA_CLUSTER的masters意思是这些节点同时成为主节点,负载均衡算法可以选择主节点
 
-reuqestType是进行心跳的实现方式,使用mysql意味着使用proxy方式进行,能异步地进行心跳,而jdbc方式会占用线程池
+requestType是进行心跳的实现方式,使用mysql意味着使用proxy方式进行,能异步地进行心跳,而jdbc方式会占用线程池
 
 当配置是主从的时候,发生主从切换,mycat会备份原来的配置(文件名带有版本号)然后使用更新的配置
 
