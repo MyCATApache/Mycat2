@@ -836,13 +836,15 @@ datasource:
 
 
 
-maxConnectTimeout:单位millis
+### maxConnectTimeout
+
+单位millis
 
 配置中的定时器主要作用是定时检查闲置连接
 
 
 
-initSqlsGetConnection
+### initSqlsGetConnection
 
 true|false
 
@@ -852,11 +854,39 @@ true|false
 
 
 
-datasourceProviderClass
+### datasourceProviderClass
 
 数据源提供者
 
 涉及jdbc,xa需要特定配置的DataSource,可以实现这个类,暂时mycat只支持mysql的数据源配置,使用mysql的xa数据源
+
+
+
+### type
+
+数据源类型
+
+###### NATIVE
+
+只使用NATIVE协议(即Mycat自研的连接MySQL的协议)
+
+###### JDBC
+
+只使用JDBC驱动连接
+
+示例
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/sharingXA/mycat.yml
+
+
+
+###### NATIVE_JDBC
+
+默认配置
+
+该数据源同一个配置同时可以使用NATIVE,JDBC
+
+
 
 
 
