@@ -20,7 +20,6 @@ import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.ContextExecuter;
 import io.mycat.util.Response;
-import io.mycat.util.SQLDispatcher;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ import java.util.LinkedList;
  **/
 public enum MycatdbCommand implements MycatCommand {
     INSTANCE;
-    final static Logger logger = LoggerFactory.getLogger(SQLDispatcher.class);
+    final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
     final Collection<SQLHandler> sqlHandlers = new ArrayList<>();
 
     MycatdbCommand() {
