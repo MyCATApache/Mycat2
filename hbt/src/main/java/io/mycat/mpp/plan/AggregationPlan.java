@@ -1,6 +1,6 @@
 package io.mycat.mpp.plan;
 
-import io.mycat.mpp.AggregationExp;
+import io.mycat.mpp.AggregationCallExp;
 import io.mycat.mpp.AggregationGroup;
 import io.mycat.mpp.AggregationKey;
 import io.mycat.mpp.DataContext;
@@ -17,39 +17,47 @@ import java.util.stream.Stream;
 
 
 public class AggregationPlan extends NodePlan {
-    final String[] resultSetColumnNames;
-    final String[] aggCallNames;
-    final List<List<Integer>> args;
-    final int[] groupedFieldsIndexes;//多个键
-    final boolean concurrent;
+    private final String[] aggCallNames;
+    private final Type returnType;
+    private final List<List<Integer>> args;
+    private final int[] groupedFieldsIndexes;//多个键
+    private  final boolean concurrent;
+    private final String[] resultSetColumnNames;
 
-    public AggregationPlan(QueryPlan from, String[] resultSetColumnNames, String[] aggCallNames, List<List<Integer>> args, int[] groupedFieldsIndexes, boolean concurrent) {
+    public AggregationPlan(QueryPlan from,
+                           String[] aggCallNames,
+                           Type returnType,
+                           List<List<Integer>> args,
+                           int[] groupedFieldsIndexes,
+                           boolean concurrent) {
         super(from);
-        this.resultSetColumnNames = resultSetColumnNames;
         this.aggCallNames = aggCallNames;
+        this.returnType = returnType;
         this.args = args;
         this.groupedFieldsIndexes = groupedFieldsIndexes;
         this.concurrent = concurrent;
+
+        this.resultSetColumnNames = Arrays.stream(returnType.getColumns()).map(i -> i.getName()).toArray(String[]::new);
     }
-    public AggregationPlan create(QueryPlan from,
-                                  String[] resultSetColumnNames,
+    public static final AggregationPlan create(QueryPlan from,
                                   String[] aggCallNames,
+                                  Type returnType,
                                   List<List<Integer>> args,
                                   int[] groupedFieldsIndexes){
-        return create(from, resultSetColumnNames, aggCallNames, args, groupedFieldsIndexes,false);
+        return create(from, aggCallNames,returnType, args, groupedFieldsIndexes,false);
     }
-    public AggregationPlan create(QueryPlan from,
-                                  String[] resultSetColumnNames,
+    public  static final AggregationPlan create(QueryPlan from,
                                   String[] aggCallNames,
+                                  Type returnType,
                                   List<List<Integer>> args,
                                   int[] groupedFieldsIndexes,
                                   boolean concurrent){
-        return new AggregationPlan(from, resultSetColumnNames, aggCallNames, args, groupedFieldsIndexes, concurrent);
+        return new AggregationPlan(from,aggCallNames, returnType,args, groupedFieldsIndexes, concurrent);
     }
 
     @Override
     public Type getColumns() {
-        return null;
+        return returnType;
     }
 
     @Override
@@ -84,7 +92,7 @@ public class AggregationPlan extends NodePlan {
                     Object[] values = new Object[resultSetColumnNames.length];
                     int index = 0;
                     for (Object field : k.getValues()) values[index++] = field;
-                    for (AggregationExp column : v.getColumns()) values[index++] = column.getValue();
+                    for (AggregationCallExp column : v.getColumns()) values[index++] = column.getValue();
                     iterator.remove();//help gc
                     return DataAccessor.of(values);
                 }
@@ -96,10 +104,10 @@ public class AggregationPlan extends NodePlan {
                 private void compute() {
                     Scanner scanner = from.scan(dataContext, flags);
                     AggregationGroup group = AggregationGroup.of(aggCallNames, resultSetColumnNames, args);
-                    AggregationExp[] columns = group.getColumns();
+                    AggregationCallExp[] columns = group.getColumns();
                     while (scanner.hasNext()) {
                         DataAccessor dataAccessor = scanner.next();
-                        for (AggregationExp cc : columns) {
+                        for (AggregationCallExp cc : columns) {
                             cc.accept(dataAccessor);
                         }
                     }
@@ -119,7 +127,7 @@ public class AggregationPlan extends NodePlan {
                 public DataAccessor next() {
                     Object[] values = new Object[resultSetColumnNames.length];
                     int index = 0;
-                    for (AggregationExp column : group.getColumns()) values[index++] = column.getValue();
+                    for (AggregationCallExp column : group.getColumns()) values[index++] = column.getValue();
                     return DataAccessor.of(values);
                 }
             });
@@ -149,7 +157,7 @@ public class AggregationPlan extends NodePlan {
                                        DataAccessor dataAccessor) {
                         AggregationKey key = AggregationKey.of(dataAccessor, groupedFieldsIndexes);
                         AggregationGroup aggregationGroup = aggregationKeyAggregationGroupMap.computeIfAbsent(key, this::createGroup);
-                        for (final AggregationExp cc : aggregationGroup.getColumns()) {
+                        for (final AggregationCallExp cc : aggregationGroup.getColumns()) {
                             if (concurrent) {
                                 synchronized (cc) {
                                     cc.accept(dataAccessor);

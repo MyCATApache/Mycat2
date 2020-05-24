@@ -6,6 +6,7 @@ import io.mycat.mpp.DataContext;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +36,13 @@ public class ValuesPlanTest {
         Scanner scan1 = limitPlan.scan(dataContext, 0);
         String collect2 = scan1.stream().map(i -> i.toString()).collect(Collectors.joining());
 
+        AggregationPlan aggregationPlan = AggregationPlan.create(limitPlan, new String[]{"count","avg"}, Type.of(
+                Column.of("count()", Long.class),
+                Column.of("avg(id)", Double.class)
+                ),
+                Collections.singletonList( Collections.singletonList(1)), new int[]{});
 
+        String collect3 = aggregationPlan.scan(dataContext, 0).stream().map(i -> i.toString()).collect(Collectors.joining());
     }
 
     private List<Object[]> values(Object[]... objects) {
