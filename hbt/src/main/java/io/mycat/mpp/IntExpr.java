@@ -1,40 +1,32 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLObject;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.Type;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.Getter;
 
-import java.text.MessageFormat;
-
+@Getter
 @AllArgsConstructor
-@Builder
-public class BinaryOp implements SqlValue {
-    SqlValue left;
-    SqlValue right;
-    char op;
+public class IntExpr implements SqlValue {
+    final int value;
 
-    @Override
-    public String toString() {
-        return MessageFormat.format("%s %s %s", left, op, right);
+    public static IntExpr of(int value) {
+        return new IntExpr(value);
     }
-
-    @Override
-    public SQLObject toParseTree() {
-        return SQLUtils.toSQLExpr(toString());
-    }
-
-
 
     @Override
     public Object getValue(Type type, DataAccessor dataAccessor, DataContext context) {
-        return null;
+        return value;
     }
 
     @Override
     public boolean getValueAsBoolean(Type columns, DataAccessor dataAccessor, DataContext dataContext) {
         return false;
+    }
+
+    @Override
+    public SQLObject toParseTree() {
+        return null;
     }
 }

@@ -1,8 +1,8 @@
 package io.mycat.mpp.plan;
 
-import com.sun.org.apache.xpath.internal.operations.Or;
-import io.mycat.beans.mysql.MySQLType;
 import io.mycat.mpp.DataContext;
+import io.mycat.mpp.MyRelBuilder;
+import io.mycat.mpp.SqlValue;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -66,6 +66,26 @@ public class ValuesPlanTest {
 
         UnionPlan unionPlan = UnionPlan.create(Arrays.asList(one, two));
         Scanner scan = unionPlan.scan(dataContext, 0);
+        String collect = scan.stream().map(i -> i.toString()).collect(Collectors.joining());
+    }
+
+    @Test
+    public void test3(){
+        MyRelBuilder builder = new MyRelBuilder();
+
+        ValuesPlan one = ValuesPlan.create(
+                Type.of(
+                        Column.of("id", Integer.class),
+                        Column.of("name", String.class)
+                ),
+                values(new Object[]{1,"1"}, new Object[]{2,"2"})
+        );
+        builder.push(one);
+        SqlValue id = builder.field("id");
+        SqlValue equality = builder.equality(id, builder.literal(1));
+
+        FilterPlan queryPlan = FilterPlan.create(one, equality);
+        Scanner scan = queryPlan.scan(dataContext, 0);
         String collect = scan.stream().map(i -> i.toString()).collect(Collectors.joining());
     }
     private List<Object[]> values(Object[]... objects) {

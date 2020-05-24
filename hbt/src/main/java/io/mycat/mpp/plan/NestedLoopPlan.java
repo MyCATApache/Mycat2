@@ -25,7 +25,9 @@ public class NestedLoopPlan extends NodePlan {
 
     @Override
     public Type getColumns() {
-        return null;
+        Type left = this.left.getColumns();
+        Type right = this.right.getColumns();
+        return left.join(right);
     }
 
     @Override
@@ -33,7 +35,7 @@ public class NestedLoopPlan extends NodePlan {
         final Enumerable<DataAccessor> outer = Linq4j.asEnumerable(() -> left.scan(dataContext, flags));
         final Enumerable<DataAccessor> inner = Linq4j.asEnumerable(() -> right.scan(dataContext, flags));
         final Predicate2<DataAccessor, DataAccessor> predicate = null;
-        Function2<DataAccessor, DataAccessor, DataAccessor> resultSelector = null;
+        final Function2<DataAccessor, DataAccessor, DataAccessor> resultSelector = null;
         final JoinType joinType = this.joinRelType;
         return Scanner.of(EnumerableDefaults.nestedLoopJoin(outer, inner, predicate, resultSelector, joinType).iterator());
     }

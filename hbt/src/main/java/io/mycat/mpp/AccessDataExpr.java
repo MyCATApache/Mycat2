@@ -21,7 +21,7 @@ public class AccessDataExpr implements SqlValue {
 
     @Override
     public Object getValue(Type type, DataAccessor dataAccessor, DataContext context) {
-        return null;
+        return dataAccessor.get(index);
     }
 
     @Override

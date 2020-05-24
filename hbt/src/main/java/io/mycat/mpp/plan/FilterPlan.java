@@ -3,6 +3,7 @@ package io.mycat.mpp.plan;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.SqlValue;
 
+import java.util.Collections;
 import java.util.List;
 
 public class FilterPlan extends ColumnThroughPlan {
@@ -12,8 +13,10 @@ public class FilterPlan extends ColumnThroughPlan {
         super(from);
         this.conds = conds;
     }
-
-    public static QueryPlan create(QueryPlan from,List<SqlValue> conds){
+    public static FilterPlan create(QueryPlan from,SqlValue cond){
+        return create(from, Collections.singletonList(cond));
+    }
+    public static FilterPlan create(QueryPlan from,List<SqlValue> conds){
         return new FilterPlan(from,conds);
     }
 
