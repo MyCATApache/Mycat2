@@ -43,8 +43,31 @@ public class ValuesPlanTest {
                 Collections.singletonList( Collections.singletonList(1)), new int[]{});
 
         String collect3 = aggregationPlan.scan(dataContext, 0).stream().map(i -> i.toString()).collect(Collectors.joining());
-    }
 
+
+    }
+    @Test
+    public void test2(){
+
+        ValuesPlan one = ValuesPlan.create(
+                Type.of(
+                        Column.of("id", Integer.class),
+                        Column.of("name", String.class)
+                ),
+                values(new Object[]{1,"1"}, new Object[]{2,"2"})
+        );
+        ValuesPlan two = ValuesPlan.create(
+                Type.of(
+                        Column.of("id", Integer.class),
+                        Column.of("name", String.class)
+                ),
+                values(new Object[]{1,"1"}, new Object[]{2,"2"})
+        );
+
+        UnionPlan unionPlan = UnionPlan.create(Arrays.asList(one, two));
+        Scanner scan = unionPlan.scan(dataContext, 0);
+        String collect = scan.stream().map(i -> i.toString()).collect(Collectors.joining());
+    }
     private List<Object[]> values(Object[]... objects) {
         return Arrays.asList(objects);
     }
