@@ -12,7 +12,7 @@ public abstract class QueryPlan implements Wrapper {
         this.to = Optional.empty();
     }
 
-    public abstract Type getColumns();
+    public abstract RowType getType();
 
     public abstract Scanner scan(DataContext dataContext, long flags);
 

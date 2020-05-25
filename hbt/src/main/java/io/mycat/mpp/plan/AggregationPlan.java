@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 public class AggregationPlan extends NodePlan {
     private final String[] aggCallNames;
-    private final Type returnType;
+    private final RowType returnType;
     private final List<List<Integer>> args;
     private final int[] groupedFieldsIndexes;//多个键
     private  final boolean concurrent;
@@ -26,7 +26,7 @@ public class AggregationPlan extends NodePlan {
 
     public AggregationPlan(QueryPlan from,
                            String[] aggCallNames,
-                           Type returnType,
+                           RowType returnType,
                            List<List<Integer>> args,
                            int[] groupedFieldsIndexes,
                            boolean concurrent) {
@@ -41,14 +41,14 @@ public class AggregationPlan extends NodePlan {
     }
     public static final AggregationPlan create(QueryPlan from,
                                   String[] aggCallNames,
-                                  Type returnType,
+                                  RowType returnType,
                                   List<List<Integer>> args,
                                   int[] groupedFieldsIndexes){
         return create(from, aggCallNames,returnType, args, groupedFieldsIndexes,false);
     }
     public  static final AggregationPlan create(QueryPlan from,
                                   String[] aggCallNames,
-                                  Type returnType,
+                                  RowType returnType,
                                   List<List<Integer>> args,
                                   int[] groupedFieldsIndexes,
                                   boolean concurrent){
@@ -56,7 +56,7 @@ public class AggregationPlan extends NodePlan {
     }
 
     @Override
-    public Type getColumns() {
+    public RowType getType() {
         return returnType;
     }
 

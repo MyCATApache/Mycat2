@@ -7,21 +7,21 @@ import java.util.List;
 
 @Builder
 public class ValuesPlan extends QueryPlan {
-    final Type type;
+    final RowType type;
     final List<Object[]> values;
 
-    public static ValuesPlan create(Type type,List<Object[]> values){
+    public static ValuesPlan create(RowType type, List<Object[]> values){
         return new ValuesPlan(type,values);
     }
 
 
-    public ValuesPlan(Type type,List<Object[]> values) {
+    public ValuesPlan(RowType type, List<Object[]> values) {
         this.values = values;
         this.type = type;
     }
 
     @Override
-    public Type getColumns() {
+    public RowType getType() {
         return type;
     }
 

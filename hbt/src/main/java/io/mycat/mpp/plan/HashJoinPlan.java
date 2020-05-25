@@ -27,7 +27,7 @@ public class HashJoinPlan extends NodePlan {
     }
 
     @Override
-    public Type getColumns() {
+    public RowType getType() {
         return null;
     }
 

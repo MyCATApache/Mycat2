@@ -1,6 +1,7 @@
 package io.mycat.mpp.plan;
 
 
+import io.mycat.mpp.runtime.Type;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -12,9 +13,9 @@ import java.util.Comparator;
 @Getter
 public class Column {
     final String name;
-    final Class clazz;
+    final Type type;
 
-    public static Column of(String name, Class clazz) {
+    public static Column of(String name, Type clazz) {
         return new Column(name, clazz);
     }
 
@@ -22,13 +23,13 @@ public class Column {
     public String toString() {
         return "Column{" +
                 "name='" + name + '\'' +
-                ", clazz=" + clazz +
+                ", type=" + type +
                 '}';
     }
 
 
     public Comparator<DataAccessor> createComparator(int field) {
-        if (Comparable.class.isAssignableFrom(clazz)) {
+        if (Comparable.class.isAssignableFrom(type.getJavaClass())) {
             return (o1, o2) -> {
                 Comparable l = (Comparable)o1.get(field);
                 if (l == null)return -1;

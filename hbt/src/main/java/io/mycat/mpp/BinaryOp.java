@@ -1,40 +1,44 @@
 package io.mycat.mpp;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLObject;
+import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
 import io.mycat.mpp.plan.DataAccessor;
-import io.mycat.mpp.plan.Type;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import io.mycat.mpp.plan.RowType;
+import io.mycat.mpp.runtime.Invoker;
+import io.mycat.mpp.runtime.Type;
+import lombok.SneakyThrows;
 
-import java.text.MessageFormat;
 
-@AllArgsConstructor
-@Builder
-public class BinaryOp implements SqlValue {
-    SqlValue left;
-    SqlValue right;
-    char op;
+public abstract class BinaryOp  implements SqlValue {
+    final SqlValue leftExpr;
+    final SqlValue rightExpr;
+    final Type returnType;
+    final SQLBinaryOperator operator;
+    final Invoker fun;
 
-    @Override
-    public String toString() {
-        return MessageFormat.format("%s %s %s", left, op, right);
+    public BinaryOp(SQLBinaryOperator operator,SqlValue leftExpr, SqlValue rightExpr, Type returnType,  Invoker fun) {
+        this.leftExpr = leftExpr;
+        this.rightExpr = rightExpr;
+        this.returnType = returnType;
+        this.operator = operator;
+        this.fun = fun;
     }
 
     @Override
     public SQLObject toParseTree() {
-        return SQLUtils.toSQLExpr(toString());
-    }
-
-
-
-    @Override
-    public Object getValue(Type type, DataAccessor dataAccessor, DataContext context) {
-        return null;
+        return SQLUtils.buildCondition(operator, (SQLExpr) leftExpr.toParseTree(), true, (SQLExpr) rightExpr.toParseTree());
     }
 
     @Override
-    public boolean getValueAsBoolean(Type columns, DataAccessor dataAccessor, DataContext dataContext) {
-        return false;
+    @SneakyThrows
+    public Object getValue(RowType type, DataAccessor dataAccessor, DataContext context) {
+        return fun.invokeWithArguments(leftExpr.getValue(type, dataAccessor, context), rightExpr.getValue(type, dataAccessor, context));
+    }
+
+    @Override
+    public Type getType() {
+        return returnType;
     }
 }

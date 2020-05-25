@@ -1,16 +1,20 @@
 package io.mycat.mpp;
 
+import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
 import io.mycat.mpp.plan.Column;
 import io.mycat.mpp.plan.QueryPlan;
 import io.mycat.mpp.plan.TableProvider;
+import io.mycat.mpp.runtime.Type;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -23,9 +27,8 @@ public class MyRelBuilder {
     private final Deque<Frame> stack = new ArrayDeque<>();
 
     public SqlValue add(SqlValue left, SqlValue right) {
-        return null;
+        return buildArithmeticBinaryOperator(SQLBinaryOperator.Add, left, right);
     }
-
     public SqlValue mod(SqlValue left, SqlValue right) {
         return null;
     }
@@ -46,119 +49,116 @@ public class MyRelBuilder {
         return null;
     }
 
-    public SqlValue bitwiseXorEQ(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue bitwiseXorEQ(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue multiply(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue multiply(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue divide(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue divide(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue div(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue div(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue subtract(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue subtract(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue leftShift(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue leftShift(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue rightShift(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue rightShift(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue bitwiseOr(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue bitwiseOr(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue bitwiseAnd(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue bitwiseAnd(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue greaterThan(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue greaterThan(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue greaterThanOrEqual(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue greaterThanOrEqual(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue is(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue is(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue lessThan(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue lessThan(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue lessThanOrEqual(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue lessThanOrEqual(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue lessThanOrEqualOrGreaterThan(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue lessThanOrEqualOrGreaterThan(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue lessThanOrGreater(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue lessThanOrGreater(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue like(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue like(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue notLike(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue notLike(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue escape(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue escape(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue regExp(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue regExp(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue notRegExp(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue notRegExp(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue equality(SqlValue convertExpr, SqlValue convertExpr1) {
-        return EqualityBinaryOp.of(convertExpr,convertExpr1);
-    }
 
-    public SqlValue bitwiseNot(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue bitwiseNot(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue concat(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue concat(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue booleanAnd(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue booleanAnd(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue booleanXor(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue booleanXor(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue booleanOr(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue booleanOr(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue bitwiseXor(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue bitwiseXor(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
-    public SqlValue between(SqlValue convertExpr, SqlValue convertExpr1) {
+    public SqlValue between(SqlValue leftExpr, SqlValue rightExpr) {
         return null;
     }
 
@@ -204,10 +204,11 @@ public class MyRelBuilder {
     }
 
     public SqlValue field(String name) {
-        Column[] fields = stack.peek().getFields();
+        Column[] fields = Objects.requireNonNull(stack.peek()).getFields();
         for (int i = 0; i < fields.length; i++) {
-            if(name.equals(fields[i].getName())){
-                return new AccessDataExpr(i);
+            Column field = fields[i];
+            if (name.equals(field.getName())) {
+                return new AccessDataExpr(i, field.getType());
             }
         }
         return null;
@@ -250,7 +251,12 @@ public class MyRelBuilder {
         return null;
     }
 
-    public SqlValue cast(SqlValue convertExpr, String type, Integer prec, Integer scale, boolean auto) {
+    public SqlValue cast(SqlValue leftExpr, Type type) {
+        if (leftExpr.getType().equals(type)) return leftExpr;
+        return new CastExpr(leftExpr, type);
+    }
+
+    public SqlValue cast(SqlValue leftExpr, Type type, Integer prec, Integer scale, boolean auto) {
         return null;
     }
 
@@ -259,7 +265,7 @@ public class MyRelBuilder {
     }
 
     public MyRelBuilder push(QueryPlan sqlExpr) {
-        stack.push(Frame.of(sqlExpr,sqlExpr.getColumns().getColumns()));
+        stack.push(Frame.of(sqlExpr, sqlExpr.getType().getColumns()));
         return this;
     }
 
@@ -311,8 +317,15 @@ public class MyRelBuilder {
 
     public MyRelBuilder scan(String schemaName, String tableName) {
         QueryPlan queryPlan = tableProvider.create(schemaName, tableName);
-        this.stack.push(Frame.of(queryPlan,queryPlan.getColumns().getColumns())); ;
+        this.stack.push(Frame.of(queryPlan, queryPlan.getType().getColumns()));
         return this;
+    }
+
+    public SqlValue equality(SqlValue leftExpr, SqlValue rightExpr) {
+        Type type = TypeSystem.resloveType(leftExpr.getType(), rightExpr.getType());
+        leftExpr = cast(leftExpr, type);
+        rightExpr = cast(rightExpr, type);
+        return EqualityBinaryOp.create(leftExpr, rightExpr);
     }
 
 //    public SqlValue makeCase(List<Case.Item> items, SqlValue value, SqlValue anElse) {
@@ -322,11 +335,25 @@ public class MyRelBuilder {
     @AllArgsConstructor
     @Getter
     private static class Frame {
-       private final QueryPlan rel;
-        private  final Column[] fields;
+        private final QueryPlan rel;
+        private final Column[] fields;
 
         public static Frame of(QueryPlan queryPlan, Column[] fields) {
             return new Frame(queryPlan, fields);
         }
     }
+
+    @NotNull
+    public SqlValue buildArithmeticBinaryOperator(SQLBinaryOperator operator, SqlValue left, SqlValue right) {
+        Type returnType = TypeSystem.resolveArithmeticType(left.getType(), right.getType());
+        SqlValue leftExpr = cast(left, returnType);
+        SqlValue rightExpr = cast(right, returnType);
+        switch (operator){
+            case Add:
+               return AddNode.create(leftExpr,rightExpr,returnType);
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
+
 }

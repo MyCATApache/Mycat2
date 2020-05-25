@@ -24,9 +24,9 @@ public class NestedLoopPlan extends NodePlan {
     }
 
     @Override
-    public Type getColumns() {
-        Type left = this.left.getColumns();
-        Type right = this.right.getColumns();
+    public RowType getType() {
+        RowType left = this.left.getType();
+        RowType right = this.right.getType();
         return left.join(right);
     }
 

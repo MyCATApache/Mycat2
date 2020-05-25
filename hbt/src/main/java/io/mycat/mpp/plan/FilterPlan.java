@@ -22,7 +22,7 @@ public class FilterPlan extends ColumnThroughPlan {
 
     @Override
     public Scanner scan(DataContext dataContext, long flags) {
-        Type columns = from.getColumns();
+        RowType columns = from.getType();
         return Scanner.of( from.scan(dataContext, flags).stream()
                 .filter(dataAccessor -> conds.stream().
                         allMatch(c ->

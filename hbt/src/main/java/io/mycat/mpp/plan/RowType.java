@@ -13,17 +13,17 @@ import java.util.Comparator;
 @AllArgsConstructor
 @Getter
 @ToString
-public class Type {
+public class RowType {
     final Column[] columns;
     public Comparator<DataAccessor> getComparator(int index) {
         return columns[index].createComparator(index);
     }
 
-    public static  Type of(Column... columns){
-        return new Type(columns);
+    public static RowType of(Column... columns){
+        return new RowType(columns);
     }
 
-    public Type join(Type o){
+    public RowType join(RowType o){
         ArrayList<Column> columns = new ArrayList<>();
         columns.addAll(Arrays.asList(this.columns));
         columns.addAll(Arrays.asList(o.columns));

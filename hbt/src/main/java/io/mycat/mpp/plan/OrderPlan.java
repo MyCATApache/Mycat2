@@ -1,6 +1,5 @@
 package io.mycat.mpp.plan;
 
-import io.mycat.mpp.AccessDataExpr;
 import io.mycat.mpp.DataContext;
 
 import java.util.Comparator;
@@ -21,7 +20,7 @@ public class OrderPlan extends ColumnThroughPlan {
 
     @Override
     public Scanner scan(DataContext dataContext, long flags) {
-        Type columns = from.getColumns();
+        RowType columns = from.getType();
         Comparator<DataAccessor> comparator = null;
         int i = 0;
         for (int field : fields) {

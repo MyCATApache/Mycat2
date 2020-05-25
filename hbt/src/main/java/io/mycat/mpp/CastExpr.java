@@ -4,21 +4,25 @@ import com.alibaba.fastsql.sql.ast.SQLObject;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Type;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class IntExpr implements SqlValue {
-    final int value;
+import java.util.function.Function;
 
-    public static IntExpr of(int value) {
-        return new IntExpr(value);
+public class CastExpr implements SqlValue {
+    final SqlValue expr;
+    final Type targetType;
+    final Type originType;
+    final Function cast;
+
+    public CastExpr(SqlValue expr, Type targetType) {
+        this.expr = expr;
+        this.targetType = targetType;
+        this.originType = expr.getType();
+        this.cast = TypeSystem.convert(originType, targetType);
     }
 
     @Override
     public Object getValue(RowType type, DataAccessor dataAccessor, DataContext context) {
-        return value;
+        return cast.apply(expr.getValue(type, dataAccessor, context));
     }
 
     @Override
@@ -28,7 +32,7 @@ public class IntExpr implements SqlValue {
 
     @Override
     public Type getType() {
-        return Type.of(Type.INT,false);
+        return targetType;
     }
 
     @Override

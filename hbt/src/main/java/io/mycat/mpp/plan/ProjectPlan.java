@@ -1,6 +1,5 @@
 package io.mycat.mpp.plan;
 
-import io.mycat.mpp.Context;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.SqlValue;
 
@@ -15,13 +14,13 @@ public class ProjectPlan extends NodePlan {
     }
 
     @Override
-    public Type getColumns() {
+    public RowType getType() {
         return null;
     }
 
     @Override
     public Scanner scan(DataContext dataContext, long flags) {
-        Type columns = from.getColumns();
+        RowType columns = from.getType();
         return Scanner.of(from.scan(dataContext, flags).stream().map(dataAccessor -> {
             Object[] row = new Object[values.size()];
             int index = 0;
@@ -33,7 +32,7 @@ public class ProjectPlan extends NodePlan {
         }));
     }
 
-    private Object eval(Type columns, SqlValue c, Object[] row) {
+    private Object eval(RowType columns, SqlValue c, Object[] row) {
         return false;
     }
 }

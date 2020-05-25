@@ -7,7 +7,7 @@ public abstract class ColumnThroughPlan extends NodePlan {
     }
 
     @Override
-    public Type getColumns() {
-        return from.getColumns();
+    public RowType getType() {
+        return from.getType();
     }
 }
