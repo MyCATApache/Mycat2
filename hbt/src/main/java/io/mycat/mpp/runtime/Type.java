@@ -10,9 +10,11 @@ import java.math.BigDecimal;
 @EqualsAndHashCode
 @Getter
 public class Type {
+    public static final int NULL = 0;
     public static final int INT = 1;
     public static final int VARCHAR = 2;
     public static final int DECIMAL = 3;
+//    public static final int BINARY = 4;
     public static final int TIMESTAMP = 5;
     public static final int DATETIME = 6;
 
@@ -91,6 +93,8 @@ public class Type {
                 return java.sql.Timestamp.class;
             case DATETIME:
                 return java.sql.Date.class;
+            case NULL:
+                return Object.class;
             default:
                 throw new UnsupportedOperationException();
         }

@@ -5,26 +5,21 @@ import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Type;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class IntExpr implements SqlValue {
-    final int value;
+import java.math.BigInteger;
 
-    public static IntExpr of(int value) {
-        return new IntExpr(value);
+public class BigIntSqlValue implements SqlValue{
+    final BigInteger value;
+
+    public BigIntSqlValue(BigInteger value) {
+        this.value = value;
     }
-
+    public static BigIntSqlValue create(BigInteger value) {
+       return new BigIntSqlValue(value);
+    }
     @Override
     public Object getValue(RowType type, DataAccessor dataAccessor, DataContext context) {
         return value;
-    }
-
-    @Override
-    public boolean getValueAsBoolean(RowType columns, DataAccessor dataAccessor, DataContext dataContext) {
-        return false;
     }
 
     @Override

@@ -5,16 +5,12 @@ import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Type;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class IntExpr implements SqlValue {
-    final int value;
+public class BinarySqlValue implements SqlValue {
+    final String value;
 
-    public static IntExpr of(int value) {
-        return new IntExpr(value);
+    public BinarySqlValue(String value) {
+        this.value = value;
     }
 
     @Override
@@ -23,13 +19,8 @@ public class IntExpr implements SqlValue {
     }
 
     @Override
-    public boolean getValueAsBoolean(RowType columns, DataAccessor dataAccessor, DataContext dataContext) {
-        return false;
-    }
-
-    @Override
     public Type getType() {
-        return Type.of(Type.INT,false);
+        return Type.of(Type.VARCHAR,false);
     }
 
     @Override

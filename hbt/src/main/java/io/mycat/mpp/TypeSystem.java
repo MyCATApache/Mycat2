@@ -92,6 +92,9 @@ public class TypeSystem {
         int leftType = origin.getBase();
         int rightType = target.getBase();
         switch (leftType) {
+            case Type.NULL:{
+                return Function.identity();
+            }
             case Type.INT: {
                 switch (rightType) {
                     case Type.INT: {
