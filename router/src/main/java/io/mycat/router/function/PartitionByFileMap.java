@@ -95,7 +95,7 @@ public class PartitionByFileMap extends RuleFunction {
       default:
         throw new MycatException("unsupport type!!");
     }
-    for (Entry<String, String> entry : prot.entrySet()) {
+    for (Entry<String, String> entry : range.entrySet()) {
       Object key = transformation.apply(entry.getKey());
       int value = Integer.parseInt(entry.getValue());
       app2Partition.put(key, value);
