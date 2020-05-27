@@ -14,7 +14,7 @@ public class Type {
     public static final int INT = 1;
     public static final int VARCHAR = 2;
     public static final int DECIMAL = 3;
-//    public static final int BINARY = 4;
+    //    public static final int BINARY = 4;
     public static final int TIMESTAMP = 5;
     public static final int DATETIME = 6;
 
@@ -23,6 +23,39 @@ public class Type {
 
     public static Type of(int base, boolean nullable) {
         return new Type(base, nullable);
+    }
+
+    public static Type of(String name, boolean nullable) {
+        int base = 0;
+        switch (name.toUpperCase()) {
+            case "NULL": {
+                base = NULL;
+                break;
+            }
+            case "INT": {
+                base = INT;
+                break;
+            }
+            case "VARCHAR": {
+                base = VARCHAR;
+                break;
+            }
+            case "DECIMAL": {
+                base = DECIMAL;
+                break;
+            }
+            case "TIMESTAMP": {
+                base = TIMESTAMP;
+                break;
+            }
+            case "DATETIME": {
+                base = DATETIME;
+                break;
+            }
+            default:
+                throw new IllegalArgumentException();
+        }
+        return of(base, nullable);
     }
 
     public Type toNullable() {
@@ -94,7 +127,7 @@ public class Type {
             case DATETIME:
                 return java.sql.Date.class;
             case NULL:
-                return Object.class;
+                return Void.TYPE;
             default:
                 throw new UnsupportedOperationException();
         }

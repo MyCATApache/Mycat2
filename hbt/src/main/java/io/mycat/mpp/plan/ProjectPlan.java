@@ -12,10 +12,15 @@ public class ProjectPlan extends NodePlan {
         super(from);
         this.values = values;
     }
+    public static ProjectPlan create(QueryPlan from, List<SqlValue> values){
+        return new ProjectPlan(from, values);
+    }
 
     @Override
     public RowType getType() {
-        return null;
+        return RowType.of(values.stream().map(i->{
+            return Column.of(i.toString(),i.getType());
+        }).toArray((i->new Column[i])));
     }
 
     @Override

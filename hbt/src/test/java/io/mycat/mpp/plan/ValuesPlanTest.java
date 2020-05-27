@@ -1,7 +1,11 @@
 package io.mycat.mpp.plan;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.MyRelBuilder;
+import io.mycat.mpp.SqlToExprTranslator;
 import io.mycat.mpp.SqlValue;
 import io.mycat.mpp.runtime.Type;
 import org.junit.Test;
@@ -94,4 +98,16 @@ public class ValuesPlanTest {
         return Arrays.asList(objects);
     }
 
+
+    @Test
+    public void test4(){
+        MyRelBuilder builder = new MyRelBuilder();
+        SqlToExprTranslator sqlToExprTranslator = new SqlToExprTranslator(builder);
+        SQLSelectStatement sqlSelectStatement = (SQLSelectStatement)SQLUtils.parseSingleMysqlStatement("select 1");
+        SQLSelectQuery query = sqlSelectStatement.getSelect().getQuery();
+        QueryPlan queryPlan1 = sqlToExprTranslator.convertQueryRecursive(query);
+        Scanner scan = queryPlan1.scan(dataContext, 0);
+        RowType type = queryPlan1.getType();
+        String collect = scan.stream().map(i -> i.toString()).collect(Collectors.joining());
+    }
 }

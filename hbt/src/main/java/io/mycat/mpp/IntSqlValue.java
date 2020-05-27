@@ -10,11 +10,11 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class IntExpr implements SqlValue {
+public class IntSqlValue implements SqlValue {
     final int value;
 
-    public static IntExpr of(int value) {
-        return new IntExpr(value);
+    public static IntSqlValue create(int value) {
+        return new IntSqlValue(value);
     }
 
     @Override
@@ -24,12 +24,12 @@ public class IntExpr implements SqlValue {
 
     @Override
     public boolean getValueAsBoolean(RowType columns, DataAccessor dataAccessor, DataContext dataContext) {
-        return false;
+        return value > 0;
     }
 
     @Override
     public Type getType() {
-        return Type.of(Type.INT,false);
+        return Type.of(Type.INT, false);
     }
 
     @Override

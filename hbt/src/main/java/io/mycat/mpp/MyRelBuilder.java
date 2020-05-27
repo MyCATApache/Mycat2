@@ -5,6 +5,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
 import io.mycat.mpp.plan.Column;
 import io.mycat.mpp.plan.QueryPlan;
 import io.mycat.mpp.plan.TableProvider;
+import io.mycat.mpp.runtime.SqlNull;
 import io.mycat.mpp.runtime.Type;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -211,15 +212,15 @@ public class MyRelBuilder {
     }
 
     public SqlValue nullLiteral() {
-        return null;
+        return SqlNull .SINGLETON;
     }
 
     public SqlValue literal(int number) {
-        return IntExpr.of(number);
+        return IntSqlValue.create(number);
     }
 
     public SqlValue literal(long number) {
-        return null;
+        return LongSqlValue.create(number);
     }
 
     public SqlValue aggCall(String funcName, List<SqlValue> convertExprs, boolean isDistinct) {
@@ -252,7 +253,7 @@ public class MyRelBuilder {
         return new CastExpr(leftExpr, type);
     }
 
-    public SqlValue cast(SqlValue leftExpr, Type type, Integer prec, Integer scale, boolean auto) {
+    public SqlValue cast(SqlValue leftExpr, int type, Integer prec, Integer scale, boolean auto) {
         return null;
     }
 
@@ -290,7 +291,7 @@ public class MyRelBuilder {
         return null;
     }
 
-    public SqlSource build() {
+    public QueryPlan build() {
         return null;
     }
 
@@ -319,6 +320,15 @@ public class MyRelBuilder {
 
     public SqlValue equality(SqlValue leftExpr, SqlValue rightExpr) {
         return call(SQLBinaryOperator.Equality, leftExpr, rightExpr);
+    }
+
+    public SqlValue literal(Number number) {
+        return NumberSqlValue.create(number);
+    }
+
+
+    public SqlValue hexLiteral(String hex) {
+        return BinarySqlValue.create(hex);
     }
 
 
