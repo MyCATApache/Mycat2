@@ -199,6 +199,9 @@ public class CalciteUtls {
                 left = ((RexCall) left).operands.get(0);
             }
             RexNode right = call.getOperands().get(1);
+            if (right.isA(SqlKind.CAST)) {
+                right = ((RexCall) right).operands.get(0);
+            }
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
