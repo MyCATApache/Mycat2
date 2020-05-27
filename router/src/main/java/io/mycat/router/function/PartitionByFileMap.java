@@ -15,8 +15,6 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.router.RuleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +93,7 @@ public class PartitionByFileMap extends RuleFunction {
       default:
         throw new MycatException("unsupport type!!");
     }
-    for (Entry<String, String> entry : prot.entrySet()) {
+    for (Entry<String, String> entry : range.entrySet()) {
       Object key = transformation.apply(entry.getKey());
       int value = Integer.parseInt(entry.getValue());
       app2Partition.put(key, value);
