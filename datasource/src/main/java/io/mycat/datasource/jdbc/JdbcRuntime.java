@@ -193,6 +193,9 @@ public enum JdbcRuntime {
      * @return Value for property 'fetchDataExecutorService'.
      */
     public ExecutorService getFetchDataExecutorService() {
+        if (fetchDataExecutorService==null){
+            fetchDataExecutorService = ExecutorUtil.create("for hbt test",1);
+        }
         return fetchDataExecutorService;
     }
 }
