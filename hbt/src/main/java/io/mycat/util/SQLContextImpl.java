@@ -313,6 +313,7 @@ public class SQLContextImpl implements SQLContext {
     static {
         addFunction(MysqlFunctions.next_value_for);
         addFunction(MysqlFunctions.last_insert_id);
+        addFunction(MysqlFunctions.current_user);
     }
 
     static void addFunction(MySQLFunction function) {

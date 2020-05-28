@@ -88,13 +88,11 @@ public class CalciteRunners {
                 if (list.size() > 1) {
                     throw new IllegalAccessException("该执行计划重复拉取同一个数据源的数据");
                 }
-                Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
-                        .submit(() -> connection.executeQuery(table.getMetaData(), table.getSql()));
                 table.setEnumerable(new AbstractEnumerable<Object[]>() {
                     @Override
                     @SneakyThrows
                     public Enumerator<Object[]> enumerator() {
-                        return new MyCatResultSetEnumerator(cancelFlag, submit.get(1, TimeUnit.MINUTES));
+                        return new MyCatResultSetEnumerator(cancelFlag, connection.executeQuery(table.getMetaData(), table.getSql()));
                     }
                 });
             }
@@ -110,18 +108,11 @@ public class CalciteRunners {
                 for (SingeTargetSQLTable v : value) {
                     MycatConnection connection = nameMap.get(v.getTargetName()).remove();
                     uponDBContext.addCloseResource(connection);
-                    Future<RowBaseIterator> c = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
-                            .submit(() -> {
-                                if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug(" --------------------------jdbc fetch data getTargetName:" + v.getTargetName());
-                                }
-                                return connection.executeQuery(v.getMetaData(), v.getSql());
-                            });
                     AbstractEnumerable enumerable = new AbstractEnumerable<Object[]>() {
                         @Override
                         @SneakyThrows
                         public Enumerator<Object[]> enumerator() {
-                            return new MyCatResultSetEnumerator(cancelFlag, c.get());
+                            return new MyCatResultSetEnumerator(cancelFlag, connection.executeQuery(v.getMetaData(), v.getSql()));
                         }
                     };
                     v.setEnumerable(enumerable);

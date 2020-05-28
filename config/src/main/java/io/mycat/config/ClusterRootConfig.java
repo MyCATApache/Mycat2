@@ -81,7 +81,7 @@ public class ClusterRootConfig {
         private long minSwitchTimeInterval;
         private long heartbeatTimeout;
         private long slaveThreshold;
-        private String reuqestType;
+        private String requestType;
     }
 
 }

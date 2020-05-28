@@ -61,6 +61,8 @@ public class MycatDBs {
                     return dataContext.getVariable(MycatDataContextEnum.CHARSET_SET_RESULT);
                 } else if (target.contains("read_only")) {
                     return dataContext.getVariable(MycatDataContextEnum.IS_READ_ONLY);
+                }else if (target.contains("current_user")) {
+                    return dataContext.getUser().getUserName();
                 }
                 Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
                 MySQLVariablesEnum mySQLVariablesEnum = MySQLVariablesEnum.parseFromColumnName(target);

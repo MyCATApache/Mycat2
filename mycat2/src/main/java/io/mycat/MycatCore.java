@@ -201,7 +201,7 @@ public enum MycatCore {
 
     private void heartbeat(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
         for (ClusterRootConfig.ClusterConfig cluster : mycatConfig.getCluster().getClusters()) {
-            if ("mysql".equalsIgnoreCase(cluster.getHeartbeat().getReuqestType())) {
+            if ("mysql".equalsIgnoreCase(cluster.getHeartbeat().getRequestType())) {
                 String replicaName = cluster.getName();
                 for (String datasource : cluster.getAllDatasources())
                     ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, heartBeatStrategy -> reactorManager.getRandomReactor().addNIOJob(new NIOJob() {

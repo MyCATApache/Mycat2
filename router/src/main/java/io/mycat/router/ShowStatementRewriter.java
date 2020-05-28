@@ -5,6 +5,8 @@ import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
 import io.mycat.MycatException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 
@@ -13,7 +15,7 @@ import java.text.MessageFormat;
  * 完成show语句到普通sql的转换
  */
 public class ShowStatementRewriter {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowStatementRewriter.class);
     public static String rewriteShowTables(String defaultSchema, SQLShowTablesStatement ast) {
         SQLExpr where = ast.getWhere();
         SQLName from = ast.getFrom();

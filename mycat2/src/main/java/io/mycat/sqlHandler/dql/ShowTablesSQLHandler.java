@@ -12,6 +12,8 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Resource
 public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatement> {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowTablesSQLHandler.class);
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
 
@@ -49,6 +51,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         TABLES_TABLE_OBJECT[] tables_table_objects = objects.toArray(new TABLES_TABLE_OBJECT[0]);
         InformationSchemaRuntime.INSTANCE.update(informationSchema -> informationSchema.TABLES = tables_table_objects);
         String sql = ShowStatementRewriter.rewriteShowTables( dataContext.getDefaultSchema(),request.getAst());
+        LOGGER.info(sql);
         response.sendResultSet(MycatDBs.createClient(dataContext).query(sql), null);
         return ExecuteCode.PERFORMED;
     }
