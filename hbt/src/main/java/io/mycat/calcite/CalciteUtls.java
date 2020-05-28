@@ -164,13 +164,13 @@ public class CalciteUtls {
                 RexNode right = operands.get(j);
                 if (left instanceof RexCall && right instanceof RexCall) {
                     if ((left.isA(SqlKind.GREATER_THAN_OR_EQUAL)||left.isA(SqlKind.GREATER_THAN))  && (right.isA(SqlKind.LESS_THAN_OR_EQUAL)||right.isA(SqlKind.LESS_THAN))) {
-                        RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
-                        RexNode secondExpr = ((RexCall) right).getOperands().get(0);
+                        RexNode fisrtExpr = unCastWrapper(((RexCall) left).getOperands().get(0));
+                        RexNode secondExpr =unCastWrapper(((RexCall) right).getOperands().get(0));
                         if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
                             int index = ((RexInputRef) fisrtExpr).getIndex();
                             if (index == ((RexInputRef) secondExpr).getIndex()) {
-                                RexNode start = ((RexCall) left).getOperands().get(1);
-                                RexNode end = ((RexCall) right).getOperands().get(1);
+                                RexNode start =unCastWrapper( ((RexCall) left).getOperands().get(1));
+                                RexNode end = unCastWrapper(((RexCall) right).getOperands().get(1));
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
                                     String startValue = ((RexLiteral) start).getValue2().toString();
                                     String endValue = ((RexLiteral) end).getValue2().toString();
@@ -195,13 +195,9 @@ public class CalciteUtls {
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
             RexNode left = call.getOperands().get(0);
-            if (left.isA(SqlKind.CAST)) {
-                left = ((RexCall) left).operands.get(0);
-            }
+            left = unCastWrapper(left);
             RexNode right = call.getOperands().get(1);
-            if (right.isA(SqlKind.CAST)) {
-                right = ((RexCall) right).operands.get(0);
-            }
+            right = unCastWrapper(right);
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
@@ -211,6 +207,13 @@ public class CalciteUtls {
 
         }
         return false;
+    }
+
+    private static RexNode unCastWrapper(RexNode left) {
+        if (left.isA(SqlKind.CAST)) {
+            left = ((RexCall) left).operands.get(0);
+        }
+        return left;
     }
 
 
