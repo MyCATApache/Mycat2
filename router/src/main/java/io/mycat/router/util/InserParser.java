@@ -26,6 +26,7 @@ import static com.alibaba.fastsql.sql.parser.SQLParserFeature.*;
  * @author chen junwen
  */
 public class InserParser extends AbstractStringRowIterator {
+    boolean isClosed = false;
     public InserParser(String path) {
         this(getLines(path).map(i->i.trim()).filter(i->!i.isEmpty()).iterator());
     }
@@ -92,8 +93,9 @@ public class InserParser extends AbstractStringRowIterator {
 
     @Override
     public void close() {
-
+        isClosed = true;
     }
+
 
     public static void main(String[] args) throws IOException {
         Iterator<String> iterator = Files.lines(Paths.get("d:/show_databases.sql")).iterator();

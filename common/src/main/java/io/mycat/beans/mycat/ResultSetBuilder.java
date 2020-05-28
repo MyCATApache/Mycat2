@@ -141,10 +141,16 @@ public class ResultSetBuilder {
     }
 
 
-    @AllArgsConstructor
+
     static public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator {
         final DefMycatRowMetaData mycatRowMetaData;
         final Iterator<Object[]> iterator;
+        boolean close = false;
+
+        public DefObjectRowIteratorImpl(DefMycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
+            this.mycatRowMetaData = mycatRowMetaData;
+            this.iterator = iterator;
+        }
 
         @Override
         public MycatRowMetaData getMetaData() {
@@ -163,7 +169,8 @@ public class ResultSetBuilder {
 
         @Override
         public void close() {
-
+            close = true;
         }
+
     }
 }

@@ -21,7 +21,7 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
 
     final long timeout;
     final TimeUnit unit;
-    final Runnable closeCallback;
+    volatile Runnable closeCallback;
 
     public BlockQueueRowBaseIterator(BlockingQueue<Object[]> queue, MycatRowMetaData mycatRowMetaData, long timeout, TimeUnit unit, Runnable closeCallback) {
         this.queue = queue;
@@ -53,9 +53,10 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (closeCallback!=null) {
             closeCallback.run();
+            closeCallback = null;
         }
     }
 
@@ -143,4 +144,5 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
     public BigDecimal getBigDecimal(int columnIndex) {
         throw new UnsupportedOperationException();
     }
+
 }
