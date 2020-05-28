@@ -43,4 +43,22 @@ public class MysqlFunctions {
             return context.lastInsertId();
         }
     };
+
+    //SELECT current_user() mysql workbench
+    public static final MySQLFunction current_user = new MySQLFunction() {
+        @Override
+        public String getFunctionName() {
+            return "current_user";
+        }
+
+        @Override
+        public int getArgumentSize() {
+            return 0;
+        }
+
+        @Override
+        public Object eval(SQLContext context, Object[] args) {
+            return context.getSQLVariantRef("current_user");
+        }
+    };
 }

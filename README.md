@@ -248,11 +248,63 @@ default_authentication_plugin = mysql_native_password
 
 --default-auth-password=mysql_native_password
 
+--default-auth=mysql_native_password
+
 推荐先采用命令行测试：
 
 ```
 mysql -uroot -proot -P8066 -h127.0.0.1
 ```
+
+
+
+客户端登录记录
+
+LINUX平台客户端
+
+```bash
+mysql  Ver 15.1 Distrib 10.1.44-MariaDB, for debian-linux-gnu (x86_64) using rea
+```
+
+
+
+```
+mysql  Ver 14.14 Distrib 5.6.33, for debian-linux-gnu (x86_64) using  EditLine wrapper
+```
+
+
+
+WINDOWS平台客户端
+
+```
+mysql  Ver 15.1 Distrib 10.3.15-MariaDB, for Win64 (AMD64), source revision 07aef9f7eb936de2b277f8ae209a1fd72510c011
+```
+
+
+
+```
+mysql  Ver 8.0.19 for Win64 on x86_64 (MySQL Community Server - GPL)
+```
+
+
+
+```
+SQLyog XXXX - MySQL GUI v12.3.1(64 bit)
+```
+
+
+
+```
+Navicat xxxx 12.1.22(64 bit)
+```
+
+
+
+```
+MySQL Workbench 8.0.19
+```
+
+支持select  current_user()
 
 
 
