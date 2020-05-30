@@ -431,6 +431,16 @@ default-character-setVariable=utf8mb4
 
 #### 日志配置
 
+
+
+JVM调试参数
+
+```bash
+-Dlog4j.debug
+```
+
+
+
 wrapper.conf
 
 ```ini
