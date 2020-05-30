@@ -15,8 +15,6 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.router.RuleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -195,7 +195,14 @@ public class CalciteUtls {
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
             RexNode left = call.getOperands().get(0);
+
             left = unCastWrapper(left);
+
+
+
+  
+
+
             RexNode right = call.getOperands().get(1);
             right = unCastWrapper(right);
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
