@@ -3,7 +3,6 @@ package io.mycat.mpp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.Collections;
 import java.util.List;
 
 @AllArgsConstructor
@@ -24,7 +23,7 @@ public class AggregationGroup {
             String aggCallName = aggCallNames[i];
             String columnName = columnNames[i];
             int fieldIndex = args.isEmpty()?-1:0;
-            columns[i] = AggregationCallExp.of( columnName, fieldIndex,aggCallName);
+            columns[i] = AggregationCallExp.of(fieldIndex,aggCallName);
         }
         return of(columns);
     }

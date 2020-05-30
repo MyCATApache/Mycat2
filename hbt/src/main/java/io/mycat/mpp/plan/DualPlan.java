@@ -4,9 +4,10 @@ import io.mycat.mpp.DataContext;
 
 import java.util.Collections;
 
-public class DualPlan extends QueryPlan {
+public class DualPlan extends LogicTablePlan {
 
     public DualPlan() {
+        super("metaData","dual",RowType.of());
     }
 
     @Override

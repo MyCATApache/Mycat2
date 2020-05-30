@@ -5,6 +5,8 @@ import io.mycat.mpp.runtime.Invoker;
 import io.mycat.mpp.runtime.Ops;
 import io.mycat.mpp.runtime.Type;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 
 public class AddNode extends BinaryOp {
@@ -24,11 +26,70 @@ public class AddNode extends BinaryOp {
         return new AddNode(left, right, returnType, fun);
     }
 
-    public static Integer add(Integer a, Integer b) {
+    public static byte add(byte a, byte b) {
+        return (byte) (((int) a) + ((int) b));
+    }
+
+    public static Byte add(Byte a, Byte b) {
+        return (byte) (a.intValue() + b.intValue());
+    }
+
+    public static char add(char a, char b) {
+        return (char) (a + b);
+    }
+
+    public static Character add(Character a, Character b) {
+        return (char) (a + b);
+    }
+
+    public static String add(String a, String b) {
         return a + b;
     }
 
     public static int add(int a, int b) {
         return a + b;
     }
+
+    public static Integer add(Integer a, Integer b) {
+        return a + b;
+    }
+
+    public static long add(long a, long b) {
+        return a + b;
+    }
+
+    public static Long add(Long a, Long b) {
+        return a + b;
+    }
+
+    public static float add(float a, float b) {
+        return a + b;
+    }
+
+    public static Float add(Float a, Float b) {
+        return a + b;
+    }
+
+    public static double add(double a, double b) {
+        return a + b;
+    }
+
+    public static double add(Double a, Double b) {
+        return a + b;
+    }
+
+    public static BigDecimal add(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.add(b);
+    }
+
+    public static BigInteger add(BigInteger a, BigInteger b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.add(b);
+    }
+
 }

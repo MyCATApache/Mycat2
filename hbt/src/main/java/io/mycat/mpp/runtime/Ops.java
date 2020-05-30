@@ -7,10 +7,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Ops {
 
@@ -38,7 +35,7 @@ public class Ops {
         for (Type type : types) {
             classes[index++] = type.getJavaClass();
         }
-        MethodHandle methodHandle = (MethodHandle) map.get(Key.of(classes));
+        MethodHandle methodHandle = Objects.requireNonNull((MethodHandle) map.get(Key.of(classes)));
         return arguments -> methodHandle.invokeWithArguments(arguments);
     }
 

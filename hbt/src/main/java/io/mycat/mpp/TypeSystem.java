@@ -274,21 +274,16 @@ public class TypeSystem {
             }
             if (leftExprType.isInt() == rightExprType.isInt()) {
                 leftExprType = rightExprType.toIntType();
-                rightExprType = rightExprType.toIntType();
             } else if (leftExprType.isString() == rightExprType.isString()) {
                 leftExprType = rightExprType.toStringType();
-                rightExprType = rightExprType.toStringType();
             } else if (leftExprType.isTimestampOrDateTime() || rightExprType.isTimestampOrDateTime()) {
                 leftExprType = leftExprType.toTimestamp();
-                rightExprType = rightExprType.toTimestamp();
             } else if (leftExprType.isDecimal() || rightExprType.isDecimal()) {
                 leftExprType = rightExprType.toDecimalType();
-                rightExprType = rightExprType.toDecimalType();
             } else {
                 leftExprType = rightExprType.toDecimalType();
-                rightExprType = rightExprType.toDecimalType();
             }
-            return resloveType(leftExprType, rightExprType);
+            return leftExprType;
         }
     }
 

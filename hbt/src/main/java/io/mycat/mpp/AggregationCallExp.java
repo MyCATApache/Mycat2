@@ -1,26 +1,29 @@
 package io.mycat.mpp;
 
 import com.alibaba.fastsql.sql.ast.SQLObject;
+import com.alibaba.fastsql.sql.ast.expr.SQLAggregateOption;
 import io.mycat.mpp.plan.DataAccessor;
+import io.mycat.mpp.runtime.Type;
 
-public class AggregationCallExp implements ASTExp {
-    private final String columnName;
+public class AggregationCallExp implements SqlValue {
     private final int fieldIndex;
     private final AggCalls.AggCall call;
+    private final SQLAggregateOption option = SQLAggregateOption.ALL;
 
-    public AggregationCallExp(String columnName, int fieldIndex, AggCalls.AggCall call) {
-        this.columnName = columnName;
+    public AggregationCallExp(int fieldIndex, AggCalls.AggCall call) {
         this.fieldIndex = fieldIndex;
         this.call = call;
     }
 
-    public static AggregationCallExp of(String columnName, int fieldIndex, String aggCallName) {
-        return of(columnName, fieldIndex, AggCalls.getAggCall(aggCallName));
+    public static AggregationCallExp of( int fieldIndex, String aggCallName) {
+        return of( fieldIndex, AggCalls.getAggCall(aggCallName));
     }
 
-    public static AggregationCallExp of(String columnName, int fieldIndex, AggCalls.AggCall call) {
-        return new AggregationCallExp(columnName, fieldIndex, call);
+    public static AggregationCallExp of(int fieldIndex, AggCalls.AggCall call) {
+        return new AggregationCallExp( fieldIndex, call);
     }
+
+
 
 
     public void accept(DataAccessor tuple) {
@@ -54,5 +57,10 @@ public class AggregationCallExp implements ASTExp {
 
     public void merge(AggregationCallExp column) {
         call.merge(column.call);
+    }
+
+    @Override
+    public Type getType() {
+        return null;
     }
 }

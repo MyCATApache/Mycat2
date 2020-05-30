@@ -11,6 +11,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.mpp.plan.LogicTablePlan;
 import io.mycat.mpp.runtime.Type;
 
 import java.math.BigInteger;
@@ -22,15 +23,21 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
     SqlValue result = null;
 
     final MyRelBuilder relBuilder;
+    final TranslatorBlackboard blackboard;
 
-    public RexTranslator(MyRelBuilder rexBuilder) {
+    public RexTranslator(MyRelBuilder rexBuilder, TranslatorBlackboard blackboard) {
         this.relBuilder = rexBuilder;
+        this.blackboard = blackboard;
     }
 
-    SqlValue convertExpr(SQLExpr expr) {
-        RexTranslator rexTranslator = new RexTranslator(relBuilder);
+   protected SqlValue convertExpr(SQLExpr expr) {
+        RexTranslator rexTranslator = new RexTranslator(relBuilder, blackboard);
         expr.accept(rexTranslator);
-        return rexTranslator.result;
+        return collect(expr,rexTranslator.result);
+    }
+
+    protected SqlValue collect(SQLObject expr, SqlValue result) {
+      return   this.blackboard.collect(expr,result);
     }
 
     final List<SqlValue> convertExprs(List<SQLExpr> exprs) {
@@ -53,7 +60,7 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLBetweenExpr x) {
-        result = relBuilder.between(convertExpr(x.getTestExpr()),convertExpr(x.getBeginExpr()), convertExpr(x.getEndExpr()));
+        result = relBuilder.between(convertExpr(x.getTestExpr()), convertExpr(x.getBeginExpr()), convertExpr(x.getEndExpr()));
     }
 
     @Override
@@ -286,7 +293,7 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
         Integer prec = getPrec(dataType);
         Integer scale = getScale(dataType);
         String type = dataType.getName();
-        result = relBuilder.cast(convertExpr(expr), Type.of(type,true).getBase(), prec, scale, auto);
+        result = relBuilder.cast(convertExpr(expr), Type.of(type, true).getBase(), prec, scale, auto);
     }
 
     private Integer getScale(SQLDataType dataType) {
@@ -315,8 +322,68 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
     }
 
     @Override
+    public boolean visit(SQLPropertyExpr one) {
+        String schemaName = null;
+        String tableName = null;
+        String columnName = null;
+        if (one.getOwner() instanceof SQLPropertyExpr) {
+            SQLPropertyExpr two = (SQLPropertyExpr) one.getOwner();
+            SQLIdentifierExpr tri = (SQLIdentifierExpr) two.getOwner();
+            schemaName = SQLUtils.normalize(tri.getName());
+            tableName = SQLUtils.normalize(two.getName());
+            columnName = SQLUtils.normalize(one.getName());
+
+            Optional<LogicTablePlan> queryPlan = blackboard.lookUp(schemaName, tableName, columnName);
+            if (queryPlan.isPresent()) {
+                result = relBuilder.push(queryPlan.get()).field(columnName);
+                return false;
+            }
+        }
+        if (one.getOwner() instanceof SQLIdentifierExpr) {
+            SQLIdentifierExpr two = (SQLIdentifierExpr) one.getOwner();
+            tableName = two.normalizedName();
+            columnName = SQLUtils.normalize(one.getName());
+
+            Optional<LogicTablePlan> queryPlan = blackboard.lookUp(schemaName, tableName, columnName);
+            if (queryPlan.isPresent()) {
+                result = relBuilder.push(queryPlan.get()).field(columnName);
+                return false;
+            }
+        }
+        if (one.getOwner() == null) {
+            result = relBuilder.field(columnName);
+        }
+        return false;
+    }
+
+    @Override
     public void endVisit(SQLIdentifierExpr x) {
-        result = relBuilder.field(x.getName());
+        String schemaName;
+        String tableName;
+        String columnName;
+        if (x.getParent() instanceof SQLPropertyExpr) {
+            SQLPropertyExpr parent = (SQLPropertyExpr) x.getParent();
+            if (parent != null) {
+                SQLExpr owner = parent.getOwner();
+                if (owner instanceof SQLIdentifierExpr) {
+                    schemaName = ((SQLIdentifierExpr) owner).normalizedName();
+                    tableName = ((SQLIdentifierExpr) owner).normalizedName();
+                    columnName = x.normalizedName();
+                    Optional<LogicTablePlan> queryPlan = blackboard.lookUp(schemaName, tableName, columnName);
+                    if (queryPlan.isPresent()) {
+                        relBuilder.push(queryPlan.get());
+                        result = relBuilder.field(schemaName, tableName, columnName);
+                        return;
+                    }
+                }
+            } else {
+                System.out.println();
+            }
+            System.out.println();
+        } else {
+            result = relBuilder.field(x.getName());
+        }
+
     }
 
     @Override
@@ -326,7 +393,15 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLIntegerExpr x) {
-        result = relBuilder.literal(x.getNumber().longValue());
+        Number number = x.getNumber();
+        if (number instanceof Integer) {
+            result = relBuilder.literal(number.intValue());
+        } else if (number instanceof Long) {
+            result = relBuilder.literal(number.longValue());
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     @Override
@@ -341,34 +416,12 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLVariantRefExpr x) {
-        result = relBuilder.placeHolder(x.getName());
+        result = relBuilder.placeHolder(x.toString());
     }
 
     @Override
     public void endVisit(SQLPropertyExpr x) {
-        String columnName = x.getName();
-        if (x.getOwner() == null) {
-            result = relBuilder.field(columnName);
-            return;
-        }
-        if (x.getOwner() instanceof SQLIdentifierExpr) {
-            result = relBuilder.field(((SQLIdentifierExpr) x.getOwner()).normalizedName(), columnName);
-            return;
-        }
-        if (x.getOwner() instanceof SQLPropertyExpr) {
-            SQLPropertyExpr owner = (SQLPropertyExpr) x.getOwner();
-            if (owner.getOwner() instanceof SQLIdentifierExpr) {
-                String databaseName = SQLUtils.normalize(((SQLIdentifierExpr) owner.getOwner()).getName());
-                String tableName = SQLUtils.normalize(owner.getName());
-                result = relBuilder.field(databaseName, tableName, columnName);
-                return;
-            }
-        }
-        if (x.getOwner() instanceof SQLVariantRefExpr) {
-            result = relBuilder.placeHolder(x.normalizedName());
-            return;
-        }
-        //SQLVariantRefExpr
+
     }
 
 
@@ -387,6 +440,7 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
                 throw new UnsupportedOperationException();
         }
         result = relBuilder.aggCall(x.getMethodName(), convertExprs(x.getArguments()), isDistinct);
+        blackboard.collect(x,result);
     }
 
     @Override
@@ -411,7 +465,7 @@ public class RexTranslator extends MySqlASTVisitorAdapter {
     private void rightSubQuery(boolean all, SQLObject parent2, SQLSelect subQuery) {
         if (parent2 instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr parent = (SQLBinaryOpExpr) parent2;
-            if (simplyBinarySubQuery(parent ,all)) {
+            if (simplyBinarySubQuery(parent, all)) {
                 SqlValue sqlAbs = convertExpr(parent.getLeft());
                 result = convertAnySubQuery(sqlAbs, parent.getOperator(), subQuery.getQuery());
                 return;

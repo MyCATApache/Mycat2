@@ -21,7 +21,7 @@ public class AggregationPlan extends NodePlan {
     private final RowType returnType;
     private final List<List<Integer>> args;
     private final int[] groupedFieldsIndexes;//多个键
-    private  final boolean concurrent;
+    private final boolean concurrent;
     private final String[] resultSetColumnNames;
 
     public AggregationPlan(QueryPlan from,
@@ -39,20 +39,22 @@ public class AggregationPlan extends NodePlan {
 
         this.resultSetColumnNames = Arrays.stream(returnType.getColumns()).map(i -> i.getName()).toArray(String[]::new);
     }
+
     public static final AggregationPlan create(QueryPlan from,
-                                  String[] aggCallNames,
-                                  RowType returnType,
-                                  List<List<Integer>> args,
-                                  int[] groupedFieldsIndexes){
-        return create(from, aggCallNames,returnType, args, groupedFieldsIndexes,false);
+                                               String[] aggCallNames,
+                                               List<List<Integer>> args,
+                                               RowType returnType,
+                                               int[] groupedFieldsIndexes) {
+        return create(from, aggCallNames, returnType, args, groupedFieldsIndexes, false);
     }
-    public  static final AggregationPlan create(QueryPlan from,
-                                  String[] aggCallNames,
-                                  RowType returnType,
-                                  List<List<Integer>> args,
-                                  int[] groupedFieldsIndexes,
-                                  boolean concurrent){
-        return new AggregationPlan(from,aggCallNames, returnType,args, groupedFieldsIndexes, concurrent);
+
+    public static final AggregationPlan create(QueryPlan from,
+                                               String[] aggCallNames,
+                                               RowType returnType,
+                                               List<List<Integer>> args,
+                                               int[] groupedFieldsIndexes,
+                                               boolean concurrent) {
+        return new AggregationPlan(from, aggCallNames, returnType, args, groupedFieldsIndexes, concurrent);
     }
 
     @Override
@@ -93,7 +95,7 @@ public class AggregationPlan extends NodePlan {
                     int index = 0;
                     for (Object field : k.getValues()) values[index++] = field;
                     for (AggregationCallExp column : v.getColumns()) values[index++] = column.getValue();
-                    iterator.remove();//help gc
+//                    iterator.remove();//help gc
                     return DataAccessor.of(values);
                 }
             });

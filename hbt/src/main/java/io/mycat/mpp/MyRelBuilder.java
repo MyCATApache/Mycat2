@@ -23,7 +23,14 @@ import java.util.Objects;
  * rel关系表达式部分使用stack构建图
  */
 public class MyRelBuilder {
-    private final TableProvider tableProvider = new TableProvider();
+    private final TableProvider tableProvider;
+    public MyRelBuilder(){
+        this(null);
+    }
+    public MyRelBuilder(TableProvider tableProvider) {
+        this.tableProvider = tableProvider;
+    }
+
     private final Deque<Frame> stack = new ArrayDeque<>();
 
     public SqlValue add(SqlValue leftExpr, SqlValue rightExpr) {
@@ -201,14 +208,15 @@ public class MyRelBuilder {
     }
 
     public SqlValue field(String name) {
-        Column[] fields = Objects.requireNonNull(stack.peek()).getFields();
+        Frame frame = Objects.requireNonNull(stack.peek());
+        Column[] fields = frame.getFields();
         for (int i = 0; i < fields.length; i++) {
             Column field = fields[i];
             if (name.equals(field.getName())) {
-                return new AccessDataExpr(i, field.getType());
+                return AccessDataExpr.of(i ,field.getType(),name);
             }
         }
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     public SqlValue nullLiteral() {
@@ -225,7 +233,7 @@ public class MyRelBuilder {
 
     public SqlValue aggCall(String funcName, List<SqlValue> convertExprs, boolean isDistinct) {
 
-        return null;
+        return AggSqlValue.of(funcName,convertExprs);
     }
 
     public SqlValue call(String methodName, List<SqlValue> convertExprs) {
@@ -237,6 +245,7 @@ public class MyRelBuilder {
     }
 
     public SqlValue field(String databaseName, String tableName, String columnName) {
+        Frame peek = stack.peek();
         return null;
     }
 
@@ -258,7 +267,7 @@ public class MyRelBuilder {
     }
 
     public SqlValue placeHolder(String name) {
-        return null;
+        return PlaceHolderExpr.create(name,Type.of(Type.VARCHAR,true));
     }
 
     public MyRelBuilder push(QueryPlan sqlExpr) {
@@ -292,7 +301,7 @@ public class MyRelBuilder {
     }
 
     public QueryPlan build() {
-        return null;
+        return stack.pop().getRel();
     }
 
     public MyRelBuilder rename(List<String> strings) {
@@ -311,7 +320,9 @@ public class MyRelBuilder {
     public void alias(String alias2) {
 
     }
-
+    public MyRelBuilder scan(String tableName){
+        return scan(getDefaultSchema(),tableName);
+    }
     public MyRelBuilder scan(String schemaName, String tableName) {
         QueryPlan queryPlan = tableProvider.create(schemaName, tableName);
         this.stack.push(Frame.of(queryPlan, queryPlan.getType().getColumns()));
@@ -331,12 +342,18 @@ public class MyRelBuilder {
         return BinarySqlValue.create(hex);
     }
 
+    public MyRelBuilder clear() {
+        stack.clear();
+        return this;
+    }
+
 
     @AllArgsConstructor
     @Getter
     private static class Frame {
         private final QueryPlan rel;
         private final Column[] fields;
+//        private String alias;
 
         public static Frame of(QueryPlan queryPlan, Column[] fields) {
             return new Frame(queryPlan, fields);

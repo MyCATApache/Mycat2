@@ -6,7 +6,9 @@ import io.mycat.mpp.runtime.Type;
 
 //别名
 public interface SqlValue extends ASTExp {
-    Object getValue(RowType type, DataAccessor dataAccessor, DataContext context);
+    default  Object getValue(RowType type, DataAccessor dataAccessor, DataContext context){
+        throw new UnsupportedOperationException();
+    }
 
     default boolean getValueAsBoolean(RowType columns, DataAccessor dataAccessor, DataContext dataContext) {
         throw new UnsupportedOperationException();

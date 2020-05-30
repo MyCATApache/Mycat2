@@ -10,6 +10,8 @@ import io.mycat.mpp.runtime.Invoker;
 import io.mycat.mpp.runtime.Type;
 import lombok.SneakyThrows;
 
+import java.util.Objects;
+
 
 public abstract class BinaryOp  implements SqlValue {
     final SqlValue leftExpr;
@@ -23,7 +25,7 @@ public abstract class BinaryOp  implements SqlValue {
         this.rightExpr = rightExpr;
         this.returnType = returnType;
         this.operator = operator;
-        this.fun = fun;
+        this.fun = Objects.requireNonNull(fun);
     }
 
     @Override

@@ -132,4 +132,72 @@ public class Type {
                 throw new UnsupportedOperationException();
         }
     }
+    public static Type getFromClass(Class c) {
+        int b = 0;
+        if (c == Integer.class){
+          b= INT;
+        }
+        if (c == Long.class){
+            b= INT;
+        }
+        if (c == String.class){
+            b= VARCHAR;
+        }
+        if (c == BigDecimal.class){
+            b= DECIMAL;
+        }
+        if (c == java.sql.Timestamp.class){
+            b= TIMESTAMP;
+        }
+        if (c == java.sql.Date.class){
+            b= DATETIME;
+        }
+        if (c == Void.class){
+            b= NULL;
+        }
+       return Type.of(b,false);
+    }
+    @Override
+    public String toString() {
+        String typeName = "";
+        /*
+           public static final int NULL = 0;
+    public static final int INT = 1;
+    public static final int VARCHAR = 2;
+    public static final int DECIMAL = 3;
+    //    public static final int BINARY = 4;
+    public static final int TIMESTAMP = 5;
+    public static final int DATETIME = 6;
+         */
+        typeName = getTypeName();
+        return "Type{" +
+                "base=" + typeName +
+                ", nullable=" + nullable +
+                '}';
+    }
+
+    public String getTypeName() {
+        String typeName = null;
+        switch (base){
+            case NULL:
+                typeName ="NULL";
+                break;
+            case INT:
+                typeName ="INT";
+                break;
+            case VARCHAR:
+                typeName ="VARCHAR";
+                break;
+            case DECIMAL:
+                typeName ="DECIMAL";
+                break;
+            case TIMESTAMP:
+                typeName ="TIMESTAMP";
+                break;
+            case DATETIME:
+                typeName ="DATETIME";
+                break;
+        }
+        return typeName;
+    }
 }

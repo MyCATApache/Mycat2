@@ -1,6 +1,9 @@
 package io.mycat.mpp;
 
+import com.alibaba.fastsql.sql.ast.SQLDataTypeImpl;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLObject;
+import com.alibaba.fastsql.sql.ast.expr.SQLCastExpr;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Type;
@@ -27,7 +30,7 @@ public class CastExpr implements SqlValue {
 
     @Override
     public boolean getValueAsBoolean(RowType columns, DataAccessor dataAccessor, DataContext dataContext) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -37,6 +40,6 @@ public class CastExpr implements SqlValue {
 
     @Override
     public SQLObject toParseTree() {
-        return null;
+        return new SQLCastExpr((SQLExpr) expr.toParseTree(), new SQLDataTypeImpl(targetType.getTypeName()));
     }
 }
