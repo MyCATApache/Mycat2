@@ -20,6 +20,7 @@
       <module>hbt</module>
       <module>boost</module>
       <module>example</module>
+      <module>autohandler</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
