@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-5-6
+author:junwen  2020-5-30
 
 作者qq: 294712221
 
@@ -181,8 +181,8 @@ db1.sql,db2.sql,db3.sql是测试用的表
 
 ```shell
 下载安装包
-wget http://dl.mycat.io/2.0-release/1.01/mycat2-1.01-SNAPSHOT.tar.gz
-tar -xvf mycat2-1.01-SNAPSHOT.tar.gz
+wget http://dl.mycat.org.cn/2.0/xxxx
+tar -xvf xxx.gz
 修改/root/mycat/conf/mycat.yml文件
 cd mycat/bin
 ./mycat start
@@ -208,8 +208,8 @@ cd mycat/bin
 
 ```shell
 下载安装包
-http://dl.mycat.io/2.0-release/1.01/mycat2-1.01-SNAPSHOT.tar.gz
-tar -xvf mycat2-1.01-SNAPSHOT.tar.gz
+http://dl.mycat.org.cn/2.0/xxxx
+tar -xvf xxx.gz
 修改/root/mycat/conf/mycat.yml文件
 cd mycat/bin
 ./mycat insatll
