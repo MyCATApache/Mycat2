@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+
 /**
  * @author Junwen Chen
  **/
@@ -17,7 +18,14 @@ public enum DefErrorCommand implements MycatCommand {
 
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
-        String errorMessage = request.getOrDefault("errorMessage", "may be unknown error");
+        Map<String, String> tags = request.get("tags");
+        String errorMessage = null;
+        if (tags != null) {
+            errorMessage = tags.getOrDefault("errorMessage", null);
+        }
+        if (errorMessage == null) {
+            errorMessage = request.getOrDefault("errorMessage", "may be unknown error");
+        }
         int errorCode = Integer.parseInt(request.getOrDefault("errorCode", "-1"));
         response.sendError(errorMessage, errorCode);
         return true;

@@ -94,4 +94,8 @@ public enum PlugRuntime {
     public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
         return manager.getLoadBalanceByBalanceName(name);
     }
+
+    public LoadBalanceManager getManager() {
+        return Objects.requireNonNull(manager);
+    }
 }

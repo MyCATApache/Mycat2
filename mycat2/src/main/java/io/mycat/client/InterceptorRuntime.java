@@ -18,7 +18,7 @@ package io.mycat.client;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.boost.CacheConfig;
+import io.mycat.booster.CacheConfig;
 import io.mycat.commands.*;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.matcher.Matcher;
@@ -78,6 +78,7 @@ public enum InterceptorRuntime {
         addCommand(SetAutoCommitOnCommand.INSTANCE);
         addCommand(SetTransactionIsolationCommand.INSTANCE);
         addCommand(UseStatementCommand.INSTANCE);
+        addCommand(BoostMycatdbCommand.INSTANCE);
 
         //config
         this.wapper.clear();

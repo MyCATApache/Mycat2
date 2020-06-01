@@ -1,6 +1,6 @@
 package io.mycat.client;
 
-import io.mycat.boost.CacheConfig;
+import io.mycat.booster.CacheConfig;
 import lombok.Getter;
 
 import java.util.Objects;

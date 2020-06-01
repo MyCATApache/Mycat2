@@ -7,8 +7,8 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.boost.CacheConfig;
-import io.mycat.boost.Task;
+import io.mycat.booster.CacheConfig;
+import io.mycat.booster.Task;
 import io.mycat.commands.MycatCommand;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
@@ -86,7 +86,7 @@ public class UserSpace {
     public boolean execute(int sessionId, MycatDataContext dataContext, CharBuffer charBuffer, Map<String, Object> context, Response response) {
         try {
             final String name = Objects.requireNonNull((String) context.get("name"), "command is not allowed null");
-            final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null").toLowerCase();
+            final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null");
             final List<String> hints = (List<String>) context.getOrDefault("hints", Collections.emptyList());
             final boolean explainCommand = "true".equalsIgnoreCase(Objects.toString(context.getOrDefault("doExplain", "")));
             //////////////////////////////////hints/////////////////////////////////

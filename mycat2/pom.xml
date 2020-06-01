@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.06-SNAPSHOT</version>
+        <version>1.07-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -15,29 +15,29 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.06-SNAPSHOT</version>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.06-SNAPSHOT</version>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.06-SNAPSHOT</version>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>pattern</artifactId>
-            <version>1.06-SNAPSHOT</version>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.06-SNAPSHOT</version>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.collections</groupId>
@@ -78,6 +78,18 @@
             <groupId>org.apache.crail</groupId>
             <artifactId>crail-storage</artifactId>
             <version>1.1-incubating</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>boost</artifactId>
+            <version>1.07-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>boost</artifactId>
+            <version>1.07-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

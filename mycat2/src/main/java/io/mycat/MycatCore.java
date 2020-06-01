@@ -22,6 +22,7 @@ import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.booster.BoosterRuntime;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.client.InterceptorRuntime;
@@ -81,6 +82,7 @@ public enum MycatCore {
 
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
+        BoosterRuntime.INSTANCE.load(mycatConfig);
         InterceptorRuntime.INSTANCE.load(mycatConfig);
 
 

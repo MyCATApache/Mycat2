@@ -1,11 +1,8 @@
-package io.mycat.boost;
+package io.mycat.booster;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.MySQLTaskUtil;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.util.Duration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

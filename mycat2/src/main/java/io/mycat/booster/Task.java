@@ -1,4 +1,4 @@
-package io.mycat.boost;
+package io.mycat.booster;
 
 import lombok.AllArgsConstructor;
 

@@ -3,46 +3,37 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-      <version>1.07-SNAPSHOT</version>
+        <groupId>io.mycat</groupId>
+        <version>1.07-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>proxy</artifactId>
+    <artifactId>boost</artifactId>
 
     <dependencies>
-      <dependency>
-        <groupId>io.mycat</groupId>
-        <artifactId>config</artifactId>
-        <version>1.07-SNAPSHOT</version>
-      </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
         <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>plug</artifactId>
-          <version>1.07-SNAPSHOT</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>28.2-jre</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
-            <artifactId>router</artifactId>
-          <version>1.07-SNAPSHOT</version>
+            <artifactId>config</artifactId>
+            <version>1.07-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-          <version>1.07-SNAPSHOT</version>
-        </dependency>
-      <dependency>
-        <groupId>io.mycat</groupId>
-        <artifactId>replica</artifactId>
-        <version>1.07-SNAPSHOT</version>
-      </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>datasource</artifactId>
             <version>1.07-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>plug</artifactId>
+            <version>1.07-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
-
 
 </project>
