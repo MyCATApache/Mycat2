@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.06-SNAPSHOT</version>
+  <version>1.07-SNAPSHOT</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -18,7 +18,7 @@
     <module>replica</module>
       <module>pattern</module>
       <module>hbt</module>
-      <module>boost</module>
+      <module>booster</module>
       <module>example</module>
       <module>autohandler</module>
       <module>testsuite</module>
