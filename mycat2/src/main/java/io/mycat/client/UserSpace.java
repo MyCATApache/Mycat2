@@ -149,7 +149,13 @@ public class UserSpace {
 
             @Override
             public void start(CacheConfig cacheConfig) {
-                timer.scheduleAtFixedRate(() -> executorService.execute(() -> cache(cacheConfig)),
+                timer.scheduleAtFixedRate(() -> executorService.execute(() -> {
+                            try {
+                                cache(cacheConfig);
+                            } catch (Exception e) {
+                                logger.error("build cache fail:"+cacheConfig, e);
+                            }
+                        }),
                         cacheConfig.getInitialDelay().toMillis(),
                         cacheConfig.getRefreshInterval().toMillis(),
                         TimeUnit.MILLISECONDS);
