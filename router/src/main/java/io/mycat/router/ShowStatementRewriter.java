@@ -16,6 +16,7 @@ import java.text.MessageFormat;
  */
 public class ShowStatementRewriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowStatementRewriter.class);
+
     public static String rewriteShowTables(String defaultSchema, SQLShowTablesStatement ast) {
         SQLExpr where = ast.getWhere();
         SQLName from = ast.getFrom();
@@ -27,11 +28,13 @@ public class ShowStatementRewriter {
         }
         String schemaCondition = " TABLE_SCHEMA = '" + schema + "' ";
         String whereCondition = " " + (where == null ? "true" : where.toString()) + " ";
-        String likeCondition = like == null ? "true" : " TABLE_NAME like " + " " + like.toString() + " ";
+        String likeCondition = like == null ? " true " : " TABLE_NAME like " + " " + like.toString() + " ";
         String fullCondition = !full ? " true " : " TABLE_TYPE  = 'BASE TABLE' ";
 
-        return MessageFormat.format("select TABLE_NAME as {0} from information_schema.`TABLES` where {1} ",
-                "Tables_in_" + schema, String.join(" and ", schemaCondition, whereCondition, likeCondition, fullCondition)
+        String sql = MessageFormat.format("select TABLE_NAME as {0} from information_schema.`TABLES` where {1} ",
+                "`" + "Tables_in_" + schema + "`", String.join(" and ", schemaCondition, whereCondition, likeCondition, fullCondition)
         );
+        LOGGER.info(ast + "->" + sql);
+        return sql;
     }
 }
