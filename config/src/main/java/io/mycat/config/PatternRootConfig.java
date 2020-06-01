@@ -24,13 +24,14 @@ public class PatternRootConfig {
     public PatternRootConfig() {
     }
 
-    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String transactionType, String matcherClazz) {
+    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String transactionType, String matcherClazz,List<String> boosters) {
         this.user = user;
         this.sqls = sqls;
         this.sqlsGroup = sqlsGroup;
         this.defaultHanlder = defaultHanlder;
         this.transactionType = transactionType;
         this.matcherClazz = matcherClazz;
+        this.boosters = boosters;
     }
 
     public List<Map<String,Object>> getSqls() {//注意去重

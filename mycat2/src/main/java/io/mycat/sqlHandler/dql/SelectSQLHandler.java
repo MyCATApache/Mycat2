@@ -141,6 +141,15 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return onSelectDual(sqlSelectQueryBlock, request, receiver);
         }
 
+        ///////////////////////////////booster//////////////////////////////
+        if (!dataContext.isInTransaction() && dataContext.isAutocommit()) {
+            Optional<String> booster = BoosterRuntime.INSTANCE.getBooster(dataContext.getUser().getUserName());
+            if (booster.isPresent()) {
+                receiver.proxySelect(booster.get(), statement);
+                return ExecuteCode.PERFORMED;
+            }
+        }
+
         ///////////////////////////////common///////////////////////////////
         Map<String, SchemaHandler> schemaMap = mycatDBContext.config().getSchemaMap();
         String schemaName = collector.getSchema();
@@ -169,14 +178,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 return ExecuteCode.PERFORMED;
             }
         }
-        ///////////////////////////////booster//////////////////////////////
-        if (!dataContext.isInTransaction() || dataContext.isAutocommit()) {
-            Optional<String> booster = BoosterRuntime.INSTANCE.getBooster(dataContext.getUser().getUserName());
-            if (booster.isPresent()) {
-                receiver.proxySelect(booster.get(), statement);
-                return ExecuteCode.PERFORMED;
-            }
-        }
+
 
         ///////////////////////////////common///////////////////////////////
 

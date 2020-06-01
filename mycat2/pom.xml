@@ -85,6 +85,12 @@
             <version>1.06-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>boost</artifactId>
+            <version>1.06-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
     <build>

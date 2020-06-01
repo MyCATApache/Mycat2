@@ -17,6 +17,12 @@
             <artifactId>quidem</artifactId>
             <version>0.9</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>example</artifactId>
+            <version>1.06-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

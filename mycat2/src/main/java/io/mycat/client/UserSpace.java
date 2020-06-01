@@ -86,7 +86,7 @@ public class UserSpace {
     public boolean execute(int sessionId, MycatDataContext dataContext, CharBuffer charBuffer, Map<String, Object> context, Response response) {
         try {
             final String name = Objects.requireNonNull((String) context.get("name"), "command is not allowed null");
-            final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null").toLowerCase();
+            final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null");
             final List<String> hints = (List<String>) context.getOrDefault("hints", Collections.emptyList());
             final boolean explainCommand = "true".equalsIgnoreCase(Objects.toString(context.getOrDefault("doExplain", "")));
             //////////////////////////////////hints/////////////////////////////////
