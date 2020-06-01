@@ -106,4 +106,8 @@ public class LoadBalanceManager {
             return strategy;
         }
     }
+
+    public LoadBalanceStrategy getDefaultLoadBalanceStrategy() {
+        return Objects.requireNonNull(defaultLoadBalanceStrategy);
+    }
 }

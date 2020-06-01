@@ -28,6 +28,12 @@
             <artifactId>common</artifactId>
             <version>1.06-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>plug</artifactId>
+            <version>1.06-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>
