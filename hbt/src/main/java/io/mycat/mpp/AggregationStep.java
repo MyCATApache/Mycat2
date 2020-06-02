@@ -14,7 +14,7 @@ public interface AggregationStep {
     List<SqlValue> getOutput();
     List<SqlValue> getProject();
 
-    List<AggSqlValue> getAggregationExpr();
+    List<SqlValue> getAggregationExpr();
 
     SqlValue getHavingExpr();
 

@@ -99,8 +99,8 @@ public class SqlToExprTranslator {
             blackboard.addWhere(convertExpr(where));
         }
         List<SQLSelectItem> selectList = sqlSelectQuery.getSelectList();
-        List<SQLAggregateExpr> aggregates = getAggregate(selectList);
-        boolean isAggregate = sqlSelectQuery.getGroupBy() != null || !aggregates.isEmpty();
+        Map<String, SQLAggregateExpr> aggregates = getAggregate(sqlSelectQuery);
+        boolean isAggregate = !aggregates.isEmpty();
         rexBuilder.clear();
         rexBuilder.push(from);
         if (!isAggregate) {
@@ -108,7 +108,7 @@ public class SqlToExprTranslator {
             List<SqlValue> sqlValues = convertSelect(selectList, aliasList);
             blackboard.addSelect(sqlValues, aliasList);
         } else {
-            AggregationStep agg = new AggBuilder(selectList, aggregates, sqlSelectQuery.getGroupBy()).build();
+            AggregationStep agg = new AggBuilder(selectList, from,aggregates, sqlSelectQuery.getGroupBy()).build();
             blackboard.addGroupBy(agg);
         }
         SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
@@ -123,25 +123,27 @@ public class SqlToExprTranslator {
     }
 
 
-    private List<SQLAggregateExpr> getAggregate(List<SQLSelectItem> selectList) {
-        List<SQLAggregateExpr> sqlAggregateExprs = new ArrayList<>();
-        int size = selectList.size();
-        for (int i = 0; i < size; i++) {
-            SQLSelectItem sqlSelectItem = selectList.get(i);
-            int o = sqlAggregateExprs.size();
-            sqlSelectItem.accept(new MySqlASTVisitorAdapter() {
-                @Override
-                public void endVisit(SQLAggregateExpr x) {
-                    sqlAggregateExprs.add(x);
-                    super.endVisit(x);
+    private Map<String, SQLAggregateExpr> getAggregate(MySqlSelectQueryBlock queryBlock) {
+        Map<String, SQLAggregateExpr> aggregateExprs = new HashMap<>();
+        queryBlock.accept0(new MySqlASTVisitorAdapter() {
+            @Override
+            public void endVisit(SQLAggregateExpr x) {
+                SQLObject parent = x.getParent();
+                String name = null;
+                if (parent instanceof SQLSelectItem) {
+                    SQLSelectItem parent1 = (SQLSelectItem) parent;
+                    if (parent1.getAlias() != null) {
+                        name = parent1.computeAlias();
+                    }
                 }
-            });
-            boolean notChange = sqlAggregateExprs.size() == o;
-            if (notChange) {
-                sqlAggregateExprs.add(null);
+                if (name == null) {
+                    name = x.toString();
+                }
+                String name1 = name;
+                aggregateExprs.put(name1, x);
             }
-        }
-        return sqlAggregateExprs;
+        });
+        return aggregateExprs;
     }
 
     private boolean isAggregate(List<SqlValue> sqlValues) {
@@ -274,40 +276,49 @@ public class SqlToExprTranslator {
 
     private class AggBuilder {
         private List<SQLSelectItem> selectList;
-        private List<SQLAggregateExpr> aggregates;
+        private Map<String, SQLAggregateExpr> aggregates;
         private SQLSelectGroupByClause groupBy;
         private List<SqlValue> inputRow;
         private List<SqlValue> outputRow;
         private Map<Integer, Pair<Integer, Integer>> indexMap = new HashMap<>();
-        private List<AggSqlValue> agg = new ArrayList<>();
+        private List<SqlValue> aggResult = new ArrayList<>();
         private List<AccessDataExpr> groupByItems = new ArrayList<>();
 
-        public AggBuilder(List<SQLSelectItem> selectList, List<SQLAggregateExpr> aggregates, SQLSelectGroupByClause groupBy) {
+        public AggBuilder(List<SQLSelectItem> selectList, LogicTablePlan from, Map<String, SQLAggregateExpr> aggregates, SQLSelectGroupByClause groupBy) {
             this.selectList = selectList;
             this.aggregates = aggregates;
             this.groupBy = groupBy;
         }
 
         public AggregationStep build() {
-            inputRow = getInputAggregateExpr(aggregates, selectList, indexMap);
-            outputRow = getOutputAggregateExpr(aggregates, selectList, inputRow, indexMap);
-            SqlValue havingExpr = null;
 
-            MockQueryPlan mockQueryPlan = MockQueryPlan.create(RowType.of(outputRow));
-            if (groupBy.getItems() != null) {
-                rexBuilder.clear().push(mockQueryPlan);
-                for (SQLExpr item : groupBy.getItems()) {
-                    groupByItems.add((AccessDataExpr) convertExpr(item));
-                }
-            }
-            if (groupBy.getHaving() != null) {
-                SQLExpr having = groupBy.getHaving();
-                havingExpr = getHavingExpr(having);
-            }
-            List<String> aliasList = new ArrayList<>(selectList.size());
-//            outputRow= convertSelect(selectList, aliasList);
+//            for (SQLAggregateExpr value : aggregates.values()) {
+//                List<SQLExpr> arguments = value.getArguments();
+//            }
+//
+//
+//
+//            inputRow = getInputAggregateExpr(aggregates, selectList, indexMap);
+//            outputRow = getOutputAggregateExpr(aggregates, selectList, inputRow, indexMap);
+//            SqlValue havingExpr = null;
+//
+//            MockQueryPlan mockQueryPlan = MockQueryPlan.create(RowType.of(outputRow));
+//            if (groupBy.getItems() != null) {
+//                rexBuilder.clear().push(mockQueryPlan);
+//                for (SQLExpr item : groupBy.getItems()) {
+//                    groupByItems.add((AccessDataExpr) convertExpr(item));
+//                }
+//            }
+//            if (groupBy.getHaving() != null) {
+//                SQLExpr having = groupBy.getHaving();
+//                havingExpr = getHavingExpr(having);
+//            }
+//            List<String> aliasList = new ArrayList<>(selectList.size());
+////            outputRow= convertSelect(selectList, aliasList);
+//
+//            return AggregationStepImpl.create(selectList, inputRow, outputRow, aggResult, groupByItems, havingExpr, null, groupBy);
 
-            return AggregationStepImpl.create(selectList, inputRow, outputRow, agg, groupByItems,havingExpr,null ,groupBy);
+            return null;
         }
 
         private SqlValue getHavingExpr(SQLExpr having) {
@@ -319,6 +330,75 @@ public class SqlToExprTranslator {
                                                       List<SQLSelectItem> selectList,
                                                       List<SqlValue> inputAggregateExpr,
                                                       Map<Integer, Pair<Integer, Integer>> indexMap) {
+            LinkedList<SqlValue> aggs = new LinkedList<>();
+            HashMap<String, SqlValue> aliasAggMap = new HashMap<>();
+            int size = aggregates.size();
+            for (int i = 0; i < size; i++) {
+                SQLAggregateExpr e = aggregates.get(i);
+                if (e != null) {
+                    SQLAggregateExpr sqlAggregateExpr = aggregates.get(i);
+                    List<SQLExpr> arguments = sqlAggregateExpr.getArguments();
+                    List<SqlValue> args = Collections.emptyList();
+                    if (!arguments.isEmpty()) {
+                        //聚合函数的有参数
+                        Pair<Integer, Integer> pair = indexMap.get(i);
+                        args = IntStream.range(pair.getKey(), pair.getValue()).mapToObj(j -> {
+                            SqlValue sql = inputAggregateExpr.get(j);
+                            return AccessDataExpr.of(j, sql.getType(), sql.toParseTree().toString());
+                        }).collect(Collectors.toList());
+                    } else {
+                        //聚合函数无参数
+                    }
+                    SqlValue sqlValue = rexBuilder.aggCall(sqlAggregateExpr.getMethodName(), args, false);
+                    aggs.add(sqlValue);
+                    if (sqlAggregateExpr.getParent() instanceof SQLSelectItem) {
+                        aliasAggMap.put(((SQLSelectItem) sqlAggregateExpr.getParent()).computeAlias(), sqlValue);
+                    } else {
+
+                    }
+                }
+            }
+
+            //生成group by的key
+            rexBuilder.clear().push(MockQueryPlan.create(RowType.of(inputAggregateExpr)));
+            if (groupBy.getItems() != null) {
+                this.aggResult.addAll(groupBy.getItems().stream().map(e -> {
+                    RexTranslator rexTranslator = new RexTranslator(rexBuilder, blackboard);
+                    e.accept(rexTranslator);
+                    return e;
+                })  //todo 解子查询
+                        .map(i -> (AccessDataExpr) i).collect(Collectors.toList()));
+            }
+
+            //添加聚合函数
+            this.aggResult.addAll(aggs);
+
+            rexBuilder.clear().push(MockQueryPlan.create(aggResult));
+            //叶子节点的聚合函数使用visitor替代结果
+            RexTranslator rexTranslator = new RexTranslator(rexBuilder, blackboard) {
+                @Override
+                protected SqlValue convertExpr(SQLExpr expr) {
+                    if (expr instanceof SQLAggregateExpr) {
+                        return aggs.removeFirst();
+                    } else {
+                        return super.convertExpr(expr);
+                    }
+                }
+            };
+            int selectListSize = selectList.size();
+            for (int i = 0; i < selectListSize; i++) {
+                SQLSelectItem sqlSelectItem = selectList.get(i);
+                SQLExpr expr = sqlSelectItem.getExpr();
+                expr.accept(rexTranslator);
+            }
+
+            return Collections.emptyList();
+        }
+
+        private List<SqlValue> getOutputAggregateExprbackup(List<SQLAggregateExpr> aggregates,
+                                                            List<SQLSelectItem> selectList,
+                                                            List<SqlValue> inputAggregateExpr,
+                                                            Map<Integer, Pair<Integer, Integer>> indexMap) {
             int size = aggregates.size();
             int index = 0;
 
@@ -345,7 +425,7 @@ public class SqlToExprTranslator {
                     }).collect(Collectors.toList());
                 }
                 sqlValue = (AggSqlValue) rexBuilder.aggCall(sqlAggregateExpr.getMethodName(), args, false);
-                agg.add(sqlValue);
+                aggResult.add(sqlValue);
                 AccessDataExpr of = AccessDataExpr.of(i, sqlValue.getType(), sqlAggregateExpr.toString());
 
                 if (sqlAggregateExpr.getParent() instanceof SQLSelectItem) {

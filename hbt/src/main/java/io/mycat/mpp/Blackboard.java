@@ -101,12 +101,12 @@ public class Blackboard {
                 types.add(groupByItem.getMySQLType());
             }
 
-            List<AggSqlValue> aggregationExpr = agg.getAggregationExpr();
+            List<SqlValue> aggregationExpr = agg.getAggregationExpr();
             int size = aggregationExpr.size();
             String[] funNames = new String[size];
             List<List<Integer>> args = new ArrayList<>();
             for (int i = 0; i < size; i++) {
-                AggSqlValue aggSqlValue = aggregationExpr.get(i);
+                AggSqlValue aggSqlValue = (AggSqlValue)aggregationExpr.get(i);
                 funNames[i] = aggSqlValue.getName();
                 args.add(aggSqlValue.getArgs().stream().map(j -> ((AccessDataExpr) j).getIndex()).collect(Collectors.toList()));
             }

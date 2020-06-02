@@ -11,7 +11,7 @@ public class AggregationStepImpl implements AggregationStep {
     final List<SQLSelectItem> sqlSelectItems;
     final List<SqlValue> inputs;
     final List<SqlValue> outputs;
-    final List<AggSqlValue> aggregationExpr;
+    final List<SqlValue> aggregationExpr;
     final List<AccessDataExpr> groupByItems;
     final SqlValue havingExpr;
     final SQLSelectGroupByClause sQLSelectGroupByClause;
@@ -20,7 +20,7 @@ public class AggregationStepImpl implements AggregationStep {
     public static AggregationStep create(List<SQLSelectItem> sqlSelectItems,
                                          List<SqlValue> inputs,
                                          List<SqlValue> outputs,
-                                         List<AggSqlValue> aggregationExpr,
+                                         List<SqlValue> aggregationExpr,
                                          List<AccessDataExpr> groupByItems,
                                          SqlValue havingExpr,
                                          List<SqlValue> project,
@@ -28,7 +28,7 @@ public class AggregationStepImpl implements AggregationStep {
         return new AggregationStepImpl(sqlSelectItems, inputs, outputs, aggregationExpr, groupByItems, havingExpr, project, sQLSelectGroupByClause);
     }
 
-    public AggregationStepImpl(List<SQLSelectItem> sqlSelectItems, List<SqlValue> inputs, List<SqlValue> outputs, List<AggSqlValue> aggregationExpr
+    public AggregationStepImpl(List<SQLSelectItem> sqlSelectItems, List<SqlValue> inputs, List<SqlValue> outputs, List<SqlValue> aggregationExpr
             , List<AccessDataExpr> groupByItems, SqlValue havingExpr, List<SqlValue> project, SQLSelectGroupByClause sQLSelectGroupByClause) {
         this.sqlSelectItems = Objects.requireNonNull(sqlSelectItems);
         this.inputs = Objects.requireNonNull(inputs);
@@ -61,7 +61,7 @@ public class AggregationStepImpl implements AggregationStep {
     }
 
     @Override
-    public List<AggSqlValue> getAggregationExpr() {
+    public List<SqlValue> getAggregationExpr() {
         return aggregationExpr;
     }
 

@@ -7,7 +7,6 @@ import io.mycat.example.TestUtil;
 import io.mycat.util.NetUtil;
 import lombok.SneakyThrows;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -27,7 +26,7 @@ public class ShardingExample {
         MycatCore.INSTANCE.init(bootConfig);
     }
 
-    @Test
+//    @Test
     public void test() throws Exception {
         Thread thread = null;
         if (!NetUtil.isHostConnectable("0.0.0.0", 8066)) {
