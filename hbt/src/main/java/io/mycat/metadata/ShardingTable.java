@@ -5,6 +5,7 @@ import io.mycat.TextUpdateInfo;
 import io.mycat.queryCondition.SimpleColumnInfo;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.calcite.schema.Statistic;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -72,6 +73,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Supplier<String> nextSequence() {
         return sequence;
     }
+
     @Override
     public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
         return new Function<ParseContext, Iterator<TextUpdateInfo>>() {

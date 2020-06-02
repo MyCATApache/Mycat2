@@ -68,7 +68,8 @@ public class CalciteConvertors {
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
               ;  JDBCType jdbcType = JDBCType.valueOf(typeString);
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), precision, scale,jdbcType , nullable,false,false));
+              //todo 添加索引 主键信息
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), precision, scale,jdbcType , nullable,false,false,false));
             }
             return res;
         } catch (SQLException e) {
@@ -172,7 +173,8 @@ public class CalciteConvertors {
             boolean autoIncrement = mycatRowMetaData.isAutoIncrement(i);
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
-            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey));
+            boolean index = mycatRowMetaData.isIndex(i);
+            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey,index));
         }
         return list;
     }
