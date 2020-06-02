@@ -208,6 +208,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         //不翻译无表sql
                     } else {
                         String targetName = strings.get(0);
+                        targetName = dataContext.getUponDBContext().resolveFinalTargetName(targetName);
                         return relBuilder.makeTransientSQLScan(targetName, other, forUpdate);
                     }
                 }
