@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-5-30
+author:junwen  2020-6-1
 
 作者qq: 294712221
 
@@ -550,6 +550,21 @@ targetName是目标名字,它可以是数据源的名字或者集群的名字
 
 
 
+#### 建立物理库,物理表的规律
+
+
+
+1. schema上的配置默认目标
+2. 在代理架构下即mycat proxy没有设置成自动返回show语句的情况(比如使用命令配置),则配置的默认命令指向的默认目标
+
+
+
+此默认目标应该有非分片表与分片表的名字的物理库
+
+
+
+
+
 ####   Mycat2的分片分库分表运算
 
 ​		在分片分库分表中运算分为两个部分,一部分是后端每个数据库的运算,这部分运算以SQL作为中间语言发送到后端服务器,一部分以HBT形式在mycat里执行,占用内存主要是驻留的结果集的总大小.如果结果集合拼的结果行是固定行,固定列,结果集每个值长度也是固定的,那意味着运算都是reduce的,可以边运算边丢弃已处理的值,无需保存完整的后端处理结果.
@@ -621,7 +636,9 @@ metadata:
             }]
 ```
 
-mycatdb命令可以自动完成sql分析,进行读写分离
+mycatdb命令可以自动完成sql分析,进行读写分离,对于sql中没有库名的表,会自动添上逻辑库名字
+
+targetName可以是数据源或者集群
 
 
 
@@ -715,6 +732,8 @@ schemaName
 
 
 targetName
+
+可以是数据源或者集群名字
 
 如果不配置库,表的信息,无法路由的表发往该目标
 
@@ -861,6 +880,35 @@ interceptors:
 ```
 
 此配置使用内置默认的mycatdb命令,根据分片配置进行处理,无需配置任何命令,默认事务是proxy
+
+
+
+
+
+#### booster
+
+```yaml
+interceptors:
+  [{
+     user: {ip: '.', password: '123456', username: root},
+     boosters: [defaultDs2],
+     sqls:[
+    
+     ]
+   }]
+```
+
+例子：
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/booster/mycat.yml
+
+```yaml
+boosters: [defaultDs2]
+```
+
+在无事务且开启自动提交的情况下指定的sql发送到后端目标,该属性被mycatdb和boostMycatdb两个命令使用
+
+mycatdb会自动给缺默认库名的sql添上逻辑库,boostMycatdb则不会.
 
 
 
@@ -1484,6 +1532,10 @@ refreshInterval:刷新时间
 
 ## 命令
 
+**命令名大小写敏感**
+
+
+
 ##### mycatdb
 
 该命令是根据分片配置自动处理sql
@@ -1562,6 +1614,36 @@ next_value_for('全局序列号名字')函数查询全局序列号
 
 ```yaml
 {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}
+```
+
+
+
+##### boostMycatdb
+
+```yaml
+{sql: 'SELECT COUNT(1) FROM db1.travelrecord',command: boostMycatdb ,tags:{ boosters: defaultDs2 }}
+```
+
+在无事务且开启自动提交的情况下指定的sql发送到后端目标
+
+**该命令不会改变sql**
+
+
+
+参数
+
+```
+tags:{ boosters: defaultDs2 }
+```
+
+如果不配置参数
+
+则使用拦截器上的配置boosters
+
+也支持以列表方式配置
+
+```
+tags:{ boosters: [defaultDs2] }
 ```
 
 

@@ -219,7 +219,7 @@ public enum MetadataManager {
             columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getUrl(), prototypeServer.getUser(), prototypeServer.getPassword());
         }
         if (columns == null) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("没有配置建表sql");
         }
         return columns;
     }
