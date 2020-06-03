@@ -547,7 +547,9 @@ public enum MetadataManager {
             return table;
         }
     }
-
+    public TableHandler getTable(String schemaName,String tableName) {
+        return Optional.ofNullable(schemaMap).map(i->i.get(schemaName)).map(i->i.logicTables().get(tableName)).orElse(null);
+    }
     public Map<String, SchemaHandler> getSchemaMap() {
         return (Map) schemaMap;
     }

@@ -56,7 +56,7 @@ public interface MycatRowMetaData {
 
     public boolean isNullable(int column);
 
-    public default boolean isPrimaryKey(int column){
+    public default boolean isPrimaryKey(int column) {
         return false;
     }
 
@@ -91,5 +91,9 @@ public interface MycatRowMetaData {
             int scale = getScale(i);
         }
         return list.toString();
+    }
+
+    default boolean isIndex(int column) {
+        return isPrimaryKey(column);
     }
 }

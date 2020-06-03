@@ -21,6 +21,7 @@ import io.mycat.metadata.LogicTableType;
 import io.mycat.metadata.ShardingTableHandler;
 import io.mycat.metadata.TableHandler;
 import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -118,32 +119,8 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                     LOGGER.error("", e);
                 }
                 ImmutableList<ImmutableBitSet> immutableBitSets = indexes.build();
-                statistic = new Statistic() {
-                    public Double getRowCount() {
-                        return null;
-                    }
-
-                    public boolean isKey(ImmutableBitSet columns) {
-                        return immutableBitSets.contains(columns);
-                    }
-
-                    public List<ImmutableBitSet> getKeys() {
-                        return immutableBitSets;
-                    }
-
-                    public List<RelReferentialConstraint> getReferentialConstraints() {
-                        return ImmutableList.of();
-                    }
-
-                    public List<RelCollation> getCollations() {
-                        return ImmutableList.of();
-                    }
-
-                    public RelDistribution getDistribution() {
-                        return RelDistributionTraitDef.INSTANCE.getDefault();
-                    }
-                };
-            break;
+                statistic = createStatistic(immutableBitSets);
+                break;
         }
         case GLOBAL: {
             GlobalTableHandler table = (GlobalTableHandler) t;
@@ -167,37 +144,41 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
             }
 
             ImmutableList<ImmutableBitSet> build = builder.build();
-                statistic = new Statistic() {
-                    public Double getRowCount() {
-                        return null;
-                    }
-
-                    public boolean isKey(ImmutableBitSet columns) {
-                        return build.contains(columns);
-                    }
-
-                    public List<ImmutableBitSet> getKeys() {
-                        return build;
-                    }
-
-                    public List<RelReferentialConstraint> getReferentialConstraints() {
-                        return ImmutableList.of();
-                    }
-
-                    public List<RelCollation> getCollations() {
-                        return ImmutableList.of();
-                    }
-
-                    public RelDistribution getDistribution() {
-                        return RelDistributionTraitDef.INSTANCE.getDefault();
-                    }
-                };
+            statistic = createStatistic(build);
             break;
         }
         default:
         statistic = Statistics.UNKNOWN;
     }
 }
+
+    private Statistic createStatistic(ImmutableList<ImmutableBitSet> immutableBitSets) {
+      return new Statistic() {
+            public Double getRowCount() {
+                return StatisticCenter.INSTANCE.getLogicTableRow(table.getSchemaName(),table.getTableName());
+            }
+
+            public boolean isKey(ImmutableBitSet columns) {
+                return immutableBitSets.contains(columns);
+            }
+
+            public List<ImmutableBitSet> getKeys() {
+                return immutableBitSets;
+            }
+
+            public List<RelReferentialConstraint> getReferentialConstraints() {
+                return ImmutableList.of();
+            }
+
+            public List<RelCollation> getCollations() {
+                return ImmutableList.of();
+            }
+
+            public RelDistribution getDistribution() {
+                return RelDistributionTraitDef.INSTANCE.getDefault();
+            }
+        };
+    }
 
     public MycatPhysicalTable getMycatPhysicalTable(String uniqueName) {
         return dataNodeMap.get(uniqueName);

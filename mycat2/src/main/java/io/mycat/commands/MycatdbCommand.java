@@ -87,6 +87,10 @@ public enum MycatdbCommand implements MycatCommand {
         sqlHandlers.add(new ShowVariantsSQLHandler());
         sqlHandlers.add(new ShowWarningsSQLHandler());
         sqlHandlers.add(new ShowCreateFunctionHanlder());
+
+        //Analyze
+        sqlHandlers.add(new ShowCreateFunctionHanlder());
+        sqlHandlers.add(new AnalyzeHanlder());
     }
 
     @Override

@@ -16,11 +16,13 @@ package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.MycatConnection;
+import io.mycat.SchemaInfo;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.metadata.TableHandler;
+import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.calcite.DataContext;
@@ -28,12 +30,18 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ProjectableFilterableTable;
+import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -44,10 +52,49 @@ import java.util.List;
 public class MycatPhysicalTable extends MycatTableBase implements TransientTable, ProjectableFilterableTable, TranslatableTable {
     final MycatLogicTable logicTable;
     final BackendTableInfo backendTableInfo;//真实表名
+    Statistic statistic;//MycatLogicTable的构造函数没有statistic
 
     public MycatPhysicalTable(MycatLogicTable logicTable, BackendTableInfo backendTableInfo) {
         this.logicTable = logicTable;
         this.backendTableInfo = backendTableInfo;
+    }
+
+    @NotNull
+    private Statistic createStatistic(Statistic parentStatistic) {
+        return new Statistic() {
+            @Override
+            public Double getRowCount() {
+                SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
+                return StatisticCenter.INSTANCE.getPhysicsTableRow(schemaInfo.getTargetSchema(),
+                        schemaInfo.getTargetTable(),
+                        backendTableInfo.getTargetName());
+            }
+
+            @Override
+            public boolean isKey(ImmutableBitSet columns) {
+                return parentStatistic.isKey(columns);
+            }
+
+            @Override
+            public List<ImmutableBitSet> getKeys() {
+                return parentStatistic.getKeys();
+            }
+
+            @Override
+            public List<RelReferentialConstraint> getReferentialConstraints() {
+                return parentStatistic.getReferentialConstraints();
+            }
+
+            @Override
+            public List<RelCollation> getCollations() {
+                return parentStatistic.getCollations();
+            }
+
+            @Override
+            public RelDistribution getDistribution() {
+                return parentStatistic.getDistribution();
+            }
+        };
     }
 
     @Override
@@ -68,7 +115,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
             @Override
             @SneakyThrows
             public Enumerator<Object[]> enumerator() {
-                return new MyCatResultSetEnumerator(root1.getCancelFlag(),rowBaseIterator);
+                return new MyCatResultSetEnumerator(root1.getCancelFlag(), rowBaseIterator);
             }
         };
 
@@ -80,6 +127,15 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(),relOptTable);
+        return LogicalTableScan.create(context.getCluster(), relOptTable);
+    }
+
+    @Override
+    public Statistic getStatistic() {
+        if (statistic == null) {
+            Statistic parentStatistic = logicTable.getStatistic();
+            statistic = createStatistic(parentStatistic);
+        }
+        return this.statistic;
     }
 }
