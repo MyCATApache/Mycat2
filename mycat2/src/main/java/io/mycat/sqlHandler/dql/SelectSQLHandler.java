@@ -12,14 +12,18 @@ import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.booster.BoosterRuntime;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.hbt.HBTRunners;
+import io.mycat.hbt.ast.base.Schema;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.route.*;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
@@ -49,10 +53,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
     protected ExecuteCode onSelectNoTable(SQLSelectQueryBlock sqlSelectQueryBlock,
                                           SQLRequest<SQLSelectStatement> request, Response receiver) {
-//        SQLContext sqlContext = request.getContext();
-//        SQLSelectStatement statement = request.getAst();
-//        receiver.evalSimpleSql(statement);
-//        return ExecuteCode.PERFORMED;
         return onSelectDual(sqlSelectQueryBlock, request, receiver);
     }
 
@@ -187,7 +187,26 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
         }
+        ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(),statement);
+        if(false){
+            Schema plan = parseContext.getPlan();
+            HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
+            ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
+            if (resultHandler instanceof InputHandler){
+                InputHandler resultHandler1 = (InputHandler) resultHandler;
+                String targetName = resultHandler1.getTargetName();
+                String sql = resultHandler1.getSql();
+                receiver.proxySelect(targetName, sql);
+                return ExecuteCode.PERFORMED;
+            }
+            HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
+            RowBaseIterator run = hbtRunners.run(plan);
+            receiver.sendResultSet(run, null);
+            return ExecuteCode.PERFORMED;
+        }
         dataContext.block(() -> {
+
+            ///////////////////////////////////mycatdb////////////////////////////////////////////////
             MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
 
             MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
@@ -198,7 +217,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 if (proxyInfo != null) {
                     String sql = proxyInfo.getSql();
                     String targetName = proxyInfo.getTargetName();
-                    boolean updateOpt = proxyInfo.isUpdateOpt();
                     receiver.proxySelect(targetName, sql);
                     return;
                 }

@@ -13,7 +13,6 @@ import java.util.List;
  **/
 
 @Getter
-@AllArgsConstructor
 @EqualsAndHashCode
 public class SimpleColumnInfo {
     @NonNull
@@ -25,8 +24,20 @@ public class SimpleColumnInfo {
     final boolean nullable;
     final boolean autoIncrement;
     final boolean primaryKey;
+    final boolean index;
     @NonNull
     final List<ShardingInfo> shardingInfo = new ArrayList<>();
+
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index) {
+        this.columnName = columnName;
+        this.precision = precision;
+        this.scale = scale;
+        this.jdbcType = jdbcType;
+        this.nullable = nullable;
+        this.autoIncrement = autoIncrement;
+        this.primaryKey = primaryKey;
+        this.index = index;
+    }
 
     /**
      * jamie 2019-12-11

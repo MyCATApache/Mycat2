@@ -22,6 +22,7 @@
       <module>example</module>
       <module>autohandler</module>
       <module>testsuite</module>
+      <module>statistic</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

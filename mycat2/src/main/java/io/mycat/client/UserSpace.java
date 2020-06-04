@@ -195,7 +195,10 @@ public class UserSpace {
                         default:
                             throw new UnsupportedOperationException(command.toString());
                     }
-                } finally {
+                } catch (Throwable t){
+                    logger.error("",t);
+                    throw t;
+                }finally {
                     db.recycleResource();
                 }
                 return query;

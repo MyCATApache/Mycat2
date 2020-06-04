@@ -12,6 +12,7 @@ import io.mycat.TextUpdateInfo;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.queryCondition.SimpleColumnInfo;
+import org.apache.calcite.schema.Statistic;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -143,6 +144,7 @@ public class GlobalTable implements GlobalTableHandler {
     public Supplier<String> nextSequence() {
         throw new UnsupportedOperationException();
     }
+
 
     @Override
     public BackendTableInfo getGlobalBackendTableInfoForQuery(boolean update) {

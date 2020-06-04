@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +53,7 @@ public class CalciteRunners {
         });
 
         ArrayBindable bindable1 = Interpreters.bindable(relNode);
-        submit.get(1,TimeUnit.MINUTES);
+        submit.get(1, TimeUnit.MINUTES);
         Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
 
         Enumerator<Object[]> enumerator = bind.enumerator();
@@ -108,11 +107,14 @@ public class CalciteRunners {
                 for (SingeTargetSQLTable v : value) {
                     MycatConnection connection = nameMap.get(v.getTargetName()).remove();
                     uponDBContext.addCloseResource(connection);
+                    Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
+                            .submit(() -> connection.executeQuery(v.getMetaData(), v.getSql()));
                     AbstractEnumerable enumerable = new AbstractEnumerable<Object[]>() {
                         @Override
                         @SneakyThrows
                         public Enumerator<Object[]> enumerator() {
-                            return new MyCatResultSetEnumerator(cancelFlag, connection.executeQuery(v.getMetaData(), v.getSql()));
+                            LOGGER.info("------!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                            return new MyCatResultSetEnumerator(cancelFlag, submit.get());
                         }
                     };
                     v.setEnumerable(enumerable);

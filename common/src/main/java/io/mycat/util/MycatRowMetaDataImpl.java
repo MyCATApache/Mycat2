@@ -95,4 +95,9 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     public boolean isPrimaryKey(int column) {
         return columnInfo.get(column).isPrimaryKey();
     }
+
+    @Override
+    public boolean isIndex(int column) {
+        return isPrimaryKey(column);
+    }
 }

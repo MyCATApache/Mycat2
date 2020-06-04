@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 /**
  * @author jamie12221
  **/
-@Data
+
 @EqualsAndHashCode
 public abstract class Schema extends Node  {
     public Schema(HBTOp op) {

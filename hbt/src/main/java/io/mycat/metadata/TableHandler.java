@@ -2,6 +2,7 @@ package io.mycat.metadata;
 
 import io.mycat.TextUpdateInfo;
 import io.mycat.queryCondition.SimpleColumnInfo;
+import org.apache.calcite.schema.Statistic;
 
 import java.util.Iterator;
 import java.util.List;
