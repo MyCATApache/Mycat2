@@ -99,7 +99,7 @@ public class PushDownLogicTable extends RelOptRule {
                 logicTable.getRowType(cluster.getTypeFactory()),//这里使用logicTable,避免类型不一致
                 mycatPhysicalTable,
                 ImmutableList.of(mycatPhysicalTable.getBackendTableInfo().getUniqueName()));
-        logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        logicalTableScan = LogicalTableScan.create(cluster, dataNode,ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }
 
@@ -159,7 +159,7 @@ public class PushDownLogicTable extends RelOptRule {
                 mycatPhysicalTable.getRowType(cluster.getTypeFactory()),
                 mycatPhysicalTable,
                 ImmutableList.of(uniqueName));
-        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode,ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }
 }
