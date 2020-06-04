@@ -43,8 +43,9 @@ public class GlobalRouter implements SqlRouteChain {
                 return false;
             }
         }
+        String sql = parseContext.getSqlStatement().toString();
         parseContext.plan(HBTBuilder.create()
-                .from(targetName,parseContext.getSqlStatement().toString())
+                .from(targetName,sql)
                 .build());
         return true;
     }

@@ -23,8 +23,7 @@ import io.mycat.hbt.ast.base.Schema;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.route.ParseContext;
-import io.mycat.route.SqlRouteChains;
+import io.mycat.route.*;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
@@ -191,6 +190,15 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         ParseContext parseContext = ParseContext.of(statement);
         if(SqlRouteChains.INSTANCE.execute(parseContext)){
             Schema plan = parseContext.getPlan();
+            HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
+            ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
+            if (resultHandler instanceof InputHandler){
+                InputHandler resultHandler1 = (InputHandler) resultHandler;
+                String targetName = resultHandler1.getTargetName();
+                String sql = resultHandler1.getSql();
+                receiver.proxySelect(targetName, sql);
+                return ExecuteCode.PERFORMED;
+            }
             HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
             RowBaseIterator run = hbtRunners.run(plan);
             receiver.sendResultSet(run, null);
@@ -209,7 +217,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 if (proxyInfo != null) {
                     String sql = proxyInfo.getSql();
                     String targetName = proxyInfo.getTargetName();
-                    boolean updateOpt = proxyInfo.isUpdateOpt();
                     receiver.proxySelect(targetName, sql);
                     return;
                 }
