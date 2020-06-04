@@ -369,6 +369,9 @@ public class HBTQueryConvertor {
 
     private RelNode setSchema(SetOpSchema input) {
         int size = input.getSchemas().size();
+        if (size > 2){
+            throw new UnsupportedOperationException("set op size must equals 2");
+        }
         RelBuilder relBuilder = this.relBuilder.pushAll(handle(input.getSchemas()));
         switch (input.getOp()) {
             case UNION_DISTINCT:

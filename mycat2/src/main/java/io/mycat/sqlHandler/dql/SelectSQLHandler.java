@@ -187,8 +187,8 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
         }
-        ParseContext parseContext = ParseContext.of(statement);
-        if(SqlRouteChains.INSTANCE.execute(parseContext)){
+        ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(),statement);
+        if(false){
             Schema plan = parseContext.getPlan();
             HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
             ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);

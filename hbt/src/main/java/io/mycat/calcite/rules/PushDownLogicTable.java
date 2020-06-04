@@ -81,7 +81,7 @@ public class PushDownLogicTable extends RelOptRule {
                     value = shardingTable(builder, bindableTableScan, cluster, relOptSchema, logicTable);
                     break;
                 case GLOBAL:
-                    value = global(cluster,bindableTableScan, relOptSchema, logicTable);
+                    value = global(cluster, bindableTableScan, relOptSchema, logicTable);
             }
 
         } else {
@@ -91,7 +91,7 @@ public class PushDownLogicTable extends RelOptRule {
     }
 
     @NotNull
-    private RelNode global(RelOptCluster cluster,Bindables.BindableTableScan bindableTableScan, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+    private RelNode global(RelOptCluster cluster, Bindables.BindableTableScan bindableTableScan, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
         RelNode logicalTableScan;
         MycatPhysicalTable mycatPhysicalTable = logicTable.getMycatGlobalPhysicalTable(context);
         RelOptTable dataNode = RelOptTableImpl.create(
@@ -114,27 +114,37 @@ public class PushDownLogicTable extends RelOptRule {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////
 
-        TreeMap<String, List<RelNode>> bindTableGroupMapByTargetName = new TreeMap<>(Comparator.comparing(x->x));
+        TreeMap<String, List<RelNode>> bindTableGroupMapByTargetName = new TreeMap<>(Comparator.comparing(x -> x));
         for (BackendTableInfo backendTableInfo : backendTableInfos) {
             String targetName = backendTableInfo.getTargetName();
             List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
             queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
         }
 
-        TreeMap<String, RelNode> relNodeGroup = new TreeMap<>(Comparator.comparing(x->x));
+        TreeMap<String, RelNode> relNodeGroup = new TreeMap<>(Comparator.comparing(x -> x));
         context.addAll(relNodeGroup.keySet());
         for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
-            String targetName = entry.getKey();
-            builder.pushAll(entry.getValue());
-            builder.union(true, entry.getValue().size());
-            relNodeGroup.put(targetName, builder.build());
+            if (entry.getValue().isEmpty()) {
+                continue;
+            }
+            RelNode relNode = entry.getValue().stream().reduce((relNode1, relNode2) -> {
+                builder.clear();
+                return builder.push(relNode1).push(relNode2).union(true).build();
+            }).get();
+            relNodeGroup.put(entry.getKey(), relNode);
         }
 
         if (relNodeGroup.size() == 1) {
             value = relNodeGroup.entrySet().iterator().next().getValue();
         } else {
-            builder.pushAll(relNodeGroup.values());
-            value = builder.union(true, relNodeGroup.size()).build();
+            if (relNodeGroup.size() < 1) {
+                throw new AssertionError();
+            }
+            Optional<RelNode> reduce = relNodeGroup.values().stream().reduce((relNode1, relNode2) -> {
+                builder.clear();
+                return builder.push(relNode1).push(relNode2).union(true).build();
+            });
+            value = reduce.get();
         }
         return value;
     }
