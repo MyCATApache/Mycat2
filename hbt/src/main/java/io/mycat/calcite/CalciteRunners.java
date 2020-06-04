@@ -13,6 +13,7 @@ import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
@@ -38,7 +39,11 @@ public class CalciteRunners {
     }
 
     public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
-        return planner.pushDownBySQL(planner.eliminateLogicTable(relNode), forUpdate);
+         relNode = planner.eliminateLogicTable(relNode);
+         relNode = planner.pullUpUnion(relNode);
+        relNode = planner.pushDownBySQL(relNode, forUpdate);
+        relNode =  planner.fixBug(relNode);
+        return relNode;
     }
 
 

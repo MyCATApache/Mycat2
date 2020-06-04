@@ -197,7 +197,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(), relOptTable);
+        return LogicalTableScan.create(context.getCluster(), relOptTable,ImmutableList.of());
     }
 
     public MycatPhysicalTable getMycatGlobalPhysicalTable(Set<String> context) {

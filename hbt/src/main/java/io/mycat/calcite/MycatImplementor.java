@@ -17,18 +17,19 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.tools.RelBuilder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +44,12 @@ public class MycatImplementor extends RelToSqlConverter {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
                 SchemaInfo schemaInfo = physicalTable.getBackendTableInfo().getSchemaInfo();
-                SqlIdentifier identifier = new SqlIdentifier(Arrays.asList(schemaInfo.getTargetSchema(),schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                SqlIdentifier identifier;
+                if (schemaInfo.getTargetSchema() == null) {
+                    identifier = new SqlIdentifier(Collections.singletonList(schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                } else {
+                    identifier = new SqlIdentifier(Arrays.asList(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                }
                 return result(identifier, ImmutableList.of(Clause.FROM), e, null);
             } else {
                 return super.visit(e);
@@ -80,12 +86,13 @@ public class MycatImplementor extends RelToSqlConverter {
 
     /**
      * 1.修复生成的sql不带select items
+     *
      * @param e
      * @return
      */
     @Override
     public Result visit(Project e) {
-        if (e.getProjects().isEmpty()){
+        if (e.getProjects().isEmpty()) {
             Result x = visitChild(0, e.getInput());
             final Builder builder =
                     x.builder(e, Clause.SELECT);
@@ -94,6 +101,37 @@ public class MycatImplementor extends RelToSqlConverter {
         }
         return super.visit(e);
     }
+
+    @Override
+    public Result visit(Union e) {
+        if (!e.isDistinct()) {
+            ArrayList<RelNode> unions = new ArrayList<>();
+            CalciteUtls.collect(e, unions);
+            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
+            relBuilder.pushAll(unions);
+            relBuilder.union(e.all, unions.size());
+            e = (Union) relBuilder.build();
+            SqlNode node = null;
+            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
+                final Result result = visitChild(input.i, input.e);
+                if (node == null) {
+                    node = result.subSelect();//修改点
+                } else {
+                    SqlSetOperator sqlSetOperator = e.all
+                            ? SqlStdOperatorTable.UNION_ALL
+                            : SqlStdOperatorTable.UNION;
+                    node = sqlSetOperator.createCall(POS, node, result.asSelect());
+                }
+            }
+            final List<Clause> clauses =
+                    Expressions.list(Clause.SET_OP);
+            return result(node, clauses, e, null);
+        }
+        return super.visit(e);
+    }
+
+
+
     @Override
     protected Result buildAggregate(Aggregate e, Builder builder,
                                     List<SqlNode> selectList, List<SqlNode> groupByList) {
@@ -103,7 +141,7 @@ public class MycatImplementor extends RelToSqlConverter {
             SqlNode aggCallSqlNode = builder.context.toSql(aggCall);
             if (aggCall.getAggregation() instanceof SqlSingleValueAggFunction) {
                 aggCallSqlNode = dialect.rewriteSingleValueExpr(aggCallSqlNode);
-                aggCallSqlNode=   SqlStdOperatorTable.CAST.createCall(POS,
+                aggCallSqlNode = SqlStdOperatorTable.CAST.createCall(POS,
                         aggCallSqlNode, dialect.getCastSpec(type));
             }
             addSelect(selectList, aggCallSqlNode, e.getRowType());

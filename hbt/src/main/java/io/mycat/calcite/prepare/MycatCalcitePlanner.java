@@ -15,10 +15,14 @@
 package io.mycat.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
+import io.mycat.calcite.rules.LimitRemoveRule;
 import io.mycat.calcite.rules.PushDownLogicTable;
+import io.mycat.calcite.rules.SortLimitPushRule;
 import io.mycat.calcite.table.*;
 import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -111,7 +115,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlValidatorCatalogReader catalogReader = createCalciteCatalogReader();
         RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         SqlConformance conformance = MycatCalciteSupport.INSTANCE.calciteConnectionConfig.conformance();
-        return (SqlValidatorImpl) SqlValidatorUtil.newValidator(opTab, catalogReader, typeFactory, conformance);
+        return (SqlValidatorImpl) SqlValidatorUtil.newValidator(opTab, catalogReader, typeFactory);
     }
 
     public SqlToRelConverter createSqlToRelConverter() {
@@ -140,29 +144,33 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
     public RelNode eliminateLogicTable(final RelNode bestExp) {
         RelOptCluster cluster = bestExp.getCluster();
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addMatchLimit(32);
         PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-        Arrays.asList(
+
+        //目的是下推谓词,所以添加 Filter 相关
+        ImmutableSet.of(
+                FilterAggregateTransposeRule.INSTANCE,
+                FilterCorrelateRule.INSTANCE,
+                FilterJoinRule.FILTER_ON_JOIN,
+                FilterMergeRule.INSTANCE,
+                FilterMultiJoinMergeRule.INSTANCE,
                 FilterProjectTransposeRule.INSTANCE,
-                Bindables.BINDABLE_TABLE_SCAN_RULE,
+                FilterRemoveIsNotDistinctFromRule.INSTANCE,
+                FilterTableScanRule.INSTANCE,
+                FilterSetOpTransposeRule.INSTANCE,
+                FilterProjectTransposeRule.INSTANCE,
+                SemiJoinFilterTransposeRule.INSTANCE,
+                ReduceExpressionsRule.FILTER_INSTANCE,
+                ReduceExpressionsRule.JOIN_INSTANCE,
+                ReduceExpressionsRule.PROJECT_INSTANCE,
+                ProjectFilterTransposeRule.INSTANCE,
                 FilterTableScanRule.INSTANCE,
                 ProjectTableScanRule.INSTANCE,
-                FilterSetOpTransposeRule.INSTANCE,
-                JoinUnionTransposeRule.LEFT_UNION,
-                JoinUnionTransposeRule.RIGHT_UNION,
                 JoinExtractFilterRule.INSTANCE,
                 JoinPushTransitivePredicatesRule.INSTANCE,
-                AggregateUnionTransposeRule.INSTANCE,
-                AggregateUnionAggregateRule.AGG_ON_FIRST_INPUT,
-                AggregateUnionAggregateRule.AGG_ON_SECOND_INPUT,
-                AggregateUnionAggregateRule.INSTANCE,
-                AggregateProjectMergeRule.INSTANCE,
-                AggregateProjectPullUpConstantsRule.INSTANCE,
-                pushDownLogicTable,
-//                PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable,
-                AggregateValuesRule.INSTANCE
+                Bindables.BINDABLE_TABLE_SCAN_RULE,
+                pushDownLogicTable
         ).forEach(i -> hepProgramBuilder.addRuleInstance(i));
-//        hepProgramBuilder.addRuleInstance(PushDownLogicTable.INSTANCE_FOR_PushDownLogicTable);
-
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(bestExp);
         final RelNode bestExp1 = planner2.findBestExp();
@@ -186,10 +194,13 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0, boolean forUpdate) {
-        HepProgram build = new HepProgramBuilder().build();
+        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addMatchLimit(2);
+        hepProgramBuilder.addRuleInstance(new LimitRemoveRule());
+        hepProgramBuilder.addRuleInstance(new SortLimitPushRule());
+        HepProgram build = hepProgramBuilder.build();
 
         RelOptPlanner planner = new HepPlanner(build);
-        RelOptUtil.registerDefaultRules(planner, true, true);
 
         planner.setRoot(bestExp0);
         final RelNode bestExp1 = planner.findBestExp();
@@ -197,7 +208,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         IdentityHashMap<RelNode, Boolean> cache = computePushDownInfo.getCache();
         IdentityHashMap<RelNode, List<String>> margeList = computePushDownInfo.getMargeList();
 
-        final RelNode bestExp3 = simplyAggreate(relBuilder, cache, margeList, bestExp1);
+        final RelNode bestExp3 = bestExp1;
         //从根节点开始把变成SQL下推
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
@@ -221,6 +232,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /**
      * 测试单库分表与不同分片两个情况
+     *
      * @param relBuilder
      * @param cache
      * @param margeList
@@ -233,14 +245,14 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         RelNode bestExp3 = parent;
         if (parent instanceof Aggregate && child instanceof Union) {
             Aggregate aggregate = (Aggregate) parent;
-            if (aggregate.getAggCallList() != null&&!aggregate.getAggCallList().isEmpty()) {//distinct会没有参数
+            if (aggregate.getAggCallList() != null && !aggregate.getAggCallList().isEmpty()) {//distinct会没有参数
                 List<AggregateCall> aggCallList = aggregate.getAggCallList();
-                boolean allMatch = aggregate.getRowType().getFieldCount()==1&&aggCallList.stream().allMatch(new Predicate<AggregateCall>() {
+                boolean allMatch = aggregate.getRowType().getFieldCount() == 1 && aggCallList.stream().allMatch(new Predicate<AggregateCall>() {
                     @Override
                     public boolean test(AggregateCall aggregateCall) {
                         return SUPPORTED_AGGREGATES.getOrDefault(aggregateCall.getAggregation().getKind(), false)
                                 &&
-                                aggregate.getRowType().getFieldList().stream().allMatch(i->i.getType().getSqlTypeName().getFamily()== SqlTypeFamily.NUMERIC);
+                                aggregate.getRowType().getFieldList().stream().allMatch(i -> i.getType().getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC);
                     }
                 });
                 if (allMatch) {
@@ -438,6 +450,74 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         });
     }
 
+    //目的是上拉union,所以添加 union 相关
+    //目的是消除project,减少产生的子查询 所以添加 project 相关
+    static final ImmutableSet<RelOptRule> rules = ImmutableSet.of(
+            UnionEliminatorRule.INSTANCE,
+            UnionMergeRule.INTERSECT_INSTANCE,
+            UnionMergeRule.INTERSECT_INSTANCE,
+            UnionMergeRule.MINUS_INSTANCE,
+            UnionPullUpConstantsRule.INSTANCE,
+            UnionToDistinctRule.INSTANCE,
+            ProjectCorrelateTransposeRule.INSTANCE,
+            ProjectFilterTransposeRule.INSTANCE,
+            ProjectJoinJoinRemoveRule.INSTANCE,
+            ProjectJoinRemoveRule.INSTANCE,
+            ProjectJoinTransposeRule.INSTANCE,
+            ProjectMergeRule.INSTANCE,
+            ProjectMultiJoinMergeRule.INSTANCE,
+            ProjectRemoveRule.INSTANCE,
+            JoinUnionTransposeRule.LEFT_UNION,
+            JoinUnionTransposeRule.RIGHT_UNION,
+            AggregateProjectMergeRule.INSTANCE,//该类有效
+            AggregateUnionTransposeRule.INSTANCE,
+            AggregateUnionAggregateRule.INSTANCE,
+            AggregateProjectMergeRule.INSTANCE,
+            AggregateRemoveRule.INSTANCE,
+            AggregateProjectPullUpConstantsRule.INSTANCE2,
+            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+            ProjectSortTransposeRule.INSTANCE,
+            ProjectTableScanRule.INSTANCE,
+            //sort
+            SortJoinCopyRule.INSTANCE,
+            SortJoinTransposeRule.INSTANCE,
+            SortProjectTransposeRule.INSTANCE,
+            SortRemoveConstantKeysRule.INSTANCE,
+            SortRemoveRule.INSTANCE,
+            SortUnionTransposeRule.INSTANCE,
+            SortUnionTransposeRule.MATCH_NULL_FETCH,
+            SubQueryRemoveRule.FILTER,
+            SubQueryRemoveRule.JOIN,
+            SubQueryRemoveRule.PROJECT);
+
+    public RelNode pullUpUnion(RelNode relNode1) {
+        RelOptCluster cluster = relNode1.getCluster();
+        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addMatchLimit(32);
+        rules.forEach(i -> hepProgramBuilder.addRuleInstance(i));
+        final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
+        planner2.setRoot(relNode1);
+        final RelNode bestExp1 = planner2.findBestExp();
+        return bestExp1;
+    }
+
+    public RelNode fixBug(RelNode relNode) {
+       return  relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(LogicalUnion union) {
+                if (union.getInputs().size() > 2) {
+                    MycatRelBuilder relBuilder = createRelBuilder();
+                    return union.getInputs().stream().reduce((relNode1, relNode2) -> {
+                        relBuilder.push(relNode1);
+                        relBuilder.push(relNode2);
+                        return relBuilder.union(!union.isDistinct()).build();
+                    }).orElse(union);
+                }
+                return super.visit(union);
+            }
+        });
+    }
+
     private class ComputePushDownInfo {
         private RelNode bestExp1;
         private IdentityHashMap<RelNode, Boolean> cache;
@@ -473,6 +553,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                     boolean isLeftNode = inputs == null || other.getInputs() != null && other.getInputs().isEmpty();
 
                     if (!isLeftNode) {
+
                         ArrayList<String> targetList = new ArrayList<>();
                         for (RelNode input : inputs) {
                             targetList.addAll(margeList.getOrDefault(input, Collections.emptyList()));
@@ -480,12 +561,17 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         Set<String> distinct = new HashSet<>(targetList);
                         margeList.put(other, targetList);
                         boolean b = other instanceof Aggregate && other != root;//控制深度为2的关系表达式节点是否是Aggregate
+                        if (other instanceof Union && !dataContext.getUponDBContext().isInTransaction()) {
+                            cache.put(other, false);
+                            return other;
+                        }
                         if (other instanceof Correlate) {
                             cache.put(other, false);//关联子查询(mycat不支持)和
                         } else {
                             boolean distinctValue = distinct.isEmpty() || distinct.size() == 1;
                             cache.put(other, distinctValue);
                         }
+
                     } else {
                         MycatPhysicalTable mycatPhysicalTable = Optional.ofNullable(other.getTable()).map(i -> i.unwrap(MycatPhysicalTable.class)).orElse(null);
                         if (mycatPhysicalTable != null) {

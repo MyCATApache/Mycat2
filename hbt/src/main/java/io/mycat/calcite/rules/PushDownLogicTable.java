@@ -127,11 +127,8 @@ public class PushDownLogicTable extends RelOptRule {
             if (entry.getValue().isEmpty()) {
                 continue;
             }
-            RelNode relNode = entry.getValue().stream().reduce((relNode1, relNode2) -> {
-                builder.clear();
-                return builder.push(relNode1).push(relNode2).union(true).build();
-            }).get();
-            relNodeGroup.put(entry.getKey(), relNode);
+            builder.clear();
+            relNodeGroup.put(entry.getKey(), builder.pushAll(entry.getValue()).union(true,entry.getValue().size()).build());
         }
 
         if (relNodeGroup.size() == 1) {
@@ -140,11 +137,7 @@ public class PushDownLogicTable extends RelOptRule {
             if (relNodeGroup.size() < 1) {
                 throw new AssertionError();
             }
-            Optional<RelNode> reduce = relNodeGroup.values().stream().reduce((relNode1, relNode2) -> {
-                builder.clear();
-                return builder.push(relNode1).push(relNode2).union(true).build();
-            });
-            value = reduce.get();
+            value = builder.pushAll(relNodeGroup.values()).union(true,relNodeGroup.values().size()).build();
         }
         return value;
     }
