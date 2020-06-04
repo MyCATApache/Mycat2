@@ -71,8 +71,8 @@ public enum MetadataManager {
         schemaMap.remove(schemaName);
     }
 
-    public void addSchema(String schemaName,String dataNode) {
-        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName,dataNode);
+    public void addSchema(String schemaName, String dataNode) {
+        SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, dataNode);
         schemaMap.computeIfAbsent(schemaName, s -> schemaHandler);
         schemaMap.computeIfAbsent("`" + schemaName + "`", s -> schemaHandler);
     }
@@ -83,7 +83,7 @@ public enum MetadataManager {
 
     public void removeTable(String schemaName, String tableName) {
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
-        if (schemaHandler!=null) {
+        if (schemaHandler != null) {
             Map<String, TableHandler> stringLogicTableConcurrentHashMap = schemaMap.get(schemaName).logicTables();
             if (stringLogicTableConcurrentHashMap != null) {
                 stringLogicTableConcurrentHashMap.remove(tableName);
@@ -94,15 +94,15 @@ public enum MetadataManager {
 
     public void load(MycatConfig mycatConfig) {
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
-        if (shardingQueryRootConfig!=null) {
+        if (shardingQueryRootConfig != null) {
             for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas()
                     .stream()
-                    .collect(Collectors.toMap(k->k.getSchemaName(),v->v)).entrySet()) {
+                    .collect(Collectors.toMap(k -> k.getSchemaName(), v -> v)).entrySet()) {
                 String orignalSchemaName = entry.getKey();
                 ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
                 String targetName = value.getTargetName();
                 final String schemaName = orignalSchemaName;
-                addSchema(schemaName,targetName);
+                addSchema(schemaName, targetName);
                 for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                     String tableName = e.getKey();
                     ShardingTableConfig tableConfigEntry = e.getValue();
@@ -547,14 +547,21 @@ public enum MetadataManager {
             return table;
         }
     }
-    public TableHandler getTable(String schemaName,String tableName) {
-        return Optional.ofNullable(schemaMap).map(i->i.get(schemaName)).map(i->i.logicTables().get(tableName)).orElse(null);
+
+    public TableHandler getTable(String schemaName, String tableName) {
+        return Optional.ofNullable(schemaMap).map(i -> i.get(schemaName)).map(i -> i.logicTables().get(tableName)).orElse(null);
     }
+
     public Map<String, SchemaHandler> getSchemaMap() {
         return (Map) schemaMap;
     }
 
-    public List<String> showDatabases(){
-        return schemaMap.keySet().stream().map(i->SQLUtils.normalize(i)).distinct().sorted(Comparator.comparing(s->s)).collect(Collectors.toList());
+    public List<String> showDatabases() {
+        return schemaMap.keySet().stream().map(i -> SQLUtils.normalize(i)).distinct().sorted(Comparator.comparing(s -> s)).collect(Collectors.toList());
+    }
+
+    public MetadataManager clear() {
+        this.schemaMap.clear();
+        return this;
     }
 }

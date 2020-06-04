@@ -28,7 +28,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 @Builder
-public class BackendTableInfo {
+public class BackendTableInfo implements DataNode{
     private String targetName;
     private SchemaInfo schemaInfo;
 
@@ -41,4 +41,13 @@ public class BackendTableInfo {
         return targetName + "." + schemaInfo.getTargetSchemaTable();
     }
 
+    @Override
+    public String getSchema() {
+        return schemaInfo.getTargetSchema();
+    }
+
+    @Override
+    public String geTable() {
+        return schemaInfo.getTargetTable();
+    }
 }
