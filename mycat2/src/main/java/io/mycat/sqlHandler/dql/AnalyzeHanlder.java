@@ -54,7 +54,7 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 }
                 StatisticCenter.INSTANCE.computeTableRowCount(tableHandler);
             }
-            response.sendResultSet(resultSetBuilder.build(),null);
+            response.sendResultSet(()->resultSetBuilder.build(),null);
             return ExecuteCode.PERFORMED;
         }
 

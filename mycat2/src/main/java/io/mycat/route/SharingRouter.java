@@ -17,7 +17,7 @@ import java.util.List;
 public class SharingRouter implements SqlRouteChain {
     @Override
     public boolean handle(ParseContext parseContext) {
-        List<SQLExprTableSource> leftTables = parseContext.getLeftTables();
+        List<SQLExprTableSource> leftTables = parseContext.startAndGetLeftTables();
         if (leftTables.size() == 1) {//means no join
             SQLExprTableSource singleDataSource = leftTables.get(0);
             SharingTableInfo sharingTableInfo = parseContext.getSharingTableInfo(singleDataSource);
@@ -52,7 +52,7 @@ public class SharingRouter implements SqlRouteChain {
                             source.from(targetName, sql);
                         }
 
-                        source = source.union(!queryBlock.isDistinct());
+                        source = source.unionMore(!queryBlock.isDistinct());
 
 
                         SQLOrderBy orderBy = queryBlock.getOrderBy();

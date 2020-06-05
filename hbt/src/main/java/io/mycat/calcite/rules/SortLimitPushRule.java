@@ -1,5 +1,6 @@
 package io.mycat.calcite.rules;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -23,7 +24,15 @@ public class SortLimitPushRule extends RelOptRule {
     boolean apply = false;
     public SortLimitPushRule() {
         super(
-                operand(Sort.class,
+                operandJ(Sort.class,null, (Predicate<Sort>) call -> {
+                            if (call!=null) {
+                                if ( call.isDistinct() ||
+                                        (call.getChildExps() == null || call.getChildExps().isEmpty())) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        },
                         operand(Union.class, any())),
                 RelFactories.LOGICAL_BUILDER, "SortLimitPushRule");
     }
@@ -34,13 +43,14 @@ public class SortLimitPushRule extends RelOptRule {
             return;
         }
         List<RelNode> parents = call.getParents();
-        RelBuilder builder = call.builder();
-        builder.clear();
+
         final Sort sort = call.rel(0);
         if (parents != null || sort.isDistinct() ||
                 (sort.getChildExps() == null || sort.getChildExps().isEmpty())) {
             return;
         }
+        RelBuilder builder = call.builder();
+        builder.clear();
         final Union union = call.rel(1);
         if (!union.isDistinct()) {
             int size = union.getInputs().size();

@@ -85,7 +85,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
                             RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
 
                             //safe
-                            response.sendResultSet(ComposeRowBaseIterator.of(rowBaseIterator, query), null);
+                            response.sendResultSet(()->ComposeRowBaseIterator.of(rowBaseIterator, query), null);
                             return ExecuteCode.PERFORMED;
                         }
                     }
@@ -93,7 +93,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
             } catch (Exception e) {
                 LOGGER.error("", e);
             }
-            response.sendResultSet(query, null);
+            response.sendResultSet(()->query, null);
             return ExecuteCode.PERFORMED;
         }
     }

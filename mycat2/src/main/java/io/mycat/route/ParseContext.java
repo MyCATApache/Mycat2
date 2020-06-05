@@ -3,27 +3,34 @@ package io.mycat.route;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.expr.SQLAggregateExpr;
+import com.alibaba.fastsql.sql.ast.statement.*;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRecoverDDLJob;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRemoveDDLJob;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.DataNode;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.replica.ReplicaSelectorRuntime;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 public class ParseContext implements ParseHelper {
+    private String defaultSchema;
     final SQLStatement sqlStatement;
     List<SQLExprTableSource> leftTables;
     Schema plan;
-
-    public ParseContext(SQLStatement sqlStatement) {
+    List<SQLAggregateExpr> aggregateExprs = new LinkedList<>();
+    List<SQLTableSource> complexTableSources = new LinkedList<>();
+    public ParseContext(String defaultSchema,SQLStatement sqlStatement) {
+        this.defaultSchema = defaultSchema;
         this.sqlStatement = sqlStatement;
     }
 
-    public  static ParseContext of(SQLStatement sqlStatement) {
-        return new ParseContext(sqlStatement);
+    public static ParseContext of(String defaultSchema,SQLStatement sqlStatement) {
+        return new ParseContext(defaultSchema,sqlStatement);
     }
 
 
@@ -31,20 +38,55 @@ public class ParseContext implements ParseHelper {
         return sqlStatement;
     }
 
-    public List<SQLExprTableSource> getLeftTables() {
+    public MySqlSelectQueryBlock tryGetQueryBlock() {
+        return unWapperToQueryBlock(getSqlStatement());
+    }
+
+    public List<SQLExprTableSource> startAndGetLeftTables() {
         if (leftTables == null) {
             SQLStatement sqlStatement = getSqlStatement();
             leftTables = new ArrayList<>();
+            aggregateExprs = new ArrayList<>();
             sqlStatement.accept(new MySqlASTVisitorAdapter() {
+
+
                 @Override
-                public boolean visit(SQLExprTableSource x) {
-                    if (x.getExpr() instanceof SQLName) {//必须是名字
-                        leftTables.add(x);
-                        return true;
-                    } else {
-                        return super.visit(x);
-                    }
+                public boolean visit(SQLAggregateExpr x) {
+                    aggregateExprs.add(x);
+                    return super.visit(x);
                 }
+
+                @Override
+                public boolean visit(SQLJoinTableSource x) {
+                    complexTableSources.add(x);
+                    return true;
+                }
+
+                @Override
+                public boolean visit(SQLSubqueryTableSource x) {
+                    complexTableSources.add(x);
+                    return true;
+                }
+                @Override
+                public boolean visit(SQLUnionQueryTableSource x) {
+                    complexTableSources.add(x);
+                    return true;
+                }
+
+                @Override
+                public boolean visit(SQLValuesTableSource x) {
+                    complexTableSources.add(x);
+                    return true;
+                }
+
+
+
+                @Override
+                public boolean visit(SQLUnnestTableSource x) {
+                    complexTableSources.add(x);
+                    return true;
+                }
+
             });
         }
         return leftTables;
@@ -55,33 +97,29 @@ public class ParseContext implements ParseHelper {
     }
 
 
-
-
-
-    public SharingTableInfo getSharingTableInfo(String schemaName, String tableName){
+    public SharingTableInfo getSharingTableInfo(String schemaName, String tableName) {
         return null;
     }
 
 
-
-    public SharingTableInfo getSharingTableInfo(SQLExprTableSource sqlExprTableSource){
+    public SharingTableInfo getSharingTableInfo(SQLExprTableSource sqlExprTableSource) {
         return null;
     }
 
-    public boolean isNoAgg(){
+    public boolean isNoAgg() {
+        return aggregateExprs.isEmpty();
+    }
+
+    public boolean isNoWhere() {
         return false;
     }
 
-    public boolean isNoWhere(){
-        return false;
-    }
-
-    public boolean isNoSubQuery(){
+    public boolean isNoSubQuery() {
         return false;
     }
 
 
-    public List<DataNode> computeWhere(SQLExpr where){
+    public List<DataNode> computeWhere(SQLExpr where) {
         return null;
     }
 
@@ -96,5 +134,17 @@ public class ParseContext implements ParseHelper {
 
     public Schema getPlan() {
         return plan;
+    }
+
+    public boolean isNoComplexDatasource() {
+        return complexTableSources.isEmpty();
+    }
+
+    public String getDefaultSchema() {
+        return defaultSchema;
+    }
+
+    public boolean isNoOrder() {
+        return false;
     }
 }

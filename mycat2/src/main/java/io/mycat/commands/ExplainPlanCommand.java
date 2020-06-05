@@ -14,7 +14,7 @@ public enum ExplainPlanCommand implements MycatCommand{
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         String text = request.getText();
         MycatDBClientMediator client = MycatDBs.createClient(context);
-        response.sendResultSet(client.executeRel(text), () -> client.explainRel(text));
+        response.sendResultSet(()->client.executeRel(text), () -> client.explainRel(text));
         return true;
     }
 

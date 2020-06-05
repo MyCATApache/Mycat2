@@ -24,7 +24,7 @@ public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.fastsql
             resultSetBuilder.addObjectRowPayload(s);
         }
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(rowBaseIterator, () -> {
+        response.sendResultSet(()->rowBaseIterator, () -> {
             throw new UnsupportedOperationException();
         });
         return ExecuteCode.PERFORMED;

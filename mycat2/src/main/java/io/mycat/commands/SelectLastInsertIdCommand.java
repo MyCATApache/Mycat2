@@ -22,7 +22,7 @@ public enum SelectLastInsertIdCommand implements MycatCommand{
         resultSetBuilder.addColumnInfo(columnName, JDBCType.BIGINT);
         resultSetBuilder.addObjectRowPayload(lastInsertId);
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(rowBaseIterator, ()->Arrays.asList(""+columnName+":"+context.getLastInsertId()+""));
+        response.sendResultSet(()->rowBaseIterator, ()->Arrays.asList(""+columnName+":"+context.getLastInsertId()+""));
         return true;
     }
 

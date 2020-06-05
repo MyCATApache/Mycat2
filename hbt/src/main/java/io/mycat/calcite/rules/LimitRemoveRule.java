@@ -16,6 +16,7 @@
  */
 package io.mycat.calcite.rules;
 
+import com.google.common.base.Predicate;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -25,6 +26,7 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.tools.RelBuilder;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +48,15 @@ public class LimitRemoveRule extends RelOptRule {
     boolean apply = false;
     public LimitRemoveRule() {
         super(
-                operand(Sort.class,
+                operandJ(Sort.class, null, (Predicate<Sort>) call -> {
+                    if (call!=null) {
+                        if (call.isDistinct() ||
+                                (call.getChildExps() != null && !call.getChildExps().isEmpty())) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
                         operand(Union.class, any())),
                 RelFactories.LOGICAL_BUILDER, "LimitRemoveRule");
     }
@@ -57,13 +67,15 @@ public class LimitRemoveRule extends RelOptRule {
             return;
         }
         List<RelNode> parents = call.getParents();
-        RelBuilder builder = call.builder();
-        builder.clear();
+
         final Sort sort = call.rel(0);
         if (parents != null || sort.isDistinct() ||
                 (sort.getChildExps() != null && !sort.getChildExps().isEmpty())) {
             return;
         }
+        RelBuilder builder = call.builder();
+
+        builder.clear();
         final Union union = call.rel(1);
         if (!union.isDistinct()) {
             ArrayList<RelNode> newNodes = new ArrayList<>();

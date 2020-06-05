@@ -22,7 +22,7 @@ public enum SelectAutocommitCommand implements MycatCommand{
         resultSetBuilder.addColumnInfo(columnName, JDBCType.BIGINT);
         resultSetBuilder.addObjectRowPayload(isAutocommit);
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(rowBaseIterator, () -> Arrays.asList(columnName+":"+ (context.isAutocommit() ? 1 :0)));
+        response.sendResultSet(()->rowBaseIterator, () -> Arrays.asList(columnName+":"+ (context.isAutocommit() ? 1 :0)));
         return true;
     }
 
