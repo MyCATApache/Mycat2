@@ -8,7 +8,5 @@ public interface DataSourceNearness {
 
     public void setLoadBalanceStrategy(String loadBalanceStrategy);
 
-    public void setUpdate(boolean update);
-
     public void clear();
 }

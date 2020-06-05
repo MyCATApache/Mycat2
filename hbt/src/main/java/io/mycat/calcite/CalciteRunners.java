@@ -17,10 +17,12 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -29,6 +31,8 @@ import org.apache.calcite.tools.RelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +52,11 @@ public class CalciteRunners {
 
     public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
         relNode = planner.eliminateLogicTable(relNode);
+        StringWriter stringWriter = new StringWriter();
+//        final RelWriterImpl pw =
+//                new RelWriterImpl(new PrintWriter(stringWriter));
+//        relNode.explain(pw);
+//        LOGGER.debug(stringWriter.toString());
         relNode = planner.pullUpUnion(relNode);
         relNode = planner.pushDownBySQL(relNode, forUpdate);
         return relNode;
@@ -83,18 +92,19 @@ public class CalciteRunners {
 
             @Override
             public RelNode visit(LogicalUnion union) {
-                if (union.getInputs().size() > 0 && !calciteDataContext.getUponDBContext().isInTransaction()) {
+                boolean inTransaction = calciteDataContext.getUponDBContext().isInTransaction();
+                if (union.getInputs().size() > 0) {
                     RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(union.getCluster(), null);
-                    if (union.getInputs().stream().allMatch(p -> p.getTable().unwrap(MycatSQLTableScan.class) != null)) {
+                    if (union.getInputs().stream().allMatch(p->  p.getTable()!=null&&p.getTable().unwrap(MycatSQLTableScan.class)!=null)) {
                         List<MycatSQLTableScan> relNodes = (List)
-                                (union.getInputs().stream().map(p-> p.getTable().unwrap(MycatSQLTableScan.class) ).collect(Collectors.toList()));
+                                (union.getInputs().stream().map(p -> p.getTable().unwrap(MycatSQLTableScan.class)).collect(Collectors.toList()));
                         StreamUnionTable scanOperator = new StreamUnionTable(relNodes);
                         RelOptTable table = RelOptTableImpl.create(
                                 null,
-                                scanOperator.getRowType( MycatCalciteSupport.INSTANCE.TypeFactory),
+                                scanOperator.getRowType(MycatCalciteSupport.INSTANCE.TypeFactory),
                                 scanOperator,
                                 ImmutableList.of(union.toString()));
-                        return LogicalTableScan.create(union.getCluster(),table,ImmutableList.of()) ;
+                        return LogicalTableScan.create(union.getCluster(), table, ImmutableList.of());
                     }
 
                     //calcite的默认union执行器的输入不能超过2个
@@ -131,7 +141,7 @@ public class CalciteRunners {
                     @Override
                     @SneakyThrows
                     public Enumerator<Object[]> enumerator() {
-                        return new MyCatResultSetEnumerator(cancelFlag, submit.get(1,TimeUnit.MINUTES));
+                        return new MyCatResultSetEnumerator(cancelFlag, submit.get(1, TimeUnit.MINUTES));
                     }
                 });
             }

@@ -16,6 +16,7 @@ package io.mycat.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
@@ -59,6 +60,8 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.*;
 import org.apache.calcite.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Reader;
 import java.util.*;
@@ -73,7 +76,7 @@ import static org.apache.calcite.plan.RelOptRule.operand;
  * @author Junwen Chen
  **/
 public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(MycatCalcitePlanner.class);
     private final SchemaPlus rootSchema;
     private final PlannerImpl planner;
     CalciteCatalogReader reader = null;
@@ -472,7 +475,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             AggregateProjectMergeRule.INSTANCE,
             AggregateRemoveRule.INSTANCE,
             AggregateProjectPullUpConstantsRule.INSTANCE2,
-            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+//            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
             ProjectTableScanRule.INSTANCE,
             //sort
@@ -493,6 +496,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         hepProgramBuilder.addRuleCollection(PULL_RULES);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(relNode1);
+
         return planner2.findBestExp();
     }
     public RelNode fixBug(RelNode relNode) {
@@ -516,7 +520,6 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         private RelNode bestExp1;
         private IdentityHashMap<RelNode, Boolean> cache;
         private IdentityHashMap<RelNode, List<String>> margeList;
-        private RelNode bestExp2;
 
         public ComputePushDownInfo(RelNode bestExp1) {
             this.bestExp1 = bestExp1;
@@ -530,9 +533,6 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             return margeList;
         }
 
-        public RelNode getBestExp2() {
-            return bestExp2;
-        }
 
         public ComputePushDownInfo invoke() {
             RelNode root = bestExp1;
@@ -544,8 +544,8 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                 public RelNode visit(RelNode other) {
                     RelNode res = super.visit(other);//后续遍历
 
-                    if(other instanceof Union&&!dataContext.getUponDBContext().isInTransaction()){
-                        cache.put(other, false);//没有事务并行查询
+                    if(other instanceof Union){
+                        cache.put(other, false);//没有事务并行查询->总是并行查询
                         margeList.put(other, Collections.emptyList());
                         return other;
                     }
@@ -585,7 +585,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                     return other;
                 }
             };
-            bestExp2 = relHomogeneousShuttle.visit(bestExp1);
+            relHomogeneousShuttle.visit(bestExp1);
             return this;
         }
     }

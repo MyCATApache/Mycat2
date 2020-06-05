@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
-    protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl();
+    protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
     final MycatDataContext dataContext;
     protected final ConcurrentLinkedQueue<AutoCloseable> closeResourceQueue = new ConcurrentLinkedQueue<>();
 
@@ -78,8 +78,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         if (!isAutocommit()) {
             begin();
         }
-
-        dataSourceNearness.setUpdate(isInTransaction());
     }
 
     abstract protected void callBackBegin();

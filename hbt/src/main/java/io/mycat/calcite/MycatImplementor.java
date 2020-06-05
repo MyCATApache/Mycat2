@@ -103,34 +103,38 @@ public class MycatImplementor extends RelToSqlConverter {
         return super.visit(e);
     }
 
-    @Override
-    public Result visit(Union e) {
-        if (!e.isDistinct()) {
-            ArrayList<RelNode> unions = new ArrayList<>();
-            CalciteUtls.collect(e, unions);
-            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
-            relBuilder.pushAll(unions);
-            relBuilder.union(e.all, unions.size());
-            e = (Union) relBuilder.build();
-            SqlNode node = null;
-            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
-                final Result result = visitChild(input.i, input.e);
-                if (node == null) {
-                    node = result.subSelect();//修改点 会添加别名???
-                } else {
-                    SqlSetOperator sqlSetOperator = e.all
-                            ? SqlStdOperatorTable.UNION_ALL
-                            : SqlStdOperatorTable.UNION;
-                    node = sqlSetOperator.createCall(POS, node, result.asSelect());
-                }
-            }
-            final List<Clause> clauses =
-                    Expressions.list(Clause.SET_OP);
-            return result(node, clauses, e, null);
-        }
-        return super.visit(e);
-    }
-
+    /**
+     * 该union输入是超过2个节点的,union 别名 问题
+     * @param e
+     * @return
+     */
+//    @Override
+//    public Result visit(Union e) {
+//        if (!e.isDistinct()) {
+//            List<RelNode> unions =e.getInputs();
+//            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
+//            relBuilder.pushAll(unions);
+//            relBuilder.union(e.all, unions.size());
+//            e = (Union) relBuilder.build();
+//            SqlNode node = null;
+//            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
+//                final Result result = visitChild(input.i, input.e);
+//                if (node == null) {
+//                    node = result.asSelect().;//修改点 会添加别名???
+//                } else {
+//                    SqlSetOperator sqlSetOperator = e.all
+//                            ? SqlStdOperatorTable.UNION_ALL
+//                            : SqlStdOperatorTable.UNION;
+//                    node = sqlSetOperator.createCall(POS, node, result.asSelect());
+//                }
+//            }
+//            final List<Clause> clauses =
+//                    Expressions.list(Clause.SET_OP);
+//            return result(node, clauses, e, null);
+//        }
+//        return super.visit(e).qualifiedContext().implementor().setOpToSql().resetAlias();
+//    }
+//
 
 
     @Override
