@@ -1,5 +1,6 @@
 package io.mycat.calcite.table;
 
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.table.EnumerableTable;
 import io.mycat.calcite.table.MycatSQLTableScan;
 import org.apache.calcite.DataContext;
@@ -20,7 +21,7 @@ public class StreamUnionTable extends EnumerableTable {
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return enumerableTables.get(0).getRowType(typeFactory);
+        return enumerableTables.get(0).getRowType(MycatCalciteSupport.INSTANCE.TypeFactory);
     }
 
     @Override

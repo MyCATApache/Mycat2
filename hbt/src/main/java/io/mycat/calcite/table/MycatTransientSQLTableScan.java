@@ -30,11 +30,12 @@ public class MycatTransientSQLTableScan extends TableScan {
                 }), relOptTable);
         this.convention = convention;
         this.sql = sql;
+        this.digest = convention.toString();
     }
 
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        return pw.item("sql", getSql());
+        return pw.item("id",id).item("targetName",this.convention.targetName).item("sql", getSql());
     }
 
     @Override
@@ -51,4 +52,5 @@ public class MycatTransientSQLTableScan extends TableScan {
     private MycatConvention getMycatConvention() {
         return (MycatConvention) getConvention();
     }
+
 }

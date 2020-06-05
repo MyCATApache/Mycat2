@@ -206,8 +206,7 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-        return pushDownLogicTable.toPhyTable(relBuilder, bindableTableScan);
+        return PushDownLogicTable.BindableTableScan.toPhyTable(relBuilder, bindableTableScan);
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -443,8 +442,7 @@ public class HBTQueryConvertor {
 
         //消除逻辑表,变成物理表
         if (unwrap!= null){
-            PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-          return   pushDownLogicTable.toPhyTable(relBuilder,(TableScan)build);
+          return   PushDownLogicTable.BindableTableScan.toPhyTable(relBuilder,(TableScan)build);
         }
 
         return build;

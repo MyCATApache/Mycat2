@@ -52,6 +52,7 @@ import java.util.List;
  * @author Junwen Chen
  **/
 public class MycatRelBuilder extends RelBuilder {
+    int id = 0;
     public MycatRelBuilder(Context context, RelOptCluster cluster, RelOptSchema relOptSchema) {
         super(context, cluster, relOptSchema);
     }
@@ -187,11 +188,12 @@ public class MycatRelBuilder extends RelBuilder {
     public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
         MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
         MycatSQLTableScan transientTable = new MycatSQLTableScan(convention,relDataType,sql);
+        id++;
         RelOptTable relOptTable = RelOptTableImpl.create(
                 this.getRelOptSchema(),
                 relDataType,
                 transientTable,
-                ImmutableList.of(targetName, sql));
+                ImmutableList.of(id +"$"+targetName, id+sql));
         return new MycatTransientSQLTableScan(this.getCluster(), convention, relOptTable, () -> sql);
     }
 }

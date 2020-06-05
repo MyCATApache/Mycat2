@@ -16,13 +16,11 @@ package io.mycat.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
-import io.mycat.calcite.rules.LimitRemoveRule;
+import io.mycat.calcite.rules.LimitPushRemoveRule;
 import io.mycat.calcite.rules.PushDownLogicTable;
-import io.mycat.calcite.rules.SortLimitPushRule;
 import io.mycat.calcite.table.*;
 import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -175,14 +173,16 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                 .addRuleCollection(FILTER);
          HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(bestExp);
-         planner2.findBestExp();
+        RelNode   bestExp2 = planner2.findBestExp();
 
         hepProgramBuilder=   new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
-                .addRuleInstance(PushDownLogicTable.INSTANCE);
+                .addRuleCollection(ImmutableList.of(
+                        PushDownLogicTable.BindableTableScan
+                ));
 
          planner2 = new HepPlanner(hepProgramBuilder.build());
-        planner2.setRoot(bestExp);
+        planner2.setRoot(bestExp2);
         return planner2.findBestExp();
     }
 
@@ -194,7 +194,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
         hepProgramBuilder.addMatchLimit(3);
         hepProgramBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
-//        hepProgramBuilder.addRuleInstance(new LimitRemoveRule());
+        hepProgramBuilder.addRuleInstance(LimitPushRemoveRule.INSTANCE);
         HepProgram build = hepProgramBuilder.build();
 
         RelOptPlanner planner = new HepPlanner(build);
@@ -465,14 +465,14 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             JoinUnionTransposeRule.LEFT_UNION,
             JoinUnionTransposeRule.RIGHT_UNION,
             AggregateProjectMergeRule.INSTANCE,//该类有效
-//            AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
+            AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
             AggregateUnionAggregateRule.INSTANCE,
             AggregateProjectMergeRule.INSTANCE,
             AggregateRemoveRule.INSTANCE,
             AggregateProjectPullUpConstantsRule.INSTANCE2,
             ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
-            ProjectTableScanRule.INSTANCE,
+
             //sort
             SortJoinCopyRule.INSTANCE,
             SortJoinTransposeRule.INSTANCE,
@@ -487,30 +487,13 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
 
     public RelNode pullUpUnion(RelNode relNode1) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(64);
+        hepProgramBuilder.addMatchLimit(PULL_RULES.size());
         hepProgramBuilder.addRuleCollection(PULL_RULES);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
-        planner2.addListener(new MulticastRelOptListener());
         planner2.setRoot(relNode1);
-
         return planner2.findBestExp();
     }
-    public RelNode fixBug(RelNode relNode) {
-        return  relNode.accept(new RelShuttleImpl() {
-            @Override
-            public RelNode visit(LogicalUnion union) {
-                if (union.getInputs().size() > 2) {
-                    MycatRelBuilder relBuilder = createRelBuilder();
-                    return union.getInputs().stream().reduce((relNode1, relNode2) -> {
-                        relBuilder.push(relNode1);
-                        relBuilder.push(relNode2);
-                        return relBuilder.union(!union.isDistinct()).build();
-                    }).orElse(union);
-                }
-                return super.visit(union);
-            }
-        });
-    }
+
 
     private class ComputePushDownInfo {
         private RelNode bestExp1;
@@ -540,11 +523,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                 public RelNode visit(RelNode other) {
                     RelNode res = super.visit(other);//后续遍历
 
-                    if(other instanceof Union){
-                        cache.put(other, false);//没有事务并行查询->总是并行查询
-                        margeList.put(other, Collections.emptyList());
-                        return other;
-                    }
+
 
                     List<RelNode> inputs = other.getInputs();
                     boolean isLeftNode = inputs == null || other.getInputs() != null && other.getInputs().isEmpty();
@@ -577,6 +556,11 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                             margeList.put(other, Collections.emptyList());
                         }
                         cache.put(other, Boolean.TRUE);
+                    }
+                    //修正,不能影响上面流程
+                    if(other instanceof Union){
+                        cache.put(other, false);//没有事务并行查询->总是并行查询
+                        return other;
                     }
                     return other;
                 }

@@ -103,7 +103,7 @@ public class ShardingRwExample {
                     for (int i = 0; i < 10; i++) {
                         set.add(TestUtil.getString(statement.executeQuery(
                                 "explain select * from travelrecord"
-                        )));
+                        )).replaceAll("id=\\[\\d+\\]",""));
                     }
                     Assert.assertTrue(set.size() == 1);//验证有事务的情况下,不读写分离
                 }
@@ -115,7 +115,7 @@ public class ShardingRwExample {
                         for (int i = 0; i < 10; i++) {
                             set.add(TestUtil.getString(statement.executeQuery(
                                     "explain select * from travelrecord"
-                            )));
+                            )).replaceAll("id=\\[\\d+\\]",""));
                         }
                         Assert.assertEquals(1, set.size());//验证无事务的情况下但是set autocommit = 0,不读写分离
                     }
