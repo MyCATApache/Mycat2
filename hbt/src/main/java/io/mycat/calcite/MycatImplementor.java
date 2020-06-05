@@ -78,6 +78,7 @@ public class MycatImplementor extends RelToSqlConverter {
 //    /** @see #dispatch */
 //    public Result visit(MycatTransientSQLTableScan scan) {
 //        return scan.implement();
+
 //    }
 
     public Result implement(RelNode node) {
@@ -115,7 +116,7 @@ public class MycatImplementor extends RelToSqlConverter {
             for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
                 final Result result = visitChild(input.i, input.e);
                 if (node == null) {
-                    node = result.subSelect();//修改点
+                    node = result.subSelect();//修改点 会添加别名???
                 } else {
                     SqlSetOperator sqlSetOperator = e.all
                             ? SqlStdOperatorTable.UNION_ALL

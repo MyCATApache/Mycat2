@@ -45,7 +45,7 @@ public class PushDownLogicTable extends RelOptRule {
     final HashSet<String> context = new HashSet<>();
 
     public PushDownLogicTable() {
-        super(operand(Bindables.BindableTableScan.class, any()), "proj on filter on proj");
+        super(operand(Bindables.BindableTableScan.class, any()), "PushDownLogicTable");
     }
 
 

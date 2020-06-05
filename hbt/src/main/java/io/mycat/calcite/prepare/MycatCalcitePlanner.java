@@ -500,9 +500,8 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         final RelNode bestExp1 = planner2.findBestExp();
         return bestExp1;
     }
-
     public RelNode fixBug(RelNode relNode) {
-       return  relNode.accept(new RelShuttleImpl() {
+        return  relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(LogicalUnion union) {
                 if (union.getInputs().size() > 2) {
@@ -549,8 +548,16 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 @Override
                 public RelNode visit(RelNode other) {
                     RelNode res = super.visit(other);//后续遍历
+
+                    if(other instanceof Union&&!dataContext.getUponDBContext().isInTransaction()){
+                        cache.put(other, false);//没有事务并行查询
+                        margeList.put(other, Collections.emptyList());
+                        return other;
+                    }
+
                     List<RelNode> inputs = other.getInputs();
                     boolean isLeftNode = inputs == null || other.getInputs() != null && other.getInputs().isEmpty();
+
 
                     if (!isLeftNode) {
 
@@ -561,10 +568,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                         Set<String> distinct = new HashSet<>(targetList);
                         margeList.put(other, targetList);
                         boolean b = other instanceof Aggregate && other != root;//控制深度为2的关系表达式节点是否是Aggregate
-                        if (other instanceof Union && !dataContext.getUponDBContext().isInTransaction()) {
-                            cache.put(other, false);
-                            return other;
-                        }
+
                         if (other instanceof Correlate) {
                             cache.put(other, false);//关联子查询(mycat不支持)和
                         } else {
