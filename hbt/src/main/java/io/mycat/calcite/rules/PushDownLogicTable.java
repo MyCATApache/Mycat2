@@ -27,7 +27,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.FilterableTable;
+import org.apache.calcite.schema.ProjectableFilterableTable;
+import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,26 +46,35 @@ SubstitutionVisitor 物化结合
 MaterializedViewSubstitutionVisitor
  */
 public class PushDownLogicTable extends RelOptRule {
-    final HashSet<String> context = new HashSet<>();
+    public  static  PushDownLogicTable INSTANCE = new PushDownLogicTable();
 
     public PushDownLogicTable() {
-        super(operand(Bindables.BindableTableScan.class, any()), "PushDownLogicTable");
+        super(operand(LogicalTableScan.class, none()), "PushDownLogicTable");
     }
 
 
+    public static boolean canHandle(RelOptTable table) {
+        return table.unwrap(ScannableTable.class) != null
+                || table.unwrap(FilterableTable.class) != null
+                || table.unwrap(ProjectableFilterableTable.class) != null;
+    }
     /**
      * @param call todo result set with order，backend
      */
     @Override
     public void onMatch(RelOptRuleCall call) {
         TableScan judgeObject = (TableScan) call.rels[0];
-        RelNode value = toPhyTable(call.builder(), judgeObject);
-        if (value != null) {
-            call.transformTo(value);
+        if(canHandle(judgeObject.getTable())){
+            RelNode value = toPhyTable(call.builder(), judgeObject);
+            if (value != null) {
+                call.transformTo(value);
+            }
         }
+
     }
 
     public RelNode toPhyTable(RelBuilder builder, TableScan judgeObject) {
+
         Bindables.BindableTableScan bindableTableScan;
         if (judgeObject instanceof Bindables.BindableTableScan) {
             bindableTableScan = (Bindables.BindableTableScan) judgeObject;
@@ -91,7 +104,11 @@ public class PushDownLogicTable extends RelOptRule {
     }
 
     @NotNull
-    private RelNode global(RelOptCluster cluster, Bindables.BindableTableScan bindableTableScan, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+    private RelNode global(RelOptCluster cluster,
+                           Bindables.BindableTableScan bindableTableScan,
+                           RelOptSchema relOptSchema,
+                           MycatLogicTable logicTable) {
+        final HashSet<String> context = new HashSet<>();
         RelNode logicalTableScan;
         MycatPhysicalTable mycatPhysicalTable = logicTable.getMycatGlobalPhysicalTable(context);
         RelOptTable dataNode = RelOptTableImpl.create(
@@ -104,6 +121,7 @@ public class PushDownLogicTable extends RelOptRule {
     }
 
     private RelNode shardingTable(RelBuilder builder, Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+        final HashSet<String> context = new HashSet<>();
         RelNode value;
         ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
         List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters);
@@ -128,7 +146,8 @@ public class PushDownLogicTable extends RelOptRule {
                 continue;
             }
             builder.clear();
-            relNodeGroup.put(entry.getKey(), builder.pushAll(entry.getValue()).union(true,entry.getValue().size()).build());
+            RelNode union = builder.pushAll(entry.getValue()).union(true, entry.getValue().size()).build();
+            relNodeGroup.put(entry.getKey(), union);
         }
 
         if (relNodeGroup.size() == 1) {

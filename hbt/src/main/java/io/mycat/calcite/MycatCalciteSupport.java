@@ -146,6 +146,7 @@ public enum MycatCalciteSupport implements Context {
                 map.put("IFNULL", SqlStdOperatorTable.COALESCE);
                 build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
                 build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                build.put("CURRENT_DATE",SqlStdOperatorTable.CURRENT_DATE);
                 build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
                 build.put("LOG", SqlStdOperatorTable.LOG10);
                 build.put("PI",SqlStdOperatorTable.PI);

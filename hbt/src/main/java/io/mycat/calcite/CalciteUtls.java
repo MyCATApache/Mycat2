@@ -67,16 +67,11 @@ public class CalciteUtls {
     }
 
     public static void collect(Union e, List<RelNode> unions) {
-        if (e.getInputs().size() == 2) {
-            if (e.getInput(0) instanceof Union) {
-                collect((Union) e.getInput(0), unions);
-            } else {
-                unions.add(e.getInput(0));
-            }
-            if (e.getInput(1) instanceof Union) {
-                collect((Union) e.getInput(1), unions);
-            } else {
-                unions.add(e.getInput(1));
+        for (RelNode input : e.getInputs()) {
+            if (input instanceof Union){
+                collect((Union)input,unions);
+            }else {
+                unions.add(input);
             }
         }
     }

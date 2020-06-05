@@ -6,10 +6,13 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
+import io.mycat.calcite.rules.PushDownLogicTable;
+import io.mycat.calcite.rules.UnionRule;
 import io.mycat.calcite.table.MycatSQLTableScan;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.calcite.table.StreamUnionTable;
 import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.hbt.TextConvertor;
 import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Interpreters;
@@ -17,12 +20,12 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -31,7 +34,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -51,31 +53,34 @@ public class CalciteRunners {
     }
 
     public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
-        relNode = planner.eliminateLogicTable(relNode);
-        StringWriter stringWriter = new StringWriter();
+        try {
+            relNode = planner.eliminateLogicTable(relNode);
+            StringWriter stringWriter = new StringWriter();
 //        final RelWriterImpl pw =
 //                new RelWriterImpl(new PrintWriter(stringWriter));
 //        relNode.explain(pw);
 //        LOGGER.debug(stringWriter.toString());
-        relNode = planner.pullUpUnion(relNode);
-        relNode = planner.pushDownBySQL(relNode, forUpdate);
-        return relNode;
+            relNode = planner.pullUpUnion(relNode);
+            relNode = planner.pushDownBySQL(relNode, forUpdate);
+            return relNode;
+        }catch (Throwable e){
+            LOGGER.error("",e);
+        }
+        return null;
     }
 
 
     @SneakyThrows
     public static RowBaseIterator run(MycatCalciteDataContext calciteDataContext, RelNode relNode) {
-        fork(calciteDataContext, relNode);
-        ArrayBindable bindable1 = Interpreters.bindable(relNode);
-        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-
-        Enumerator<Object[]> enumerator = bind.enumerator();
-        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator);
-    }
-
-    private static void fork(MycatCalciteDataContext calciteDataContext, RelNode relNode) throws IllegalAccessException {
         Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
+        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addMatchLimit(64);
 
+        hepProgramBuilder.addRuleInstance(new UnionRule());
+        final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
+        planner2.setRoot(relNode);
+        relNode = planner2.findBestExp();
+//        System.out.println(  TextConvertor.dumpResultSet(relNode));
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
@@ -87,39 +92,22 @@ public class CalciteRunners {
                 return super.visit(scan);
             }
         });
+//        UnionResolver unionResolver = new UnionResolver();
+//        while (unionResolver.change) {
+//            unionResolver.change = false;
+//            relNode = relNode.accept(unionResolver);
+//        }
+//      System.out.println(  TextConvertor.dumpResultSet(relNode));
+        fork(calciteDataContext, map);
+        ArrayBindable bindable1 = Interpreters.bindable(relNode);
+        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
 
-        relNode = relNode.accept(new RelShuttleImpl() {
+        Enumerator<Object[]> enumerator = bind.enumerator();
+        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator);
+    }
 
-            @Override
-            public RelNode visit(LogicalUnion union) {
-                boolean inTransaction = calciteDataContext.getUponDBContext().isInTransaction();
-                if (union.getInputs().size() > 0) {
-                    RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(union.getCluster(), null);
-                    if (union.getInputs().stream().allMatch(p->  p.getTable()!=null&&p.getTable().unwrap(MycatSQLTableScan.class)!=null)) {
-                        List<MycatSQLTableScan> relNodes = (List)
-                                (union.getInputs().stream().map(p -> p.getTable().unwrap(MycatSQLTableScan.class)).collect(Collectors.toList()));
-                        StreamUnionTable scanOperator = new StreamUnionTable(relNodes);
-                        RelOptTable table = RelOptTableImpl.create(
-                                null,
-                                scanOperator.getRowType(MycatCalciteSupport.INSTANCE.TypeFactory),
-                                scanOperator,
-                                ImmutableList.of(union.toString()));
-                        return LogicalTableScan.create(union.getCluster(), table, ImmutableList.of());
-                    }
+    private static void fork(MycatCalciteDataContext calciteDataContext, Map<String, List<SingeTargetSQLTable>> map) throws IllegalAccessException {
 
-                    //calcite的默认union执行器的输入不能超过2个
-                    if (union.getInputs().size() > 2) {
-                        return union.getInputs().stream().reduce((relNode1, relNode2) -> {
-                            relBuilder.push(relNode1);
-                            relBuilder.push(relNode2);
-                            return relBuilder.union(!union.isDistinct()).build();
-                        }).orElse(union);
-                    }
-
-                }
-                return union;
-            }
-        });
 
         MycatDBContext uponDBContext = calciteDataContext.getUponDBContext();
         AtomicBoolean cancelFlag = uponDBContext.cancelFlag();

@@ -48,17 +48,19 @@ public class LimitRemoveRule extends RelOptRule {
     boolean apply = false;
     public LimitRemoveRule() {
         super(
-                operandJ(Sort.class, null, (Predicate<Sort>) call -> {
-                    if (call!=null) {
-                        if (call.isDistinct() ||
-                                (call.getChildExps() != null && !call.getChildExps().isEmpty())) {
-                            return false;
-                        }
-                    }
-                    return true;
-                },
+                operandJ(Sort.class, null, (Predicate<Sort>) LimitRemoveRule::apply,
                         operand(Union.class, any())),
                 RelFactories.LOGICAL_BUILDER, "LimitRemoveRule");
+    }
+
+    private static   boolean apply(Sort call) {
+        if (call != null) {
+            if (call.isDistinct() ||
+                    (call.getChildExps() == null)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -69,8 +71,7 @@ public class LimitRemoveRule extends RelOptRule {
         List<RelNode> parents = call.getParents();
 
         final Sort sort = call.rel(0);
-        if (parents != null || sort.isDistinct() ||
-                (sort.getChildExps() != null && !sort.getChildExps().isEmpty())) {
+        if (parents != null || sort.isDistinct()) {
             return;
         }
         RelBuilder builder = call.builder();
@@ -109,7 +110,8 @@ public class LimitRemoveRule extends RelOptRule {
             }
             if (!newNodes.isEmpty()) {
                 builder.pushAll(newNodes);
-                Sort copy = sort.copy(sort.getTraitSet(), builder.union(true, newNodes.size()).build(), sort.getCollation());
+                RelNode build = builder.union(true, newNodes.size()).build();
+                Sort copy = sort.copy(sort.getTraitSet(),build, sort.getCollation());
                 call.transformTo(copy);
                 apply = true;
             }

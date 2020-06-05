@@ -157,37 +157,33 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         FilterProjectTransposeRule.INSTANCE,
         SemiJoinFilterTransposeRule.INSTANCE,
 //        ReduceExpressionsRule.FILTER_INSTANCE,
-//        ReduceExpressionsRule.JOIN_INSTANCE, //https://issues.apache.org/jira/browse/CALCITE-4045
+//        ReduceExpressionsRule.JOIN_INSTANCE,
+        //https://issues.apache.org/jira/browse/CALCITE-4045
 //        ReduceExpressionsRule.PROJECT_INSTANCE,
         ProjectFilterTransposeRule.INSTANCE,
         FilterTableScanRule.INSTANCE,
         JoinPushTransitivePredicatesRule.INSTANCE,
+        JoinPushTransitivePredicatesRule.INSTANCE,
         ProjectTableScanRule.INSTANCE,
         JoinExtractFilterRule.INSTANCE,
-        JoinPushTransitivePredicatesRule.INSTANCE,
         Bindables.BINDABLE_TABLE_SCAN_RULE
+
 );
     public RelNode eliminateLogicTable(final RelNode bestExp) {
-        RelOptCluster cluster = bestExp.getCluster();
-        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(64);
-        PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-        hepProgramBuilder.addRuleCollection(FILTER);
-        final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
+        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder()
+                .addMatchLimit(FILTER.size())
+                .addRuleCollection(FILTER);
+         HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(bestExp);
-        final RelNode bestExp1 = planner2.findBestExp();
-        RelShuttleImpl relShuttle = new RelShuttleImpl() {
-            @Override
-            public RelNode visit(TableScan scan) {
-                MycatLogicTable unwrap = scan.getTable().unwrap(MycatLogicTable.class);
-                if (unwrap != null) {
-                    return pushDownLogicTable.toPhyTable(createRelBuilder(cluster), scan);
-                }
-                return super.visit(scan);
-            }
-        };
-        final RelNode bestExp2 = bestExp1.accept(relShuttle);
-        return relShuttle.visit(bestExp2);
+         planner2.findBestExp();
+
+        hepProgramBuilder=   new HepProgramBuilder()
+                .addMatchLimit(FILTER.size())
+                .addRuleInstance(PushDownLogicTable.INSTANCE);
+
+         planner2 = new HepPlanner(hepProgramBuilder.build());
+        planner2.setRoot(bestExp);
+        return planner2.findBestExp();
     }
 
     public RelNode pushDownBySQL(RelNode bestExp, boolean forUpdate) {
@@ -198,8 +194,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
         hepProgramBuilder.addMatchLimit(3);
         hepProgramBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
-        hepProgramBuilder.addRuleInstance(new LimitRemoveRule());
-        hepProgramBuilder.addRuleInstance(new SortLimitPushRule());
+//        hepProgramBuilder.addRuleInstance(new LimitRemoveRule());
         HepProgram build = hepProgramBuilder.build();
 
         RelOptPlanner planner = new HepPlanner(build);
@@ -470,12 +465,12 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             JoinUnionTransposeRule.LEFT_UNION,
             JoinUnionTransposeRule.RIGHT_UNION,
             AggregateProjectMergeRule.INSTANCE,//该类有效
-            AggregateUnionTransposeRule.INSTANCE,
+//            AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
             AggregateUnionAggregateRule.INSTANCE,
             AggregateProjectMergeRule.INSTANCE,
             AggregateRemoveRule.INSTANCE,
             AggregateProjectPullUpConstantsRule.INSTANCE2,
-//            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
             ProjectTableScanRule.INSTANCE,
             //sort
@@ -495,6 +490,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         hepProgramBuilder.addMatchLimit(64);
         hepProgramBuilder.addRuleCollection(PULL_RULES);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
+        planner2.addListener(new MulticastRelOptListener());
         planner2.setRoot(relNode1);
 
         return planner2.findBestExp();
