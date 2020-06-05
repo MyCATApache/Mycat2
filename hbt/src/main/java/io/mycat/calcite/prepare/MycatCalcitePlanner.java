@@ -115,7 +115,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlOperatorTable opTab = MycatCalciteSupport.INSTANCE.config.getOperatorTable();
         SqlValidatorCatalogReader catalogReader = createCalciteCatalogReader();
         RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
-        return (SqlValidatorImpl) SqlValidatorUtil.newValidator(opTab, catalogReader, typeFactory, MycatCalciteSupport.INSTANCE.sqlValidatorConfig);
+        return (SqlValidatorImpl) SqlValidatorUtil.newValidator(opTab, catalogReader, typeFactory, MycatCalciteSupport.INSTANCE.getValidatorConfig());
     }
 
     public SqlToRelConverter createSqlToRelConverter() {

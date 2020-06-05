@@ -126,97 +126,101 @@ public enum MycatCalciteSupport implements Context {
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderFactory(relBuilderFactory).build();
 
-    public final SqlValidator.Config sqlValidatorConfig =  new SqlValidator.Config() {
-        @Override
-        public boolean callRewrite() {
-            return false;
-        }
-
-        @Override
-        public SqlValidator.Config withCallRewrite(boolean rewrite) {
-            return this;
-        }
-
-        @Override
-        public NullCollation defaultNullCollation() {
-            return NullCollation.HIGH;
-        }
-
-        @Override
-        public SqlValidator.Config withDefaultNullCollation(NullCollation nullCollation) {
-            return this;
-        }
-
-        @Override
-        public boolean columnReferenceExpansion() {
-            return false;
-        }
-
-        @Override
-        public SqlValidator.Config withColumnReferenceExpansion(boolean expand) {
-            return this;
-        }
-
-        @Override
-        public boolean identifierExpansion() {
-            return false;
-        }
-
-        @Override
-        public SqlValidator.Config withIdentifierExpansion(boolean expand) {
-            return this;
-        }
-
-        @Override
-        public boolean lenientOperatorLookup() {
-            return true;
-        }
-
-        @Override
-        public SqlValidator.Config withLenientOperatorLookup(boolean lenient) {
-            return this;
-        }
-
-        @Override
-        public boolean typeCoercionEnabled() {
-            return true;
-        }
-
-        @Override
-        public SqlValidator.Config withTypeCoercionEnabled(boolean enabled) {
-            return this;
-        }
-
-        @Override
-        public TypeCoercionFactory typeCoercionFactory() {
-            return SqlValidator.Config.DEFAULT.typeCoercionFactory();
-        }
-
-        @Override
-        public SqlValidator.Config withTypeCoercionFactory(TypeCoercionFactory factory) {
-            return this;
-        }
-
-        @Override
-        public SqlTypeCoercionRule typeCoercionRules() {
-            return SqlValidator.Config.DEFAULT.typeCoercionRules();
-        }
-
-        @Override
-        public SqlValidator.Config withTypeCoercionRules(SqlTypeCoercionRule rules) {
-            return this;
-        }
-
-        @Override
-        public SqlConformance sqlConformance() {
-            return MycatCalciteSupport.INSTANCE.calciteConnectionConfig.conformance();
-        }
-
-        @Override
-        public SqlValidator.Config withSqlConformance(SqlConformance conformance) {
-            return this;
-        }
-    };
+    public final SqlValidator.Config getValidatorConfig() {
+       return SqlValidator.Config.DEFAULT;
+//                .withSqlConformance(calciteConnectionConfig.conformance());
+    }
+//    new SqlValidator.Config() {
+//        @Override
+//        public boolean callRewrite() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withCallRewrite(boolean rewrite) {
+//            return this;
+//        }
+//
+//        @Override
+//        public NullCollation defaultNullCollation() {
+//            return NullCollation.HIGH;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withDefaultNullCollation(NullCollation nullCollation) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean columnReferenceExpansion() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withColumnReferenceExpansion(boolean expand) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean identifierExpansion() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withIdentifierExpansion(boolean expand) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean lenientOperatorLookup() {
+//            return true;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withLenientOperatorLookup(boolean lenient) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean typeCoercionEnabled() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionEnabled(boolean enabled) {
+//            return this;
+//        }
+//
+//        @Override
+//        public TypeCoercionFactory typeCoercionFactory() {
+//            return SqlValidator.Config.DEFAULT.typeCoercionFactory();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionFactory(TypeCoercionFactory factory) {
+//            return this;
+//        }
+//
+//        @Override
+//        public SqlTypeCoercionRule typeCoercionRules() {
+//            return SqlValidator.Config.DEFAULT.typeCoercionRules();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionRules(SqlTypeCoercionRule rules) {
+//            return this;
+//        }
+//
+//        @Override
+//        public SqlConformance sqlConformance() {
+//            return MycatCalciteSupport.INSTANCE.calciteConnectionConfig.conformance();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withSqlConformance(SqlConformance conformance) {
+//            return this;
+//        }
+//    };
 
 
     public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
