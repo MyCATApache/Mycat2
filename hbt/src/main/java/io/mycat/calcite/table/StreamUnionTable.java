@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class StreamUnionTable extends EnumerableTable {
-    private List<MycatSQLTableScan> enumerableTables;
+    private final List<MycatSQLTableScan> enumerableTables;
 
     public StreamUnionTable(List<MycatSQLTableScan> enumerableTables) {
         this.enumerableTables = enumerableTables;

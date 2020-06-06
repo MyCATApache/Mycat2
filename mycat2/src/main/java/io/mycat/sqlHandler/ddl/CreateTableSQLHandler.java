@@ -18,7 +18,6 @@ import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +25,8 @@ import javax.annotation.Resource;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * chenjunwnen
@@ -61,18 +60,27 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             if (tableHandler instanceof ShardingTableHandler) {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
                 for (BackendTableInfo shardingBackend : handler.getShardingBackends()) {
-                    makeTask(ast, tableName, sqlAndDatasoureMap, shardingBackend);
+                    makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
                 databaseCollections.addAll(handler.getShardingBackends());
             } else if (tableHandler instanceof GlobalTableHandler) {
                 GlobalTableHandler handler = (GlobalTableHandler) tableHandler;
                 for (BackendTableInfo shardingBackend : handler.getDataNodeMap().values()) {
-                    makeTask(ast, tableName, sqlAndDatasoureMap, shardingBackend);
+                    makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
                 databaseCollections.addAll(handler.getDataNodeMap().values());
             } else {
                 throw new UnsupportedOperationException("UnsupportedOperation :" + tableHandler);
             }
+            List<String> dataSources = sqlAndDatasoureMap.values().stream().flatMap(i->i.stream()).distinct().collect(Collectors.toList());
+
+            //建立物理数据中与逻辑库逻辑表同名物理库
+            SchemaInfo schemaInfo = new SchemaInfo(tableHandler.getSchemaName(),tableHandler.getTableName());
+            dataSources.forEach(i->{
+                BackendTableInfo backendTableInfo = new BackendTableInfo(i, schemaInfo);
+                makeTask(ast, sqlAndDatasoureMap, backendTableInfo);
+            });
+
             //创建库
             createDatabase(throwables, databaseCollections);
             createTable(throwables, sqlAndDatasoureMap);
@@ -135,7 +143,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
     }
 
 
-    private void makeTask(SQLCreateTableStatement ast, String tableName, Map<String, Set<String>> sqlAndDatasoureMap, BackendTableInfo shardingBackend) {
+    private void makeTask(SQLCreateTableStatement ast, Map<String, Set<String>> sqlAndDatasoureMap, BackendTableInfo shardingBackend) {
         String targetName = shardingBackend.getTargetName();
         SchemaInfo schemaInfo = shardingBackend.getSchemaInfo();
         SQLCreateTableStatement entry = ast.clone();

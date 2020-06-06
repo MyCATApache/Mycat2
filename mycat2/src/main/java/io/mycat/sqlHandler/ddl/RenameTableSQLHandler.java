@@ -14,7 +14,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

@@ -9,6 +9,7 @@ import lombok.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 @Getter
@@ -35,7 +36,7 @@ public class LogicTable {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.rawColumns = rawColumns;
-        this.createTableSQL = createTableSQL;
+        this.createTableSQL = Objects.requireNonNull(createTableSQL,  this.uniqueName+" createTableSQL is not existed");
         /////////////////////////////////////////
         this.autoIncrementColumn = rawColumns.stream().filter(i -> i.isAutoIncrement()).findFirst().orElse(null);
         /////////////////////////////////////////

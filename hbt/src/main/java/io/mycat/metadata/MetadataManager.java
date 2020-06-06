@@ -65,7 +65,7 @@ public enum MetadataManager {
     private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final ConcurrentHashMap<String, SchemaHandler> schemaMap = new ConcurrentHashMap<>();
 
-    private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
     public void removeSchema(String schemaName) {
         schemaMap.remove(schemaName);

@@ -14,6 +14,7 @@ public class KillSQLHandler extends AbstractSQLHandler<MySqlKillStatement> {
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlKillStatement> request, MycatDataContext dataContext, Response response) {
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }
