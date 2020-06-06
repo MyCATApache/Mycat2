@@ -471,7 +471,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
-            AggregateFilterTransposeRule.INSTANCE,
+//            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段
             AggregateValuesRule.INSTANCE,
             //sort
             SortJoinCopyRule.INSTANCE,
