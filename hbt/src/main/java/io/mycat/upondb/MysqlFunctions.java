@@ -1,14 +1,17 @@
 package io.mycat.upondb;
 
 import com.alibaba.fastsql.sql.ast.expr.SQLDateExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLDateTimeExpr;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.util.MySQLFunction;
 import io.mycat.util.SQLContext;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 
 public class MysqlFunctions {
@@ -80,8 +83,23 @@ public class MysqlFunctions {
 
         @Override
         public Object eval(SQLContext context, Object[] args) {
-            return  LocalDate.now().toString();
+            return LocalDate.now().toString();
         }
     };
+    public static final MySQLFunction NOW = new MySQLFunction() {
+        @Override
+        public Set<String> getFunctionNames() {
+            return ImmutableSet.of("NOW");
+        }
 
+        @Override
+        public int getArgumentSize() {
+            return 0;
+        }
+
+        @Override
+        public Object eval(SQLContext context, Object[] args) {
+            return  LocalDateTime.now().toString();
+        }
+    };
 }

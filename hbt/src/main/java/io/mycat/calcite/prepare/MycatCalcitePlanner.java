@@ -468,7 +468,12 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             AggregateProjectMergeRule.INSTANCE,
             AggregateRemoveRule.INSTANCE,
             AggregateProjectPullUpConstantsRule.INSTANCE2,
-            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+            /**
+             *
+             * at org.apache.calcite.rel.rules.PushProjector.getAdjustments(PushProjector.java:572)
+             * 	at org.apache.calcite.rel.rules.ProjectSetOpTransposeRule.onMatch(ProjectSetOpTransposeRule.java:92)
+             */
+//            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
 //            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段

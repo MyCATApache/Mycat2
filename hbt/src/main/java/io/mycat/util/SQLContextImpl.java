@@ -315,6 +315,7 @@ public class SQLContextImpl implements SQLContext {
         addFunction(MysqlFunctions.last_insert_id);
         addFunction(MysqlFunctions.current_user);
         addFunction(MysqlFunctions.CURRENT_DATE);
+//        addFunction(MysqlFunctions.NOW);
     }
 
     static void addFunction(MySQLFunction function) {
