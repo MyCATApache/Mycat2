@@ -173,4 +173,12 @@ public class ResultSetBuilder {
         }
 
     }
+
+    /**
+     * 跳过头部的null
+     * @return
+     */
+    public List<ColumnInfo> getColumnInfos() {
+        return columnInfos.subList(1,columnInfos.size());
+    }
 }

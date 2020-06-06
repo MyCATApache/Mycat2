@@ -47,14 +47,14 @@ RexSimplify 简化行表达式
 SubstitutionVisitor 物化结合
 MaterializedViewSubstitutionVisitor
  */
-public class PushDownLogicTable extends RelOptRule {
-    public static PushDownLogicTable LogicalTable = new PushDownLogicTable(LogicalTableScan.class);
-    public static PushDownLogicTable ScannableTable = new PushDownLogicTable(ScannableTable.class);
-    public static PushDownLogicTable FilterableTable = new PushDownLogicTable(FilterableTable.class);
-    public static PushDownLogicTable ProjectableFilterableTable = new PushDownLogicTable(ProjectableFilterableTable.class);
-    public static PushDownLogicTable BindableTableScan = new PushDownLogicTable(        Bindables.BindableTableScan.class);
+public class PushDownLogicTableRule extends RelOptRule {
+    public static PushDownLogicTableRule LogicalTable = new PushDownLogicTableRule(LogicalTableScan.class);
+    public static PushDownLogicTableRule ScannableTable = new PushDownLogicTableRule(ScannableTable.class);
+    public static PushDownLogicTableRule FilterableTable = new PushDownLogicTableRule(FilterableTable.class);
+    public static PushDownLogicTableRule ProjectableFilterableTable = new PushDownLogicTableRule(ProjectableFilterableTable.class);
+    public static PushDownLogicTableRule BindableTableScan = new PushDownLogicTableRule(        Bindables.BindableTableScan.class);
 
-    public PushDownLogicTable(Class c) {
+    public PushDownLogicTableRule(Class c) {
         super(operand(c, none()), "PushDownLogicTable");
     }
 

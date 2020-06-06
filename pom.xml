@@ -23,6 +23,7 @@
       <module>autohandler</module>
       <module>testsuite</module>
       <module>statistic</module>
+      <module>hbt2</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

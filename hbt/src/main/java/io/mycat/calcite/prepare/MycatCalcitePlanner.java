@@ -20,7 +20,7 @@ import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.rules.LimitPushRemoveRule;
-import io.mycat.calcite.rules.PushDownLogicTable;
+import io.mycat.calcite.rules.PushDownLogicTableRule;
 import io.mycat.calcite.table.*;
 import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -51,7 +51,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -177,7 +176,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         hepProgramBuilder=   new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
                 .addRuleCollection(ImmutableList.of(
-                        PushDownLogicTable.BindableTableScan
+                        PushDownLogicTableRule.BindableTableScan
                 ));
 
          planner2 = new HepPlanner(hepProgramBuilder.build());
@@ -332,7 +331,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
     }
 
-    private static final EnumMap<SqlKind, Boolean> SUPPORTED_AGGREGATES = new EnumMap<>(SqlKind.class);
+    public static final EnumMap<SqlKind, Boolean> SUPPORTED_AGGREGATES = new EnumMap<>(SqlKind.class);
 
     static {
         SUPPORTED_AGGREGATES.put(SqlKind.MIN, true);
@@ -471,7 +470,9 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             AggregateProjectPullUpConstantsRule.INSTANCE2,
             ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
-
+            AggregateCaseToFilterRule.INSTANCE,
+            AggregateFilterTransposeRule.INSTANCE,
+            AggregateValuesRule.INSTANCE,
             //sort
             SortJoinCopyRule.INSTANCE,
             SortJoinTransposeRule.INSTANCE,
