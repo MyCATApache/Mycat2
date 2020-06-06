@@ -16,6 +16,8 @@
  */
 package io.mycat.calcite.prepare;
 
+import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteSupport;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -23,15 +25,8 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCostFactory;
-import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.RelOptTable.ViewExpander;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -53,338 +48,355 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Planner;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.tools.*;
 import org.apache.calcite.util.Pair;
-
-import com.google.common.collect.ImmutableList;
 
 import java.io.Reader;
 import java.util.List;
 import java.util.Properties;
 
-/** Implementation of {@link org.apache.calcite.tools.Planner}. */
+/**
+ * Implementation of {@link org.apache.calcite.tools.Planner}.
+ */
 public class PlannerImpl implements Planner, ViewExpander {
-  private final SqlOperatorTable operatorTable;
-  private final ImmutableList<Program> programs;
-  private final RelOptCostFactory costFactory;
-  private final Context context;
-  private final CalciteConnectionConfig connectionConfig;
+    private static final SqlOperatorTable operatorTable;
+    private static final ImmutableList<Program> programs;
+    private static final RelOptCostFactory costFactory;
+    private static final Context context;
+    private static  final CalciteConnectionConfig connectionConfig;
 
-  /** Holds the trait definitions to be registered with planner. May be null. */
-  private final ImmutableList<RelTraitDef> traitDefs;
+    /**
+     * Holds the trait definitions to be registered with planner. May be null.
+     */
+    private static final ImmutableList<RelTraitDef> traitDefs;
 
-  private final SqlParser.Config parserConfig;
-  private final SqlValidator.Config sqlValidatorConfig;
-  private final SqlToRelConverter.Config sqlToRelConverterConfig;
-  private final SqlRexConvertletTable convertletTable;
+    private static final SqlParser.Config parserConfig;
+    private static final SqlValidator.Config sqlValidatorConfig;
+    private static final SqlToRelConverter.Config sqlToRelConverterConfig;
+    private static final SqlRexConvertletTable convertletTable;
 
-  private State state;
+    private State state;
 
-  // set in STATE_1_RESET
-  private boolean open;
+    // set in STATE_1_RESET
+    private boolean open;
 
-  // set in STATE_2_READY
-  private SchemaPlus defaultSchema;
-  private JavaTypeFactory typeFactory;
-  private RelOptPlanner planner;
-  private RexExecutor executor;
+    // set in STATE_2_READY
+    private SchemaPlus defaultSchema;
+    private final static JavaTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+    private RelOptPlanner planner;
+    private final static RexExecutor executor;
 
-  // set in STATE_4_VALIDATE
-  private SqlValidator validator;
-  private SqlNode validatedSqlNode;
+    // set in STATE_4_VALIDATE
+    private SqlValidator validator;
+    private SqlNode validatedSqlNode;
 
-  // set in STATE_5_CONVERT
-  private RelRoot root;
+    // set in STATE_5_CONVERT
+    private RelRoot root;
 
-  /** Creates a planner. Not a public API; call
-   * {@link org.apache.calcite.tools.Frameworks#getPlanner} instead. */
-  public PlannerImpl(FrameworkConfig config) {
-    this.costFactory = config.getCostFactory();
-    this.defaultSchema = config.getDefaultSchema();
-    this.operatorTable = config.getOperatorTable();
-    this.programs = config.getPrograms();
-    this.parserConfig = config.getParserConfig();
-    this.sqlValidatorConfig = config.getSqlValidatorConfig();
-    this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
-    this.state = State.STATE_0_CLOSED;
-    this.traitDefs = config.getTraitDefs();
-    this.convertletTable = config.getConvertletTable();
-    this.executor = config.getExecutor();
-    this.context = config.getContext();
-    this.connectionConfig = connConfig();
-    reset();
-  }
+    static {
+        FrameworkConfig frameworkConfig = MycatCalciteSupport.INSTANCE.config;
+        costFactory = frameworkConfig.getCostFactory();
 
-  /** Gets a user defined config and appends default connection values */
-  private CalciteConnectionConfig connConfig() {
-    CalciteConnectionConfigImpl config =
-        context.unwrap(CalciteConnectionConfigImpl.class);
-    if (config == null) {
-      config = new CalciteConnectionConfigImpl(new Properties());
-    }
-    if (!config.isSet(CalciteConnectionProperty.CASE_SENSITIVE)) {
-      config = config.set(CalciteConnectionProperty.CASE_SENSITIVE,
-          String.valueOf(parserConfig.caseSensitive()));
-    }
-    if (!config.isSet(CalciteConnectionProperty.CONFORMANCE)) {
-      config = config.set(CalciteConnectionProperty.CONFORMANCE,
-          String.valueOf(parserConfig.conformance()));
-    }
-    return config;
-  }
+        operatorTable = frameworkConfig.getOperatorTable();
+        programs = frameworkConfig.getPrograms();
+        parserConfig = frameworkConfig.getParserConfig();
+        sqlValidatorConfig = frameworkConfig.getSqlValidatorConfig();
+        sqlToRelConverterConfig = frameworkConfig.getSqlToRelConverterConfig();
 
-  /** Makes sure that the state is at least the given state. */
-  private void ensure(State state) {
+        traitDefs = frameworkConfig.getTraitDefs();
+        convertletTable = frameworkConfig.getConvertletTable();
+        executor = frameworkConfig.getExecutor();
+        context = frameworkConfig.getContext();
 
-  }
+//        CalciteConnectionConfigImpl config =
+//                context.unwrap(CalciteConnectionConfigImpl.class);
+//        if (config == null) {
+//            config = new CalciteConnectionConfigImpl(new Properties());
+//        }
+//        if (!config.isSet(CalciteConnectionProperty.CASE_SENSITIVE)) {
+//            config = config.set(CalciteConnectionProperty.CASE_SENSITIVE,
+//                    String.valueOf(parserConfig.caseSensitive()));
+//        }
+//        if (!config.isSet(CalciteConnectionProperty.CONFORMANCE)) {
+//            config = config.set(CalciteConnectionProperty.CONFORMANCE,
+//                    String.valueOf(parserConfig.conformance()));
+//        }
 
-  public RelTraitSet getEmptyTraitSet() {
-    return planner.emptyTraitSet();
-  }
-
-  public void close() {
-    open = false;
-    typeFactory = null;
-    state = State.STATE_0_CLOSED;
-  }
-
-  public void reset() {
-    ensure(State.STATE_0_CLOSED);
-    open = true;
-    state = State.STATE_1_RESET;
-  }
-
-  private void ready() {
-    switch (state) {
-    case STATE_0_CLOSED:
-      reset();
-    }
-    ensure(State.STATE_1_RESET);
-
-    RelDataTypeSystem typeSystem =
-        connectionConfig.typeSystem(RelDataTypeSystem.class,
-            RelDataTypeSystem.DEFAULT);
-    typeFactory = new JavaTypeFactoryImpl(typeSystem);
-    planner = new VolcanoPlanner(costFactory, context);
-    RelOptUtil.registerDefaultRules(planner,
-        connectionConfig.materializationsEnabled(),
-        Hook.ENABLE_BINDABLE.get(false));
-    planner.setExecutor(executor);
-
-    state = State.STATE_2_READY;
-
-    // If user specify own traitDef, instead of default default trait,
-    // register the trait def specified in traitDefs.
-    if (this.traitDefs == null) {
-      planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-      if (CalciteSystemProperty.ENABLE_COLLATION_TRAIT.value()) {
-        planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-      }
-    } else {
-      for (RelTraitDef def : this.traitDefs) {
-        planner.addRelTraitDef(def);
-      }
-    }
-  }
-
-  public SqlNode parse(final Reader reader) throws SqlParseException {
-    switch (state) {
-    case STATE_0_CLOSED:
-    case STATE_1_RESET:
-      ready();
-    }
-    ensure(State.STATE_2_READY);
-    SqlParser parser = SqlParser.create(reader, parserConfig);
-    SqlNode sqlNode = parser.parseStmt();
-    state = State.STATE_3_PARSED;
-    return sqlNode;
-  }
-
-  public SqlNode validate(SqlNode sqlNode) throws ValidationException {
-    ensure(State.STATE_3_PARSED);
-    this.validator = createSqlValidator(createCatalogReader());
-    try {
-      validatedSqlNode = validator.validate(sqlNode);
-    } catch (RuntimeException e) {
-      throw new ValidationException(e);
-    }
-    state = State.STATE_4_VALIDATED;
-    return validatedSqlNode;
-  }
-
-  public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode)
-      throws ValidationException {
-    final SqlNode validatedNode = this.validate(sqlNode);
-    final RelDataType type =
-        this.validator.getValidatedNodeType(validatedNode);
-    return Pair.of(validatedNode, type);
-  }
-
-  @SuppressWarnings("deprecation")
-  public final RelNode convert(SqlNode sql) {
-    return rel(sql).rel;
-  }
-
-  public RelRoot rel(SqlNode sql) {
-    ensure(State.STATE_4_VALIDATED);
-    assert validatedSqlNode != null;
-    final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
-    final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-        .withConfig(sqlToRelConverterConfig)
-        .withTrimUnusedFields(false)
-        .build();
-    final SqlToRelConverter sqlToRelConverter =
-        new SqlToRelConverter(this, validator,
-            createCatalogReader(), cluster, convertletTable, config);
-    root =
-        sqlToRelConverter.convertQuery(validatedSqlNode, false, true);
-    root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-    final RelBuilder relBuilder =
-        config.getRelBuilderFactory().create(cluster, null);
-    root = root.withRel(
-        RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
-    state = State.STATE_5_CONVERTED;
-    return root;
-  }
-
-
-  /** @deprecated Now {@link PlannerImpl} implements {@link ViewExpander}
-   * directly. */
-  @Deprecated
-  public class ViewExpanderImpl implements ViewExpander {
-    ViewExpanderImpl() {
+        connectionConfig = MycatCalciteSupport.INSTANCE.calciteConnectionConfig;
     }
 
+    /**
+     * Creates a planner. Not a public API; call
+     * {@link org.apache.calcite.tools.Frameworks#getPlanner} instead.
+     */
+    public PlannerImpl(FrameworkConfig config) {
+        defaultSchema = config.getDefaultSchema();
+        this.state = State.STATE_0_CLOSED;
+        reset();
+    }
+
+    /**
+     * Gets a user defined config and appends default connection values
+     */
+//    private CalciteConnectionConfig connConfig() {
+//
+//        return config;
+//    }
+
+    /**
+     * Makes sure that the state is at least the given state.
+     */
+    private void ensure(State state) {
+
+    }
+
+    public RelTraitSet getEmptyTraitSet() {
+        return planner.emptyTraitSet();
+    }
+
+    public void close() {
+        open = false;
+        state = State.STATE_0_CLOSED;
+    }
+
+    public void reset() {
+        ensure(State.STATE_0_CLOSED);
+        open = true;
+        state = State.STATE_1_RESET;
+    }
+
+    private void ready() {
+        switch (state) {
+            case STATE_0_CLOSED:
+                reset();
+        }
+        ensure(State.STATE_1_RESET);
+        planner = new VolcanoPlanner(costFactory, context);
+        RelOptUtil.registerDefaultRules(planner,
+                connectionConfig.materializationsEnabled(),
+                Hook.ENABLE_BINDABLE.get(false));
+        planner.setExecutor(executor);
+
+        state = State.STATE_2_READY;
+
+        // If user specify own traitDef, instead of default default trait,
+        // register the trait def specified in traitDefs.
+        if (this.traitDefs == null) {
+            planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+            if (CalciteSystemProperty.ENABLE_COLLATION_TRAIT.value()) {
+                planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
+            }
+        } else {
+            for (RelTraitDef def : this.traitDefs) {
+                planner.addRelTraitDef(def);
+            }
+        }
+    }
+
+    public SqlNode parse(final Reader reader) throws SqlParseException {
+        switch (state) {
+            case STATE_0_CLOSED:
+            case STATE_1_RESET:
+                ready();
+        }
+        ensure(State.STATE_2_READY);
+        SqlParser parser = SqlParser.create(reader, parserConfig);
+        SqlNode sqlNode = parser.parseStmt();
+        state = State.STATE_3_PARSED;
+        return sqlNode;
+    }
+
+    public SqlNode validate(SqlNode sqlNode) throws ValidationException {
+        ensure(State.STATE_3_PARSED);
+        this.validator = createSqlValidator(createCatalogReader());
+        try {
+            validatedSqlNode = validator.validate(sqlNode);
+        } catch (RuntimeException e) {
+            throw new ValidationException(e);
+        }
+        state = State.STATE_4_VALIDATED;
+        return validatedSqlNode;
+    }
+
+    public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode)
+            throws ValidationException {
+        final SqlNode validatedNode = this.validate(sqlNode);
+        final RelDataType type =
+                this.validator.getValidatedNodeType(validatedNode);
+        return Pair.of(validatedNode, type);
+    }
+
+    @SuppressWarnings("deprecation")
+    public final RelNode convert(SqlNode sql) {
+        return rel(sql).rel;
+    }
+
+    public RelRoot rel(SqlNode sql) {
+        ensure(State.STATE_4_VALIDATED);
+        assert validatedSqlNode != null;
+        final RexBuilder rexBuilder = createRexBuilder();
+        final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+                .withConfig(sqlToRelConverterConfig)
+                .withTrimUnusedFields(false)
+                .build();
+        final SqlToRelConverter sqlToRelConverter =
+                new SqlToRelConverter(this, validator,
+                        createCatalogReader(), cluster, convertletTable, config);
+        root =
+                sqlToRelConverter.convertQuery(validatedSqlNode, false, true);
+        root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
+        final RelBuilder relBuilder =
+                config.getRelBuilderFactory().create(cluster, null);
+        root = root.withRel(
+                RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
+        state = State.STATE_5_CONVERTED;
+        return root;
+    }
+
+
+    /**
+     * @deprecated Now {@link PlannerImpl} implements {@link ViewExpander}
+     * directly.
+     */
+    @Deprecated
+    public class ViewExpanderImpl implements ViewExpander {
+        ViewExpanderImpl() {
+        }
+
+        public RelRoot expandView(RelDataType rowType, String queryString,
+                                  List<String> schemaPath, List<String> viewPath) {
+            return PlannerImpl.this.expandView(rowType, queryString, schemaPath,
+                    viewPath);
+        }
+    }
+
+    @Override
     public RelRoot expandView(RelDataType rowType, String queryString,
-        List<String> schemaPath, List<String> viewPath) {
-      return PlannerImpl.this.expandView(rowType, queryString, schemaPath,
-          viewPath);
+                              List<String> schemaPath, List<String> viewPath) {
+        if (planner == null) {
+            ready();
+        }
+        SqlParser parser = SqlParser.create(queryString, parserConfig);
+        SqlNode sqlNode;
+        try {
+            sqlNode = parser.parseQuery();
+        } catch (SqlParseException e) {
+            throw new RuntimeException("parse failed", e);
+        }
+
+        final CalciteCatalogReader catalogReader =
+                createCatalogReader().withSchemaPath(schemaPath);
+        final SqlValidator validator = createSqlValidator(catalogReader);
+
+        final RexBuilder rexBuilder = createRexBuilder();
+        final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+        final SqlToRelConverter.Config config = SqlToRelConverter
+                .configBuilder()
+                .withConfig(sqlToRelConverterConfig)
+                .withTrimUnusedFields(false)
+                .build();
+        final SqlToRelConverter sqlToRelConverter =
+                new SqlToRelConverter(this, validator,
+                        catalogReader, cluster, convertletTable, config);
+
+        final RelRoot root =
+                sqlToRelConverter.convertQuery(sqlNode, true, false);
+        final RelRoot root2 =
+                root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
+        final RelBuilder relBuilder =
+                config.getRelBuilderFactory().create(cluster, null);
+        return root2.withRel(
+                RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
     }
-  }
 
-  @Override public RelRoot expandView(RelDataType rowType, String queryString,
-      List<String> schemaPath, List<String> viewPath) {
-    if (planner == null) {
-      ready();
-    }
-    SqlParser parser = SqlParser.create(queryString, parserConfig);
-    SqlNode sqlNode;
-    try {
-      sqlNode = parser.parseQuery();
-    } catch (SqlParseException e) {
-      throw new RuntimeException("parse failed", e);
+    // CalciteCatalogReader is stateless; no need to store one
+    public CalciteCatalogReader createCatalogReader() {
+        final SchemaPlus rootSchema = rootSchema(defaultSchema);
+
+        return new CalciteCatalogReader(
+                CalciteSchema.from(rootSchema),
+                CalciteSchema.from(defaultSchema).path(null),
+                typeFactory, connectionConfig);
     }
 
-    final CalciteCatalogReader catalogReader =
-        createCatalogReader().withSchemaPath(schemaPath);
-    final SqlValidator validator = createSqlValidator(catalogReader);
-
-    final RexBuilder rexBuilder = createRexBuilder();
-    final RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
-    final SqlToRelConverter.Config config = SqlToRelConverter
-        .configBuilder()
-        .withConfig(sqlToRelConverterConfig)
-        .withTrimUnusedFields(false)
-        .build();
-    final SqlToRelConverter sqlToRelConverter =
-        new SqlToRelConverter(this, validator,
-            catalogReader, cluster, convertletTable, config);
-
-    final RelRoot root =
-        sqlToRelConverter.convertQuery(sqlNode, true, false);
-    final RelRoot root2 =
-        root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-    final RelBuilder relBuilder =
-        config.getRelBuilderFactory().create(cluster, null);
-    return root2.withRel(
-        RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
-  }
-
-  // CalciteCatalogReader is stateless; no need to store one
-  private CalciteCatalogReader createCatalogReader() {
-    final SchemaPlus rootSchema = rootSchema(defaultSchema);
-
-    return new CalciteCatalogReader(
-        CalciteSchema.from(rootSchema),
-        CalciteSchema.from(defaultSchema).path(null),
-        typeFactory, connectionConfig);
-  }
-
-  private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
-    final SqlOperatorTable opTab =
-        ChainedSqlOperatorTable.of(operatorTable, catalogReader);
-    return new CalciteSqlValidator(opTab,
-        catalogReader,
-        typeFactory,
-        sqlValidatorConfig
-            .withDefaultNullCollation(connectionConfig.defaultNullCollation())
-            .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
-            .withSqlConformance(connectionConfig.conformance())
-            .withIdentifierExpansion(true));
-  }
-
-  private static SchemaPlus rootSchema(SchemaPlus schema) {
-    for (;;) {
-      if (schema.getParentSchema() == null) {
-        return schema;
-      }
-      schema = schema.getParentSchema();
+    private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        final SqlOperatorTable opTab =
+                ChainedSqlOperatorTable.of(operatorTable, catalogReader);
+        return new CalciteSqlValidator(opTab,
+                catalogReader,
+                typeFactory,
+                sqlValidatorConfig
+                        .withDefaultNullCollation(connectionConfig.defaultNullCollation())
+                        .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
+                        .withSqlConformance(connectionConfig.conformance())
+                        .withIdentifierExpansion(true));
     }
-  }
 
-  // RexBuilder is stateless; no need to store one
-  private RexBuilder createRexBuilder() {
-    return new RexBuilder(typeFactory);
-  }
-
-  public JavaTypeFactory getTypeFactory() {
-    return typeFactory;
-  }
-
-  public RelNode transform(int ruleSetIndex, RelTraitSet requiredOutputTraits,
-      RelNode rel) {
-    ensure(State.STATE_5_CONVERTED);
-    rel.getCluster().setMetadataProvider(
-        new CachingRelMetadataProvider(
-            rel.getCluster().getMetadataProvider(),
-            rel.getCluster().getPlanner()));
-    Program program = programs.get(ruleSetIndex);
-    return program.run(planner, rel, requiredOutputTraits, ImmutableList.of(),
-        ImmutableList.of());
-  }
-
-  /** Stage of a statement in the query-preparation lifecycle. */
-  private enum State {
-    STATE_0_CLOSED {
-      @Override void from(PlannerImpl planner) {
-        planner.close();
-      }
-    },
-    STATE_1_RESET {
-      @Override void from(PlannerImpl planner) {
-        planner.ensure(STATE_0_CLOSED);
-        planner.reset();
-      }
-    },
-    STATE_2_READY {
-      @Override void from(PlannerImpl planner) {
-        STATE_1_RESET.from(planner);
-        planner.ready();
-      }
-    },
-    STATE_3_PARSED,
-    STATE_4_VALIDATED,
-    STATE_5_CONVERTED;
-
-    /** Moves planner's state to this state. This must be a higher state. */
-    void from(PlannerImpl planner) {
-      throw new IllegalArgumentException("cannot move from " + planner.state
-          + " to " + this);
+    private static SchemaPlus rootSchema(SchemaPlus schema) {
+        for (; ; ) {
+            if (schema.getParentSchema() == null) {
+                return schema;
+            }
+            schema = schema.getParentSchema();
+        }
     }
-  }
+
+    // RexBuilder is stateless; no need to store one
+    private RexBuilder createRexBuilder() {
+        return new RexBuilder(typeFactory);
+    }
+
+    public JavaTypeFactory getTypeFactory() {
+        return typeFactory;
+    }
+
+    public RelNode transform(int ruleSetIndex, RelTraitSet requiredOutputTraits,
+                             RelNode rel) {
+        ensure(State.STATE_5_CONVERTED);
+        rel.getCluster().setMetadataProvider(
+                new CachingRelMetadataProvider(
+                        rel.getCluster().getMetadataProvider(),
+                        rel.getCluster().getPlanner()));
+        Program program = programs.get(ruleSetIndex);
+        return program.run(planner, rel, requiredOutputTraits, ImmutableList.of(),
+                ImmutableList.of());
+    }
+
+    /**
+     * Stage of a statement in the query-preparation lifecycle.
+     */
+    private enum State {
+        STATE_0_CLOSED {
+            @Override
+            void from(PlannerImpl planner) {
+                planner.close();
+            }
+        },
+        STATE_1_RESET {
+            @Override
+            void from(PlannerImpl planner) {
+                planner.ensure(STATE_0_CLOSED);
+                planner.reset();
+            }
+        },
+        STATE_2_READY {
+            @Override
+            void from(PlannerImpl planner) {
+                STATE_1_RESET.from(planner);
+                planner.ready();
+            }
+        },
+        STATE_3_PARSED,
+        STATE_4_VALIDATED,
+        STATE_5_CONVERTED;
+
+        /**
+         * Moves planner's state to this state. This must be a higher state.
+         */
+        void from(PlannerImpl planner) {
+            throw new IllegalArgumentException("cannot move from " + planner.state
+                    + " to " + this);
+        }
+    }
 }
