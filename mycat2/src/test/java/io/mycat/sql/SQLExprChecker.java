@@ -61,8 +61,8 @@ public class SQLExprChecker extends BaseChecker {
         check("select user_id*id from db1.travelrecord",(999*max)+")("+(999*min));
         check("select (user_id*1.0)/(id*1.0) from db1.travelrecord");//结果不确定
 //        check("select user_id DIV id from db1.travelrecord",(999/max)+")("+(999/min));不支持
-        check("select user_id % id from db1.travelrecord",(999%max)+")("+(999%min));
-        check("select user_id MOD id from db1.travelrecord",(999%max)+")("+(999%min));
+        check("select user_id % id from db1.travelrecord");//结果不确定
+        check("select user_id MOD id from db1.travelrecord");//结果不确定
 
         //
 

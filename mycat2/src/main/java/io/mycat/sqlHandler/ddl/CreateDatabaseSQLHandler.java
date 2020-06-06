@@ -15,7 +15,7 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

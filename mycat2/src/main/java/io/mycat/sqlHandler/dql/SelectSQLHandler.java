@@ -113,7 +113,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             payloadList.add(payload);
         }
         resultSetBuilder.addObjectRowPayload(payloadList);
-        receiver.sendResultSet(resultSetBuilder.build(), Collections::emptyList);
+        receiver.sendResultSet(()->resultSetBuilder.build(), Collections::emptyList);
         return ExecuteCode.PERFORMED;
     }
 
@@ -201,7 +201,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
             HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
             RowBaseIterator run = hbtRunners.run(plan);
-            receiver.sendResultSet(run, null);
+            receiver.sendResultSet(()->run, null);
             return ExecuteCode.PERFORMED;
         }
         dataContext.block(() -> {
@@ -221,7 +221,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                     return;
                 }
             }
-            receiver.sendResultSet(plan.run(), plan::explain);
+            receiver.sendResultSet(()->plan.run(), plan::explain);
         });
 
         return ExecuteCode.PERFORMED;

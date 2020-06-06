@@ -14,7 +14,7 @@ public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseSt
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

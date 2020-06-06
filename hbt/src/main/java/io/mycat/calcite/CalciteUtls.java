@@ -23,6 +23,8 @@ import io.mycat.metadata.TableHandler;
 import io.mycat.queryCondition.DataMappingEvaluator;
 import io.mycat.queryCondition.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -57,11 +59,21 @@ public class CalciteUtls {
         List<QueryBackendTask> list = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
             String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
-            QueryBackendTask queryBackendTask = new QueryBackendTask( backendTableInfo.getTargetName(),backendTaskSQL);
+            QueryBackendTask queryBackendTask = new QueryBackendTask(backendTableInfo.getTargetName(), backendTaskSQL);
             list.add(queryBackendTask);
         }
         return list;
 
+    }
+
+    public static void collect(Union e, List<RelNode> unions) {
+        for (RelNode input : e.getInputs()) {
+            if (input instanceof Union){
+                collect((Union)input,unions);
+            }else {
+                unions.add(input);
+            }
+        }
     }
 
     public static List<BackendTableInfo> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
@@ -132,8 +144,8 @@ public class CalciteUtls {
         };
         try {
             return " where " + context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
-        }catch (Exception e){
-            LOGGER.warn("不能生成对应的sql",e);
+        } catch (Exception e) {
+            LOGGER.warn("不能生成对应的sql", e);
         }
         return "";
     }
@@ -163,13 +175,13 @@ public class CalciteUtls {
                 RexNode left = operands.get(i);
                 RexNode right = operands.get(j);
                 if (left instanceof RexCall && right instanceof RexCall) {
-                    if ((left.isA(SqlKind.GREATER_THAN_OR_EQUAL)||left.isA(SqlKind.GREATER_THAN))  && (right.isA(SqlKind.LESS_THAN_OR_EQUAL)||right.isA(SqlKind.LESS_THAN))) {
+                    if ((left.isA(SqlKind.GREATER_THAN_OR_EQUAL) || left.isA(SqlKind.GREATER_THAN)) && (right.isA(SqlKind.LESS_THAN_OR_EQUAL) || right.isA(SqlKind.LESS_THAN))) {
                         RexNode fisrtExpr = unCastWrapper(((RexCall) left).getOperands().get(0));
-                        RexNode secondExpr =unCastWrapper(((RexCall) right).getOperands().get(0));
+                        RexNode secondExpr = unCastWrapper(((RexCall) right).getOperands().get(0));
                         if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
                             int index = ((RexInputRef) fisrtExpr).getIndex();
                             if (index == ((RexInputRef) secondExpr).getIndex()) {
-                                RexNode start =unCastWrapper( ((RexCall) left).getOperands().get(1));
+                                RexNode start = unCastWrapper(((RexCall) left).getOperands().get(1));
                                 RexNode end = unCastWrapper(((RexCall) right).getOperands().get(1));
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
                                     String startValue = ((RexLiteral) start).getValue2().toString();
@@ -197,10 +209,6 @@ public class CalciteUtls {
             RexNode left = call.getOperands().get(0);
 
             left = unCastWrapper(left);
-
-
-
-  
 
 
             RexNode right = call.getOperands().get(1);

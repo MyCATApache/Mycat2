@@ -18,6 +18,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.util.StringUtil;
 
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
@@ -71,7 +72,11 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     }
     public ColumnDefPacketImpl(final MycatRowMetaData resultSetMetaData, int columnIndex) {
         try {
-            this.columnSchema = getBytes(resultSetMetaData.getSchemaName(columnIndex));
+            String schemaName = resultSetMetaData.getSchemaName(columnIndex);
+            if (StringUtil.isEmpty(schemaName )){
+                schemaName = "UNKNOWN";//mysql workbench 该字段不能为长度0
+            }
+            this.columnSchema = getBytes(schemaName);
             this.columnName = getBytes(resultSetMetaData.getColumnLabel(columnIndex));
             this.columnOrgName = getBytes(resultSetMetaData.getColumnName(columnIndex));
             this.columnNextLength = 0xC;

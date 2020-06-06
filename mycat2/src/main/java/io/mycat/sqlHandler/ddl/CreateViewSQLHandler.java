@@ -14,7 +14,7 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLCreateViewStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

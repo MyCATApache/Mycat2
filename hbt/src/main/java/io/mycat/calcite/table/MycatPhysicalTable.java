@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.table;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.MycatConnection;
 import io.mycat.SchemaInfo;
@@ -127,7 +128,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(), relOptTable);
+        return LogicalTableScan.create(context.getCluster(), relOptTable, ImmutableList.of());
     }
 
     @Override

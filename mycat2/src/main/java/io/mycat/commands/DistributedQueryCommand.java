@@ -23,7 +23,7 @@ public enum DistributedQueryCommand implements MycatCommand{
         MycatDBClientMediator client = MycatDBs.createClient(context);
         MycatSQLPrepareObject mycatSQLPrepareObject = client.getUponDBSharedServer().innerQueryPrepareObject(client.sqlContext().simplySql(sql), client);
         PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
-        response.sendResultSet(plan.run(), () -> plan.explain());
+        response.sendResultSet(()->plan.run(), () -> plan.explain());
         return true;
     }
 

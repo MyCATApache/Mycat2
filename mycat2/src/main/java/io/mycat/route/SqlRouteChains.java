@@ -4,7 +4,11 @@ import com.google.common.collect.ImmutableList;
 
 public enum SqlRouteChains {
     INSTANCE;
-    final SqlRouteChain[] sqlRouteChains = ImmutableList.builder().add(new NoTablesRouter(), new GlobalRouter()).build().toArray(new SqlRouteChain[0]);
+    final SqlRouteChain[] sqlRouteChains = ImmutableList.builder().add(
+            new NoTablesRouter(),
+            new SimpleShardingRouter(),
+            new GlobalRouter()
+    ).build().toArray(new SqlRouteChain[0]);
 
     public boolean execute(ParseContext context) {
         for (int i = 0; i < sqlRouteChains.length; i++) {

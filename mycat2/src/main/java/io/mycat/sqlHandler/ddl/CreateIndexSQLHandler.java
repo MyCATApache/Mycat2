@@ -14,7 +14,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

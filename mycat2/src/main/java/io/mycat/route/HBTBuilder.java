@@ -1,20 +1,26 @@
 package io.mycat.route;
 
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.OrderItem;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.hbt.ast.query.FromSqlSchema;
+import io.mycat.hbt.ast.query.SetOpSchema;
+import org.checkerframework.checker.units.qual.A;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class HBTBuilder {
-    Schema schema;
+    LinkedList<Schema> stack;
+
     public static HBTBuilder create() {
         return new HBTBuilder();
     }
 
-    public  HBTBuilder  from(String targetName, String sql) {
-        schema = new FromSqlSchema(Collections.emptyList(),targetName,sql);
+    public HBTBuilder from(String targetName, String sql) {
+        stack.push(new FromSqlSchema(Collections.emptyList(), targetName, sql));
         return this;
     }
 
@@ -22,7 +28,12 @@ public class HBTBuilder {
         return null;
     }
 
-    public HBTBuilder union(boolean b) {
+    public HBTBuilder unionMore(boolean all) {
+        ArrayList<Schema> arrayList = new ArrayList<>();
+        while (stack.isEmpty()){
+            arrayList.add(stack.pop());
+        }
+//        stack.push(new SetOpSchema(all?HBTOp.UNION_ALL,));
         return null;
     }
 
@@ -35,6 +46,6 @@ public class HBTBuilder {
     }
 
     public Schema build() {
-        return schema;
+        return stack.pop();
     }
 }

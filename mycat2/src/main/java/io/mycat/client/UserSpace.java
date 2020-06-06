@@ -174,6 +174,9 @@ public class UserSpace {
                     }
                     cache = CacheLib.cache(() -> new TextResultSetResponse(query), finalText.replaceAll(" ", "_"));
                 } finally {
+                    if (query !=null){
+                        query.close();
+                    }
                     if (cache2 != null) {
                         cache2.close();
                     }

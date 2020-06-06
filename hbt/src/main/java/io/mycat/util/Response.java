@@ -48,7 +48,7 @@ public interface Response {
      */
     void sendExplain(Class defErrorCommandClass, Object map);
 
-    void sendResultSet(RowBaseIterator rowBaseIterator, Supplier<List<String>> explainSupplier);
+    void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier);
 
     void sendResponse(MycatResponse[] mycatResponses, Supplier<List<String>> explainSupplier);
 

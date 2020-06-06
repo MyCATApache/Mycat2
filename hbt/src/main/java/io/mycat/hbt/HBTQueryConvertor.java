@@ -18,14 +18,12 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.beans.mycat.JdbcRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
-import io.mycat.calcite.rules.PushDownLogicTable;
+import io.mycat.calcite.rules.PushDownLogicTableRule;
 import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
@@ -206,8 +204,7 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-        return pushDownLogicTable.toPhyTable(relBuilder, bindableTableScan);
+        return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, bindableTableScan);
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -443,8 +440,7 @@ public class HBTQueryConvertor {
 
         //消除逻辑表,变成物理表
         if (unwrap!= null){
-            PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
-          return   pushDownLogicTable.toPhyTable(relBuilder,(TableScan)build);
+          return   PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder,(TableScan)build);
         }
 
         return build;

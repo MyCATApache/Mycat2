@@ -28,10 +28,16 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.FilterableTable;
+import org.apache.calcite.schema.ProjectableFilterableTable;
+import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * @author Junwen Chen
@@ -41,13 +47,23 @@ RexSimplify 简化行表达式
 SubstitutionVisitor 物化结合
 MaterializedViewSubstitutionVisitor
  */
-public class PushDownLogicTable extends RelOptRule {
-    final HashSet<String> context = new HashSet<>();
+public class PushDownLogicTableRule extends RelOptRule {
+    public static PushDownLogicTableRule LogicalTable = new PushDownLogicTableRule(LogicalTableScan.class);
+    public static PushDownLogicTableRule ScannableTable = new PushDownLogicTableRule(ScannableTable.class);
+    public static PushDownLogicTableRule FilterableTable = new PushDownLogicTableRule(FilterableTable.class);
+    public static PushDownLogicTableRule ProjectableFilterableTable = new PushDownLogicTableRule(ProjectableFilterableTable.class);
+    public static PushDownLogicTableRule BindableTableScan = new PushDownLogicTableRule(        Bindables.BindableTableScan.class);
 
-    public PushDownLogicTable() {
-        super(operand(Bindables.BindableTableScan.class, any()), "proj on filter on proj");
+    public PushDownLogicTableRule(Class c) {
+        super(operand(c, none()), "PushDownLogicTable");
     }
 
+
+    public static boolean canHandle(RelOptTable table) {
+        return table.unwrap(ScannableTable.class) != null
+                || table.unwrap(FilterableTable.class) != null
+                || table.unwrap(ProjectableFilterableTable.class) != null;
+    }
 
     /**
      * @param call todo result set with order，backend
@@ -55,13 +71,17 @@ public class PushDownLogicTable extends RelOptRule {
     @Override
     public void onMatch(RelOptRuleCall call) {
         TableScan judgeObject = (TableScan) call.rels[0];
-        RelNode value = toPhyTable(call.builder(), judgeObject);
-        if (value != null) {
-            call.transformTo(value);
+        if (canHandle(judgeObject.getTable())) {
+            RelNode value = toPhyTable(call.builder(), judgeObject);
+            if (value != null) {
+                call.transformTo(value);
+            }
         }
+
     }
 
     public RelNode toPhyTable(RelBuilder builder, TableScan judgeObject) {
+
         Bindables.BindableTableScan bindableTableScan;
         if (judgeObject instanceof Bindables.BindableTableScan) {
             bindableTableScan = (Bindables.BindableTableScan) judgeObject;
@@ -91,7 +111,11 @@ public class PushDownLogicTable extends RelOptRule {
     }
 
     @NotNull
-    private RelNode global(RelOptCluster cluster, Bindables.BindableTableScan bindableTableScan, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+    private RelNode global(RelOptCluster cluster,
+                           Bindables.BindableTableScan bindableTableScan,
+                           RelOptSchema relOptSchema,
+                           MycatLogicTable logicTable) {
+        final HashSet<String> context = new HashSet<>();
         RelNode logicalTableScan;
         MycatPhysicalTable mycatPhysicalTable = logicTable.getMycatGlobalPhysicalTable(context);
         RelOptTable dataNode = RelOptTableImpl.create(
@@ -99,7 +123,7 @@ public class PushDownLogicTable extends RelOptRule {
                 logicTable.getRowType(cluster.getTypeFactory()),//这里使用logicTable,避免类型不一致
                 mycatPhysicalTable,
                 ImmutableList.of(mycatPhysicalTable.getBackendTableInfo().getUniqueName()));
-        logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        logicalTableScan = LogicalTableScan.create(cluster, dataNode, ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }
 
@@ -113,39 +137,11 @@ public class PushDownLogicTable extends RelOptRule {
 
 
         ////////////////////////////////////////////////////////////////////////////////////////////////
-
-        TreeMap<String, List<RelNode>> bindTableGroupMapByTargetName = new TreeMap<>(Comparator.comparing(x -> x));
+        builder.clear();
         for (BackendTableInfo backendTableInfo : backendTableInfos) {
-            String targetName = backendTableInfo.getTargetName();
-            List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
-            queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
+            builder.push(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
         }
-
-        TreeMap<String, RelNode> relNodeGroup = new TreeMap<>(Comparator.comparing(x -> x));
-        context.addAll(relNodeGroup.keySet());
-        for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
-            if (entry.getValue().isEmpty()) {
-                continue;
-            }
-            RelNode relNode = entry.getValue().stream().reduce((relNode1, relNode2) -> {
-                builder.clear();
-                return builder.push(relNode1).push(relNode2).union(true).build();
-            }).get();
-            relNodeGroup.put(entry.getKey(), relNode);
-        }
-
-        if (relNodeGroup.size() == 1) {
-            value = relNodeGroup.entrySet().iterator().next().getValue();
-        } else {
-            if (relNodeGroup.size() < 1) {
-                throw new AssertionError();
-            }
-            Optional<RelNode> reduce = relNodeGroup.values().stream().reduce((relNode1, relNode2) -> {
-                builder.clear();
-                return builder.push(relNode1).push(relNode2).union(true).build();
-            });
-            value = reduce.get();
-        }
+        value = builder.union(true, backendTableInfos.size()).build();
         return value;
     }
 
@@ -159,7 +155,7 @@ public class PushDownLogicTable extends RelOptRule {
                 mycatPhysicalTable.getRowType(cluster.getTypeFactory()),
                 mycatPhysicalTable,
                 ImmutableList.of(uniqueName));
-        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode, ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }
 }

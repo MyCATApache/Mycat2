@@ -47,7 +47,7 @@ public class MycatSqlPlanner implements PlanRunner,Proxyable {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = CalciteRunners.complie(planner, sql, prepare.isForUpdate());
+        this.relNode = CalciteRunners.compile(planner, sql, prepare.isForUpdate());
     }
 
     public List<String> explain() {

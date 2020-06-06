@@ -14,7 +14,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }

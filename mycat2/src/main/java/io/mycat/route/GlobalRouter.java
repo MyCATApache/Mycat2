@@ -11,7 +11,7 @@ public class GlobalRouter implements SqlRouteChain {
 
     @Override
     public boolean handle(ParseContext parseContext) {
-        List<SQLExprTableSource> leftTables = parseContext.getLeftTables();
+        List<SQLExprTableSource> leftTables = parseContext.startAndGetLeftTables();
         List<Set<String>> set = new ArrayList<>();
         HashMap<SQLExprTableSource, Set<DataNode>> mapping = new HashMap<>();
         for (SQLExprTableSource leftTable : leftTables) {

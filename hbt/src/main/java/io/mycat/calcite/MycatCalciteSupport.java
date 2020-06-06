@@ -26,10 +26,7 @@ import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
-import org.apache.calcite.config.CalciteConnectionProperty;
-import org.apache.calcite.config.Lex;
+import org.apache.calcite.config.*;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
@@ -51,11 +48,14 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionFactory;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -126,6 +126,102 @@ public enum MycatCalciteSupport implements Context {
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderFactory(relBuilderFactory).build();
 
+    public final SqlValidator.Config getValidatorConfig() {
+       return SqlValidator.Config.DEFAULT;
+//                .withSqlConformance(calciteConnectionConfig.conformance());
+    }
+//    new SqlValidator.Config() {
+//        @Override
+//        public boolean callRewrite() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withCallRewrite(boolean rewrite) {
+//            return this;
+//        }
+//
+//        @Override
+//        public NullCollation defaultNullCollation() {
+//            return NullCollation.HIGH;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withDefaultNullCollation(NullCollation nullCollation) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean columnReferenceExpansion() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withColumnReferenceExpansion(boolean expand) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean identifierExpansion() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withIdentifierExpansion(boolean expand) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean lenientOperatorLookup() {
+//            return true;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withLenientOperatorLookup(boolean lenient) {
+//            return this;
+//        }
+//
+//        @Override
+//        public boolean typeCoercionEnabled() {
+//            return false;
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionEnabled(boolean enabled) {
+//            return this;
+//        }
+//
+//        @Override
+//        public TypeCoercionFactory typeCoercionFactory() {
+//            return SqlValidator.Config.DEFAULT.typeCoercionFactory();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionFactory(TypeCoercionFactory factory) {
+//            return this;
+//        }
+//
+//        @Override
+//        public SqlTypeCoercionRule typeCoercionRules() {
+//            return SqlValidator.Config.DEFAULT.typeCoercionRules();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withTypeCoercionRules(SqlTypeCoercionRule rules) {
+//            return this;
+//        }
+//
+//        @Override
+//        public SqlConformance sqlConformance() {
+//            return MycatCalciteSupport.INSTANCE.calciteConnectionConfig.conformance();
+//        }
+//
+//        @Override
+//        public SqlValidator.Config withSqlConformance(SqlConformance conformance) {
+//            return this;
+//        }
+//    };
+
 
     public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
         return new MycatCalciteDataContext(uponDBContext);
@@ -146,6 +242,7 @@ public enum MycatCalciteSupport implements Context {
                 map.put("IFNULL", SqlStdOperatorTable.COALESCE);
                 build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
                 build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                build.put("CURRENT_DATE",SqlStdOperatorTable.CURRENT_DATE);
                 build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
                 build.put("LOG", SqlStdOperatorTable.LOG10);
                 build.put("PI",SqlStdOperatorTable.PI);

@@ -89,7 +89,6 @@ public enum MycatdbCommand implements MycatCommand {
         sqlHandlers.add(new ShowCreateFunctionHanlder());
 
         //Analyze
-        sqlHandlers.add(new ShowCreateFunctionHanlder());
         sqlHandlers.add(new AnalyzeHanlder());
     }
 
@@ -117,7 +116,7 @@ public enum MycatdbCommand implements MycatCommand {
             try {
                 final String finalSql = request.getText().trim();
                 if (finalSql.startsWith("execute ")) {
-                    response.sendResultSet(client.executeRel(finalSql), () -> client.explainRel(finalSql));
+                    response.sendResultSet(()->client.executeRel(finalSql), () -> client.explainRel(finalSql));
                     isRun = true;
                 }
             } catch (Throwable e1) {
@@ -177,7 +176,7 @@ public enum MycatdbCommand implements MycatCommand {
                 String pre = "execute plan ";
                 if (trim.toLowerCase().startsWith(pre)) {
                     final String finalSql = trim.substring(pre.length());
-                    receiver.sendResultSet(db.executeRel(finalSql), () -> db.explainRel(finalSql));
+                    receiver.sendResultSet(()->db.executeRel(finalSql), () -> db.explainRel(finalSql));
                     isRun = true;
                 }
             } catch (Throwable e1) {

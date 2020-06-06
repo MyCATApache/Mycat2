@@ -23,7 +23,7 @@ public enum SelectTransactionReadOnlyCommand implements MycatCommand{
         resultSetBuilder.addColumnInfo(columnName, JDBCType.BIGINT);
         resultSetBuilder.addObjectRowPayload(isReadOnly);
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(rowBaseIterator, new Supplier<List<String>>() {
+        response.sendResultSet(()->rowBaseIterator, new Supplier<List<String>>() {
             @Override
             public List<String> get() {
                 return Arrays.asList(""+columnName+":"+(context.isReadOnly()?1:0));

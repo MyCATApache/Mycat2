@@ -1,6 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.DataSourceNearness;
+import io.mycat.TransactionSession;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -14,9 +15,10 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
     HashMap<String, String> map = new HashMap<>();
     String loadBalanceStrategy;
     Boolean replicaMode;
-    boolean update;
+    private TransactionSession transactionSession;
 
-    public DataSourceNearnessImpl() {
+    public DataSourceNearnessImpl(TransactionSession transactionSession) {
+        this.transactionSession = transactionSession;
     }
 
     public String getDataSourceByTargetName(final String targetName) {
@@ -28,7 +30,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         String res;
         if (replicaMode) {
             res  =  map.computeIfAbsent(targetName, (s) -> {
-                String datasourceNameByReplicaName = instance.getDatasourceNameByReplicaName(targetName, false, loadBalanceStrategy);
+                String datasourceNameByReplicaName = instance.getDatasourceNameByReplicaName(targetName, !transactionSession.isAutocommit()||transactionSession.isInTransaction(), loadBalanceStrategy);
                 return Objects.requireNonNull(datasourceNameByReplicaName);
             });
         }else {
@@ -41,9 +43,6 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         this.loadBalanceStrategy = loadBalanceStrategy;
     }
 
-    public void setUpdate(boolean update) {
-        this.update = update;
-    }
 
     public void clear(){
         map.clear();

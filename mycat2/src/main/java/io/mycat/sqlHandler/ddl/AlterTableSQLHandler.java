@@ -14,7 +14,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyDDL(request.getAst());
+        response.sendOk();
         return ExecuteCode.PERFORMED;
     }
 }
