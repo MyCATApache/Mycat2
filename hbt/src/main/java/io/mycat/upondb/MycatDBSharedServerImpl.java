@@ -416,15 +416,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(calciteMySqlNodeVisitor);
         SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-        MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(dataContext);
-        SqlValidatorImpl sqlValidator = planner.getSqlValidator();
-        sqlNode = sqlValidator.validate(sqlNode);
-        MycatRowMetaData parameterRowType = null;
-        if (id != null) {
-            parameterRowType = new CalciteRowMetaData(sqlValidator.getParameterRowType(sqlNode).getFieldList());
-        }
-        MycatRowMetaData resultRowType = new CalciteRowMetaData(sqlValidator.getValidatedNodeType(sqlNode).getFieldList());
-        return new MycatCalciteSQLPrepareObject(id, sql, sqlNode, parameterRowType, resultRowType, forUpdate, dataContext);
+        return new FastMycatCalciteSQLPrepareObject(id, sql, sqlNode, null, null, forUpdate, dataContext);
     }
 
 
