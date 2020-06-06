@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  */
 @NoArgsConstructor
 @Data
-public class InformationSchema {
+public class InformationSchema implements Cloneable {
 
     public TABLES_TABLE_OBJECT[] TABLES = new TABLES_TABLE_OBJECT[]{};
 
@@ -2252,5 +2252,10 @@ public class InformationSchema {
         public String COLLATION_CONNECTION;
 
         public String DATABASE_COLLATION;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

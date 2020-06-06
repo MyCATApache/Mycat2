@@ -89,7 +89,6 @@ public enum MycatdbCommand implements MycatCommand {
         sqlHandlers.add(new ShowCreateFunctionHanlder());
 
         //Analyze
-        sqlHandlers.add(new ShowCreateFunctionHanlder());
         sqlHandlers.add(new AnalyzeHanlder());
     }
 

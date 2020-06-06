@@ -87,14 +87,12 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
     public SchemaPlus getRootSchema() {
         MycatDBSharedServer uponDBSharedServer = uponDBContext.getUponDBSharedServer();
-        Function<Byte, SchemaPlus> function = new Function<Byte, SchemaPlus>() {
-            @Override
-            public SchemaPlus apply(Byte aByte) {
-                return getSchema(uponDBContext);
-            }
-        };
-        SchemaPlus component = uponDBSharedServer.getComponent(Components.SCHEMA,function);
-        return component;
+        Function<Byte, SchemaPlus> function = aByte -> getSchema(uponDBContext);
+        if (uponDBContext.config().isCache()) {
+            return uponDBSharedServer.getComponent(Components.SCHEMA, function);
+        } else {
+            return function.apply(Components.SCHEMA);
+        }
     }
 
     public JavaTypeFactory getTypeFactory() {
@@ -185,7 +183,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     public RexExecutor getExecutor() {
         return (rexBuilder, constExps, reducedValues) -> {
             RexExecutor executor = MycatCalciteSupport.INSTANCE.config.getExecutor();
-            if (executor!=null) {
+            if (executor != null) {
                 executor.reduce(rexBuilder, constExps, reducedValues);
             }
         };
@@ -250,29 +248,30 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
         String uniqueName = targetName + "." + schema + "." + table;
         SchemaPlus rootSchema = getRootSchema();
         Set<String> subSchemaNames = rootSchema.getSubSchemaNames();
-        for (String subSchemaName :subSchemaNames) {
+        for (String subSchemaName : subSchemaNames) {
             SchemaPlus subSchema = rootSchema.getSubSchema(subSchemaName);
-            log.debug("schemaName:{}",subSchemaName);
+            log.debug("schemaName:{}", subSchemaName);
             Set<String> tableNames = subSchema.getTableNames();
-            log.debug("tableNames:{}",tableNames);
+            log.debug("tableNames:{}", tableNames);
             for (String tableName : tableNames) {
                 Table table1 = subSchema.getTable(tableName);
                 if (table1 instanceof MycatLogicTable) {
                     Map<String, MycatPhysicalTable> dataNodeMap = ((MycatLogicTable) table1).getDataNodeMap();
-                    log.debug("dataNodeMap:{}",dataNodeMap);
+                    log.debug("dataNodeMap:{}", dataNodeMap);
                     if (dataNodeMap.containsKey(uniqueName)) {
-                        return Objects.requireNonNull((MycatLogicTable)table1);
+                        return Objects.requireNonNull((MycatLogicTable) table1);
                     }
                 }
             }
         }
         return null;
     }
+
     final static Logger log = LoggerFactory.getLogger(MycatCalciteDataContext.class);
 
-   public AtomicBoolean getCancelFlag(){
-    return DataContext.Variable.CANCEL_FLAG.get(this);
-   }
+    public AtomicBoolean getCancelFlag() {
+        return DataContext.Variable.CANCEL_FLAG.get(this);
+    }
 
 
 }

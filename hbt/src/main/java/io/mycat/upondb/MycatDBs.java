@@ -1,5 +1,6 @@
 package io.mycat.upondb;
 
+import com.google.common.collect.ImmutableSet;
 import io.mycat.MycatConnection;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatDataContextEnum;
@@ -7,22 +8,32 @@ import io.mycat.RootHelper;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.beans.mysql.MySQLVariablesEnum;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.util.SQLContext;
 import io.mycat.util.SQLContextImpl;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MycatDBs {
 
+    public final static Set<String> VARIABLES_COLUMNNAME_SET = ImmutableSet
+            .of("autocommit", "net_write_timeout", "SQL_SELECT_LIMIT", "character_set_results", "read_only", "current_user");
+
 
     public static MycatDBClientMediator createClient(MycatDataContext dataContext) {
-        return new MycatDBClientMediator() {
+        return createClient(dataContext, new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getSchemaMap()
+                ,Collections.singletonMap("information_schema", InformationSchemaRuntime.INSTANCE.get()
+                ),true));
+    }
 
+    @NotNull
+    public static MycatDBClientMediator createClient(MycatDataContext dataContext, MycatDBClientBasedConfig config) {
+        return new MycatDBClientMediator() {
             @Override
             public void setVariable(String target, Object text) {
                 String value = Objects.toString(text);
@@ -49,19 +60,20 @@ public class MycatDBs {
 
             @Override
             public Object getVariable(String target) {
+                target = target.toLowerCase();
                 if (target.contains("autocommit")) {
                     return this.isAutoCommit() ? 1 : 0;
                 } else if (target.equalsIgnoreCase("xa")) {
                     return dataContext.getTransactionSession().name();
                 } else if (target.contains("net_write_timeout")) {
                     return dataContext.getVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT);
-                } else if ("SQL_SELECT_LIMIT".equalsIgnoreCase(target)) {
+                } else if ("sql_select_limit".equalsIgnoreCase(target)) {
                     return dataContext.getVariable(MycatDataContextEnum.SELECT_LIMIT);
                 } else if ("character_set_results".equalsIgnoreCase(target)) {
                     return dataContext.getVariable(MycatDataContextEnum.CHARSET_SET_RESULT);
                 } else if (target.contains("read_only")) {
                     return dataContext.getVariable(MycatDataContextEnum.IS_READ_ONLY);
-                }else if (target.contains("current_user")) {
+                } else if (target.contains("current_user")) {
                     return dataContext.getUser().getUserName();
                 }
                 Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
@@ -82,10 +94,7 @@ public class MycatDBs {
 
             @Override
             public MycatDBClientBasedConfig config() {
-                MycatDBClientBasedConfig mycatDBClientBasedConfig = new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getSchemaMap(),
-                        Collections.singletonMap("information_schema", InformationSchemaRuntime.INSTANCE.get()
-                        ));
-                return mycatDBClientBasedConfig;
+                return config;
             }
 
             @Override
