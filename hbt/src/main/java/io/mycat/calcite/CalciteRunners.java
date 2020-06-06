@@ -21,10 +21,11 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.tools.RelConversionException;
+import org.apache.calcite.tools.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -134,5 +135,12 @@ public class CalciteRunners {
                 }
             }
         }
+    }
+
+    @SneakyThrows
+    public static RelNode compile(MycatCalcitePlanner planner, SqlNode sql, boolean forUpdate) {
+        SqlNode validate = planner.validate(sql);
+        RelNode relNode = planner.convert(validate);
+        return compile(planner, relNode, forUpdate);
     }
 }

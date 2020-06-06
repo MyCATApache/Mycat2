@@ -33,7 +33,6 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -498,6 +497,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         planner2.setRoot(relNode1);
         return planner2.findBestExp();
     }
+
 
 
     private class ComputePushDownInfo {
