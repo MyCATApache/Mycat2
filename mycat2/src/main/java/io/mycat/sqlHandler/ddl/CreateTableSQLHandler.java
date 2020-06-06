@@ -18,10 +18,12 @@ import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +41,8 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         SQLCreateTableStatement ast = request.getAst();
+
+        List<Throwable> throwables = new ArrayList<>();
         try {
             String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
             String tableName = ast.getTableName();
@@ -53,39 +57,25 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 return ExecuteCode.PERFORMED;
             }
             Map<String, Set<String>> sqlAndDatasoureMap = new HashMap<>();
+            List<BackendTableInfo> databaseCollections= new ArrayList<>();
             if (tableHandler instanceof ShardingTableHandler) {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
                 for (BackendTableInfo shardingBackend : handler.getShardingBackends()) {
                     makeTask(ast, tableName, sqlAndDatasoureMap, shardingBackend);
                 }
+                databaseCollections.addAll(handler.getShardingBackends());
             } else if (tableHandler instanceof GlobalTableHandler) {
                 GlobalTableHandler handler = (GlobalTableHandler) tableHandler;
                 for (BackendTableInfo shardingBackend : handler.getDataNodeMap().values()) {
                     makeTask(ast, tableName, sqlAndDatasoureMap, shardingBackend);
                 }
+                databaseCollections.addAll(handler.getDataNodeMap().values());
             } else {
                 throw new UnsupportedOperationException("UnsupportedOperation :" + tableHandler);
             }
-            ExecutorService fetchDataExecutorService = JdbcRuntime.INSTANCE.getFetchDataExecutorService();
-            List<CompletableFuture> resList = new ArrayList<>();
-            sqlAndDatasoureMap.forEach((sql, dataSources) -> {
-                for (String dataSource : dataSources) {
-                    resList.add(CompletableFuture.runAsync(() -> {
-                        try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
-                            connection.executeUpdate(sql, false, 0);
-                        }
-                    }, fetchDataExecutorService));
-                }
-            });
-
-            List<Throwable> throwables = new ArrayList<>();
-            CompletableFuture.allOf(resList.toArray(new CompletableFuture[0]))
-                    .exceptionally(throwable -> {
-                        LOGGER.error("执行SQL失败", throwable);
-                        throwables.add(throwable);
-                        return null;
-                    })
-                    .get(5, TimeUnit.MINUTES);
+            //创建库
+            createDatabase(throwables, databaseCollections);
+            createTable(throwables, sqlAndDatasoureMap);
 
             if (throwables.isEmpty()) {
                 response.sendOk();
@@ -98,6 +88,50 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             response.sendError(throwable);
             return ExecuteCode.PERFORMED;
         }
+    }
+
+    private void createTable(List<Throwable> throwables, Map<String, Set<String>> sqlAndDatasoureMap) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        List<CompletableFuture> resList = new ArrayList<>();
+
+        sqlAndDatasoureMap.forEach((sql, dataSources) -> {
+            for (String dataSource : dataSources) {
+                resList.add(CompletableFuture.runAsync(() -> {
+                    try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
+                        connection.executeUpdate(sql, false, 0);
+                    }
+                },     JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
+            }
+        });
+
+        CompletableFuture.allOf(resList.toArray(new CompletableFuture[0]))
+                .exceptionally(throwable -> {
+                    LOGGER.error("执行SQL失败", throwable);
+                    throwables.add(throwable);
+                    return null;
+                })
+                .get(5, TimeUnit.MINUTES);
+    }
+
+    private void createDatabase(List<Throwable> throwables, List<BackendTableInfo> databaseCollections) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        List<CompletableFuture> resList = new ArrayList<>();
+        for (BackendTableInfo databaseCollection : databaseCollections) {
+            for (String dataSource : getDatasource(databaseCollection.getTargetName())) {
+                resList.add(CompletableFuture.runAsync(() -> {
+                    try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
+                        connection.executeUpdate(MessageFormat.format("create database if not exists  {0} ",
+                                dataSource), false, 0);
+                    }
+                },       JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
+            }
+        }
+
+        CompletableFuture.allOf(resList.toArray(new CompletableFuture[0]))
+                .exceptionally(throwable -> {
+                    LOGGER.error("执行SQL失败", throwable);
+                    throwables.add(throwable);
+                    return null;
+                })
+                .get(5, TimeUnit.MINUTES);
     }
 
 
@@ -115,17 +149,20 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             throw new AssertionError();
         }
 
+        String sql = entry.toString();
+        Set<String> set = sqlAndDatasoureMap.computeIfAbsent(sql, s -> new HashSet<>());
+        set.addAll(getDatasource(targetName));
+    }
+
+    private static Set<String> getDatasource(String targetName) {
         Set<String> dataSources = new HashSet<>();
         if (ReplicaSelectorRuntime.INSTANCE.isReplicaName(targetName)) {
             ReplicaDataSourceSelector dataSourceSelector = ReplicaSelectorRuntime.INSTANCE.getDataSourceSelector(targetName);
             dataSources.addAll(dataSourceSelector.getRwaDataSourceMap().keySet());
         }
         if (ReplicaSelectorRuntime.INSTANCE.isDatasource(targetName)) {
-            dataSources.add(tableName);
+            dataSources.add(targetName);
         }
-
-        String sql = entry.toString();
-        Set<String> set = sqlAndDatasoureMap.computeIfAbsent(sql, s -> new HashSet<>());
-        set.addAll(dataSources);
+        return dataSources;
     }
 }
