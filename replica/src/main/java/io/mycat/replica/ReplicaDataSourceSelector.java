@@ -238,4 +238,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         writeDataSourceList.removeIf((i) -> i.getName().equals(datasourceName));
         readDataSource.removeIf((i) -> i.getName().equals(datasourceName));
     }
+    public Map<String,PhysicsInstance> getRwaDataSourceMap(){
+        return Collections.unmodifiableMap(this.datasourceMap);
+    }
 }
