@@ -41,7 +41,7 @@ public class StreamUnionRule extends RelOptRule {
     public static final StreamUnionRule INSTANCE  = new StreamUnionRule();
 
     public StreamUnionRule() {
-        super(operandJ(Union.class, null, input -> input.getInputs().size() > 2, any()), "UnionRule");
+        super(operandJ(Union.class, null, input -> input.getInputs().size() >= 2, any()), "UnionRule");
     }
 
 

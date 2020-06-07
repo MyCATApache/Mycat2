@@ -19,10 +19,9 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.tools.RelConversionException;
-import org.apache.calcite.tools.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +47,8 @@ public class CalciteRunners {
             relNode = planner.pullUpUnion(relNode);
             relNode = planner.pushDownBySQL(relNode, forUpdate);
             return relNode;
-        }catch (Throwable e){
-            LOGGER.error("",e);
+        } catch (Throwable e) {
+            LOGGER.error("", e);
         }
         return null;
     }
@@ -77,6 +76,18 @@ public class CalciteRunners {
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(relNode);
         relNode = planner2.findBestExp();
+
+        //check
+        relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(LogicalUnion union) {
+                if (union.getInputs().size() > 2) {
+                    throw new AssertionError("union input more 2");
+                }
+                return super.visit(union);
+            }
+        });
+
         fork(calciteDataContext, map);
         ArrayBindable bindable1 = Interpreters.bindable(relNode);
         Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
@@ -127,7 +138,7 @@ public class CalciteRunners {
                         @Override
                         @SneakyThrows
                         public Enumerator<Object[]> enumerator() {
-                            LOGGER.info("拉取数据"+v.getTargetName()+" sql:"+v.getSql());
+                            LOGGER.info("拉取数据" + v.getTargetName() + " sql:" + v.getSql());
                             return new MyCatResultSetEnumerator(cancelFlag, submit.get());
                         }
                     };
