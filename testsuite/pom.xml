@@ -23,6 +23,16 @@
             <version>1.07-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.datayoo.moql/moql-translator -->
+        <!-- sql 2 elasticsearch -->
+        <dependency>
+            <groupId>org.datayoo.moql</groupId>
+            <artifactId>moql-translator</artifactId>
+            <version>1.1.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
