@@ -193,7 +193,7 @@ public enum MycatdbCommand implements MycatCommand {
     @NotNull
     private Iterator<SQLStatement> parse(String text) {
         text = text.trim();
-        if (text.startsWith("begin")) {
+        if (text.startsWith("begin") || text.startsWith("BEGIN")) {
             SQLStartTransactionStatement sqlStartTransactionStatement = new SQLStartTransactionStatement();
             return new Iterator<SQLStatement>() {
                 boolean hasNext = true;
