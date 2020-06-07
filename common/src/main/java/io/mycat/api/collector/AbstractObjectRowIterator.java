@@ -111,6 +111,9 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     public Date getDate(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
+        if(o instanceof Number){
+            return new Date(((Number) o).longValue());
+        }
         return (Date) o;
     }
 
@@ -118,6 +121,9 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     public Time getTime(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
+        if(o instanceof Number){
+            return new Time(((Number) o).longValue());
+        }
         return (Time) o;
     }
 
@@ -125,6 +131,9 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     public Timestamp getTimestamp(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
+        if(o instanceof Number){
+            return new Timestamp(((Number) o).longValue());
+        }
         return (Timestamp) o;
     }
 
