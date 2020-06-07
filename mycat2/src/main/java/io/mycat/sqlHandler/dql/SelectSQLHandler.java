@@ -152,7 +152,11 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
         ///////////////////////////////common///////////////////////////////
         Map<String, SchemaHandler> schemaMap = mycatDBContext.config().getSchemaMap();
-        String schemaName = collector.getSchema();
+        String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
+        if (schemaName == null){
+            receiver.sendError(new MycatException("schema is null"));
+            return ExecuteCode.PERFORMED;
+        }
         Set<String> tables = collector.getTables();
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler == null) {
@@ -187,8 +191,9 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
             return ExecuteCode.PERFORMED;
         }
-        ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(),statement);
+
         if(false){
+            ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(),statement);
             Schema plan = parseContext.getPlan();
             HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
             ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
