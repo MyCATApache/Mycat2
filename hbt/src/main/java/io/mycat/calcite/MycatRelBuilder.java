@@ -193,7 +193,7 @@ public class MycatRelBuilder extends RelBuilder {
                 this.getRelOptSchema(),
                 relDataType,
                 transientTable,
-                ImmutableList.of(id +"$"+targetName, id+sql));
+                ImmutableList.of(id +"$"+targetName, id+sql));//名称唯一
         return new MycatTransientSQLTableScan(this.getCluster(), convention, relOptTable, () -> sql);
     }
 }
