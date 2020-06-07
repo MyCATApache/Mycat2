@@ -4,6 +4,9 @@ import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import org.apache.calcite.linq4j.Enumerator;
 
+import java.sql.Date;
+import java.sql.Timestamp;
+
 /**
  * @author chen junwen
  */
@@ -32,8 +35,27 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     }
 
     @Override
+    public Date getDate(int columnIndex) {
+        Object o = getObject(columnIndex);
+        if (wasNull) return null;
+        if (o instanceof Integer) {
+            return new Date((Integer) o);
+        }
+        return (Date) o;
+    }
+
+    @Override
     public void close() {
         iterator.close();
     }
 
+    @Override
+    public Timestamp getTimestamp(int columnIndex) {
+        Object o = getObject(columnIndex);
+        if (wasNull) return null;
+        if (o instanceof Long) {
+            return new Timestamp((Long) (o));
+        }
+        return (Timestamp) o;
+    }
 }

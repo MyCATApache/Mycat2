@@ -21,7 +21,10 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.rules.LimitPushRemoveRule;
 import io.mycat.calcite.rules.PushDownLogicTableRule;
-import io.mycat.calcite.table.*;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatSQLTableScan;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.interpreter.Bindables;
@@ -33,34 +36,30 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.*;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.tools.*;
-import org.apache.calcite.util.Pair;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RuleSets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Reader;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -72,35 +71,19 @@ import static org.apache.calcite.plan.RelOptRule.operand;
 /**
  * @author Junwen Chen
  **/
-public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
+public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.ViewExpander {
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatCalcitePlanner.class);
     private final SchemaPlus rootSchema;
-    private final PlannerImpl planner;
-    CalciteCatalogReader reader = null;
+
     private MycatCalciteDataContext dataContext;
 
     public MycatCalcitePlanner(MycatCalciteDataContext dataContext) {
+        super(dataContext);
         this.dataContext = dataContext;
         this.rootSchema = dataContext.getRootSchema();
-        this.planner = new PlannerImpl(dataContext);
     }
 
-    public CalciteCatalogReader createCalciteCatalogReader() {
-        if (reader == null) {
-            List<String> path = Collections.emptyList();
-            SchemaPlus defaultSchema = dataContext.getDefaultSchema();
-            if (defaultSchema != null) {
-                String name = defaultSchema.getName();
-                path = Collections.singletonList(name);
-            }
-            CalciteCatalogReader calciteCatalogReader = new CalciteCatalogReader(
-                    CalciteSchema.from(rootSchema),
-                    path,
-                    MycatCalciteSupport.INSTANCE.TypeFactory, MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
-            reader = calciteCatalogReader;
-        }
-        return reader;
-    }
+
 
     public MycatRelBuilder createRelBuilder(RelOptCluster cluster) {
         return (MycatRelBuilder) MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, createCalciteCatalogReader());
@@ -118,7 +101,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     public SqlToRelConverter createSqlToRelConverter() {
-        return new SqlToRelConverter(planner, getSqlValidator(),
+        return new SqlToRelConverter(this, getSqlValidator(),
                 createCalciteCatalogReader(), newCluster(), MycatCalciteSupport.MycatStandardConvertletTable.INSTANCE, MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
     }
 
@@ -345,61 +328,6 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
     }
 
 
-    @Override
-    public RelRoot expandView(RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath) {
-        return planner.expandView(rowType, queryString, schemaPath, viewPath);
-    }
-
-    @Override
-    public SqlNode parse(Reader source) throws SqlParseException {
-        return planner.parse(source);
-    }
-
-    @Override
-    public SqlNode validate(SqlNode sqlNode) throws ValidationException {
-        return planner.validate(sqlNode);
-    }
-
-    @Override
-    public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode) throws ValidationException {
-        return planner.validateAndGetType(sqlNode);
-    }
-
-    @Override
-    public RelRoot rel(SqlNode sql) throws RelConversionException {
-        return planner.rel(sql);
-    }
-
-    @Override
-    public RelNode convert(SqlNode sql) throws RelConversionException {
-        return planner.convert(sql);
-    }
-
-    @Override
-    public RelDataTypeFactory getTypeFactory() {
-        return planner.getTypeFactory();
-    }
-
-    @Override
-    public RelNode transform(int ruleSetIndex, RelTraitSet requiredOutputTraits, RelNode rel) throws RelConversionException {
-        return planner.transform(ruleSetIndex, requiredOutputTraits, rel);
-    }
-
-    @Override
-    public void reset() {
-        planner.reset();
-    }
-
-    @Override
-    public void close() {
-        planner.close();
-    }
-
-    @Override
-    public RelTraitSet getEmptyTraitSet() {
-        return planner.getEmptyTraitSet();
-    }
-
     public void convert(String sql) {
 
     }
@@ -436,7 +364,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             public RelNode visit(TableScan scan) {
                 MycatSQLTableScan unwrap = scan.getTable().unwrap(MycatSQLTableScan.class);
                 if (unwrap != null) {
-                    return unwrap.toRel(ViewExpanders.toRelContext(planner, MycatCalcitePlanner.this.newCluster()), scan.getTable());
+                    return unwrap.toRel(ViewExpanders.toRelContext(MycatCalcitePlanner.this, MycatCalcitePlanner.this.newCluster()), scan.getTable());
                 }
                 return super.visit(scan);
             }
@@ -448,7 +376,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
     static final ImmutableSet<RelOptRule> PULL_RULES = ImmutableSet.of(
             UnionEliminatorRule.INSTANCE,
             UnionMergeRule.INTERSECT_INSTANCE,
-            UnionMergeRule.INTERSECT_INSTANCE,
+            UnionMergeRule.INSTANCE,
             UnionMergeRule.MINUS_INSTANCE,
             UnionPullUpConstantsRule.INSTANCE,
             UnionToDistinctRule.INSTANCE,
@@ -462,16 +390,21 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             ProjectRemoveRule.INSTANCE,
             JoinUnionTransposeRule.LEFT_UNION,
             JoinUnionTransposeRule.RIGHT_UNION,
-            AggregateProjectMergeRule.INSTANCE,//该类有效
+            AggregateProjectMergeRule.INSTANCE,//
             AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
             AggregateUnionAggregateRule.INSTANCE,
             AggregateProjectMergeRule.INSTANCE,
             AggregateRemoveRule.INSTANCE,
             AggregateProjectPullUpConstantsRule.INSTANCE2,
-            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+            /**
+             *
+             * at org.apache.calcite.rel.rules.PushProjector.getAdjustments(PushProjector.java:572)
+             * 	at org.apache.calcite.rel.rules.ProjectSetOpTransposeRule.onMatch(ProjectSetOpTransposeRule.java:92)
+             */
+//            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
-            AggregateFilterTransposeRule.INSTANCE,
+//            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段
             AggregateValuesRule.INSTANCE,
             //sort
             SortJoinCopyRule.INSTANCE,
@@ -493,6 +426,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
         planner2.setRoot(relNode1);
         return planner2.findBestExp();
     }
+
 
 
     private class ComputePushDownInfo {

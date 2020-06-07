@@ -4,10 +4,7 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLObject;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
@@ -34,7 +31,12 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
                 if (mySQLFunction != null) {
                     String[] strings = arguments.stream().map(i -> SQLUtils.normalize(Objects.toString(i))).toArray(i -> new String[i]);
                     Object res = mySQLFunction.eval(context, strings);
-                    SQLExpr sqlExpr = SQLExprUtils.fromJavaObject(res);
+                    SQLExpr sqlExpr;
+                    if (res instanceof SQLValuableExpr){
+                        sqlExpr =(SQLValuableExpr) res;
+                    }else {
+                        sqlExpr = SQLExprUtils.fromJavaObject(res);
+                    }
                     sqlExpr.setParent(parent);
                     ((SQLReplaceable) parent).replace(x, sqlExpr);
 
