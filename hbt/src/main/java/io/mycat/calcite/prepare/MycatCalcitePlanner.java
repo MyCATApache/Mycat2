@@ -391,7 +391,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
     static final ImmutableSet<RelOptRule> PULL_RULES = ImmutableSet.of(
             UnionEliminatorRule.INSTANCE,
             UnionMergeRule.INTERSECT_INSTANCE,
-            UnionMergeRule.INTERSECT_INSTANCE,
+            UnionMergeRule.INSTANCE,
             UnionMergeRule.MINUS_INSTANCE,
             UnionPullUpConstantsRule.INSTANCE,
             UnionToDistinctRule.INSTANCE,
@@ -405,7 +405,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             ProjectRemoveRule.INSTANCE,
             JoinUnionTransposeRule.LEFT_UNION,
             JoinUnionTransposeRule.RIGHT_UNION,
-            AggregateProjectMergeRule.INSTANCE,//该类有效
+            AggregateProjectMergeRule.INSTANCE,//
             AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
             AggregateUnionAggregateRule.INSTANCE,
             AggregateProjectMergeRule.INSTANCE,
