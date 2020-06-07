@@ -17,6 +17,7 @@
 package io.mycat.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -52,6 +53,7 @@ import org.apache.calcite.tools.*;
 import org.apache.calcite.util.Pair;
 
 import java.io.Reader;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -64,7 +66,9 @@ public class PlannerImpl implements Planner, ViewExpander {
     private static final RelOptCostFactory costFactory;
     private static final Context context;
     private static  final CalciteConnectionConfig connectionConfig;
+    private final MycatCalciteDataContext config;
 
+    CalciteCatalogReader reader = null;
     /**
      * Holds the trait definitions to be registered with planner. May be null.
      */
@@ -96,32 +100,15 @@ public class PlannerImpl implements Planner, ViewExpander {
     static {
         FrameworkConfig frameworkConfig = MycatCalciteSupport.INSTANCE.config;
         costFactory = frameworkConfig.getCostFactory();
-
         operatorTable = frameworkConfig.getOperatorTable();
         programs = frameworkConfig.getPrograms();
         parserConfig = frameworkConfig.getParserConfig();
         sqlValidatorConfig = frameworkConfig.getSqlValidatorConfig();
         sqlToRelConverterConfig = frameworkConfig.getSqlToRelConverterConfig();
-
         traitDefs = frameworkConfig.getTraitDefs();
         convertletTable = frameworkConfig.getConvertletTable();
         executor = frameworkConfig.getExecutor();
         context = frameworkConfig.getContext();
-
-//        CalciteConnectionConfigImpl config =
-//                context.unwrap(CalciteConnectionConfigImpl.class);
-//        if (config == null) {
-//            config = new CalciteConnectionConfigImpl(new Properties());
-//        }
-//        if (!config.isSet(CalciteConnectionProperty.CASE_SENSITIVE)) {
-//            config = config.set(CalciteConnectionProperty.CASE_SENSITIVE,
-//                    String.valueOf(parserConfig.caseSensitive()));
-//        }
-//        if (!config.isSet(CalciteConnectionProperty.CONFORMANCE)) {
-//            config = config.set(CalciteConnectionProperty.CONFORMANCE,
-//                    String.valueOf(parserConfig.conformance()));
-//        }
-
         connectionConfig = MycatCalciteSupport.INSTANCE.calciteConnectionConfig;
     }
 
@@ -129,8 +116,9 @@ public class PlannerImpl implements Planner, ViewExpander {
      * Creates a planner. Not a public API; call
      * {@link org.apache.calcite.tools.Frameworks#getPlanner} instead.
      */
-    public PlannerImpl(FrameworkConfig config) {
+    public PlannerImpl(MycatCalciteDataContext config) {
         defaultSchema = config.getDefaultSchema();
+        this.config = config;
         this.state = State.STATE_0_CLOSED;
         reset();
     }
@@ -312,14 +300,22 @@ public class PlannerImpl implements Planner, ViewExpander {
 
     // CalciteCatalogReader is stateless; no need to store one
     public CalciteCatalogReader createCatalogReader() {
-        final SchemaPlus rootSchema = rootSchema(defaultSchema);
-
-        return new CalciteCatalogReader(
-                CalciteSchema.from(rootSchema),
-                CalciteSchema.from(defaultSchema).path(null),
-                typeFactory, connectionConfig);
+        return createCalciteCatalogReader();
     }
-
+    public CalciteCatalogReader createCalciteCatalogReader() {
+        if (reader == null) {
+            List<String> path = Collections.emptyList();
+            if (defaultSchema != null) {
+                String name = defaultSchema.getName();
+                path = Collections.singletonList(name);
+            }
+            reader = new CalciteCatalogReader(
+                    CalciteSchema.from(config.getRootSchema()),
+                    path,
+                    MycatCalciteSupport.INSTANCE.TypeFactory, MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
+        }
+        return reader;
+    }
     private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
         final SqlOperatorTable opTab =
                 ChainedSqlOperatorTable.of(operatorTable, catalogReader);
