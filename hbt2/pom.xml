@@ -17,5 +17,10 @@
             <artifactId>mycat2</artifactId>
             <version>1.08-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>example</artifactId>
+            <version>1.08-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
