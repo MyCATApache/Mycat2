@@ -14,7 +14,13 @@
     <dependencies>
         <dependency>
             <groupId>io.mycat</groupId>
-            <artifactId>mycat</artifactId>
+            <artifactId>common</artifactId>
+            <version>1.07-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+            <version>2.1.6.RELEASE</version>
         </dependency>
     </dependencies>
 </project>
