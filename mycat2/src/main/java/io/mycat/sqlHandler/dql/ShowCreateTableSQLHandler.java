@@ -40,12 +40,12 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
                     ((SQLIdentifierExpr)((SQLPropertyExpr) nameExpr).getOwner()).normalizedName();
             tableName = SQLUtils.normalize(((SQLPropertyExpr) nameExpr).getName());
         }else {
-            response.sendError(new MycatException("unsupport name :"+nameExpr));
+            response.proxyShow(ast);
             return ExecuteCode.PERFORMED;
         }
         TableHandler table = MetadataManager.INSTANCE.getTable(schemaName, tableName);
         if (table == null){
-            response.sendError(new MycatException("table "+ schemaName+"."+tableName+" is not existed"));
+            response.proxyShow(ast);
             return ExecuteCode.PERFORMED;
         }
         String createTableSQL = table.getCreateTableSQL();

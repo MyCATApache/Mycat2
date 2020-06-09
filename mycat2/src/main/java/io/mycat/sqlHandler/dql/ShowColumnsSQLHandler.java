@@ -71,7 +71,7 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
 
         SchemaObject table1 = MetadataManager.INSTANCE.TABLE_REPOSITORY.findTable(schema + "." + table);
         if (table1 == null) {
-            response.sendError(new MycatException("table is not existed"));
+            response.proxyShow(ast);
             return ExecuteCode.PERFORMED;
         }
         InformationSchema informationSchema = InformationSchemaRuntime.INSTANCE.get();

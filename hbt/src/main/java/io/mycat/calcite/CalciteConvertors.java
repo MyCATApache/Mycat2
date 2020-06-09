@@ -289,7 +289,7 @@ public class CalciteConvertors {
             } else {
                 SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(columnType.getVendorTypeNumber());
                 if (sqlTypeName == null) {
-                    throw new UnsupportedOperationException();
+                    sqlTypeName = SqlTypeName.VARCHAR;
                 }
                 type = factory.createSqlType(sqlTypeName);
             }

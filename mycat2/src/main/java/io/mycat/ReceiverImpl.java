@@ -288,6 +288,7 @@ public class ReceiverImpl implements Response {
         boolean master = details.needStartTransaction || session.isInTransaction() || !session.isAutocommit() || details.globalTableUpdate || details.executeType.isMaster();
         MycatDataContext client = Objects.requireNonNull(session.unwrap(MycatDataContext.class));
         Map<String, List<String>> tasks = resolveDataSourceName(details.getBalance(), master, Objects.requireNonNull(details.targets));
+        details.setTargets(tasks);
         ExecuteType executeType = details.executeType;
         if (this.explainMode) {
             sendExplain(null, "execute:" + details);
