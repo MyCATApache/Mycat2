@@ -5,6 +5,7 @@ import io.mycat.MycatConfig;
 import io.mycat.config.PlugRootConfig;
 import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.plug.hint.HintLoader;
+import io.mycat.plug.loadBalance.BalanceRandom;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
@@ -92,6 +93,9 @@ public enum PlugRuntime {
     }
 
     public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
+        if (manager == null) {
+            return BalanceRandom.INSTANCE;
+        }
         return manager.getLoadBalanceByBalanceName(name);
     }
 

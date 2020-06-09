@@ -18,6 +18,7 @@ package io.mycat.optimizer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.*;
@@ -56,7 +57,9 @@ import java.util.function.Predicate;
  * 1.注意点 转换时候注意目标的表达式是否能接受源表达式,比如有不支持的自定义函数,排序项,分组项
  */
 public class MycatRules {
+  final  static  BindableConvention convention = BindableConvention.INSTANCE;
   private MycatRules() {
+
   }
 
   protected static final Logger LOGGER = CalciteTrace.getPlannerTracer();
@@ -213,7 +216,7 @@ public class MycatRules {
     /** Creates a MycatJoinRule. */
     public MycatJoinRule(MycatConvention out,
                         RelBuilderFactory relBuilderFactory) {
-      super(Join.class, (Predicate<RelNode>) r -> true, Convention.NONE,
+      super(Join.class, (Predicate<RelNode>) r -> true, convention,
           out, relBuilderFactory, "MycatJoinRule");
     }
 
@@ -356,7 +359,7 @@ public class MycatRules {
     /** Creates a MycatCalcRule. */
     private MycatCalcRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-      super(Calc.class, (Predicate<RelNode>) r -> true, Convention.NONE,
+      super(Calc.class, (Predicate<RelNode>) r -> true, convention,
           out, relBuilderFactory, "MycatCalcRule");
     }
 
@@ -426,7 +429,7 @@ public class MycatRules {
         RelBuilderFactory relBuilderFactory) {
       super(Project.class, (Predicate<Project>) project ->
              true,
-          Convention.NONE, out, relBuilderFactory, "MycatProjectRule");
+          convention, out, relBuilderFactory, "MycatProjectRule");
     }
 
     private static boolean userDefinedFunctionInProject(Project project) {
@@ -495,7 +498,7 @@ public class MycatRules {
                           RelBuilderFactory relBuilderFactory) {
       super(Filter.class,
           (Predicate<Filter>) r -> !userDefinedFunctionInFilter(r),
-          Convention.NONE, out, relBuilderFactory, "MycatFilterRule");
+          convention, out, relBuilderFactory, "MycatFilterRule");
     }
 
     private static boolean userDefinedFunctionInFilter(Filter filter) {
@@ -544,7 +547,7 @@ public class MycatRules {
     /** Creates a MycatAggregateRule. */
     public MycatAggregateRule(MycatConvention out,
                              RelBuilderFactory relBuilderFactory) {
-      super(Aggregate.class, (Predicate<RelNode>) r -> true, Convention.NONE,
+      super(Aggregate.class, (Predicate<RelNode>) r -> true, convention,
           out, relBuilderFactory, "MycatAggregateRule");
     }
 
@@ -600,7 +603,7 @@ public class MycatRules {
     /** Creates a MycatSortRule. */
     public MycatSortRule(MycatConvention out,
                         RelBuilderFactory relBuilderFactory) {
-      super(Sort.class, (Predicate<RelNode>) r -> true, Convention.NONE, out,
+      super(Sort.class, (Predicate<RelNode>) r -> true, convention, out,
           relBuilderFactory, "MycatSortRule");
     }
 
@@ -671,7 +674,7 @@ public class MycatRules {
     /** Creates a MycatUnionRule. */
     public MycatUnionRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-      super(Union.class, (Predicate<RelNode>) r -> true, Convention.NONE, out,
+      super(Union.class, (Predicate<RelNode>) r -> true, convention, out,
           relBuilderFactory, "MycatUnionRule");
     }
 
@@ -715,7 +718,7 @@ public class MycatRules {
     /** Creates a MycatIntersectRule. */
     private MycatIntersectRule(MycatConvention out,
                               RelBuilderFactory relBuilderFactory) {
-      super(Intersect.class, (Predicate<RelNode>) r -> true, Convention.NONE,
+      super(Intersect.class, (Predicate<RelNode>) r -> true, convention,
           out, relBuilderFactory, "MycatIntersectRule");
     }
 
@@ -760,7 +763,7 @@ public class MycatRules {
     /** Creates a MycatMinusRule. */
     private MycatMinusRule(MycatConvention out,
                           RelBuilderFactory relBuilderFactory) {
-      super(Minus.class, (Predicate<RelNode>) r -> true, Convention.NONE, out,
+      super(Minus.class, (Predicate<RelNode>) r -> true, convention, out,
           relBuilderFactory, "MycatMinusRule");
     }
 
@@ -797,7 +800,7 @@ public class MycatRules {
     private MycatTableModificationRule(MycatConvention out,
                                       RelBuilderFactory relBuilderFactory) {
       super(TableModify.class, (Predicate<RelNode>) r -> true,
-          Convention.NONE, out, relBuilderFactory, "MycatTableModificationRule");
+          convention, out, relBuilderFactory, "MycatTableModificationRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
@@ -870,7 +873,7 @@ public class MycatRules {
     /** Creates a MycatValuesRule. */
     private MycatValuesRule(MycatConvention out,
                            RelBuilderFactory relBuilderFactory) {
-      super(Values.class, (Predicate<RelNode>) r -> true, Convention.NONE,
+      super(Values.class, (Predicate<RelNode>) r -> true, convention,
           out, relBuilderFactory, "MycatValuesRule");
     }
 

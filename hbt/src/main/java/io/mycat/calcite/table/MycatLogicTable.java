@@ -24,7 +24,10 @@ import io.mycat.queryCondition.SimpleColumnInfo;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.linq4j.DefaultEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.EnumerableDefaults;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -192,7 +195,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        throw new UnsupportedOperationException();
+        return  (Enumerable)Linq4j.singletonEnumerable(new Long[]{1L});
     }
 
     @Override

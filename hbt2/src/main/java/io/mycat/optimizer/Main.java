@@ -10,10 +10,14 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
@@ -37,7 +41,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select id+1 from travelrecord");
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1");
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
@@ -76,7 +80,11 @@ public class Main {
                 RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         RelNode logPlan = finalRoot.rel;
         RelOptPlanner planner = cluster.getPlanner();
+        RelOptUtil.registerDefaultRules(planner,false,true);
         MycatConvention.INSTANCE.register(planner);
+        planner.addRule(MycatRules2.FilterView.INSTACNE);
+        planner.addRule(MycatRules2.ProjectView.INSTACNE);
+        planner.removeRule(ProjectFilterTransposeRule.INSTANCE);
         RelTraitSet relTraits = cluster.traitSet();
         RelTraitSet relTraitSet = relTraits.replace(MycatConvention.INSTANCE);
         logPlan = planner.changeTraits(logPlan, relTraitSet);
