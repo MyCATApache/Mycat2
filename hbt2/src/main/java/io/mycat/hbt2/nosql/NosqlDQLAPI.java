@@ -1,7 +1,10 @@
 package io.mycat.hbt2.nosql;
 
+import io.mycat.util.Pair;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * nosql查询接口
@@ -36,7 +39,7 @@ public interface NosqlDQLAPI {
     /**
      * 列格式响应返回 (键值对)
      */
-    interface PairDQLResponse extends DQLResponse,Map<String,NosqlValue> {
+    interface PairDQLResponse extends DQLResponse,Iterable<Pair<String,NosqlValue>> {
     }
 
 }
