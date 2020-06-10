@@ -34,13 +34,6 @@ public class MyCatResultSetEnumerator<T> implements Enumerator<T> {
                 res[i] = object;
             }
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER
-                    .debug("-------------------------------" +
-                            this +
-                            "------------------");
-            LOGGER.debug(Arrays.toString(res));
-        }
         return (T) res;
     }
 
