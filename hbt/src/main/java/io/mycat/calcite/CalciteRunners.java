@@ -109,7 +109,7 @@ public class CalciteRunners {
                 }
                 MycatConnection connection = uponDBContext.getConnection(datasource);
                 if (list.size() > 1) {
-                    throw new IllegalAccessException("该执行计划重复拉取同一个数据源的数据");
+                    throw new IllegalAccessException("事务内该执行计划重复拉取同一个数据源的数据");
                 }
                 Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
                         .submit(() -> connection.executeQuery(table.getMetaData(), table.getSql()));

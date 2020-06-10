@@ -28,9 +28,9 @@ public class MyCatResultSetEnumerator<T> implements Enumerator<T> {
         Object[] res = new Object[columnCount];
         for (int i = 0, j = 1; i < columnCount; i++, j++) {
             Object object = rowBaseIterator.getObject(j);
-            if (object instanceof Date) {
-                res[i] = ((Date) object).getTime();
-            } else {
+            if (object instanceof java.util.Date) {
+                res[i] = ((java.util.Date) object).getTime();
+            }else {
                 res[i] = object;
             }
         }
