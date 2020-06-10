@@ -221,7 +221,7 @@
                                     <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
-                                    <extraArgument>-Xmx4G</extraArgument>
+                                    <extraArgument>-Xmx32G</extraArgument>
                                     <extraArgument>-Xms1G</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
