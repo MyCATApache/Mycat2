@@ -287,7 +287,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 if (this.schema == null) {
                     this.schema = visitSchema;
                 } else if (!Objects.equals(this.schema, visitSchema)) {
-                    this.errors.add(new MycatException("one select no support multiple schema. sql={};\n", statement));
                 }
             }
 
