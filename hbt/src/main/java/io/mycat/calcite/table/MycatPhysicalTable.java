@@ -22,7 +22,7 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import lombok.SneakyThrows;

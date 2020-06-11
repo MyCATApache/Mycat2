@@ -1,6 +1,6 @@
 package io.mycat.mpp;
 
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.SimpleColumnInfo;
 
 import java.util.List;
 import java.util.Map;

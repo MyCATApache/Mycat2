@@ -9,7 +9,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;

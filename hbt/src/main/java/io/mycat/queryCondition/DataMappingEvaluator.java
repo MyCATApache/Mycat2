@@ -16,6 +16,7 @@ package io.mycat.queryCondition;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.metadata.ShardingTableHandler;
 import io.mycat.router.RuleFunction;
 import lombok.NonNull;
@@ -97,14 +98,14 @@ public class DataMappingEvaluator {
     }
 
     private List<String> getRouteColumnSortedSet(SimpleColumnInfo.ShardingInfo target) {
-        return getRouteIndexSortedSet(target).stream().map(i -> target.map.get(i)).collect(Collectors.toList());
+        return getRouteIndexSortedSet(target).stream().map(i -> target.getMap().get(i)).collect(Collectors.toList());
     }
 
     private List<Integer> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
-        @NonNull SimpleColumnInfo columnInfo = target.columnInfo;
-        Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.columnName);
+        @NonNull SimpleColumnInfo columnInfo = target.getColumnInfo();
+        Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.getColumnName());
         if (rangeVariables == null) {
-            return IntStream.range(0, target.map.size()).boxed().collect(Collectors.toList());
+            return IntStream.range(0, target.getMap().size()).boxed().collect(Collectors.toList());
         } else {
             return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
         }

@@ -1,5 +1,7 @@
 package io.mycat.metadata;
 
+import io.mycat.TableHandler;
+
 import java.util.Map;
 
 public interface SchemaHandler {

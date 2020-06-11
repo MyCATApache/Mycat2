@@ -7,13 +7,9 @@ import io.mycat.DDLManager;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mysql.InformationSchema;
-import io.mycat.beans.mysql.InformationSchema.TABLES_TABLE_OBJECT;
-import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShowStatementRewriter;
 import io.mycat.sqlHandler.AbstractSQLHandler;
@@ -25,10 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Resource
 public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatement> {

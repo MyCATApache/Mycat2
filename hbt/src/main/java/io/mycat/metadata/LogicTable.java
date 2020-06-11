@@ -1,8 +1,10 @@
 package io.mycat.metadata;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.LogicTableType;
+import io.mycat.TableHandler;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.SimpleColumnInfo;
 import lombok.Getter;
 import lombok.NonNull;
 

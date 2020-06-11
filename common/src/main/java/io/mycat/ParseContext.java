@@ -1,4 +1,4 @@
-package io.mycat.metadata;
+package io.mycat;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

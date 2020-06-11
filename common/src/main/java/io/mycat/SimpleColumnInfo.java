@@ -1,4 +1,4 @@
-package io.mycat.queryCondition;
+package io.mycat;
 
 import io.mycat.router.RuleFunction;
 import lombok.*;

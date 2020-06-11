@@ -6,13 +6,9 @@ import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import io.mycat.BackendTableInfo;
-import io.mycat.SchemaInfo;
-import io.mycat.TextUpdateInfo;
+import io.mycat.*;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.queryCondition.SimpleColumnInfo;
-import org.apache.calcite.schema.Statistic;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
