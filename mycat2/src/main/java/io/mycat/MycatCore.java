@@ -28,7 +28,9 @@ import io.mycat.buffer.HeapBufferPool;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.ext.MySQLAPIImpl;
 import io.mycat.logTip.MycatLogger;
@@ -133,7 +135,8 @@ public enum MycatCore {
         HashMap<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap = new HashMap<>();
 
 
-        transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> new UserTransactionImp()));
+        DatasourceProvider datasourceProvider = JdbcRuntime.INSTANCE.getDatasourceProvider();
+        transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () ->datasourceProvider.createUserTransaction()));
         transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
         MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap);
