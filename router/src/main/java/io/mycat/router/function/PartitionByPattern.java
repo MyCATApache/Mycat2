@@ -15,6 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class PartitionByPattern extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     this.patternValue = Integer.parseInt(prot.get("patternValue"));
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
     this.longRanges = NodeIndexRange.getLongRanges(ranges);
@@ -48,7 +49,7 @@ public class PartitionByPattern extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     if (!isNumeric(columnValue)) {
       return defaultNode;
     }
@@ -63,7 +64,7 @@ public class PartitionByPattern extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 

@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.LocalDate;
@@ -38,7 +39,7 @@ public class PartitionByHotDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     long targetTime = formatter.parse(columnValue).get(ChronoField.DAY_OF_YEAR);
     return innerCaculate(targetTime);
   }
@@ -59,7 +60,7 @@ public class PartitionByHotDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     int[] targetPartition = null;
     long startTime = formatter.parse(beginValue).get(ChronoField.DAY_OF_YEAR);
     long endTime = formatter.parse(endValue).get(ChronoField.DAY_OF_YEAR);
@@ -74,7 +75,7 @@ public class PartitionByHotDate extends SingleValueRuleFunction {
     } else {
       int[] re = null;
       int begin = 0, end = 0;
-      end = this.calculate(beginValue);
+      end = this.calculateIndex(beginValue);
       boolean hasLimit = false;
       if (endTime - limitDate > 0) {
         endTime = limitDate;
@@ -109,7 +110,7 @@ public class PartitionByHotDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
     this.lastTime = Integer.parseInt(prot.get("lastTime"));
     this.partionTime = Integer.parseInt(prot.get("partionTime"));

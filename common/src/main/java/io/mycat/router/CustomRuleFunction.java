@@ -27,7 +27,7 @@ import java.util.Map;
 public abstract class CustomRuleFunction {
     private Map<String, String> properties;
     private Map<String, String> ranges;
-    private TableHandler table;
+    private ShardingTableHandler table;
 
     public abstract String name();
 
@@ -35,7 +35,7 @@ public abstract class CustomRuleFunction {
 
     public abstract List<DataNode> calculateRange(String beginValue, String endValue);
 
-    protected abstract void init(TableHandler tableHandler, Map<String, String> prot, Map<String, String> ranges);
+    protected abstract void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges);
 
     public Map<String, String> getProperties() {
         return properties;
@@ -43,5 +43,16 @@ public abstract class CustomRuleFunction {
 
     public Map<String, String> getRanges() {
         return ranges;
+    }
+
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+        this.properties = properties;
+        this.ranges = ranges;
+        this.table = tableHandler;
+        init(table, properties, ranges);
+    }
+
+    public ShardingTableHandler getTable() {
+        return table;
     }
 }

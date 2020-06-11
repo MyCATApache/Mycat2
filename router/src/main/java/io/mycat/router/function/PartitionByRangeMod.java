@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
@@ -31,7 +32,7 @@ public class PartitionByRangeMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     long value = Long.parseLong(columnValue);
     int nodeIndex = 0;
     for (GroupSizeRange longRang : this.longRanges) {
@@ -51,7 +52,7 @@ public class PartitionByRangeMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
@@ -61,7 +62,7 @@ public class PartitionByRangeMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
     this.longRanges = GroupSizeRange.getGroupSizeRange(ranges);
     this.partitionCount = GroupSizeRange.getPartitionCount(this.longRanges);

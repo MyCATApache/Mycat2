@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
@@ -30,7 +31,7 @@ public class PartitionByHashMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     BigInteger bigNum = BigInteger.valueOf(hash(columnValue.hashCode())).abs();
     if (watch) {
       return bigNum.intValue() & (count - 1);
@@ -39,7 +40,7 @@ public class PartitionByHashMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
@@ -49,7 +50,7 @@ public class PartitionByHashMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
     this.watch = false;
     this.count = Integer.parseInt(prot.get("count"));
 

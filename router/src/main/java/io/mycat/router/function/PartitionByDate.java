@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
@@ -39,7 +40,7 @@ public class PartitionByDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
     String startBeginDate = prot.get("beginDate");
     String startEndDate = prot.get("endDate");
     String startPartionDay = prot.get("partionDay");
@@ -66,7 +67,7 @@ public class PartitionByDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     long targetTime = getTime(columnValue);
     return innerCalculate(targetTime);
   }
@@ -80,7 +81,7 @@ public class PartitionByDate extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     long beginDate = getTime(beginValue);
     long endDate = getTime(endValue);
     ArrayList<Integer> list = new ArrayList<>();

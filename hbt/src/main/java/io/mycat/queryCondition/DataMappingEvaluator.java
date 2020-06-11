@@ -15,9 +15,11 @@
 package io.mycat.queryCondition;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.SchemaInfo;
 import io.mycat.SimpleColumnInfo;
-import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 import lombok.NonNull;
 
@@ -43,15 +45,15 @@ public class DataMappingEvaluator {
         return columnMap.computeIfAbsent(columnName, s -> new HashSet<>());
     }
 
-    public List<BackendTableInfo> calculate(ShardingTableHandler logicTable) {
+    public List<DataNode> calculate(ShardingTableHandler logicTable) {
         if (logicTable.isNatureTable()) {
-            return getBackendTableInfosByNatureDatabaseTable(logicTable).stream().map(integer -> logicTable.getShardingBackends().get(integer)).collect(Collectors.toList());
+            return getBackendTableInfosByNatureDatabaseTable(logicTable);
         } else {
             return getBackendTableInfosByMap(logicTable);
         }
     }
 
-    private List<BackendTableInfo> getBackendTableInfosByMap(ShardingTableHandler logicTable) {
+    private List<DataNode> getBackendTableInfosByMap(ShardingTableHandler logicTable) {
         List<String> targetSet = Collections.emptyList();
         List<String> databaseSet = Collections.emptyList();
         List<String> tableSet = Collections.emptyList();
@@ -76,66 +78,61 @@ public class DataMappingEvaluator {
             }
         }
         if (res.isEmpty()) {
-            return allBackends;
+            return (List)allBackends;
         } else {
             if (allBackends.isEmpty()) {
-                return res;
+                return (List)res;
             }
             return res.stream().filter(allBackends::contains).collect(Collectors.toList());
         }
     }
 
-    private List<Integer> getBackendTableInfosByNatureDatabaseTable(ShardingTableHandler logicTable) {
-        List<Integer> routeIndexSortedSet = Collections.emptyList();
+    private List<DataNode> getBackendTableInfosByNatureDatabaseTable(ShardingTableHandler logicTable) {
+        List<DataNode> routeIndexSortedSet = Collections.emptyList();
         if (!columnMap.isEmpty()) {
             routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
         }
         if (routeIndexSortedSet.isEmpty()) {
-            return IntStream.range(0,logicTable.getShardingBackends().size()).boxed().collect(Collectors.toList());
+            return (List)logicTable.getShardingBackends();
         } else {
             return routeIndexSortedSet;
         }
     }
 
     private List<String> getRouteColumnSortedSet(SimpleColumnInfo.ShardingInfo target) {
-        return getRouteIndexSortedSet(target).stream().map(i -> target.getMap().get(i)).collect(Collectors.toList());
+        return getRouteIndexSortedSet(target).stream().map(i -> i.getTargetName()).collect(Collectors.toList());
     }
 
-    private List<Integer> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
+    private List<DataNode> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
         @NonNull SimpleColumnInfo columnInfo = target.getColumnInfo();
         Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.getColumnName());
         if (rangeVariables == null) {
-            return IntStream.range(0, target.getMap().size()).boxed().collect(Collectors.toList());
+           return (List)target.getFunction().getTable().getShardingBackends();
         } else {
             return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
         }
     }
 
-    private Set<Integer> calculate(SingleValueRuleFunction ruleFunction, Set<RangeVariable> value) {
-        HashSet<Integer> res = new HashSet<>();
+    private Set<DataNode> calculate(CustomRuleFunction ruleFunction, Set<RangeVariable> value) {
+        HashSet<DataNode> res = new HashSet<>();
         for (RangeVariable rangeVariable : value) {
             String begin = Objects.toString(rangeVariable.getBegin());
             String end = Objects.toString(rangeVariable.getEnd());
             switch (rangeVariable.getOperator()) {
                 case EQUAL: {
-                    int calculate = ruleFunction.calculate(begin);
-                    if (calculate == -1) {
+                    DataNode calculate = ruleFunction.calculate(begin);
+                    if (calculate == null) {
                         return Collections.emptySet();
                     }
                     res.add(calculate);
                     break;
                 }
                 case RANGE: {
-                    int[] calculate = ruleFunction.calculateRange(begin, end);
-                    if (calculate == null || calculate.length == 0) {
+                    List<DataNode> calculate = ruleFunction.calculateRange(begin, end);
+                    if (calculate == null || calculate.size() == 0) {
                         return Collections.emptySet();
                     }
-                    for (int i : calculate) {
-                        if (i == -1) {
-                            return Collections.emptySet();
-                        }
-                        res.add(i);
-                    }
+                    res.addAll(calculate);
                     break;
                 }
             }

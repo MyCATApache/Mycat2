@@ -1,5 +1,6 @@
 package io.mycat;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.SingleValueRuleFunction;
 import lombok.*;
 
@@ -63,6 +64,6 @@ public class SimpleColumnInfo {
         @NonNull
         final List<String> map ;
         @NonNull
-        final SingleValueRuleFunction function;
+        final CustomRuleFunction function;
     }
 }

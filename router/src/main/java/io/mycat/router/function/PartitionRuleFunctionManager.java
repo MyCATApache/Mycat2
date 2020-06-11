@@ -14,7 +14,10 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.TableHandler;
 import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.Collections;
@@ -23,44 +26,32 @@ import java.util.Map;
 public enum PartitionRuleFunctionManager {
     INSTANCE;
 
-    public static SingleValueRuleFunction createFunction(String name, String clazz)
+    public static CustomRuleFunction createFunction(String name, String clazz)
             throws Exception {
         Class<?> clz = Class.forName(clazz);
         //判断是否继承AbstractPartitionAlgorithm
-        if (!SingleValueRuleFunction.class.isAssignableFrom(clz)) {
+        if (!CustomRuleFunction.class.isAssignableFrom(clz)) {
             throw new IllegalArgumentException("rule function must implements "
-                    + SingleValueRuleFunction.class.getName() + ", name=" + name);
+                    + CustomRuleFunction.class.getName() + ", name=" + name);
         }
-        return (SingleValueRuleFunction) clz.getDeclaredConstructor().newInstance();
-    }
-    public static ColumnJoinerRuleFunction createColumnJoinerRuleFunction(String name, String clazz) throws Exception {
-        return new ColumnJoinerRuleFunction(name,createFunction(name,clazz));
+        return (CustomRuleFunction) clz.getDeclaredConstructor().newInstance();
     }
 
-    public static SingleValueRuleFunction getRuleAlgorithm(SharingFuntionRootConfig.ShardingFuntion funtion)
+    public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler, SharingFuntionRootConfig.ShardingFuntion funtion)
             throws Exception {
         Map<String, String> properties = funtion.getProperties();
         properties = (properties == null) ? Collections.emptyMap() : properties;
         funtion.setProperties(properties);
-        SingleValueRuleFunction rootFunction = createFunction(funtion.getName(), funtion.getClazz());
-        rootFunction.callInit(funtion.getProperties(), funtion.getRanges());
+        CustomRuleFunction rootFunction = createFunction(funtion.getName(), funtion.getClazz());
+        rootFunction.callInit(tableHandler,funtion.getProperties(), funtion.getRanges());
         return rootFunction;
     }
 
-    public SingleValueRuleFunction getRuleAlgorithm(String name, String clazz, Map<String, String> properties, Map<String, String> ranges) {
+    public CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,String name, String clazz, Map<String, String> properties, Map<String, String> ranges) {
         try {
-            SingleValueRuleFunction function = createFunction(name, clazz);
-            function.callInit(properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
+            CustomRuleFunction function = createFunction(name, clazz);
+            function.callInit(tableHandler,properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
             return function;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-    public ColumnJoinerRuleFunction getColumnJoinerRuleFunction(String name, String clazz, Map<String, String> properties, Map<String, String> ranges) {
-        try {
-            SingleValueRuleFunction function = createFunction(name, clazz);
-            function.callInit(properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
-            return new ColumnJoinerRuleFunction(name,function);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

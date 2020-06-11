@@ -18,13 +18,13 @@ public class PartitionByDateTest {
         prot.put("endDate", null);
         prot.put("partionDay", "10");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(prot, Collections.emptyMap());
+        partition.init(null,prot, Collections.emptyMap());
 
 
-        Assert.assertEquals(true, 0 == partition.calculate("2014-01-01"));
-        Assert.assertEquals(true, 0 == partition.calculate("2014-01-10"));
-        Assert.assertEquals(true, 1 == partition.calculate("2014-01-11"));
-        Assert.assertEquals(true, 12 == partition.calculate("2014-05-01"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-10"));
+        Assert.assertEquals(true, 1 == partition.calculateIndex("2014-01-11"));
+        Assert.assertEquals(true, 12 == partition.calculateIndex("2014-05-01"));
 
 
         //////////////////////////////////////////
@@ -35,7 +35,7 @@ public class PartitionByDateTest {
         prot.put("endDate", "2014-01-31");
         prot.put("partionDay", "10");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(prot, Collections.emptyMap());
+        partition.init(null,prot, Collections.emptyMap());
 
 //
 //		/**
@@ -44,16 +44,16 @@ public class PartitionByDateTest {
 //		 * 2 : 01.21-01.30,03.02-03.12
 //		 * 3  ： 01.31-02-09,03.13-03.23
 //		 */
-        Assert.assertEquals(true, 0 == partition.calculate("2014-01-01"));
-        Assert.assertEquals(true, 0 == partition.calculate("2014-01-10"));
-        Assert.assertEquals(true, 1 == partition.calculate("2014-01-11"));
-        Assert.assertEquals(true, 3 == partition.calculate("2014-02-01"));
-        Assert.assertEquals(true, 0 == partition.calculate("2014-02-19"));
-        Assert.assertEquals(true, 1 == partition.calculate("2014-02-20"));
-        Assert.assertEquals(true, 1 == partition.calculate("2014-03-01"));
-        Assert.assertEquals(true, 2 == partition.calculate("2014-03-02"));
-        Assert.assertEquals(true, 2 == partition.calculate("2014-03-11"));
-        Assert.assertEquals(true, 3 == partition.calculate("2014-03-20"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-10"));
+        Assert.assertEquals(true, 1 == partition.calculateIndex("2014-01-11"));
+        Assert.assertEquals(true, 3 == partition.calculateIndex("2014-02-01"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-02-19"));
+        Assert.assertEquals(true, 1 == partition.calculateIndex("2014-02-20"));
+        Assert.assertEquals(true, 1 == partition.calculateIndex("2014-03-01"));
+        Assert.assertEquals(true, 2 == partition.calculateIndex("2014-03-02"));
+        Assert.assertEquals(true, 2 == partition.calculateIndex("2014-03-11"));
+        Assert.assertEquals(true, 3 == partition.calculateIndex("2014-03-20"));
 
 
         //////////////////////////////////////////
@@ -65,13 +65,13 @@ public class PartitionByDateTest {
         prot.put("endDate", "2014-01-31");
         prot.put("partionDay", "1");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(prot, Collections.emptyMap());
+        partition.init(null,prot, Collections.emptyMap());
 
         //测试默认1
-        Assert.assertEquals(true, 0 == partition.calculate("2014-01-01"));
-        Assert.assertEquals(true, 9 == partition.calculate("2014-01-10"));
-        Assert.assertEquals(true, 10 == partition.calculate("2014-01-11"));
-        Assert.assertEquals(true, 0 == partition.calculate("2014-02-01"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));
+        Assert.assertEquals(true, 9 == partition.calculateIndex("2014-01-10"));
+        Assert.assertEquals(true, 10 == partition.calculateIndex("2014-01-11"));
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-02-01"));
         System.out.println(partition.calculate("2014-02-19"));
     }
 }

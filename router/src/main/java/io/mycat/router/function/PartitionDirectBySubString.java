@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.Map;
@@ -35,7 +36,7 @@ public class PartitionDirectBySubString extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     this.startIndex = Integer.parseInt(prot.get("startIndex"));
     this.size = Integer.parseInt(prot.get("size"));
     this.partitionCount = Integer.parseInt(prot.get("partitionCount"));
@@ -43,7 +44,7 @@ public class PartitionDirectBySubString extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     String partitionSubString = columnValue.substring(startIndex, startIndex + size);
     int partition = Integer.parseInt(partitionSubString, 10);
     return partitionCount > 0 && partition >= partitionCount
@@ -51,7 +52,7 @@ public class PartitionDirectBySubString extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 

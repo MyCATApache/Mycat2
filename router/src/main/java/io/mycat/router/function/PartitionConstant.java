@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.Map;
@@ -32,18 +33,18 @@ public class PartitionConstant extends SingleValueRuleFunction {
     }
 
     @Override
-    public void init(Map<String, String> properties, Map<String, String> ranges) {
+    public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
         this.defaultNode = Integer.parseInt(properties.get("defaultNode"));
         this.nodes = new int[]{defaultNode};
     }
 
     @Override
-    public int calculate(String columnValue) {
+    public int calculateIndex(String columnValue) {
         return defaultNode;
     }
 
     @Override
-    public int[] calculateRange(String beginValue, String endValue) {
+    public int[] calculateIndexRange(String beginValue, String endValue) {
         return nodes;
     }
 

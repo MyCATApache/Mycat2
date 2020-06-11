@@ -16,10 +16,11 @@ package io.mycat.calcite.rules;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.router.ShardingTableHandler;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -130,7 +131,7 @@ public class PushDownLogicTableRule extends RelOptRule {
     private RelNode shardingTable(RelBuilder builder, Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
         RelNode value;
         ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
-        List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters);
+        List<DataNode> backendTableInfos = CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////
         //视图优化
@@ -138,7 +139,7 @@ public class PushDownLogicTableRule extends RelOptRule {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////
         builder.clear();
-        for (BackendTableInfo backendTableInfo : backendTableInfos) {
+        for (DataNode backendTableInfo : backendTableInfos) {
             builder.push(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
         }
         value = builder.union(true, backendTableInfos.size()).build();
@@ -146,7 +147,7 @@ public class PushDownLogicTableRule extends RelOptRule {
     }
 
     @NotNull
-    private static RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, BackendTableInfo backendTableInfo) {
+    private static RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, DataNode backendTableInfo) {
         String uniqueName = backendTableInfo.getUniqueName();
         MycatLogicTable unwrap = bindableTableScan.getTable().unwrap(MycatLogicTable.class);
         MycatPhysicalTable mycatPhysicalTable = unwrap.getMycatPhysicalTable(uniqueName);
@@ -154,7 +155,7 @@ public class PushDownLogicTableRule extends RelOptRule {
                 relOptSchema,
                 mycatPhysicalTable.getRowType(cluster.getTypeFactory()),
                 mycatPhysicalTable,
-                ImmutableList.of(uniqueName));
+                ImmutableList.of(mycatPhysicalTable.getTargetName()));
         RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode, ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }

@@ -16,6 +16,7 @@ package io.mycat.router.function;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.HashMap;
@@ -45,7 +46,7 @@ public class PartitionByMurmurHash extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     SortedMap<Integer, Integer> tail = bucketMap
         .tailMap(hash.hashUnencodedChars(columnValue).asInt());
     if (tail.isEmpty()) {
@@ -55,7 +56,7 @@ public class PartitionByMurmurHash extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
@@ -65,7 +66,7 @@ public class PartitionByMurmurHash extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     int seed = Integer.parseInt(prot.get("seed"));
     this.count = Integer.parseInt(prot.get("count"));
     int virtualBucketTimes = Integer.parseInt(prot.get("virtualBucketTimes"));

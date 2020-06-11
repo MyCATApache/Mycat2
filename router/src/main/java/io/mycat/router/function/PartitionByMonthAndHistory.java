@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
@@ -39,7 +40,7 @@ public class PartitionByMonthAndHistory extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex( String columnValue) {
     TemporalAccessor value = formatter.parse(columnValue);
     int targetPartition = ((value.get(ChronoField.YEAR) - beginDate.getYear())
         * 12 + value.get(ChronoField.MONTH_OF_YEAR)
@@ -51,7 +52,7 @@ public class PartitionByMonthAndHistory extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValueText, String endValueText) {
+  public int[] calculateIndexRange(String beginValueText, String endValueText) {
     int startPartition = getStartPartition(beginValueText, beginDate);
     int endPartition = getEndPartition(endValueText, beginDate);
     List<Integer> list = new ArrayList<>();
@@ -87,7 +88,7 @@ public class PartitionByMonthAndHistory extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     String beginDateText = prot.get("beginDate");
     String endDateText = prot.get("endDate");
     String dateFormat = prot.get("dateFormat");

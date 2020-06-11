@@ -15,6 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class PartitionByFileMap extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> range) {
+  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> range) {
     String type = prot.get("type");
     defaultNode = Integer.parseInt(prot.get("defaultNode"));
     switch (type) {
@@ -105,7 +106,7 @@ public class PartitionByFileMap extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     Object key = transformation.apply(columnValue);
     Integer integer = null;
     try {
@@ -121,7 +122,7 @@ public class PartitionByFileMap extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return calculateSequenceRange(this, beginValue, endValue);
   }
 

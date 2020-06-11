@@ -1,15 +1,18 @@
 package io.mycat.metadata;
 
 import io.mycat.*;
+import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.function.PartitionRuleFunctionManager;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.mycat.SimpleColumnInfo.ShardingType.*;
 
@@ -25,16 +28,38 @@ public class ShardingTable implements ShardingTableHandler {
     private final List<BackendTableInfo> backends;
 
     public ShardingTable(LogicTable logicTable,
-                         List<BackendTableInfo> backends,
-                         Map<SimpleColumnInfo.@NonNull ShardingType,
-                                 SimpleColumnInfo.ShardingInfo> shardingInfo, Supplier<String> sequence) {
+                         List<BackendTableInfo> backends, List<ShardingQueryRootConfig.Column> columns,Supplier<String> sequence) {
         this.logicTable = logicTable;
         this.backends = backends == null ? Collections.emptyList() : backends;
+        this.sequence = sequence;
+
+        Map<SimpleColumnInfo.ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo = getShardingInfo(this, logicTable.getRawColumns(), columns);
         this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
         this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
         this.databaseColumnInfo = shardingInfo.get(MAP_SCHEMA);
         this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
-        this.sequence = sequence;
+
+    }
+
+    private static Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> getShardingInfo(
+            ShardingTableHandler  table,
+            List<SimpleColumnInfo> columns,
+            List<ShardingQueryRootConfig.Column> columnMap) {
+        return columnMap.stream().map(entry1 -> {
+            SharingFuntionRootConfig.ShardingFuntion function = entry1.getFunction();
+            CustomRuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
+                    getRuleAlgorithm(table,entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
+            SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.valueOf(entry1.getShardingType());
+            SimpleColumnInfo found = null;
+            for (SimpleColumnInfo i : columns) {
+                if (entry1.getColumnName().equals(i.getColumnName())) {
+                    found = i;
+                    break;
+                }
+            }
+            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found);
+            return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
+        }).collect(Collectors.toMap(k -> k.getShardingType(), k -> k));
     }
 
     public boolean isNatureTable() {

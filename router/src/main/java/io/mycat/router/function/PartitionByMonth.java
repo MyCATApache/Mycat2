@@ -15,6 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
@@ -41,7 +42,7 @@ public class PartitionByMonth extends SingleValueRuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     TemporalAccessor value = formatter.parse(columnValue);
     switch (type) {
       case DEFAULT:
@@ -60,7 +61,7 @@ public class PartitionByMonth extends SingleValueRuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return doCalculateRange(beginValue, endValue, beginDate);
   }
 
@@ -70,7 +71,7 @@ public class PartitionByMonth extends SingleValueRuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     String beginDateText = prot.get("beginDate");
     String endDateText = prot.get("endDate");
     String dateFormat = prot.get("dateFormat");
