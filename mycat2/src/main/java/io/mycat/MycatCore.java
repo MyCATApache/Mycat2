@@ -31,6 +31,7 @@ import io.mycat.config.*;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.ext.MySQLAPIImpl;
 import io.mycat.logTip.MycatLogger;
@@ -45,6 +46,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.runtime.LocalTransactionSession;
 import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.ApplicationContext;
@@ -136,7 +138,11 @@ public enum MycatCore {
 
 
         DatasourceProvider datasourceProvider = JdbcRuntime.INSTANCE.getDatasourceProvider();
-        transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () ->datasourceProvider.createUserTransaction()));
+        if ((datasourceProvider instanceof AtomikosDatasourceProvider)){
+            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () ->datasourceProvider.createUserTransaction()));
+        }else  {
+            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+        }
         transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
         MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap);
