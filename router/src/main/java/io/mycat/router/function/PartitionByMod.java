@@ -14,13 +14,13 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.Objects;
 
-public class PartitionByMod extends RuleFunction {
+public class PartitionByMod extends SingleValueRuleFunction {
 
   private BigInteger count;
 

@@ -14,14 +14,14 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 
 import java.util.Map;
 
-public class PartitionByString extends RuleFunction {
+public class PartitionByString extends SingleValueRuleFunction {
 
   private int hashSliceStart;
   private int hashSliceEnd;

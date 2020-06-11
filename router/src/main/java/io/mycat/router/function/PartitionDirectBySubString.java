@@ -14,11 +14,11 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.Map;
 
-public class PartitionDirectBySubString extends RuleFunction {
+public class PartitionDirectBySubString extends SingleValueRuleFunction {
 
   // 字符子串起始索引（zero-based)
   private int startIndex;

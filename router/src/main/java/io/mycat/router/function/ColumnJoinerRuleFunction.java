@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public class ColumnJoinerRuleFunction {
     final String name;
-    final RuleFunction ruleFunction;
+    final SingleValueRuleFunction ruleFunction;
 
-    public ColumnJoinerRuleFunction(String name, RuleFunction ruleFunction) {
+    public ColumnJoinerRuleFunction(String name, SingleValueRuleFunction ruleFunction) {
         this.name = name;
         this.ruleFunction = ruleFunction;
     }

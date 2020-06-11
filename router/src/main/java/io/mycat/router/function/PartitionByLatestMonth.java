@@ -14,14 +14,14 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 
-public class PartitionByLatestMonth extends RuleFunction {
+public class PartitionByLatestMonth extends SingleValueRuleFunction {
 
   private int splitOneDay;
   private int hourSpan;

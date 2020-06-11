@@ -15,12 +15,12 @@
 package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 
-public class AutoPartitionByLong extends RuleFunction {
+public class AutoPartitionByLong extends SingleValueRuleFunction {
 
   private List<NodeIndexRange> longRanges;
   private int defaultNode = -1;

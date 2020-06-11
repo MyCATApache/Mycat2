@@ -15,13 +15,13 @@
 package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class PartitionByPattern extends RuleFunction {
+public class PartitionByPattern extends SingleValueRuleFunction {
 
   private static final int PARTITION_LENGTH = 1024;
   private static final Pattern PATTERN = Pattern.compile("[0-9]*");

@@ -37,7 +37,7 @@ import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.queryCondition.*;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.function.PartitionRuleFunctionManager;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -193,7 +193,7 @@ public enum MetadataManager {
     private Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> getShardingInfo(List<SimpleColumnInfo> columns, List<ShardingQueryRootConfig.Column> columnMap) {
         return columnMap.stream().map(entry1 -> {
             SharingFuntionRootConfig.ShardingFuntion function = entry1.getFunction();
-            RuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
+            SingleValueRuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
                     getRuleAlgorithm(entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
             SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.valueOf(entry1.getShardingType());
             SimpleColumnInfo found = null;

@@ -15,13 +15,13 @@
 package io.mycat.router.function;
 
 import com.google.common.hash.Hashing;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Map;
 
-public class PartitionByRangeDateHash extends RuleFunction {
+public class PartitionByRangeDateHash extends SingleValueRuleFunction {
 
   private DateTimeFormatter formatter;
   private long beginDate;

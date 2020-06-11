@@ -14,12 +14,12 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByHashMod extends RuleFunction {
+public class PartitionByHashMod extends SingleValueRuleFunction {
 
   private int count;
   private boolean watch;

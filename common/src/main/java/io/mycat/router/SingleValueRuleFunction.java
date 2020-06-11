@@ -22,7 +22,7 @@ import java.util.Map;
  * @author cjw
  * 路由算法接口
  */
-public abstract class RuleFunction {
+public abstract class SingleValueRuleFunction {
     private Map<String, String> prot;
     private Map<String, String> ranges;
 
@@ -50,7 +50,7 @@ public abstract class RuleFunction {
     /**
      * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
      */
-    public static int[] calculateSequenceRange(RuleFunction algorithm, String beginValue,
+    public static int[] calculateSequenceRange(SingleValueRuleFunction algorithm, String beginValue,
                                                String endValue) {
         int begin = 0, end = 0;
         begin = algorithm.calculate(beginValue);

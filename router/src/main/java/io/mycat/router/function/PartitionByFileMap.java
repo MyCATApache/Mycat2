@@ -15,7 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
-public class PartitionByFileMap extends RuleFunction {
+public class PartitionByFileMap extends SingleValueRuleFunction {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByFileMap.class);
   /**

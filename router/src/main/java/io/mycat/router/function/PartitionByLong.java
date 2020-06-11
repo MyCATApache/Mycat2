@@ -14,7 +14,7 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * @author jamie12221 date 2019-05-02 23:36
  **/
-public class PartitionByLong extends RuleFunction {
+public class PartitionByLong extends SingleValueRuleFunction {
 
   private PartitionUtil partitionUtil;
   @Override

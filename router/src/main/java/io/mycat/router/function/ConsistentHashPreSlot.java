@@ -1,7 +1,7 @@
 package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.hashFunction.HashFunction;
 import io.mycat.router.migrate.ConsistentHashBalanceExpandResult;
 import io.mycat.router.migrate.MigrateTask;
@@ -14,7 +14,7 @@ import java.util.*;
  * jamie12221
  *
  */
-public class ConsistentHashPreSlot extends RuleFunction {
+public class ConsistentHashPreSlot extends SingleValueRuleFunction {
 
     public ConsistentHashPreSlot(String name, int defaultSlotsNum, HashFunction hashFunction) {
         this.name = name;

@@ -16,7 +16,7 @@ package io.mycat.router.function;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class PartitionByMurmurHash extends RuleFunction {
+public class PartitionByMurmurHash extends SingleValueRuleFunction {
 
   private static final int DEFAULT_WEIGHT = 1;
   private final SortedMap<Integer, Integer> bucketMap = new TreeMap<>();

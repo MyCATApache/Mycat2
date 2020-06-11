@@ -15,7 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
 import java.time.LocalDate;
@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class PartitionByMonth extends RuleFunction {
+public class PartitionByMonth extends SingleValueRuleFunction {
 
   private int partition;
   private Type type = Type.DEFAULT;

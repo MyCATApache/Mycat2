@@ -14,7 +14,7 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * todo check
  */
-public class PartitionByHotDate extends RuleFunction {
+public class PartitionByHotDate extends SingleValueRuleFunction {
 
   private long lastTime;
   private long partionTime;

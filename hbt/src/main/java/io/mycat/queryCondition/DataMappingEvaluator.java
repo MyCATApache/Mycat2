@@ -18,7 +18,7 @@ import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.metadata.ShardingTableHandler;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import lombok.NonNull;
 
 import java.util.*;
@@ -111,7 +111,7 @@ public class DataMappingEvaluator {
         }
     }
 
-    private Set<Integer> calculate(RuleFunction ruleFunction, Set<RangeVariable> value) {
+    private Set<Integer> calculate(SingleValueRuleFunction ruleFunction, Set<RangeVariable> value) {
         HashSet<Integer> res = new HashSet<>();
         for (RangeVariable rangeVariable : value) {
             String begin = Objects.toString(rangeVariable.getBegin());

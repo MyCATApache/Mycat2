@@ -14,12 +14,12 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByRangeMod extends RuleFunction {
+public class PartitionByRangeMod extends SingleValueRuleFunction {
 
   private GroupSizeRange[] longRanges;
   private int defaultNode = -1;
