@@ -50,8 +50,8 @@ public class MycatTransientSQLTableScan extends TableScan {
         return sql.get();
     }
 
-    private MycatConvention getMycatConvention() {
-        return (MycatConvention) getConvention();
+    public MycatConvention getMycatConvention() {
+        return convention;
     }
 
 }
