@@ -34,11 +34,10 @@ import io.mycat.util.Response;
 import io.mycat.util.SQLContext;
 import lombok.Getter;
 
-import javax.annotation.Resource;
+
 import java.sql.JDBCType;
 import java.util.*;
 
-@Resource
 public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     //    public static String NULL = new String(new char[]{(char)0XFB});
 //    public static int NULL = 0XFB;
