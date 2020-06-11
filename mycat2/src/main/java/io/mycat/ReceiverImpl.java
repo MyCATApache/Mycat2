@@ -400,7 +400,10 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            throw new IllegalArgumentException();
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName)) {
+                UpdateRowIteratorResponse updateRowIteratorResponse = connection.executeUpdate(sql, true, 0);
+                writeToMycatSession(session, updateRowIteratorResponse);
+            }
         }));
     }
 
