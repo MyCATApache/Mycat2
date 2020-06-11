@@ -353,14 +353,13 @@ public enum MetadataManager {
                 if (valueText instanceof SQLValuableExpr) {
                     String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
                     dataMappingEvaluator.assignment(false, simpleColumnInfo.getColumnName(), value);
-                } else {
-                    throw new UnsupportedOperationException();
-                }
+                }  //                    throw new UnsupportedOperationException();
+
                 index++;
             }
             List<DataNode> calculate = dataMappingEvaluator.calculate(logicTable);
             if (calculate.size() != 1) {
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("插入语句多于1个目标:"+valuesList);
             }
             DataNode endTableInfo = calculate.get(0);
             List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>(1));

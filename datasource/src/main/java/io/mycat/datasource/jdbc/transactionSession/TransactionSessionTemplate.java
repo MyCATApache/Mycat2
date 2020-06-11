@@ -11,10 +11,11 @@ import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
-    protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
+    protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
     protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
     final MycatDataContext dataContext;
     protected final ConcurrentLinkedQueue<AutoCloseable> closeResourceQueue = new ConcurrentLinkedQueue<>();
@@ -107,7 +108,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.dataContext.setInTransaction(inTranscation);
     }
 
-    public void close() {
+    public synchronized void close() {
         check();
         for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
             DefaultConnection value = stringDefaultConnectionEntry.getValue();
