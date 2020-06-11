@@ -1,11 +1,8 @@
 package io.mycat.metadata;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.TextUpdateInfo;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.*;
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.calcite.schema.Statistic;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -14,7 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.mycat.queryCondition.SimpleColumnInfo.ShardingType.*;
+import static io.mycat.SimpleColumnInfo.ShardingType.*;
 
 @Getter
 public class ShardingTable implements ShardingTableHandler {

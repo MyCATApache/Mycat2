@@ -1,29 +1,13 @@
 package io.mycat.sqlHandler.dql;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLShowColumnsStatement;
-import com.alibaba.fastsql.sql.builder.impl.SQLSelectBuilderImpl;
-import com.alibaba.fastsql.sql.repository.SchemaObject;
 import io.mycat.MycatDataContext;
-import io.mycat.beans.mysql.InformationSchema;
-import io.mycat.beans.mysql.InformationSchemaRuntime;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
-import io.mycat.queryCondition.SimpleColumnInfo;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
-import io.mycat.upondb.MycatDBClientBasedConfig;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @ chenjunwen

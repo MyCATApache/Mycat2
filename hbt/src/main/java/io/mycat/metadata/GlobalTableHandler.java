@@ -1,6 +1,7 @@
 package io.mycat.metadata;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.TableHandler;
 
 import java.util.Map;
 import java.util.Set;

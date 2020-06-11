@@ -1,7 +1,8 @@
 package io.mycat.metadata;
 
 import io.mycat.BackendTableInfo;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.TableHandler;
+import io.mycat.SimpleColumnInfo;
 
 import java.util.List;
 

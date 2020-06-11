@@ -16,7 +16,7 @@ package io.mycat.calcite.table;
 
 import io.mycat.calcite.CalciteConvertors;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;

@@ -17,7 +17,7 @@ package io.mycat.calcite;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;

@@ -6,7 +6,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ShardingTable;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 
 import java.util.List;
 import java.util.Map;

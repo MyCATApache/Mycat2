@@ -11,7 +11,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.GlobalTable;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ShardingTable;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

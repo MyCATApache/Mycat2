@@ -16,11 +16,11 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
+import io.mycat.LogicTableType;
 import io.mycat.metadata.GlobalTableHandler;
-import io.mycat.metadata.LogicTableType;
 import io.mycat.metadata.ShardingTableHandler;
-import io.mycat.metadata.TableHandler;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.TableHandler;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import org.apache.calcite.DataContext;

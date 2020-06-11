@@ -11,7 +11,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ShardingTableHandler;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlHandler.AbstractSQLHandler;
