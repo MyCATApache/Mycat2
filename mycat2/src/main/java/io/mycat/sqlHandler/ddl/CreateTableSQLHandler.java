@@ -2,16 +2,12 @@ package io.mycat.sqlHandler.ddl;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
-import io.mycat.BackendTableInfo;
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
-import io.mycat.SchemaInfo;
+import io.mycat.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlHandler.AbstractSQLHandler;
@@ -56,10 +52,10 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 return ExecuteCode.PERFORMED;
             }
             Map<String, Set<String>> sqlAndDatasoureMap = new HashMap<>();
-            List<BackendTableInfo> databaseCollections= new ArrayList<>();
+            List<DataNode> databaseCollections= new ArrayList<>();
             if (tableHandler instanceof ShardingTableHandler) {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
-                for (BackendTableInfo shardingBackend : handler.getShardingBackends()) {
+                for (DataNode shardingBackend : handler.getShardingBackends()) {
                     makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
                 databaseCollections.addAll(handler.getShardingBackends());
@@ -120,9 +116,9 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 .get(5, TimeUnit.MINUTES);
     }
 
-    private void createDatabase(List<Throwable> throwables, List<BackendTableInfo> databaseCollections) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+    private void createDatabase(List<Throwable> throwables, List<DataNode> databaseCollections) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
         List<CompletableFuture> resList = new ArrayList<>();
-        for (BackendTableInfo databaseCollection : databaseCollections) {
+        for (DataNode databaseCollection : databaseCollections) {
             for (String dataSource : getDatasource(databaseCollection.getTargetName())) {
                 resList.add(CompletableFuture.runAsync(() -> {
                     try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
@@ -143,17 +139,16 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
     }
 
 
-    private void makeTask(SQLCreateTableStatement ast, Map<String, Set<String>> sqlAndDatasoureMap, BackendTableInfo shardingBackend) {
+    private void makeTask(SQLCreateTableStatement ast, Map<String, Set<String>> sqlAndDatasoureMap, DataNode shardingBackend) {
         String targetName = shardingBackend.getTargetName();
-        SchemaInfo schemaInfo = shardingBackend.getSchemaInfo();
         SQLCreateTableStatement entry = ast.clone();
         entry.setIfNotExiists(true);
-        entry.setTableName(schemaInfo.getTargetTable());//设置库名 表名顺序不能乱
-        entry.setSchema(schemaInfo.getTargetSchema());
-        if (!schemaInfo.getTargetTable().equals(entry.getTableName())) {
+        entry.setTableName(shardingBackend.getTable());//设置库名 表名顺序不能乱
+        entry.setSchema(shardingBackend.getSchema());
+        if (!shardingBackend.getTable().equals(entry.getTableName())) {
             throw new AssertionError();
         }
-        if (!schemaInfo.getTargetSchema().equals(entry.getSchema())) {
+        if (!shardingBackend.getSchema().equals(entry.getSchema())) {
             throw new AssertionError();
         }
 

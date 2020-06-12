@@ -25,10 +25,10 @@ public class ShardingTable implements ShardingTableHandler {
     private final SimpleColumnInfo.ShardingInfo databaseColumnInfo;
     private final SimpleColumnInfo.ShardingInfo tableColumnInfo;
     private final Supplier<String> sequence;
-    private final List<BackendTableInfo> backends;
+    private final List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
-                         List<BackendTableInfo> backends, List<ShardingQueryRootConfig.Column> columns,Supplier<String> sequence) {
+                         List<DataNode> backends, List<ShardingQueryRootConfig.Column> columns,Supplier<String> sequence) {
         this.logicTable = logicTable;
         this.backends = backends == null ? Collections.emptyList() : backends;
         this.sequence = sequence;
@@ -67,7 +67,7 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
-    public List<BackendTableInfo> getShardingBackends() {
+    public List<DataNode> getShardingBackends() {
         return backends;
     }
 

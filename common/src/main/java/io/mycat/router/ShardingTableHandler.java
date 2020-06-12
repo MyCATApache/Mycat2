@@ -1,6 +1,7 @@
 package io.mycat.router;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.TableHandler;
 import io.mycat.SimpleColumnInfo;
 
@@ -10,7 +11,7 @@ public interface ShardingTableHandler extends TableHandler {
 
     public boolean isNatureTable();
 
-    public List<BackendTableInfo> getShardingBackends();
+    public List<DataNode> getShardingBackends();
 
     SimpleColumnInfo.ShardingInfo getNatureTableColumnInfo();
 

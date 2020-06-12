@@ -172,7 +172,7 @@ public enum MetadataManager {
 
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
 
-        ShardingTable shardingTable = new ShardingTable(logicTable, backends, tableConfigEntry.getColumns(), sequence);
+        ShardingTable shardingTable = new ShardingTable(logicTable, (List)backends, tableConfigEntry.getColumns(), sequence);
         addLogicTable(shardingTable);
     }
 

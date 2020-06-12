@@ -68,7 +68,7 @@ public class DataMappingEvaluator {
         }
         List<BackendTableInfo> res = new ArrayList<>();
 
-        @NonNull List<BackendTableInfo> allBackends = logicTable.getShardingBackends();
+        @NonNull List<DataNode> allBackends = logicTable.getShardingBackends();
 
         for (String targetName : targetSet) {
             for (String databaseName : databaseSet) {

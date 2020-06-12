@@ -93,7 +93,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
             return null;
         }
         ShardingTableHandler table = getTable();
-        List<BackendTableInfo> shardingBackends = table.getShardingBackends();
+        List<DataNode> shardingBackends = table.getShardingBackends();
         int size = shardingBackends.size();
         if (0 <= i && i < size) {
             return shardingBackends.get(i);

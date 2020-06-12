@@ -4,6 +4,7 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.builder.SQLBuilderFactory;
 import com.alibaba.fastsql.sql.builder.SQLSelectBuilder;
 import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.SchemaInfo;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.JdbcRuntime;
@@ -74,19 +75,18 @@ public enum StatisticCenter {
 
     public void computeShardingTableRowCount(ShardingTable shardingTable) {
         Double sum = 0d;
-        for (BackendTableInfo backendTableInfo : shardingTable.getBackends()) {
-            SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
+        for (DataNode backendTableInfo : shardingTable.getBackends()) {
 
             String targetName = backendTableInfo.getTargetName();
-            String sql = makeCountSql(schemaInfo);
+            String sql = makeCountSql(backendTableInfo);
             Double onePhyRowCount = fetchRowCount(targetName, sql);
             if (onePhyRowCount == null) {
                 return;//退出
             } else {
                 sum += onePhyRowCount;
                 //物理表
-                Key key = Key.of(schemaInfo.getTargetSchema(),
-                        schemaInfo.getTargetTable(),
+                Key key = Key.of(backendTableInfo.getTargetName(),
+                        backendTableInfo.getTable(),
                         backendTableInfo.getTargetName());
                 updateRowCount(key, sum);
             }
@@ -98,10 +98,10 @@ public enum StatisticCenter {
 
     private void computeGlobalRowCount(GlobalTable globalTable) {
         BackendTableInfo backendTableInfo = globalTable.getDataNodeMap().entrySet().iterator().next().getValue();
-        SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
+
 
         String targetName = backendTableInfo.getTargetName();
-        String sql = makeCountSql(schemaInfo);
+        String sql = makeCountSql(backendTableInfo);
 
 
         Double value = fetchRowCount(targetName, sql);
@@ -136,7 +136,7 @@ public enum StatisticCenter {
         LOGGER.info("行统计更新  tableName:" + key1 + " " + res);
     }
 
-    private String makeCountSql(SchemaInfo schemaInfo) {
+    private String makeCountSql(DataNode schemaInfo) {
         SQLSelectBuilder selectSQLBuilder = SQLBuilderFactory.createSelectSQLBuilder(DbType.mysql);
         return selectSQLBuilder.from(schemaInfo.getTargetSchemaTable()).select("count(*)").toString();
     }

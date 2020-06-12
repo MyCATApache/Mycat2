@@ -25,9 +25,9 @@ import java.util.Map;
  * 自定义路由算法接口
  */
 public abstract class CustomRuleFunction {
-    private Map<String, String> properties;
-    private Map<String, String> ranges;
-    private ShardingTableHandler table;
+    protected Map<String, String> properties;
+    protected Map<String, String> ranges;
+    protected ShardingTableHandler table;
 
     public abstract String name();
 

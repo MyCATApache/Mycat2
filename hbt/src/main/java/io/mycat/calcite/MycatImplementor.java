@@ -17,6 +17,8 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
@@ -25,7 +27,9 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.tools.RelBuilder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -99,15 +103,16 @@ public class MycatImplementor extends RelToSqlConverter {
         return super.visit(e);
     }
 
-    /**
-     * 该union输入是超过2个节点的,union 别名 问题
-     * @param e
-     * @return
-     */
+//    /**
+//     * 该union输入是超过2个节点的,union 别名 问题
+//     * @param e
+//     * @return
+//     */
 //    @Override
 //    public Result visit(Union e) {
 //        if (!e.isDistinct()) {
-//            List<RelNode> unions =e.getInputs();
+//            ArrayList<RelNode> unions = new ArrayList<>();
+//            CalciteUtls.collect(e, unions);
 //            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
 //            relBuilder.pushAll(unions);
 //            relBuilder.union(e.all, unions.size());
@@ -116,7 +121,7 @@ public class MycatImplementor extends RelToSqlConverter {
 //            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
 //                final Result result = visitChild(input.i, input.e);
 //                if (node == null) {
-//                    node = result.asSelect().;//修改点 会添加别名???
+//                    node = result.subSelect();//修改点 会添加别名???
 //                } else {
 //                    SqlSetOperator sqlSetOperator = e.all
 //                            ? SqlStdOperatorTable.UNION_ALL
@@ -128,9 +133,8 @@ public class MycatImplementor extends RelToSqlConverter {
 //                    Expressions.list(Clause.SET_OP);
 //            return result(node, clauses, e, null);
 //        }
-//        return super.visit(e).qualifiedContext().implementor().setOpToSql().resetAlias();
+//        return super.visit(e);
 //    }
-//
 
 
     @Override
