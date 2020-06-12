@@ -1,5 +1,6 @@
 package io.mycat.router.function;
 
+import io.mycat.router.ShardingTableHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,7 +19,9 @@ public class PartitionByDateTest {
         prot.put("endDate", null);
         prot.put("partionDay", "10");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(null,prot, Collections.emptyMap());
+
+        ShardingTableHandler shardingTableHandler = TableHandlerMocks.mockTableHandlerWithDataNodes(1024);
+        partition.init(shardingTableHandler,prot, Collections.emptyMap());
 
 
         Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));
@@ -35,7 +38,7 @@ public class PartitionByDateTest {
         prot.put("endDate", "2014-01-31");
         prot.put("partionDay", "10");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(null,prot, Collections.emptyMap());
+        partition.init(shardingTableHandler,prot, Collections.emptyMap());
 
 //
 //		/**
@@ -65,7 +68,7 @@ public class PartitionByDateTest {
         prot.put("endDate", "2014-01-31");
         prot.put("partionDay", "1");
         prot.put("dateFormat", "yyyy-MM-dd");
-        partition.init(null,prot, Collections.emptyMap());
+        partition.init(shardingTableHandler,prot, Collections.emptyMap());
 
         //测试默认1
         Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));

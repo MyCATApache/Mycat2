@@ -41,6 +41,10 @@ public class PartitionByDate extends SingleValueRuleFunction {
 
   @Override
   public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
+    this.table = tableHandler;
+    this.properties = prot;
+    this.ranges = ranges;
+
     String startBeginDate = prot.get("beginDate");
     String startEndDate = prot.get("endDate");
     String startPartionDay = prot.get("partionDay");

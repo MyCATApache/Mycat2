@@ -60,6 +60,9 @@ public class ConsistentHashPreSlot extends SingleValueRuleFunction {
 
     @Override
     protected void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
+        this.table = table;
+        this.properties = prot;
+        this.ranges = ranges;
         String countText = prot.get("count");
         if (countText != null) {
             int count = Integer.parseInt(countText);
