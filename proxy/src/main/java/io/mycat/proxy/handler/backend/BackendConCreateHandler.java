@@ -230,9 +230,11 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
+
+        LOGGER.info("backend mysql authPluginName:{} ",hs.getAuthPluginName());
         //加密密码
         this.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;//hs.getAuthPluginName();
-        LOGGER.info("authPluginName:{} ",authPluginName);
+        LOGGER.info("mycat set authPluginName:{} ",authPluginName);
         packet.setPassword(generatePassword(authPluginName, seed));
 //        print(packet.getPassword());
         packet.setAuthPluginName(hs.getAuthPluginName());
