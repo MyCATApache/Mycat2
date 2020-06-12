@@ -327,6 +327,7 @@ public class ReceiverImpl implements Response {
                             throw new IllegalStateException("Unexpected value: " + executeType);
                     }
                 });
+                return;
             }
         }
         block(mycat -> {
