@@ -2,7 +2,7 @@ package io.mycat.meta.impl;
 
 import io.mycat.meta.MetadataService;
 
-import javax.annotation.Resource;
+
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 代理数据(mycat)
  * @author wangzihaogithub 2020年4月19日10:23:11
  */
-@Resource
+
 public class MetadataServiceImpl implements MetadataService {
     private final ProxyMetadata globalProxyMetadata = new GlobalProxyMetadataImpl();
     private final FrontendMetadata globalFrontendMetadata = new GlobalFrontendMetadataImpl();

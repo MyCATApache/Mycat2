@@ -10,9 +10,9 @@ import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
 
-@Resource
+
+
 public class SetTransactionSQLHandler extends AbstractSQLHandler<MySqlSetTransactionStatement> {
 
     @Override

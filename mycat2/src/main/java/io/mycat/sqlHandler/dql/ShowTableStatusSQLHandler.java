@@ -16,7 +16,7 @@ import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
+
 import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * chenjunwen
  */
-@Resource
+
 public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTableStatusStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 

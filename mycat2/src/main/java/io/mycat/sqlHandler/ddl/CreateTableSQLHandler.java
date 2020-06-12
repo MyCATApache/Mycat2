@@ -21,7 +21,7 @@ import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
+
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  *
  * 实现创建表
  */
-@Resource
+
 public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableSQLHandler.class);
 
