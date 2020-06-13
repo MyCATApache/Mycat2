@@ -5,12 +5,10 @@ import com.alibaba.fastsql.interpreter.TypeCalculation;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLNumericLiteralExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.optimizer.rules.TableSourceExtractor;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -18,13 +16,16 @@ import io.mycat.booster.BoosterRuntime;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.hbt.HBTRunners;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.route.*;
+import io.mycat.route.HBTQueryConvertor2;
+import io.mycat.route.InputHandler;
 import io.mycat.route.ParseContext;
+import io.mycat.route.ResultHandler;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
@@ -35,9 +36,9 @@ import io.mycat.util.Response;
 import io.mycat.util.SQLContext;
 import lombok.Getter;
 
-
 import java.sql.JDBCType;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     //    public static String NULL = new String(new char[]{(char)0XFB});
@@ -113,7 +114,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             payloadList.add(payload);
         }
         resultSetBuilder.addObjectRowPayload(payloadList);
-        receiver.sendResultSet(()->resultSetBuilder.build(), Collections::emptyList);
+        receiver.sendResultSet(() -> resultSetBuilder.build(), Collections::emptyList);
         return ExecuteCode.PERFORMED;
     }
 
@@ -153,7 +154,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         ///////////////////////////////common///////////////////////////////
         Map<String, SchemaHandler> schemaMap = mycatDBContext.config().getSchemaMap();
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
-        if (schemaName == null){
+        if (schemaName == null) {
             receiver.sendError(new MycatException("schema is null"));
             return ExecuteCode.PERFORMED;
         }
@@ -192,12 +193,12 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return ExecuteCode.PERFORMED;
         }
 
-        if(false){
-            ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(),statement);
+        if (false) {
+            ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(), statement);
             Schema plan = parseContext.getPlan();
             HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
             ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
-            if (resultHandler instanceof InputHandler){
+            if (resultHandler instanceof InputHandler) {
                 InputHandler resultHandler1 = (InputHandler) resultHandler;
                 String targetName = resultHandler1.getTargetName();
                 String sql = resultHandler1.getSql();
@@ -206,7 +207,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
             HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
             RowBaseIterator run = hbtRunners.run(plan);
-            receiver.sendResultSet(()->run, null);
+            receiver.sendResultSet(() -> run, null);
             return ExecuteCode.PERFORMED;
         }
         dataContext.block(() -> {
@@ -226,7 +227,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                     return;
                 }
             }
-            receiver.sendResultSet(()->plan.run(), plan::explain);
+            receiver.sendResultSet(() -> plan.run(), plan::explain);
         });
 
         return ExecuteCode.PERFORMED;
@@ -247,6 +248,9 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         //直接调用已实现好的
 
         SQLSelectStatement ast = request.getAst();
+        if (hanldeInformationSchema(response, ast)) return ExecuteCode.PERFORMED;
+
+
         Optional<SQLSelectQueryBlock> sqlSelectQueryBlockMaybe = Optional.ofNullable(ast)
                 .map(SQLSelectStatement::getSelect)
                 .map(SQLSelect::getQueryBlock);
@@ -255,6 +259,35 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 .map(tableSource -> onSelectTable(dataContext, tableSource, sqlSelectQueryBlockMaybe.get(), request, response))
                 .orElseGet(() -> onSelectNoTable(sqlSelectQueryBlockMaybe.orElse(null), request, response));
         return returnCode;
+    }
+
+    private boolean hanldeInformationSchema(Response response, SQLSelectStatement ast) {
+        TableSourceExtractor tableSourceExtractor = new TableSourceExtractor();
+        ast.accept(tableSourceExtractor);
+        boolean cantainsInformation_schema = tableSourceExtractor.getTableSources().stream().anyMatch(new Predicate<SQLExprTableSource>() {
+            @Override
+            public boolean test(SQLExprTableSource sqlExprTableSource) {
+                SQLExpr expr = sqlExprTableSource.getExpr();
+                if (expr instanceof SQLPropertyExpr) {
+                    SQLExpr owner = ((SQLPropertyExpr) expr).getOwner();
+                    if (owner instanceof SQLIdentifierExpr) {
+                        return "information_schema".equalsIgnoreCase(((SQLIdentifierExpr) owner).normalizedName());
+                    }
+                    return "information_schema".equalsIgnoreCase(((SQLPropertyExpr) expr).getName());
+
+                }
+                return false;
+            }
+        });
+        if (cantainsInformation_schema) {
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom())) {
+                try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
+                    response.sendResultSet(() -> rowBaseIterator, () -> Arrays.asList(ast.toString()));
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Getter
