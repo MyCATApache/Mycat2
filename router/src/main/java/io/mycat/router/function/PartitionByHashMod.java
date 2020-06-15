@@ -44,10 +44,6 @@ public class PartitionByHashMod extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return count;
-  }
 
   @Override
   public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {

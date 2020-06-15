@@ -65,10 +65,6 @@ public class PartitionByMonth extends SingleValueRuleFunction {
     return doCalculateRange(beginValue, endValue, beginDate);
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partition;
-  }
 
   @Override
   public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {

@@ -60,10 +60,7 @@ public class PartitionByMurmurHash extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return count;
-  }
+
 
   @Override
   public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {

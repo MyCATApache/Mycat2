@@ -64,10 +64,6 @@ public class PartitionByRangeDateHash extends SingleValueRuleFunction {
     }
   }
 
-  @Override
-  public int getPartitionNum() {
-    return -1;
-  }
 
   @Override
   public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {

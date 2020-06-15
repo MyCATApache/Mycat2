@@ -57,8 +57,4 @@ public class PartitionByLong extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partitionUtil.getPartitionNum();
-  }
 }

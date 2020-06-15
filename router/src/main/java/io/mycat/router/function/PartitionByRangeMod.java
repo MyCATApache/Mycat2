@@ -57,11 +57,6 @@ public class PartitionByRangeMod extends SingleValueRuleFunction {
   }
 
   @Override
-  public int getPartitionNum() {
-    return partitionCount;
-  }
-
-  @Override
   public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
     this.longRanges = GroupSizeRange.getGroupSizeRange(ranges);

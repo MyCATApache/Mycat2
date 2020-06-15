@@ -82,10 +82,6 @@ public class PartitionByMonthAndHistory extends SingleValueRuleFunction {
         - beginDate.getMonthValue());
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partition;
-  }
 
   @Override
   public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {

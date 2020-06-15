@@ -48,11 +48,6 @@ public class ConsistentHashPreSlot extends SingleValueRuleFunction {
         return null;
     }
 
-    @Override
-    public int getPartitionNum() {
-       throw new UnsupportedOperationException();
-    }
-
     public ConsistentHashBalanceExpandResult balanceExpand(ShardingTableHandler table,List<String> oldDataNodes, List<String> newDataNodes) {
         List<List<NodeIndexRange>> copy = MigrateUtils.copy(longRanges);
         SortedMap<String, List<MigrateTask>> stringListSortedMap = MigrateUtils.balanceExpand(copy, oldDataNodes, newDataNodes, DEFAULT_SLOTS_NUM);

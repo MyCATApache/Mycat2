@@ -56,8 +56,4 @@ public class PartitionDirectBySubString extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partitionCount;
-  }
 }

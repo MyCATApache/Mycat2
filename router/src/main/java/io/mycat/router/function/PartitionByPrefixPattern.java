@@ -63,8 +63,5 @@ public class PartitionByPrefixPattern extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return nPartition;
-  }
+
 }

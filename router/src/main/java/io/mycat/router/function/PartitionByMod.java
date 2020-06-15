@@ -54,8 +54,4 @@ public class PartitionByMod extends SingleValueRuleFunction {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return count.intValue();
-  }
 }

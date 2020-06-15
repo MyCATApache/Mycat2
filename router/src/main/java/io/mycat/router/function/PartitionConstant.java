@@ -48,8 +48,4 @@ public class PartitionConstant extends SingleValueRuleFunction {
         return nodes;
     }
 
-    @Override
-    public int getPartitionNum() {
-        return 1;
-    }
 }

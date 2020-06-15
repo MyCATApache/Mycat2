@@ -78,8 +78,6 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         return ints;
     }
 
-    public abstract int getPartitionNum();
-
     protected static int[] ints(List<Integer> list) {
         int[] ints = new int[list.size()];
         for (int i = 0; i < ints.length; i++) {

@@ -96,8 +96,4 @@ public class PartitionByDate extends SingleValueRuleFunction {
   }
 
 
-  @Override
-  public int getPartitionNum() {
-    return nCount > 0 ? nCount : -1;
-  }
 }

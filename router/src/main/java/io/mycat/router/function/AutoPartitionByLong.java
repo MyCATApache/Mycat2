@@ -63,9 +63,4 @@ public class AutoPartitionByLong extends SingleValueRuleFunction {
     return calculateSequenceRange(this, beginValue, endValue);
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partitionCount;
-  }
-
 }
