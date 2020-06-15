@@ -58,8 +58,5 @@ public class BackendTableInfo implements DataNode {
     }
 
 
-    @Override
-    public int compareTo(@NotNull DataNode o) {
-        return (this.getTargetName().compareTo(o.getTargetName()));
-    }
+
 }

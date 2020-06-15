@@ -1,6 +1,6 @@
 package io.mycat;
 
-public interface DataNode extends java.lang.Comparable<DataNode>{
+public interface DataNode extends java.lang.Comparable<DataNode> {
     String getTargetName();
 
     String getSchema();
@@ -15,7 +15,11 @@ public interface DataNode extends java.lang.Comparable<DataNode>{
         return schema + "." + geTable();
     }
 
-    default  public String getUniqueName() {
+    default public String getUniqueName() {
         return getTargetName() + "." + getTargetSchemaTable();
+    }
+
+    default public int compareTo(DataNode o) {
+        return (this.getTargetName().compareTo(o.getTargetName()));
     }
 }
