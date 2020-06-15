@@ -28,14 +28,12 @@ import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.interpreter.Bindables;
-import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepMatchOrder;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
@@ -84,7 +82,6 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
     }
 
 
-
     public MycatRelBuilder createRelBuilder(RelOptCluster cluster) {
         return (MycatRelBuilder) MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, createCalciteCatalogReader());
     }
@@ -105,7 +102,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                 createCalciteCatalogReader(), newCluster(), MycatCalciteSupport.MycatStandardConvertletTable.INSTANCE, MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
     }
 
-//    List<RelOptRule> relOptRules = Arrays.asList(
+    //    List<RelOptRule> relOptRules = Arrays.asList(
 //            FilterTableScanRule.INSTANCE,
 //            ProjectTableScanRule.INSTANCE,
 //            FilterSetOpTransposeRule.INSTANCE,
@@ -123,48 +120,49 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
 //            PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable
 //    );
 //目的是下推谓词,所以添加 Filter 相关
-static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
-        FilterAggregateTransposeRule.INSTANCE,
-        FilterCorrelateRule.INSTANCE,
-        FilterJoinRule.FILTER_ON_JOIN,
-        FilterMergeRule.INSTANCE,
-        FilterMultiJoinMergeRule.INSTANCE,
-        FilterProjectTransposeRule.INSTANCE,
-        FilterRemoveIsNotDistinctFromRule.INSTANCE,
-        FilterTableScanRule.INSTANCE,
-        FilterSetOpTransposeRule.INSTANCE,
-        FilterProjectTransposeRule.INSTANCE,
-        SemiJoinFilterTransposeRule.INSTANCE,
+    static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
+            FilterAggregateTransposeRule.INSTANCE,
+            FilterCorrelateRule.INSTANCE,
+            FilterJoinRule.FILTER_ON_JOIN,
+            FilterMergeRule.INSTANCE,
+            FilterMultiJoinMergeRule.INSTANCE,
+            FilterProjectTransposeRule.INSTANCE,
+            FilterRemoveIsNotDistinctFromRule.INSTANCE,
+            FilterTableScanRule.INSTANCE,
+            FilterSetOpTransposeRule.INSTANCE,
+            FilterProjectTransposeRule.INSTANCE,
+            SemiJoinFilterTransposeRule.INSTANCE,
 //        ReduceExpressionsRule.FILTER_INSTANCE,
 //        ReduceExpressionsRule.JOIN_INSTANCE,
-        //https://issues.apache.org/jira/browse/CALCITE-4045
+            //https://issues.apache.org/jira/browse/CALCITE-4045
 //        ReduceExpressionsRule.PROJECT_INSTANCE,
-        ProjectFilterTransposeRule.INSTANCE,
-        FilterTableScanRule.INSTANCE,
-        JoinPushTransitivePredicatesRule.INSTANCE,
-        JoinPushTransitivePredicatesRule.INSTANCE,
-        ProjectTableScanRule.INSTANCE,
-        JoinExtractFilterRule.INSTANCE,
-        Bindables.BINDABLE_TABLE_SCAN_RULE
+            ProjectFilterTransposeRule.INSTANCE,
+            FilterTableScanRule.INSTANCE,
+            JoinPushTransitivePredicatesRule.INSTANCE,
+            JoinPushTransitivePredicatesRule.INSTANCE,
+            ProjectTableScanRule.INSTANCE,
+            JoinExtractFilterRule.INSTANCE,
+            Bindables.BINDABLE_TABLE_SCAN_RULE
 
-);
-    public RelNode eliminateLogicTable(final RelNode bestExp) {
+    );
+
+    public RelNode eliminateLogicTable(final RelNode originExpr) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
                 .addRuleCollection(FILTER);
-         HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
-        planner2.setRoot(bestExp);
-        RelNode   bestExp2 = planner2.findBestExp();
+        HepPlanner planner = new HepPlanner(hepProgramBuilder.build());
+        planner.setRoot(originExpr);
+        RelNode pushRes = Objects.requireNonNull(planner.findBestExp());
 
-        hepProgramBuilder=   new HepProgramBuilder()
+        hepProgramBuilder = new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
                 .addRuleCollection(ImmutableList.of(
                         PushDownLogicTableRule.BindableTableScan
                 ));
 
-         planner2 = new HepPlanner(hepProgramBuilder.build());
-        planner2.setRoot(bestExp2);
-        return planner2.findBestExp();
+        planner = new HepPlanner(hepProgramBuilder.build());
+        planner.setRoot(pushRes);
+        return Objects.requireNonNull(planner.findBestExp());
     }
 
     public RelNode pushDownBySQL(RelNode bestExp, boolean forUpdate) {
@@ -203,7 +201,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                 return super.visit(other);
             }
         };
-        return bestExp1.accept(relHomogeneousShuttle1);
+        return  Objects.requireNonNull(bestExp1.accept(relHomogeneousShuttle1));
     }
 
     /**
@@ -428,7 +426,6 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
     }
 
 
-
     private class ComputePushDownInfo {
         private RelNode bestExp1;
         private IdentityHashMap<RelNode, Boolean> cache;
@@ -456,7 +453,6 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                 @Override
                 public RelNode visit(RelNode other) {
                     RelNode res = super.visit(other);//后续遍历
-
 
 
                     List<RelNode> inputs = other.getInputs();
@@ -492,7 +488,7 @@ static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
                         cache.put(other, Boolean.TRUE);
                     }
                     //修正,不能影响上面流程
-                    if(other instanceof Union){
+                    if (other instanceof Union) {
                         cache.put(other, false);//没有事务并行查询->总是并行查询
                         return other;
                     }

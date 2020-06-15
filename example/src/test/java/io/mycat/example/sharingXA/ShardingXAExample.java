@@ -71,7 +71,7 @@ public class ShardingXAExample {
 
             Set<String> set2 = new HashSet<>();
             for (int i = 0; i < 10; i++) {
-                statement.execute("INSERT INTO `db1`.`travelrecord` (`id`, `user_id`) VALUES ('1', '1'); ");
+                statement.execute("INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ( '1'); ");
             }
 
 

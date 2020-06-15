@@ -15,11 +15,11 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.sql.JDBCType;
 import java.util.Arrays;
 
-@Resource
+
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override

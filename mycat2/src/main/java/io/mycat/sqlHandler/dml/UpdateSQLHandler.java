@@ -17,12 +17,11 @@ import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-@Resource
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override

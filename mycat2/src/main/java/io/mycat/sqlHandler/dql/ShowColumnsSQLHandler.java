@@ -7,12 +7,12 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 
 /**
  * @ chenjunwen
  */
-@Resource
+
 public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStatement> {
 
     @Override

@@ -32,6 +32,7 @@ import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Junwen Chen
@@ -48,13 +49,13 @@ public class MycatSqlPlanner implements PlanRunner,Proxyable {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = CalciteRunners.compile(planner, sql, prepare.isForUpdate());
+        this.relNode = Objects.requireNonNull(CalciteRunners.compile(planner, sql, prepare.isForUpdate()));
     }
     public MycatSqlPlanner(MycatSQLPrepareObject prepare, SqlNode sql, MycatDBContext uponDBContext) {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = CalciteRunners.compile(planner, sql, prepare.isForUpdate());
+        this.relNode =  Objects.requireNonNull(CalciteRunners.compile(planner, sql, prepare.isForUpdate()));
     }
     public List<String> explain() {
         RelDataType rowType = relNode.getRowType();
@@ -76,7 +77,7 @@ public class MycatSqlPlanner implements PlanRunner,Proxyable {
             return null;
         }
         List<SingeTargetSQLTable> list = new ArrayList<>();
-        relNode.accept(new RelShuttleImpl() {
+        Objects.requireNonNull(relNode).accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 SingeTargetSQLTable unwrap = scan.getTable().unwrap(SingeTargetSQLTable.class);
