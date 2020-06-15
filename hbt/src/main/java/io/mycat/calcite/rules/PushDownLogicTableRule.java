@@ -150,7 +150,7 @@ public class PushDownLogicTableRule extends RelOptRule {
     private static RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, DataNode backendTableInfo) {
         String uniqueName = backendTableInfo.getUniqueName();
         MycatLogicTable unwrap = bindableTableScan.getTable().unwrap(MycatLogicTable.class);
-        MycatPhysicalTable mycatPhysicalTable = unwrap.getMycatPhysicalTable(uniqueName);
+        MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(unwrap,backendTableInfo);
         RelOptTable dataNode = RelOptTableImpl.create(
                 relOptSchema,
                 mycatPhysicalTable.getRowType(cluster.getTypeFactory()),

@@ -15,6 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.linq4j.Ord;
@@ -43,12 +44,12 @@ public class MycatImplementor extends RelToSqlConverter {
         try {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
-                SchemaInfo schemaInfo = physicalTable.getBackendTableInfo().getSchemaInfo();
+                DataNode backendTableInfo = physicalTable.getBackendTableInfo();
                 SqlIdentifier identifier;
-                if (schemaInfo.getTargetSchema() == null) {
-                    identifier = new SqlIdentifier(Collections.singletonList(schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                if (backendTableInfo.getSchema() == null) {
+                    identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.geTable()), SqlParserPos.ZERO);
                 } else {
-                    identifier = new SqlIdentifier(Arrays.asList(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                    identifier = new SqlIdentifier(Arrays.asList(backendTableInfo.getSchema(), backendTableInfo.geTable()), SqlParserPos.ZERO);
                 }
                 return result(identifier, ImmutableList.of(Clause.FROM), e, null);
             } else {

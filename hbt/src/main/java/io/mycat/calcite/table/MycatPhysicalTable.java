@@ -15,14 +15,11 @@
 package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
-import io.mycat.MycatConnection;
-import io.mycat.SchemaInfo;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
-import io.mycat.TableHandler;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -52,10 +49,10 @@ import java.util.List;
 @Getter
 public class MycatPhysicalTable extends MycatTableBase implements TransientTable, ProjectableFilterableTable, TranslatableTable {
     final MycatLogicTable logicTable;
-    final BackendTableInfo backendTableInfo;//真实表名
+    final DataNode backendTableInfo;//真实表名
     Statistic statistic;//MycatLogicTable的构造函数没有statistic
 
-    public MycatPhysicalTable(MycatLogicTable logicTable, BackendTableInfo backendTableInfo) {
+    public MycatPhysicalTable(MycatLogicTable logicTable, DataNode backendTableInfo) {
         this.logicTable = logicTable;
         this.backendTableInfo = backendTableInfo;
     }
@@ -65,9 +62,8 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
         return new Statistic() {
             @Override
             public Double getRowCount() {
-                SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
-                return StatisticCenter.INSTANCE.getPhysicsTableRow(schemaInfo.getTargetSchema(),
-                        schemaInfo.getTargetTable(),
+                return StatisticCenter.INSTANCE.getPhysicsTableRow(backendTableInfo.getSchema(),
+                        backendTableInfo.geTable(),
                         backendTableInfo.getTargetName());
             }
 
