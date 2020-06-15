@@ -313,7 +313,7 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            if ((executeType == QUERY_MASTER || executeType == QUERY) && MycatDatasourceUtil.isJdbcDatasource(datasourceName)) {
+            if ((executeType == QUERY_MASTER || executeType == QUERY)) {
                 block(mycat -> {
                     switch (executeType) {
                         case QUERY_MASTER:

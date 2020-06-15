@@ -29,24 +29,26 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
-        DDLManager.INSTANCE.updateTables();
-        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());
-        LOGGER.info(sql);
-        //show 语句变成select 语句
-
-        try (RowBaseIterator query = MycatDBs.createClient(dataContext).query(sql)) {
-            //schema上默认的targetName;
-            try {
-                SQLShowTablesStatement showTablesStatement = request.getAst();
-                SQLName from = showTablesStatement.getFrom();
-                String schema = SQLUtils.normalize(from == null ? dataContext.getDefaultSchema() : from.getSimpleName());
-                if (WithDefaultTargetInfo(response, sql, query, schema)) return ExecuteCode.PERFORMED;
-            } catch (Exception e) {
-                LOGGER.error("", e);
-            }
-            response.sendResultSet(()->query, null);
-            return ExecuteCode.PERFORMED;
-        }
+//        DDLManager.INSTANCE.updateTables();
+//        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());
+//        LOGGER.info(sql);
+//        //show 语句变成select 语句
+//
+//        try (RowBaseIterator query = MycatDBs.createClient(dataContext).query(sql)) {
+//            //schema上默认的targetName;
+//            try {
+//                SQLShowTablesStatement showTablesStatement = request.getAst();
+//                SQLName from = showTablesStatement.getFrom();
+//                String schema = SQLUtils.normalize(from == null ? dataContext.getDefaultSchema() : from.getSimpleName());
+//                if (WithDefaultTargetInfo(response, sql, query, schema)) return ExecuteCode.PERFORMED;
+//            } catch (Exception e) {
+//                LOGGER.error("", e);
+//            }
+//            response.sendResultSet(()->query, null);
+//            return ExecuteCode.PERFORMED;
+//        }
+        response.proxyShow(request.getAst());
+        return ExecuteCode.PERFORMED;
     }
 
     private boolean WithDefaultTargetInfo(Response response, String sql, RowBaseIterator query, String schema) {
