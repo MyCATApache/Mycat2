@@ -258,6 +258,14 @@ mysql -uroot -proot -P8066 -h127.0.0.1
 
 
 
+mysql8客户端要加上-A参数禁用预读功能
+
+```
+mysql -A -uroot -proot -P8066 -h127.0.0.1
+```
+
+
+
 客户端登录记录
 
 LINUX平台客户端
