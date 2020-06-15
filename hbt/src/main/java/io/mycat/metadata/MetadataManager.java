@@ -32,16 +32,11 @@ import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.ShardingTableConfig;
-import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.queryCondition.*;
-import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
-import io.mycat.router.function.PartitionRuleFunctionManager;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -250,7 +245,7 @@ public enum MetadataManager {
                 for (Map.Entry<DataNode, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
                     DataNode dataNode = entry.getKey();
                     SQLExprTableSource tableSource = statement.getTableSource();
-                    tableSource.setExpr(new SQLPropertyExpr(dataNode.getSchema(), dataNode.geTable()));
+                    tableSource.setExpr(new SQLPropertyExpr(dataNode.getSchema(), dataNode.getTable()));
                     statement.getValuesList().clear();
                     statement.getValuesList().addAll(entry.getValue());
                     List<String> list = map.computeIfAbsent(dataNode.getTargetName(), s12 -> new ArrayList<>());
@@ -282,7 +277,7 @@ public enum MetadataManager {
             statement.getValuesList().clear();
             DataNode key = backendTableInfoListEntry.getKey();
             statement.getValuesList().addAll(backendTableInfoListEntry.getValue());
-            tableSource.setExpr(new SQLPropertyExpr(key.getSchema(), key.geTable()));
+            tableSource.setExpr(new SQLPropertyExpr(key.getSchema(), key.getTable()));
             List<String> strings = res.computeIfAbsent(key.getTargetName(), s -> new ArrayList<>());
             strings.add(statement.toString());
         }
@@ -383,7 +378,7 @@ public enum MetadataManager {
         Map<String, List<String>> sqls = new HashMap<>();
         for (DataNode endTableInfo : rrs.getBackEndTableInfos()) {
             SQLExprTableSource table = rrs.getTable();
-            table.setExpr(new SQLPropertyExpr(endTableInfo.getSchema(), endTableInfo.geTable()));
+            table.setExpr(new SQLPropertyExpr(endTableInfo.getSchema(), endTableInfo.getTable()));
             List<String> list = sqls.computeIfAbsent(endTableInfo.getTargetName(), s -> new ArrayList<>());
             list.add(SQLUtils.toMySqlString(sqlStatement));
         }

@@ -92,7 +92,7 @@ public class CalciteUtls {
     @NotNull
     public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, DataNode backendTableInfo) {
         String targetSchema = backendTableInfo.getSchema();
-        String targetTable = backendTableInfo.geTable();
+        String targetTable = backendTableInfo.getTable();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }

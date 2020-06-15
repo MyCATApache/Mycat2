@@ -40,7 +40,7 @@ public interface ParseHelper {
 
     default public void changeSchemaTable(SQLExprTableSource tableSource, DataNode dataNode) {
         tableSource.setSchema(dataNode.getSchema());
-        tableSource.setSimpleName(dataNode.geTable());
+        tableSource.setSimpleName(dataNode.getTable());
     }
 
     default public MySqlSelectQueryBlock unWapperToQueryBlock(SQLStatement sqlStatement) {

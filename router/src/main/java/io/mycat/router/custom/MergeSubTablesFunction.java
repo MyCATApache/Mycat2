@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+
+/**
+ *@author  chenjunwen
+ */
 public class MergeSubTablesFunction extends CustomRuleFunction {
     private static final Logger LOGGER = LoggerFactory.getLogger(MergeSubTablesFunction.class);
     DataNode defaultDataNode;
@@ -85,7 +89,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             }
 
             @Override
-            public String geTable() {
+            public String getTable() {
                 return table;
             }
         };
@@ -104,7 +108,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
             }
 
             @Override
-            public String geTable() {
+            public String getTable() {
                 return tableName;
             }
         };

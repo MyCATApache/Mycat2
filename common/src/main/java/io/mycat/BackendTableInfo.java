@@ -48,7 +48,7 @@ public class BackendTableInfo implements DataNode {
     }
 
     @Override
-    public String geTable() {
+    public String getTable() {
         return schemaInfo.getTargetTable();
     }
 

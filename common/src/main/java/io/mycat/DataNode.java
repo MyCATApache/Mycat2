@@ -5,14 +5,14 @@ public interface DataNode extends java.lang.Comparable<DataNode> {
 
     String getSchema();
 
-    String geTable();
+    String getTable();
 
     default String getTargetSchemaTable() {
         String schema = getSchema();
         if (schema == null) {
-            return geTable();
+            return getTable();
         }
-        return schema + "." + geTable();
+        return schema + "." + getTable();
     }
 
     default public String getUniqueName() {

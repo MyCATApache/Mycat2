@@ -63,7 +63,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
             @Override
             public Double getRowCount() {
                 return StatisticCenter.INSTANCE.getPhysicsTableRow(backendTableInfo.getSchema(),
-                        backendTableInfo.geTable(),
+                        backendTableInfo.getTable(),
                         backendTableInfo.getTargetName());
             }
 
