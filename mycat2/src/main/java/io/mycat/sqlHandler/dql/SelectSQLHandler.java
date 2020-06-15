@@ -280,7 +280,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
         });
         if (cantainsInformation_schema) {
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom())) {
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource())) {
                 try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
                     response.sendResultSet(() -> rowBaseIterator, () -> Arrays.asList(ast.toString()));
                     return true;

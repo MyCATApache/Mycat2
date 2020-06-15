@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlNode;
 
@@ -82,6 +83,11 @@ public class MycatSqlPlanner implements PlanRunner,Proxyable {
                     list.add(unwrap);
                 }
                 return super.visit(scan);
+            }
+
+            @Override
+            public RelNode visit(LogicalUnion union) {
+                return super.visit(union);
             }
         });
         int size = list.size();

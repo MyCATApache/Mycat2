@@ -86,6 +86,7 @@ public class JdbcConnectionManager implements ConnectionManager {
                     }
                 }
             } catch (SQLException e) {
+                LOGGER.debug("",e);
                 key.counter.decrementAndGet();
                 throw new MycatException(e);
             }
