@@ -155,7 +155,7 @@ public class PushDownLogicTableRule extends RelOptRule {
                 relOptSchema,
                 mycatPhysicalTable.getRowType(cluster.getTypeFactory()),
                 mycatPhysicalTable,
-                ImmutableList.of(mycatPhysicalTable.getTargetName()));
+                ImmutableList.of(uniqueName));
         RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode, ImmutableList.of());
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }

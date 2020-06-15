@@ -1,6 +1,6 @@
 package io.mycat;
 
-public interface DataNode {
+public interface DataNode extends java.lang.Comparable<DataNode>{
     String getTargetName();
 
     String getSchema();
