@@ -28,7 +28,7 @@ public class DefaultCustomRuleFunctionTest {
         DataNode dataNode = mergeSubTablesFunction.calculate("11");
         Assert.assertEquals(dataNode.getTargetName(),"defaultDs");
         Assert.assertEquals(dataNode.getSchema(),"db1");
-        Assert.assertEquals(dataNode.geTable(),"prefix_1");
+        Assert.assertEquals(dataNode.getTable(),"prefix_1");
 
         List<DataNode> dataNodes = mergeSubTablesFunction.calculateRange("11", "13");
         List<String> targets = dataNodes.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
@@ -54,7 +54,7 @@ public class DefaultCustomRuleFunctionTest {
         DataNode dataNode = mergeSubTablesFunction.calculate("11");
         Assert.assertEquals(dataNode.getTargetName(),"defaultDs");
         Assert.assertEquals(dataNode.getSchema(),"db1");
-        Assert.assertEquals(dataNode.geTable(),"prefix_1");
+        Assert.assertEquals(dataNode.getTable(),"prefix_1");
 
         List<DataNode> dataNodes = mergeSubTablesFunction.calculateRange("11", "13");
         List<String> targets = dataNodes.stream().map(i -> i.getTargetName()).collect(Collectors.toList());
