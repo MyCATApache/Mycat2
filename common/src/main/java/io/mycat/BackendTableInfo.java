@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Weiqing Xu
@@ -28,7 +29,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 @Builder
-public class BackendTableInfo implements DataNode{
+public class BackendTableInfo implements DataNode {
     private String targetName;
     private SchemaInfo schemaInfo;
 
@@ -47,7 +48,15 @@ public class BackendTableInfo implements DataNode{
     }
 
     @Override
-    public String geTable() {
+    public String getTable() {
         return schemaInfo.getTargetTable();
     }
+
+    @Override
+    public String getTargetSchemaTable() {
+        return schemaInfo.getTargetSchemaTable();
+    }
+
+
+
 }

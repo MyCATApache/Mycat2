@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.LogicTableType;
 import io.mycat.metadata.GlobalTableHandler;
-import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.TableHandler;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.statistic.StatisticCenter;

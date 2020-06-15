@@ -15,10 +15,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.SchemaInfo;
+import io.mycat.DataNode;
 import io.mycat.calcite.table.MycatPhysicalTable;
-import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
@@ -27,9 +25,7 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.tools.RelBuilder;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,12 +39,12 @@ public class MycatImplementor extends RelToSqlConverter {
         try {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
-                SchemaInfo schemaInfo = physicalTable.getBackendTableInfo().getSchemaInfo();
+                DataNode backendTableInfo = physicalTable.getBackendTableInfo();
                 SqlIdentifier identifier;
-                if (schemaInfo.getTargetSchema() == null) {
-                    identifier = new SqlIdentifier(Collections.singletonList(schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                if (backendTableInfo.getSchema() == null) {
+                    identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);
                 } else {
-                    identifier = new SqlIdentifier(Arrays.asList(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                    identifier = new SqlIdentifier(Arrays.asList(backendTableInfo.getSchema(), backendTableInfo.getTable()), SqlParserPos.ZERO);
                 }
                 return result(identifier, ImmutableList.of(Clause.FROM), e, null);
             } else {

@@ -59,7 +59,7 @@ public class PartitionByCRC32PreSlotTest {
     private PartitionByCRC32PreSlot getPartitionByCRC32PreSlot(int count) {
         String text = String.valueOf(count);
         PartitionByCRC32PreSlot partition = new PartitionByCRC32PreSlot();
-        partition.init(Collections.singletonMap("count", text), Collections.emptyMap());
+        partition.init(null,Collections.singletonMap("count", text), Collections.emptyMap());
         return partition;
     }
 }

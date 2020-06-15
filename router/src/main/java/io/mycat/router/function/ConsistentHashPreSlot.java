@@ -1,7 +1,8 @@
 package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.hashFunction.HashFunction;
 import io.mycat.router.migrate.ConsistentHashBalanceExpandResult;
 import io.mycat.router.migrate.MigrateTask;
@@ -14,7 +15,7 @@ import java.util.*;
  * jamie12221
  *
  */
-public class ConsistentHashPreSlot extends RuleFunction {
+public class ConsistentHashPreSlot extends SingleValueRuleFunction {
 
     public ConsistentHashPreSlot(String name, int defaultSlotsNum, HashFunction hashFunction) {
         this.name = name;
@@ -36,34 +37,29 @@ public class ConsistentHashPreSlot extends RuleFunction {
     }
 
     @Override
-    public int calculate(String columnValue) {
+    public int calculateIndex(String columnValue) {
         long hash = hashFunction.hash(columnValue);
         int slot = (int) (hash % DEFAULT_SLOTS_NUM);
         return rangeMap2[slot];
     }
 
     @Override
-    public int[] calculateRange(String beginValue, String endValue) {
+    public int[] calculateIndexRange(String beginValue, String endValue) {
         return null;
     }
 
-    @Override
-    public int getPartitionNum() {
-       throw new UnsupportedOperationException();
-    }
-
-    public ConsistentHashBalanceExpandResult balanceExpand(List<String> oldDataNodes, List<String> newDataNodes) {
+    public ConsistentHashBalanceExpandResult balanceExpand(ShardingTableHandler table,List<String> oldDataNodes, List<String> newDataNodes) {
         List<List<NodeIndexRange>> copy = MigrateUtils.copy(longRanges);
         SortedMap<String, List<MigrateTask>> stringListSortedMap = MigrateUtils.balanceExpand(copy, oldDataNodes, newDataNodes, DEFAULT_SLOTS_NUM);
         MigrateUtils.merge(copy, stringListSortedMap);
         ConsistentHashPreSlot consistentHash = new ConsistentHashPreSlot(name, DEFAULT_SLOTS_NUM, hashFunction);
-        consistentHash.init(Collections.emptyMap(), NodeIndexRange.from(copy));
+        consistentHash.init(table,Collections.emptyMap(), NodeIndexRange.from(copy));
         return new ConsistentHashBalanceExpandResult(stringListSortedMap, consistentHash);
     }
 
 
     @Override
-    protected void init(Map<String, String> prot, Map<String, String> ranges) {
+    protected void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
         String countText = prot.get("count");
         if (countText != null) {
             int count = Integer.parseInt(countText);

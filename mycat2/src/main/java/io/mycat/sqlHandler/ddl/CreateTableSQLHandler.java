@@ -10,7 +10,7 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;

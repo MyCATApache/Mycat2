@@ -1,6 +1,7 @@
 package io.mycat;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.CustomRuleFunction;
+import io.mycat.router.SingleValueRuleFunction;
 import lombok.*;
 
 import java.sql.JDBCType;
@@ -63,6 +64,6 @@ public class SimpleColumnInfo {
         @NonNull
         final List<String> map ;
         @NonNull
-        final RuleFunction function;
+        final CustomRuleFunction function;
     }
 }

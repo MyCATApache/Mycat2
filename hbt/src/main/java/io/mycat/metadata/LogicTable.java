@@ -49,17 +49,6 @@ public class LogicTable {
         this.map = result;
     }
 
-    public static TableHandler createShardingTable(String schemaName,
-                                                   String name,
-                                                   List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,
-                                                   Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo,
-                                                   String createTableSQL,
-                                                   Supplier<String> sequence) {
-        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, name, rawColumns, createTableSQL);
-        ShardingTable shardingTable = new ShardingTable(logicTable, backends, shardingInfo, sequence);
-        return shardingTable;
-    }
-
     public static TableHandler createGlobalTable(String schemaName, String tableName, List<BackendTableInfo> backendTableInfos, List<BackendTableInfo> readOnly, LoadBalanceStrategy loadBalance, List<SimpleColumnInfo> columns, String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
         GlobalTable globalTable = new GlobalTable(logicTable, backendTableInfos, readOnly, loadBalance);

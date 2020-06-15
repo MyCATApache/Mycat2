@@ -14,13 +14,15 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.TableHandler;
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 
-public class AutoPartitionByLong extends RuleFunction {
+public class AutoPartitionByLong extends SingleValueRuleFunction {
 
   private List<NodeIndexRange> longRanges;
   private int defaultNode = -1;
@@ -32,7 +34,7 @@ public class AutoPartitionByLong extends RuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler, Map<String, String> prot, Map<String, String> ranges) {
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
     this.longRanges = NodeIndexRange.getLongRanges(ranges);
     this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
@@ -40,7 +42,7 @@ public class AutoPartitionByLong extends RuleFunction {
 
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     try {
       long value = Long.parseLong(columnValue);
       for (NodeIndexRange longRang : this.longRanges) {
@@ -57,13 +59,8 @@ public class AutoPartitionByLong extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return calculateSequenceRange(this, beginValue, endValue);
-  }
-
-  @Override
-  public int getPartitionNum() {
-    return partitionCount;
   }
 
 }

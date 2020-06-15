@@ -1,4 +1,4 @@
-package io.mycat.metadata;
+package io.mycat.router;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.TableHandler;

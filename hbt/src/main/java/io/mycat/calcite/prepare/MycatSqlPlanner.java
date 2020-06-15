@@ -74,6 +74,9 @@ public class MycatSqlPlanner implements PlanRunner,Proxyable {
     }
 
     public ProxyInfo tryGetProxyInfo() {
+        if (relNode == null){
+            return null;
+        }
         List<SingeTargetSQLTable> list = new ArrayList<>();
         Objects.requireNonNull(relNode).accept(new RelShuttleImpl() {
             @Override

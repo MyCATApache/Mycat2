@@ -14,11 +14,12 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.Map;
 
-public class PartitionByJumpConsistentHash extends RuleFunction {
+public class PartitionByJumpConsistentHash extends SingleValueRuleFunction {
 
   private static final long UNSIGNED_MASK = 0x7fffffffffffffffL;
   private static final long JUMP = 1L << 31;
@@ -61,22 +62,18 @@ public class PartitionByJumpConsistentHash extends RuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     return jumpConsistentHash(columnValue.hashCode(), totalBuckets);
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return this.totalBuckets;
-  }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     this.totalBuckets = Integer.parseInt(prot.get("totalBuckets"));
   }
 }
