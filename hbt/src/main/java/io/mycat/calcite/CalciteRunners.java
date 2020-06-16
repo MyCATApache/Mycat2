@@ -44,7 +44,14 @@ public class CalciteRunners {
     public static RelNode compile(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
         try {
             relNode = Objects.requireNonNull(planner.eliminateLogicTable(relNode));
-            relNode = Objects.requireNonNull(planner.pullUpUnion(relNode));
+            try {
+                /**
+                 * 上拉union仅仅是优化不应该导致关系表达式不能执行
+                 */
+                relNode = Objects.requireNonNull(planner.pullUpUnion(relNode));
+            }catch (Throwable e){
+                LOGGER.error("", e);
+            }
             relNode = Objects.requireNonNull(planner.pushDownBySQL(relNode, forUpdate));
             return Objects.requireNonNull(relNode);
         } catch (Throwable e) {

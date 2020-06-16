@@ -1550,6 +1550,64 @@ refreshInterval:刷新时间
 
 
 
+## 自定义分片算法(单值)
+
+单值分片算法抽象类
+
+io.mycat.router.CustomRuleFunction
+
+单值分片算法
+
+io.mycat.router.SingleValueRuleFunction
+
+
+
+例子
+
+```
+public class PartitionByLong extends SingleValueRuleFunction {
+
+  private PartitionUtil partitionUtil;
+  @Override
+  public String name() {
+    return "PartitionByLong";
+  }
+
+  @Override
+  public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
+    int[] count = (toIntArray(properties.get("partitionCount")));
+    int[] length = toIntArray(properties.get("partitionLength"));
+    partitionUtil = new PartitionUtil(count, length);
+  }
+
+  @Override
+  public int calculateIndex(String columnValue) {
+    try {
+      long key = Long.parseLong(columnValue);
+      key = (key >>> 32) ^ key;
+      return partitionUtil.partition(key);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
+          e);
+    }
+  }
+
+  @Override
+  public int[] calculateIndexRange(String beginValue, String endValue) {
+    ......
+  }
+
+  @Override
+  public int getPartitionNum() {
+    return partitionUtil.getPartitionNum();
+  }
+}
+
+```
+
+
+
 ## 命令
 
 **命令名大小写敏感**
