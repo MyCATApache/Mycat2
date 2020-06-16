@@ -376,7 +376,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             UnionMergeRule.INTERSECT_INSTANCE,
             UnionMergeRule.INSTANCE,
             UnionMergeRule.MINUS_INSTANCE,
-            UnionPullUpConstantsRule.INSTANCE,
+//            UnionPullUpConstantsRule.INSTANCE,
             UnionToDistinctRule.INSTANCE,
             ProjectCorrelateTransposeRule.INSTANCE,
             ProjectFilterTransposeRule.INSTANCE,
