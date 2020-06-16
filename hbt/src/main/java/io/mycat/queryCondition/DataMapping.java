@@ -1,7 +1,7 @@
 package io.mycat.queryCondition;
 
 import io.mycat.BackendTableInfo;
-import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.router.ShardingTableHandler;
 
 import java.util.List;
 

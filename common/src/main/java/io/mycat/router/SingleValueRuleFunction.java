@@ -14,17 +14,20 @@
  */
 package io.mycat.router;
 
+import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
+import io.mycat.MycatException;
+
+import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author mycat
  * @author cjw
  * 路由算法接口
  */
-public abstract class RuleFunction {
-    private Map<String, String> prot;
-    private Map<String, String> ranges;
+public abstract class SingleValueRuleFunction extends CustomRuleFunction {
 
     public abstract String name();
 
@@ -42,19 +45,19 @@ public abstract class RuleFunction {
      *
      * @return never null
      */
-    public abstract int calculate(String columnValue);
+    public abstract int calculateIndex(String columnValue);
 
-    public abstract int[] calculateRange(String beginValue, String endValue);
+    public abstract int[] calculateIndexRange(String beginValue, String endValue);
 
 
     /**
      * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
      */
-    public static int[] calculateSequenceRange(RuleFunction algorithm, String beginValue,
+    public static int[] calculateSequenceRange(SingleValueRuleFunction algorithm, String beginValue,
                                                String endValue) {
         int begin = 0, end = 0;
-        begin = algorithm.calculate(beginValue);
-        end = algorithm.calculate(endValue);
+        begin = algorithm.calculateIndex(beginValue);
+        end = algorithm.calculateIndex(endValue);
         if (end >= begin) {
             int len = end - begin + 1;
             int[] re = new int[len];
@@ -75,19 +78,6 @@ public abstract class RuleFunction {
         return ints;
     }
 
-    public abstract int getPartitionNum();
-
-    /**
-     * init 防止并发
-     */
-    public synchronized void callInit(Map<String, String> prot, Map<String, String> ranges) {
-        this.prot = prot;
-        this.ranges = ranges;
-        init(prot, ranges);
-    }
-
-    protected abstract void init(Map<String, String> prot, Map<String, String> ranges);
-
     protected static int[] ints(List<Integer> list) {
         int[] ints = new int[list.size()];
         for (int i = 0; i < ints.length; i++) {
@@ -96,11 +86,41 @@ public abstract class RuleFunction {
         return ints;
     }
 
-    public Map<String, String> getProt() {
-        return prot;
+    @Override
+    public DataNode calculate(String columnValue) {
+        int i = calculateIndex(columnValue);
+        if (i == -1) {
+            return null;
+        }
+        ShardingTableHandler table = getTable();
+        List<DataNode> shardingBackends = table.getShardingBackends();
+        int size = shardingBackends.size();
+        if (0 <= i && i < size) {
+            return shardingBackends.get(i);
+        } else {
+            String message = MessageFormat.format("{0}.{1} 分片算法越界 {3} 分片值:{4}",
+                    table.getSchemaName(), table.getTableName(), columnValue);
+            throw new MycatException(message);
+        }
     }
 
-    public Map<String, String> getRanges() {
-        return ranges;
+    @Override
+    public List<DataNode> calculateRange(String beginValue, String endValue) {
+        int[] ints = calculateIndexRange(beginValue, endValue);
+        ShardingTableHandler table = getTable();
+        List<DataNode> shardingBackends = (List) table.getShardingBackends();
+        int size = shardingBackends.size();
+        if (ints == null) {
+            return shardingBackends;
+        }
+        ArrayList<DataNode> res = new ArrayList<>();
+        for (int i : ints) {
+            if (0 <= i && i < size) {
+                res.add(shardingBackends.get(i));
+            } else {
+                return shardingBackends;
+            }
+        }
+        return res;
     }
 }

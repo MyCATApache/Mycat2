@@ -29,7 +29,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.MycatSqlUtil;

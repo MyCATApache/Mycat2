@@ -258,6 +258,14 @@ mysql -uroot -proot -P8066 -h127.0.0.1
 
 
 
+mysql8客户端要加上-A参数禁用预读功能
+
+```
+mysql -A -uroot -proot -P8066 -h127.0.0.1
+```
+
+
+
 客户端登录记录
 
 LINUX平台客户端
@@ -1539,6 +1547,64 @@ refreshInterval:刷新时间
 仅支持distributedQuery,executePlan
 
 一个用户的配置对应一个拦截器,一个缓存对象管理器,一个拦截器对应多个sql匹配器,此缓存对象管理该用户配置下的sql缓存.也就是说即使是同一个sql,他们在不同的用户下,他的缓存配置是可以不同的.
+
+
+
+## 自定义分片算法(单值)
+
+单值分片算法抽象类
+
+io.mycat.router.CustomRuleFunction
+
+单值分片算法
+
+io.mycat.router.SingleValueRuleFunction
+
+
+
+例子
+
+```
+public class PartitionByLong extends SingleValueRuleFunction {
+
+  private PartitionUtil partitionUtil;
+  @Override
+  public String name() {
+    return "PartitionByLong";
+  }
+
+  @Override
+  public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
+    int[] count = (toIntArray(properties.get("partitionCount")));
+    int[] length = toIntArray(properties.get("partitionLength"));
+    partitionUtil = new PartitionUtil(count, length);
+  }
+
+  @Override
+  public int calculateIndex(String columnValue) {
+    try {
+      long key = Long.parseLong(columnValue);
+      key = (key >>> 32) ^ key;
+      return partitionUtil.partition(key);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
+          e);
+    }
+  }
+
+  @Override
+  public int[] calculateIndexRange(String beginValue, String endValue) {
+    ......
+  }
+
+  @Override
+  public int getPartitionNum() {
+    return partitionUtil.getPartitionNum();
+  }
+}
+
+```
 
 
 

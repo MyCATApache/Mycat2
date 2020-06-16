@@ -15,10 +15,10 @@
 package io.mycat.calcite;
 
 
+import io.mycat.SimpleColumnInfo;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.queryCondition.SimpleColumnInfo;
-import io.mycat.util.MycatRowMetaDataImpl;
+import io.mycat.hbt.TextConvertor;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -46,11 +46,85 @@ import java.util.stream.Collectors;
 public class CalciteConvertors {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteConvertors.class);
 
-    final static List<SimpleColumnInfo> convertfromDatabaseMetaData(DatabaseMetaData databaseMetaData, String catalog, String schema, String tableName) {
+
+    /**
+     * TABLE_CAT:CHAR
+     * TABLE_SCHEM:CHAR
+     * TABLE_NAME:CHAR
+     * COLUMN_NAME:CHAR
+     * DATA_TYPE:INT
+     * TYPE_NAME:CHAR
+     * COLUMN_SIZE:INT
+     * BUFFER_LENGTH:INT
+     * DECIMAL_DIGITS:INT
+     * NUM_PREC_RADIX:INT
+     * NULLABLE:INT
+     * REMARKS:CHAR
+     * COLUMN_DEF:CHAR
+     * SQL_DATA_TYPE:INT
+     * SQL_DATETIME_SUB:INT
+     * CHAR_OCTET_LENGTH:INT
+     * ORDINAL_POSITION:INT
+     * IS_NULLABLE:CHAR
+     * SCOPE_CATALOG:CHAR
+     * SCOPE_SCHEMA:CHAR
+     * SCOPE_TABLE:CHAR
+     * SOURCE_DATA_TYPE:SMALLINT
+     * IS_AUTOINCREMENT:CHAR
+     * IS_GENERATEDCOLUMN:CHAR
+     *
+     * @param databaseMetaData
+     * @param catalog
+     * @param schema
+     * @param tableName
+     * @return
+     */
+    public final static List<SimpleColumnInfo> convertfromDatabaseMetaData(DatabaseMetaData databaseMetaData, String catalog, String schema, String tableName) {
         try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema, tableName, null)) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnName(i);
+                System.out.println(columnName + ":" + metaData.getColumnTypeName(i));
+
+            }
+
             ArrayList<SimpleColumnInfo> res = new ArrayList<>();
             while (resultSet.next()) {
-                final String columnName = resultSet.getString(4).toLowerCase();
+
+                String TABLE_CAT = resultSet.getString(1);
+                String TABLE_SCHEM = resultSet.getString(2);
+                String TABLE_NAME = resultSet.getString(3);
+                String COLUMN_NAME = resultSet.getString(4);
+                int DATA_TYPE = resultSet.getByte(5);
+                String TYPE_NAME = resultSet.getString(6);
+                int COLUMN_SIZE = resultSet.getInt(7);
+
+                int BUFFER_LENGTH = resultSet.getInt(8);
+
+                int DECIMAL_DIGITS = resultSet.getInt(9);
+
+                int NUM_PREC_RADIX = resultSet.getInt(10);
+                int NULLABLE = resultSet.getInt(11);
+                String REMARKS = resultSet.getString(12);
+
+                String COLUMN_DEF = resultSet.getString(13);
+                int SQL_DATA_TYPE = resultSet.getInt(14);
+
+                int SQL_DATETIME_SUB = resultSet.getInt(15);
+                int CHAR_OCTET_LENGTH = resultSet.getInt(16);
+
+                int ORDINAL_POSITION = resultSet.getInt(17);
+                boolean IS_NULLABLE = "Yes".equalsIgnoreCase(resultSet.getString(18));
+                String SCOPE_CATALOG = resultSet.getString(19);
+                String SCOPE_SCHEMA = resultSet.getString(20);
+                String SCOPE_TABLE = resultSet.getString(21);
+
+                int SOURCE_DATA_TYPE = resultSet.getInt(22);
+                boolean IS_AUTOINCREMENT ="Yes".equalsIgnoreCase( resultSet.getString(23));
+                boolean IS_GENERATEDCOLUMN = "Yes".equalsIgnoreCase(resultSet.getString(24));
+
+                final String columnName = resultSet.getString(4);
                 final int dataType = resultSet.getInt(5);
                 final String typeString = resultSet.getString(6);
                 final int precision;
@@ -67,13 +141,18 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-              ;  JDBCType jdbcType = JDBCType.valueOf(typeString);
-              //todo 添加索引 主键信息
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), precision, scale,jdbcType , nullable,false,false,false));
+                ;
+                JDBCType jdbcType = JDBCType.valueOf(DATA_TYPE);
+                //todo 添加索引 主键信息
+
+
+
+                res.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, nullable, IS_AUTOINCREMENT, false, false));
             }
             return res;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Throwable e) {
+            LOGGER.error("不能从DatabaseMetaData获取字段信息",e);
+            return null;
         }
     }
 
@@ -82,7 +161,7 @@ public class CalciteConvertors {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for (SimpleColumnInfo info : infos) {
-            RelDataType relDataType = sqlType(typeFactory,  info.getJdbcType().ordinal(),info.getPrecision(), info.getScale(), info.getJdbcType().getName());
+            RelDataType relDataType = sqlType(typeFactory, info.getJdbcType().ordinal(), info.getPrecision(), info.getScale(), info.getJdbcType().getName());
             fieldInfo.add(info.getColumnName(), relDataType).nullable(info.isNullable());
         }
         return RelDataTypeImpl.proto(fieldInfo.build());
@@ -161,8 +240,13 @@ public class CalciteConvertors {
         return null;
     }
 
-   public static List<SimpleColumnInfo> getColumnInfo(String sql) {
-        MycatRowMetaDataImpl mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
+    public static List<SimpleColumnInfo> getColumnInfo(String sql) {
+        MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
+        return getColumnInfo(mycatRowMetaData);
+    }
+
+
+    public static List<SimpleColumnInfo> getColumnInfo(MycatRowMetaData mycatRowMetaData) {
         int columnCount = mycatRowMetaData.getColumnCount();
         List<SimpleColumnInfo> list = new ArrayList<>();
         for (int i = 1; i <= columnCount; i++) {
@@ -174,7 +258,7 @@ public class CalciteConvertors {
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
             boolean index = mycatRowMetaData.isIndex(i);
-            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i),autoIncrement,primaryKey,index));
+            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, index));
         }
         return list;
     }
@@ -289,11 +373,11 @@ public class CalciteConvertors {
             } else {
                 SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(columnType.getVendorTypeNumber());
                 if (sqlTypeName == null) {
-                    throw new UnsupportedOperationException();
+                    sqlTypeName = SqlTypeName.VARCHAR;
                 }
                 type = factory.createSqlType(sqlTypeName);
             }
-            builder.add(columnInfo.getColumnName(),  factory.createTypeWithNullability(type, columnInfo.isNullable()));
+            builder.add(columnInfo.getColumnName(), factory.createTypeWithNullability(type, columnInfo.isNullable()));
         }
         return builder.build();
     }

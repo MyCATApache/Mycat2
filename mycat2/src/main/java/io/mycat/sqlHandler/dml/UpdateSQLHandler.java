@@ -7,10 +7,9 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.RootHelper;
-import io.mycat.metadata.LogicTableType;
-import io.mycat.metadata.ParseContext;
+import io.mycat.ParseContext;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
@@ -18,12 +17,11 @@ import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-@Resource
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override

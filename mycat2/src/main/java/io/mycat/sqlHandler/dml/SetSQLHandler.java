@@ -10,12 +10,12 @@ import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-@Resource
+
 public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
 
     @Override

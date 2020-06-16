@@ -1,25 +1,33 @@
 package io.mycat.runtime;
 
 import io.mycat.MycatDataContext;
+import io.mycat.MycatException;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalTransactionSession.class);
     public LocalTransactionSession(MycatDataContext dataContext) {
         super(dataContext);
     }
 
     @Override
     public String name() {
-        return "local";
+        return "xa";
     }
 
     @Override
@@ -34,17 +42,49 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     protected void callBackBegin() {
-        throw new UnsupportedOperationException();
+        ArrayList<SQLException> exceptions = new ArrayList<>();
+        for (DefaultConnection i : this.updateConnectionMap.values()) {
+            try {
+                i.getRawConnection().setAutoCommit(false);
+            } catch (SQLException e) {
+                exceptions.add(e);
+            }
+        }
+        if (!exceptions.isEmpty()){
+            throw new MycatException("本地事务开启失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        }
     }
 
     @Override
     protected void callBackCommit() {
-        throw new UnsupportedOperationException();
+        ArrayList<SQLException> exceptions = new ArrayList<>();
+        for (DefaultConnection value : this.updateConnectionMap.values()) {
+            try {
+                value.getRawConnection().commit();
+            } catch (SQLException e) {
+                LOGGER.error("本地事务提交失败",e);
+                exceptions.add(e);
+            }
+        }
+        if (!exceptions.isEmpty()){
+            throw new MycatException("本地事务提交失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        }
     }
 
     @Override
     protected void callBackRollback() {
-
+        ArrayList<SQLException> exceptions = new ArrayList<>();
+        for (DefaultConnection value : this.updateConnectionMap.values()) {
+            try {
+                value.getRawConnection().rollback();
+            } catch (SQLException e) {
+                LOGGER.error("本地事务回滚失败",e);
+                exceptions.add(e);
+            }
+        }
+        if (!exceptions.isEmpty()){
+            throw new MycatException("本地事务回滚失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        }
     }
 
     @Override
@@ -56,7 +96,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, true, TRANSACTION_REPEATABLE_READ, false);
+                                .getConnection(jdbcDataSource, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
                     }
                 });
     }

@@ -1,13 +1,8 @@
 package io.mycat.commands;
 
-import io.mycat.ExecuteType;
-import io.mycat.ExplainDetail;
-import io.mycat.MycatDataContext;
-import io.mycat.TableCollector;
+import io.mycat.*;
 import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
 import io.mycat.client.MycatRequest;
-import io.mycat.metadata.LogicTableType;
-import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;

@@ -15,13 +15,14 @@
 package io.mycat.router.function;
 
 import com.google.common.hash.Hashing;
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Map;
 
-public class PartitionByRangeDateHash extends RuleFunction {
+public class PartitionByRangeDateHash extends SingleValueRuleFunction {
 
   private DateTimeFormatter formatter;
   private long beginDate;
@@ -34,7 +35,7 @@ public class PartitionByRangeDateHash extends RuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     long targetTime = formatter.parse(columnValue).get(ChronoField.DAY_OF_YEAR);
     int targetPartition = (int) ((targetTime - beginDate) / partionDay);
     int innerIndex = Hashing.consistentHash(targetTime, groupPartionSize);
@@ -42,7 +43,7 @@ public class PartitionByRangeDateHash extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange( String beginValue, String endValue) {
     int begin = calculateStart(beginValue);
     int end = calculateEnd(endValue);
     if (begin == -1 || end == -1) {
@@ -63,13 +64,9 @@ public class PartitionByRangeDateHash extends RuleFunction {
     }
   }
 
-  @Override
-  public int getPartitionNum() {
-    return -1;
-  }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
     this.beginDate = this.formatter.parse(prot.get("beginDate")).get(ChronoField.DAY_OF_YEAR);
     this.groupPartionSize = Integer.parseInt(prot.get("groupPartionSize"));
