@@ -22,25 +22,32 @@ import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import io.mycat.*;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.ShardingTableConfig;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.queryCondition.*;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -56,7 +63,7 @@ import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
  **/
 public enum MetadataManager {
     INSTANCE;
-    private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final ConcurrentHashMap<String, SchemaHandler> schemaMap = new ConcurrentHashMap<>();
 
     public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
@@ -128,8 +135,9 @@ public enum MetadataManager {
                                 List<BackendTableInfo> readOnly) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
-        String createTableSQL = tableConfigEntry.getCreateTableSQL();
-        List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
+        String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
+                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName,orignalTableName,backendTableInfos));
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backendTableInfos);
         //////////////////////////////////////////////
 
         LoadBalanceStrategy loadBalance = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
@@ -161,8 +169,8 @@ public enum MetadataManager {
     private void addShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
-        String createTableSQL = tableConfigEntry.getCreateTableSQL();
-        List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
+        String createTableSQL =Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(()->getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backends);
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(s);
@@ -172,7 +180,7 @@ public enum MetadataManager {
 
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
 
-        ShardingTable shardingTable = new ShardingTable(logicTable, (List)backends, tableConfigEntry.getColumns(), sequence);
+        ShardingTable shardingTable = new ShardingTable(logicTable, (List) backends, tableConfigEntry.getColumns(), sequence);
         addLogicTable(shardingTable);
     }
 
@@ -192,18 +200,114 @@ public enum MetadataManager {
     }
 
 
-
-    private List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, ShardingQueryRootConfig.PrototypeServer prototypeServer, String tableName, String createTableSQL) {
+    private List<SimpleColumnInfo> getSimpleColumnInfos(ShardingQueryRootConfig.PrototypeServer prototypeServer,
+                                                        String schemaName,
+                                                        String tableName,
+                                                        String createTableSQL,
+                                                        List<BackendTableInfo> backends) {
         List<SimpleColumnInfo> columns = null;
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
         if (createTableSQL != null) {
-            columns = getColumnInfo(createTableSQL);
-        } else if (prototypeServer != null) {
-            columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getUrl(), prototypeServer.getUser(), prototypeServer.getPassword());
+            try {
+                columns = getColumnInfo(createTableSQL);
+            } catch (Throwable e) {
+                LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
+            }
         }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        if (columns == null && backends != null && !backends.isEmpty()) {
+            try {
+                columns = getColumnInfoBySelectSQLOnJdbc(backends);
+            } catch (Throwable e) {
+                LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        if (columns == null && prototypeServer != null) {
+            try {
+                columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getUrl(), prototypeServer.getUser(), prototypeServer.getPassword());
+            } catch (Throwable e) {
+                LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        if (columns == null && backends != null && !backends.isEmpty()) {
+            try {
+                BackendTableInfo backendTableInfo = backends.get(0);
+                String targetName = backendTableInfo.getTargetName();
+                String schema = backendTableInfo.getSchema();
+                String table = backendTableInfo.getTable();
+                targetName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, false, null);
+                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName)) {
+                    DatabaseMetaData metaData = connection.getRawConnection().getMetaData();
+                    return CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema, table);
+                }
+            } catch (Throwable e) {
+                LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
         if (columns == null) {
             throw new UnsupportedOperationException("没有配置建表sql");
         }
         return columns;
+    }
+
+    private List<SimpleColumnInfo> getColumnInfoBySelectSQLOnJdbc(List<BackendTableInfo> backends) {
+        if (backends.isEmpty()) {
+            return null;
+        }
+        BackendTableInfo backendTableInfo = backends.get(0);
+        String targetName = backendTableInfo.getTargetName();
+        String targetSchemaTable = backendTableInfo.getSchemaInfo().getTargetSchemaTable();
+        String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+        try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
+            Connection rawConnection = connection.getRawConnection();
+            String sql = "select * from " + targetSchemaTable + " where 0 ";
+            try (Statement statement = rawConnection.createStatement()) {
+                statement.setMaxRows(0);
+                try (ResultSet resultSet = statement.executeQuery(sql)) {
+                    resultSet.next();
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                    return getColumnInfo(jdbcRowMetaData);
+                }
+            }
+        } catch (Throwable e) {
+            LOGGER.error("无法根据jdbc连接获取建表sql:{} {}", backends, e);
+        }
+        return null;
+    }
+
+    private static String getCreateTableSQLByJDBC(String schemaName, String tableName, List<BackendTableInfo> backends) {
+        if (backends == null || backends.isEmpty()) {
+            return null;
+        }
+        try {
+            BackendTableInfo backendTableInfo = backends.get(0);
+            String targetName = backendTableInfo.getTargetName();
+            String targetSchemaTable = backendTableInfo.getSchemaInfo().getTargetSchemaTable();
+            String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
+                String sql = "SHOW CREATE TABLE " + targetSchemaTable;
+                try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
+                    while (rowBaseIterator.next()) {
+                        String string = rowBaseIterator.getString(2);
+                        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+                        MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
+
+                        sqlStatement1.setTableName(SQLUtils.normalize(tableName));
+                        sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                        return sqlStatement1.toString();
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            LOGGER.error("无法根据jdbc连接获取建表sql:{} {}", backends, e);
+        }
+        return null;
     }
 
 
@@ -359,7 +463,7 @@ public enum MetadataManager {
             }
             List<DataNode> calculate = dataMappingEvaluator.calculate(logicTable);
             if (calculate.size() != 1) {
-                throw new UnsupportedOperationException("插入语句多于1个目标:"+valuesList);
+                throw new UnsupportedOperationException("插入语句多于1个目标:" + valuesList);
             }
             DataNode endTableInfo = calculate.get(0);
             List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>(1));
