@@ -28,7 +28,7 @@ public class ShardingTable implements ShardingTableHandler {
     private final List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
-                         List<DataNode> backends, List<ShardingQueryRootConfig.Column> columns,Supplier<String> sequence) {
+                         List<DataNode> backends, List<ShardingQueryRootConfig.Column> columns, Supplier<String> sequence) {
         this.logicTable = logicTable;
         this.backends = backends == null ? Collections.emptyList() : backends;
         this.sequence = sequence;
@@ -42,14 +42,14 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     private static Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> getShardingInfo(
-            ShardingTableHandler  table,
+            ShardingTableHandler table,
             List<SimpleColumnInfo> columns,
             List<ShardingQueryRootConfig.Column> columnMap) {
         return columnMap.stream().map(entry1 -> {
             SharingFuntionRootConfig.ShardingFuntion function = entry1.getFunction();
             CustomRuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
-                    getRuleAlgorithm(table,entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
-            SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.valueOf(entry1.getShardingType());
+                    getRuleAlgorithm(table, entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
+            SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.parse(entry1.getShardingType());
             SimpleColumnInfo found = null;
             for (SimpleColumnInfo i : columns) {
                 if (entry1.getColumnName().equals(i.getColumnName())) {
@@ -59,7 +59,7 @@ public class ShardingTable implements ShardingTableHandler {
             }
             SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found);
             return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
-        }).collect(Collectors.toMap(k -> k.getShardingType(), k -> k));
+        }).collect(Collectors.toMap(k -> k.getShardingType() != null ? k.getShardingType() : NATURE_DATABASE_TABLE, k -> k));
     }
 
     public boolean isNatureTable() {

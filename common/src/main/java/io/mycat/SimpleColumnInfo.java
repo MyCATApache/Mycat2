@@ -1,7 +1,6 @@
 package io.mycat;
 
 import io.mycat.router.CustomRuleFunction;
-import io.mycat.router.SingleValueRuleFunction;
 import lombok.*;
 
 import java.sql.JDBCType;
@@ -47,8 +46,14 @@ public class SimpleColumnInfo {
         MAP_TARGET,
         MAP_SCHEMA,
         MAP_TABLE,
-        NATURE_DATABASE_TABLE,
+        NATURE_DATABASE_TABLE;
 
+        public static ShardingType parse(String name) {
+            if (name == null) {
+                return NATURE_DATABASE_TABLE;
+            }
+            return valueOf(name);
+        }
     }
 
     /**
@@ -62,7 +67,7 @@ public class SimpleColumnInfo {
         @NonNull
         final ShardingType shardingType;
         @NonNull
-        final List<String> map ;
+        final List<String> map;
         @NonNull
         final CustomRuleFunction function;
     }
