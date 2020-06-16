@@ -44,16 +44,7 @@ public class PatternRootConfig {
         return Stream.concat(sqlsGroup.stream().flatMap(i -> i.stream()), sqls.stream()).distinct().collect(Collectors.toList());
     }
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    @EqualsAndHashCode
-    public static class UserConfig {
-        private String username;
-        private String password;
-        private String ip;
-    }
+
 
     public static void main(String[] args) {
         PatternRootConfig config = PatternRootConfig.builder().user(

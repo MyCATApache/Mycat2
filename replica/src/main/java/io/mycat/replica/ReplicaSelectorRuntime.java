@@ -392,4 +392,13 @@ public String getDatasourceNameByRandom() {
         return this.physicsInstanceMap.containsKey(targetName);
     }
 
+
+    public Map<String, ReplicaDataSourceSelector> getReplicaMap() {
+        return Collections.unmodifiableMap(replicaMap);
+    }
+
+
+    public Map<String, PhysicsInstance> getPhysicsInstanceMap() {
+        return Collections.unmodifiableMap(physicsInstanceMap);
+    }
 }
