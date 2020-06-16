@@ -1,4 +1,4 @@
-package io.mycat.example.customRulesegmentQuery;
+package io.mycat.example.customRuleSegmentQuery;
 
 import io.mycat.ConfigProvider;
 import io.mycat.MycatCore;
