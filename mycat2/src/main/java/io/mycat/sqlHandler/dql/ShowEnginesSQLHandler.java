@@ -8,7 +8,7 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.sql.JDBCType;
 import java.util.Arrays;
 
@@ -16,7 +16,7 @@ import java.util.Arrays;
  * chenjunwen
  * mock ShowEngines
  */
-@Resource
+
 public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesStatement> {
 
     @Override

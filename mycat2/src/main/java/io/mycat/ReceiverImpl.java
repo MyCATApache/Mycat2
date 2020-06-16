@@ -288,6 +288,7 @@ public class ReceiverImpl implements Response {
         boolean master = details.needStartTransaction || session.isInTransaction() || !session.isAutocommit() || details.globalTableUpdate || details.executeType.isMaster();
         MycatDataContext client = Objects.requireNonNull(session.unwrap(MycatDataContext.class));
         Map<String, List<String>> tasks = resolveDataSourceName(details.getBalance(), master, Objects.requireNonNull(details.targets));
+        details.setTargets(tasks);
         ExecuteType executeType = details.executeType;
         if (this.explainMode) {
             sendExplain(null, "execute:" + details);
@@ -312,7 +313,7 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            if ((executeType == QUERY_MASTER || executeType == QUERY) && MycatDatasourceUtil.isJdbcDatasource(datasourceName)) {
+            if ((executeType == QUERY_MASTER || executeType == QUERY)) {
                 block(mycat -> {
                     switch (executeType) {
                         case QUERY_MASTER:
@@ -326,6 +327,7 @@ public class ReceiverImpl implements Response {
                             throw new IllegalStateException("Unexpected value: " + executeType);
                     }
                 });
+                return;
             }
         }
         block(mycat -> {
@@ -398,7 +400,10 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            throw new IllegalArgumentException();
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName)) {
+                UpdateRowIteratorResponse updateRowIteratorResponse = connection.executeUpdate(sql, true, 0);
+                writeToMycatSession(session, updateRowIteratorResponse);
+            }
         }));
     }
 

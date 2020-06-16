@@ -1,5 +1,12 @@
 {
   "map": {
+    "@@global.performance_schema": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@performance_schema",
+      "enumObject": "performance_schema",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
     "@@global.version_comment": {
       "clazz": "java.lang.String",
       "columnName": "@@version_comment",

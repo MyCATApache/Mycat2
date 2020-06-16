@@ -99,7 +99,12 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     @SneakyThrows
     public void close() {
         if (isInTransaction() && userTransaction != null) {
-            this.userTransaction.setRollbackOnly();
+            try {
+                this.userTransaction.rollback();
+            }catch (Throwable e){
+                LOGGER.error("",e);
+                this.userTransaction.setRollbackOnly();
+            }
             this.userTransaction = null;
             this.bindThread = null;
         }

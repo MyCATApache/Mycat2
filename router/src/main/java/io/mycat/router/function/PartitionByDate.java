@@ -14,7 +14,8 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
 import java.time.format.DateTimeFormatter;
@@ -24,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-public class PartitionByDate extends RuleFunction {
+public class PartitionByDate extends SingleValueRuleFunction {
 
   private static final long ONE_DAY = 86400000;
   private long beginDate;
@@ -39,7 +40,11 @@ public class PartitionByDate extends RuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
+    this.table = tableHandler;
+    this.properties = prot;
+    this.ranges = ranges;
+
     String startBeginDate = prot.get("beginDate");
     String startEndDate = prot.get("endDate");
     String startPartionDay = prot.get("partionDay");
@@ -66,7 +71,7 @@ public class PartitionByDate extends RuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     long targetTime = getTime(columnValue);
     return innerCalculate(targetTime);
   }
@@ -80,7 +85,7 @@ public class PartitionByDate extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     long beginDate = getTime(beginValue);
     long endDate = getTime(endValue);
     ArrayList<Integer> list = new ArrayList<>();
@@ -95,8 +100,4 @@ public class PartitionByDate extends RuleFunction {
   }
 
 
-  @Override
-  public int getPartitionNum() {
-    return nCount > 0 ? nCount : -1;
-  }
 }

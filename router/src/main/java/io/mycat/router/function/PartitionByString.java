@@ -14,14 +14,15 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 
 import java.util.Map;
 
-public class PartitionByString extends RuleFunction {
+public class PartitionByString extends SingleValueRuleFunction {
 
   private int hashSliceStart;
   private int hashSliceEnd;
@@ -60,7 +61,7 @@ public class PartitionByString extends RuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
     String partitionLengthText = prot.get("partitionLength");
     String partitionCountText = prot.get("partitionCount");
     String hashSliceText = prot.get("hashSlice");
@@ -74,7 +75,7 @@ public class PartitionByString extends RuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     int start = hashSliceStart >= 0 ? hashSliceStart : columnValue.length() + hashSliceStart;
     int end = hashSliceEnd > 0 ? hashSliceEnd : columnValue.length() + hashSliceEnd;
     long hash = StringUtil.hash(columnValue, start, end);
@@ -82,14 +83,11 @@ public class PartitionByString extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partitionUtil.getPartitionNum();
-  }
+
 
 
 }

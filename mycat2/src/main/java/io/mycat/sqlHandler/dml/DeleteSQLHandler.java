@@ -8,11 +8,10 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
 
 import static io.mycat.sqlHandler.dml.UpdateSQLHandler.updateHandler;
 
-@Resource
+
 public class DeleteSQLHandler extends AbstractSQLHandler<MySqlDeleteStatement> {
 
     @Override

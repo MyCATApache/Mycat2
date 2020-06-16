@@ -13,7 +13,7 @@ import io.mycat.DataNode;
 import io.mycat.hbt.ast.base.OrderItem;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 
 import java.util.List;
 import java.util.Set;
@@ -40,7 +40,7 @@ public interface ParseHelper {
 
     default public void changeSchemaTable(SQLExprTableSource tableSource, DataNode dataNode) {
         tableSource.setSchema(dataNode.getSchema());
-        tableSource.setSimpleName(dataNode.geTable());
+        tableSource.setSimpleName(dataNode.getTable());
     }
 
     default public MySqlSelectQueryBlock unWapperToQueryBlock(SQLStatement sqlStatement) {

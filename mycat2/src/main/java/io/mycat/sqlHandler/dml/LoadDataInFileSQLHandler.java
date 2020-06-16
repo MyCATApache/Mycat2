@@ -7,14 +7,14 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 
-@Resource
+
+
+
 public class LoadDataInFileSQLHandler extends AbstractSQLHandler<MySqlLoadDataInFileStatement> {
 
 
-    @PostConstruct
+
     public void init(){
 
     }

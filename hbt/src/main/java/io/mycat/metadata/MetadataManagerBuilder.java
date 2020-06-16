@@ -17,7 +17,7 @@ package io.mycat.metadata;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.ShardingTableConfig;
 import io.mycat.config.SharingFuntionRootConfig;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.util.YamlUtil;
 
 import java.util.*;

@@ -1,8 +1,6 @@
-package io.mycat.metadata;
+package io.mycat;
 
-import io.mycat.TextUpdateInfo;
-import io.mycat.queryCondition.SimpleColumnInfo;
-import org.apache.calcite.schema.Statistic;
+
 
 import java.util.Iterator;
 import java.util.List;
