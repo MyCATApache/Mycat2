@@ -494,7 +494,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                         cache.put(other, Boolean.TRUE);
                     }
                     //修正,不能影响上面流程
-                    if (other instanceof Union) {
+                    if (other instanceof SetOp) {
                         cache.put(other, false);//没有事务并行查询->总是并行查询
                         margeList.put(other,ImmutableList.of("a","b"));//强制使union的数据源不一致,这样就不会下推union
                         return other;
