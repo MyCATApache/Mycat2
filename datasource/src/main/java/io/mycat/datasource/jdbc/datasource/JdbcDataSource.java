@@ -89,4 +89,8 @@ public class JdbcDataSource implements MycatDataSource {
     public DataSource getDataSource() {
         return dataSource;
     }
+
+    public int getUsedCount() {
+        return counter.get();
+    }
 }

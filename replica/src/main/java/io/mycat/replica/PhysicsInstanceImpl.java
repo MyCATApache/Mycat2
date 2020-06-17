@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
-    volatile InstanceType type;
+    final InstanceType type;
     final String name;
     final ReplicaDataSourceSelector selector;
     final int weight;
@@ -111,7 +111,4 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         return result;
     }
 
-    public void setType(InstanceType type) {
-        this.type = type;
-    }
 }

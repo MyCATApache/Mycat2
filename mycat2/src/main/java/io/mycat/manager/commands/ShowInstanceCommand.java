@@ -24,6 +24,7 @@ public class ShowInstanceCommand implements MycatCommand {
         if ("show @@backend.instance".equalsIgnoreCase(request.getText())){
             ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
             resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
+            resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
             resultSetBuilder.addColumnInfo("READABLE", JDBCType.BOOLEAN);
             resultSetBuilder.addColumnInfo("SESSION_COUNT", JDBCType.BIGINT);
             resultSetBuilder.addColumnInfo("WEIGHT", JDBCType.BIGINT);
@@ -41,6 +42,7 @@ public class ShowInstanceCommand implements MycatCommand {
             for (PhysicsInstance instance : values) {
 
                 String NAME = instance.getName();
+                String TYPE = instance.getType().name();
                 boolean READABLE = instance.asSelectRead();
                 int SESSION_COUNT = instance.getSessionCounter();
                 int WEIGHT = instance.getWeight();
@@ -50,7 +52,7 @@ public class ShowInstanceCommand implements MycatCommand {
                 Optional<DatasourceRootConfig.DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
                 resultSetBuilder.addObjectRowPayload(
-                        Arrays.asList(NAME, READABLE,SESSION_COUNT,WEIGHT,ALIVE,MASTER,
+                        Arrays.asList(NAME,TYPE, READABLE,SESSION_COUNT,WEIGHT,ALIVE,MASTER,
                                 e.map(i->i.getIp()).orElse(""),
                                 e.map(i->i.getPort()).orElse(-1),
                                 e.map(i->i.getMaxCon()).orElse(-1),

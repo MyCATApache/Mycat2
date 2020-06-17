@@ -27,4 +27,6 @@ public interface PhysicsInstance {
   int getSessionCounter();
 
   int getWeight();
+
+  InstanceType getType();
 }
