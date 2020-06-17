@@ -332,4 +332,8 @@ public enum MycatCore {
         Class<?> bufferPoolClass = Class.forName(clazz);
         return bufferPoolClass.getDeclaredConstructor();
     }
+
+    public Map<String, MySQLDatasource> getDatasourceMap() {
+        return Collections.unmodifiableMap(datasourceMap);
+    }
 }

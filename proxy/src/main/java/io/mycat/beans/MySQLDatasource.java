@@ -139,4 +139,8 @@ public abstract class MySQLDatasource implements MycatDataSource {
     public int getConnectionCounter() {
         return connectionCounter.get();
     }
+
+    public int getUsedCounter() {
+        return usedCounter.get();
+    }
 }
