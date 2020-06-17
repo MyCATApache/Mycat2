@@ -1,4 +1,4 @@
-package io.mycat.example.sharingXA;
+package io.mycat.example.shardingXA;
 
 import io.mycat.ConfigProvider;
 import io.mycat.MycatCore;
