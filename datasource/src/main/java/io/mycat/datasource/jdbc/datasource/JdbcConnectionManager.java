@@ -18,8 +18,6 @@ package io.mycat.datasource.jdbc.datasource;
 import io.mycat.MycatException;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,19 +72,21 @@ public class JdbcConnectionManager implements ConnectionManager {
                 DatasourceRootConfig.DatasourceConfig config = key.getConfig();
                 Connection connection = key.getDataSource().getConnection();
                 DefaultConnection defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
-                try{
+                try {
                     return defaultConnection;
-                }finally {
+                } finally {
                     if (config.isInitSqlsGetConnection()) {
-                        try(Statement statement = connection.createStatement()){
-                            for (String initSql : config.getInitSqls()) {
-                                statement.execute(initSql);
+                        if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
+                            try (Statement statement = connection.createStatement()) {
+                                for (String initSql : config.getInitSqls()) {
+                                    statement.execute(initSql);
+                                }
                             }
                         }
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.debug("",e);
+                LOGGER.debug("", e);
                 key.counter.decrementAndGet();
                 throw new MycatException(e);
             }
