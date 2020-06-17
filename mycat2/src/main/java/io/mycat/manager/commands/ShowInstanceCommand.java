@@ -7,8 +7,6 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
 import io.mycat.config.DatasourceRootConfig;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Response;
@@ -20,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ShowDatasourceCommand implements MycatCommand {
+public class ShowInstanceCommand implements MycatCommand {
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         if ("show @@backend.instance".equalsIgnoreCase(request.getText())){
@@ -34,12 +32,14 @@ public class ShowDatasourceCommand implements MycatCommand {
             resultSetBuilder.addColumnInfo("HOST", JDBCType.VARCHAR);
             resultSetBuilder.addColumnInfo("PORT", JDBCType.BIGINT);
             resultSetBuilder.addColumnInfo("LIMIT_SESSION_COUNT", JDBCType.BIGINT);
+            resultSetBuilder.addColumnInfo("REPLICA", JDBCType.VARCHAR);
             Collection<PhysicsInstance> values =
                     ReplicaSelectorRuntime.INSTANCE.getPhysicsInstanceMap().values();
             MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
             Map<String, DatasourceRootConfig.DatasourceConfig> dataSourceConfig = mycatConfig.getDatasource().getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
 
             for (PhysicsInstance instance : values) {
+
                 String NAME = instance.getName();
                 boolean READABLE = instance.asSelectRead();
                 int SESSION_COUNT = instance.getSessionCounter();
@@ -53,7 +53,10 @@ public class ShowDatasourceCommand implements MycatCommand {
                         Arrays.asList(NAME, READABLE,SESSION_COUNT,WEIGHT,ALIVE,MASTER,
                                 e.map(i->i.getIp()).orElse(""),
                                 e.map(i->i.getPort()).orElse(-1),
-                                e.map(i->i.getMaxCon()).orElse(-1)
+                                e.map(i->i.getMaxCon()).orElse(-1),
+                                ReplicaSelectorRuntime.INSTANCE.getReplicaMap().values()
+                                        .stream().flatMap(i->i.getRawDataSourceMap().values().stream())
+                                        .filter(i->NAME.equals(i.getName())).findFirst().orElse(null)
                                 ));
             }
             response.sendResultSet(() -> resultSetBuilder.build());

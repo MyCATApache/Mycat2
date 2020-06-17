@@ -3,22 +3,18 @@ package io.mycat.manager;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DefaultCommandHandler;
 import io.mycat.ReceiverImpl;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
-import io.mycat.manager.commands.ShowDatasourceCommand;
+import io.mycat.manager.commands.ShowInstanceCommand;
+import io.mycat.manager.commands.ShowReplicaCommand;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaSelectorRuntime;
 
-import java.sql.JDBCType;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 
 public class ManagerCommandDispatcher extends DefaultCommandHandler {
     static final ImmutableList<MycatCommand> COMMANDS = ImmutableList.of(
-            new ShowDatasourceCommand()
+            new ShowInstanceCommand(),
+            new ShowReplicaCommand()
     );
 
     @Override
