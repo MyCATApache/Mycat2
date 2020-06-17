@@ -72,6 +72,11 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         }
         return count;
     }
+    public void addSessionCounter(SessionCounter sessionCounter){
+        if (sessionCounter!=null){
+            sessionCounters.add(sessionCounter);
+        }
+    }
 
     @Override
     public int getWeight() {

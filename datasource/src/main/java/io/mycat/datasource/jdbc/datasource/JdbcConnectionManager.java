@@ -18,6 +18,7 @@ package io.mycat.datasource.jdbc.datasource;
 import io.mycat.MycatException;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +46,11 @@ public class JdbcConnectionManager implements ConnectionManager {
 
     @Override
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
-        dataSourceMap.computeIfAbsent(key.getName(), dataSource1 -> datasourceProvider
-                .createDataSource(key));
+        dataSourceMap.computeIfAbsent(key.getName(), dataSource1 -> {
+            JdbcDataSource dataSource = datasourceProvider.createDataSource(key);
+            ReplicaSelectorRuntime.INSTANCE.registerDatasource(dataSource1, () -> dataSource.counter.get());
+            return dataSource;
+        });
     }
 
     @Override

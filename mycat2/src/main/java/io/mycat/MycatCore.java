@@ -164,18 +164,18 @@ public enum MycatCore {
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
 
 
-        HashMap<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap = new HashMap<>();
+        HashMap<TransactionType, Function<MycatDataContext, TransactionSession>> transactionFactoryMap = new HashMap<>();
 
 
         DatasourceProvider datasourceProvider = JdbcRuntime.INSTANCE.getDatasourceProvider();
         if ((datasourceProvider instanceof AtomikosDatasourceProvider)) {
-            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> datasourceProvider.createUserTransaction()));
+            transactionFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> datasourceProvider.createUserTransaction()));
         } else {
-            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+            transactionFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
         }
-        transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
+        transactionFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
-        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap);
+        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transactionFactoryMap);
 
 
         long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);
@@ -312,7 +312,12 @@ public enum MycatCore {
         List<DatasourceRootConfig.DatasourceConfig> datasources = config.currentConfig().getDatasource().getDatasources();
         for (DatasourceRootConfig.DatasourceConfig datasourceConfig : datasources) {
             if (datasourceConfig.computeType().isNative() && name.equals(datasourceConfig.getName())) {
-                return datasourceMap.computeIfAbsent(name, s -> new MySQLDatasource(datasourceConfig) {
+
+                return datasourceMap.computeIfAbsent(name, s -> {
+                    MySQLDatasource mySQLDatasource = new MySQLDatasource(datasourceConfig) {
+                    };
+                    ReplicaSelectorRuntime.INSTANCE.registerDatasource(datasourceConfig.getName(), () -> mySQLDatasource.getConnectionCounter());
+                    return mySQLDatasource;
                 });
             }
         }
