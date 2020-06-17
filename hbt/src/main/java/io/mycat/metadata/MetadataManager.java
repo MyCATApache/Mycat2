@@ -411,9 +411,13 @@ public enum MetadataManager {
         } else {
             simpleColumnInfos = new ArrayList<>(logicTable.getColumns().size());
             for (SQLExpr column : columns) {
-                String s1 = SQLUtils.normalize(column.toString());
-                SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(s1));
-                simpleColumnInfos.add(columnByName);
+                String columnName = SQLUtils.normalize(column.toString());
+                try {
+                    SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(columnName));
+                    simpleColumnInfos.add(columnByName);
+                }catch (NullPointerException e){
+                   throw new MycatException("未知字段:"+columnName);
+                }
             }
         }
         Supplier<String> stringSupplier = logicTable.nextSequence();
