@@ -32,6 +32,7 @@ public class MycatConfig {
     ClusterRootConfig cluster = new ClusterRootConfig();
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
+    ManagerConfig manager = new ManagerConfig();
     Map<String, Object> properties;
 
     ///expend

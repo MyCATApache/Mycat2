@@ -180,7 +180,11 @@ public class ReceiverImpl implements Response {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session, Arrays.asList(message.split("\n")));
     }
-
+    public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator){
+        sendResultSet(rowBaseIterator, () -> {
+            throw new UnsupportedOperationException();
+        });
+    }
     @Override
     public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier) {
         if (!this.explainMode) {

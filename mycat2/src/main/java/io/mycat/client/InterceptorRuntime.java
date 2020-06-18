@@ -21,6 +21,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.booster.CacheConfig;
 import io.mycat.commands.*;
 import io.mycat.config.PatternRootConfig;
+import io.mycat.config.UserConfig;
 import io.mycat.matcher.Matcher;
 import io.mycat.matcher.StringEqualsFactory;
 import io.mycat.plug.command.MycatCommandLoader;
@@ -83,7 +84,7 @@ public enum InterceptorRuntime {
         //config
         this.wapper.clear();
         for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
-            PatternRootConfig.UserConfig user = Objects.requireNonNull(interceptor.getUser());
+            UserConfig user = Objects.requireNonNull(interceptor.getUser());
             String username = Objects.requireNonNull(user.getUsername());
             String matcherClazz = interceptor.getMatcherClazz();
             Map<String, Object> defaultHanlder = interceptor.getDefaultHanlder();

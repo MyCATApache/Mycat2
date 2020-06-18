@@ -15,6 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.MycatConfig;
+import io.mycat.MycatException;
 import io.mycat.ScheduleUtil;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
@@ -81,7 +82,7 @@ public enum ReplicaSelectorRuntime {
         updateTimer(config);
 
         Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toMap(k -> k.getName(), v -> v));
-        CollectionUtil.safeUpdate(this.physicsInstanceMap,newphysicsInstanceMap);
+        CollectionUtil.safeUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
     }
 
     public synchronized void updateTimer(MycatConfig config) {
@@ -173,6 +174,17 @@ public enum ReplicaSelectorRuntime {
     }
 
 
+    public PhysicsInstance registerDatasource(String dataSourceName, SessionCounter sessionCounter) {
+        PhysicsInstance instance = this.physicsInstanceMap.get(dataSourceName);
+        if (instance == null){
+            throw new MycatException(dataSourceName+" is not existed");
+        }
+        PhysicsInstanceImpl physicsInstance = (PhysicsInstanceImpl) instance;
+        physicsInstance.addSessionCounter(sessionCounter);
+        return physicsInstance;
+    }
+
+
 ///////////////////////////////////////private manager//////////////////////////////////////////////////////////////////////////
 
     private PhysicsInstance registerDatasource(boolean master, ReplicaDataSourceSelector selector,
@@ -239,6 +251,7 @@ public enum ReplicaSelectorRuntime {
         return instance;
     }
 
+
     private ReplicaDataSourceSelector registerCluster(String replicaName, BalanceType balanceType,
                                                       ReplicaType type,
                                                       int maxRequestCount,
@@ -248,14 +261,15 @@ public enum ReplicaSelectorRuntime {
                 s -> new ReplicaDataSourceSelector(replicaName, balanceType, type, maxRequestCount, switchType, readLB,
                         writeLB));
     }
-//////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
-public String getDatasourceNameByRandom() {
-    ArrayList<ReplicaDataSourceSelector> values = new ArrayList<>(replicaMap.values());
-    int i = ThreadLocalRandom.current().nextInt(0, values.size());
-    ReplicaDataSourceSelector replicaDataSourceSelector = values.get(i);
-    String name = replicaDataSourceSelector.getName();
-    return getDatasourceNameByReplicaName(name,false,null);
-}
+
+    //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
+    public String getDatasourceNameByRandom() {
+        ArrayList<ReplicaDataSourceSelector> values = new ArrayList<>(replicaMap.values());
+        int i = ThreadLocalRandom.current().nextInt(0, values.size());
+        ReplicaDataSourceSelector replicaDataSourceSelector = values.get(i);
+        String name = replicaDataSourceSelector.getName();
+        return getDatasourceNameByReplicaName(name, false, null);
+    }
 
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
         BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function = master ? this::getWriteDatasource : this::getDatasource;
@@ -305,7 +319,7 @@ public String getDatasourceNameByRandom() {
             balanceStrategy = defaultWriteLoadBalanceStrategy;
         }
         LoadBalanceElement select = balanceStrategy.select(selector, element);
-        Objects.requireNonNull(select,"No data source available");
+        Objects.requireNonNull(select, "No data source available");
         return (PhysicsInstanceImpl) select;
     }
 
@@ -333,7 +347,7 @@ public String getDatasourceNameByRandom() {
         MycatConfig config = this.config;
         Objects.requireNonNull(config);
         String name = replicaName + "." + datasourceName;
-        if (!heartbeatDetectorMap.containsKey(name)){
+        if (!heartbeatDetectorMap.containsKey(name)) {
             config.getCluster().getClusters().stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
                 ClusterRootConfig.HeartbeatConfig heartbeat = c.getHeartbeat();
                 ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
@@ -376,20 +390,31 @@ public String getDatasourceNameByRandom() {
     }
 
 
-    public String getFirstReplicaDataSource(){
-    return   Optional.ofNullable(  config)
-              .map(c->c.getCluster())
-              .filter(c->c.getClusters()!=null&&c.getClusters().isEmpty())
-              .map(c->c.getClusters().get(0)).map(c->getDatasourceNameByReplicaName(c.getName(),false,null))
-              .orElseGet(()->config.getDatasource().getDatasources().get(0).getName());
+    public String getFirstReplicaDataSource() {
+        return Optional.ofNullable(config)
+                .map(c -> c.getCluster())
+                .filter(c -> c.getClusters() != null && c.getClusters().isEmpty())
+                .map(c -> c.getClusters().get(0)).map(c -> getDatasourceNameByReplicaName(c.getName(), false, null))
+                .orElseGet(() -> config.getDatasource().getDatasources().get(0).getName());
     }
 
-    public PhysicsInstance getPhysicsInstanceByName(String name){
+    public PhysicsInstance getPhysicsInstanceByName(String name) {
         return physicsInstanceMap.get(name);
     }
 
     public boolean isDatasource(String targetName) {
         return this.physicsInstanceMap.containsKey(targetName);
     }
+
+
+    public Map<String, ReplicaDataSourceSelector> getReplicaMap() {
+        return Collections.unmodifiableMap(replicaMap);
+    }
+
+
+    public Map<String, PhysicsInstance> getPhysicsInstanceMap() {
+        return Collections.unmodifiableMap(physicsInstanceMap);
+    }
+
 
 }

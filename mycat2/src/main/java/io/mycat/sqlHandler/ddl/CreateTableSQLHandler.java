@@ -161,7 +161,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
         Set<String> dataSources = new HashSet<>();
         if (ReplicaSelectorRuntime.INSTANCE.isReplicaName(targetName)) {
             ReplicaDataSourceSelector dataSourceSelector = ReplicaSelectorRuntime.INSTANCE.getDataSourceSelector(targetName);
-            dataSources.addAll(dataSourceSelector.getRwaDataSourceMap().keySet());
+            dataSources.addAll(dataSourceSelector.getRawDataSourceMap().keySet());
         }
         if (ReplicaSelectorRuntime.INSTANCE.isDatasource(targetName)) {
             dataSources.add(targetName);
