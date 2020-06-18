@@ -5,6 +5,7 @@ import io.mycat.DefaultCommandHandler;
 import io.mycat.ReceiverImpl;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
+import io.mycat.manager.commands.ShowConnectionCommand;
 import io.mycat.manager.commands.ShowDatasourceCommand;
 import io.mycat.manager.commands.ShowInstanceCommand;
 import io.mycat.manager.commands.ShowReplicaCommand;
@@ -16,7 +17,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
     static final ImmutableList<MycatCommand> COMMANDS = ImmutableList.of(
             new ShowInstanceCommand(),
             new ShowReplicaCommand(),
-            new ShowDatasourceCommand()
+            new ShowDatasourceCommand(),
+            new ShowConnectionCommand()
     );
 
     @Override
