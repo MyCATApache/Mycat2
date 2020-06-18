@@ -5,10 +5,7 @@ import io.mycat.DefaultCommandHandler;
 import io.mycat.ReceiverImpl;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
-import io.mycat.manager.commands.ShowConnectionCommand;
-import io.mycat.manager.commands.ShowDatasourceCommand;
-import io.mycat.manager.commands.ShowInstanceCommand;
-import io.mycat.manager.commands.ShowReplicaCommand;
+import io.mycat.manager.commands.*;
 import io.mycat.proxy.session.MycatSession;
 
 import java.util.HashMap;
@@ -18,7 +15,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowInstanceCommand(),
             new ShowReplicaCommand(),
             new ShowDatasourceCommand(),
-            new ShowConnectionCommand()
+            new ShowConnectionCommand(),
+            new ShowHeartbeatCommand()
     );
 
     @Override
