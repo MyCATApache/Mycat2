@@ -52,7 +52,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             schemaHandler = Optional.ofNullable(handlerMap.get(schemaName))
                     .orElseGet(() -> {
                         if (mycatDBClientMediator.getSchema() == null) {
-                            throw new MycatException("unknown schema");
+                            throw new MycatException("unknown schema:"+schemaName);//可能schemaName有值,但是值名不是配置的名字
                         }
                         return handlerMap.get(mycatDBClientMediator.getSchema());
                     });
