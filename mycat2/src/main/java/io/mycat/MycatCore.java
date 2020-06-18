@@ -72,6 +72,8 @@ public enum MycatCore {
     private ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
     @Getter
     private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期
+    @Getter
+    private ReactorThreadManager reactorManager;
 
     @SneakyThrows
     public void init(ConfigProvider config) {
@@ -122,7 +124,7 @@ public enum MycatCore {
         list.add(thread);
 
 
-        final ReactorThreadManager reactorManager = new ReactorThreadManager(list);
+        reactorManager = new ReactorThreadManager(list);
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
         acceptor.startServerChannel(manager.getIp(), manager.getPort());
     }
