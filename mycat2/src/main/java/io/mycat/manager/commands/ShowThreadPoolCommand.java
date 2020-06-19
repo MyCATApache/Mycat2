@@ -6,6 +6,8 @@ import io.mycat.NameableExecutor;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
+import io.mycat.runtime.MycatDataContextSupport;
+import io.mycat.thread.GThreadPool;
 import io.mycat.util.Response;
 
 import java.sql.JDBCType;
@@ -25,6 +27,19 @@ public class ShowThreadPoolCommand implements MycatCommand {
                     .addColumnInfo("TOTAL_TASK",JDBCType.BIGINT);
             List<NameableExecutor> nameableExecutors = Arrays.asList(MycatWorkerProcessor.INSTANCE.getMycatWorker(),
                     MycatWorkerProcessor.INSTANCE.getTimeWorker());
+
+            GThreadPool gThreadPool = MycatDataContextSupport.INSTANCE.getgThreadPool();
+
+            int pendingSize = gThreadPool.getPendingSize();
+            long completedTasks = gThreadPool.getCompletedTasks();
+            builder.addObjectRowPayload(Arrays.asList(
+                    gThreadPool.toString(),
+                    gThreadPool.getMaxThread(),
+                    gThreadPool.getThreadCounter(),
+                    pendingSize,
+                    completedTasks,
+                    pendingSize+completedTasks
+            ));
             for (NameableExecutor w : nameableExecutors) {
                 builder.addObjectRowPayload(Arrays.asList(
                         w.getName(),

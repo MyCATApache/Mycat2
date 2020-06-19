@@ -32,11 +32,11 @@ public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, 
   private static final Logger LOGGER = LoggerFactory.getLogger(GThreadPool.class);
 
 
-  public GThreadPool(int maxPengdingLimit, long waitTaskTimeout, TimeUnit timeoutUnit, int minThread, int maxThread) {
-    super(maxPengdingLimit, waitTaskTimeout, timeoutUnit, minThread, maxThread, bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
+  public GThreadPool(int maxPengdingLimit, long waitTaskTimeout, TimeUnit timeoutUnit, int minThread, int maxThread,long keeplive) {
+    super(maxPengdingLimit, waitTaskTimeout, timeoutUnit, minThread, maxThread,keeplive, bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 
   public GThreadPool(ServerConfig.ThreadPoolExecutorConfig worker) {
-    super(worker.getMaxPendingLimit(), worker.getTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()), worker.getCorePoolSize(), worker.getMaxPoolSize(), bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
+    super(worker.getMaxPendingLimit(), worker.getTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()), worker.getCorePoolSize(), worker.getMaxPoolSize(),worker.getKeepAliveTime(), bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 }

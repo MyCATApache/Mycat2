@@ -38,5 +38,7 @@ public enum MycatDataContextSupport {
         return mycatDataContext;
     }
 
-
+    public GThreadPool getgThreadPool() {
+        return gThreadPool;
+    }
 }

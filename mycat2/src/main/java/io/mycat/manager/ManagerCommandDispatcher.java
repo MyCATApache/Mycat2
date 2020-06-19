@@ -19,7 +19,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowHeartbeatCommand(),
             new ShowBackendNativeCommand(),
             new ShowReactorCommand(),
-            new ShowThreadPoolCommand()
+            new ShowThreadPoolCommand(),
+            new ShowScheduleCommand()
     );
 
     @Override
