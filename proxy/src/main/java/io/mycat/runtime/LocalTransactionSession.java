@@ -8,6 +8,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
+import io.mycat.util.Dumper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,5 +100,13 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
                                 .getConnection(jdbcDataSource, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
                     }
                 });
+    }
+
+    @Override
+    public Dumper snapshot() {
+        return super.snapshot()
+                .addText("name",name())
+                .addText("threadUsage",getThreadUsageEnum())
+                .addText("transactionType",this.transactionType());
     }
 }

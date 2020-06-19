@@ -15,6 +15,8 @@
 
 package io.mycat.buffer;
 
+import io.mycat.util.Dumper;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
@@ -74,5 +76,10 @@ public class HeapBufferPool implements BufferPool {
     @Override
     public int chunkSize() {
         return chunkSize;
+    }
+
+    @Override
+    public Dumper snapshot() {
+        return Dumper.create().addText("chunkSize",chunkSize);
     }
 }

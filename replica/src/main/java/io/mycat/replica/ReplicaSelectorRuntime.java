@@ -420,5 +420,19 @@ public enum ReplicaSelectorRuntime {
         return Collections.unmodifiableMap(physicsInstanceMap);
     }
 
+    public Map<String, HeartbeatFlow> getHeartbeatDetectorMap() {
+        return Collections.unmodifiableMap(heartbeatDetectorMap);
+    }
 
+    public List<String> getRepliaNameListByInstanceName(String name) {
+        List<String> replicaDataSourceSelectorList = new ArrayList<>();
+        for (ReplicaDataSourceSelector replicaDataSourceSelector : ReplicaSelectorRuntime.INSTANCE.getReplicaMap().values()) {
+            for (PhysicsInstance physicsInstance : replicaDataSourceSelector.getRawDataSourceMap().values()) {
+                if (name.equals(physicsInstance.getName())) {
+                    replicaDataSourceSelectorList.add(replicaDataSourceSelector.getName());
+                }
+            }
+        }
+        return replicaDataSourceSelectorList;
+    }
 }
