@@ -227,7 +227,7 @@ public enum MetadataManager {
         ////////////////////////////////////////////////////////////////////////////////////////////////
         if (columns == null && prototypeServer != null) {
             try {
-                columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getUrl(), prototypeServer.getUser(), prototypeServer.getPassword());
+                columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getTargetName());
             } catch (Throwable e) {
                 LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
             }

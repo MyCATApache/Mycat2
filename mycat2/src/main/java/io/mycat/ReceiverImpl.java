@@ -119,8 +119,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void proxyDDL(SQLStatement statement) {
-        String datasourceNameByRandom = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
-        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), QUERY_MASTER);
+        String replicaDataSource = ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
+        ExplainDetail detail = getExplainDetail(replicaDataSource, statement.toString(), QUERY_MASTER);
         this.execute(detail);
     }
 

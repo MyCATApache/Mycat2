@@ -183,7 +183,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
                     @Override
                     public RowBaseIterator run() {
-                        String firstReplicaDataSource = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
+                        String firstReplicaDataSource = ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
                         MycatConnection connection = dbContext.getConnection(firstReplicaDataSource);
                         return connection.executeQuery(null,templateSql);
                     }

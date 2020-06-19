@@ -60,9 +60,6 @@ public class ShardingQueryRootConfig {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class PrototypeServer {
-        String url = "jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC";
-        String user = "root";
-        String password = "123456";
         String targetName = "defaultDs";
     }
 

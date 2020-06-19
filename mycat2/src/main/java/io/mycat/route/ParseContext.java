@@ -1,12 +1,9 @@
 package io.mycat.route;
 
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRecoverDDLJob;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.DrdsRemoveDDLJob;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.DataNode;
@@ -93,7 +90,7 @@ public class ParseContext implements ParseHelper {
     }
 
     public String getDefaultTarget() {
-        return ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
+        return ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
     }
 
 
