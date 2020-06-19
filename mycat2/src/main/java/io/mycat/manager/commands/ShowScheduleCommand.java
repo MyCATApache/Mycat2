@@ -11,34 +11,30 @@ import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class ShowScheduleCommand implements MycatCommand {
+public class ShowScheduleCommand implements ManageCommand {
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
-        if ("show @@schedule".equalsIgnoreCase(request.getText())) {
-            ResultSetBuilder builder = ResultSetBuilder.create();
-            ScheduledExecutorService timer = ScheduleUtil.getTimer();
-            String NAME = timer.toString();
-            boolean IS_TERMINATED = timer.isTerminated();
-            boolean IS_SHUTDOWN = timer.isShutdown();
-            int SCHEDULE_COUNT = ScheduleUtil.getScheduleCount();
-            builder.addColumnInfo("NAME", JDBCType.VARCHAR)
-                    .addColumnInfo("IS_TERMINATED",JDBCType.BOOLEAN)
-                    .addColumnInfo("IS_SHUTDOWN",JDBCType.BOOLEAN)
-                    .addColumnInfo("SCHEDULE_COUNT",JDBCType.BIGINT);
-            builder.addObjectRowPayload(Arrays.asList(NAME,IS_TERMINATED,IS_SHUTDOWN,SCHEDULE_COUNT));
-            response.sendResultSet(()->builder.build());
-            return true;
-        }
-        return false;
+    public String statement() {
+        return "show @@schedule";
     }
 
     @Override
-    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
-        return false;
+    public String description() {
+        return "show @@schedule";
     }
 
     @Override
-    public String getName() {
-        return getClass().getName();
+    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+        ResultSetBuilder builder = ResultSetBuilder.create();
+        ScheduledExecutorService timer = ScheduleUtil.getTimer();
+        String NAME = timer.toString();
+        boolean IS_TERMINATED = timer.isTerminated();
+        boolean IS_SHUTDOWN = timer.isShutdown();
+        int SCHEDULE_COUNT = ScheduleUtil.getScheduleCount();
+        builder.addColumnInfo("NAME", JDBCType.VARCHAR)
+                .addColumnInfo("IS_TERMINATED",JDBCType.BOOLEAN)
+                .addColumnInfo("IS_SHUTDOWN",JDBCType.BOOLEAN)
+                .addColumnInfo("SCHEDULE_COUNT",JDBCType.BIGINT);
+        builder.addObjectRowPayload(Arrays.asList(NAME,IS_TERMINATED,IS_SHUTDOWN,SCHEDULE_COUNT));
+        response.sendResultSet(()->builder.build());
     }
 }

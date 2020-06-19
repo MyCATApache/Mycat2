@@ -14,54 +14,51 @@ import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.List;
 
-public class ShowThreadPoolCommand implements MycatCommand {
+public class ShowThreadPoolCommand implements ManageCommand {
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
-        if ("show @@threadPool".equalsIgnoreCase(request.getText())){
-            ResultSetBuilder builder = ResultSetBuilder.create();
-            builder.addColumnInfo("NAME", JDBCType.VARCHAR)
-                    .addColumnInfo("POOL_SIZE",JDBCType.BIGINT)
-                    .addColumnInfo("ACTIVE_COUNT",JDBCType.BIGINT)
-                    .addColumnInfo("TASK_QUEUE_SIZE",JDBCType.BIGINT)
-                    .addColumnInfo("COMPLETED_TASK",JDBCType.BIGINT)
-                    .addColumnInfo("TOTAL_TASK",JDBCType.BIGINT);
-            List<NameableExecutor> nameableExecutors = Arrays.asList(MycatWorkerProcessor.INSTANCE.getMycatWorker(),
-                    MycatWorkerProcessor.INSTANCE.getTimeWorker());
+    public String statement() {
+        return "show @@threadPool";
+    }
 
-            GThreadPool gThreadPool = MycatDataContextSupport.INSTANCE.getgThreadPool();
+    @Override
+    public String description() {
+        return "show @@threadPool";
+    }
 
-            int pendingSize = gThreadPool.getPendingSize();
-            long completedTasks = gThreadPool.getCompletedTasks();
+    @Override
+    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+        ResultSetBuilder builder = ResultSetBuilder.create();
+        builder.addColumnInfo("NAME", JDBCType.VARCHAR)
+                .addColumnInfo("POOL_SIZE",JDBCType.BIGINT)
+                .addColumnInfo("ACTIVE_COUNT",JDBCType.BIGINT)
+                .addColumnInfo("TASK_QUEUE_SIZE",JDBCType.BIGINT)
+                .addColumnInfo("COMPLETED_TASK",JDBCType.BIGINT)
+                .addColumnInfo("TOTAL_TASK",JDBCType.BIGINT);
+        List<NameableExecutor> nameableExecutors = Arrays.asList(MycatWorkerProcessor.INSTANCE.getMycatWorker(),
+                MycatWorkerProcessor.INSTANCE.getTimeWorker());
+
+        GThreadPool gThreadPool = MycatDataContextSupport.INSTANCE.getgThreadPool();
+
+        int pendingSize = gThreadPool.getPendingSize();
+        long completedTasks = gThreadPool.getCompletedTasks();
+        builder.addObjectRowPayload(Arrays.asList(
+                gThreadPool.toString(),
+                gThreadPool.getMaxThread(),
+                gThreadPool.getThreadCounter(),
+                pendingSize,
+                completedTasks,
+                pendingSize+completedTasks
+        ));
+        for (NameableExecutor w : nameableExecutors) {
             builder.addObjectRowPayload(Arrays.asList(
-                    gThreadPool.toString(),
-                    gThreadPool.getMaxThread(),
-                    gThreadPool.getThreadCounter(),
-                    pendingSize,
-                    completedTasks,
-                    pendingSize+completedTasks
-            ));
-            for (NameableExecutor w : nameableExecutors) {
-                builder.addObjectRowPayload(Arrays.asList(
-                        w.getName(),
-                        w.getPoolSize(),
-                        w.getActiveCount(),
-                        w.getQueue().size(),
-                        w.getCompletedTaskCount(),
-                        w.getTaskCount()));
-            }
-            response.sendResultSet(()->builder.build());
-            return true;
+                    w.getName(),
+                    w.getPoolSize(),
+                    w.getActiveCount(),
+                    w.getQueue().size(),
+                    w.getCompletedTaskCount(),
+                    w.getTaskCount()));
         }
-        return false;
+        response.sendResultSet(()->builder.build());
     }
 
-    @Override
-    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
-        return false;
-    }
-
-    @Override
-    public String getName() {
-        return getClass().getName();
-    }
 }
