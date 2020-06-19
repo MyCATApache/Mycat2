@@ -21,7 +21,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowReactorCommand(),
             new ShowThreadPoolCommand(),
             new ShowScheduleCommand(),
-            new ShowHelpCommand()
+            new ShowHelpCommand(),
+            new ShowMetaDataSchemaCommand()
     );
 
     @Override
