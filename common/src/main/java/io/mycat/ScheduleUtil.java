@@ -22,9 +22,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ScheduleUtil {
     final static ScheduledExecutorService timer = Executors.newScheduledThreadPool(1);
+    final static AtomicInteger COUNTER = new AtomicInteger(0);
 
     public static ScheduledExecutorService getTimer() {
         return timer;
@@ -38,6 +40,7 @@ public class ScheduleUtil {
                 closeable.close();
             }
         };
+        COUNTER.incrementAndGet();
         getTimer().schedule(() -> timerTask.accept(), delay, unit);
         return timerTask;
     }
@@ -61,6 +64,7 @@ public class ScheduleUtil {
         }
 
         public void setFinished() {
+            COUNTER.decrementAndGet();
             finished.set(true);
         }
 
@@ -73,5 +77,10 @@ public class ScheduleUtil {
                 e.printStackTrace();
             }
         }
+    }
+
+
+    public static int getScheduleCount() {
+        return COUNTER.get();
     }
 }
