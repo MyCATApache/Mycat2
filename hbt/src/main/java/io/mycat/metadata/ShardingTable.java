@@ -101,8 +101,9 @@ public class ShardingTable implements ShardingTableHandler {
         return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
             @Override
             public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                return MetadataManager.routeInsertFlat(getSchemaName(), s.getSql())
-                        .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
+                List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.getSql())
+                        .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
+                return collect.iterator();
             }
         };
     }
