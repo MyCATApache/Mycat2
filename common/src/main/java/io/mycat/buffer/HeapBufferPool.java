@@ -20,6 +20,7 @@ import io.mycat.util.Dumper;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HeapBufferPool implements BufferPool {
 
@@ -30,6 +31,8 @@ public class HeapBufferPool implements BufferPool {
     public final static String CHUNK_SIZE = "chunkSize";
     public final static String PAGE_SIZE = "pageSize";
     public final static String PAGE_COUNT = "pageCount";
+
+    private final AtomicInteger trace = new AtomicInteger(0);
 
     @Override
     public void init(Map<String, String> args) {
@@ -50,22 +53,25 @@ public class HeapBufferPool implements BufferPool {
 
     @Override
     public ByteBuffer allocate() {
+        trace.incrementAndGet();
         return ByteBuffer.allocate(chunkSize);
     }
 
     @Override
     public ByteBuffer allocate(int size) {
+        trace.incrementAndGet();
         return ByteBuffer.allocate(size);
     }
 
     @Override
     public ByteBuffer allocate(byte[] bytes) {
+        trace.incrementAndGet();
         return ByteBuffer.wrap(Arrays.copyOf(bytes, bytes.length));
     }
 
     @Override
     public void recycle(ByteBuffer theBuf) {
-
+        trace.decrementAndGet();
     }
 
     @Override
@@ -80,6 +86,6 @@ public class HeapBufferPool implements BufferPool {
 
     @Override
     public Dumper snapshot() {
-        return Dumper.create().addText("chunkSize",chunkSize);
+        return Dumper.create().addText("chunkSize",chunkSize).addText("trace",trace.get());
     }
 }
