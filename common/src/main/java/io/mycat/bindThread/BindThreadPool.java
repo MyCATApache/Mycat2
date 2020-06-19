@@ -16,6 +16,7 @@ package io.mycat.bindThread;
 
 import io.mycat.ExecutorUtil;
 import io.mycat.MycatException;
+import io.mycat.MycatWorkerProcessor;
 import io.mycat.ScheduleUtil;
 
 import java.io.Closeable;
@@ -69,7 +70,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
             }
         }, 1, 1, TimeUnit.MILLISECONDS);
         //   , 1, 1, TimeUnit.MILLISECONDS
-        this.noBindingPool = ExecutorUtil.create("noBindingExecutor", maxThread);
+        this.noBindingPool = MycatWorkerProcessor.INSTANCE.getMycatWorker();
     }
 
     void pollTask() {

@@ -82,7 +82,7 @@ public enum MycatCore {
         MycatConfig mycatConfig = config.currentConfig();
 
         PlugRuntime.INSTCANE.load(mycatConfig);
-
+        MycatWorkerProcessor.INSTANCE.init(mycatConfig.getServer().getWorkerPool(),mycatConfig.getServer().getTimeWorkerPool());
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
         BoosterRuntime.INSTANCE.load(mycatConfig);
@@ -177,7 +177,7 @@ public enum MycatCore {
         }
         transactionFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
-        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transactionFactoryMap);
+        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getBindTransactionPool(), transactionFactoryMap);
 
 
         long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);

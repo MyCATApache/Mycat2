@@ -18,7 +18,7 @@ public enum MycatDataContextSupport {
     private Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap;
     private GThreadPool gThreadPool;
 
-    public void init(ServerConfig.Worker worker, Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap) {
+    public void init(ServerConfig.ThreadPoolExecutorConfig worker, Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap) {
         Map<TransactionType, Function<MycatDataContext, TransactionSession>> map = new HashMap<>();
         if (!transcationFactoryMap.containsKey(TransactionType.DEFAULT)) {
             map.put(TransactionType.DEFAULT, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));

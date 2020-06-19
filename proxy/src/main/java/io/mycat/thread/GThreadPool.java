@@ -19,8 +19,6 @@ import io.mycat.bindThread.BindThreadKey;
 import io.mycat.bindThread.BindThreadPool;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,17 +30,13 @@ import java.util.concurrent.TimeUnit;
 public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, BindThread> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GThreadPool.class);
-  public GThreadPool(JdbcRuntime runtime) {
-    super(runtime.getMaxPengdingLimit(), runtime.getWaitTaskTimeout(),
-        TimeUnit.valueOf(runtime.getTimeUnit()), runtime.getMaxThread(), runtime.getMaxThread(),
-        bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
-  }
+
 
   public GThreadPool(int maxPengdingLimit, long waitTaskTimeout, TimeUnit timeoutUnit, int minThread, int maxThread) {
     super(maxPengdingLimit, waitTaskTimeout, timeoutUnit, minThread, maxThread, bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 
-  public GThreadPool(ServerConfig.Worker worker) {
-    super(worker.getMaxPengdingLimit(), worker.getWaitTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()), worker.getMinThread(), worker.getMaxThread(),  bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
+  public GThreadPool(ServerConfig.ThreadPoolExecutorConfig worker) {
+    super(worker.getMaxPendingLimit(), worker.getTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()), worker.getCorePoolSize(), worker.getMaxPoolSize(), bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 }
