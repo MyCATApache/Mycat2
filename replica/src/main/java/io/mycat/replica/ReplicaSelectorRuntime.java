@@ -147,7 +147,7 @@ public enum ReplicaSelectorRuntime {
         }
     }
 
-    public boolean notifySwitchReplicaDataSource(String replicaName) {
+    public synchronized boolean notifySwitchReplicaDataSource(String replicaName) {
         ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
         Objects.requireNonNull(selector);
         return selector.switchDataSourceIfNeed();

@@ -29,4 +29,8 @@ public interface PhysicsInstance {
   int getWeight();
 
   InstanceType getType();
+
+  public void notifyChangeAlive(boolean alive);
+
+  public void notifyChangeSelectRead(boolean readable);
 }

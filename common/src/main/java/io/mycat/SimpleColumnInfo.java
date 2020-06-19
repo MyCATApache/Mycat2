@@ -14,6 +14,7 @@ import java.util.List;
 
 @Getter
 @EqualsAndHashCode
+@ToString
 public class SimpleColumnInfo {
     @NonNull
     final String columnName;
@@ -25,8 +26,8 @@ public class SimpleColumnInfo {
     final boolean autoIncrement;
     final boolean primaryKey;
     final boolean index;
-    @NonNull
-    final List<ShardingInfo> shardingInfo = new ArrayList<>();
+
+
 
     public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index) {
         this.columnName = columnName;
@@ -61,6 +62,7 @@ public class SimpleColumnInfo {
      */
     @Data
     @AllArgsConstructor
+    @ToString
     public static class ShardingInfo {
         @NonNull
         final SimpleColumnInfo columnInfo;

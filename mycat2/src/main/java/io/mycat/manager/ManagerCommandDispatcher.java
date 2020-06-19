@@ -22,7 +22,11 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowThreadPoolCommand(),
             new ShowScheduleCommand(),
             new ShowHelpCommand(),
-            new ShowMetaDataSchemaCommand()
+            new ShowMetaDataSchemaCommand(),
+            new ShowMetaDataTableCommand(),
+            new KillConnectionCommand(),
+            new SwitchInstanceCommand(),
+            new SwitchReplicaCommand()
     );
 
     @Override
