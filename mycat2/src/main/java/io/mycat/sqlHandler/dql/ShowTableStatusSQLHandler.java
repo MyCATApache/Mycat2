@@ -1,25 +1,22 @@
 package io.mycat.sqlHandler.dql;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
-import io.mycat.DDLManager;
 import io.mycat.MycatDataContext;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.ColumnInfo;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.router.ShowStatementRewriter;
+import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.SchemaHandler;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.sql.JDBCType;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 /**
  * chenjunwen
@@ -30,27 +27,38 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
+
         MySqlShowTableStatusStatement ast = request.getAst();
-
-        try {
-            DDLManager.INSTANCE.updateTables();
-            String databaseName = ast.getDatabase() == null ? dataContext.getDefaultSchema() :
-                    SQLUtils.normalize(ast.getDatabase().getSimpleName());
-
-            String tableName = ast.getTableGroup() == null ? null
-                    : SQLUtils.normalize(ast.getTableGroup().getSimpleName());
-
-            String sql = ShowStatementRewriter.showTableStatus(ast, databaseName, tableName);
-
-            try (RowBaseIterator query = MycatDBs.createClient(dataContext).query(sql)) {
-                response.sendResultSet(() -> query, () -> {
-                    throw new UnsupportedOperationException();
-                });
-            }
-        }catch (Exception e){
-            LOGGER.error("",e);
-            response.sendError(e);
+        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
+            ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
         }
+        Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        if (targetName != null) {
+            response.proxySelect(targetName, ast.toString());
+        } else {
+            response.proxyShow(ast);
+        }
+
+//        try {
+//            DDLManager.INSTANCE.updateTables();
+//            String databaseName = ast.getDatabase() == null ? dataContext.getDefaultSchema() :
+//                    SQLUtils.normalize(ast.getDatabase().getSimpleName());
+//
+//            String tableName = ast.getTableGroup() == null ? null
+//                    : SQLUtils.normalize(ast.getTableGroup().getSimpleName());
+//
+//            String sql = ShowStatementRewriter.showTableStatus(ast, databaseName, tableName);
+//
+//            try (RowBaseIterator query = MycatDBs.createClient(dataContext).query(sql)) {
+//                response.sendResultSet(() -> query, () -> {
+//                    throw new UnsupportedOperationException();
+//                });
+//            }
+//        }catch (Exception e){
+//            LOGGER.error("",e);
+//            response.sendError(e);
+//        }
         return ExecuteCode.PERFORMED;
     }
 

@@ -176,8 +176,8 @@ public enum ReplicaSelectorRuntime {
 
     public PhysicsInstance registerDatasource(String dataSourceName, SessionCounter sessionCounter) {
         PhysicsInstance instance = this.physicsInstanceMap.get(dataSourceName);
-        if (instance == null){
-            throw new MycatException(dataSourceName+" is not existed");
+        if (instance == null) {
+            throw new MycatException(dataSourceName + " is not existed");
         }
         PhysicsInstanceImpl physicsInstance = (PhysicsInstanceImpl) instance;
         physicsInstance.addSessionCounter(sessionCounter);
@@ -390,12 +390,16 @@ public enum ReplicaSelectorRuntime {
     }
 
 
-    public String getFirstReplicaDataSource() {
-        return Optional.ofNullable(config)
-                .map(c -> c.getCluster())
-                .filter(c -> c.getClusters() != null && c.getClusters().isEmpty())
-                .map(c -> c.getClusters().get(0)).map(c -> getDatasourceNameByReplicaName(c.getName(), false, null))
-                .orElseGet(() -> config.getDatasource().getDatasources().get(0).getName());
+    public String getPrototypeOrFirstReplicaDataSource() {
+        Optional<MycatConfig> config = Optional.ofNullable(this.config);
+        Optional<String> prototype = config.map(i -> i.getMetadata()).map(i -> i.getPrototype()).map(i -> i.getTargetName());
+        String targetName = prototype.orElseGet(() -> {
+            return config.map(c -> c.getCluster())
+                    .filter(c -> c.getClusters() != null && c.getClusters().isEmpty())
+                    .map(c -> c.getClusters().get(0)).map(c -> getDatasourceNameByReplicaName(c.getName(), false, null))
+                    .orElseGet(() -> this.config.getDatasource().getDatasources().get(0).getName());
+        });
+        return getDatasourceNameByReplicaName(targetName, true, null);
     }
 
     public PhysicsInstance getPhysicsInstanceByName(String name) {
