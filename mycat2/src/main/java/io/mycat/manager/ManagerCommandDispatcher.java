@@ -26,7 +26,9 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowMetaDataTableCommand(),
             new KillConnectionCommand(),
             new SwitchInstanceCommand(),
-            new SwitchReplicaCommand()
+            new SwitchReplicaCommand(),
+            new ShowStatCommand(),
+            new ReloadConfigCommand()
     );
 
     @Override
