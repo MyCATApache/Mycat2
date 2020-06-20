@@ -119,8 +119,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void proxyDDL(SQLStatement statement) {
-        String datasourceNameByRandom = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
-        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), QUERY_MASTER);
+        String replicaDataSource = ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
+        ExplainDetail detail = getExplainDetail(replicaDataSource, statement.toString(), QUERY_MASTER);
         this.execute(detail);
     }
 
@@ -180,7 +180,11 @@ public class ReceiverImpl implements Response {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session, Arrays.asList(message.split("\n")));
     }
-
+    public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator){
+        sendResultSet(rowBaseIterator, () -> {
+            throw new UnsupportedOperationException();
+        });
+    }
     @Override
     public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier) {
         if (!this.explainMode) {

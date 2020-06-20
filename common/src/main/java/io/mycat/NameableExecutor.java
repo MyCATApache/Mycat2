@@ -39,7 +39,13 @@ public class NameableExecutor extends ThreadPoolExecutor {
         super(size, size, Long.MAX_VALUE, TimeUnit.NANOSECONDS, queue, factory);
         this.name = name;
     }
-
+    public NameableExecutor(String name,int corePoolSize,
+                            int maximumPoolSize,
+                            long keepAliveTime,
+                            TimeUnit unit, BlockingQueue<Runnable> queue, ThreadFactory factory) {
+        super(corePoolSize, maximumPoolSize,keepAliveTime, unit, queue, factory);
+        this.name = name;
+    }
     public String getName() {
         return name;
     }

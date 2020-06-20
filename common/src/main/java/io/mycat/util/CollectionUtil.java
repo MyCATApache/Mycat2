@@ -18,11 +18,12 @@ public class CollectionUtil {
     public static void safeUpdate(Map t, Map updateInfo) {
         MapDifference difference = Maps.difference(updateInfo, t);
         Map commonMap = difference.entriesInCommon();//求交集,交集为可以持续提供服务的数据源
+        t.putAll(commonMap);
         Map entriesOnlyOnLeft = difference.entriesOnlyOnLeft();//两个map，左边有，右边没有的entry,为需要移除的数据源
         for (Object s : entriesOnlyOnLeft.keySet()) {
             t.remove(s);
         }
-        t.putAll(commonMap);
+        t.putAll(updateInfo);
     }
 
     /*

@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy.reactor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,8 +27,8 @@ public class ReactorThreadManager {
     final CopyOnWriteArrayList<MycatReactorThread> list;
 
 
-    public CopyOnWriteArrayList<MycatReactorThread> getList() {
-        return list;
+    public List<MycatReactorThread> getList() {
+        return Collections.unmodifiableList(list);
     }
 
     public ReactorThreadManager(List<MycatReactorThread> list) {

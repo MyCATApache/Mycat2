@@ -99,13 +99,13 @@ HBT与普通sql执行生成目标数据源的sql不只是mysql方言,而是可�
 
 ###### *information_schema* 
 
-1.模仿MySQL服务器把元数据表现成*information_schema* 对象
+1.模仿MySQL服务器把元数据表现成*information_schema* 对象(完成)
 
-2.分布式查询引擎能对*information_schema*对象进行sql条件进行查询
+2.分布式查询引擎能对*information_schema*对象进行sql条件进行查询(已经完成)
 
-3.DDL能对*information_schema*对象进行修改以及生成对多个数据源的更改sql
+3.DDL能对*information_schema*对象进行修改以及生成对多个数据源的更改sql(已经完成create table)
 
-4.实现常用的show语句
+4.实现常用的show语句(实现一部分,但是某些客户端兼容性不好)
 
 
 
@@ -125,11 +125,7 @@ HBT与普通sql执行生成目标数据源的sql不只是mysql方言,而是可�
 
 
 
-###### 分布式查询引擎优化
 
-limit/order下推
-
-全局表与分片表精准下推
 
 
 
@@ -183,13 +179,91 @@ limit/order下推
 
 ###### 统计中心,为优化器选择物理执行器提供支持
 
-返回有关要使用的表和列的统计信息,以及统计执行阶段的耗时,多次出现的拉取数据源的sql
+已经完成行统计
+
+缺:统计执行阶段的耗时,统计多次出现的拉取数据源的sql
+
+
+
+##### 2020.6.19-> 2020.6.28开发计划
+
+更改worker配置,重构线程池以便添加线程池监控
+
+尝试实现自定义执行器接口
+
+完成管理命令(监控)
+
+
+
+
+
+##### 2020.6.15-> 2020.6.19日志
+
+[配置无需配置建表sql](https://github.com/MyCATApache/Mycat2/commit/ec034439a43ec97da1e5e74668c4fad7d4f19225) 自动从dataNode中查询建表语句
+
+[简化配置 ShardingType可以不写,默认自然分片](https://github.com/MyCATApache/Mycat2/commit/706262328682d490c850742f6f4c70d46c0e39ab)
+
+[添加插入语句中出现未知字段的提示](https://github.com/MyCATApache/Mycat2/commit/d1bf9a01caa3440928f49427a48264a27802e9c0)
+
+[修复caclite 内部类型为数字的日期类型 类型转换问题](https://github.com/MyCATApache/Mycat2/commit/c883f60366d69acc6048995b653d3b5c50e52728)
+
+[通过判断是否存在初始化语句加速jdbc获取连接](https://github.com/MyCATApache/Mycat2/commit/b1438d34e698f8ab884675319a5f16a715da98c7)
+
+[修复boolean类型转换](https://github.com/MyCATApache/Mycat2/commit/8d9bf7e9ed2abfbfd74bf917695bac350e3f53c7)
+
+[show @@backend.replica](https://github.com/MyCATApache/Mycat2/commit/d7285cfd4eb24d8b9713a73578fa0e99f4b4c78f)
+
+[show @@backend.datasource 可以显示连接使用数量](https://github.com/MyCATApache/Mycat2/commit/e3aa295288ed15a2b782941ba042a5cf4d3e43fa)
+
+[实现show @](https://github.com/MyCATApache/Mycat2/commit/18f5bc104794a1b9ba1764125c156793c5099bfd)[@connection](https://github.com/connection)
+
+[实现show @@backend.native](https://github.com/MyCATApache/Mycat2/commit/1f0467131d4b30fc548fc0c66811bc8414cbec99)
+
+
+
+##### 2020.6.8-> 2020.6.14日志
+
+修复读写分离在跨库情况下有异常
+
+支持枚举类型(以字符串对待)
+
+修复时间类型转换错误
+
+修复sqllog下mycat自研的show column命令导致的崩溃
+
+重构路由,可以支持分片算法返回dataNode
+
+强制native(proxy)使用[NativePassword](https://github.com/MyCATApache/Mycat2/commit/a135181457554199aa072a8f8f097faa6cefa15e)插件,而不再自动可以切换为其他插件
+
+使用druid作为数据源的时候可以使用本地事务
+
+添加本地事务配置例子(druid)
+
+修复使用jdbc查询返回[IllegalArgumentException();](https://github.com/MyCATApache/Mycat2/commit/9afe0dde62912da22839cf040bbc9e06690a5d32)
+
+[忽略SET TRANSACTION READ WRITE;](https://github.com/MyCATApache/Mycat2/commit/1aa50549d1ce4f4467150065314739306cb7ea42)
+
+[带有InformationSchema的表的sql发送到后端数据库](https://github.com/MyCATApache/Mycat2/commit/f3ee1fa64d27ae472dc095479a0f93cefd6c8b4b)
+
+[修复xa测试主键冲突](https://github.com/MyCATApache/Mycat2/commit/6c5cc719ccc075a4828a208b560d52dc8735924b)
+
+[暂时禁用show tables因为mysql8客户端不兼容此实现](https://github.com/MyCATApache/Mycat2/commit/6926e67a5b84946a83343f6be61c0ffd6acc23f1)
+
+[禁用jdbc设置readOnly](https://github.com/MyCATApache/Mycat2/commit/6f9ce86a21c8d2221ff561522dd40a5b64cb2455)
+
+[禁用UnionPullUpConstantsRule](https://github.com/MyCATApache/Mycat2/commit/00454390f52b34c6bb9535347fb6cc0d51d05374)
+
+
 
 
 
 ##### 2020.6.2-> 2020.6.7开发日志
 
-迁移1.6路由
+迁移1.6路由(未完成)
+
+limit/order下推
+
+全局表与分片表精准下推
 
 
 

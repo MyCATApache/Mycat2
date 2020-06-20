@@ -175,11 +175,11 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                     receiver.proxySelect(targetNameOptional.get(), statement);
                     return ExecuteCode.PERFORMED;
                 } else {
-                    receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource(), statement);
+                    receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement);
                     return ExecuteCode.PERFORMED;
                 }
             } else {
-                receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource(), statement);
+                receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement);
                 return ExecuteCode.PERFORMED;
             }
         }
@@ -280,7 +280,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             }
         });
         if (cantainsInformation_schema) {
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource())) {
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource())) {
                 try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
                     response.sendResultSet(() -> rowBaseIterator, () -> Arrays.asList(ast.toString()));
                     return true;

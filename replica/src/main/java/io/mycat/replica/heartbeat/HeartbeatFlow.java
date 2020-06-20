@@ -14,18 +14,17 @@
  */
 package io.mycat.replica.heartbeat;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.mycat.replica.heartbeat.DatasourceState.*;
+import static io.mycat.replica.heartbeat.DatasourceEnum.*;
 
 /**
  * @author : zhangwy date Date : 2019年05月15日 21:34
  */
+@Getter
 public abstract class HeartbeatFlow {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
@@ -62,12 +61,12 @@ public abstract class HeartbeatFlow {
     this.lastSendQryTime = System.currentTimeMillis();
   }
 
-  public void setStatus(DatasourceState status) {
+  public void setStatus(DatasourceEnum status) {
     DatasourceStatus datasourceStatus = new DatasourceStatus();
     setStatus(datasourceStatus, status);
   }
 
-  public void setStatus(DatasourceStatus datasourceStatus, DatasourceState status) {
+  public void setStatus(DatasourceStatus datasourceStatus, DatasourceEnum status) {
     //对应的status 状态进行设置
     switch (status) {
       case OK_STATUS:
@@ -122,7 +121,7 @@ public abstract class HeartbeatFlow {
     this.hbStatus.incrementErrorCount();
     setTaskquitDetector();
     if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
-      datasourceStatus.setStatus(DatasourceState.TIMEOUT_STATUS);
+      datasourceStatus.setStatus(DatasourceEnum.TIMEOUT_STATUS);
       sendDataSourceStatus(datasourceStatus);
       this.hbStatus.setErrorCount(0);
     }

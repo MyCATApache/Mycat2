@@ -14,7 +14,6 @@
  */
 package io.mycat;
 
-import com.atomikos.icatch.jta.UserTransactionImp;
 import io.mycat.api.MySQLAPI;
 import io.mycat.api.callback.MySQLAPIExceptionCallback;
 import io.mycat.api.collector.CollectorUtil;
@@ -30,12 +29,10 @@ import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.ext.MySQLAPIImpl;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.manager.ManagerCommandDispatcher;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
@@ -75,6 +72,8 @@ public enum MycatCore {
     private ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
     @Getter
     private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期
+    @Getter
+    private ReactorThreadManager reactorManager;
 
     @SneakyThrows
     public void init(ConfigProvider config) {
@@ -83,7 +82,7 @@ public enum MycatCore {
         MycatConfig mycatConfig = config.currentConfig();
 
         PlugRuntime.INSTCANE.load(mycatConfig);
-
+        MycatWorkerProcessor.INSTANCE.init(mycatConfig.getServer().getWorkerPool(),mycatConfig.getServer().getTimeWorkerPool());
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
         BoosterRuntime.INSTANCE.load(mycatConfig);
@@ -95,6 +94,39 @@ public enum MycatCore {
         CharsetUtil.init(null);
         //context.scanner("io.mycat.sqlHandler").inject();
         startProxy(mycatConfig);
+        startManager(mycatConfig);
+    }
+
+    private void startManager(MycatConfig config) throws IOException {
+        ManagerConfig manager = config.getManager();
+        if (manager == null) {
+            return;
+        }
+        List<UserConfig> users = manager.getUsers();
+        if (users == null || users.isEmpty()) {
+            return;
+        }
+        List<MycatReactorThread> list = new ArrayList<>(1);
+        BufferPool bufferPool = new HeapBufferPool();
+        bufferPool.init(Collections.emptyMap());
+        Function<MycatSession, CommandDispatcher> function = session -> {
+            try {
+                CommandDispatcher commandDispatcher = new ManagerCommandDispatcher();
+                commandDispatcher.initRuntime(session);
+                return commandDispatcher;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+        Map<String, UserConfig> userConfigMap = users.stream().collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
+        MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function, new AuthenticatorImpl(userConfigMap)));
+        thread.start();
+        list.add(thread);
+
+
+        reactorManager = new ReactorThreadManager(list);
+        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
+        acceptor.startServerChannel(manager.getIp(), manager.getPort());
     }
 
     private void startProxy(MycatConfig mycatConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
@@ -120,7 +152,7 @@ public enum MycatCore {
                     throw new RuntimeException(e);
                 }
             };
-            Map<String, PatternRootConfig.UserConfig> userConfigMap = mycatConfig.getInterceptors().stream().map(u -> u.getUser()).collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
+            Map<String, UserConfig> userConfigMap = mycatConfig.getInterceptors().stream().map(u -> u.getUser()).collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
             MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function, new AuthenticatorImpl(userConfigMap)));
             thread.start();
             list.add(thread);
@@ -134,18 +166,18 @@ public enum MycatCore {
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
 
 
-        HashMap<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap = new HashMap<>();
+        HashMap<TransactionType, Function<MycatDataContext, TransactionSession>> transactionFactoryMap = new HashMap<>();
 
 
         DatasourceProvider datasourceProvider = JdbcRuntime.INSTANCE.getDatasourceProvider();
-        if ((datasourceProvider instanceof AtomikosDatasourceProvider)){
-            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () ->datasourceProvider.createUserTransaction()));
-        }else  {
-            transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+        if ((datasourceProvider instanceof AtomikosDatasourceProvider)) {
+            transactionFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> datasourceProvider.createUserTransaction()));
+        } else {
+            transactionFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
         }
-        transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
+        transactionFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
-        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap);
+        MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getBindTransactionPool(), transactionFactoryMap);
 
 
         long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);
@@ -282,11 +314,16 @@ public enum MycatCore {
         List<DatasourceRootConfig.DatasourceConfig> datasources = config.currentConfig().getDatasource().getDatasources();
         for (DatasourceRootConfig.DatasourceConfig datasourceConfig : datasources) {
             if (datasourceConfig.computeType().isNative() && name.equals(datasourceConfig.getName())) {
-                return datasourceMap.computeIfAbsent(name, s -> new MySQLDatasource(datasourceConfig) {
+
+                return datasourceMap.computeIfAbsent(name, s -> {
+                    MySQLDatasource mySQLDatasource = new MySQLDatasource(datasourceConfig) {
+                    };
+                    ReplicaSelectorRuntime.INSTANCE.registerDatasource(datasourceConfig.getName(), () -> mySQLDatasource.getConnectionCounter());
+                    return mySQLDatasource;
                 });
             }
         }
-       return null;
+        return null;
     }
 
     public void removeDatasource(String name) {
@@ -296,5 +333,9 @@ public enum MycatCore {
     private static Constructor<?> getConstructor(String clazz) throws ClassNotFoundException, NoSuchMethodException {
         Class<?> bufferPoolClass = Class.forName(clazz);
         return bufferPoolClass.getDeclaredConstructor();
+    }
+
+    public Map<String, MySQLDatasource> getDatasourceMap() {
+        return Collections.unmodifiableMap(datasourceMap);
     }
 }

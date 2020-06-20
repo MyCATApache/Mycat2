@@ -15,11 +15,12 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.util.Dumper;
 
 /**
  * @author Junwen Chen
  **/
-public interface TransactionSession {
+public interface TransactionSession extends Dumpable{
 
     public final static String LOCAL = "local";
     public final static String XA = "xa";
@@ -69,4 +70,5 @@ public interface TransactionSession {
     public void doAction();
 
     public void addCloseResource(AutoCloseable closeable);
+
 }

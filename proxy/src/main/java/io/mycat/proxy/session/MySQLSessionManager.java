@@ -80,9 +80,20 @@ public class MySQLSessionManager implements
     @Override
     public void getIdleSessionsOfIdsOrPartial(MySQLDatasource datasource, List<SessionIdAble> ids,
                                               PartialType partialType,
-                                              SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
+                                              SessionCallBack<MySQLClientSession> arg) {
         Objects.requireNonNull(datasource);
+        SessionCallBack<MySQLClientSession> asyncTaskCallBack = new SessionCallBack<MySQLClientSession>() {
+            @Override
+            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+                datasource.tryIncrementUsedCounter();//设置正在使用的数量
+                arg.onSession(session, sender, attr);
+            }
 
+            @Override
+            public void onException(Exception exception, Object sender, Object attr) {
+                arg.onException(exception, sender, attr);
+            }
+        };
         try {
             for (; ; ) {//禁止循环里没有return
                 MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
@@ -115,7 +126,7 @@ public class MySQLSessionManager implements
     /**
      * @param ids 如果id失效 设置为-id
      */
-    public MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+    private MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
                                                               List<SessionIdAble> ids, PartialType partialType) {
         MySQLClientSession session = null;
         //dataSource
@@ -200,6 +211,9 @@ public class MySQLSessionManager implements
             assert !session.isIdle();
             /////////////////////////////////////////
 
+            session.getDatasource().decrementUsedCounter();
+            ////////////////////////////////////////
+
             if (shouldClear(session)) {
                 return;
             }
@@ -209,7 +223,8 @@ public class MySQLSessionManager implements
             session.setIdle(true);
             session.switchNioHandler(IdleHandler.INSTANCE);
             session.change2ReadOpts();
-            idleDatasourcehMap.computeIfAbsent(session.getDatasource(), (l) -> new LinkedList<>()).add(session);
+            LinkedList<MySQLClientSession> idleList = idleDatasourcehMap.computeIfAbsent(session.getDatasource(), (l) -> new LinkedList<>());
+            idleList.add(session);
             MycatMonitor.onAddIdleMysqlSession(session);
         } catch (Exception e) {
             LOGGER.error("{}", e);
@@ -601,6 +616,7 @@ public class MySQLSessionManager implements
             assert session != null;
             assert reason != null;
             session.getDatasource().decrementSessionCounter();
+            session.getDatasource().decrementUsedCounter();
             allSessions.remove(session.sessionId());
             MycatMonitor.onCloseMysqlSession(session, normal, reason);
             removeIdleSession(session);
@@ -625,7 +641,7 @@ public class MySQLSessionManager implements
     /**
      * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
      */
-    public void getSessionCallback(MySQLDatasource datasource, List<SessionManager.SessionIdAble> ids, Object sender,
+    private void getSessionCallback(MySQLDatasource datasource, List<SessionManager.SessionIdAble> ids, Object sender,
                                    SessionCallBack<MySQLClientSession> asynTaskCallBack) {
         Objects.requireNonNull(datasource);
         Objects.requireNonNull(asynTaskCallBack);

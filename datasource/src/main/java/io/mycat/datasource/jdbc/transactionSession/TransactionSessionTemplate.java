@@ -7,10 +7,14 @@ import io.mycat.TransactionSession;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.replica.DataSourceNearnessImpl;
+import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -172,4 +176,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         closeResourceQueue.add(closeable);
     }
 
+    @Override
+    public Dumper snapshot() {
+        return Dumper.create()
+                .addText("jdbcCon", String.join(",", this.updateConnectionMap.keySet()))
+                .addText("closeQueueSize", String.valueOf(closeResourceQueue.size()));
+    }
 }

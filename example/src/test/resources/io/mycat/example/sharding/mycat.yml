@@ -1,13 +1,18 @@
-metadata:
+metadata: #读写分离无需配置
   schemas: [{
               schemaName: 'db1' ,   targetName: 'repli',
               shadingTables: {
                 travelrecord: {
                   columns: [{
                               columnName: id ,#分片字段信息,显式提供,
-                              function: {clazz: io.mycat.router.function.PartitionByLong ,
-                                         properties: {partitionCount: '4', partitionLength: '256'}}
+                              shardingType: NATURE_DATABASE_TABLE ,#类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
+                              function: {
+                                clazz: io.mycat.router.function.PartitionByLong ,
+                                name: partitionByLong,
+                                properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}
+                              }
                             }],
+                  createTableSQL: 'CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
                   dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
                               {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
                               {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
@@ -16,6 +21,7 @@ metadata:
               },
               globalTables: {
                 company:{
+                  createTableSQL: 'CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))',
                   dataNodes: [{targetName: defaultDs2 ,schemaName: db1, tableName: company},{targetName: defaultDs2 ,schemaName: db2, tableName: company}]
                 }
               }
@@ -24,7 +30,7 @@ interceptors:
   [{
      user: {ip: '.', password: '123456', username: root},
      sqls:[
-#     {sql: 'SELECT COUNT(1) FROM db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
+       #     {sql: 'SELECT COUNT(1) FROM db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
      ]
    }]
 datasource:
@@ -79,6 +85,22 @@ server:
            timeUnit: MINUTES,
            waitTaskTimeout: 5 #超时后将结束闲置的线程
   }
+#负载均衡类型 BALANCE_ALL:所有数据源参与负载均衡 BALANCE_ALL_READ:所以非master数据源参与负载均衡 BALANCE_NONE:只有master(一个)参与负载
+plug:
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    loadBalances: [
+    {name: BalanceRunOnMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnMaster},
+    {name: BalanceLeastActive, clazz: io.mycat.plug.loadBalance.BalanceLeastActive},
+    {name: BalanceRoundRobin, clazz: io.mycat.plug.loadBalance.BalanceRoundRobin},
+    {name: BalanceRunOnReplica, clazz: io.mycat.plug.loadBalance.BalanceRunOnReplica},
+    {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
+    ]
+  sequence:
+    sequences: [
+    {name: 'db1_travelrecord', clazz: io.mycat.plug.sequence.SequenceMySQLGenerator ,args: "sql : SELECT db1.mycat_seq_nextval('GLOBAL') , targetName:defaultDs"},
+    {name: 'db1_address', clazz: io.mycat.plug.sequence.SequenceSnowflakeGenerator ,args: 'workerId:1'},
+    ]
 
 properties:
   key: value
