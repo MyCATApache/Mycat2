@@ -17,6 +17,7 @@
 package io.mycat.optimizer;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Getter;
 import org.apache.calcite.plan.*;
@@ -26,15 +27,13 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
-import org.apache.calcite.util.ImmutableIntList;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
@@ -44,12 +43,13 @@ public class BottomView extends TableScan implements MycatRel {
 
     private final RelNode relNode;
     private final RelDataType relDataType;
+    private final List<DataNode> dataNodes = new ArrayList<>();
 
     BottomView(RelOptCluster cluster, RelTraitSet traitSet,
                RelOptTable table, RelNode relNode) {
         super(cluster, traitSet, ImmutableList.of(), table);
-        this.relNode =  relNode;
-        this.relDataType = relNode==null?table.getRowType():relNode.getRowType();
+        this.relNode = relNode;
+        this.relDataType = relNode == null ? table.getRowType() : relNode.getRowType();
     }
 
     /**
@@ -57,7 +57,7 @@ public class BottomView extends TableScan implements MycatRel {
      */
     public static BottomView create(RelOptCluster cluster,
                                     RelOptTable relOptTable) {
-        return create(cluster, relOptTable,null);
+        return create(cluster, relOptTable, null);
     }
 
     /**
@@ -79,43 +79,72 @@ public class BottomView extends TableScan implements MycatRel {
     }
 
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RelDataType deriveRowType() {
-      return relDataType;
+        return relDataType;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RelWriter explainTerms(RelWriter pw) {
-        String sql=relNode==null?
-                MycatCalciteSupport.INSTANCE.convertToSql(this, MysqlSqlDialect.DEFAULT,false)
-                :   MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT,false);
+        String sql = relNode == null ?
+                MycatCalciteSupport.INSTANCE.convertToSql(this, MysqlSqlDialect.DEFAULT, false)
+                : MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT, false);
         return super.explainTerms(pw)
-                .itemIf("relNode", relNode,relNode!=null)
+                .itemIf("relNode", relNode, relNode != null)
                 .item("sql", sql
-                      );
+                );
 
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner,
                                       RelMetadataQuery mq) {
-      double f;
-      if (relNode!=null){
-        f = 0.5;
-        return super.computeSelfCost(planner, mq)
-                .multiplyBy(f  * 0.01d);
-      }else {
-        return super.computeSelfCost(planner, mq);
-      }
+        double f;
+        if (relNode != null) {
+            f = 0.5;
+            return super.computeSelfCost(planner, mq)
+                    .multiplyBy(f * 0.01d);
+        } else {
+            return super.computeSelfCost(planner, mq);
+        }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return super.copy(traitSet, inputs);
     }
 
+    public boolean isSamePartition(BottomView right) {
+        MycatTable mycatTable = getTable().unwrap(MycatTable.class);
+        return true;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        String sql = MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT, false);
+        return writer
+                .name("BottomView")
+                .item("dataNode", dataNodes.stream().map(i->i.getUniqueName()).collect(Collectors.joining(",")))
+                .item("dataNodeCount",dataNodes.size(),dataNodes.size()>1)
+                .item("sql",sql)
+                .into()
+                .ret();
+    }
+
+    @Override
+    public MycatExecutor implement(MycatExecutorImplementor implementor) {
+        return null;
+    }
 }

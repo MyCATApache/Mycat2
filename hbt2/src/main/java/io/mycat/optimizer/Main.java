@@ -11,13 +11,11 @@ import io.mycat.metadata.SchemaHandler;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
-import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
@@ -41,7 +39,9 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1");
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1 limit 1");
+        String parameterizedString = sqlStatement.toParameterizedString();
+
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
@@ -79,18 +79,45 @@ public class Main {
         RelRoot finalRoot = root2.withRel(
                 RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         RelNode logPlan = finalRoot.rel;
-        RelOptPlanner planner = cluster.getPlanner();
-        RelOptUtil.registerDefaultRules(planner,false,true);
-        MycatConvention.INSTANCE.register(planner);
-        planner.addRule(MycatRules2.FilterView.INSTACNE);
-        planner.addRule(MycatRules2.ProjectView.INSTACNE);
-        planner.removeRule(ProjectFilterTransposeRule.INSTANCE);
-        RelTraitSet relTraits = cluster.traitSet();
-        RelTraitSet relTraitSet = relTraits.replace(MycatConvention.INSTANCE);
-        logPlan = planner.changeTraits(logPlan, relTraitSet);
 
+
+        logPlan = optimizeWithRBO(logPlan);
+        MycatRel phyPlan = (MycatRel) optimizeWithCBO(logPlan, cluster);
+        ExplainWriter explainWriter = new ExplainWriter();
+        phyPlan.explain(explainWriter);
+        StringBuilder text = explainWriter.getText();
+        System.out.println(text);
+        MycatExecutor executor = phyPlan.implement(new MycatExecutorImplementor() {
+        });
+    }
+
+    private static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
+        RelOptPlanner planner = cluster.getPlanner();
+        MycatConvention.INSTANCE.register(planner);
+        logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
         planner.setRoot(logPlan);
-        RelNode phyPlan2 = planner.findBestExp();
+        return planner.findBestExp();
+    }
+
+    private static RelNode optimizeWithRBO(RelNode logPlan) {
+        ImmutableList<RelOptRule> rules = ImmutableList.of(
+                MycatRules2.ProjectView.INSTANCE,
+                MycatRules2.FilterView.INSTACNE,
+                MycatRules2.ProjectView.INSTANCE,
+                MycatRules2.AggregateView.INSTACNE,
+                MycatRules2.ProjectView.INSTANCE,
+                MycatRules2.JoinView.INSTANCE,
+                MycatRules2.ProjectView.INSTANCE,
+                MycatRules2.CorrelateView.INSTANCE,
+                MycatRules2.ProjectView.INSTANCE,
+                MycatRules2.SortView.INSTACNE,
+                MycatRules2.ProjectView.INSTANCE
+        );
+        HepProgramBuilder builder = new HepProgramBuilder();
+        builder.addRuleCollection(rules);
+        HepPlanner planner = new HepPlanner(builder.build());
+        planner.setRoot(logPlan);
+        return planner.findBestExp();
     }
 
     private static RelOptCluster newCluster() {
