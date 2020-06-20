@@ -188,6 +188,12 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
         RelHomogeneousShuttle relHomogeneousShuttle1 = new RelHomogeneousShuttle() {
             @Override
             public RelNode visit(RelNode other) {
+                /**
+                 * 跳过集合操作,不能下推union
+                 */
+                if (other instanceof SetOp){
+                    return super.visit(other);
+                }
                 if (cache.get(other) == Boolean.TRUE) {
                     List<String> strings = margeList.get(other);
                     if (strings == null || strings != null && strings.isEmpty()) {
@@ -488,8 +494,9 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                         cache.put(other, Boolean.TRUE);
                     }
                     //修正,不能影响上面流程
-                    if (other instanceof Union) {
+                    if (other instanceof SetOp) {
                         cache.put(other, false);//没有事务并行查询->总是并行查询
+                        margeList.put(other,ImmutableList.of("a","b"));//强制使union的数据源不一致,这样就不会下推union
                         return other;
                     }
                     return other;

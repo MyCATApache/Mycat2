@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.08-SNAPSHOT</version>
+    <version>1.09-08</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,7 @@
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>config</artifactId>
-      <version>1.08-SNAPSHOT</version>
+      <version>1.09-08</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
     <dependency>

@@ -1,4 +1,4 @@
-package io.mycat.example.sharingXA;
+package io.mycat.example.manager;
 
 import io.mycat.ConfigProvider;
 import io.mycat.MycatCore;
@@ -17,13 +17,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class ShardingXAExample {
+/**
+ * 读写分离例子不能使用全局序列号,jdbc系统,读写分离也没有预处理的支持
+ */
+public class ReadWriteSeparationExample {
     @SneakyThrows
-    public static void main(String[] args) {
-        String resource = Paths.get( ShardingXAExample.class.getResource("").toURI()).toAbsolutePath().toString();
+    public static void main(String[] args) throws Exception {
+        String resource = Paths.get(ReadWriteSeparationExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
-        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(ShardingXAExample.class);
+        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(ReadWriteSeparationExample.class);
         MycatCore.INSTANCE.init(bootConfig);
     }
 
@@ -47,7 +50,7 @@ public class ShardingXAExample {
 
         try (Connection mySQLConnection = TestUtil.getMySQLConnection()) {
             Statement statement = mySQLConnection.createStatement();
-            statement.execute("set xa  = on");
+            statement.execute("set xa  = off");
             String string = TestUtil.getString(statement.executeQuery("select 1"));
             statement.execute(
                     "use db1"
@@ -55,24 +58,22 @@ public class ShardingXAExample {
             statement.execute(
                     "delete from travelrecord"
             );
-            statement.execute("select next_value_for('db1_travelrecord')");
-            statement.execute("select next_value_for('db1_address')");
-            statement.execute("INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('1'); ");
             {
-
                 Set<String> set = new HashSet<>();
                 for (int i = 0; i < 10; i++) {
                     set.add(TestUtil.getString(statement.executeQuery(
-                            " select * from travelrecord"
+                            "explain select * from travelrecord"
                     )));
                 }
-                Assert.assertEquals(1, set.size());//验证没有事务的情况下,可以读写分离
+                Assert.assertTrue(set.size() > 1);//验证没有事务的情况下,可以读写分离
             }
-
             Set<String> set2 = new HashSet<>();
             for (int i = 0; i < 10; i++) {
-                statement.execute("INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ( '1'); ");
+                set2.add(TestUtil.getString(statement.executeQuery(
+                        "explain INSERT INTO `db1`.`travelrecord` (`id`, `user_id`) VALUES ('1', '1'); "
+                )));
             }
+            Assert.assertEquals(1, set2.size());//验证插入语句只到主节点
 
 
             //验证能返回自增序列
@@ -97,7 +98,7 @@ public class ShardingXAExample {
                     for (int i = 0; i < 10; i++) {
                         set.add(TestUtil.getString(statement.executeQuery(
                                 "explain select * from travelrecord"
-                        )).replaceAll("id=\\[\\d+\\]",""));
+                        )));
                     }
                     Assert.assertTrue(set.size() == 1);//验证有事务的情况下,不读写分离
                 }
@@ -109,7 +110,7 @@ public class ShardingXAExample {
                         for (int i = 0; i < 10; i++) {
                             set.add(TestUtil.getString(statement.executeQuery(
                                     "explain select * from travelrecord"
-                            )).replaceAll("id=\\[\\d+\\]",""));
+                            )));
                         }
                         Assert.assertEquals(1, set.size());//验证无事务的情况下但是set autocommit = 0,不读写分离
                     }
@@ -125,10 +126,10 @@ public class ShardingXAExample {
                     Set<String> set = new HashSet<>();
                     for (int i = 0; i < 10; i++) {
                         set.add(TestUtil.getString(statement.executeQuery(
-                                " select * from travelrecord"
+                                "explain select * from travelrecord"
                         )));
                     }
-                    Assert.assertEquals(1, set.size());//验证无事务的情况下但是set autocommit = 1,读写分离
+                    Assert.assertTrue(set.size() > 1);//验证无事务的情况下但是set autocommit = 1,读写分离
                 }
 
             }
@@ -144,7 +145,7 @@ public class ShardingXAExample {
                     for (int i = 0; i < 10; i++) {
                         set.add(TestUtil.getString(statement.executeQuery(
                                 "explain select * from travelrecord"
-                        )).replaceAll("id=\\[\\d+\\]",""));
+                        )));
                     }
                     Assert.assertTrue(set.size() == 1);//验证有事务的情况下,不读写分离
                 }

@@ -15,10 +15,13 @@
 package io.mycat.calcite;
 
 
+import io.mycat.MycatConfig;
+import io.mycat.RootHelper;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.hbt.TextConvertor;
+import io.mycat.config.DatasourceRootConfig;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -121,7 +124,7 @@ public class CalciteConvertors {
                 String SCOPE_TABLE = resultSet.getString(21);
 
                 int SOURCE_DATA_TYPE = resultSet.getInt(22);
-                boolean IS_AUTOINCREMENT ="Yes".equalsIgnoreCase( resultSet.getString(23));
+                boolean IS_AUTOINCREMENT = "Yes".equalsIgnoreCase(resultSet.getString(23));
                 boolean IS_GENERATEDCOLUMN = "Yes".equalsIgnoreCase(resultSet.getString(24));
 
                 final String columnName = resultSet.getString(4);
@@ -146,12 +149,11 @@ public class CalciteConvertors {
                 //todo 添加索引 主键信息
 
 
-
                 res.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, nullable, IS_AUTOINCREMENT, false, false));
             }
             return res;
         } catch (Throwable e) {
-            LOGGER.error("不能从DatabaseMetaData获取字段信息",e);
+            LOGGER.error("不能从DatabaseMetaData获取字段信息", e);
             return null;
         }
     }
@@ -230,12 +232,20 @@ public class CalciteConvertors {
         }
     }
 
-    public static List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String url, String user, String password) {
-        try (Connection rawConnection = DriverManager.getConnection(url, user, password)) {
+    public static List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String targetName) {
+        String dataSourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+        MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
+        DatasourceRootConfig.DatasourceConfig datasourceConfig = Optional.ofNullable(mycatConfig.getDatasource()).map(i -> i.getDatasources()).map(i -> i.stream().collect(Collectors.toMap(k -> k.getName(),
+                v -> v))).map(i -> i.get(dataSourceName)).orElse(null);
+        if (datasourceConfig == null) {
+            return null;
+        }
+        try (Connection rawConnection = DriverManager.getConnection(datasourceConfig.getUrl(), datasourceConfig.getUser(), datasourceConfig.getPassword())) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
             return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("不能根据schemaName:{} tableName:{} url:{} user:{} 获取字段信息 {}", schemaName, tableName,
+                    datasourceConfig.getUrl(), datasourceConfig.getUser(), e);
         }
         return null;
     }

@@ -15,7 +15,6 @@
 package io.mycat.datasource.jdbc;
 
 
-import io.mycat.ExecutorUtil;
 import io.mycat.MycatConfig;
 import io.mycat.MycatConnection;
 import io.mycat.MycatException;
@@ -29,6 +28,7 @@ import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
+import io.mycat.MycatWorkerProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,6 @@ public enum JdbcRuntime {
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;
-    private ExecutorService executorService;
-    private ExecutorService fetchDataExecutorService;
 
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
         connectionManager.addDatasource(key);
@@ -81,40 +79,35 @@ public enum JdbcRuntime {
     }
 
     public synchronized void load(MycatConfig config) {
-        ServerConfig.Worker worker = config.getServer().getWorker();
-        int maxThread = worker.getMaxThread();
-        executorService = ExecutorUtil.create("heartBeatExecutor", 1);
-        fetchDataExecutorService = ExecutorUtil.create("fetchDataExecutorService", maxThread);
-        if (!config.getServer().getWorker().isClose()) {
-            PlugRuntime.INSTCANE.load(config);
-            ReplicaSelectorRuntime.INSTANCE.load(config);
-            this.config = config;
-            String customerDatasourceProvider = config.getDatasource().getDatasourceProviderClass();
-            String defaultDatasourceProvider = Optional.ofNullable(customerDatasourceProvider).orElse(AtomikosDatasourceProvider.class.getName());
-            try {
-                this.datasourceProvider = (DatasourceProvider) Class.forName(defaultDatasourceProvider)
-                        .getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                throw new MycatException("can not load datasourceProvider:{}", config.getDatasource().getDatasourceProviderClass());
+        ServerConfig.ThreadPoolExecutorConfig worker = config.getServer().getWorkerPool();
+        MycatWorkerProcessor.INSTANCE.init(worker, config.getServer().getTimeWorkerPool());
+        PlugRuntime.INSTCANE.load(config);
+        ReplicaSelectorRuntime.INSTANCE.load(config);
+        this.config = config;
+        String customerDatasourceProvider = config.getDatasource().getDatasourceProviderClass();
+        String defaultDatasourceProvider = Optional.ofNullable(customerDatasourceProvider).orElse(AtomikosDatasourceProvider.class.getName());
+        try {
+            this.datasourceProvider = (DatasourceProvider) Class.forName(defaultDatasourceProvider)
+                    .getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new MycatException("can not load datasourceProvider:{}", config.getDatasource().getDatasourceProviderClass());
+        }
+        connectionManager = new JdbcConnectionManager(this.datasourceProvider);
+
+
+        for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
+            if (datasource.computeType().isJdbc()) {
+                addDatasource(datasource);
             }
-            connectionManager = new JdbcConnectionManager(this.datasourceProvider);
+        }
 
-
-            for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
-                if (datasource.computeType().isJdbc()) {
-                    addDatasource(datasource);
+        for (ClusterRootConfig.ClusterConfig replica : config.getCluster().getClusters()) {
+            if ("jdbc".equalsIgnoreCase(replica.getHeartbeat().getRequestType())) {
+                String replicaName = replica.getName();
+                for (String datasource : replica.getAllDatasources()) {
+                    putHeartFlow(replicaName, datasource);
                 }
             }
-
-            for (ClusterRootConfig.ClusterConfig replica : config.getCluster().getClusters()) {
-                if ("jdbc".equals(replica.getHeartbeat().getRequestType())) {
-                    String replicaName = replica.getName();
-                    for (String datasource : replica.getAllDatasources()) {
-                        putHeartFlow(replicaName, datasource);
-                    }
-                }
-            }
-
         }
     }
 
@@ -124,7 +117,7 @@ public enum JdbcRuntime {
         ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                executorService.submit(() -> {
+                MycatWorkerProcessor.INSTANCE.getMycatWorker().submit(() -> {
                     try {
                         heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
@@ -162,20 +155,13 @@ public enum JdbcRuntime {
         return datasourceProvider;
     }
 
-    public int getMaxThread() {
-        return config.getServer().getWorker().getMaxThread();
-    }
-
-    public int getWaitTaskTimeout() {
-        return config.getServer().getWorker().getWaitTaskTimeout();
-    }
 
     public String getTimeUnit() {
-        return config.getServer().getWorker().getTimeUnit();
+        return config.getServer().getBindTransactionPool().getTimeUnit();
     }
 
     public int getMaxPengdingLimit() {
-        return config.getServer().getWorker().getMaxPengdingLimit();
+        return config.getServer().getBindTransactionPool().getMaxPendingLimit();
     }
 
     public JdbcConnectionManager getConnectionManager() {
@@ -187,15 +173,7 @@ public enum JdbcRuntime {
 
     }
 
-    /**
-     * Getter for property 'fetchDataExecutorService'.
-     *
-     * @return Value for property 'fetchDataExecutorService'.
-     */
     public ExecutorService getFetchDataExecutorService() {
-        if (fetchDataExecutorService==null){
-            fetchDataExecutorService = ExecutorUtil.create("for hbt test",1);
-        }
-        return fetchDataExecutorService;
+        return MycatWorkerProcessor.INSTANCE.getMycatWorker();
     }
 }

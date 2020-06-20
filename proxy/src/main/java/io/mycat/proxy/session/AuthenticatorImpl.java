@@ -2,6 +2,7 @@ package io.mycat.proxy.session;
 
 import io.mycat.MycatException;
 import io.mycat.config.PatternRootConfig;
+import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -13,9 +14,9 @@ import java.util.regex.Pattern;
 public class AuthenticatorImpl implements Authenticator {
     final Map<String, Matcher> userMatchers = new HashMap<>();
 
-    public AuthenticatorImpl(Map<String, PatternRootConfig.UserConfig> map) {
-        for (Map.Entry<String, PatternRootConfig.UserConfig> stringUserConfigEntry : map.entrySet()) {
-            PatternRootConfig.UserConfig value = stringUserConfigEntry.getValue();
+    public AuthenticatorImpl(Map<String, UserConfig> map) {
+        for (Map.Entry<String,UserConfig> stringUserConfigEntry : map.entrySet()) {
+         UserConfig value = stringUserConfigEntry.getValue();
             Predicate<String> stringPredicate;
 
             if (value.getIp() != null) {

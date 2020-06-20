@@ -2,12 +2,10 @@ package io.mycat.beans.mycat;
 
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.api.collector.RowBaseIterator;
-import lombok.AllArgsConstructor;
 
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,20 +21,24 @@ public class ResultSetBuilder {
         columnInfos.add(null);
     }
 
-    public void addColumnInfo(String schemaName, String tableName, String columnName, int columnType, int precision, int scale, String columnLabel, boolean isAutoIncrement, boolean isCaseSensitive, boolean isNullable, boolean isSigned, int displaySize) {
+    public ResultSetBuilder addColumnInfo(String schemaName, String tableName, String columnName, int columnType, int precision, int scale, String columnLabel, boolean isAutoIncrement, boolean isCaseSensitive, boolean isNullable, boolean isSigned, int displaySize) {
         columnInfos.add(new ColumnInfo(schemaName, tableName, columnName, columnType, precision, scale, columnLabel, isAutoIncrement, isCaseSensitive, isNullable, isSigned, displaySize));
+        return this;
     }
 
-    public void addColumnInfo(String tableName, String columnName, int columnType, int precision, int scale) {
+    public ResultSetBuilder addColumnInfo(String tableName, String columnName, int columnType, int precision, int scale) {
         columnInfos.add(new ColumnInfo(tableName, tableName, columnName, columnType, precision, scale, columnName, false, true, true, true, columnName.length()));
+        return this;
     }
 
-    public void addColumnInfo(String columnName, JDBCType columnType) {
+    public ResultSetBuilder addColumnInfo(String columnName, JDBCType columnType) {
         addColumnInfo(columnName, columnType.getVendorTypeNumber());
+        return this;
     }
 
-    public void addColumnInfo(String columnName, int columnType) {
+    public ResultSetBuilder addColumnInfo(String columnName, int columnType) {
         columnInfos.add(new ColumnInfo(columnName, columnType));
+        return this;
     }
 
 

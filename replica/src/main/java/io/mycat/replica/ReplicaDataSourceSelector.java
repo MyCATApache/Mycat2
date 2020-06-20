@@ -19,8 +19,6 @@ import io.mycat.ConfigProvider;
 import io.mycat.MycatConfig;
 import io.mycat.RootHelper;
 import io.mycat.config.ClusterRootConfig;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.util.CollectionUtil;
@@ -35,6 +33,7 @@ import java.util.stream.Collectors;
 /**
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
+
 public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaDataSourceSelector.class);
@@ -89,13 +88,17 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
                         DEFAULT_SELECT_AS_READ, weight,
                         ReplicaDataSourceSelector.this));
         if (type.isReadType()) {
-            this.readDataSource.add(physicsInstance);
+            if (!this.readDataSource.contains(physicsInstance)) {
+                this.readDataSource.add(physicsInstance);
+            }
         }
         if (type.isWriteType()) {
-            this.writeDataSourceList.add(physicsInstance);
-            physicsInstance.notifyChangeAlive(false);
-            physicsInstance.notifyChangeSelectRead(false);
+            if (!this.writeDataSourceList.contains(physicsInstance)) {
+                this.writeDataSourceList.add(physicsInstance);
+            }
         }
+        physicsInstance.notifyChangeAlive(false);
+        physicsInstance.notifyChangeSelectRead(false);
         switch (this.type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
@@ -205,7 +208,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
             return false;
         }
         List<PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
-        CollectionUtil.safeUpdate(oldWriteDataSource,backup);
+        CollectionUtil.safeUpdate(oldWriteDataSource, backup);
         LOGGER.info(message, backup, newWriteDataSource);
         return true;
     }
@@ -216,7 +219,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         ClusterRootConfig.ClusterConfig clusterConfig = config.getCluster().getClusters().stream().filter(i -> getName().equals(i.getName())).findFirst().get();
         List<String> collect = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toList());
         clusterConfig.setMasters(collect);
-        configProvider.reportReplica(clusterConfig.getName(),collect);
+        configProvider.reportReplica(clusterConfig.getName(), collect);
     }
 
     @Override
@@ -238,7 +241,24 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         writeDataSourceList.removeIf((i) -> i.getName().equals(datasourceName));
         readDataSource.removeIf((i) -> i.getName().equals(datasourceName));
     }
-    public Map<String,PhysicsInstance> getRwaDataSourceMap(){
+
+    public Map<String, PhysicsInstance> getRawDataSourceMap() {
         return Collections.unmodifiableMap(this.datasourceMap);
+    }
+
+    public BalanceType getBalanceType() {
+        return balanceType;
+    }
+
+    public LoadBalanceStrategy getDefaultReadLoadBalanceStrategy() {
+        return defaultReadLoadBalanceStrategy;
+    }
+
+    public LoadBalanceStrategy getDefaultWriteLoadBalanceStrategy() {
+        return defaultWriteLoadBalanceStrategy;
+    }
+
+    public List<PhysicsInstanceImpl> getReadDataSource() {
+        return Collections.unmodifiableList(readDataSource);
     }
 }

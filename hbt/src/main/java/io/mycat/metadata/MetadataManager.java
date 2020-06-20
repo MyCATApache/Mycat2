@@ -52,7 +52,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
@@ -227,7 +226,7 @@ public enum MetadataManager {
         ////////////////////////////////////////////////////////////////////////////////////////////////
         if (columns == null && prototypeServer != null) {
             try {
-                columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getUrl(), prototypeServer.getUser(), prototypeServer.getPassword());
+                columns = CalciteConvertors.getSimpleColumnInfos(schemaName, tableName, prototypeServer.getTargetName());
             } catch (Throwable e) {
                 LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
             }
@@ -322,12 +321,15 @@ public enum MetadataManager {
 
     public static Map<String, List<String>> routeInsertFlat(String currentSchema, String sql) {
         Iterable<Map<String, List<String>>> maps = routeInsert(currentSchema, sql);
-        Stream<Map<String, List<String>>> stream = StreamSupport.stream(maps.spliterator(), false);
-        return stream.flatMap(i -> i.entrySet().stream())
-                .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.reducing(new ArrayList<String>(), (list, list2) -> {
-                    list.addAll(list2);
-                    return list;
-                }))));
+        HashMap<String, List<String>> res = new HashMap<>();
+        for (Map<String, List<String>> map : maps) {
+            for (Map.Entry<String, List<String>> e : map.entrySet()) {
+                List<String> strings = res.computeIfAbsent(e.getKey(), s -> new ArrayList<>());
+                strings.addAll(e.getValue());
+            }
+        }
+
+        return res;
     }
 
     public Iterable<Map<String, List<String>>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
@@ -411,9 +413,13 @@ public enum MetadataManager {
         } else {
             simpleColumnInfos = new ArrayList<>(logicTable.getColumns().size());
             for (SQLExpr column : columns) {
-                String s1 = SQLUtils.normalize(column.toString());
-                SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(s1));
-                simpleColumnInfos.add(columnByName);
+                String columnName = SQLUtils.normalize(column.toString());
+                try {
+                    SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(columnName));
+                    simpleColumnInfos.add(columnByName);
+                }catch (NullPointerException e){
+                   throw new MycatException("未知字段:"+columnName);
+                }
             }
         }
         Supplier<String> stringSupplier = logicTable.nextSequence();

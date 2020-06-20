@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
-    volatile InstanceType type;
+    final InstanceType type;
     final String name;
     final ReplicaDataSourceSelector selector;
     final int weight;
@@ -72,17 +72,22 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         }
         return count;
     }
+    public void addSessionCounter(SessionCounter sessionCounter){
+        if (sessionCounter!=null){
+            sessionCounters.add(sessionCounter);
+        }
+    }
 
     @Override
     public int getWeight() {
         return weight;
     }
 
-    public void notifyChangeAlive(boolean alive) {
+    public synchronized void notifyChangeAlive(boolean alive) {
         this.alive = alive;
     }
 
-    public void notifyChangeSelectRead(boolean readable) {
+    public synchronized void notifyChangeSelectRead(boolean readable) {
         this.selectRead = readable;
     }
 
@@ -106,7 +111,4 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         return result;
     }
 
-    public void setType(InstanceType type) {
-        this.type = type;
-    }
 }
