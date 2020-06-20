@@ -17,9 +17,8 @@
 package io.mycat.optimizer;
 
 import com.google.common.collect.ImmutableMap;
-import io.mycat.RootHelper;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
+
+import io.mycat.TableHandler;
 import lombok.SneakyThrows;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;

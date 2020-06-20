@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.09-08</version>
+        <version>1.09-10</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,12 +15,19 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.09-08</version>
+            <version>1.09-10</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>example</artifactId>
-            <version>1.08-SNAPSHOT</version>
+            <version>1.09-10</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>hbt</artifactId>
+            <version>1.09-10</version>
+        </dependency>
+
+
     </dependencies>
 </project>

@@ -1,8 +1,8 @@
 package io.mycat.optimizer;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.TableHandler;
 import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.metadata.TableHandler;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
