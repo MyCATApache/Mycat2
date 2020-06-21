@@ -29,7 +29,6 @@ import org.apache.calcite.tools.RelBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 public class Main {
     private static final ImmutableList<RelTraitDef> TRAITS = ImmutableList
@@ -103,8 +102,7 @@ public class Main {
         phyPlan.explain(explainWriter);
         StringBuilder text = explainWriter.getText();
         System.out.println(text);
-        MycatExecutor executor = phyPlan.implement(new MycatExecutorImplementor() {
-        });
+        Executor executor = phyPlan.implement(new ExecutorImplementorImpl());
         return null;
     }
 
@@ -118,17 +116,17 @@ public class Main {
 
     private static RelNode optimizeWithRBO(RelNode logPlan) {
         ImmutableList<RelOptRule> rules = ImmutableList.of(
-                MycatRules2.ProjectView.INSTANCE,
-                MycatRules2.FilterView.INSTACNE,
-                MycatRules2.ProjectView.INSTANCE,
-                MycatRules2.AggregateView.INSTACNE,
-                MycatRules2.ProjectView.INSTANCE,
-                MycatRules2.JoinView.INSTANCE,
-                MycatRules2.ProjectView.INSTANCE,
-                MycatRules2.CorrelateView.INSTANCE,
-                MycatRules2.ProjectView.INSTANCE,
-                MycatRules2.SortView.INSTACNE,
-                MycatRules2.ProjectView.INSTANCE
+                BottomViewRules.ProjectView.INSTANCE,
+                BottomViewRules.FilterView.INSTACNE,
+                BottomViewRules.ProjectView.INSTANCE,
+                BottomViewRules.AggregateView.INSTACNE,
+                BottomViewRules.ProjectView.INSTANCE,
+                BottomViewRules.JoinView.INSTANCE,
+                BottomViewRules.ProjectView.INSTANCE,
+                BottomViewRules.CorrelateView.INSTANCE,
+                BottomViewRules.ProjectView.INSTANCE,
+                BottomViewRules.SortView.INSTACNE,
+                BottomViewRules.ProjectView.INSTANCE
         );
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addRuleCollection(rules);

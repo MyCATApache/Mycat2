@@ -379,8 +379,8 @@ public class MycatRules {
       }
 
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -462,8 +462,8 @@ public class MycatRules {
       }
 
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -548,9 +548,10 @@ public class MycatRules {
           return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -614,9 +615,10 @@ public class MycatRules {
         return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -689,9 +691,10 @@ public class MycatRules {
         return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -776,10 +779,9 @@ public class MycatRules {
             ((MycatRel) getInput()).explain(writer);
             return writer.ret();
         }
-
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -841,9 +843,10 @@ public class MycatRules {
         return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -904,9 +907,10 @@ public class MycatRules {
         return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -961,9 +965,10 @@ public class MycatRules {
         return writer.ret();
       }
 
+
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -1054,8 +1059,8 @@ public class MycatRules {
       }
 
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 
@@ -1102,8 +1107,8 @@ public class MycatRules {
         }
 
         @Override
-        public MycatExecutor implement(MycatExecutorImplementor implementor) {
-            return null;
+        public Executor implement(ExecutorImplementor implementor) {
+            return implementor.implement(this);
         }
     }
 

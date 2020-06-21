@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Getter;
-import org.apache.calcite.interpreter.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -29,13 +28,10 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
-import org.apache.calcite.util.Pair;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -101,14 +97,17 @@ public class BottomView extends TableScan implements MycatRel {
         return true;
     }
 
+    public String getSql() {
+        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
+        return MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
+    }
+
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        String sql;
-        List<DataNode> dataNodes;
 
-        sql = MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
-        dataNodes = transientTable.getDataNodes();
+        String sql = MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
+        List<DataNode> dataNodes = transientTable.getDataNodes();
 
         return writer
                 .name("BottomView")
@@ -120,23 +119,28 @@ public class BottomView extends TableScan implements MycatRel {
     }
 
     @Override
-    public MycatExecutor implement(MycatExecutorImplementor implementor) {
-        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        RelNode relNode = transientTable.getRelNode();
-        RelOptCluster cluster = getCluster();
-        RelOptPlanner planner = cluster.getPlanner();
-        RelOptUtil.registerDefaultRules(planner,false,true);
-
-        RelNode relNode1 = planner.changeTraits(relNode, cluster.traitSetOf(BindableConvention.INSTANCE));
-        planner.setRoot(relNode1);
-        InterpretableRel bestExp = (InterpretableRel)planner.findBestExp();
-//
-//        Nodes.CoreCompiler coreCompiler = new CoreCompilerImpl(objects,cluster);
-//        Pair<RelNode, Map<RelNode, Interpreter.NodeInfo>> pair = coreCompiler.visitRoot(bestExp);
-//        InterpretableRel.InterpreterImplementor interpreterImplementor = new InterpretableRel.InterpreterImplementor(coreCompiler, null, null);
-//      Node implement = bestExp.implement(interpreterImplementor);
-        return null;
+    public Executor implement(ExecutorImplementor implementor) {
+        return implementor.implement(this);
     }
+
+//    @Override
+//    public MycatExecutor implement(MycatExecutorImplementor implementor) {
+//        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
+//        RelNode relNode = transientTable.getRelNode();
+//        RelOptCluster cluster = getCluster();
+//        RelOptPlanner planner = cluster.getPlanner();
+//        RelOptUtil.registerDefaultRules(planner,false,true);
+//
+//        RelNode relNode1 = planner.changeTraits(relNode, cluster.traitSetOf(BindableConvention.INSTANCE));
+//        planner.setRoot(relNode1);
+//        InterpretableRel bestExp = (InterpretableRel)planner.findBestExp();
+////
+////        Nodes.CoreCompiler coreCompiler = new CoreCompilerImpl(objects,cluster);
+////        Pair<RelNode, Map<RelNode, Interpreter.NodeInfo>> pair = coreCompiler.visitRoot(bestExp);
+////        InterpretableRel.InterpreterImplementor interpreterImplementor = new InterpretableRel.InterpreterImplementor(coreCompiler, null, null);
+////      Node implement = bestExp.implement(interpreterImplementor);
+//        return null;
+//    }
 
     public RelNode getRelNode() {
         MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
@@ -152,25 +156,27 @@ public class BottomView extends TableScan implements MycatRel {
         );
         return BottomView.create(relNode.getCluster(), relOptTable1);
     }
-    public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode, List<DataNode> dataNodes){
-        return makeTransient(relOptTable.getRelOptSchema(),relNode,dataNodes);
+
+    public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode, List<DataNode> dataNodes) {
+        return makeTransient(relOptTable.getRelOptSchema(), relNode, dataNodes);
     }
+
     public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode) {
         MycatTransientTable transientTable = relOptTable.unwrap(MycatTransientTable.class);
         return makeTransient(relOptTable.getRelOptSchema(), relNode, transientTable.getDataNodes());
     }
 
+
     List<DataNode> getDataNodes() {
         MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
         return transientTable.getDataNodes();
     }
-
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw);
         ExplainWriter explainWriter = new ExplainWriter();
         explain(explainWriter);
-        pw.item("sql",explainWriter.getText());
+        pw.item("sql", explainWriter.getText());
         return pw;
     }
 }

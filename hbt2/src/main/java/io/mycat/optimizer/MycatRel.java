@@ -16,8 +16,6 @@
  */
 package io.mycat.optimizer;
 
-import org.apache.calcite.interpreter.InterpretableRel;
-import org.apache.calcite.interpreter.Node;
 import org.apache.calcite.rel.RelNode;
 
 /**
@@ -27,5 +25,5 @@ public interface MycatRel extends RelNode {
 
     ExplainWriter explain(ExplainWriter writer);
 
-    MycatExecutor implement(MycatExecutorImplementor implementor);
+    Executor implement(ExecutorImplementor implementor);
 }

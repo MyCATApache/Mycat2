@@ -20,14 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Getter;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.interpreter.BindableRel;
-import org.apache.calcite.interpreter.Node;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -41,7 +36,7 @@ import java.util.stream.Collectors;
  * Relational expression representing a scan of a table in a JDBC data source.
  */
 @Getter
-public class BottomTable extends TableScan implements MycatRel, BindableRel {
+public class BottomTable extends TableScan implements MycatRel {
 
     private RelOptTable table;
 
@@ -112,22 +107,7 @@ public class BottomTable extends TableScan implements MycatRel, BindableRel {
     }
 
     @Override
-    public MycatExecutor implement(MycatExecutorImplementor implementor) {
-        return null;
-    }
-
-    @Override
-    public Node implement(InterpreterImplementor implementor) {
-        return null;
-    }
-
-    @Override
-    public Class<Object[]> getElementType() {
-        return null;
-    }
-
-    @Override
-    public Enumerable<Object[]> bind(DataContext dataContext) {
-        return null;
+    public Executor implement(ExecutorImplementor implementor) {
+        return implementor.implement(this);
     }
 }
