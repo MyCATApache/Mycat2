@@ -134,7 +134,9 @@ public class BottomView extends TableScan implements MycatRel {
         );
         return BottomView.create(relNode.getCluster(), relOptTable1);
     }
-
+    public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode, List<DataNode> dataNodes){
+        return makeTransient(relOptTable.getRelOptSchema(),relNode,dataNodes);
+    }
     public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode) {
         MycatTransientTable transientTable = relOptTable.unwrap(MycatTransientTable.class);
         return makeTransient(relOptTable.getRelOptSchema(), relNode, transientTable.getDataNodes());

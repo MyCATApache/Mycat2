@@ -1,14 +1,28 @@
 package io.mycat.optimizer;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
+import io.mycat.calcite.CalciteUtls;
+import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.metadata.ShardingTable;
+import io.mycat.router.ShardingTableHandler;
+import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.rules.FilterTableScanRule;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class MycatRules2 {
@@ -32,10 +46,34 @@ public class MycatRules2 {
                 builder.push(relNode);
             }
             RelNode res = builder.filter(filter.getVariablesSet(), filter.getChildExps()).build();
-            BottomView newBottomView = BottomView.create(
-                    bottomView.getCluster(),
-                    bottomView.getTable()
-            );
+
+            BottomView newBottomView;
+            //不分片直接下推
+            if (bottomView.getDataNodes().size() == 1) {
+                newBottomView = BottomView.makeTransient(bottomView.getTable(), res);
+            } else {
+                HepProgramBuilder builder1 = new HepProgramBuilder();
+                builder1.addRuleInstance(FilterTableScanRule.INSTANCE);
+                HepPlanner planner = new HepPlanner(builder1.build());
+                planner.setRoot(res);
+                RelNode bestExp = planner.findBestExp();
+                List<DataNode> dataNodes = new ArrayList<>();
+                bestExp.accept(new RelShuttleImpl() {
+                    @Override
+                    public RelNode visit(TableScan scan) {
+                        if (scan instanceof Bindables.BindableTableScan) {
+                            Bindables.BindableTableScan bindableTableScan = (Bindables.BindableTableScan) scan;
+                            MycatLogicTable logicTable = scan.getTable().unwrap(MycatLogicTable.class);
+                            ShardingTable table = (ShardingTable) logicTable.getTable();
+                            ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
+                            dataNodes.addAll(CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters));
+                        }
+                        return super.visit(scan);
+                    }
+                });
+
+                newBottomView = BottomView.makeTransient(bottomView.getTable(), res,dataNodes);
+            }
             call.transformTo(newBottomView);
         }
     }
