@@ -21,7 +21,6 @@ import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Getter;
 import org.apache.calcite.plan.*;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -38,17 +37,19 @@ import java.util.stream.Collectors;
  * Relational expression representing a scan of a table in a JDBC data source.
  */
 @Getter
-public class BottomView extends TableScan implements MycatRel {
+public class BottomTable extends TableScan implements MycatRel {
 
+    private RelOptTable table;
 
-    BottomView(RelOptCluster cluster, RelTraitSet traitSet,
-               RelOptTable relOptTable) {
-        super(cluster, traitSet, ImmutableList.of(), relOptTable);
+    BottomTable(RelOptCluster cluster, RelTraitSet traitSet,
+                RelOptTable table) {
+        super(cluster, traitSet, ImmutableList.of(), table);
+        this.table = table;
     }
 
 
-    public static BottomView create(RelOptCluster cluster,
-                                    RelOptTable relOptTable) {
+    public static BottomTable create(RelOptCluster cluster,
+                                     RelOptTable relOptTable) {
         final Table table = relOptTable.unwrap(Table.class);
         final RelTraitSet traitSet =
                 cluster.traitSetOf(MycatConvention.INSTANCE)
@@ -58,7 +59,7 @@ public class BottomView extends TableScan implements MycatRel {
                             }
                             return ImmutableList.of();
                         });
-        return new BottomView(cluster, traitSet, relOptTable);
+        return new BottomTable(cluster, traitSet, relOptTable);
     }
 
 
@@ -70,18 +71,13 @@ public class BottomView extends TableScan implements MycatRel {
         return table.getRowType();
     }
 
-
     /**
      * {@inheritDoc}
      */
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner,
                                       RelMetadataQuery mq) {
-        double f;
-        f = 0.5;
-        return super.computeSelfCost(planner, mq)
-                .multiplyBy(f * 0.01d);
-
+        return super.computeSelfCost(planner, mq);
     }
 
     /**
@@ -92,20 +88,16 @@ public class BottomView extends TableScan implements MycatRel {
         return super.copy(traitSet, inputs);
     }
 
-    public boolean isSamePartition(BottomView right) {
+    public boolean isSamePartition(BottomTable right) {
         MycatTable mycatTable = getTable().unwrap(MycatTable.class);
         return true;
     }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        String sql;
-        List<DataNode> dataNodes;
-
-        sql = MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
-        dataNodes = transientTable.getDataNodes();
-
+        String sql = MycatCalciteSupport.INSTANCE.convertToSql(this, MysqlSqlDialect.DEFAULT, false);
+        MycatTable table = this.table.unwrap(MycatTable.class);
+        List<DataNode> dataNodes = table.getDataNodes();
         return writer
                 .name("BottomView")
                 .item("dataNode", dataNodes.stream().map(i -> i.getUniqueName()).collect(Collectors.joining(",")))
@@ -118,39 +110,5 @@ public class BottomView extends TableScan implements MycatRel {
     @Override
     public MycatExecutor implement(MycatExecutorImplementor implementor) {
         return null;
-    }
-
-    public RelNode getRelNode() {
-        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        return transientTable.getRelNode();
-    }
-
-    public static BottomView makeTransient(RelOptSchema schema, RelNode relNode, List<DataNode> dataNodes) {
-        MycatTransientTable mycatTransientTable = new MycatTransientTable(dataNodes, relNode);
-        RelOptTableImpl relOptTable1 = RelOptTableImpl.create(schema,
-                mycatTransientTable.getRelNode().getRowType(),
-                mycatTransientTable
-                , ImmutableList.of()
-        );
-        return BottomView.create(relNode.getCluster(), relOptTable1);
-    }
-
-    public static BottomView makeTransient(RelOptTable relOptTable, RelNode relNode) {
-        MycatTransientTable transientTable = relOptTable.unwrap(MycatTransientTable.class);
-        return makeTransient(relOptTable.getRelOptSchema(), relNode, transientTable.getDataNodes());
-    }
-
-    List<DataNode> getDataNodes() {
-        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        return transientTable.getDataNodes();
-    }
-
-    @Override
-    public RelWriter explainTerms(RelWriter pw) {
-        super.explainTerms(pw);
-        ExplainWriter explainWriter = new ExplainWriter();
-        explain(explainWriter);
-        pw.item("sql",explainWriter.getText());
-        return pw;
     }
 }

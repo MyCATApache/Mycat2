@@ -256,7 +256,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
             for (String tableName : tableNames) {
                 Table table1 = subSchema.getTable(tableName);
                 if (table1 instanceof MycatLogicTable) {
-                    Map<String, MycatPhysicalTable> dataNodeMap = ((MycatLogicTable) table1).getDataNodeMap();
+                    Map<String, MycatPhysicalTable> dataNodeMap = ((MycatLogicTable) table1).getPhysicalTableMap();
                     log.debug("dataNodeMap:{}", dataNodeMap);
                     if (dataNodeMap.containsKey(uniqueName)) {
                         return Objects.requireNonNull((MycatLogicTable) table1);

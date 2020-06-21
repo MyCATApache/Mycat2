@@ -1,16 +1,14 @@
 package io.mycat.optimizer;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.mapping.IntPair;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 public class MycatRules2 {
@@ -36,8 +34,7 @@ public class MycatRules2 {
             RelNode res = builder.filter(filter.getVariablesSet(), filter.getChildExps()).build();
             BottomView newBottomView = BottomView.create(
                     bottomView.getCluster(),
-                    bottomView.getTable(),
-                    res
+                    bottomView.getTable()
             );
             call.transformTo(newBottomView);
         }
@@ -55,16 +52,14 @@ public class MycatRules2 {
             Project project = call.rel(0);
             BottomView bottomView = call.rel(1);
             RelNode relNode = bottomView.getRelNode();
-
             RelBuilder builder = call.builder();
             if (relNode == null) builder.push(bottomView);
             else {
                 builder.push(relNode);
             }
+
             RelNode res = builder.project(project.getChildExps()).build();
-            BottomView newBottomView = BottomView.create(
-                    bottomView.getCluster(),
-                    bottomView.getTable(),
+            BottomView newBottomView = BottomView.makeTransient(bottomView.getTable(),
                     res
             );
             call.transformTo(newBottomView);
@@ -90,8 +85,7 @@ public class MycatRules2 {
                 builder.push(relNode);
             }
             RelNode res = builder.aggregate(builder.groupKey(aggregate.getGroupSet()), aggregate.getAggCallList()).build();
-            BottomView newBottomView = BottomView.create(
-                    bottomView.getCluster(),
+            BottomView newBottomView = BottomView.makeTransient(
                     bottomView.getTable(),
                     res
             );
@@ -108,6 +102,7 @@ public class MycatRules2 {
 
         @Override
         public void onMatch(RelOptRuleCall call) {
+
             Sort sort = call.rel(0);
             BottomView bottomView = call.rel(1);
             RelNode relNode = bottomView.getRelNode();
@@ -117,12 +112,13 @@ public class MycatRules2 {
             else {
                 builder.push(relNode);
             }
+            Sort sort1 = sort.copy(relNode.getTraitSet(), ImmutableList.of(relNode));
+            RelOptCluster cluster = builder.getCluster();
 
-            BottomView newBottomView = BottomView.create(
-                    bottomView.getCluster(),
+            BottomView newBottomView = BottomView.makeTransient(
                     bottomView.getTable(),
-                    sort.copy(relNode.getTraitSet(), ImmutableList.of(relNode))
-            );
+                    sort1);
+
             call.transformTo(newBottomView);
         }
     }
@@ -146,7 +142,7 @@ public class MycatRules2 {
             if (joinInfo.isEqui()) {
                 if (left.isSamePartition(right)) {
                     Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode()));
-                    call.transformTo(BottomView.create(left.getCluster(), left.getTable(), newJoin));
+                    call.transformTo(BottomView.create(left.getCluster(), left.getTable()));
                 }
             }
         }
@@ -168,7 +164,7 @@ public class MycatRules2 {
             BottomView right = call.rel(1);
             if (left.isSamePartition(right)) {
                 Correlate newCorrelate = correlate.copy(correlate.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode()));
-                call.transformTo(BottomView.create(left.getCluster(), left.getTable(), newCorrelate));
+                call.transformTo(BottomView.create(left.getCluster(), left.getTable()));
             }
         }
     }
