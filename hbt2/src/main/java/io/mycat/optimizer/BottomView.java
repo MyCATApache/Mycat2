@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Getter;
+import org.apache.calcite.interpreter.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -28,10 +29,13 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.apache.calcite.util.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -117,6 +121,20 @@ public class BottomView extends TableScan implements MycatRel {
 
     @Override
     public MycatExecutor implement(MycatExecutorImplementor implementor) {
+        MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
+        RelNode relNode = transientTable.getRelNode();
+        RelOptCluster cluster = getCluster();
+        RelOptPlanner planner = cluster.getPlanner();
+        RelOptUtil.registerDefaultRules(planner,false,true);
+
+        RelNode relNode1 = planner.changeTraits(relNode, cluster.traitSetOf(BindableConvention.INSTANCE));
+        planner.setRoot(relNode1);
+        InterpretableRel bestExp = (InterpretableRel)planner.findBestExp();
+//
+//        Nodes.CoreCompiler coreCompiler = new CoreCompilerImpl(objects,cluster);
+//        Pair<RelNode, Map<RelNode, Interpreter.NodeInfo>> pair = coreCompiler.visitRoot(bestExp);
+//        InterpretableRel.InterpreterImplementor interpreterImplementor = new InterpretableRel.InterpreterImplementor(coreCompiler, null, null);
+//      Node implement = bestExp.implement(interpreterImplementor);
         return null;
     }
 

@@ -64,6 +64,7 @@ public class MycatRules2 {
                         if (scan instanceof Bindables.BindableTableScan) {
                             Bindables.BindableTableScan bindableTableScan = (Bindables.BindableTableScan) scan;
                             MycatLogicTable logicTable = scan.getTable().unwrap(MycatLogicTable.class);
+
                             ShardingTable table = (ShardingTable) logicTable.getTable();
                             ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
                             dataNodes.addAll(CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters));
@@ -244,4 +245,5 @@ public class MycatRules2 {
 //            }
 //        }
     }
+
 }

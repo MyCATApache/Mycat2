@@ -2,6 +2,7 @@ package io.mycat.optimizer;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.RootHelper;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
@@ -25,8 +26,10 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 public class Main {
     private static final ImmutableList<RelTraitDef> TRAITS = ImmutableList
@@ -39,9 +42,22 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1 limit 1");
-        String parameterizedString = sqlStatement.toParameterizedString();
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1 limit 2");
+        List<Object> parameters = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        MySqlExportParameterVisitor mySqlExportParameterVisitor = new MySqlExportParameterVisitor(parameters,sb,true);
+        sqlStatement.accept(mySqlExportParameterVisitor);
+        Plan plan;
+        if (parameters.isEmpty()) {
+            String parameterSql = sb.toString();
+            plan = PlanCache.INSTANCE.get(parameterSql, () -> compile(defaultSchema, SQLUtils.parseSingleMysqlStatement(parameterSql)));
+        }else {
+            plan = compile(defaultSchema,sqlStatement);
+        }
 
+    }
+
+    private static Plan compile(String defaultSchema, SQLStatement sqlStatement) throws Exception {
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
@@ -89,6 +105,7 @@ public class Main {
         System.out.println(text);
         MycatExecutor executor = phyPlan.implement(new MycatExecutorImplementor() {
         });
+        return null;
     }
 
     private static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
