@@ -11,14 +11,25 @@ import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
 
 public class ManagerCommandDispatcher extends DefaultCommandHandler {
-    static final ImmutableList<MycatCommand> COMMANDS = ImmutableList.of(
+    public static final ImmutableList<ManageCommand> COMMANDS = ImmutableList.of(
             new ShowInstanceCommand(),
             new ShowReplicaCommand(),
             new ShowDatasourceCommand(),
             new ShowConnectionCommand(),
             new ShowHeartbeatCommand(),
             new ShowBackendNativeCommand(),
-            new ShowReactorCommand()
+            new ShowReactorCommand(),
+            new ShowThreadPoolCommand(),
+            new ShowScheduleCommand(),
+            new ShowHelpCommand(),
+            new ShowMetaDataSchemaCommand(),
+            new ShowMetaDataTableCommand(),
+            new KillConnectionCommand(),
+            new SwitchInstanceCommand(),
+            new SwitchReplicaCommand(),
+            new ShowStatCommand(),
+            new ReloadConfigCommand(),
+            new SwitchHeatbeatCommand()
     );
 
     @Override

@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,14 +16,15 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
 package io.mycat;
 
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author mycat
@@ -31,13 +32,27 @@ import java.util.concurrent.LinkedTransferQueue;
 public class ExecutorUtil {
 
     public static final NameableExecutor create(String name, int size) {
-        return create(name, size, true);
+        return create(name, size, false);
     }
 
     private static final NameableExecutor create(String name, int size, boolean isDaemon) {
         NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
-        return new NameableExecutor(name, size, new LinkedTransferQueue<Runnable>(), factory);
+        return new NameableExecutor(name, size, new LinkedTransferQueue<>(), factory);
     }
 
-   
+    public static final NameableExecutor create(String name, int corePoolSize,
+                                                int maximumPoolSize,
+                                                long keepAliveTime,
+                                                TimeUnit unit) {
+        return create(name, corePoolSize, maximumPoolSize, keepAliveTime, unit,false);
+    }
+
+    public static final NameableExecutor create(String name, int corePoolSize,
+                                                int maximumPoolSize,
+                                                long keepAliveTime,
+                                                TimeUnit unit, boolean isDaemon) {
+        NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
+        return new NameableExecutor(name, corePoolSize, maximumPoolSize, keepAliveTime, unit, new LinkedTransferQueue<>(), factory);
+    }
+
 }

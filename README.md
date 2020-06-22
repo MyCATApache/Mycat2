@@ -378,6 +378,8 @@ use db1;
 
 jdbc的连接属性建议使用连接字符串设置
 
+如果使用图形化客户端出现*no* *database* *selected* 等提示,请在JDBC连接字符串上写上默认库
+
 
 
 ##### mysql服务器设置参考
@@ -778,9 +780,31 @@ targetName
 
 1.都需要建表sql
 
+
+
+此sql在mycat v1.09之后会自动从dataNode中查询得到,无需配置,但是遇上得到的createTableSQL是mycat无法解析的时候,就需要在mycat里面调整此sql直到mycat的sql解析器能识别并设置
+
+
+
 2.当建表sql中的字段信息带有AUTO_INCREMENT同时配置中有配置全局序列号,则该sql在插入数据的时候,自动改写sql补上自增值
 
+
+
 3.要么是自然分片要么是动态分片
+
+mycat v1.09后当分片类型不配置的时候,默认是NATURE_DATABASE_TABLE
+
+
+
+###### 建表sql的作用
+
+1.主要是为分布式查询引擎提供逻辑表与物理表的字段信息,具体体现为mycat能对查询逻辑表的sql编译成查询物理表的sql,如果没有字段信息,mycat就不能准确生成查询的字段.在配置中都提供字段信息的情况下,mycat可以脱离后端数据库独立编译sql为执行计划.
+
+2.提供自增字段的信息,是开启全局序列号的前提
+
+3.当建表sql带有索引信息,主键信息的时候,分布式查询引擎可以利用它优化算子(mycat v1.09)
+
+4.mycat会把分片字段与主键自动认为是带有索引的字段(mycat v1.09)
 
 
 
@@ -901,11 +925,51 @@ interceptors:
 
 此配置使用内置默认的mycatdb命令,根据分片配置进行处理,无需配置任何命令,默认事务是proxy
 
+该属性在mycat连接初始化的时候设置上,但是可以通过sql改变连接中的事务模式
 
 
 
+可选的事务
 
-#### booster
+proxy
+
+xa
+
+
+
+设置proxy是使用基于一个连接上实现的本地事务
+
+设置xa实际上是指使用数据源提供者的事务实现
+
+
+
+当数据源提供者为
+
+```yaml
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+```
+
+
+
+当前事务状态为xa,则使用Atomikos的xa事务,并占用bindTransactionPool中的线程
+
+而提供者是其他类的时候,则不会使用bindTransactionPool中的线程
+
+直接使用 workerPool中的线程
+
+
+
+例如
+
+```yaml
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+```
+
+当使用此数据源提供者的时候使用workerPool线程池,当设置xa事务的时候,是使用此DruidDatasourceProvider实现的事务是本地事务,多个连接commit在阶段失败,已经commit的连接不能回滚
+
+
+
+#### booster架构
 
 ```yaml
 interceptors:
@@ -929,6 +993,8 @@ boosters: [defaultDs2]
 在无事务且开启自动提交的情况下指定的sql发送到后端目标,该属性被mycatdb和boostMycatdb两个命令使用
 
 mycatdb会自动给缺默认库名的sql添上逻辑库,boostMycatdb则不会.
+
+此转发的后端目标一般是高性能的查询服务,mycat在此仅仅是高性能,处理事务或更新请求,对于查询,转发到其他服务处理
 
 
 
@@ -1151,6 +1217,10 @@ workerId对应雪花算法的参数
 
 ## Mycat2.0分布式查询支持语法
 
+select语法
+
+
+
 ```yaml
 query:
 
@@ -1200,6 +1270,20 @@ groupItem:
   |   '(' expression [, expression ]* ')'
 
 ```
+
+Select 语法支持使用for update结尾表示在事务中涉及的查询行使用排它锁,mycat会在最终发送的sql语句中加上for update后缀
+
+
+
+UNION语法(v1.09)
+
+```
+SELECT UNION [ALL | DISTINCT] SELECT ...
+```
+
+UNION语法中不支持使用for update,如果sql中添加了for update则自动忽略
+
+
 
 ## Mycat2.0分布式修改支持语法
 
@@ -1271,11 +1355,9 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 8. 聚合函数max,min函数不能与group by一起用
 
-9. union等集合操作暂时不支持
-
 10. 非查询语句,mycat暂时不会自动处理函数表达式调用,会路由到mysql中调用,所以按日期分表的情况,需要sql中写清楚日期
 
-11. 部分关联子查询暂时不支持
+11. 部分关联子查询暂时不支持(不可下推的子查询)
 
 
 
@@ -1324,8 +1406,6 @@ https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b7395
 ##### 字符函数
 
 https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331765/mycat2/src/test/java/io/mycat/sql/CharChecker.java
-
-## SQL支持情况
 
 
 
@@ -1412,6 +1492,20 @@ cluster:
 4. 显式的配置,明确哪些sql是怎样被mycat处理
 
    
+
+拦截器处理流程
+
+接收sql
+
+->匹配器分析获得可能可以处理的命令及其配置并依次匹配执行(io.mycat.commands.MycatCommand)
+
+->执行每个MycatCommand前执行命令中配置的io.mycat.Hint,其作用是提取信息保存到上下文中(Map)
+
+->检查上下文中是否有缓存配置,如果缓存中有数据则返回缓存数据
+
+->如果当前是explain语句,则执行MycatCommand的explain函数,否则执行run函数
+
+
 
 ##### 处理器基本形式
 
@@ -2049,8 +2143,297 @@ SQL被'SET NAMES utf8mb4'替换
 
 
 
-##### 更新日志
+## 实验性sql
+
+
+
+#### 客户端相关
+
+##### ANALYZE TABLE
+
+``` sql
+ANALYZE TABLE schemaName.tableName;
+ANALYZE TABLE db1.travelrecord;
+
+//res
+Table				Op			Msg_type	Msg_Text
+db1.travelrecord	analyze		status		OK
+```
+
+当表名为mycat中配置的表名时候,mycat会对存储节点发送查询行数量的语句,统计该逻辑表中所有表并记录,行数可以帮助优化器进行算子优化
+
+
+
+##### SHOW CREATE TABLE 
+
+```sql
+SHOW CREATE TABLE db1.travelrecord;
+
+//res
+Table	Create Table
+travelrecord	CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+当表名为mycat中配置的表名时候,mycat会把配置中的建表sql返回
+
+当表名不存在时候,行为还没有定义(路由到第一个数据源)
+
+
+
+##### SHOW DATABASES
+
+```sql
+SHOW DATABASES;
+
+//res
+Database
+db1
+```
+
+mycat返回逻辑库信息
+
+
+
+##### SHOW ENGINES
+
+```
+SHOW ENGINES
+
+//res
+Engine	Support	Comment
+InnoDB	DRFAULT ...
+```
+
+mycat返回固定的引擎信息
+
+
+
+##### SHOW TABLES
+
+##### SHOW TABLE STATUS
+
+```sql
+SHOW TABLES;
+SHOW TABLES FROM db1;
+
+//res
+Tables_in_db1
+address1
+
+SHOW TABLE STATUS;
+SHOW TABLE STATUS  FROM db1;
+```
+
+sql中不带库名,如果mycat会话中设置了默认schema,则会对sql使用此schema作为库名补充
+
+然后根据库名获取逻辑库上配置的targetName路由,如果没有配置则路由到一个节点(此行为可能会改变)
+
+```sql
+use db1;
+SHOW TABLES;
+//实际mycat向后端发送的是SHOW TABLES FROM db1;
+```
+
+
+
+#### Mycat2管理与监控相关
+
+配置9066管理端
+
+管理端只有manager的用户才可以使用
+
+manager有独立的执行线程,一般不受8066的请求影响
+
+
+
+```yml
+manager:
+  ip: 127.0.0.1
+  port: 9066
+  users: [{ip: '.', password: '123456', username: root}]
+
+properties:
+  key: value
+```
+
+mycat中创建的连接一般有两大类,前端连接,后端连接,后端连接也区分native连接与jdbc连接
+
+
+
+###### kill
+
+```sql
+kill @@connection id1,id2...
+```
+
+id是mycat前端连接或者后端native连接的id(它们公用一个id生成器)
+
+
+
+###### 显示Mycat前端连接
+
+```sql
+show @@connection
+```
+
+
+
+###### 刷新配置(暂不开放)
+
+```sql
+reload @@config
+```
+
+
+
+###### 显示native连接
+
+```
+show @@backend.native
+```
+
+
+
+###### 显示数据源状态
+
+```sql
+show @@backend.datasource
+```
+
+
+
+###### 显示心跳状态
+
+```sql
+show @@heartbeat
+```
+
+
+
+###### 显示可以使用的管理命令
+
+```sql
+show @@help
+```
+
+
+
+###### 显示心跳中数据源实例中的状态
+
+navite连接与jdbc连接使用相同的数据源配置,指向相同的服务器,那么它们的数据源实例只有一个
+
+```sql
+show @@backend.instance
+```
+
+
+
+###### 显示逻辑库配置
+
+```sql
+show @@metadata.schema
+```
+
+
+
+###### 显示逻辑表配置
+
+```sql
+show @@metadata.schema.table
+```
+
+
+
+###### 显示reactor线程状态
+
+reactor是mycat2的io线程,主要处理透传响应与接收报文,解析sql等任务
+
+```sql
+show @@reactor
+```
+
+
+
+###### 显示集群状态
+
+```sql
+show @@backend.replica
+```
+
+
+
+###### 显示定时器状态
+
+```sql
+show @@schedule
+```
+
+
+
+###### 显示sql统计信息(暂时没有数据)
+
+```sql
+show @@stat
+```
+
+
+
+###### 显示线程池状态
+
+```sql
+show @@threadPool
+```
+
+
+
+###### 设置数据源实例状态
+
+```sql
+switch @@backend.instance = {name:xxx ,alive:true ,readable:true} 
+```
+
+name是数据源名字
+
+alive是数据源可用状态,值 true|false
+
+readable是数据源可读状态,值 true|false
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 集群切换
+
+```
+switch @@backend.replica = {name:xxx} 
+```
+
+name是数据源名字
+
+手动触发集群切换
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 心跳开关
+
+```sql
+switch @@backend.heartbeat = {true|false}
+```
+
+当有心跳配置的时候,可以进心跳进行开启关闭
+
+心跳会自动修改数据源实例的状态,关闭心跳可以自行通过上面的命令修改状态
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+## 更新日志
 
 具体看git记录
 
 2020-5-5拦截器,元数据配置发生变更
+
+2020-6-19后,mycat.yml中的server设置发生变化

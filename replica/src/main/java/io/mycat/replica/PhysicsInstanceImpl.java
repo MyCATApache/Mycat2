@@ -83,11 +83,11 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         return weight;
     }
 
-    public void notifyChangeAlive(boolean alive) {
+    public synchronized void notifyChangeAlive(boolean alive) {
         this.alive = alive;
     }
 
-    public void notifyChangeSelectRead(boolean readable) {
+    public synchronized void notifyChangeSelectRead(boolean readable) {
         this.selectRead = readable;
     }
 
