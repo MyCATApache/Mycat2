@@ -27,7 +27,5 @@
             <artifactId>hbt</artifactId>
             <version>1.09-10</version>
         </dependency>
-
-
     </dependencies>
 </project>

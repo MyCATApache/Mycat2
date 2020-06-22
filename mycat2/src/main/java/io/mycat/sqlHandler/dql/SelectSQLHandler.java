@@ -52,22 +52,19 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         super(statementClass);
     }
 
-    protected ExecuteCode onSelectNoTable(SQLSelectQueryBlock sqlSelectQueryBlock,
-                                          SQLRequest<SQLSelectStatement> request, Response receiver) {
-        return onSelectDual(sqlSelectQueryBlock, request, receiver);
+    protected ExecuteCode onSelectNoTable(SQLRequest<SQLSelectStatement> request, Response receiver) {
+        return onSelectDual(request, receiver);
     }
 
     /**
      * impl example
      * select @@last_insert_id, max(1+1),1+2 as b ,'' as b, '3' as c , null as d from dual;
      *
-     * @param sqlSelectQueryBlock
      * @param request
      * @param receiver
      * @return
      */
-    protected ExecuteCode onSelectDual(SQLSelectQueryBlock sqlSelectQueryBlock,
-                                       SQLRequest<SQLSelectStatement> request, Response receiver) {
+    protected ExecuteCode onSelectDual(SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLSelectQueryBlock queryBlock = (SQLSelectQueryBlock) (request.getAst().getSelect().getQuery());
         List<SQLSelectItem> selectItems = queryBlock.getSelectList();
 
@@ -118,14 +115,12 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         return ExecuteCode.PERFORMED;
     }
 
-    protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource, SQLSelectQueryBlock sqlSelectQueryBlock,
+    protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
                                         SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLContext sqlContext = request.getContext();
         SQLSelectStatement statement = request.getAst();
         MycatDBContext mycatDBContext = sqlContext.getMycatDBContext();
 
-        //  有表sql
-        boolean forUpdate = sqlSelectQueryBlock.isForUpdate();
 
         ASTCheckCollector collector = new ASTCheckCollector(statement);
         tableSource.accept(collector);
@@ -139,7 +134,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
         if (collector.isDual()) {
             /*select 1 from dual; select 1; 空表查询*/
-            return onSelectDual(sqlSelectQueryBlock, request, receiver);
+            return onSelectDual(request, receiver);
         }
 
         ///////////////////////////////booster//////////////////////////////
@@ -246,23 +241,19 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
         //直接调用已实现好的
-
         SQLSelectStatement ast = request.getAst();
-        if (hanldeInformationSchema(response, ast)) return ExecuteCode.PERFORMED;
-
-
-        Optional<SQLSelectQueryBlock> sqlSelectQueryBlockMaybe = Optional.ofNullable(ast)
-                .map(SQLSelectStatement::getSelect)
-                .map(SQLSelect::getQueryBlock);
-        Optional<SQLTableSource> sqlTableSource = sqlSelectQueryBlockMaybe.map(SQLSelectQueryBlock::getFrom);
-        ExecuteCode returnCode = sqlTableSource
-                .map(tableSource -> onSelectTable(dataContext, tableSource, sqlSelectQueryBlockMaybe.get(), request, response))
-                .orElseGet(() -> onSelectNoTable(sqlSelectQueryBlockMaybe.orElse(null), request, response));
-        return returnCode;
+        TableSourceExtractor tableSourceExtractor = new TableSourceExtractor();
+        if (hanldeInformationSchema(response, ast, tableSourceExtractor)) {
+            return ExecuteCode.PERFORMED;
+        }
+        if (tableSourceExtractor.getTableSources().isEmpty()) {
+            return onSelectNoTable(request, response);
+        }
+        return onSelectTable(dataContext, tableSourceExtractor.getTableSources().get(0), request, response);
     }
 
-    private boolean hanldeInformationSchema(Response response, SQLSelectStatement ast) {
-        TableSourceExtractor tableSourceExtractor = new TableSourceExtractor();
+    private boolean hanldeInformationSchema(Response response, SQLSelectStatement ast, TableSourceExtractor tableSourceExtractor) {
+
         ast.accept(tableSourceExtractor);
         boolean cantainsInformation_schema = tableSourceExtractor.getTableSources().stream().anyMatch(new Predicate<SQLExprTableSource>() {
             @Override

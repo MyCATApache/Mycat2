@@ -84,13 +84,17 @@ public enum ReplicaSelectorRuntime {
         Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toMap(k -> k.getName(), v -> v));
         CollectionUtil.safeUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
     }
-
+    public synchronized void restartHeatbeat(){
+        if (config == null){
+           throw new MycatException("restartHeatbeat fail because config is null");
+        }else {
+            updateTimer(config);
+        }
+    }
     public synchronized void updateTimer(MycatConfig config) {
         /////////////////////////////////////////////////////////////////////////////////////////
-        if (this.schedule != null) {
-            schedule.cancel(false);
-            schedule = null;
-        }
+        stopHeartBeat();
+        /////////////////////////////////////////////////////////////////////////////////////////////
         ClusterRootConfig replicas = config.getCluster();
         TimerConfig timerConfig = replicas.getTimer();
         List<PhysicsInstanceImpl> collect = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toList());
@@ -120,6 +124,13 @@ public enum ReplicaSelectorRuntime {
                         }
                     }
                     , timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
+        }
+    }
+
+    public void stopHeartBeat() {
+        if (this.schedule != null) {
+            schedule.cancel(false);
+            schedule = null;
         }
     }
 
