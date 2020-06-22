@@ -1,4 +1,4 @@
-package io.mycat.hbt;
+package io.mycat.mock;
 
 public class Db1 {
     public final Travelrecord[] travelrecord = {
