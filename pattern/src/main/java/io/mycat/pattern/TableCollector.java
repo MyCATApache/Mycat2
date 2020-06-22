@@ -14,8 +14,6 @@
  */
 package io.mycat.pattern;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;

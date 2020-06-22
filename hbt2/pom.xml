@@ -12,10 +12,5 @@
     <artifactId>hbt2</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>mycat2</artifactId>
-            <version>1.09-08</version>
-        </dependency>
     </dependencies>
 </project>
