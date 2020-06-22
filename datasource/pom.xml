@@ -24,11 +24,6 @@
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
-    <artifactId>worker</artifactId>
-    <version>1.09-08</version>
-  </dependency>
-  <dependency>
-    <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
     <version>1.09-10</version>
   </dependency>
