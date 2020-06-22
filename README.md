@@ -1493,6 +1493,20 @@ cluster:
 
    
 
+拦截器处理流程
+
+接收sql
+
+->匹配器分析获得可能可以处理的命令及其配置并依次匹配执行(io.mycat.commands.MycatCommand)
+
+->执行每个MycatCommand前执行命令中配置的io.mycat.Hint,其作用是提取信息保存到上下文中(Map)
+
+->检查上下文中是否有缓存配置,如果缓存中有数据则返回缓存数据
+
+->如果当前是explain语句,则执行MycatCommand的explain函数,否则执行run函数
+
+
+
 ##### 处理器基本形式
 
 该配置同时也是默认处理器的配置
