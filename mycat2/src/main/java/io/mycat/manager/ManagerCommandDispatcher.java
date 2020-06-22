@@ -28,7 +28,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new SwitchInstanceCommand(),
             new SwitchReplicaCommand(),
             new ShowStatCommand(),
-            new ReloadConfigCommand()
+            new ReloadConfigCommand(),
+            new SwitchHeatbeatCommand()
     );
 
     @Override
