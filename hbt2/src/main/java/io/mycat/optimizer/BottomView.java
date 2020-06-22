@@ -39,7 +39,12 @@ import java.util.stream.Collectors;
  */
 @Getter
 public class BottomView extends TableScan implements MycatRel {
-
+    boolean filter;
+    boolean join;
+    boolean project;
+    boolean sort;
+    boolean limit;
+    boolean filterSubquery;
 
     BottomView(RelOptCluster cluster, RelTraitSet traitSet,
                RelOptTable relOptTable) {
