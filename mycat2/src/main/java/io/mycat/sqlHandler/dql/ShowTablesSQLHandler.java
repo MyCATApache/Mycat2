@@ -62,7 +62,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
 //            response.sendResultSet(()->query, null);
 //            return ExecuteCode.PERFORMED;
 //        }
-        response.proxyShow(ast);
+//        response.proxyShow(ast);
         return ExecuteCode.PERFORMED;
     }
 
