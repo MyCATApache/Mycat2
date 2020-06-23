@@ -1,6 +1,7 @@
 package io.mycat.optimizer.logical;
 
 import io.mycat.optimizer.*;
+import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @see Calc
  */
+@Getter
 public class MycatCalc extends SingleRel implements MycatRel {
     private final RexProgram program;
 

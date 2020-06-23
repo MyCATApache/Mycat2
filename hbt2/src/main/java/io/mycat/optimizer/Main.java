@@ -9,6 +9,10 @@ import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
+import org.apache.calcite.avatica.util.Unsafe;
+import org.apache.calcite.interpreter.Context;
+import org.apache.calcite.interpreter.JaninoRexCompiler;
+import org.apache.calcite.interpreter.Scalar;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -18,15 +22,23 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
+import org.objenesis.instantiator.util.UnsafeUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -44,14 +56,40 @@ public class Main {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("select count(1) from travelrecord where id = 1 limit 2");
         List<Object> parameters = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
-        MySqlExportParameterVisitor mySqlExportParameterVisitor = new MySqlExportParameterVisitor(parameters,sb,true);
+        MySqlExportParameterVisitor mySqlExportParameterVisitor = new MySqlExportParameterVisitor(parameters, sb, true);
         sqlStatement.accept(mySqlExportParameterVisitor);
         Plan plan;
+
+        RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+        RelDataType javaType = MycatCalciteSupport.INSTANCE.TypeFactory.createJavaType(Integer.class);
+        final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+
+        builder.add("1", SqlTypeName.INTEGER);
+        RelDataType build = builder.build();
+        JaninoRexCompiler janinoRexCompiler = new JaninoRexCompiler(rexBuilder);
+        RexNode rexNode = rexBuilder.makeCall(build, SqlStdOperatorTable.PLUS,
+                Arrays.asList(
+                        rexBuilder.makeExactLiteral(BigDecimal.valueOf(1)),
+                        rexBuilder.makeInputRef(build, 0)));
+
+        Scalar compile = janinoRexCompiler.compile(Arrays.asList(rexNode)
+
+
+                , build
+        );
+
+        Context context =  (Context)UnsafeUtils.getUnsafe().allocateInstance( Context.class);
+
+        Object[] objects = new Object[]{3};
+        context.values = objects;
+        Object[] res = new Object[2];
+        compile.execute(context, res);
         if (parameters.isEmpty()) {
             String parameterSql = sb.toString();
             plan = PlanCache.INSTANCE.get(parameterSql, () -> compile(defaultSchema, SQLUtils.parseSingleMysqlStatement(parameterSql)));
-        }else {
-            plan = compile(defaultSchema,sqlStatement);
+        } else {
+            plan = compile(defaultSchema, sqlStatement);
         }
 
     }
