@@ -16,7 +16,7 @@ public class SwitchReplicaCommand  implements ManageCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(SwitchInstanceCommand.class);
     @Override
     public String statement() {
-        return "switch @@backend.replica = {name:xxx} ";
+        return "switch @@backend.replica = {name:'xxx'}";
     }
 
     @Override

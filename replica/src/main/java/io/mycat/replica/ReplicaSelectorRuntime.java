@@ -82,12 +82,13 @@ public enum ReplicaSelectorRuntime {
         updateTimer(config);
 
         Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toMap(k -> k.getName(), v -> v));
-        CollectionUtil.safeUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
+        CollectionUtil.safeUpdateByUpdateOrder(this.physicsInstanceMap, newphysicsInstanceMap);
     }
     public synchronized void restartHeatbeat(){
         if (config == null){
            throw new MycatException("restartHeatbeat fail because config is null");
         }else {
+            config.getCluster().setClose(false);//强制开启心跳
             updateTimer(config);
         }
     }
@@ -134,6 +135,14 @@ public enum ReplicaSelectorRuntime {
         }
     }
 
+    public synchronized boolean isHeartbeat(){
+        if( schedule != null&&!schedule.isDone()&&!schedule.isCancelled()){
+            return true;
+        }
+        schedule = null;
+        return false;
+    }
+
 
     /////////////////////////////////////////public manager/////////////////////////////////////////////////////////////
 
@@ -160,7 +169,7 @@ public enum ReplicaSelectorRuntime {
 
     public synchronized boolean notifySwitchReplicaDataSource(String replicaName) {
         ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
-        Objects.requireNonNull(selector);
+        Objects.requireNonNull(selector,replicaName+" 集群不存在");
         return selector.switchDataSourceIfNeed();
     }
 

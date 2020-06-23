@@ -25,12 +25,12 @@ import java.util.stream.Collectors;
 public class ShowHeartbeatCommand implements ManageCommand {
     @Override
     public String statement() {
-        return "show @@heartbeat";
+        return "show @@backend.heartbeat";
     }
 
     @Override
     public String description() {
-        return "show @@heartbeat";
+        return "show @@backend.heartbeat";
     }
 
     @Override

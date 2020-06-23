@@ -2,6 +2,7 @@ package io.mycat.hbt;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hbt.ast.base.Schema;
 import org.apache.calcite.rel.RelNode;
@@ -10,10 +11,8 @@ import org.apache.calcite.tools.RelRunners;
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
 
 public class TextConvertor {
 
@@ -35,7 +34,7 @@ public class TextConvertor {
     public static String dumpResultSet(ResultSet resultSet) {
         CharArrayWriter writer = new CharArrayWriter(8192);
         dumpResultSet(resultSet, true, new PrintWriter(writer));
-        return writer.toString();
+        return writer.toString().trim();
     }
 
     public static void dumpResultSet(Writer writer, ResultSet resultSet) {
@@ -49,9 +48,8 @@ public class TextConvertor {
     }
 
 
-
     public static void dumpResultSet(ResultSet resultSet, boolean newline, PrintWriter writer) {
-        dumpResultSet(new JdbcRowBaseIterator(null, null, resultSet, null,null), newline, writer);
+        dumpResultSet(new JdbcRowBaseIterator(null, null, resultSet, null, null), newline, writer);
     }
 
     public static void dumpResultSet(RowBaseIterator resultSet, boolean newline, PrintWriter writer) {
@@ -100,5 +98,18 @@ public class TextConvertor {
         CharArrayWriter writer = new CharArrayWriter(8192);
         dumpResultSet(rel, writer);
         return new String(writer.toCharArray()).replaceAll("\r", "");
+    }
+
+    public static String dumpMetadata(JdbcRowMetaData metaData) {
+        int columnCount = metaData.getColumnCount();
+        ArrayList<String> names = new ArrayList<>();
+        for (int i = 1; i <= columnCount; i++) {
+            names.add(metaData.getColumnName(i));
+        }
+        return String.join(",",names).trim();
+    }
+
+    public static String dumpMetadata(ResultSetMetaData metaData) {
+        return dumpMetadata(new JdbcRowMetaData(metaData));
     }
 }

@@ -31,11 +31,13 @@ public class ShowInstanceCommand implements ManageCommand {
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
-        resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
+
+        resultSetBuilder.addColumnInfo("ALIVE", JDBCType.BOOLEAN);
         resultSetBuilder.addColumnInfo("READABLE", JDBCType.BOOLEAN);
+        resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("SESSION_COUNT", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("WEIGHT", JDBCType.BIGINT);
-        resultSetBuilder.addColumnInfo("ALIVE", JDBCType.BOOLEAN);
+
         resultSetBuilder.addColumnInfo("MASTER", JDBCType.BOOLEAN);
         resultSetBuilder.addColumnInfo("HOST", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("PORT", JDBCType.BIGINT);
@@ -63,7 +65,7 @@ public class ShowInstanceCommand implements ManageCommand {
             String replicaDataSourceSelectorList =String.join(",", ReplicaSelectorRuntime.INSTANCE.getRepliaNameListByInstanceName(NAME));
 
             resultSetBuilder.addObjectRowPayload(
-                    Arrays.asList(NAME, TYPE, READABLE, SESSION_COUNT, WEIGHT, ALIVE, MASTER,
+                    Arrays.asList(NAME, ALIVE, READABLE,TYPE, SESSION_COUNT, WEIGHT, MASTER,
                             e.map(i -> i.getIp()).orElse(""),
                             e.map(i -> i.getPort()).orElse(-1),
                             e.map(i -> i.getMaxCon()).orElse(-1),

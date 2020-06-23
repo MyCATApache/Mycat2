@@ -192,23 +192,23 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
     private synchronized boolean switchReadDatasource(List<PhysicsInstanceImpl> newReadDataSource) {
-        return switchNode(newReadDataSource, (List) this.readDataSource, "{} switch replica to {}");
+        return switchNode((List) this.readDataSource, newReadDataSource,"{} switch replica to {}");
     }
 
     private synchronized boolean switchMaster(List<PhysicsInstanceImpl> newWriteDataSource) {
-        boolean b = switchNode(newWriteDataSource, (List) this.writeDataSourceList, "{} switch master to {}");
+        boolean b = switchNode((List) this.writeDataSourceList,newWriteDataSource,  "{} switch master to {}");
         if (b) {
             updateFile(newWriteDataSource);
         }
         return b;
     }
 
-    private synchronized boolean switchNode(List<PhysicsInstanceImpl> newWriteDataSource, List<PhysicsInstanceImpl> oldWriteDataSource, String message) {
+    private synchronized boolean switchNode( List<PhysicsInstanceImpl> oldWriteDataSource,List<PhysicsInstanceImpl> newWriteDataSource, String message) {
         if (new ArrayList<>(oldWriteDataSource).equals(new ArrayList<>(newWriteDataSource))) {
             return false;
         }
         List<PhysicsInstanceImpl> backup = new ArrayList<>(oldWriteDataSource);
-        CollectionUtil.safeUpdate(oldWriteDataSource, backup);
+        CollectionUtil.safeUpdateByUpdateOrder(oldWriteDataSource, newWriteDataSource);
         LOGGER.info(message, backup, newWriteDataSource);
         return true;
     }

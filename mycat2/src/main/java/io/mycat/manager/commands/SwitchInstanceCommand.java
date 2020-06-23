@@ -1,6 +1,5 @@
 package io.mycat.manager.commands;
 
-import com.alibaba.fastsql.support.json.JSONUtils;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.replica.PhysicsInstance;
@@ -15,9 +14,10 @@ import java.util.Objects;
 
 public class SwitchInstanceCommand implements ManageCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(SwitchInstanceCommand.class);
+
     @Override
     public String statement() {
-        return "switch @@backend.instance = {name:xxx ,alive:true ,readable:true} ";
+        return "switch @@backend.instance = {name:'xxx' ,alive:'true' ,readable:'true'}";
     }
 
     @Override
@@ -27,7 +27,7 @@ public class SwitchInstanceCommand implements ManageCommand {
 
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
-        if (request.getText().toLowerCase().startsWith("switch @@backend.instance")){
+        if (request.getText().toLowerCase().startsWith("switch @@backend.instance")) {
             handle(request, context, response);
             return true;
         }
@@ -39,27 +39,27 @@ public class SwitchInstanceCommand implements ManageCommand {
         String json = request.getText().split("=")[1];
         Map from = JsonUtil.from(json, Map.class);
 
-        String name = Objects.requireNonNull((String) from.get("name"),"name required");
+        String name = Objects.requireNonNull((String) from.get("name"), "name required");
         String readable = (String) from.get("readable");
         String alive = (String) from.get("alive");
 
         Map<String, PhysicsInstance> physicsInstanceMap = ReplicaSelectorRuntime.INSTANCE.getPhysicsInstanceMap();
-        PhysicsInstance physicsInstance =Objects.requireNonNull( physicsInstanceMap.get(name),"name is not existed");
+        PhysicsInstance physicsInstance = Objects.requireNonNull(physicsInstanceMap.get(name), "name is not existed");
 
-        if (readable != null){
+        if (readable != null) {
             try {
                 physicsInstance.notifyChangeSelectRead(Boolean.parseBoolean(readable));
-            }catch (Throwable e){
-                LOGGER.error("update notifyChangeSelectRead name:{} readable:{} fail:{}",name,readable,e);
+            } catch (Throwable e) {
+                LOGGER.error("update notifyChangeSelectRead name:{} readable:{} fail:{}", name, readable, e);
                 response.sendError(e);
                 return;
             }
         }
-        if (readable != null){
+        if (readable != null) {
             try {
                 physicsInstance.notifyChangeAlive(Boolean.parseBoolean(alive));
-            }catch (Throwable e){
-                LOGGER.error("update notifyChangeAlive name:{} alive:{} fail:{}",name,alive,e);
+            } catch (Throwable e) {
+                LOGGER.error("update notifyChangeAlive name:{} alive:{} fail:{}", name, alive, e);
                 response.sendError(e);
                 return;
             }
