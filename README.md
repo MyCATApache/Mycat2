@@ -1124,12 +1124,19 @@ requestType是进行心跳的实现方式,使用mysql意味着使用proxy方式�
 
 ## 服务器配置
 
+基础配置样例
+
 ```yaml
 server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-  #用于多线程任务的线程池,
+```
+
+
+
+```yml
+  #用于多线程任务的线程池,v1.09前的配置
   worker: {
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
            maxThread: 1024,
@@ -1137,6 +1144,70 @@ server:
            timeUnit: SECONDS, #超时单位
            waitTaskTimeout: 30 #超时后将结束闲置的线程
   }
+```
+
+
+
+v1.09后把原线程池划分为三大类
+
+
+
+bindTransactionPool
+
+对于Atomikos这种对于事务运行环境有要求的事务框架,它要求事务与线程相关,当使用事务的会话与线程绑定之后,在事务消失之前,此线程都不能被其他需要使用事务的会话使用.对于这种特殊要求的事务框架,使用独立的线程池处理事务请求.
+
+
+
+workerPool
+
+对于一些耗时长的,可能涉及阻塞的任务,jdbc请求,事务与线程没有绑定关系的事务处理,在这个线程里处理
+
+如Druid数据源提供的本地事务处理,并行拉取结果集等任务,就是这个线程里面处理的.
+
+
+
+timeWorkerPool
+
+对于对时间周期敏感的任务,使用独立的定时器处理,但是此定时器一般处理线程比较少,不会处理耗时任务,往往把任务投递到workerPool中处理
+
+
+
+三个线程池的配置都是一致的
+
+```yml
+ {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+```
+
+corePoolSize:是线程池里保留的最小线程数量
+
+keepAliveTime:线程存活时间,超过此时间的空闲线程将会关闭
+
+maxPoolSize:线程池中最大线程数量
+
+timeUnit:时间单位,对keepAliveTime,taskTimeout生效
+
+一般来说,taskTimeout与maxPendingLimit仅仅对bindTransactionPool生效
+
+
+
+```yml
+server:
+  bindTransactionPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+  bufferPool:
+    args: {}
+    poolName: null
+  handlerName: null
+  ip: 0.0.0.0
+  port: 8066
+  reactorNumber: 1
+  tempDirectory: D:\git8\Mycat2\example\target\test-classes\target
+  timeWorkerPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 2,
+    taskTimeout: 1, timeUnit: MINUTES}
+  timer: {initialDelay: 3, period: 15, timeUnit: SECONDS}
+  workerPool: {corePoolSize: 8, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 1024,
+    taskTimeout: 1, timeUnit: MINUTES}
 ```
 
 
@@ -1504,6 +1575,51 @@ cluster:
 ->检查上下文中是否有缓存配置,如果缓存中有数据则返回缓存数据
 
 ->如果当前是explain语句,则执行MycatCommand的explain函数,否则执行run函数
+
+
+
+io.mycat.Hint 
+
+```java
+public interface Hint {
+    String getName();
+    void accept(String buffer, Map<String, Object> t);
+}
+```
+
+
+
+io.mycat.commands.MycatCommand
+
+```java
+public interface MycatCommand {
+
+    boolean run(MycatRequest request, MycatDataContext context, Response response);
+
+    boolean explain(MycatRequest request, MycatDataContext context, Response response);
+
+    String getName();
+}
+```
+
+
+
+Hint与MycatCommand都在Plug配置里加载
+
+
+
+```yaml
+plug:
+  command:
+    commands: 
+     - {clazz: xxx , name: xxx}
+  hint:
+    hints: 
+     - {clazz: xxx, name: xxx ,args:''}
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    .....
+```
 
 
 
@@ -2437,3 +2553,5 @@ switch @@backend.heartbeat = {true|false}
 2020-5-5拦截器,元数据配置发生变更
 
 2020-6-19后,mycat.yml中的server设置发生变化
+
+2020-6-23后添加hint,MycatCommand配置
