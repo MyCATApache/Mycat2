@@ -62,7 +62,7 @@ public enum ReplicaSelectorRuntime {
     }
 
     private void innerThis(MycatConfig config) {
-        PlugRuntime.INSTCANE.load(config);
+        PlugRuntime.INSTANCE.load(config);
 
         ClusterRootConfig replicasRootConfig = config.getCluster();
         Objects.requireNonNull(replicasRootConfig, "replica config can not found");
@@ -236,10 +236,10 @@ public enum ReplicaSelectorRuntime {
         BalanceType balanceType = BalanceType.valueOf(replicaConfig.getReadBalanceType());
         ReplicaSwitchType switchType = ReplicaSwitchType.valueOf(replicaConfig.getSwitchType());
 
-        LoadBalanceStrategy readLB = PlugRuntime.INSTCANE
+        LoadBalanceStrategy readLB = PlugRuntime.INSTANCE
                 .getLoadBalanceByBalanceName(replicaConfig.getReadBalanceName());
         LoadBalanceStrategy writeLB
-                = PlugRuntime.INSTCANE
+                = PlugRuntime.INSTANCE
                 .getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
         int maxRequestCount = replicaConfig.getMaxCon() == null ? Integer.MAX_VALUE : replicaConfig.getMaxCon();
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
@@ -299,7 +299,7 @@ public enum ReplicaSelectorRuntime {
         }
         LoadBalanceStrategy loadBalanceByBalance = null;
         if (loadBalanceStrategy != null) {
-            loadBalanceByBalance = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(loadBalanceStrategy);
+            loadBalanceByBalance = PlugRuntime.INSTANCE.getLoadBalanceByBalanceName(loadBalanceStrategy);
         }//传null集群配置的负载均衡生效
         PhysicsInstanceImpl writeDatasource = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
         if (writeDatasource == null) {

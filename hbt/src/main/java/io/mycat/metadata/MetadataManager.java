@@ -139,7 +139,7 @@ public enum MetadataManager {
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backendTableInfos);
         //////////////////////////////////////////////
 
-        LoadBalanceStrategy loadBalance = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
+        LoadBalanceStrategy loadBalance = PlugRuntime.INSTANCE.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
         addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, readOnly, loadBalance, columns, createTableSQL));
     }

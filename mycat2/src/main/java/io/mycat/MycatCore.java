@@ -81,7 +81,7 @@ public enum MycatCore {
 
         MycatConfig mycatConfig = config.currentConfig();
 
-        PlugRuntime.INSTCANE.load(mycatConfig);
+        PlugRuntime.INSTANCE.load(mycatConfig);
         MycatWorkerProcessor.INSTANCE.init(mycatConfig.getServer().getWorkerPool(),mycatConfig.getServer().getTimeWorkerPool());
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);

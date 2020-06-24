@@ -81,7 +81,7 @@ public enum JdbcRuntime {
     public synchronized void load(MycatConfig config) {
         ServerConfig.ThreadPoolExecutorConfig worker = config.getServer().getWorkerPool();
         MycatWorkerProcessor.INSTANCE.init(worker, config.getServer().getTimeWorkerPool());
-        PlugRuntime.INSTCANE.load(config);
+        PlugRuntime.INSTANCE.load(config);
         ReplicaSelectorRuntime.INSTANCE.load(config);
         this.config = config;
         String customerDatasourceProvider = config.getDatasource().getDatasourceProviderClass();
