@@ -37,14 +37,6 @@ import java.util.concurrent.TimeUnit;
 public class ManagerExample {
     @SneakyThrows
     public static void main(String[] args) throws Exception {
-//        URL url1 = new File("D:/mycat(6).yml").toURL();
-        URL url = new URL("file:/D:/mycat(6).yml");
-        try(InputStream is = url.openStream()){
-            String read = Utils.read(is);
-            System.out.println();
-        }
-
-
         String resource = Paths.get(ManagerExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
@@ -117,7 +109,7 @@ public class ManagerExample {
                 matchMetadata(statement, sql, expected);
 
                 sql = "show @@stat";
-                expected = "HOST,STATEMENT,START_TIME,END_TIME,SQL_ROWS,NET_IN_BYTES,NET_OUT_BYTES,PARSE_TIME,COMPILE_TIME,CBO_TIME,RBO_TIME,CONNECTION_POOL_TIME,CONNECTION_QUERY_TIME";
+                expected = "STATEMENT,START_TIME,END_TIME,SQL_ROWS,NET_IN_BYTES,NET_OUT_BYTES,PARSE_TIME,COMPILE_TIME,CBO_TIME,RBO_TIME,CONNECTION_POOL_TIME,CONNECTION_QUERY_TIME";
 
                 matchMetadata(statement, sql, expected);
 

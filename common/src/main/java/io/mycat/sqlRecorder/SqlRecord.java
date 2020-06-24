@@ -5,11 +5,8 @@ import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
 @Data
-@Builder
 public class SqlRecord implements Comparable<SqlRecord>{
-    String host;
     String statement;
-    String username;
     long startTime;
     long endTime;
     long sqlRows;
@@ -21,9 +18,10 @@ public class SqlRecord implements Comparable<SqlRecord>{
     long rboTime;
     long connectionPoolTime;
     long connectionQueryTIme;
+    long wholeTime;
 
     @Override
     public int compareTo(@NotNull SqlRecord o) {
-        return this.host.compareTo(o.host);
+        return this.statement.compareTo(o.statement);
     }
 }

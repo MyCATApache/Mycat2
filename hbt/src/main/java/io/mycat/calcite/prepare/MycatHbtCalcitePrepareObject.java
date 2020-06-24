@@ -16,7 +16,6 @@ import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     final Schema schema;
@@ -37,7 +36,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     @Override
     public PlanRunner plan(List<Object> params) {
         RelNode relNode = getRelNode(params);
-       RowBaseIterator run = CalciteRunners.run(mycatCalciteDataContext, relNode);
+        RowBaseIterator run = CalciteRunners.run(MycatCalciteSupport.INSTANCE.convertToHBTText(schema), mycatCalciteDataContext, relNode);
         return new PlanRunner() {
             @Override
             public RowBaseIterator run() {
@@ -46,7 +45,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
             @Override
             public List<String> explain() {
-                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT,false),
+                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT, false),
                         null,
                         MycatCalciteSupport.INSTANCE.dumpMetaData(relNode.getRowType()),
                         MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
@@ -57,7 +56,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     }
 
     public RelNode getRelNode(List<Object> params) {
-        HBTQueryConvertor hbtConvertor = new HBTQueryConvertor( params,mycatCalciteDataContext);
+        HBTQueryConvertor hbtConvertor = new HBTQueryConvertor(params, mycatCalciteDataContext);
         return hbtConvertor.handle(schema);
     }
 

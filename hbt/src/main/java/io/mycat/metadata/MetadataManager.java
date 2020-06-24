@@ -132,7 +132,7 @@ public enum MetadataManager {
             //配置里面不存在的表移除
             for (Map.Entry<String, SchemaHandler> entry : schemaMap.entrySet()) {
                 SchemaHandler schemaHandler = entry.getValue();
-                Set<String> tableNames = schemaHandler.logicTables().keySet();
+                Set<String> tableNames = new HashSet<>(schemaHandler.logicTables().keySet());
                 Set<String> set = schemaConfigMap.values().stream()
                         .flatMap(i -> Stream.concat(i.getGlobalTables().keySet().stream(),
                         i.getShadingTables().keySet().stream())).collect(Collectors.toSet());

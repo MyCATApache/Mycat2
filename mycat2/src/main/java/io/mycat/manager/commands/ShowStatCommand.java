@@ -30,7 +30,7 @@ public class ShowStatCommand implements ManageCommand {
         ResultSetBuilder builder = ResultSetBuilder.create();
 
 
-        builder.addColumnInfo("HOST", JDBCType.VARCHAR)
+        builder
                 .addColumnInfo("STATEMENT", JDBCType.VARCHAR)
                 .addColumnInfo("START_TIME", JDBCType.TIMESTAMP)
                 .addColumnInfo("END_TIME", JDBCType.TIMESTAMP)
@@ -45,9 +45,7 @@ public class ShowStatCommand implements ManageCommand {
                 .addColumnInfo("CONNECTION_QUERY_TIME", JDBCType.TIMESTAMP);
 
         for (SqlRecord value : values) {
-            String host = value.getHost();
             String statement = value.getStatement();
-            String username = value.getUsername();
             Timestamp startTime = new Timestamp(value.getStartTime());
             Timestamp endTime = new Timestamp(value.getEndTime());
             long sqlRows = value.getSqlRows();
@@ -61,9 +59,7 @@ public class ShowStatCommand implements ManageCommand {
             Timestamp connectionQueryTIme = new Timestamp(value.getConnectionQueryTIme());
 
             builder.addObjectRowPayload(Arrays.asList(
-                    host,
                     statement,
-                    username,
                     startTime,
                     endTime,
                     sqlRows,
