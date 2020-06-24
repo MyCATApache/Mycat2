@@ -28,8 +28,8 @@ import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,7 +37,6 @@ import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BinaryOperator;
 
 
 public class FileConfigProvider implements ConfigProvider {
@@ -49,19 +48,7 @@ public class FileConfigProvider implements ConfigProvider {
 
     @Override
     public void init(Class rootClass, Map<String, String> config) throws Exception {
-        String path = config.get("path");
-
-        if (path == null) {
-            if (rootClass == null){
-                rootClass = FileConfigProvider.class;
-            }
-            URI uri = rootClass.getResource("/mycat.yml").toURI();
-            System.out.println("uri:" + uri);
-            path = Paths.get(uri).toAbsolutePath().toString();
-        } else {
-            System.out.println("path:" + path);
-            path = Paths.get(path).resolve("mycat.yml").toAbsolutePath().toString();
-        }
+        String path = getConfigPath(rootClass, config);
         this.defaultPath = path;
         fetchConfig(this.defaultPath);
 
@@ -93,14 +80,44 @@ public class FileConfigProvider implements ConfigProvider {
                     List<DatasourceRootConfig.DatasourceConfig> datasourceConfigs = Optional.ofNullable(config2.getDatasource()).map(i -> i.getDatasources()).orElse(Collections.emptyList());
                     List<ClusterRootConfig.ClusterConfig> clusterConfigs = Optional.ofNullable(config2.getCluster()).map(i -> i.getClusters()).orElse(Collections.emptyList());
 
-                    main.getMetadata().getSchemas().addAll(logicSchemaConfigs);
-                    main.getInterceptors().addAll(patternRootConfigs);
-                    main.getDatasource().getDatasources().addAll(datasourceConfigs);
-                    main.getCluster().getClusters().addAll(clusterConfigs);
+                    List<ShardingQueryRootConfig.LogicSchemaConfig> schemas = main.getMetadata().getSchemas();
+                    schemas.addAll(logicSchemaConfigs);
+
+                    List<PatternRootConfig> interceptors = main.getInterceptors();
+                    interceptors.addAll(patternRootConfigs);
+
+                    List<DatasourceRootConfig.DatasourceConfig> datasources = main.getDatasource().getDatasources();
+                    datasources.addAll(datasourceConfigs);
+
+                    List<ClusterRootConfig.ClusterConfig> clusters = main.getCluster().getClusters();
+                    clusters.addAll(clusterConfigs);
                     return main;
                 });
         logger.warn("----------------------------------Combined configuration----------------------------------");
         logger.info(YamlUtil.dump(this.config));
+    }
+
+    /**
+     * 根据初始化信息生成配置
+     * @param rootClass
+     * @param config
+     * @return
+     * @throws URISyntaxException
+     */
+    private String getConfigPath(Class rootClass, Map<String, String> config) throws URISyntaxException {
+        String path = config.get("path");
+        if (path == null) {
+            if (rootClass == null){
+                rootClass = FileConfigProvider.class;
+            }
+            URI uri = rootClass.getResource("/mycat.yml").toURI();
+            System.out.println("uri:" + uri);
+            path = Paths.get(uri).toAbsolutePath().toString();
+        } else {
+            System.out.println("path:" + path);
+            path = Paths.get(path).resolve("mycat.yml").toAbsolutePath().toString();
+        }
+        return path;
     }
 
     @Override
@@ -181,7 +198,7 @@ public class FileConfigProvider implements ConfigProvider {
             StringBuilder outputStreamWriter = new StringBuilder();
             outputStreamWriter.append(ReplicaInfo.builder().replicaName(replicaName).dataSourceList(dataSourceList).build());
             outputStreamWriter.append("\n");
-            logger.error("switch log: ", outputStreamWriter);
+            logger.error("switch log: {}", outputStreamWriter.toString());
             Files.write(resolve, outputStreamWriter.toString().getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
         } catch (Throwable e) {
             logger.error("", e);

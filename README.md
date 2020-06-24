@@ -1202,7 +1202,6 @@ server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-  tempDirectory: D:\git8\Mycat2\example\target\test-classes\target
   timeWorkerPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 2,
     taskTimeout: 1, timeUnit: MINUTES}
   timer: {initialDelay: 3, period: 15, timeUnit: SECONDS}
@@ -1500,7 +1499,9 @@ https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/
 
 ## 高级内容
 
-### 多配置文件
+
+
+##### 多配置文件
 
 -DMYCAT_HOME=mycat2\src\main\resources 指向的是配置文件夹
 
@@ -1539,6 +1540,40 @@ cluster:
 
 
 能看到它们的配置都是以列表方式配置的,如果这些单元配置在副配置文件里,也会被合拼到主配置文件
+
+
+
+##### 配置动态更新
+
+
+
+###### 配置更新原理
+
+更新的对象满足以下条件
+
+对象支持并发修改,单例
+
+
+
+一类对象总是在请求时候获取并使用到结束
+
+逻辑库配置
+
+
+
+逻辑表配置
+
+
+
+一类对象无状态,仅仅是作为工具用途,在处理过程中获取对象
+
+负载均衡插件
+
+
+
+一类对象完全支持动态创建,并能根据属性自己维护状态,支持外部函数调整参数,调用close函数
+
+如native连接池,jdbc连接池
 
 
 
@@ -2421,7 +2456,7 @@ show @@backend.datasource
 ###### 显示心跳状态
 
 ```sql
-show @@heartbeat
+show @@backend.heartbeat
 ```
 
 
@@ -2505,7 +2540,7 @@ show @@threadPool
 ###### 设置数据源实例状态
 
 ```sql
-switch @@backend.instance = {name:xxx ,alive:true ,readable:true} 
+switch @@backend.instance = {name:'xxx' ,alive:'true' ,readable:'true'} 
 ```
 
 name是数据源名字
@@ -2521,7 +2556,7 @@ readable是数据源可读状态,值 true|false
 ###### 集群切换
 
 ```
-switch @@backend.replica = {name:xxx} 
+switch @@backend.replica = {name:'xxx'} 
 ```
 
 name是数据源名字

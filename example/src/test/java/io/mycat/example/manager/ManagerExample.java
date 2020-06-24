@@ -1,15 +1,25 @@
 package io.mycat.example.manager;
 
+import com.alibaba.druid.util.Utils;
 import io.mycat.ConfigProvider;
 import io.mycat.MycatCore;
 import io.mycat.RootHelper;
 import io.mycat.example.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.util.NetUtil;
+import io.vertx.core.http.impl.HttpUtils;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -18,6 +28,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,6 +37,14 @@ import java.util.concurrent.TimeUnit;
 public class ManagerExample {
     @SneakyThrows
     public static void main(String[] args) throws Exception {
+//        URL url1 = new File("D:/mycat(6).yml").toURL();
+        URL url = new URL("file:/D:/mycat(6).yml");
+        try(InputStream is = url.openStream()){
+            String read = Utils.read(is);
+            System.out.println();
+        }
+
+
         String resource = Paths.get(ManagerExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
@@ -155,8 +174,14 @@ public class ManagerExample {
                 String replInfo = TextConvertor.dumpResultSet(statement.executeQuery("show @@backend.replica"));
                 //确认切换完成
                 Assert.assertFalse(replInfo.contains("defaultDs,"));
+
                 System.out.println("");
+                //配置更新测试
+
+
             }
+
+            //kill 命令测试,检查kill之后旧连接是否存在
             ArrayList<String> ids = new ArrayList<>();
             ArrayList<String> ids2 = new ArrayList<>();
             try (Connection connection = TestUtil.getMySQLConnection(9066)) {
@@ -191,4 +216,5 @@ public class ManagerExample {
             Assert.assertEquals(expected, text);
         }
     }
+
 }
