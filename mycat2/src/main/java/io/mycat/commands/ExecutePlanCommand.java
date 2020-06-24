@@ -8,7 +8,7 @@ import io.mycat.util.Response;
 /**
  * @author Junwen Chen
  **/
-public enum ExplainPlanCommand implements MycatCommand{
+public enum ExecutePlanCommand implements MycatCommand{
     INSTANCE;
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
@@ -22,12 +22,12 @@ public enum ExplainPlanCommand implements MycatCommand{
     public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
         String text = request.getText();
         MycatDBClientMediator client = MycatDBs.createClient(context);
-        response.sendExplain(ExplainPlanCommand.class,client.explainRel(text));
+        response.sendExplain(ExecutePlanCommand.class,client.explainRel(text));
         return true;
     }
 
     @Override
     public String getName() {
-        return "explainPlan";
+        return "executePlan";
     }
 }
