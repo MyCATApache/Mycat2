@@ -1,5 +1,6 @@
 package io.mycat.manager.commands;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -19,7 +20,7 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     @Override
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
         try {
-            String value = request.getText().split("=")[1].trim();
+            String value = SQLUtils.normalize(request.getText().split("=")[1].trim());
             if (Boolean.parseBoolean(value)) {
                 ReplicaSelectorRuntime.INSTANCE.restartHeatbeat();
             }else {

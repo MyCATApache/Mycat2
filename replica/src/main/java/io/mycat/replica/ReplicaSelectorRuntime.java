@@ -48,6 +48,9 @@ public enum ReplicaSelectorRuntime {
     INSTANCE;
     final ConcurrentMap<String, ReplicaDataSourceSelector> replicaMap = new ConcurrentHashMap<>();
     final ConcurrentMap<String, PhysicsInstance> physicsInstanceMap = new ConcurrentHashMap<>();
+    ////////////////////////////////////////heartbeat///////////////////////////////////////////////////////////////////
+
+    final ConcurrentMap<String, HeartbeatFlow> heartbeatDetectorMap = new ConcurrentHashMap<>();
     volatile ScheduledFuture<?> schedule;
     volatile MycatConfig config;
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaSelectorRuntime.class);
@@ -78,6 +81,18 @@ public enum ReplicaSelectorRuntime {
         for (ClusterRootConfig.ClusterConfig replicaConfig : replicaConfigList) {
             addCluster(datasourceConfigMap, replicaConfig);
         }
+
+
+        //移除不必要的配置
+
+        //新配置中的集群名字
+        Set<String> clusterNames = replicasRootConfig.getClusters().stream().map(i -> i.getName()).collect(Collectors.toSet());
+        new HashSet<>(replicaMap.keySet()).stream().filter(name->!clusterNames.contains(name)).forEach(name->replicaMap.remove(name));
+
+        //新配置中的数据源名字
+        Set<String> datasourceNames = config.getDatasource().getDatasources().stream().map(i -> i.getName()).collect(Collectors.toSet());
+        new HashSet<>(physicsInstanceMap.keySet()).stream().filter(name->!datasourceNames.contains(name)).forEach(name->physicsInstanceMap.remove(name));
+
 
         updateTimer(config);
 
@@ -359,9 +374,7 @@ public enum ReplicaSelectorRuntime {
     public ReplicaDataSourceSelector getDataSourceSelector(String replicaName) {
         return replicaMap.get(replicaName);
     }
-    ////////////////////////////////////////heartbeat///////////////////////////////////////////////////////////////////
 
-    final ConcurrentMap<String, HeartbeatFlow> heartbeatDetectorMap = new ConcurrentHashMap<>();
 
     public synchronized void putHeartFlow(String replicaName, String datasourceName, Consumer<HeartBeatStrategy> executer) {
         MycatConfig config = this.config;

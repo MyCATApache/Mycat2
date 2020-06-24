@@ -24,6 +24,7 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
@@ -109,6 +111,13 @@ public enum JdbcRuntime {
                 }
             }
         }
+
+        //移除不必要的配置
+        //新配置中的数据源名字
+        Set<String> datasourceNames = config.getDatasource().getDatasources().stream().map(i -> i.getName()).collect(Collectors.toSet());
+        Map<String, JdbcDataSource> datasourceInfo = connectionManager.getDatasourceInfo();
+        new HashSet<>(datasourceInfo.keySet()).stream().filter(name->!datasourceNames.contains(name)).forEach(name->connectionManager.removeDatasource(name));
+
     }
 
 

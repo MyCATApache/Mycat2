@@ -53,7 +53,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     public boolean multiStatementSupport = false;
     private String charsetSetResult;
-    private boolean inTransaction = false;
+    private volatile boolean inTransaction = false;
 
     private MycatUser user;
     private TransactionSession transactionSession = new ProxyTransactionSession(this);

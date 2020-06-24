@@ -338,4 +338,10 @@ public enum MycatCore {
     public Map<String, MySQLDatasource> getDatasourceMap() {
         return Collections.unmodifiableMap(datasourceMap);
     }
+
+    //动态更新仅更新这两部分
+    public void flash(MycatConfig config){
+        datasourceMap.clear();
+        heartbeat(config, reactorManager);
+    }
 }

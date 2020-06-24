@@ -52,6 +52,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
@@ -95,9 +96,11 @@ public enum MetadataManager {
     public void load(MycatConfig mycatConfig) {
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
         if (shardingQueryRootConfig != null) {
-            for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas()
+            //更新新配置里面的信息
+            Map<String, ShardingQueryRootConfig.LogicSchemaConfig> schemaConfigMap = shardingQueryRootConfig.getSchemas()
                     .stream()
-                    .collect(Collectors.toMap(k -> k.getSchemaName(), v -> v)).entrySet()) {
+                    .collect(Collectors.toMap(k -> k.getSchemaName(), v -> v));
+            for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : schemaConfigMap.entrySet()) {
                 String orignalSchemaName = entry.getKey();
                 ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
                 String targetName = value.getTargetName();
@@ -120,8 +123,24 @@ public enum MetadataManager {
                     );
 
                 }
+            }
+            //去掉失效的配置
+            Map<String, SchemaHandler> schemaMap = this.getSchemaMap();
+            //配置里面不存在的库移除
+            new ArrayList<>(schemaMap.keySet()).stream().filter(currentSchema -> !schemaConfigMap.containsKey(currentSchema)).forEach(schemaMap::remove);
 
-
+            //配置里面不存在的表移除
+            for (Map.Entry<String, SchemaHandler> entry : schemaMap.entrySet()) {
+                SchemaHandler schemaHandler = entry.getValue();
+                Set<String> tableNames = schemaHandler.logicTables().keySet();
+                Set<String> set = schemaConfigMap.values().stream()
+                        .flatMap(i -> Stream.concat(i.getGlobalTables().keySet().stream(),
+                        i.getShadingTables().keySet().stream())).collect(Collectors.toSet());
+                for (String tableName : tableNames) {
+                    if(!set.contains(tableName)){
+                        schemaHandler.logicTables().remove(tableName);
+                    }
+                }
             }
         }
     }
