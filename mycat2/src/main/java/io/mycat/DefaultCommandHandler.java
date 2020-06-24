@@ -16,13 +16,9 @@ package io.mycat;
 
 
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.client.Interceptor;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +35,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
-    private Interceptor interceptor;
 
 
     @Override
@@ -51,8 +46,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MycatSession session) {
-        this.interceptor = InterceptorRuntime.INSTANCE.login(session.getUser().getUserName());
-        TransactionType defaultTransactionType = interceptor.getUserSpace().getDefaultTransactionType();
+       UserSpace interceptor = InterceptorRuntime.INSTANCE.getUserSpace(session.getUser().getUserName());
+        TransactionType defaultTransactionType = interceptor.getDefaultTransactionType();
         if (defaultTransactionType != null) {
             session.getDataContext().switchTransaction(defaultTransactionType);
         }
@@ -65,7 +60,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            UserSpace userSpace = this.interceptor.getUserSpace();
+            UserSpace userSpace = InterceptorRuntime.INSTANCE.getUserSpace(session.getUser().getUserName());
             userSpace.execute(ByteBuffer.wrap(bytes), session, new ReceiverImpl(session));
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
