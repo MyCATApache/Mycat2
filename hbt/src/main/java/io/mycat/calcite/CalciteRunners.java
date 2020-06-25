@@ -8,9 +8,11 @@ import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.calcite.rules.StreamUnionRule;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.sqlRecorder.SqlRecorder;
 import io.mycat.sqlRecorder.SqlRecorderRuntime;
 import io.mycat.sqlRecorder.SqlRecorderType;
 import io.mycat.upondb.MycatDBContext;
+import io.mycat.util.TimeProvider;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -27,6 +29,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -36,19 +39,20 @@ public class CalciteRunners {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteRunners.class);
 
     @SneakyThrows
-    public static RelNode compile(MycatCalcitePlanner planner, String sql, boolean forUpdate) {
-        long start = System.currentTimeMillis();
-        SqlRecorderRuntime.INSTANCE.start();
-        SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.AT_START, sql, start);
-        SqlNode sqlNode = planner.parse(sql);
+    public static RelNode compile(MycatCalcitePlanner planner, String sql, SqlNode sqlNode , boolean forUpdate) {
+        long start = TimeProvider.INSTANCE.now();
+        SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
+        recorder.start();
+        recorder.addRecord(SqlRecorderType.AT_START, sql, start);
+        planner.parse();
         SqlNode validate = planner.validate(sqlNode);
         RelNode relNode = planner.convert(validate);
-        long cro = System.currentTimeMillis();
-        SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.COMPILE_SQL, sql, cro - start);
+        long cro = TimeProvider.INSTANCE.now();
+        recorder.addRecord(SqlRecorderType.COMPILE_SQL, sql, cro - start);
         try {
             return compile(planner, relNode, forUpdate);
         } finally {
-            SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.RBO, sql, System.currentTimeMillis() - cro);
+            recorder.addRecord(SqlRecorderType.RBO, sql, TimeProvider.INSTANCE.now() - cro);
         }
     }
 
@@ -74,6 +78,7 @@ public class CalciteRunners {
 
     @SneakyThrows
     public static RowBaseIterator run(String sql, MycatCalciteDataContext calciteDataContext, RelNode relNode) {
+        SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
             @Override
@@ -105,25 +110,25 @@ public class CalciteRunners {
                 return super.visit(union);
             }
         });
-        long startGetConnectionTime = System.currentTimeMillis();
-        fork(sql,calciteDataContext, map);
-        long cbo = System.currentTimeMillis();
-        SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
+        long startGetConnectionTime = TimeProvider.INSTANCE.now();
+        fork(sql, calciteDataContext, map);
+        long cbo = TimeProvider.INSTANCE.now();
+        recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
         ArrayBindable bindable1 = Interpreters.bindable(relNode);
-        SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.CBO, sql, System.currentTimeMillis() - cbo);
-
         Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-
+        recorder.addRecord(SqlRecorderType.CBO, sql, TimeProvider.INSTANCE.now() - cbo);
 
         Enumerator<Object[]> enumerator = bind.enumerator();
 
         return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator,
-                () -> SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.AT_END, sql, System.currentTimeMillis()));
+                () -> recorder.addRecord(SqlRecorderType.AT_END, sql,TimeProvider.INSTANCE.now()));
     }
 
     private static void fork(String sql, MycatCalciteDataContext calciteDataContext, Map<String, List<SingeTargetSQLTable>> map) throws IllegalAccessException {
         MycatDBContext uponDBContext = calciteDataContext.getUponDBContext();
         AtomicBoolean cancelFlag = uponDBContext.cancelFlag();
+        SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
+
         if (uponDBContext.isInTransaction()) {
             for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
                 String datasource = entry.getKey();
@@ -133,17 +138,17 @@ public class CalciteRunners {
                     continue;
                 }
                 MycatConnection connection = uponDBContext.getConnection(datasource);
+                long start = System.currentTimeMillis();
                 if (list.size() > 1) {
                     throw new IllegalAccessException("事务内该执行计划重复拉取同一个数据源的数据");
                 }
                 Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
                         .submit(() -> {
-                            long start = System.currentTimeMillis();
                             try {
                                 return connection.executeQuery(table.getMetaData(), table.getSql());
                             } finally {
-                                SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.CONNECTION_QUERY_RESPONSE,
-                                        sql, System.currentTimeMillis() - start);
+                                recorder.addRecord(SqlRecorderType.CONNECTION_QUERY_RESPONSE,
+                                        sql, TimeProvider.INSTANCE.now()- start);
                             }
                         });
                 table.setEnumerable(new AbstractEnumerable<Object[]>() {
@@ -160,6 +165,7 @@ public class CalciteRunners {
                     .filter(i -> !i.existsEnumerable())
                     .map(i -> i.getTargetName()).iterator();
             Map<String, Deque<MycatConnection>> nameMap = JdbcRuntime.INSTANCE.getConnection(iterator);
+            long start = System.currentTimeMillis();
             for (Map.Entry<String, List<SingeTargetSQLTable>> entry : map.entrySet()) {
                 List<SingeTargetSQLTable> value = entry.getValue();
                 for (SingeTargetSQLTable v : value) {
@@ -167,12 +173,11 @@ public class CalciteRunners {
                     uponDBContext.addCloseResource(connection);
                     Future<RowBaseIterator> submit = JdbcRuntime.INSTANCE.getFetchDataExecutorService()
                             .submit(() -> {
-                                long start = System.currentTimeMillis();
                                 try {
                                     return connection.executeQuery(v.getMetaData(), v.getSql());
                                 } finally {
-                                    SqlRecorderRuntime.INSTANCE.addRecord(SqlRecorderType.CONNECTION_QUERY_RESPONSE,
-                                            sql, System.currentTimeMillis() - start);
+                                    recorder.addRecord(SqlRecorderType.CONNECTION_QUERY_RESPONSE,
+                                            sql, TimeProvider.INSTANCE.now() - start);
                                 }
                             });
                     AbstractEnumerable enumerable = new AbstractEnumerable<Object[]>() {

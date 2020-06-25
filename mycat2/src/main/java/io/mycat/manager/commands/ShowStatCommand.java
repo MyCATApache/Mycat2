@@ -6,9 +6,9 @@ import io.mycat.client.MycatRequest;
 import io.mycat.sqlRecorder.SqlRecord;
 import io.mycat.sqlRecorder.SqlRecorderRuntime;
 import io.mycat.util.Response;
+import sun.util.locale.provider.TimeZoneNameProviderImpl;
 
 import java.sql.JDBCType;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,45 +32,50 @@ public class ShowStatCommand implements ManageCommand {
 
         builder
                 .addColumnInfo("STATEMENT", JDBCType.VARCHAR)
-                .addColumnInfo("START_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("END_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("SQL_ROWS", JDBCType.BIGINT)
-                .addColumnInfo("NET_IN_BYTES", JDBCType.BIGINT)
-                .addColumnInfo("NET_OUT_BYTES", JDBCType.BIGINT)
-                .addColumnInfo("PARSE_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("COMPILE_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CBO_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("RBO_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CONNECTION_POOL_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CONNECTION_QUERY_TIME", JDBCType.TIMESTAMP);
+//                .addColumnInfo("START_TIME", JDBCType.BIGINT)
+//                .addColumnInfo("END_TIME", JDBCType.BIGINT)
+//                .addColumnInfo("SQL_ROWS", JDBCType.BIGINT)
+//                .addColumnInfo("NET_IN_BYTES", JDBCType.BIGINT)
+//                .addColumnInfo("NET_OUT_BYTES", JDBCType.BIGINT)
+//                .addColumnInfo("PARSE_TIME", JDBCType.BIGINT)
+                .addColumnInfo("COMPILE_TIME", JDBCType.BIGINT)
+                .addColumnInfo("RBO_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CBO_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CONNECTION_POOL_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CONNECTION_QUERY_TIME", JDBCType.BIGINT)
+                .addColumnInfo("TOTAL_TIME", JDBCType.BIGINT)
+        ;
+
+
 
         for (SqlRecord value : values) {
             String statement = value.getStatement();
-            Timestamp startTime = new Timestamp(value.getStartTime());
-            Timestamp endTime = new Timestamp(value.getEndTime());
+            long startTime = (value.getStartTime());
+            long endTime =(value.getEndTime());
             long sqlRows = value.getSqlRows();
             long netInBytes = value.getNetInBytes();
             long netOutBytes = value.getNetOutBytes();
-            Timestamp parseTime = new Timestamp(value.getParseTime());
-            Timestamp compileTime = new Timestamp(value.getCompileTime());
-            Timestamp cboTime = new Timestamp(value.getCboTime());
-            Timestamp rboTime = new Timestamp(value.getRboTime());
-            Timestamp connectionPoolTime = new Timestamp(value.getConnectionPoolTime());
-            Timestamp connectionQueryTIme = new Timestamp(value.getConnectionQueryTIme());
-
+            long parseTime = (value.getParseTime());
+            long compileTime =(value.getCompileTime());
+            long cboTime =(value.getCboTime());
+            long rboTime =(value.getRboTime());
+            long connectionPoolTime = (value.getConnectionPoolTime());
+            long connectionQueryTIme = (value.getConnectionQueryTime());
+            long TOTAL_TIME = (value.getWholeTime());
             builder.addObjectRowPayload(Arrays.asList(
                     statement,
-                    startTime,
-                    endTime,
-                    sqlRows,
-                    netInBytes,
-                    netOutBytes,
-                    parseTime,
+//                    startTime,
+//                    endTime,
+//                    sqlRows,
+//                    netInBytes,
+//                    netOutBytes,
+//                    parseTime,
                     compileTime,
-                    cboTime,
                     rboTime,
+                    cboTime,
                     connectionPoolTime,
-                    connectionQueryTIme
+                    connectionQueryTIme,
+                    TOTAL_TIME
             ));
         }
         response.sendResultSet(() -> builder.build());

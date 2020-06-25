@@ -17,7 +17,7 @@ public class SqlRecord implements Comparable<SqlRecord>{
     long cboTime;
     long rboTime;
     long connectionPoolTime;
-    long connectionQueryTIme;
+    long connectionQueryTime;
     long wholeTime;
 
     @Override

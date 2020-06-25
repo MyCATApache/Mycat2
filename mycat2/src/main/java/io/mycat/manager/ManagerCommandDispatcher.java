@@ -30,7 +30,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ShowStatCommand(),
             new ReloadConfigCommand(),
             new SwitchHeatbeatCommand(),
-            new ShowHeatbeatRunningCommand()
+            new ShowHeatbeatRunningCommand(),
+            new ResetStatCommand()
     );
 
     @Override

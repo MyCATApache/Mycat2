@@ -77,7 +77,7 @@ public class MycatCalciteSQLPrepareObject extends MycatSQLPrepareObject {
                         return literal(o);
                     }
                 });
-        return new MycatSqlPlanner(this, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql(),dataContext);
+        return new MycatSqlPlanner(this,getSql(), accept,dataContext);
     }
 
     public static SqlNode literal(Object value) {

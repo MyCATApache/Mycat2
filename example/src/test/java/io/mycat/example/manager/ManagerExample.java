@@ -130,10 +130,10 @@ public class ManagerExample {
                 expected = "NAME,SWITCH_TYPE,MAX_REQUEST_COUNT,TYPE,WRITE_DS,READ_DS,WRITE_L,READ_L";
                 matchMetadata(statement, sql, expected);
 
-                sql = "show @@stat";
-                expected = "STATEMENT,START_TIME,END_TIME,SQL_ROWS,NET_IN_BYTES,NET_OUT_BYTES,PARSE_TIME,COMPILE_TIME,CBO_TIME,RBO_TIME,CONNECTION_POOL_TIME,CONNECTION_QUERY_TIME";
-
-                matchMetadata(statement, sql, expected);
+//                sql = "show @@stat";
+//                expected = "STATEMENT,START_TIME,END_TIME,SQL_ROWS,NET_IN_BYTES,NET_OUT_BYTES,PARSE_TIME,COMPILE_TIME,CBO_TIME,RBO_TIME,CONNECTION_POOL_TIME,CONNECTION_QUERY_TIME";
+//
+//                matchMetadata(statement, sql, expected);
 
                 sql = "show @@threadPool";
                 expected = "NAME,POOL_SIZE,ACTIVE_COUNT,TASK_QUEUE_SIZE,COMPLETED_TASK,TOTAL_TASK";
