@@ -205,6 +205,10 @@ public class FileConfigProvider implements ConfigProvider {
         }
     }
 
+    public String getDefaultPath() {
+        return defaultPath;
+    }
+
     @Getter
     @Builder
     @ToString

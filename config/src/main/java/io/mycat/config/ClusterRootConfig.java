@@ -20,6 +20,7 @@ package io.mycat.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import java.util.List;
  */
 @Data
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ClusterRootConfig {
     private List<ClusterConfig> clusters = new ArrayList<>();
     private boolean close;
@@ -44,6 +46,7 @@ public class ClusterRootConfig {
 
     @AllArgsConstructor
     @Data
+    @EqualsAndHashCode
     public static class ClusterConfig {
         private String replicaType;
         private String switchType;

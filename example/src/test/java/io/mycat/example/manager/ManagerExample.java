@@ -1,14 +1,17 @@
 package io.mycat.example.manager;
 
 import com.alibaba.druid.util.Utils;
-import io.mycat.ConfigProvider;
-import io.mycat.MycatCore;
-import io.mycat.RootHelper;
+import com.rits.cloning.Cloner;
+import io.mycat.*;
+import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.example.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.util.NetUtil;
+import io.mycat.util.YamlUtil;
 import io.vertx.core.http.impl.HttpUtils;
 import lombok.SneakyThrows;
+import org.apache.curator.shaded.com.google.common.base.Objects;
+import org.codehaus.janino.util.DeepCopier;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -20,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -46,6 +50,17 @@ public class ManagerExample {
 
     @Test
     public void test() throws Exception {
+        String resource = Paths.get(ManagerExample.class.getResource("").toURI()).toAbsolutePath().toString();
+        System.out.println(resource);
+        System.setProperty("MYCAT_HOME", resource);
+        FileConfigProvider fileConfigProvider = (FileConfigProvider) RootHelper.INSTANCE.bootConfig(ManagerExample.class);
+        MycatConfig oldConfig = fileConfigProvider.currentConfig();
+        String defaultPath = fileConfigProvider.getDefaultPath();
+        MycatConfig backup = Cloner.standard().deepClone(fileConfigProvider.currentConfig());
+        ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig = new ShardingQueryRootConfig.LogicSchemaConfig();
+        logicSchemaConfig.setSchemaName("testdb");
+        backup.getMetadata().getSchemas().add(logicSchemaConfig);
+
         Thread thread = null;
         if (!NetUtil.isHostConnectable("0.0.0.0", 9066)) {
             thread = new Thread(() -> {
@@ -169,8 +184,8 @@ public class ManagerExample {
 
                 System.out.println("");
                 //配置更新测试
-
-
+                statement.execute("reload @@config by file");
+                Assert.assertNotSame(fileConfigProvider.currentConfig(), oldConfig);
             }
 
             //kill 命令测试,检查kill之后旧连接是否存在

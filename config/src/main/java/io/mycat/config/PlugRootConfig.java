@@ -2,6 +2,7 @@ package io.mycat.config;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  * date 2019-05-20 12:12
  **/
 @Data
+@EqualsAndHashCode
 public class PlugRootConfig {
     private LoadBalance loadBalance = new LoadBalance();
     private Sequence sequence = new Sequence();
@@ -18,6 +20,7 @@ public class PlugRootConfig {
     private MycatCommand command = new MycatCommand();
 
     @Data
+    @EqualsAndHashCode
     public static class LoadBalance {
         String defaultLoadBalance = "balanceRandom";
         List<LoadBalanceConfig> loadBalances = new ArrayList<>();
@@ -25,6 +28,7 @@ public class PlugRootConfig {
 
 
     @Data
+    @EqualsAndHashCode
     public static class LoadBalanceConfig {
         String name;
         String clazz;
@@ -39,11 +43,13 @@ public class PlugRootConfig {
     }
 
     @Data
+    @EqualsAndHashCode
     public static class Sequence {
         List<SequenceConfig> sequences = new ArrayList<>();
     }
 
     @Data
+    @EqualsAndHashCode
     public static class SequenceConfig {
         String name;
         String clazz;
@@ -60,11 +66,13 @@ public class PlugRootConfig {
     }
 
     @Data
+    @EqualsAndHashCode
     public static class Hint {
         List<HintConfig> hints = new ArrayList<>();
     }
 
     @Data
+    @EqualsAndHashCode
     public static class HintConfig {
         String name;
         String clazz;
@@ -81,12 +89,14 @@ public class PlugRootConfig {
     }
 
     @Data
+    @EqualsAndHashCode
     public static class MycatCommand {
         List<MycatCommandConfig> commands = new ArrayList<>();
     }
 
     @Data
     @Builder
+    @EqualsAndHashCode
     public static class MycatCommandConfig {
         String name;
         String clazz;

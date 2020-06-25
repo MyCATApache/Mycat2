@@ -44,7 +44,7 @@ public class ReloadConfigCommand implements ManageCommand {
                         response.sendError(new MycatException("sessions are still in Transaction"));
                         return;
                     }
-                }finally {
+                } finally {
                     ProxySwitch.INSTANCE.continueRunning();
                 }
             } else {
@@ -82,8 +82,10 @@ public class ReloadConfigCommand implements ManageCommand {
     }
 
     private void switchConfig() throws Exception {
+        MycatConfig oldConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
         RootHelper.INSTANCE.getConfigProvider().fetchConfig();
         MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
+
         PlugRuntime.INSTANCE.load(mycatConfig);
         MycatWorkerProcessor.INSTANCE.init(mycatConfig.getServer().getWorkerPool(), mycatConfig.getServer().getTimeWorkerPool());
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);

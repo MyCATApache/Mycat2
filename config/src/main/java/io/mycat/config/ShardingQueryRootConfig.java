@@ -1,14 +1,12 @@
 package io.mycat.config;
 
 import io.mycat.util.YamlUtil;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.*;
 
 @Data
+@EqualsAndHashCode
 public class ShardingQueryRootConfig {
     List<LogicSchemaConfig> schemas = new ArrayList<>();
     PrototypeServer prototype;
@@ -20,6 +18,7 @@ public class ShardingQueryRootConfig {
     @AllArgsConstructor
     @Data
     @Builder
+    @EqualsAndHashCode
     public static class BackEndTableInfoConfig {
         private String targetName;
         private String schemaName;
@@ -31,6 +30,7 @@ public class ShardingQueryRootConfig {
 
 
     @Data
+    @EqualsAndHashCode
     public static final class LogicSchemaConfig {
         String schemaName;
         String targetName;
