@@ -40,7 +40,7 @@ import java.util.function.Function;
 public class MycatDBSharedServerImpl implements MycatDBSharedServer {
     private static final AtomicLong PREPARE_ID_GENERATOR = new AtomicLong(0);
     private final Map<Long, PrepareObject> PREPARE_MAP = new HashMap<>();
-    private static final ConcurrentHashMap<Byte, Object> singletons = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Byte, Object> singletons = new ConcurrentHashMap<>();
 
     public <T> T getComponent(Byte key, Function<Byte, T> factory) {
         return (T) singletons.computeIfAbsent(key, factory);

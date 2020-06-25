@@ -29,10 +29,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,10 +50,20 @@ public class ManagerExample {
         String resource = Paths.get(ManagerExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
+
         FileConfigProvider fileConfigProvider = (FileConfigProvider) RootHelper.INSTANCE.bootConfig(ManagerExample.class);
         MycatConfig oldConfig = fileConfigProvider.currentConfig();
-        String defaultPath = fileConfigProvider.getDefaultPath();
+
+        MycatHttpConfigServer mycatHttpConfigServer = MycatHttpConfigServer.INSTANCE;
         MycatConfig backup = Cloner.standard().deepClone(fileConfigProvider.currentConfig());
+        mycatHttpConfigServer.setConfig(backup);
+        mycatHttpConfigServer.setGlobalVariables(fileConfigProvider.globalVariables());
+        mycatHttpConfigServer.start();
+        System.setProperty("MYCAT_CONFIG_PROVIER",HttpConfigProvider.class.getName());
+        RootHelper.INSTANCE.bootConfig(ManagerExample.class);
+
+        String defaultPath = fileConfigProvider.getDefaultPath();
+
         ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig = new ShardingQueryRootConfig.LogicSchemaConfig();
         logicSchemaConfig.setSchemaName("testdb");
         backup.getMetadata().getSchemas().add(logicSchemaConfig);
@@ -184,8 +191,17 @@ public class ManagerExample {
 
                 System.out.println("");
                 //配置更新测试
+
+                MycatConfig newConfig = Cloner.standard().deepClone(fileConfigProvider.currentConfig());
+                List<ShardingQueryRootConfig.LogicSchemaConfig> schemas = newConfig.getMetadata().getSchemas();
+                ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig1 = new ShardingQueryRootConfig.LogicSchemaConfig();
+                schemas.add(logicSchemaConfig1);
+                logicSchemaConfig1.setSchemaName("TESTDB");
+                mycatHttpConfigServer.setConfig(newConfig);
                 statement.execute("reload @@config by file");
-                Assert.assertNotSame(fileConfigProvider.currentConfig(), oldConfig);
+
+                String show_databases = TestUtil.getString(statement.executeQuery("show databases"));
+                Assert.assertTrue(show_databases.contains("TESTDB"));
             }
 
             //kill 命令测试,检查kill之后旧连接是否存在

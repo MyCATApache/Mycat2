@@ -11,6 +11,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.runtime.ProxySwitch;
+import io.mycat.upondb.MycatDBSharedServerImpl;
 import io.mycat.util.Response;
 
 import java.util.concurrent.TimeUnit;
@@ -94,5 +95,6 @@ public class ReloadConfigCommand implements ManageCommand {
         InterceptorRuntime.INSTANCE.load(mycatConfig);
         MetadataManager.INSTANCE.load(mycatConfig);
         MycatCore.INSTANCE.flash(mycatConfig);
+        MycatDBSharedServerImpl.singletons.clear();//todo need  refactor
     }
 }
