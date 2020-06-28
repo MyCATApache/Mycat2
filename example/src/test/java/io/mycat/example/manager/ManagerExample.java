@@ -1,35 +1,23 @@
 package io.mycat.example.manager;
 
-import com.alibaba.druid.util.Utils;
 import com.rits.cloning.Cloner;
 import io.mycat.*;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.example.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.util.NetUtil;
-import io.mycat.util.YamlUtil;
-import io.vertx.core.http.impl.HttpUtils;
 import lombok.SneakyThrows;
-import org.apache.curator.shaded.com.google.common.base.Objects;
-import org.codehaus.janino.util.DeepCopier;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,7 +47,7 @@ public class ManagerExample {
         mycatHttpConfigServer.setConfig(backup);
         mycatHttpConfigServer.setGlobalVariables(fileConfigProvider.globalVariables());
         mycatHttpConfigServer.start();
-        System.setProperty("MYCAT_CONFIG_PROVIER",HttpConfigProvider.class.getName());
+        System.setProperty("MYCAT_CONFIG_PROVIER", HttpConfigProvider.class.getName());
         RootHelper.INSTANCE.bootConfig(ManagerExample.class);
 
         String defaultPath = fileConfigProvider.getDefaultPath();
@@ -202,6 +190,9 @@ public class ManagerExample {
 
                 String show_databases = TestUtil.getString(statement.executeQuery("show databases"));
                 Assert.assertTrue(show_databases.contains("TESTDB"));
+
+                TestUtil.getString(statement.executeQuery("show @@stat"));
+                statement.execute("reset @@stat");
             }
 
             //kill 命令测试,检查kill之后旧连接是否存在

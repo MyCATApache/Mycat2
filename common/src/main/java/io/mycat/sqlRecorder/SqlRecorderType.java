@@ -8,6 +8,7 @@ public enum  SqlRecorderType {
     CBO,
     GET_CONNECTION,
     CONNECTION_QUERY_RESPONSE,
+    EXECUTION_TIME,
     AT_END
 
 

@@ -1,11 +1,11 @@
 package io.mycat.sqlRecorder;
 
-import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
 @Data
-public class SqlRecord implements Comparable<SqlRecord>{
+public class SqlRecord implements Comparable<SqlRecord> {
+    long executionTime;
     String statement;
     long startTime;
     long endTime;

@@ -79,10 +79,13 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                     c.cboTime = value;
                     break;
                 case GET_CONNECTION:
-                    c.connectionPoolTime = Math.max(       c.connectionPoolTime,value);
+                    c.connectionPoolTime = Math.max(c.connectionPoolTime, value);
                     break;
                 case CONNECTION_QUERY_RESPONSE:
-                    c.connectionQueryTime =  Math.max(       c.connectionQueryTime,value);
+                    c.connectionQueryTime = Math.max(c.connectionQueryTime, value);
+                    break;
+                case EXECUTION_TIME:
+                    c.executionTime = value;
                     break;
                 case AT_END:
                     c.endTime = value;
@@ -109,12 +112,13 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                 double connectionPoolTime = 0;
                 double connectionQueryTime = 0;
                 double wholeTime = 0;
+                double execution_time = 0;
                 SqlRecord[] value = stringEntry.getValue();
 
                 int count = 0;
 
                 //总是不统计首位的记录
-                for (int i = 0; i < value.length-1; i++) {
+                for (int i = 0; i < value.length - 1; i++) {
                     SqlRecord record = value[i];
                     if (record == null || record.getStatement() == null) {
                         continue;
@@ -130,6 +134,7 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                     rboTime += record.getRboTime();
                     connectionPoolTime += record.getConnectionPoolTime();
                     connectionQueryTime += record.getConnectionQueryTime();
+                    execution_time+=record.getExecutionTime();
                 }
                 if (count > 0) {
                     SqlRecord record = new SqlRecord();
@@ -144,6 +149,7 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                     record.compileTime = (long) compileTime / count;
                     record.wholeTime = (long) wholeTime / count;
                     record.sqlRows = (long) sqlRows / count;
+                    record.executionTime= (long) execution_time / count;
                     map.put(statement, record);
                 }
             }

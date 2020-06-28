@@ -14,9 +14,12 @@ import io.mycat.sqlRecorder.SqlRecorderType;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.TimeProvider;
 import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -115,13 +118,17 @@ public class CalciteRunners {
         long cbo = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
         ArrayBindable bindable1 = Interpreters.bindable(relNode);
+        long execution_start = TimeProvider.INSTANCE.now();
+        recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
+//        EnumerableInterpretable.toBindable()
         Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-        recorder.addRecord(SqlRecorderType.CBO, sql, TimeProvider.INSTANCE.now() - cbo);
-
         Enumerator<Object[]> enumerator = bind.enumerator();
 
         return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator,
-                () -> recorder.addRecord(SqlRecorderType.AT_END, sql,TimeProvider.INSTANCE.now()));
+                () -> {
+                    recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now()-execution_start);
+                    recorder.addRecord(SqlRecorderType.AT_END, sql, TimeProvider.INSTANCE.now());
+                });
     }
 
     private static void fork(String sql, MycatCalciteDataContext calciteDataContext, Map<String, List<SingeTargetSQLTable>> map) throws IllegalAccessException {
