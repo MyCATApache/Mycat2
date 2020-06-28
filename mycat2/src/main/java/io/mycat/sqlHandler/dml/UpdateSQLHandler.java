@@ -1,5 +1,6 @@
 package io.mycat.sqlHandler.dml;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -27,8 +28,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     public static void updateHandler(SQLStatement sql, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         MycatDBClientMediator mycatDBClientMediator = MycatDBs.createClient(dataContext);
-        String schemaName = tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema();
-        String tableName = tableSource.getTableName();
+        String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
+                .map(i-> SQLUtils.normalize(i)).orElse(null);
+        String tableName = SQLUtils.normalize(tableSource.getTableName());
         SchemaHandler schemaHandler;
         Optional<Map<String, SchemaHandler>> handlerMapOptional = Optional.ofNullable(mycatDBClientMediator)
                 .map(i -> i.config())

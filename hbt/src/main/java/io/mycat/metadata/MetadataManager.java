@@ -125,9 +125,11 @@ public enum MetadataManager {
                 }
             }
             //去掉失效的配置
-            Map<String, SchemaHandler> schemaMap = this.getSchemaMap();
+            //Map<String, SchemaHandler> schemaMap = this.getSchemaMap();
             //配置里面不存在的库移除
-            new ArrayList<>(schemaMap.keySet()).stream().filter(currentSchema -> !schemaConfigMap.containsKey(currentSchema)).forEach(schemaMap::remove);
+            new ArrayList<>(schemaMap.keySet()).stream().filter(currentSchema ->
+                    !schemaConfigMap.containsKey(currentSchema) && !schemaConfigMap.containsKey("`" + currentSchema + "`")
+            ).forEach(schemaMap::remove);
 
             //配置里面不存在的表移除
             for (Map.Entry<String, SchemaHandler> entry : schemaMap.entrySet()) {
@@ -135,9 +137,9 @@ public enum MetadataManager {
                 Set<String> tableNames = new HashSet<>(schemaHandler.logicTables().keySet());
                 Set<String> set = schemaConfigMap.values().stream()
                         .flatMap(i -> Stream.concat(i.getGlobalTables().keySet().stream(),
-                        i.getShadingTables().keySet().stream())).collect(Collectors.toSet());
+                                i.getShadingTables().keySet().stream())).collect(Collectors.toSet());
                 for (String tableName : tableNames) {
-                    if(!set.contains(tableName)){
+                    if (!set.contains(tableName)&&!set.contains("`"+tableName+"`")) {
                         schemaHandler.logicTables().remove(tableName);
                     }
                 }
@@ -154,7 +156,7 @@ public enum MetadataManager {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
-                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName,orignalTableName,backendTableInfos));
+                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backendTableInfos));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backendTableInfos);
         //////////////////////////////////////////////
 
@@ -187,7 +189,7 @@ public enum MetadataManager {
     private void addShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
-        String createTableSQL =Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(()->getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
+        String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backends);
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
@@ -417,7 +419,7 @@ public enum MetadataManager {
 
     public Map<DataNode, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, MySqlInsertStatement statement) {
         String s = statement.getTableSource().getSchema();
-        String schema = s == null ? currentSchemaName : s;
+        String schema = SQLUtils.normalize(s == null ? currentSchemaName : s);
         String tableName = SQLUtils.normalize(statement.getTableSource().getTableName());
         TableHandler logicTable = schemaMap.get(Objects.requireNonNull(schema)).logicTables().get(tableName);
         if (!(logicTable instanceof ShardingTableHandler)) {
@@ -436,8 +438,8 @@ public enum MetadataManager {
                 try {
                     SimpleColumnInfo columnByName = Objects.requireNonNull(logicTable.getColumnByName(columnName));
                     simpleColumnInfos.add(columnByName);
-                }catch (NullPointerException e){
-                   throw new MycatException("未知字段:"+columnName);
+                } catch (NullPointerException e) {
+                    throw new MycatException("未知字段:" + columnName);
                 }
             }
         }
