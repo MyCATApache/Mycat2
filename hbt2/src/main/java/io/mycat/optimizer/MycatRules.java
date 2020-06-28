@@ -58,7 +58,7 @@ import java.util.function.Predicate;
  * 1.注意点 转换时候注意目标的表达式是否能接受源表达式,比如有不支持的自定义函数,排序项,分组项
  */
 public class MycatRules {
-   public final static BindableConvention convention = BindableConvention.INSTANCE;
+   public final static Convention convention = Convention.NONE;
 
     private MycatRules() {
 

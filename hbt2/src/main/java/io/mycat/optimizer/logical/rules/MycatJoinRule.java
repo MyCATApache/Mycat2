@@ -33,15 +33,7 @@ public class MycatJoinRule extends MycatConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         final Join join = (Join) rel;
-        switch (join.getJoinType()) {
-            case SEMI:
-            case ANTI:
-                // It's not possible to convert semi-joins or anti-joins. They have fewer columns
-                // than regular joins.
-                return null;
-            default:
                 return convert(join, true);
-        }
     }
 
     /**
@@ -53,18 +45,18 @@ public class MycatJoinRule extends MycatConverterRule {
      * @return A new MycatJoin
      */
     public RelNode convert(Join join, boolean convertInputTraits) {
-        final List<RelNode> newInputs = new ArrayList<>();
-        for (RelNode input : join.getInputs()) {
-            if (convertInputTraits && input.getConvention() != getOutTrait()) {
-                input =
-                        convert(input,
-                                input.getTraitSet().replace(out));
-            }
-            newInputs.add(input);
-        }
-        if (convertInputTraits && !canJoinOnCondition(join.getCondition())) {
-            return null;
-        }
+        final List<RelNode> newInputs = join.getInputs();
+//        for (RelNode input : join.getInputs()) {
+//            if (convertInputTraits && input.getConvention() != getOutTrait()) {
+//                input =
+//                        convert(input,
+//                                input.getTraitSet().replace(out));
+//            }
+//            newInputs.add(input);
+//        }
+//        if (convertInputTraits && !canJoinOnCondition(join.getCondition())) {
+//            return null;
+//        }
         try {
             return new MycatJoin(
                     join.getCluster(),
@@ -84,7 +76,6 @@ public class MycatJoinRule extends MycatConverterRule {
      * Returns whether a condition is supported by {@link MycatJoin}.
      *
      * <p>Corresponds to the capabilities of
-     * {@link SqlImplementor#convertConditionToSqlNode}.
      *
      * @param node Condition
      * @return Whether condition is supported

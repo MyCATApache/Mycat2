@@ -195,7 +195,7 @@ public enum MycatCalciteSupport implements Context {
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
         System.setProperty("calcite.default.charset", charset);
-        System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
+        System.setProperty("saffron.default.collation.tableName", charset + "$ en_US");
         Properties properties = new Properties();
         properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
                 String.valueOf(false));
@@ -205,7 +205,7 @@ public enum MycatCalciteSupport implements Context {
         return new CalciteConnectionConfigImpl(properties) {
             @Override
             public <T> T typeSystem(Class<T> typeSystemClass, T defaultTypeSystem) {
-                return (T) MycatCalciteSupport.INSTANCE.TypeSystem;
+                return (T) new JavaTypeFactoryImpl();
             }
 
             @Override

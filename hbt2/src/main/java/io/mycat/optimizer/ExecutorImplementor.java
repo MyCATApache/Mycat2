@@ -2,8 +2,28 @@ package io.mycat.optimizer;
 
 import io.mycat.optimizer.logical.*;
 import io.mycat.optimizer.physical.*;
+import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.logical.*;
 
 public interface ExecutorImplementor {
+    Executor implement(Aggregate aggregate);
+
+    Executor implement(Filter filter);
+
+    Executor implement(Correlate correlate);
+
+    Executor implement(Join join);
+
+    Executor implement(Project project);
+
+    Executor implement(Sort sort);
+
+    Executor implement(TableScan tableScan);
+
+    Executor implement(Union union);
+
+    Executor implement(Values values);
+
     Executor implement(BottomTable bottomTable);
 
     Executor implement(BottomView bottomView);

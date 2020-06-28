@@ -22,6 +22,8 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.rules.FilterSetOpTransposeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 
+import java.util.List;
+
 public class MycatConvention extends Convention.Impl {
 
   public static final MycatConvention INSTANCE = new MycatConvention();
@@ -33,7 +35,8 @@ public class MycatConvention extends Convention.Impl {
   }
 
   @Override public void register(RelOptPlanner planner) {
-    for (RelOptRule rule : MycatRules.rules(this)) {
+    List<RelOptRule> rules = MycatRules.rules(this);
+    for (RelOptRule rule :rules) {
       planner.addRule(rule);
     }
     planner.addRule(FilterSetOpTransposeRule.INSTANCE);

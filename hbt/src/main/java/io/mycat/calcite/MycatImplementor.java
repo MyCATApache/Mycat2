@@ -85,6 +85,16 @@ public class MycatImplementor extends RelToSqlConverter {
         return dispatch(node);
     }
 
+    @Override
+    public Result visit(Filter e) {
+        return super.visit(e);
+    }
+
+    @Override
+    public Result visit(Calc e) {
+        return super.visit(e);
+    }
+
     /**
      * 1.修复生成的sql不带select items
      *
