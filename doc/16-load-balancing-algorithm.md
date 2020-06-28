@@ -27,7 +27,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 io.mycat.plug.loadBalance.BalanceRunOnReplica
 
-把请求尽量发往从节点
+把请求尽量发往从节点,不会把请求发到不可读(根据延迟值判断)与不可用的从节点
 
 
 
