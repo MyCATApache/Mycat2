@@ -2395,6 +2395,8 @@ SHOW TABLES;
 
 manager有独立的执行线程,一般不受8066的请求影响
 
+**命令语法注意空格和分号**
+
 
 
 ```yml
@@ -2429,19 +2431,45 @@ show @@connection
 
 
 
-###### 刷新配置(暂不开放)
+ID 连接的标识符
 
-```sql
-reload @@config
-```
+USER_NAME 登录的用户名
+
+HOST 客户端连接地址
 
 
 
 ###### 显示native连接
 
-```
+```sql
 show @@backend.native
 ```
+
+显示mycat proxy native 连接的信息
+
+SESSION_ID 连接ID,可被kill命令杀死
+
+THREAD_NAME 所在线程名
+
+DS_NAME数据源名字
+
+LAST_MESSAGE 接收到的报文中的信息(错误信息)
+
+MYCAT_SESSION_ID 如果有绑定前端连接,则显示它的ID
+
+IS_IDLE 是否在连接池
+
+SELECT_LIMIT限制返回行数
+
+IS_RESPONSE_FINISHED响应是否结束
+
+RESPONSE_TYPE响应类型
+
+IS_IN_TRANSACTION是否处于事务状态
+
+IS_REQUEST_SUCCESS是否向后端数据库发起请求成功
+
+IS_READ_ONLY是否处于readonly状态
 
 
 
@@ -2451,6 +2479,8 @@ show @@backend.native
 show @@backend.datasource
 ```
 
+显示配置中的数据源信息
+
 
 
 ###### 显示心跳状态
@@ -2458,6 +2488,8 @@ show @@backend.datasource
 ```sql
 show @@backend.heartbeat
 ```
+
+显示配置中的心跳信息
 
 
 
@@ -2477,6 +2509,28 @@ navite连接与jdbc连接使用相同的数据源配置,指向相同的服务器
 show @@backend.instance
 ```
 
+NAME  数据源名字
+
+ALIVE 是否存活
+
+READABLE 是否可以选择为读节点
+
+TYPE 数据源类型
+
+SESSION_COUNT 当前连接数量
+
+WEIGHT 负载均衡权重
+
+MASTER是否主节点
+
+HOST连接信息
+
+PORT连接端口
+
+LIMIT_SESSION_COUNT连接限制数量
+
+REPLICA所在集群名字
+
 
 
 ###### 显示逻辑库配置
@@ -2485,6 +2539,8 @@ show @@backend.instance
 show @@metadata.schema
 ```
 
+显示配置中的逻辑库信息
+
 
 
 ###### 显示逻辑表配置
@@ -2492,6 +2548,8 @@ show @@metadata.schema
 ```sql
 show @@metadata.schema.table
 ```
+
+显示配置中的逻辑表信息
 
 
 
@@ -2503,6 +2561,16 @@ reactor是mycat2的io线程,主要处理透传响应与接收报文,解析sql等
 show @@reactor
 ```
 
+THREAD_NAME线程名字
+
+THREAD_ID 线程ID
+
+CUR_SESSION_ID当前正在处理的前端,后端会话ID
+
+BUFFER_POOL_SNAPSHOT 网络缓冲区池快照
+
+LAST_ACTIVE_TIME 最近活跃时间
+
 
 
 ###### 显示集群状态
@@ -2510,6 +2578,26 @@ show @@reactor
 ```sql
 show @@backend.replica
 ```
+
+
+
+NAME 集群名字
+
+SWITCH_TYPE 切换类型
+
+MAX_REQUEST_COUNT 获取连接的时候尝试请求的次数
+
+TYPE 集群类型
+
+WRITE_DS 写节点列表
+
+READ_DS 读节点列表
+
+WRITE_L写节点负载均衡算法
+
+READ_L读节点负载均衡算法
+
+
 
 
 
@@ -2521,10 +2609,34 @@ show @@schedule
 
 
 
-###### 显示sql统计信息(暂时没有数据)
+###### 显示sql统计信息
 
 ```sql
 show @@stat
+```
+
+
+
+COMPILE_TIME 编译SQL的耗时
+
+RBO_TIME 规则优化耗时
+
+CBO_TIME 代价优化与生成执行器耗时
+
+CONNECTION_POOL_TIME 连接池获取连接耗时
+
+CONNECTION_QUERY_TIME 发起查询到获得响应耗时
+
+EXECUTION_TIME 执行引擎耗时
+
+TOTAL_TIME 查询总耗时
+
+
+
+###### 重置sql统计信息
+
+```sql
+reset @@stat
 ```
 
 
@@ -2534,6 +2646,20 @@ show @@stat
 ```sql
 show @@threadPool
 ```
+
+
+
+NAME 线程池名字
+
+POOL_SIZE 线程最大数量
+
+ACTIVE_COUNT 活跃线程数
+
+TASK_QUEUE_SIZE 等待队列大小
+
+COMPLETED_TASK 完成的任务数量
+
+TOTAL_TASK 总任务数量
 
 
 
@@ -2578,6 +2704,24 @@ switch @@backend.heartbeat = {true|false}
 心跳会自动修改数据源实例的状态,关闭心跳可以自行通过上面的命令修改状态
 
 此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 显示心跳定时器是否正在运行
+
+```sql
+show @@backend.heartbeat.running
+```
+
+
+
+###### 配置更新
+
+```
+reload @@config by file
+```
+
+请在低峰时段执行,配置更新停止IO请求,尽量选择没有事务的一刻进行更新,不保证配置前后一致性等问题
 
 
 
