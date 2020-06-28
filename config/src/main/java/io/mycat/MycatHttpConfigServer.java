@@ -1,14 +1,9 @@
 package io.mycat;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
-import lombok.Setter;
-import okhttp3.internal.Util;
 import org.apache.log4j.lf5.util.StreamUtils;
-import org.jcp.xml.dsig.internal.dom.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
