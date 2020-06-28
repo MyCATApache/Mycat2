@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.11-SNAPSHOT</version>
+  <version>1.11-01</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
