@@ -6,7 +6,6 @@ import io.mycat.client.MycatRequest;
 import io.mycat.sqlRecorder.SqlRecord;
 import io.mycat.sqlRecorder.SqlRecorderRuntime;
 import io.mycat.util.Response;
-import sun.util.locale.provider.TimeZoneNameProviderImpl;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
