@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
@@ -51,9 +52,9 @@ public class MySQLSessionManager implements
         BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
-    final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
-    final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
-    final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
+    final ConcurrentHashMap<Integer, MySQLClientSession> allSessions = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, MySQLPayloadWriter> clearTask = new ConcurrentHashMap<>();
 
 //  private ProxyRuntime runtime;
 

@@ -92,13 +92,15 @@ public class JdbcConnectionManager implements ConnectionManager {
             }
             return operand;
         }) < key.getMaxCon()) {
+            DefaultConnection defaultConnection;
             try {
                 DatasourceRootConfig.DatasourceConfig config = key.getConfig();
                 Connection connection = key.getDataSource().getConnection();
-                DefaultConnection defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
+                defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
                 try {
                     return defaultConnection;
                 } finally {
+                    LOGGER.info("获取连接:{}",defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
@@ -127,6 +129,7 @@ public class JdbcConnectionManager implements ConnectionManager {
             }
             return --operand;
         });
+        LOGGER.info("关闭连接:{}",connection);
         try {
             connection.connection.close();
         } catch (SQLException e) {
