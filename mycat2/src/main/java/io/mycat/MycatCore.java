@@ -31,6 +31,7 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
+import io.mycat.exporter.PrometheusExporter;
 import io.mycat.ext.MySQLAPIImpl;
 import io.mycat.manager.ManagerCommandDispatcher;
 import io.mycat.metadata.MetadataManager;
@@ -74,7 +75,8 @@ public enum MycatCore {
     private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期
     @Getter
     private ReactorThreadManager reactorManager;
-
+    @Getter
+    private ReactorThreadManager managerManager;
     @SneakyThrows
     public void init(ConfigProvider config) {
         this.config = config;
@@ -95,6 +97,7 @@ public enum MycatCore {
         //context.scanner("io.mycat.sqlHandler").inject();
         startProxy(mycatConfig);
         startManager(mycatConfig);
+       new PrometheusExporter().start();
     }
 
     private void startManager(MycatConfig config) throws IOException {
@@ -124,8 +127,8 @@ public enum MycatCore {
         list.add(thread);
 
 
-        reactorManager = new ReactorThreadManager(list);
-        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
+        managerManager = new ReactorThreadManager(list);
+        NIOAcceptor acceptor = new NIOAcceptor(managerManager);
         acceptor.startServerChannel(manager.getIp(), manager.getPort());
     }
 
@@ -158,7 +161,7 @@ public enum MycatCore {
             list.add(thread);
         }
 
-        final ReactorThreadManager reactorManager = new ReactorThreadManager(list);
+        this.reactorManager = new ReactorThreadManager(list);
         idleConnectCheck(mycatConfig, reactorManager);
         heartbeat(mycatConfig, reactorManager);
 

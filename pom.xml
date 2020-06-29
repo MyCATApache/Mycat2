@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.11-01</version>
+  <version>1.11-03</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -24,6 +24,7 @@
       <module>testsuite</module>
       <module>statistic</module>
       <module>hbt2</module>
+    <module>exporter</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
