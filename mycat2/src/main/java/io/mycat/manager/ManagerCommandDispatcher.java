@@ -3,14 +3,18 @@ package io.mycat.manager;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DefaultCommandHandler;
 import io.mycat.ReceiverImpl;
+import io.mycat.booster.CacheConfig;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
 import io.mycat.manager.commands.*;
 import io.mycat.proxy.session.MycatSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
 public class ManagerCommandDispatcher extends DefaultCommandHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagerCommandDispatcher.class);
     public static final ImmutableList<ManageCommand> COMMANDS = ImmutableList.of(
             new ShowInstanceCommand(),
             new ShowReplicaCommand(),
@@ -31,7 +35,8 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             new ReloadConfigCommand(),
             new SwitchHeatbeatCommand(),
             new ShowHeatbeatRunningCommand(),
-            new ResetStatCommand()
+            new ResetStatCommand(),
+            new ShowServerCommand()
     );
 
     @Override
@@ -51,6 +56,15 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             if (command.run(mycatRequest, session.getDataContext(), receiver)) {
                 return;
             }
+        }
+        LOGGER.info("No matching manager commands:{}",original);
+        LOGGER.info("The available management commands are as follows");
+        LOGGER.info("statement\tdescription\tclazzName");
+        for (ManageCommand command : COMMANDS) {
+            String statement = command.statement();
+            String description = command.description();
+            String clazzName = command.getName();
+            LOGGER.info("{}\t{}\t{}",statement,description,clazzName);
         }
         super.handleQuery(bytes, session);
     }

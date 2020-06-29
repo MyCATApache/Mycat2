@@ -2697,6 +2697,14 @@ reload @@config by file
 
 
 
+###### 显示服务器信息
+
+```
+show @@server
+```
+
+
+
 ## 更新日志
 
 具体看git记录
