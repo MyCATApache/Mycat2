@@ -65,6 +65,11 @@ public final class ProxyBufferPoolMonitor implements BufferPool {
     }
 
     @Override
+    public int trace() {
+        return bufferPool.trace();
+    }
+
+    @Override
     public ByteBuffer expandBuffer(ByteBuffer old, int len) {
         int chunkSize = bufferPool.chunkSize();
         ByteBuffer byteBuffer = bufferPool.expandBuffer(old, (len / chunkSize + 1) * chunkSize);

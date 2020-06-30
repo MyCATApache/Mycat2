@@ -39,6 +39,8 @@ public interface BufferPool  extends Dumpable {
 
     ByteBuffer allocate(byte[] bytes);
 
+    int trace();
+
 
     public default ByteBuffer expandBuffer(ByteBuffer old, int len) {
         assert old != null;

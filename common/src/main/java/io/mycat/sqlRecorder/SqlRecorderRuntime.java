@@ -3,6 +3,8 @@ package io.mycat.sqlRecorder;
 import com.google.common.cache.CacheBuilder;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -59,6 +61,9 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
 
         @Override
         public void addRecord(SqlRecorderType type, String sql, long value) {
+            if (sql.length()>32){//32
+                sql = sql.substring(0, 32);
+            }
             SqlRecord[] sqlRecords = this.map.computeIfAbsent(sql, SqlRecorderRuntime::createArray);
             SqlRecord c = sqlRecords[this.index];
             c.statement = sql;
@@ -134,26 +139,43 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
                     rboTime += record.getRboTime();
                     connectionPoolTime += record.getConnectionPoolTime();
                     connectionQueryTime += record.getConnectionQueryTime();
-                    execution_time+=record.getExecutionTime();
+                    execution_time += record.getExecutionTime();
                 }
                 if (count > 0) {
                     SqlRecord record = new SqlRecord();
                     record.statement = statement;
-                    record.connectionQueryTime = (long) connectionQueryTime / count;
-                    record.connectionPoolTime = (long) connectionPoolTime / count;
-                    record.cboTime = (long) cboTime / count;
-                    record.rboTime = (long) rboTime / count;
-                    record.parseTime = (long) parseTime / count;
-                    record.netInBytes = (long) netInBytes / count;
-                    record.netOutBytes = (long) netOutBytes / count;
-                    record.compileTime = (long) compileTime / count;
-                    record.wholeTime = (long) wholeTime / count;
-                    record.sqlRows = (long) sqlRows / count;
-                    record.executionTime= (long) execution_time / count;
+                    record.connectionQueryTime = (double) connectionQueryTime / count;
+                    record.connectionPoolTime = (double) connectionPoolTime / count;
+                    record.cboTime = (double) cboTime / count;
+                    record.rboTime = (double) rboTime / count;
+                    record.parseTime = (double) parseTime / count;
+                    record.netInBytes = (double) netInBytes / count;
+                    record.netOutBytes = (double) netOutBytes / count;
+                    record.compileTime = (double) compileTime / count;
+                    record.wholeTime = (double) wholeTime / count;
+                    record.sqlRows = (double) sqlRows / count;
+                    record.executionTime = (double) execution_time / count;
                     map.put(statement, record);
                 }
             }
         }
         return map;
+    }
+
+    @Override
+    public Map<String, List<SqlRecord>> getRecordList() {
+        HashMap<String, LinkedList<SqlRecord>> map = new HashMap<>();
+        for (RecordContext recordContext : all) {
+            for (Map.Entry<String, SqlRecord[]> stringEntry : recordContext.map.entrySet()) {
+                String statement = stringEntry.getKey();
+                LinkedList<SqlRecord> resList = map.computeIfAbsent(statement, s -> new LinkedList<SqlRecord>());
+                for (SqlRecord record : stringEntry.getValue()) {
+                    if (record.getStatement() != null) {
+                        resList.add(record);
+                    }
+                }
+            }
+        }
+        return (Map) map;
     }
 }

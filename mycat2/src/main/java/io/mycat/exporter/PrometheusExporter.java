@@ -1,7 +1,6 @@
 package io.mycat.exporter;
 
-import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports;
+import io.prometheus.client.hotspot.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,11 +11,28 @@ public class PrometheusExporter implements Exporter {
     @Override
     public void start() {
         try {
-            DefaultExports.initialize();
-            new ConnectionCounterCollector().register();
-            HTTPServer server = new HTTPServer(7066);
-        }catch (Throwable e){
-            LOGGER.error("",e);
+            CollectorList collectorList = new CollectorList(
+                    new StandardExports(),
+                    new MemoryPoolsExports(),
+                    new BufferPoolsExports(),
+                    new GarbageCollectorExports(),
+                    new ThreadExports(),
+                    new ClassLoadingExports(),
+                    new VersionInfoExports(),
+                    //////////////////////////////////////////
+                    new ConnectionCounterCollector(),
+                    new SqlStatCollector(),
+                    new BufferPoolCollector(),
+                    new HeartbeatCollector(),
+                    new ReplicaCollector(),
+                    new ThreadPoolCollector(),
+                    new InstanceCollector(),
+                    new CPULoadCollector()
+            );
+            collectorList.register();
+            HTTPServer server = new io.mycat.exporter.HTTPServer(7066);
+        } catch (Throwable e) {
+            LOGGER.error("", e);
         }
     }
 

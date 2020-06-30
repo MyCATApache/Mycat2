@@ -11,6 +11,7 @@ import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Response;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.JDBCType;
 import java.util.*;
@@ -29,6 +30,11 @@ public class ShowInstanceCommand implements ManageCommand {
 
     @Override
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
+        ResultSetBuilder resultSetBuilder = getResultSet();
+        response.sendResultSet(() -> resultSetBuilder.build());
+    }
+
+    public static ResultSetBuilder getResultSet() {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
 
@@ -72,6 +78,6 @@ public class ShowInstanceCommand implements ManageCommand {
                             replicaDataSourceSelectorList
                     ));
         }
-        response.sendResultSet(() -> resultSetBuilder.build());
+        return resultSetBuilder;
     }
 }

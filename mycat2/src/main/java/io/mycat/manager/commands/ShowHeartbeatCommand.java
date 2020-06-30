@@ -13,13 +13,11 @@ import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.util.Response;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ShowHeartbeatCommand implements ManageCommand {
@@ -36,9 +34,12 @@ public class ShowHeartbeatCommand implements ManageCommand {
     @Override
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
 
+        ResultSetBuilder resultSetBuilder = getResultSet();
+        response.sendResultSet(()->resultSetBuilder.build());
+    }
+    public static ResultSetBuilder getResultSet() {
         MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
         Map<String, DatasourceRootConfig.DatasourceConfig> dataSourceConfig = mycatConfig.getDatasource().getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
-
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
@@ -56,16 +57,16 @@ public class ShowHeartbeatCommand implements ManageCommand {
         resultSetBuilder.addColumnInfo("SLAVE_THRESHOLD", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("IS_HEARTBEAT_TIMEOUT", JDBCType.BOOLEAN);
         resultSetBuilder.addColumnInfo("HB_ERROR_COUNT", JDBCType.BIGINT);
-        resultSetBuilder.addColumnInfo("HB_LAST_SWITCH_TIME", JDBCType.TIMESTAMP);
+        resultSetBuilder.addColumnInfo("HB_LAST_SWITCH_TIME", JDBCType.DATE);
         resultSetBuilder.addColumnInfo("HB_MAX_RETRY", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("IS_CHECKING", JDBCType.BOOLEAN);
-        resultSetBuilder.addColumnInfo("MIN_SWITCH_TIME_INTERVAL", JDBCType.TIMESTAMP);
-        resultSetBuilder.addColumnInfo("HEARTBEAT_TIMEOUT", JDBCType.TIMESTAMP);
+        resultSetBuilder.addColumnInfo("MIN_SWITCH_TIME_INTERVAL", JDBCType.BIGINT);
+        resultSetBuilder.addColumnInfo("HEARTBEAT_TIMEOUT", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("SYNC_DS_STATUS", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("HB_DS_STATUS", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("IS_SLAVE_BEHIND_MASTER", JDBCType.BOOLEAN);
-        resultSetBuilder.addColumnInfo("LAST_SEND_QUERY_TIME", JDBCType.TIMESTAMP);
-        resultSetBuilder.addColumnInfo("LAST_RECEIVED_QUERY_TIME", JDBCType.TIMESTAMP);
+        resultSetBuilder.addColumnInfo("LAST_SEND_QUERY_TIME", JDBCType.DATE);
+        resultSetBuilder.addColumnInfo("LAST_RECEIVED_QUERY_TIME", JDBCType.DATE);
 
 
         for (HeartbeatFlow heartbeatFlow : ReplicaSelectorRuntime.INSTANCE.getHeartbeatDetectorMap().values()) {
@@ -84,24 +85,30 @@ public class ShowHeartbeatCommand implements ManageCommand {
             boolean IS_HEARTBEAT_TIMEOUT = heartbeatFlow.isHeartbeatTimeout();
             final HeartBeatStatus HEART_BEAT_STATUS = heartbeatFlow.getHbStatus();
             int HB_ERROR_COUNT = HEART_BEAT_STATUS.getErrorCount();
-            Timestamp HB_LAST_SWITCH_TIME = new Timestamp(HEART_BEAT_STATUS.getLastSwitchTime());
+            Date HB_LAST_SWITCH_TIME = new Date(HEART_BEAT_STATUS.getLastSwitchTime());
             int HB_MAX_RETRY = HEART_BEAT_STATUS.getMaxRetry();
             boolean IS_CHECKING = HEART_BEAT_STATUS.isChecking();
             long MIN_SWITCH_TIME_INTERVAL = HEART_BEAT_STATUS.getMinSwitchTimeInterval();
-            final Timestamp HEARTBEAT_TIMEOUT = new Timestamp(heartbeatFlow.getHeartbeatTimeout());
+            final Date HEARTBEAT_TIMEOUT = new Date(heartbeatFlow.getHeartbeatTimeout());
             DatasourceStatus DS_STATUS_OBJECT = heartbeatFlow.getDsStatus();
             String SYNC_DS_STATUS = DS_STATUS_OBJECT.getDbSynStatus().name();
             String HB_DS_STATUS = DS_STATUS_OBJECT.getStatus().name();
             boolean IS_SLAVE_BEHIND_MASTER = DS_STATUS_OBJECT.isSlaveBehindMaster();
-            Timestamp LAST_SEND_QUERY_TIME = new Timestamp(heartbeatFlow.getLastSendQryTime());
-            Timestamp LAST_RECEIVED_QUERY_TIME = new Timestamp(heartbeatFlow.getLastReceivedQryTime());
+            Date LAST_SEND_QUERY_TIME = new Date(heartbeatFlow.getLastSendQryTime());
+            Date LAST_RECEIVED_QUERY_TIME = new Date(heartbeatFlow.getLastReceivedQryTime());
 
             Optional<DatasourceRootConfig.DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
             String replicaDataSourceSelectorList =String.join(",", ReplicaSelectorRuntime.INSTANCE.getRepliaNameListByInstanceName(NAME));
 
             resultSetBuilder.addObjectRowPayload(
-                    Arrays.asList(NAME, TYPE, READABLE, SESSION_COUNT, WEIGHT, ALIVE, MASTER,
+                    Arrays.asList(NAME,
+                            TYPE,
+                            READABLE,
+                            SESSION_COUNT,
+                            WEIGHT,
+                            ALIVE,
+                            MASTER,
                             e.map(i -> i.getIp()).orElse(""),
                             e.map(i -> i.getPort()).orElse(-1),
                             e.map(i -> i.getMaxCon()).orElse(-1),
@@ -121,6 +128,6 @@ public class ShowHeartbeatCommand implements ManageCommand {
                             LAST_RECEIVED_QUERY_TIME
                     ));
         }
-        response.sendResultSet(()->resultSetBuilder.build());
+        return resultSetBuilder;
     }
 }

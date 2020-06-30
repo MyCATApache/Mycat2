@@ -50,19 +50,19 @@ public class ShowStatCommand implements ManageCommand {
 
         for (SqlRecord value : values) {
             String statement = value.getStatement();
-            long startTime = (value.getStartTime());
-            long endTime =(value.getEndTime());
-            long sqlRows = value.getSqlRows();
-            long netInBytes = value.getNetInBytes();
-            long netOutBytes = value.getNetOutBytes();
-            long parseTime = (value.getParseTime());
-            long compileTime =(value.getCompileTime());
-            long cboTime =(value.getCboTime());
-            long rboTime =(value.getRboTime());
-            long connectionPoolTime = (value.getConnectionPoolTime());
-            long connectionQueryTIme = (value.getConnectionQueryTime());
-            long executionTime = value.getExecutionTime();
-            long TOTAL_TIME = (value.getWholeTime());
+            double startTime = (value.getStartTime());
+            double endTime =(value.getEndTime());
+            double sqlRows = value.getSqlRows();
+            double netInBytes = value.getNetInBytes();
+            double netOutBytes = value.getNetOutBytes();
+            double parseTime = (value.getParseTime());
+            double compileTime =(value.getCompileTime());
+            double cboTime =(value.getCboTime());
+            double rboTime =(value.getRboTime());
+            double connectionPoolTime = (value.getConnectionPoolTime());
+            double connectionQueryTIme = (value.getConnectionQueryTime());
+            double executionTime = value.getExecutionTime();
+            double TOTAL_TIME = (value.getWholeTime());
             builder.addObjectRowPayload(Arrays.asList(
                     statement,
 //                    startTime,

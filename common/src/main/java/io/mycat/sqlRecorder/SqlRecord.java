@@ -5,20 +5,20 @@ import org.jetbrains.annotations.NotNull;
 
 @Data
 public class SqlRecord implements Comparable<SqlRecord> {
-    long executionTime;
+    double executionTime;
     String statement;
-    long startTime;
-    long endTime;
-    long sqlRows;
-    long netInBytes;
-    long netOutBytes;
-    long parseTime;
-    long compileTime;
-    long cboTime;
-    long rboTime;
-    long connectionPoolTime;
-    long connectionQueryTime;
-    long wholeTime;
+    double startTime;
+    double endTime;
+    double sqlRows;
+    double netInBytes;
+    double netOutBytes;
+    double parseTime;
+    double compileTime;
+    double cboTime;
+    double rboTime;
+    double connectionPoolTime;
+    double connectionQueryTime;
+    double wholeTime;
 
     @Override
     public int compareTo(@NotNull SqlRecord o) {
