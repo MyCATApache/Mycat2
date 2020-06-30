@@ -72,15 +72,15 @@ public class ConnectionCounterCollector extends Collector {
             List<MySQLClientSession> allSessions = mySQLSessionManager.getAllSessions();
             Map<String, Long> totalMap = allSessions.stream().collect(Collectors.groupingBy(j -> j.getDatasourceName(), Collectors.counting()));
             totalMap.forEach((k, v) -> {
-                gaugeMetricFamily.addMetric(ImmutableList.of(Type.TOTAL.getName(), k), v);
+                gaugeMetricFamily.addMetric(ImmutableList.of(Type.TOTAL.getName(),i.getName(), k), v);
             });
             Map<String, Long>   idleMap = mySQLSessionManager.getAllSessions().stream().filter(j -> j.isIdle()).collect(Collectors.groupingBy(j -> j.getDatasourceName(), Collectors.counting()));
             idleMap.forEach((k, v) -> {
-                gaugeMetricFamily.addMetric(ImmutableList.of(Type.IDLE.getName(), k), v);
+                gaugeMetricFamily.addMetric(ImmutableList.of(Type.IDLE.getName(),i.getName(), k), v);
             });
             Map<String, Long>   useMap = allSessions.stream().filter(j -> !j.isIdle()).collect(Collectors.groupingBy(j -> j.getDatasourceName(), Collectors.counting()));
             useMap.forEach((k, v) -> {
-                gaugeMetricFamily.addMetric(ImmutableList.of(Type.USE.getName(), k), v);
+                gaugeMetricFamily.addMetric(ImmutableList.of(Type.USE.getName(),i.getName(), k), v);
             });
         }
         return gaugeMetricFamily;

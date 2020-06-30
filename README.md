@@ -19,6 +19,8 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 Dockerfile:https://github.com/MyCATApache/Mycat2/blob/master/mycat2/Dockerfile
 
+Mycat2可视化监控,使用Grafana和prometheus实现,模板:https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
+
 执行hbt的两组命令是
 
 ```sql
@@ -2383,6 +2385,8 @@ mycat中创建的连接一般有两大类,前端连接,后端连接,后端连接
 
 
 
+##### 命令监控管理
+
 ###### 关闭连接
 
 ```sql
@@ -2693,7 +2697,7 @@ show @@backend.heartbeat.running
 reload @@config by file
 ```
 
-请在低峰时段执行,配置更新停止IO请求,尽量选择没有事务的一刻进行更新,不保证配置前后一致性等问题
+修改本地的mycat.yml就可更新,支持更新metadata与jdbc数据源.请在低峰时段执行,配置更新停止IO请求,尽量选择没有事务的一刻进行更新,不保证配置前后一致性等问题
 
 
 
@@ -2702,6 +2706,76 @@ reload @@config by file
 ```
 show @@server
 ```
+
+
+
+##### Mycat2可视化监控
+
+Mycat2可视化监控,使用Grafana和prometheus实现:
+
+https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
+
+
+
+###### 参考配置
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/manager/mycat.yml
+
+
+
+```yaml
+plug:
+  extra: [
+           "io.mycat.exporter.PrometheusExporter"
+     ]
+```
+
+此配置默认开启7066端口.并提供以下url供查询监控信息
+
+http://127.0.0.1:7066/metrics
+
+供Prometheus查询
+
+
+
+```yaml
+properties:
+  prometheusPort: 7066
+```
+
+此配置可以更改io.mycat.exporter.PrometheusExporter开启的端口
+
+
+
+###### 监控信息
+
+Gauge类型
+
+buffer_pool_counter:内存块计数
+
+client_connection:客户端计数
+
+native_mysql_connection:native连接计数
+
+instance_connection:物理实例计数
+
+jdbc_connection:jdbc连接计数
+
+mycat_cpu_utility:cpu利用率
+
+heartbeat_stat:心跳请求至响应时间
+
+instance_acitve:物理实例存活是否存活
+
+replica_available_value:集群是否可用
+
+sql_stat:sql各阶段时间统计
+
+thread_pool_active:连接池活跃线程统计
+
+
+
+如果有什么建议可以提交issue或者与作者沟通
 
 
 
@@ -2714,3 +2788,5 @@ show @@server
 2020-6-19后,mycat.yml中的server设置发生变化
 
 2020-6-23后添加hint,MycatCommand配置
+
+2020-6-30后添加extra配置
