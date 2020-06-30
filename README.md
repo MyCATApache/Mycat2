@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-6-1
+author:junwen  2020-6-30
 
 作者qq: 294712221
 
@@ -2714,6 +2714,8 @@ show @@server
 Mycat2可视化监控,使用Grafana和prometheus实现:
 
 https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
+
+可配合模板JVM dashboard
 
 
 
