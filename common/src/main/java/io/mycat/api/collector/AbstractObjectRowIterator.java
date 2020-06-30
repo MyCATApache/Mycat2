@@ -105,13 +105,13 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public java.util.Date  getDate(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         if (o instanceof Number) {
             return new Date(((Number) o).longValue());
         }
-        return (Date) o;
+        return (java.util.Date ) o;
     }
 
     @Override

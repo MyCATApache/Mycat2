@@ -85,11 +85,11 @@ public class ShowHeartbeatCommand implements ManageCommand {
             boolean IS_HEARTBEAT_TIMEOUT = heartbeatFlow.isHeartbeatTimeout();
             final HeartBeatStatus HEART_BEAT_STATUS = heartbeatFlow.getHbStatus();
             int HB_ERROR_COUNT = HEART_BEAT_STATUS.getErrorCount();
-            Date HB_LAST_SWITCH_TIME = new Date(HEART_BEAT_STATUS.getLastSwitchTime());
+            long HB_LAST_SWITCH_TIME =  (HEART_BEAT_STATUS.getLastSwitchTime());
             int HB_MAX_RETRY = HEART_BEAT_STATUS.getMaxRetry();
             boolean IS_CHECKING = HEART_BEAT_STATUS.isChecking();
             long MIN_SWITCH_TIME_INTERVAL = HEART_BEAT_STATUS.getMinSwitchTimeInterval();
-            final Date HEARTBEAT_TIMEOUT = new Date(heartbeatFlow.getHeartbeatTimeout());
+            final long HEARTBEAT_TIMEOUT =  (heartbeatFlow.getHeartbeatTimeout());
             DatasourceStatus DS_STATUS_OBJECT = heartbeatFlow.getDsStatus();
             String SYNC_DS_STATUS = DS_STATUS_OBJECT.getDbSynStatus().name();
             String HB_DS_STATUS = DS_STATUS_OBJECT.getStatus().name();

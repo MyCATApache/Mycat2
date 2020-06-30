@@ -49,6 +49,7 @@ import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.ApplicationContext;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.ClassUtil;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -97,8 +98,12 @@ public enum MycatCore {
         //context.scanner("io.mycat.sqlHandler").inject();
         startProxy(mycatConfig);
         startManager(mycatConfig);
-       new PrometheusExporter().start();
+
+
+        //插件
+        runExtra(mycatConfig);
     }
+
 
     private void startManager(MycatConfig config) throws IOException {
         ManagerConfig manager = config.getManager();
@@ -346,5 +351,21 @@ public enum MycatCore {
     public void flash(MycatConfig config){
         datasourceMap.clear();
         heartbeat(config, reactorManager);
+    }
+
+    private static void runExtra(MycatConfig mycatConfig) {
+        for (String clazz : Optional.ofNullable(mycatConfig)
+                .map(m -> m.getPlug())
+                .map(m -> m.getExtra())
+                .orElse(Collections.emptyList())) {
+            try {
+                Class<?> aClass = Class.forName(clazz);
+                Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
+                Runnable o = (Runnable)declaredConstructor.newInstance();
+                o.run();
+            }catch (Throwable e){
+                LOGGER.error("can not run:{}",clazz,e);
+            }
+        }
     }
 }

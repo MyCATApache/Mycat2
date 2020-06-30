@@ -10,6 +10,8 @@ import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -115,7 +117,7 @@ public class ManagerExample {
 
 
                 sql = "show @@backend.replica";
-                expected = "NAME,SWITCH_TYPE,MAX_REQUEST_COUNT,TYPE,WRITE_DS,READ_DS,WRITE_L,READ_L";
+                expected = "NAME,SWITCH_TYPE,MAX_REQUEST_COUNT,TYPE,WRITE_DS,READ_DS,WRITE_L,READ_L,AVAILABLE";
                 matchMetadata(statement, sql, expected);
 
 //                sql = "show @@stat";
@@ -199,6 +201,7 @@ public class ManagerExample {
             ArrayList<String> ids = new ArrayList<>();
             ArrayList<String> ids2 = new ArrayList<>();
             try (Connection connection = TestUtil.getMySQLConnection(9066)) {
+                Connection mySQLConnection1 = TestUtil.getMySQLConnection(8066);//创建8066连接,以便后面杀死
                 ResultSet resultSet1 = connection.createStatement().executeQuery("show @@connection");
                 while (resultSet1.next()) {
                     ids.add(resultSet1.getString("ID"));
@@ -215,6 +218,10 @@ public class ManagerExample {
 
             ids2.retainAll(ids);
             Assert.assertTrue(ids2.isEmpty());//没有交集,为空
+
+            Object content = new URL("http://127.0.0.1:7066/metrics").openConnection().getContent();
+            Assert.assertNotNull(content);
+            System.out.println(content);
         }
         if (thread != null) {
             thread.interrupt();

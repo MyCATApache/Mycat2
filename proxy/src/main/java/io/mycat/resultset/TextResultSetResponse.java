@@ -152,7 +152,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.DATE: {
-                Date value = rowBaseIterator.getDate(columnIndex);
+                java.util.Date  value = rowBaseIterator.getDate(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }

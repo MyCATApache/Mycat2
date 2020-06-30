@@ -18,6 +18,7 @@ public class PlugRootConfig {
     private Sequence sequence = new Sequence();
     private Hint hint = new Hint();
     private MycatCommand command = new MycatCommand();
+    private List<String> extra = new ArrayList<>();
 
     @Data
     @EqualsAndHashCode

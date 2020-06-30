@@ -93,11 +93,16 @@ plug:
     {name: 'db1_travelrecord', clazz: io.mycat.plug.sequence.SequenceMySQLGenerator ,args: "sql : SELECT db1.mycat_seq_nextval('GLOBAL') , targetName:defaultDs"},
     {name: 'db1_address', clazz: io.mycat.plug.sequence.SequenceSnowflakeGenerator ,args: 'workerId:1'},
     ]
-
+  extra: [
+           "io.mycat.exporter.PrometheusExporter"
+     ]
 manager:
   ip: 0.0.0.0
   port: 9066
   users: [{ip: '.', password: '123456', username: root}]
+
+properties:
+  key: value
 
 #lib start
 #lib end
