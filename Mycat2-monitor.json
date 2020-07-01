@@ -16,7 +16,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 13,
+  "id": 15,
+  "iteration": 1593590043226,
   "links": [],
   "panels": [
     {
@@ -65,7 +66,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "mycat_cpu_utility",
+          "expr": "mycat_cpu_utility{job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -141,7 +142,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "client_connection",
+          "expr": "client_connection{job=\"$job\",instance=\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "legendFormat": "",
@@ -254,7 +255,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "thread_pool_active",
+          "expr": "thread_pool_active{job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -351,7 +352,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "replica_available_value",
+          "expr": "replica_available_value{job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -408,7 +409,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "instance_acitve",
+          "expr": "instance_acitve{job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -484,7 +485,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "heartbeat_stat",
+          "expr": "heartbeat_stat{job=\"$job\",instance=\"$instance\"}",
           "format": "heatmap",
           "instant": false,
           "interval": "",
@@ -573,7 +574,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "sql_stat{time_type=\"COMPILE_TIME\"}",
+          "expr": "sql_stat{time_type=\"COMPILE_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
           "legendFormat": "",
@@ -636,7 +637,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "sql_stat{time_type=\"CONNECTION_QUERY_TIME\"}",
+          "expr": "sql_stat{time_type=\"CONNECTION_QUERY_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
           "legendFormat": "",
@@ -685,7 +686,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "sql_stat{time_type=\"EXECUTION_TIME\"}",
+          "expr": "sql_stat{time_type=\"EXECUTION_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
           "legendFormat": "",
@@ -734,7 +735,7 @@
       "pluginVersion": "7.0.4",
       "targets": [
         {
-          "expr": "sql_stat{time_type=\"TOTAL_TIME\"}",
+          "expr": "sql_stat{time_type=\"TOTAL_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
           "legendFormat": "",
@@ -809,7 +810,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "client_connection",
+          "expr": "client_connection{job=\"$job\",instance=\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "legendFormat": "",
@@ -942,7 +943,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jdbc_connection{type=\"use\"}",
+          "expr": "jdbc_connection{type=\"use\",job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "B"
@@ -1045,7 +1046,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jdbc_connection{type=\"idle\"}",
+          "expr": "jdbc_connection{type=\"idle\",job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "B"
@@ -1101,12 +1102,79 @@
       }
     }
   ],
-  "refresh": false,
+  "refresh": "5s",
   "schemaVersion": 25,
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "127.0.0.1:7066",
+          "value": "127.0.0.1:7066"
+        },
+        "datasource": "$datasource",
+        "definition": "label_values(jvm_info{job=\"$job\"},instance)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": "label_values(jvm_info{job=\"$job\"},instance)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "mycat-jvm",
+          "value": "mycat-jvm"
+        },
+        "hide": 0,
+        "label": "job",
+        "name": "job",
+        "options": [
+          {
+            "selected": true,
+            "text": "mycat-jvm",
+            "value": "mycat-jvm"
+          }
+        ],
+        "query": "mycat-jvm",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "constant"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
@@ -1121,5 +1189,5 @@
   "timezone": "",
   "title": "Mycat2-monitor",
   "uid": "nl-RGWMGz",
-  "version": 16
+  "version": 6
 }
