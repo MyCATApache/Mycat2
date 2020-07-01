@@ -29,6 +29,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 public abstract class MySQLDatasource implements MycatDataSource {
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MySQLDatasource that = (MySQLDatasource) o;
+
+        return datasourceConfig != null ? datasourceConfig.equals(that.datasourceConfig) : that.datasourceConfig == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return datasourceConfig != null ? datasourceConfig.hashCode() : 0;
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
     protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
@@ -66,23 +80,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
 
     public String getPassword() {
         return this.datasourceConfig.getPassword();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        MySQLDatasource that = (MySQLDatasource) o;
-        return getName().equals(that.getName());
-    }
-
-    @Override
-    public int hashCode() {
-        return getName().hashCode();
     }
 
     public int decrementSessionCounter() {

@@ -129,10 +129,11 @@ public enum ReplicaSelectorRuntime {
                         for (Map.Entry<String, ReplicaDataSourceSelector> stringReplicaDataSourceSelectorEntry : replicaMap.entrySet()) {
                             for (String datasourceName : stringReplicaDataSourceSelectorEntry.getValue().datasourceMap.keySet()) {
                                 String replicaName = stringReplicaDataSourceSelectorEntry.getKey();
-                                HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(replicaName + "." + datasourceName);
+                                String key = replicaName + "." + datasourceName;
+                                HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(key);
                                 if (heartbeatFlow != null) {
-                                    if (LOGGER.isDebugEnabled()) {
-                                        LOGGER.debug("heartbeat");
+                                    if (LOGGER.isInfoEnabled()) {
+                                        LOGGER.info("heartbeat:{}",key);
                                     }
                                     heartbeatFlow.heartbeat();
                                 }
