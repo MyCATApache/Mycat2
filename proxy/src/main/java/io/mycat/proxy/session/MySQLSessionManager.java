@@ -351,12 +351,9 @@ public class MySQLSessionManager implements
                 }
             }
             int idleCount = group == null ? 0 : group.size();
-            int createCount = 0;
-            if (datasource.getSessionMinCount() > (idleCount + checkList.size())) {
-                createCount = (datasource.getSessionMinCount() - idleCount) / 3;
-            }
-            if (createCount > 0 && idleCount < datasource.getSessionMinCount()) {
-               // createByLittle(datasource, createCount);
+            int createCount =Math.max(0,datasource.getSessionMinCount()-datasource.getConnectionCounter());
+            if (createCount > 0) {
+                createByLittle(datasource, createCount);
             } else if (idleCount - checkList.size() > datasource.getSessionMinCount()
                     && group != null) {
                 //关闭多余连接
