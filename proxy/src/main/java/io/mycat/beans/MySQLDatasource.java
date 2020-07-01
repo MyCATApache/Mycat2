@@ -33,7 +33,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
     protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
     protected final AtomicInteger connectionCounter = new AtomicInteger(0);
-    protected final AtomicInteger usedCounter = new AtomicInteger(0);
+//    protected final AtomicInteger usedCounter = new AtomicInteger(0);
 
     public MySQLDatasource(DatasourceRootConfig.DatasourceConfig datasourceConfig) {
         this.datasourceConfig = datasourceConfig;
@@ -104,14 +104,16 @@ public abstract class MySQLDatasource implements MycatDataSource {
             }
         }) < this.datasourceConfig.getMaxCon();
     }
-
-    public int decrementUsedCounter() {
-        return usedCounter.decrementAndGet();
-    }
-
-    public int tryIncrementUsedCounter() {
-        return usedCounter.incrementAndGet();
-    }
+//
+//    public int decrementUsedCounter() {
+//        LOGGER.info("decrementUsedCounter");
+//        return usedCounter.decrementAndGet();
+//    }
+//
+//    public int tryIncrementUsedCounter() {
+//        LOGGER.info("tryIncrementUsedCounter");
+//        return usedCounter.incrementAndGet();
+//    }
 
     public String getInitSqlForProxy() {
         List<String> initSqls = datasourceConfig.getInitSqls();
@@ -140,7 +142,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
         return connectionCounter.get();
     }
 
-    public int getUsedCounter() {
-        return usedCounter.get();
-    }
+//    public int getUsedCounter() {
+//        return usedCounter.get();
+//    }
 }

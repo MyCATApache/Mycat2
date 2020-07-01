@@ -86,7 +86,7 @@ public class MySQLSessionManager implements
         SessionCallBack<MySQLClientSession> asyncTaskCallBack = new SessionCallBack<MySQLClientSession>() {
             @Override
             public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                datasource.tryIncrementUsedCounter();//设置正在使用的数量
+//                datasource.tryIncrementUsedCounter();//设置正在使用的数量
                 arg.onSession(session, sender, attr);
             }
 
@@ -212,7 +212,7 @@ public class MySQLSessionManager implements
             assert !session.isIdle();
             /////////////////////////////////////////
 
-            session.getDatasource().decrementUsedCounter();
+//            session.getDatasource().decrementUsedCounter();
             ////////////////////////////////////////
 
             if (shouldClear(session)) {
@@ -617,7 +617,7 @@ public class MySQLSessionManager implements
             assert session != null;
             assert reason != null;
             session.getDatasource().decrementSessionCounter();
-            session.getDatasource().decrementUsedCounter();
+
             allSessions.remove(session.sessionId());
             MycatMonitor.onCloseMysqlSession(session, normal, reason);
             removeIdleSession(session);

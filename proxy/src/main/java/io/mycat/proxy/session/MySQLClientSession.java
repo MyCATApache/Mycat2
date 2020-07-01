@@ -120,6 +120,7 @@ public class MySQLClientSession extends
     }
     resetPacket();
     hasClosed = true;
+//    getDatasource().decrementUsedCounter();
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
