@@ -24,7 +24,6 @@
       <module>testsuite</module>
       <module>statistic</module>
       <module>hbt2</module>
-    <module>exporter</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
