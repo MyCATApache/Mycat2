@@ -111,7 +111,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             List<SQLSelectItem> selectList = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().getSelectList();
             for (SQLSelectItem sqlSelectItem : selectList) {
                 SQLDataType sqlDataType = sqlSelectItem.computeDataType();
-                fieldsBuilder.addColumnInfo(sqlSelectItem.toString(), sqlDataType.jdbcType());
+                JDBCType res = JDBCType.VARCHAR;
+                if (sqlDataType != null) {
+                    res = JDBCType.valueOf(sqlDataType.jdbcType());
+                }
+                fieldsBuilder.addColumnInfo(sqlSelectItem.toString(), res);
             }
         }
         MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
