@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.11-03</version>
+        <version>1.11-05</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -40,29 +40,29 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>pattern</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.collections</groupId>
@@ -107,13 +107,13 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>booster</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>booster</artifactId>
-            <version>1.11-03</version>
+            <version>1.11-05</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

@@ -17,10 +17,7 @@ public class InstanceCollector extends Collector {
     @Override
     public List<MetricFamilySamples> collect() {
         RowBaseIterator rowBaseIterator = ShowInstanceCommand.getResultSet().build();
-        List<String> columnList = rowBaseIterator.getMetaData().getColumnList()
-                .stream()
-                .filter(i -> !"ALIVE".equalsIgnoreCase(i))
-                .collect(Collectors.toList());
+        List<String> columnList =ImmutableList.of("NAME");
         GaugeMetricFamily gaugeMetricFamily = new GaugeMetricFamily("instance_acitve",
                 "instance_acitve",
                 columnList);
