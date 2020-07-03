@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.sql.JDBCType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -164,14 +165,20 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams, byte[] rest, MycatSession session) {
-        session.writeColumnCount(1);
-        session.writeColumnDef("1", MySQLFieldsType.FIELD_TYPE_INT24);
-        session.writeColumnEndPacket();
-        byte[] bytes1 = {9, 00, 00, 04, 00, 00, 06, 66, (byte) 0x6f, (byte) 6f, 62, 61, 72};
-        session.writeBytes(bytes1,false);
-        byte[] array = ByteBuffer.allocate(4).putInt(1024).array();
-        session.writeBinaryRowPacket(new byte[][]{array});
-        session.writeRowEndPacket(false,false);
+
+        ReceiverImpl receiver = new ReceiverImpl(session);
+        ResultSetBuilder builder = ResultSetBuilder.create();
+        builder.addColumnInfo("1",JDBCType.INTEGER);
+        builder.addObjectRowPayload(Arrays.asList(1));
+        receiver.sendBinaryResultSet(()->builder.build());
+//        session.writeColumnCount(1);
+//        session.writeColumnDef("1", MySQLFieldsType.FIELD_TYPE_INT24);
+//        session.writeColumnEndPacket();
+//        byte[] bytes1 = {9, 00, 00, 04, 00, 00, 06, 66, (byte) 0x6f, (byte) 6f, 62, 61, 72};
+//        session.writeBytes(bytes1,false);
+//        byte[] array = ByteBuffer.allocate(4).putInt(1024).array();
+//        session.writeBinaryRowPacket(new byte[][]{array});
+//        session.writeRowEndPacket(false,false);
 //        session.writeBinaryRowPacket(new byte[][]{"1".getBytes()});
 //        session.writeOkEndPacket();
     }

@@ -124,7 +124,6 @@ public class SQLExecuterWriter {
                             }
                             session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
                             break;
-                            break;
                     }
                 }
             }
