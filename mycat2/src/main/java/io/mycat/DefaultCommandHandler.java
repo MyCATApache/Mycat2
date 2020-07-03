@@ -166,6 +166,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams, byte[] rest, MycatSession session) {
         session.writeColumnCount(1);
         session.writeColumnDef("1", MySQLFieldsType.FIELD_TYPE_INT24);
+        session.writeColumnEndPacket();
+        byte[] bytes1 = {9, 00, 00, 04, 00, 00, 06, 66, (byte) 0x6f, (byte) 6f, 62, 61, 72};
+        session.writeBytes(bytes1,false);
+        byte[] array = ByteBuffer.allocate(4).putInt(1024).array();
+        session.writeBinaryRowPacket(new byte[][]{array});
         session.writeRowEndPacket(false,false);
 //        session.writeBinaryRowPacket(new byte[][]{"1".getBytes()});
 //        session.writeOkEndPacket();
