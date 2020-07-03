@@ -97,7 +97,7 @@ public enum ReplicaSelectorRuntime {
         updateTimer(config);
 
         Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toMap(k -> k.getName(), v -> v));
-        CollectionUtil.safeUpdateByUpdateOrder(this.physicsInstanceMap, newphysicsInstanceMap);
+        CollectionUtil.safeUpdateByUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
     }
     public synchronized void restartHeatbeat(){
         if (config == null){

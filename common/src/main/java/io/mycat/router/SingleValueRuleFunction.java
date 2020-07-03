@@ -14,13 +14,16 @@
  */
 package io.mycat.router;
 
-import io.mycat.BackendTableInfo;
 import io.mycat.DataNode;
 import io.mycat.MycatException;
+import io.mycat.RangeVariable;
+import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author mycat
@@ -30,6 +33,38 @@ import java.util.List;
 public abstract class SingleValueRuleFunction extends CustomRuleFunction {
 
     public abstract String name();
+
+    @Override
+    public List<DataNode> calculate(Set<RangeVariable> values) {
+        ArrayList<DataNode> res = new ArrayList<>();
+        for (RangeVariable rangeVariable : values) {
+            //匹配字段名
+            if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
+                ///////////////////////////////////////////////////////////////
+                String begin = Objects.toString(rangeVariable.getBegin());
+                String end = Objects.toString(rangeVariable.getEnd());
+                switch (rangeVariable.getOperator()) {
+                    case EQUAL: {
+                        DataNode dataNode = this.calculate(begin);
+                        if (dataNode != null) {
+                            CollectionUtil.setOpAdd(res, dataNode);
+                        } else {
+                            return getTable().getShardingBackends();
+                        }
+                    }
+                    case RANGE: {
+                        List<DataNode> dataNodes = this.calculateRange(begin, end);
+                        if (dataNodes == null || dataNodes.size() == 0) {
+                            return getTable().getShardingBackends();
+                        }
+                        CollectionUtil.setOpAdd(res, dataNodes);
+                        break;
+                    }
+                }
+            }
+        }
+        return getTable().getShardingBackends();
+    }
 
     public static int[] toIntArray(String string) {
         String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
@@ -86,7 +121,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         return ints;
     }
 
-    @Override
+
     public DataNode calculate(String columnValue) {
         int i = calculateIndex(columnValue);
         if (i == -1) {
@@ -104,7 +139,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         }
     }
 
-    @Override
+
     public List<DataNode> calculateRange(String beginValue, String endValue) {
         int[] ints = calculateIndexRange(beginValue, endValue);
         ShardingTableHandler table = getTable();
@@ -123,4 +158,5 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         }
         return res;
     }
+
 }

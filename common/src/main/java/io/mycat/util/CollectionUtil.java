@@ -16,7 +16,7 @@ public class CollectionUtil {
     /*
     在不移除现有元素的时候,只进行新增减少元素的变化
      */
-    public static void safeUpdateByUpdateOrder(Map t, Map updateInfo) {
+    public static void safeUpdateByUpdate(Map t, Map updateInfo) {
         MapDifference difference = Maps.difference(updateInfo, t);
         Map commonMap = difference.entriesInCommon();//求交集,交集为可以持续提供服务的数据源
         t.putAll(commonMap);
@@ -39,13 +39,22 @@ public class CollectionUtil {
                 t.add(next);
             }
         }
-        t.sort(new Comparator() {
-            @Override
-            public int compare(Object o1, Object o2) {
-                int one = updateObject.indexOf(o1);
-                int two = updateObject.indexOf(o2);
-                return one - two;
-            }
+        t.sort((o1, o2) -> {
+            int one = updateObject.indexOf(o1);
+            int two = updateObject.indexOf(o2);
+            return one - two;
         });
+    }
+
+    public static void setOpAdd(List t, Object element) {
+        if (!t.contains(element)){
+            t.add(element);
+        }
+    }
+
+    public static void setOpAdd(List t, List elements) {
+        for (Object element : elements) {
+            setOpAdd(t,element);
+        }
     }
 }
