@@ -52,6 +52,12 @@ public class PstmtShardingExample {
             String s = TextConvertor.dumpResultSet(preparedStatement.executeQuery());
             System.out.println(s);
         }
+        try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
+            PreparedStatement preparedStatement = mySQLConnection.prepareStatement("select * from db1.travelrecord where id =?");
+            preparedStatement.setInt(1,1);
+            String s = TextConvertor.dumpResultSet(preparedStatement.executeQuery());
+            System.out.println(s);
+        }
         if (thread != null) {
             thread.interrupt();
         }
