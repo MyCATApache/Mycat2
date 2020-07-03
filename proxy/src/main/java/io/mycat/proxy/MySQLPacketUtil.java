@@ -214,11 +214,11 @@ public class MySQLPacketUtil {
     byte[] nullMap = new byte[binaryNullBitMapLength];
     final int payloayEstimateMaxSize = generateBinaryRowHeader(rows, nullMap);
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(payloayEstimateMaxSize)) {
-      writer.writeBytes(nullMap);
-      nullMap = null;
+      writer.write(00);
+      writer.writeLenencString(nullMap);
       for (byte[] row : rows) {
         if (row != null) {
-          writer.writeLenencBytes(row);
+          writer.writeLenencString(row);
         }
       }
       return writer.toByteArray();
@@ -233,9 +233,9 @@ public class MySQLPacketUtil {
         payloayEstimateMaxSize += row.length;
         payloayEstimateMaxSize += MySQLPacket.getLenencLength(row.length);
       } else {
-        int i = (columnIndex + 2) / 8;
-        byte aByte = nullMap[i];
-        nullMap[i] = (byte) (aByte | (1 << (columnIndex & 7)));
+        int bitMapPos = (columnIndex + 2) / 8;
+        int bitPos = (columnIndex + 2) % 8;
+        nullMap[bitMapPos] |= (byte) (1 << bitPos);
       }
       columnIndex++;
     }
