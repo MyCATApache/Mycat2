@@ -16,6 +16,7 @@
 package io.mycat.command;
 
 
+import io.mycat.BindValue;
 import io.mycat.proxy.session.MycatSession;
 
 /**
@@ -28,8 +29,9 @@ public interface PrepareStatementParserHelper {
   void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
       MycatSession session);
 
-  void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams,
-      byte[] rest,
+  void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags,
+                                     int[] params,
+                                     BindValue[] values,
       MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
@@ -41,4 +43,5 @@ public interface PrepareStatementParserHelper {
   int getNumParamsByStatementId(long statementId, MycatSession session);
 
 
+  byte[] getLongData(long statementId, int i, MycatSession mycat);
 }

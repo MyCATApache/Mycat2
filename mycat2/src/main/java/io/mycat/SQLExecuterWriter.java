@@ -92,7 +92,7 @@ public class SQLExecuterWriter {
                             break;
                         }
                         case ERROR:
-                            break;
+                            throw new UnsupportedOperationException();
                         case RRESULTSET_BYTEBUFFER: {
                             MycatResultSetResponse currentResultSet = (MycatResultSetResponse) resultSet;
                             session.writeColumnCount(currentResultSet.columnCount());
@@ -109,6 +109,21 @@ public class SQLExecuterWriter {
                             session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
                             break;
                         }
+                        case BINARY_RRESULTSET:
+                            MycatResultSetResponse currentResultSet = (MycatResultSetResponse) resultSet;
+                            session.writeColumnCount(currentResultSet.columnCount());
+                            Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
+                                    .columnDefIterator();
+                            while (columnDefPayloadsIterator.hasNext()) {
+                                session.writeBytes(columnDefPayloadsIterator.next(), false);
+                            }
+                            session.writeColumnEndPacket();
+                            Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
+                            while (rowIterator.hasNext()) {
+                                session.writeBytes(rowIterator.next(), false);
+                            }
+                            session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
+                            break;
                     }
                 }
             }

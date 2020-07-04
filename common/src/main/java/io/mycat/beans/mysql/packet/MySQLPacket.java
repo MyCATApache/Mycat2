@@ -16,6 +16,8 @@ package io.mycat.beans.mysql.packet;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -214,7 +216,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     if (bytes == null) {
       return null;
     } else {
-      return new String(bytes);
+      return new String(bytes, StandardCharsets.UTF_8);
     }
   }
 

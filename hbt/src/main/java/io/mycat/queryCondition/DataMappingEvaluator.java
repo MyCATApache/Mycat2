@@ -114,6 +114,7 @@ public class DataMappingEvaluator {
     }
 
     private Set<DataNode> calculate(CustomRuleFunction ruleFunction, Set<RangeVariable> value) {
+        Objects.requireNonNull(ruleFunction);
         HashSet<DataNode> res = new HashSet<>();
         for (RangeVariable rangeVariable : value) {
             String begin = Objects.toString(rangeVariable.getBegin());

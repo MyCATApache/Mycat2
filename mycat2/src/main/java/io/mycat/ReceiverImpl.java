@@ -13,6 +13,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.TransactionSessionUtil;
 import io.mycat.util.Response;
@@ -363,6 +364,11 @@ public class ReceiverImpl implements Response {
         detail.globalTableUpdate = true;
         detail.setTargets(toMap(apply));
         this.execute(detail);
+    }
+
+    @Override
+    public void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator) {
+        sendResponse(new MycatResponse[]{new BinaryResultSetResponse(rowBaseIterator.get())}, null);
     }
 
 
