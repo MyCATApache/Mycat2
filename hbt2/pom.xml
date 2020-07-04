@@ -17,5 +17,6 @@
             <artifactId>mycat2</artifactId>
             <version>1.11-05</version>
         </dependency>
+
     </dependencies>
 </project>
