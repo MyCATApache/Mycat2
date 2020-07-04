@@ -42,7 +42,7 @@ public interface RowBaseIterator extends Closeable {
 
   byte[] getBytes(int columnIndex);
 
-  java.sql.Date getDate(int columnIndex);
+  java.util.Date  getDate(int columnIndex);
 
   java.sql.Time getTime(int columnIndex);
 

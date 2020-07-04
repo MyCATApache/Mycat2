@@ -29,11 +29,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 public abstract class MySQLDatasource implements MycatDataSource {
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MySQLDatasource that = (MySQLDatasource) o;
+
+        return datasourceConfig != null ? datasourceConfig.equals(that.datasourceConfig) : that.datasourceConfig == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return datasourceConfig != null ? datasourceConfig.hashCode() : 0;
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
     protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
     protected final AtomicInteger connectionCounter = new AtomicInteger(0);
-    protected final AtomicInteger usedCounter = new AtomicInteger(0);
+//    protected final AtomicInteger usedCounter = new AtomicInteger(0);
 
     public MySQLDatasource(DatasourceRootConfig.DatasourceConfig datasourceConfig) {
         this.datasourceConfig = datasourceConfig;
@@ -68,23 +82,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
         return this.datasourceConfig.getPassword();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        MySQLDatasource that = (MySQLDatasource) o;
-        return getName().equals(that.getName());
-    }
-
-    @Override
-    public int hashCode() {
-        return getName().hashCode();
-    }
-
     public int decrementSessionCounter() {
         return connectionCounter.updateAndGet(operand -> {
             if (operand > 0) {
@@ -104,14 +101,16 @@ public abstract class MySQLDatasource implements MycatDataSource {
             }
         }) < this.datasourceConfig.getMaxCon();
     }
-
-    public int decrementUsedCounter() {
-        return usedCounter.decrementAndGet();
-    }
-
-    public int tryIncrementUsedCounter() {
-        return usedCounter.incrementAndGet();
-    }
+//
+//    public int decrementUsedCounter() {
+//        LOGGER.info("decrementUsedCounter");
+//        return usedCounter.decrementAndGet();
+//    }
+//
+//    public int tryIncrementUsedCounter() {
+//        LOGGER.info("tryIncrementUsedCounter");
+//        return usedCounter.incrementAndGet();
+//    }
 
     public String getInitSqlForProxy() {
         List<String> initSqls = datasourceConfig.getInitSqls();
@@ -140,7 +139,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
         return connectionCounter.get();
     }
 
-    public int getUsedCounter() {
-        return usedCounter.get();
-    }
+//    public int getUsedCounter() {
+//        return usedCounter.get();
+//    }
 }

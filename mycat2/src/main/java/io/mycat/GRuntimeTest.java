@@ -30,7 +30,7 @@ public class GRuntimeTest {
     public static void main(String[] args) throws Exception {
         ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(MycatCore.class);
         MycatConfig mycatConfig = bootConfig.currentConfig();
-        PlugRuntime.INSTCANE.load(mycatConfig);
+        PlugRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         CountDownLatch countDownLatch = new CountDownLatch(1000);

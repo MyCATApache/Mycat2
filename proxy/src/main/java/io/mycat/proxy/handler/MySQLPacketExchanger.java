@@ -84,6 +84,7 @@ public enum MySQLPacketExchanger {
             mysql.setMycatSession(null);
             MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);
             mysql.switchNioHandler(null);
+//            mysql.getDatasource().decrementUsedCounter();
             mysql.getSessionManager().addIdleSession(mysql);
         }
         mycatSession.onHandlerFinishedClear();

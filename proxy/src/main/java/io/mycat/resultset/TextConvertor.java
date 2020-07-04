@@ -38,7 +38,7 @@ public interface TextConvertor {
 
   byte[] convertBytes(byte[] v);
 
-  byte[] convertDate(java.sql.Date v);
+  byte[] convertDate(java.util.Date  v);
 
   byte[] convertTime(java.sql.Time v);
 

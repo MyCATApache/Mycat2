@@ -11,6 +11,7 @@ import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.util.Response;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.JDBCType;
 import java.util.*;
@@ -29,6 +30,12 @@ public class ShowReplicaCommand implements ManageCommand {
 
     @Override
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
+        ResultSetBuilder resultSetBuilder = getResultSet();
+        response.sendResultSet(() -> resultSetBuilder.build());
+    }
+
+    @NotNull
+    public static ResultSetBuilder getResultSet() {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("SWITCH_TYPE", JDBCType.VARCHAR);
@@ -38,7 +45,7 @@ public class ShowReplicaCommand implements ManageCommand {
         resultSetBuilder.addColumnInfo("READ_DS", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("WRITE_L", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("READ_L", JDBCType.VARCHAR);
-
+        resultSetBuilder.addColumnInfo("AVAILABLE", JDBCType.BOOLEAN);
         Collection<ReplicaDataSourceSelector> values =
                 ReplicaSelectorRuntime.INSTANCE.getReplicaMap().values();
         MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
@@ -57,14 +64,15 @@ public class ShowReplicaCommand implements ManageCommand {
             String READ_DS = (value.getReadDataSource()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
             String WL = Optional.ofNullable(value.getDefaultWriteLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
             String RL = Optional.ofNullable(value.getDefaultReadLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
+            boolean AVAILABLE = ((List<PhysicsInstance>) value.getWriteDataSource()).stream().anyMatch(PhysicsInstance::isAlive);
 
             resultSetBuilder.addObjectRowPayload(
                     Arrays.asList(NAME, SWITCH_TYPE, MAX_REQUEST_COUNT, TYPE,
                             WRITE_DS, READ_DS,
-                            WL, RL
+                            WL, RL,AVAILABLE
                     ));
         }
-        response.sendResultSet(() -> resultSetBuilder.build());
+        return resultSetBuilder;
     }
 
 }

@@ -72,7 +72,7 @@ public enum TextConvertorImpl implements TextConvertor {
     }
 
     @Override
-    public byte[] convertDate(Date v) {
+    public byte[] convertDate(java.util.Date  v) {
         return v.toString().getBytes();
     }
 

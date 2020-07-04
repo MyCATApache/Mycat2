@@ -193,7 +193,15 @@ public class PlannerImpl implements Planner, ViewExpander {
         state = State.STATE_3_PARSED;
         return sqlNode;
     }
-
+    public void parse() throws SqlParseException {
+        switch (state) {
+            case STATE_0_CLOSED:
+            case STATE_1_RESET:
+                ready();
+        }
+        ensure(State.STATE_2_READY);
+        state = State.STATE_3_PARSED;
+    }
     public SqlNode validate(SqlNode sqlNode) throws ValidationException {
         ensure(State.STATE_3_PARSED);
         this.validator = createSqlValidator(createCatalogReader());

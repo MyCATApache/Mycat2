@@ -126,7 +126,7 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
 
     /////////////////////////////////////////debug////////////////////////////////////////////////
     @Override
-    public Dumper snapshot() {
+    public synchronized Dumper snapshot() {
         Dumper top = super.snapshot();
         String useTransaction = Optional.ofNullable(this.userTransaction)
                 .map(i -> {
@@ -136,10 +136,10 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
                         return e.getMessage();
                     }
                 }).orElse("");
-        Thread bindThread = this.bindThread;
-        String name = bindThread.getName();
-        long id = bindThread.getId();
-        return top.addText("threadName", name).addText("threadId", id).addText("useTransactionStatus",useTransaction);
+        Optional<Thread> bindThread = Optional.ofNullable(this.bindThread);
+        String name = bindThread.map(i -> i.getName()).orElse("");
+        Long id = bindThread.map(i -> i.getId()).orElse(null);
+        return top.addText("threadName", name).addText("threadId", id).addText("useTransactionStatus", useTransaction);
     }
 
 }

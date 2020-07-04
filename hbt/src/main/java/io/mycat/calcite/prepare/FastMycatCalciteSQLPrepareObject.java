@@ -60,7 +60,7 @@ public class FastMycatCalciteSQLPrepareObject extends MycatSQLPrepareObject {
 
     @Override
     public PlanRunner plan(List<Object> params) {
-        return new MycatSqlPlanner(this, sqlNode.toSqlString(MysqlSqlDialect.DEFAULT).getSql(),dataContext);
+        return new MycatSqlPlanner(this,getSql(), sqlNode,dataContext);
     }
 
     public static SqlNode literal(Object value) {

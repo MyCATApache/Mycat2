@@ -1,6 +1,5 @@
 package io.mycat.calcite;
 
-import io.mycat.BackendTableInfo;
 import io.mycat.DataNode;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.MetadataManagerBuilder;

@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.09-10</version>
+    <version>1.11-05</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -20,22 +20,26 @@
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
-    <version>1.09-10</version>
+
+    <version>1.11-05</version>
+
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
-    <version>1.09-10</version>
+
+    <version>1.11-05</version>
+
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>plug</artifactId>
-    <version>1.09-10</version>
+    <version>1.11-05</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>replica</artifactId>
-    <version>1.09-10</version>
+    <version>1.11-05</version>
   </dependency>
   <dependency>
     <groupId>com.zaxxer</groupId>
@@ -58,7 +62,7 @@
   <dependency>
     <groupId>mysql</groupId>
     <artifactId>mysql-connector-java</artifactId>
-    <version>8.0.11</version>
+    <version>8.0.16</version>
   </dependency>
 
   <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-jdbc -->

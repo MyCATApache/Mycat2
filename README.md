@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-6-1
+author:junwen  2020-6-30
 
 作者qq: 294712221
 
@@ -18,6 +18,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
 Dockerfile:https://github.com/MyCATApache/Mycat2/blob/master/mycat2/Dockerfile
+
+Mycat2可视化监控,使用Grafana和prometheus实现,模板:https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
 
 执行hbt的两组命令是
 
@@ -132,6 +134,10 @@ mycat2支持不启动网络层的方式,以api方式操作mycat,实现执行sql
 参考src\main\resources\sql中的sql和src\main\resources\mycat.yml建立数据库环境
 ide安装lombok插件
 启动 io.mycat.MycatCore类
+
+
+
+如果遇上在maven模块之间出现版本引用错误,可以使用下面描述的设置版本重置所有模块的版本号
 
 
 
@@ -1124,12 +1130,19 @@ requestType是进行心跳的实现方式,使用mysql意味着使用proxy方式�
 
 ## 服务器配置
 
+基础配置样例
+
 ```yaml
 server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-  #用于多线程任务的线程池,
+```
+
+
+
+```yml
+  #用于多线程任务的线程池,v1.09前的配置
   worker: {
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
            maxThread: 1024,
@@ -1137,6 +1150,69 @@ server:
            timeUnit: SECONDS, #超时单位
            waitTaskTimeout: 30 #超时后将结束闲置的线程
   }
+```
+
+
+
+v1.09后把原线程池划分为三大类
+
+
+
+bindTransactionPool
+
+对于Atomikos这种对于事务运行环境有要求的事务框架,它要求事务与线程相关,当使用事务的会话与线程绑定之后,在事务消失之前,此线程都不能被其他需要使用事务的会话使用.对于这种特殊要求的事务框架,使用独立的线程池处理事务请求.
+
+
+
+workerPool
+
+对于一些耗时长的,可能涉及阻塞的任务,jdbc请求,事务与线程没有绑定关系的事务处理,在这个线程里处理
+
+如Druid数据源提供的本地事务处理,并行拉取结果集等任务,就是这个线程里面处理的.
+
+
+
+timeWorkerPool
+
+对于对时间周期敏感的任务,使用独立的定时器处理,但是此定时器一般处理线程比较少,不会处理耗时任务,往往把任务投递到workerPool中处理
+
+
+
+三个线程池的配置都是一致的
+
+```yml
+ {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+```
+
+corePoolSize:是线程池里保留的最小线程数量
+
+keepAliveTime:线程存活时间,超过此时间的空闲线程将会关闭
+
+maxPoolSize:线程池中最大线程数量
+
+timeUnit:时间单位,对keepAliveTime,taskTimeout生效
+
+一般来说,taskTimeout与maxPendingLimit仅仅对bindTransactionPool生效
+
+
+
+```yml
+server:
+  bindTransactionPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+  bufferPool:
+    args: {}
+    poolName: null
+  handlerName: null
+  ip: 0.0.0.0
+  port: 8066
+  reactorNumber: 1
+  timeWorkerPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 2,
+    taskTimeout: 1, timeUnit: MINUTES}
+  timer: {initialDelay: 3, period: 15, timeUnit: SECONDS}
+  workerPool: {corePoolSize: 8, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 1024,
+    taskTimeout: 1, timeUnit: MINUTES}
 ```
 
 
@@ -1429,7 +1505,9 @@ https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/
 
 ## 高级内容
 
-### 多配置文件
+
+
+##### 多配置文件
 
 -DMYCAT_HOME=mycat2\src\main\resources 指向的是配置文件夹
 
@@ -1504,6 +1582,51 @@ cluster:
 ->检查上下文中是否有缓存配置,如果缓存中有数据则返回缓存数据
 
 ->如果当前是explain语句,则执行MycatCommand的explain函数,否则执行run函数
+
+
+
+io.mycat.Hint 
+
+```java
+public interface Hint {
+    String getName();
+    void accept(String buffer, Map<String, Object> t);
+}
+```
+
+
+
+io.mycat.commands.MycatCommand
+
+```java
+public interface MycatCommand {
+
+    boolean run(MycatRequest request, MycatDataContext context, Response response);
+
+    boolean explain(MycatRequest request, MycatDataContext context, Response response);
+
+    String getName();
+}
+```
+
+
+
+Hint与MycatCommand都在Plug配置里加载
+
+
+
+```yaml
+plug:
+  command:
+    commands: 
+     - {clazz: xxx , name: xxx}
+  hint:
+    hints: 
+     - {clazz: xxx, name: xxx ,args:''}
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    .....
+```
 
 
 
@@ -2244,6 +2367,8 @@ SHOW TABLES;
 
 manager有独立的执行线程,一般不受8066的请求影响
 
+**命令语法注意空格和分号**
+
 
 
 ```yml
@@ -2260,13 +2385,17 @@ mycat中创建的连接一般有两大类,前端连接,后端连接,后端连接
 
 
 
-###### kill
+##### 命令监控管理
+
+###### 关闭连接
 
 ```sql
 kill @@connection id1,id2...
 ```
 
 id是mycat前端连接或者后端native连接的id(它们公用一个id生成器)
+
+不能关闭jdbc连接,当关闭mycat前端连接的时候会自动关闭连接占用的jdbc连接
 
 
 
@@ -2278,19 +2407,82 @@ show @@connection
 
 
 
-###### 刷新配置(暂不开放)
+ID 连接的标识符
 
-```sql
-reload @@config
-```
+USER_NAME 登录的用户名
+
+HOST 客户端连接地址
+
+SCHEMA 当前schema,与sql解析有关
+
+AFFECTED_ROWS AFFECTED_ROWS
+
+AUTOCOMMIT 是否自动提交
+
+IN_TRANSACTION 是否处于事务状态
+
+CHARSET  字符编码,一般是utf8
+
+CHARSET_INDEX 对应mysql的字符编码序号
+
+OPEN 连接是否打开
+
+SERVER_CAPABILITIES 服务器能力数字
+
+ISOLATION 事务隔离级别
+
+LAST_ERROR_CODE 最后一次错误码
+
+LAST_INSERT_ID 插入自增主键ID
+
+LAST_MESSAGE 最后一次错误信息
+
+PROCESS_STATE 请求处理状态,正在接收,正在处理,完成
+
+WARNING_COUNT 警告数量
+
+MYSQL_SESSION_ID 如果代理
+
+TRANSACTION_TYPE  事务类型,XA,Proxy,Local
+
+TRANSCATION_SNAPSHOT 事务管理器状态快照
+
+CANCEL_FLAG 当前执行的任务是否已经被取消
+
 
 
 
 ###### 显示native连接
 
-```
+```sql
 show @@backend.native
 ```
+
+显示mycat proxy native 连接的信息
+
+SESSION_ID 连接ID,可被kill命令杀死
+
+THREAD_NAME 所在线程名
+
+DS_NAME数据源名字
+
+LAST_MESSAGE 接收到的报文中的信息(错误信息)
+
+MYCAT_SESSION_ID 如果有绑定前端连接,则显示它的ID
+
+IS_IDLE 是否在连接池,即是否闲置
+
+SELECT_LIMIT限制返回行数
+
+IS_RESPONSE_FINISHED响应是否结束
+
+RESPONSE_TYPE响应类型
+
+IS_IN_TRANSACTION是否处于事务状态
+
+IS_REQUEST_SUCCESS是否向后端数据库发起请求成功
+
+IS_READ_ONLY是否处于readonly状态
 
 
 
@@ -2300,13 +2492,17 @@ show @@backend.native
 show @@backend.datasource
 ```
 
+显示配置中的数据源信息
+
 
 
 ###### 显示心跳状态
 
 ```sql
-show @@heartbeat
+show @@backend.heartbeat
 ```
+
+显示配置中的心跳信息
 
 
 
@@ -2326,6 +2522,28 @@ navite连接与jdbc连接使用相同的数据源配置,指向相同的服务器
 show @@backend.instance
 ```
 
+NAME  数据源名字
+
+ALIVE 是否存活
+
+READABLE 是否可以选择为读节点
+
+TYPE 数据源类型
+
+SESSION_COUNT 当前连接数量
+
+WEIGHT 负载均衡权重
+
+MASTER是否主节点
+
+HOST连接信息
+
+PORT连接端口
+
+LIMIT_SESSION_COUNT连接限制数量
+
+REPLICA所在集群名字
+
 
 
 ###### 显示逻辑库配置
@@ -2334,6 +2552,8 @@ show @@backend.instance
 show @@metadata.schema
 ```
 
+显示配置中的逻辑库信息
+
 
 
 ###### 显示逻辑表配置
@@ -2341,6 +2561,8 @@ show @@metadata.schema
 ```sql
 show @@metadata.schema.table
 ```
+
+显示配置中的逻辑表信息
 
 
 
@@ -2352,6 +2574,16 @@ reactor是mycat2的io线程,主要处理透传响应与接收报文,解析sql等
 show @@reactor
 ```
 
+THREAD_NAME线程名字
+
+THREAD_ID 线程ID
+
+CUR_SESSION_ID当前正在处理的前端,后端会话ID
+
+BUFFER_POOL_SNAPSHOT 网络缓冲区池快照
+
+LAST_ACTIVE_TIME 最近活跃时间
+
 
 
 ###### 显示集群状态
@@ -2359,6 +2591,26 @@ show @@reactor
 ```sql
 show @@backend.replica
 ```
+
+
+
+NAME 集群名字
+
+SWITCH_TYPE 切换类型
+
+MAX_REQUEST_COUNT 获取连接的时候尝试请求的次数
+
+TYPE 集群类型
+
+WRITE_DS 写节点列表
+
+READ_DS 读节点列表
+
+WRITE_L写节点负载均衡算法
+
+READ_L读节点负载均衡算法
+
+
 
 
 
@@ -2370,10 +2622,34 @@ show @@schedule
 
 
 
-###### 显示sql统计信息(暂时没有数据)
+###### 显示sql统计信息
 
 ```sql
 show @@stat
+```
+
+
+
+COMPILE_TIME 编译SQL的耗时
+
+RBO_TIME 规则优化耗时
+
+CBO_TIME 代价优化与生成执行器耗时
+
+CONNECTION_POOL_TIME 连接池获取连接耗时
+
+CONNECTION_QUERY_TIME 发起查询到获得响应耗时
+
+EXECUTION_TIME 执行引擎耗时
+
+TOTAL_TIME 查询总耗时
+
+
+
+###### 重置sql统计信息
+
+```sql
+reset @@stat
 ```
 
 
@@ -2386,10 +2662,24 @@ show @@threadPool
 
 
 
+NAME 线程池名字
+
+POOL_SIZE 线程最大数量
+
+ACTIVE_COUNT 活跃线程数
+
+TASK_QUEUE_SIZE 等待队列大小
+
+COMPLETED_TASK 完成的任务数量
+
+TOTAL_TASK 总任务数量
+
+
+
 ###### 设置数据源实例状态
 
 ```sql
-switch @@backend.instance = {name:xxx ,alive:true ,readable:true} 
+switch @@backend.instance = {name:'xxx' ,alive:'true' ,readable:'true'} 
 ```
 
 name是数据源名字
@@ -2405,7 +2695,7 @@ readable是数据源可读状态,值 true|false
 ###### 集群切换
 
 ```
-switch @@backend.replica = {name:xxx} 
+switch @@backend.replica = {name:'xxx'} 
 ```
 
 name是数据源名字
@@ -2430,6 +2720,104 @@ switch @@backend.heartbeat = {true|false}
 
 
 
+###### 显示心跳定时器是否正在运行
+
+```sql
+show @@backend.heartbeat.running
+```
+
+
+
+###### 配置更新
+
+```sql
+reload @@config by file
+```
+
+修改本地的mycat.yml就可更新,支持更新metadata与jdbc数据源.请在低峰时段执行,配置更新停止IO请求,尽量选择没有事务的一刻进行更新,不保证配置前后一致性等问题
+
+
+
+###### 显示服务器信息
+
+```
+show @@server
+```
+
+
+
+##### Mycat2可视化监控
+
+Mycat2可视化监控,使用Grafana和prometheus实现:
+
+https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
+
+可配合模板JVM dashboard
+
+
+
+###### 参考配置
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/manager/mycat.yml
+
+
+
+```yaml
+plug:
+  extra: [
+           "io.mycat.exporter.PrometheusExporter"
+     ]
+```
+
+此配置默认开启7066端口.并提供以下url供查询监控信息
+
+http://127.0.0.1:7066/metrics
+
+供Prometheus查询
+
+
+
+```yaml
+properties:
+  prometheusPort: 7066
+```
+
+此配置可以更改io.mycat.exporter.PrometheusExporter开启的端口
+
+
+
+###### 监控信息
+
+Gauge类型
+
+buffer_pool_counter:内存块计数
+
+client_connection:客户端计数
+
+native_mysql_connection:native连接计数
+
+instance_connection:物理实例计数
+
+jdbc_connection:jdbc连接计数
+
+mycat_cpu_utility:cpu利用率
+
+heartbeat_stat:心跳请求至响应时间
+
+instance_acitve:物理实例存活是否存活
+
+replica_available_value:集群是否可用
+
+sql_stat:sql各阶段时间统计
+
+thread_pool_active:连接池活跃线程统计
+
+
+
+如果有什么建议可以提交issue或者与作者沟通
+
+
+
 ## 更新日志
 
 具体看git记录
@@ -2437,3 +2825,7 @@ switch @@backend.heartbeat = {true|false}
 2020-5-5拦截器,元数据配置发生变更
 
 2020-6-19后,mycat.yml中的server设置发生变化
+
+2020-6-23后添加hint,MycatCommand配置
+
+2020-6-30后添加extra配置

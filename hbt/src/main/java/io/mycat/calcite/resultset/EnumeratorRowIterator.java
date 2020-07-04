@@ -14,10 +14,14 @@ import java.sql.Timestamp;
 public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Enumerator<Object[]> iterator;
-
-    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator) {
+    protected final Runnable closeRunnable;
+    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator){
+        this(mycatRowMetaData,iterator,null);
+    }
+    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator,Runnable closeRunnale) {
         this.mycatRowMetaData = mycatRowMetaData;
         this.iterator = iterator;
+        this.closeRunnable = closeRunnale;
     }
 
     @Override
@@ -51,6 +55,9 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     @Override
     public void close() {
         iterator.close();
+        if (closeRunnable !=null){
+            closeRunnable.run();
+        }
     }
 
     @Override
@@ -78,4 +85,5 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         }
         return (Time) o;
     }
+
 }

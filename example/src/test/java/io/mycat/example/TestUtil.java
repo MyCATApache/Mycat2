@@ -34,7 +34,31 @@ public class TestUtil {
 
         return mysqlDataSource.getConnection();
     }
+    public static Connection getPstmtMySQLConnection() {
+        return getPstmtMySQLConnection(8066);
+    }
+    @SneakyThrows
+    public static Connection getPstmtMySQLConnection(int port) {
+        String username = "root";
+        String password = "123456";
 
+        Properties properties = new Properties();
+        properties.put("user", username);
+        properties.put("password", password);
+        properties.put("useBatchMultiSend", "false");
+        properties.put("usePipelineAuth", "false");
+
+        String url = "jdbc:mysql://0.0.0.0:" +
+                port +
+                "/db1?useServerPrepStmts=true&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+
+        MysqlDataSource mysqlDataSource = new MysqlDataSource();
+        mysqlDataSource.setUrl(url);
+        mysqlDataSource.setUser(username);
+        mysqlDataSource.setPassword(password);
+
+        return mysqlDataSource.getConnection();
+    }
     @SneakyThrows
     public static Connection getMariaDBConnection() {
         String username = "root";

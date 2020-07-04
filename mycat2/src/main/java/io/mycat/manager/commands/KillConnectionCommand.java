@@ -77,12 +77,14 @@ public class KillConnectionCommand implements ManageCommand {
             }
 
         }
+        response.sendOk();
     }
 
     @Override
     public boolean run(MycatRequest request, MycatDataContext context, Response response) {
         if (request.getText().toLowerCase().startsWith("kill @@connection ")){
             handle(request, context, response);
+            return true;
         }
         return false;
     }

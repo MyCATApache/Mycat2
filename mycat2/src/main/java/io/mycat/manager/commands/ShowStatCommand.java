@@ -8,7 +8,6 @@ import io.mycat.sqlRecorder.SqlRecorderRuntime;
 import io.mycat.util.Response;
 
 import java.sql.JDBCType;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,51 +29,55 @@ public class ShowStatCommand implements ManageCommand {
         ResultSetBuilder builder = ResultSetBuilder.create();
 
 
-        builder.addColumnInfo("HOST", JDBCType.VARCHAR)
+        builder
                 .addColumnInfo("STATEMENT", JDBCType.VARCHAR)
-                .addColumnInfo("START_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("END_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("SQL_ROWS", JDBCType.BIGINT)
-                .addColumnInfo("NET_IN_BYTES", JDBCType.BIGINT)
-                .addColumnInfo("NET_OUT_BYTES", JDBCType.BIGINT)
-                .addColumnInfo("PARSE_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("COMPILE_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CBO_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("RBO_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CONNECTION_POOL_TIME", JDBCType.TIMESTAMP)
-                .addColumnInfo("CONNECTION_QUERY_TIME", JDBCType.TIMESTAMP);
+//                .addColumnInfo("START_TIME", JDBCType.BIGINT)
+//                .addColumnInfo("END_TIME", JDBCType.BIGINT)
+//                .addColumnInfo("SQL_ROWS", JDBCType.BIGINT)
+//                .addColumnInfo("NET_IN_BYTES", JDBCType.BIGINT)
+//                .addColumnInfo("NET_OUT_BYTES", JDBCType.BIGINT)
+//                .addColumnInfo("PARSE_TIME", JDBCType.BIGINT)
+                .addColumnInfo("COMPILE_TIME", JDBCType.BIGINT)
+                .addColumnInfo("RBO_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CBO_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CONNECTION_POOL_TIME", JDBCType.BIGINT)
+                .addColumnInfo("CONNECTION_QUERY_TIME", JDBCType.BIGINT)
+                .addColumnInfo("EXECUTION_TIME", JDBCType.BIGINT)
+                .addColumnInfo("TOTAL_TIME", JDBCType.BIGINT)
+        ;
+
+
 
         for (SqlRecord value : values) {
-            String host = value.getHost();
             String statement = value.getStatement();
-            String username = value.getUsername();
-            Timestamp startTime = new Timestamp(value.getStartTime());
-            Timestamp endTime = new Timestamp(value.getEndTime());
-            long sqlRows = value.getSqlRows();
-            long netInBytes = value.getNetInBytes();
-            long netOutBytes = value.getNetOutBytes();
-            Timestamp parseTime = new Timestamp(value.getParseTime());
-            Timestamp compileTime = new Timestamp(value.getCompileTime());
-            Timestamp cboTime = new Timestamp(value.getCboTime());
-            Timestamp rboTime = new Timestamp(value.getRboTime());
-            Timestamp connectionPoolTime = new Timestamp(value.getConnectionPoolTime());
-            Timestamp connectionQueryTIme = new Timestamp(value.getConnectionQueryTIme());
-
+            double startTime = (value.getStartTime());
+            double endTime =(value.getEndTime());
+            double sqlRows = value.getSqlRows();
+            double netInBytes = value.getNetInBytes();
+            double netOutBytes = value.getNetOutBytes();
+            double parseTime = (value.getParseTime());
+            double compileTime =(value.getCompileTime());
+            double cboTime =(value.getCboTime());
+            double rboTime =(value.getRboTime());
+            double connectionPoolTime = (value.getConnectionPoolTime());
+            double connectionQueryTIme = (value.getConnectionQueryTime());
+            double executionTime = value.getExecutionTime();
+            double TOTAL_TIME = (value.getWholeTime());
             builder.addObjectRowPayload(Arrays.asList(
-                    host,
                     statement,
-                    username,
-                    startTime,
-                    endTime,
-                    sqlRows,
-                    netInBytes,
-                    netOutBytes,
-                    parseTime,
+//                    startTime,
+//                    endTime,
+//                    sqlRows,
+//                    netInBytes,
+//                    netOutBytes,
+//                    parseTime,
                     compileTime,
-                    cboTime,
                     rboTime,
+                    cboTime,
                     connectionPoolTime,
-                    connectionQueryTIme
+                    connectionQueryTIme,
+                    executionTime,
+                    TOTAL_TIME
             ));
         }
         response.sendResultSet(() -> builder.build());

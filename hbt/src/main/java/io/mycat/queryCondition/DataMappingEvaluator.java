@@ -14,18 +14,13 @@
  */
 package io.mycat.queryCondition;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.DataNode;
-import io.mycat.SchemaInfo;
-import io.mycat.SimpleColumnInfo;
+import io.mycat.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
 import lombok.NonNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author Junwen Chen
@@ -34,11 +29,11 @@ public class DataMappingEvaluator {
     private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
 
     public  void assignment(boolean or, String columnName, String value) {
-        getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.EQUAL, value));
+        getRangeVariables(columnName).add(new RangeVariable(columnName,or, RangeVariableType.EQUAL, value));
     }
 
     public    void assignmentRange(boolean or, String columnName, String begin, String end) {
-        getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.RANGE, begin, end));
+        getRangeVariables(columnName).add(new RangeVariable(columnName,or, RangeVariableType.RANGE, begin, end));
     }
 
     private Set<RangeVariable> getRangeVariables(String columnName) {
@@ -113,31 +108,33 @@ public class DataMappingEvaluator {
         }
     }
 
-    private Set<DataNode> calculate(CustomRuleFunction ruleFunction, Set<RangeVariable> value) {
-        HashSet<DataNode> res = new HashSet<>();
-        for (RangeVariable rangeVariable : value) {
-            String begin = Objects.toString(rangeVariable.getBegin());
-            String end = Objects.toString(rangeVariable.getEnd());
-            switch (rangeVariable.getOperator()) {
-                case EQUAL: {
-                    DataNode calculate = ruleFunction.calculate(begin);
-                    if (calculate == null) {
-                        return Collections.emptySet();
-                    }
-                    res.add(calculate);
-                    break;
-                }
-                case RANGE: {
-                    List<DataNode> calculate = ruleFunction.calculateRange(begin, end);
-                    if (calculate == null || calculate.size() == 0) {
-                        return Collections.emptySet();
-                    }
-                    res.addAll(calculate);
-                    break;
-                }
-            }
-        }
-        return res;
+    private List<DataNode> calculate(CustomRuleFunction ruleFunction, Set<RangeVariable> values) {
+        Objects.requireNonNull(ruleFunction);
+        return ruleFunction.calculate(values);
+//        HashSet<DataNode> res = new HashSet<>();
+//        for (RangeVariable rangeVariable : value) {
+//            String begin = Objects.toString(rangeVariable.getBegin());
+//            String end = Objects.toString(rangeVariable.getEnd());
+//            switch (rangeVariable.getOperator()) {
+//                case EQUAL: {
+//                    DataNode calculate = ruleFunction.calculate(begin);
+//                    if (calculate == null) {
+//                        return Collections.emptySet();
+//                    }
+//                    res.add(calculate);
+//                    break;
+//                }
+//                case RANGE: {
+//                    List<DataNode> calculate = ruleFunction.calculateRange(begin, end);
+//                    if (calculate == null || calculate.size() == 0) {
+//                        return Collections.emptySet();
+//                    }
+//                    res.addAll(calculate);
+//                    break;
+//                }
+//            }
+//        }
+//        return res;
     }
 //
 //    public String getFilterExpr(List<String> rowOrder) {

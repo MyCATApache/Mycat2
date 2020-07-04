@@ -1,4 +1,4 @@
-package io.mycat.queryCondition;
+package io.mycat;
 
 public enum RangeVariableType {
   EQUAL,

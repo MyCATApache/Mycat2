@@ -17,38 +17,44 @@ package io.mycat;
 import lombok.SneakyThrows;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public enum RootHelper {
     INSTANCE;
-    volatile ConfigProvider configProvider;
+     volatile ConfigProvider configProvider;
 
     @SneakyThrows
     public ConfigProvider getConfigProvider() {
-        return bootConfig(null);
+        if (configProvider == null){
+            return configProvider = bootConfig(null);
+        }
+        return configProvider;
     }
 
     public synchronized ConfigProvider bootConfig(Class rootClass) throws Exception {
-        if (configProvider == null) {
-            String configProviderKeyName = "MYCAT_CONFIG_PROVIER";
-            String className = System.getProperty(configProviderKeyName);
+        String configProviderKeyName = "MYCAT_CONFIG_PROVIER";
+        String className = System.getProperty(configProviderKeyName);
 
-            if (className == null) {
-                className = FileConfigProvider.class.getName();
-            }
-            String configResourceKeyName = "MYCAT_HOME";
-            String path = System.getProperty(configResourceKeyName);
-            System.out.println("path:"+path);
-
-            ConfigProvider tmpConfigProvider = null;
-
-            Class<?> clazz = Class.forName(className);
-            tmpConfigProvider = (ConfigProvider) clazz.getDeclaredConstructor().newInstance();
-            HashMap<String, String> config = new HashMap<>();
-            config.put("path", path);
-            tmpConfigProvider.init(rootClass,config);
-            return configProvider = tmpConfigProvider;
-        } else {
-            return configProvider;
+        if (className == null) {
+            className = FileConfigProvider.class.getName();
         }
+        String configResourceKeyName = "MYCAT_HOME";
+        String path = System.getProperty(configResourceKeyName);
+        System.out.println("path:" + path);
+
+        ConfigProvider tmpConfigProvider = null;
+
+        Class<?> clazz = Class.forName(className);
+        tmpConfigProvider = (ConfigProvider) clazz.getDeclaredConstructor().newInstance();
+        HashMap<String, String> config = new HashMap<>();
+        config.put("path", path);
+        config.putAll((Map)System.getProperties());
+        tmpConfigProvider.init(rootClass, config);
+        return configProvider = tmpConfigProvider;
+    }
+
+    public void setConfigProvider(ConfigProvider configProvider) {
+        this.configProvider = configProvider;
     }
 }
