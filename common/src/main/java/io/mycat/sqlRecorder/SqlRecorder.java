@@ -10,9 +10,6 @@ package io.mycat.sqlRecorder;
  * RESPONSE
  */
 public interface SqlRecorder {
-    public SqlRecord startRecord(SqlRecorderType type, String host, String userName, String sql);
-
-    public SqlRecord addRecord(SqlRecorderType type, String host, long value);
-
-    public SqlRecord endRecord(String host);
+    public void start();
+    public void addRecord(SqlRecorderType type, String sql, long value);
 }

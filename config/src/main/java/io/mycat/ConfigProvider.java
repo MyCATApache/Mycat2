@@ -18,6 +18,12 @@ import java.util.List;
 import java.util.Map;
 
 public interface ConfigProvider {
+    /**
+     * 配置提供者
+     * @param rootClass 加载主类,根据此类找到对应的resource文件夹
+     * @param config 初始化参数
+     * @throws Exception
+     */
     void init(Class rootClass, Map<String,String> config) throws Exception;
     void fetchConfig(String path) throws Exception;
     void fetchConfig() throws Exception;

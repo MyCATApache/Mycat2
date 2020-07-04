@@ -12,6 +12,7 @@ import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Response;
 
@@ -91,7 +92,10 @@ public class ShowDatasourceCommand implements ManageCommand {
                     MAX_RETRY_COUNT, MAX_CONNECT_TIMEOUT, DB_TYPE, URL, WEIGHT, INIT_SQL, INIT_SQL_GET_CONNECTION, INSTANCE_TYPE,
                     IDLE_TIMEOUT, DRIVER, TYPE, IS_MYSQL));
         }
-
+        Map<String, Long> map = Optional.ofNullable(MycatCore.INSTANCE.getReactorManager()).map(i -> i.getList())
+                .orElse(Collections.emptyList()).stream().flatMap(i -> i.getMySQLSessionManager().getAllSessions().stream())
+                .filter(i -> !i.isIdle())
+                .collect(Collectors.groupingBy(k -> k.getDatasourceName(), Collectors.counting()));
         for (MySQLDatasource value : MycatCore.INSTANCE.getDatasourceMap().values()) {
             String NAME = value.getName();
             Optional<DatasourceRootConfig.DatasourceConfig> e = Optional.ofNullable(datasourceConfigMap.get(NAME));
@@ -102,7 +106,7 @@ public class ShowDatasourceCommand implements ManageCommand {
             String PASSWORD = value.getPassword();
             int MAX_CON = value.getSessionLimitCount();
             int MIN_CON = value.getSessionMinCount();
-            int USED_CON = value.getUsedCounter();
+            long USED_CON = map.getOrDefault(NAME,-1L);
             int EXIST_CON = value.getConnectionCounter();
             int MAX_RETRY_COUNT = value.gerMaxRetry();
             long MAX_CONNECT_TIMEOUT = value.getMaxConnectTimeout();

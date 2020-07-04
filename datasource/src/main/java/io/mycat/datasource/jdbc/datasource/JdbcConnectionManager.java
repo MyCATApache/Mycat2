@@ -22,12 +22,12 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -55,7 +55,27 @@ public class JdbcConnectionManager implements ConnectionManager {
 
     @Override
     public void removeDatasource(String jdbcDataSourceName) {
-        dataSourceMap.remove(jdbcDataSourceName);
+        JdbcDataSource remove = dataSourceMap.remove(jdbcDataSourceName);
+        Optional.ofNullable(remove).map(i -> i.getDataSource()).ifPresent(i -> {
+            try {
+                Class<? extends DataSource> aClass = i.getClass();
+                Method[] methods = aClass.getMethods();
+                ArrayList<Method> methodList = new ArrayList<>();
+                for (Method method : methods) {
+                    if ("close".equals(method.getName())) {
+                        if (Void.TYPE.equals(method.getReturnType())) {
+                            methodList.add(method);
+                        }
+                    }
+                }
+                methodList.sort(Comparator.comparingInt(Method::getParameterCount));
+                if (!methodList.isEmpty()) {
+                    methodList.get(0).invoke(i);
+                }
+            } catch (Throwable e) {
+                LOGGER.warn("试图关闭数据源失败:{} ,{}", jdbcDataSourceName, e);
+            }
+        });
     }
 
     public DefaultConnection getConnection(String name) {
@@ -72,13 +92,15 @@ public class JdbcConnectionManager implements ConnectionManager {
             }
             return operand;
         }) < key.getMaxCon()) {
+            DefaultConnection defaultConnection;
             try {
                 DatasourceRootConfig.DatasourceConfig config = key.getConfig();
                 Connection connection = key.getDataSource().getConnection();
-                DefaultConnection defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
+                defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
                 try {
                     return defaultConnection;
                 } finally {
+                    LOGGER.info("获取连接:{}",defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
@@ -107,6 +129,7 @@ public class JdbcConnectionManager implements ConnectionManager {
             }
             return --operand;
         });
+        LOGGER.info("关闭连接:{}",connection);
         try {
             connection.connection.close();
         } catch (SQLException e) {

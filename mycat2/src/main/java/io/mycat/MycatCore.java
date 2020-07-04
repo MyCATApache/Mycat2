@@ -31,6 +31,7 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
+import io.mycat.exporter.PrometheusExporter;
 import io.mycat.ext.MySQLAPIImpl;
 import io.mycat.manager.ManagerCommandDispatcher;
 import io.mycat.metadata.MetadataManager;
@@ -48,6 +49,7 @@ import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.ApplicationContext;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.ClassUtil;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -74,14 +76,15 @@ public enum MycatCore {
     private final ApplicationContext context = new ApplicationContext();//容器管理实例数量与生命周期
     @Getter
     private ReactorThreadManager reactorManager;
-
+    @Getter
+    private ReactorThreadManager managerManager;
     @SneakyThrows
     public void init(ConfigProvider config) {
         this.config = config;
 
         MycatConfig mycatConfig = config.currentConfig();
 
-        PlugRuntime.INSTCANE.load(mycatConfig);
+        PlugRuntime.INSTANCE.load(mycatConfig);
         MycatWorkerProcessor.INSTANCE.init(mycatConfig.getServer().getWorkerPool(),mycatConfig.getServer().getTimeWorkerPool());
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
@@ -95,7 +98,12 @@ public enum MycatCore {
         //context.scanner("io.mycat.sqlHandler").inject();
         startProxy(mycatConfig);
         startManager(mycatConfig);
+
+
+        //插件
+        runExtra(mycatConfig);
     }
+
 
     private void startManager(MycatConfig config) throws IOException {
         ManagerConfig manager = config.getManager();
@@ -124,8 +132,8 @@ public enum MycatCore {
         list.add(thread);
 
 
-        reactorManager = new ReactorThreadManager(list);
-        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
+        managerManager = new ReactorThreadManager(list);
+        NIOAcceptor acceptor = new NIOAcceptor(managerManager);
         acceptor.startServerChannel(manager.getIp(), manager.getPort());
     }
 
@@ -158,7 +166,7 @@ public enum MycatCore {
             list.add(thread);
         }
 
-        final ReactorThreadManager reactorManager = new ReactorThreadManager(list);
+        this.reactorManager = new ReactorThreadManager(list);
         idleConnectCheck(mycatConfig, reactorManager);
         heartbeat(mycatConfig, reactorManager);
 
@@ -337,5 +345,27 @@ public enum MycatCore {
 
     public Map<String, MySQLDatasource> getDatasourceMap() {
         return Collections.unmodifiableMap(datasourceMap);
+    }
+
+    //动态更新仅更新这两部分
+    public void flash(MycatConfig config){
+        datasourceMap.clear();
+        heartbeat(config, reactorManager);
+    }
+
+    private static void runExtra(MycatConfig mycatConfig) {
+        for (String clazz : Optional.ofNullable(mycatConfig)
+                .map(m -> m.getPlug())
+                .map(m -> m.getExtra())
+                .orElse(Collections.emptyList())) {
+            try {
+                Class<?> aClass = Class.forName(clazz);
+                Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
+                Runnable o = (Runnable)declaredConstructor.newInstance();
+                o.run();
+            }catch (Throwable e){
+                LOGGER.error("can not run:{}",clazz,e);
+            }
+        }
     }
 }

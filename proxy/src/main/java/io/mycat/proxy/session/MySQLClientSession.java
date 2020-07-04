@@ -114,12 +114,13 @@ public class MySQLClientSession extends
    * session1解除绑定
    */
   @Override
-  public void close(boolean normal, String hint) {
+  public synchronized void close(boolean normal, String hint) {
     if (hasClosed) {
       return;
     }
     resetPacket();
     hasClosed = true;
+//    getDatasource().decrementUsedCounter();
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {

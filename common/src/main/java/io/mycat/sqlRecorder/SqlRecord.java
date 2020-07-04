@@ -1,29 +1,27 @@
 package io.mycat.sqlRecorder;
 
-import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
 @Data
-@Builder
-public class SqlRecord implements Comparable<SqlRecord>{
-    String host;
+public class SqlRecord implements Comparable<SqlRecord> {
+    double executionTime;
     String statement;
-    String username;
-    long startTime;
-    long endTime;
-    long sqlRows;
-    long netInBytes;
-    long netOutBytes;
-    long parseTime;
-    long compileTime;
-    long cboTime;
-    long rboTime;
-    long connectionPoolTime;
-    long connectionQueryTIme;
+    double startTime;
+    double endTime;
+    double sqlRows;
+    double netInBytes;
+    double netOutBytes;
+    double parseTime;
+    double compileTime;
+    double cboTime;
+    double rboTime;
+    double connectionPoolTime;
+    double connectionQueryTime;
+    double wholeTime;
 
     @Override
     public int compareTo(@NotNull SqlRecord o) {
-        return this.host.compareTo(o.host);
+        return this.statement.compareTo(o.statement);
     }
 }

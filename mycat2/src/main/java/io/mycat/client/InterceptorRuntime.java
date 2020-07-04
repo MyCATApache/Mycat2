@@ -41,15 +41,14 @@ import java.util.stream.Collectors;
 public enum InterceptorRuntime {
     INSTANCE;
     private static final Logger LOGGER = LoggerFactory.getLogger(InterceptorRuntime.class);
-    final Map<String, UserSpace> wapper = new ConcurrentHashMap<>();
+    final Map<String, UserSpace> spaceMap = new ConcurrentHashMap<>();
     volatile MycatConfig mycatConfig;
     public static final String DISTRIBUTED_QUERY = "distributedQuery";
     public static final String EXECUTE_PLAN = "executePlan";
 
 
-    public Interceptor login(String userName) {
-        UserSpace userSpace = Objects.requireNonNull(wapper.get(userName));
-        return new Interceptor(userSpace);
+    public UserSpace getUserSpace(String userName) {
+        return Objects.requireNonNull(spaceMap.get(userName));
     }
 
     final static Map<String, Object> MYCAT_DB_COMMAND = (Map) ImmutableMap.builder().put("command", MycatdbCommand.INSTANCE.getName()).put("name", "defaultMycatdb").build();
@@ -65,7 +64,7 @@ public enum InterceptorRuntime {
         addCommand(DistributedQueryCommand.INSTANCE);
         addCommand(DistributedUpdateCommand.INSTANCE);
         addCommand(ExecuteCommand.INSTANCE);
-        addCommand(ExplainPlanCommand.INSTANCE);
+        addCommand(ExecutePlanCommand.INSTANCE);
         addCommand(ExplainSqlCommand.INSTANCE);
         addCommand(MycatdbCommand.INSTANCE);
         addCommand(OffXACommand.INSTANCE);
@@ -82,7 +81,6 @@ public enum InterceptorRuntime {
         addCommand(BoostMycatdbCommand.INSTANCE);
 
         //config
-        this.wapper.clear();
         for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
             UserConfig user = Objects.requireNonNull(interceptor.getUser());
             String username = Objects.requireNonNull(user.getUsername());
@@ -124,7 +122,7 @@ public enum InterceptorRuntime {
             }
             final Matcher apply = factory.create(allItems, Pair.of(null, defaultHanlder));
             TransactionType transactionType = TransactionType.parse(interceptor.getTransactionType());
-            this.wapper.put(username, new UserSpace(username, transactionType, apply, cacheTasks));
+            this.spaceMap.put(username, new UserSpace(username, transactionType, apply, cacheTasks));
         }
     }
 

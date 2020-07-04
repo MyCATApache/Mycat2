@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.queryCondition;
+package io.mycat;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,15 +26,18 @@ public class RangeVariable {
     private final RangeVariableType operator;
     private final Object value;
     private Object optionValue = null;
+    private  String columnName;
 
-    public RangeVariable(boolean or, RangeVariableType operator, Object value) {
+    public RangeVariable(String columnName,boolean or, RangeVariableType operator, Object value) {
+        this.columnName = columnName;
         this.or = or;
         this.operator = operator;
         assert operator == RangeVariableType.EQUAL;
         this.value = value;
     }
 
-    public RangeVariable(boolean or, RangeVariableType range, String begin, String end) {
+    public RangeVariable(String columnName,boolean or, RangeVariableType range, String begin, String end) {
+        this.columnName = columnName;
         this.or = or;
         this.operator = range;
         assert operator == RangeVariableType.RANGE;

@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 @Data
 @Builder
+@EqualsAndHashCode
 public class PatternRootConfig {
     private UserConfig user;
     private List<Map<String,Object>> sqls = new ArrayList<>();

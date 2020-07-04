@@ -15,10 +15,7 @@
 
 package io.mycat.config;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Data
+@EqualsAndHashCode
 public class ServerConfig {
     private String ip = "127.0.0.1";
     private int port = 8066;

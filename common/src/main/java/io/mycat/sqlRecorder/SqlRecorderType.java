@@ -1,13 +1,15 @@
 package io.mycat.sqlRecorder;
 
 public enum  SqlRecorderType {
+    AT_START,
     PARSE_SQL,
     COMPILE_SQL,//compile
     RBO,
     CBO,
     GET_CONNECTION,
     CONNECTION_QUERY_RESPONSE,
-    RESPONSE
+    EXECUTION_TIME,
+    AT_END
 
 
     ///////////////////////////////////sql接收的时刻///////////////////////////////////

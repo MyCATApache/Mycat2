@@ -2,15 +2,14 @@ package io.mycat.router.custom;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.RangeVariable;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 
 /**
@@ -30,6 +29,38 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
+    public List<DataNode> calculate(Set<RangeVariable> values) {
+        ArrayList<DataNode> res = new ArrayList<>();
+        for (RangeVariable rangeVariable : values) {
+            //匹配字段名
+            if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
+                ///////////////////////////////////////////////////////////////
+                String begin = Objects.toString(rangeVariable.getBegin());
+                String end = Objects.toString(rangeVariable.getEnd());
+                switch (rangeVariable.getOperator()) {
+                    case EQUAL: {
+                        DataNode dataNode = this.calculate(begin);
+                        if (dataNode != null) {
+                            CollectionUtil.setOpAdd(res, dataNode);
+                        } else {
+                            return getTable().getShardingBackends();
+                        }
+                    }
+                    case RANGE: {
+                        List<DataNode> dataNodes = this.calculateRange(begin, end);
+                        if (dataNodes == null || dataNodes.size() == 0) {
+                            return getTable().getShardingBackends();
+                        }
+                        CollectionUtil.setOpAdd(res, dataNodes);
+                        break;
+                    }
+                }
+            }
+        }
+        return getTable().getShardingBackends();
+    }
+
+
     public DataNode calculate(String columnValue) {
         if (columnValue == null) {
             return defaultDataNode;
@@ -39,7 +70,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
 
-    @Override
+
     public List<DataNode> calculateRange(String beginValue, String endValue) {
         if (segmentQuery) {
             if (beginValue == null) {

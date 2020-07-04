@@ -167,7 +167,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public void close(boolean normal, String hint) {
+    public  synchronized  void close(boolean normal, String hint) {
         try {
             dataContext.close();
         } catch (Exception e) {

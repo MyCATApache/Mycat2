@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-6-1
+author:junwen  2020-6-30
 
 作者qq: 294712221
 
@@ -18,6 +18,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
 Dockerfile:https://github.com/MyCATApache/Mycat2/blob/master/mycat2/Dockerfile
+
+Mycat2可视化监控,使用Grafana和prometheus实现,模板:https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
 
 执行hbt的两组命令是
 
@@ -132,6 +134,10 @@ mycat2支持不启动网络层的方式,以api方式操作mycat,实现执行sql
 参考src\main\resources\sql中的sql和src\main\resources\mycat.yml建立数据库环境
 ide安装lombok插件
 启动 io.mycat.MycatCore类
+
+
+
+如果遇上在maven模块之间出现版本引用错误,可以使用下面描述的设置版本重置所有模块的版本号
 
 
 
@@ -377,6 +383,8 @@ use db1;
 ```
 
 jdbc的连接属性建议使用连接字符串设置
+
+如果使用图形化客户端出现*no* *database* *selected* 等提示,请在JDBC连接字符串上写上默认库
 
 
 
@@ -778,9 +786,31 @@ targetName
 
 1.都需要建表sql
 
+
+
+此sql在mycat v1.09之后会自动从dataNode中查询得到,无需配置,但是遇上得到的createTableSQL是mycat无法解析的时候,就需要在mycat里面调整此sql直到mycat的sql解析器能识别并设置
+
+
+
 2.当建表sql中的字段信息带有AUTO_INCREMENT同时配置中有配置全局序列号,则该sql在插入数据的时候,自动改写sql补上自增值
 
+
+
 3.要么是自然分片要么是动态分片
+
+mycat v1.09后当分片类型不配置的时候,默认是NATURE_DATABASE_TABLE
+
+
+
+###### 建表sql的作用
+
+1.主要是为分布式查询引擎提供逻辑表与物理表的字段信息,具体体现为mycat能对查询逻辑表的sql编译成查询物理表的sql,如果没有字段信息,mycat就不能准确生成查询的字段.在配置中都提供字段信息的情况下,mycat可以脱离后端数据库独立编译sql为执行计划.
+
+2.提供自增字段的信息,是开启全局序列号的前提
+
+3.当建表sql带有索引信息,主键信息的时候,分布式查询引擎可以利用它优化算子(mycat v1.09)
+
+4.mycat会把分片字段与主键自动认为是带有索引的字段(mycat v1.09)
 
 
 
@@ -901,11 +931,51 @@ interceptors:
 
 此配置使用内置默认的mycatdb命令,根据分片配置进行处理,无需配置任何命令,默认事务是proxy
 
+该属性在mycat连接初始化的时候设置上,但是可以通过sql改变连接中的事务模式
 
 
 
+可选的事务
 
-#### booster
+proxy
+
+xa
+
+
+
+设置proxy是使用基于一个连接上实现的本地事务
+
+设置xa实际上是指使用数据源提供者的事务实现
+
+
+
+当数据源提供者为
+
+```yaml
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+```
+
+
+
+当前事务状态为xa,则使用Atomikos的xa事务,并占用bindTransactionPool中的线程
+
+而提供者是其他类的时候,则不会使用bindTransactionPool中的线程
+
+直接使用 workerPool中的线程
+
+
+
+例如
+
+```yaml
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+```
+
+当使用此数据源提供者的时候使用workerPool线程池,当设置xa事务的时候,是使用此DruidDatasourceProvider实现的事务是本地事务,多个连接commit在阶段失败,已经commit的连接不能回滚
+
+
+
+#### booster架构
 
 ```yaml
 interceptors:
@@ -929,6 +999,8 @@ boosters: [defaultDs2]
 在无事务且开启自动提交的情况下指定的sql发送到后端目标,该属性被mycatdb和boostMycatdb两个命令使用
 
 mycatdb会自动给缺默认库名的sql添上逻辑库,boostMycatdb则不会.
+
+此转发的后端目标一般是高性能的查询服务,mycat在此仅仅是高性能,处理事务或更新请求,对于查询,转发到其他服务处理
 
 
 
@@ -1058,12 +1130,19 @@ requestType是进行心跳的实现方式,使用mysql意味着使用proxy方式�
 
 ## 服务器配置
 
+基础配置样例
+
 ```yaml
 server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-  #用于多线程任务的线程池,
+```
+
+
+
+```yml
+  #用于多线程任务的线程池,v1.09前的配置
   worker: {
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
            maxThread: 1024,
@@ -1071,6 +1150,69 @@ server:
            timeUnit: SECONDS, #超时单位
            waitTaskTimeout: 30 #超时后将结束闲置的线程
   }
+```
+
+
+
+v1.09后把原线程池划分为三大类
+
+
+
+bindTransactionPool
+
+对于Atomikos这种对于事务运行环境有要求的事务框架,它要求事务与线程相关,当使用事务的会话与线程绑定之后,在事务消失之前,此线程都不能被其他需要使用事务的会话使用.对于这种特殊要求的事务框架,使用独立的线程池处理事务请求.
+
+
+
+workerPool
+
+对于一些耗时长的,可能涉及阻塞的任务,jdbc请求,事务与线程没有绑定关系的事务处理,在这个线程里处理
+
+如Druid数据源提供的本地事务处理,并行拉取结果集等任务,就是这个线程里面处理的.
+
+
+
+timeWorkerPool
+
+对于对时间周期敏感的任务,使用独立的定时器处理,但是此定时器一般处理线程比较少,不会处理耗时任务,往往把任务投递到workerPool中处理
+
+
+
+三个线程池的配置都是一致的
+
+```yml
+ {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+```
+
+corePoolSize:是线程池里保留的最小线程数量
+
+keepAliveTime:线程存活时间,超过此时间的空闲线程将会关闭
+
+maxPoolSize:线程池中最大线程数量
+
+timeUnit:时间单位,对keepAliveTime,taskTimeout生效
+
+一般来说,taskTimeout与maxPendingLimit仅仅对bindTransactionPool生效
+
+
+
+```yml
+server:
+  bindTransactionPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535,
+    maxPoolSize: 512, taskTimeout: 1, timeUnit: MINUTES}
+  bufferPool:
+    args: {}
+    poolName: null
+  handlerName: null
+  ip: 0.0.0.0
+  port: 8066
+  reactorNumber: 1
+  timeWorkerPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 2,
+    taskTimeout: 1, timeUnit: MINUTES}
+  timer: {initialDelay: 3, period: 15, timeUnit: SECONDS}
+  workerPool: {corePoolSize: 8, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 1024,
+    taskTimeout: 1, timeUnit: MINUTES}
 ```
 
 
@@ -1151,6 +1293,10 @@ workerId对应雪花算法的参数
 
 ## Mycat2.0分布式查询支持语法
 
+select语法
+
+
+
 ```yaml
 query:
 
@@ -1200,6 +1346,20 @@ groupItem:
   |   '(' expression [, expression ]* ')'
 
 ```
+
+Select 语法支持使用for update结尾表示在事务中涉及的查询行使用排它锁,mycat会在最终发送的sql语句中加上for update后缀
+
+
+
+UNION语法(v1.09)
+
+```
+SELECT UNION [ALL | DISTINCT] SELECT ...
+```
+
+UNION语法中不支持使用for update,如果sql中添加了for update则自动忽略
+
+
 
 ## Mycat2.0分布式修改支持语法
 
@@ -1271,11 +1431,9 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 8. 聚合函数max,min函数不能与group by一起用
 
-9. union等集合操作暂时不支持
-
 10. 非查询语句,mycat暂时不会自动处理函数表达式调用,会路由到mysql中调用,所以按日期分表的情况,需要sql中写清楚日期
 
-11. 部分关联子查询暂时不支持
+11. 部分关联子查询暂时不支持(不可下推的子查询)
 
 
 
@@ -1325,8 +1483,6 @@ https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b7395
 
 https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331765/mycat2/src/test/java/io/mycat/sql/CharChecker.java
 
-## SQL支持情况
-
 
 
 
@@ -1349,7 +1505,9 @@ https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/
 
 ## 高级内容
 
-### 多配置文件
+
+
+##### 多配置文件
 
 -DMYCAT_HOME=mycat2\src\main\resources 指向的是配置文件夹
 
@@ -1412,6 +1570,65 @@ cluster:
 4. 显式的配置,明确哪些sql是怎样被mycat处理
 
    
+
+拦截器处理流程
+
+接收sql
+
+->匹配器分析获得可能可以处理的命令及其配置并依次匹配执行(io.mycat.commands.MycatCommand)
+
+->执行每个MycatCommand前执行命令中配置的io.mycat.Hint,其作用是提取信息保存到上下文中(Map)
+
+->检查上下文中是否有缓存配置,如果缓存中有数据则返回缓存数据
+
+->如果当前是explain语句,则执行MycatCommand的explain函数,否则执行run函数
+
+
+
+io.mycat.Hint 
+
+```java
+public interface Hint {
+    String getName();
+    void accept(String buffer, Map<String, Object> t);
+}
+```
+
+
+
+io.mycat.commands.MycatCommand
+
+```java
+public interface MycatCommand {
+
+    boolean run(MycatRequest request, MycatDataContext context, Response response);
+
+    boolean explain(MycatRequest request, MycatDataContext context, Response response);
+
+    String getName();
+}
+```
+
+
+
+Hint与MycatCommand都在Plug配置里加载
+
+
+
+```yaml
+plug:
+  command:
+    commands: 
+     - {clazz: xxx , name: xxx}
+  hint:
+    hints: 
+     - {clazz: xxx, name: xxx ,args:''}
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    .....
+```
+
+
 
 ##### 处理器基本形式
 
@@ -2049,8 +2266,566 @@ SQL被'SET NAMES utf8mb4'替换
 
 
 
-##### 更新日志
+## 实验性sql
+
+
+
+#### 客户端相关
+
+##### ANALYZE TABLE
+
+``` sql
+ANALYZE TABLE schemaName.tableName;
+ANALYZE TABLE db1.travelrecord;
+
+//res
+Table				Op			Msg_type	Msg_Text
+db1.travelrecord	analyze		status		OK
+```
+
+当表名为mycat中配置的表名时候,mycat会对存储节点发送查询行数量的语句,统计该逻辑表中所有表并记录,行数可以帮助优化器进行算子优化
+
+
+
+##### SHOW CREATE TABLE 
+
+```sql
+SHOW CREATE TABLE db1.travelrecord;
+
+//res
+Table	Create Table
+travelrecord	CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+当表名为mycat中配置的表名时候,mycat会把配置中的建表sql返回
+
+当表名不存在时候,行为还没有定义(路由到第一个数据源)
+
+
+
+##### SHOW DATABASES
+
+```sql
+SHOW DATABASES;
+
+//res
+Database
+db1
+```
+
+mycat返回逻辑库信息
+
+
+
+##### SHOW ENGINES
+
+```
+SHOW ENGINES
+
+//res
+Engine	Support	Comment
+InnoDB	DRFAULT ...
+```
+
+mycat返回固定的引擎信息
+
+
+
+##### SHOW TABLES
+
+##### SHOW TABLE STATUS
+
+```sql
+SHOW TABLES;
+SHOW TABLES FROM db1;
+
+//res
+Tables_in_db1
+address1
+
+SHOW TABLE STATUS;
+SHOW TABLE STATUS  FROM db1;
+```
+
+sql中不带库名,如果mycat会话中设置了默认schema,则会对sql使用此schema作为库名补充
+
+然后根据库名获取逻辑库上配置的targetName路由,如果没有配置则路由到一个节点(此行为可能会改变)
+
+```sql
+use db1;
+SHOW TABLES;
+//实际mycat向后端发送的是SHOW TABLES FROM db1;
+```
+
+
+
+#### Mycat2管理与监控相关
+
+配置9066管理端
+
+管理端只有manager的用户才可以使用
+
+manager有独立的执行线程,一般不受8066的请求影响
+
+**命令语法注意空格和分号**
+
+
+
+```yml
+manager:
+  ip: 127.0.0.1
+  port: 9066
+  users: [{ip: '.', password: '123456', username: root}]
+
+properties:
+  key: value
+```
+
+mycat中创建的连接一般有两大类,前端连接,后端连接,后端连接也区分native连接与jdbc连接
+
+
+
+##### 命令监控管理
+
+###### 关闭连接
+
+```sql
+kill @@connection id1,id2...
+```
+
+id是mycat前端连接或者后端native连接的id(它们公用一个id生成器)
+
+不能关闭jdbc连接,当关闭mycat前端连接的时候会自动关闭连接占用的jdbc连接
+
+
+
+###### 显示Mycat前端连接
+
+```sql
+show @@connection
+```
+
+
+
+ID 连接的标识符
+
+USER_NAME 登录的用户名
+
+HOST 客户端连接地址
+
+SCHEMA 当前schema,与sql解析有关
+
+AFFECTED_ROWS AFFECTED_ROWS
+
+AUTOCOMMIT 是否自动提交
+
+IN_TRANSACTION 是否处于事务状态
+
+CHARSET  字符编码,一般是utf8
+
+CHARSET_INDEX 对应mysql的字符编码序号
+
+OPEN 连接是否打开
+
+SERVER_CAPABILITIES 服务器能力数字
+
+ISOLATION 事务隔离级别
+
+LAST_ERROR_CODE 最后一次错误码
+
+LAST_INSERT_ID 插入自增主键ID
+
+LAST_MESSAGE 最后一次错误信息
+
+PROCESS_STATE 请求处理状态,正在接收,正在处理,完成
+
+WARNING_COUNT 警告数量
+
+MYSQL_SESSION_ID 如果代理
+
+TRANSACTION_TYPE  事务类型,XA,Proxy,Local
+
+TRANSCATION_SNAPSHOT 事务管理器状态快照
+
+CANCEL_FLAG 当前执行的任务是否已经被取消
+
+
+
+
+###### 显示native连接
+
+```sql
+show @@backend.native
+```
+
+显示mycat proxy native 连接的信息
+
+SESSION_ID 连接ID,可被kill命令杀死
+
+THREAD_NAME 所在线程名
+
+DS_NAME数据源名字
+
+LAST_MESSAGE 接收到的报文中的信息(错误信息)
+
+MYCAT_SESSION_ID 如果有绑定前端连接,则显示它的ID
+
+IS_IDLE 是否在连接池,即是否闲置
+
+SELECT_LIMIT限制返回行数
+
+IS_RESPONSE_FINISHED响应是否结束
+
+RESPONSE_TYPE响应类型
+
+IS_IN_TRANSACTION是否处于事务状态
+
+IS_REQUEST_SUCCESS是否向后端数据库发起请求成功
+
+IS_READ_ONLY是否处于readonly状态
+
+
+
+###### 显示数据源状态
+
+```sql
+show @@backend.datasource
+```
+
+显示配置中的数据源信息
+
+
+
+###### 显示心跳状态
+
+```sql
+show @@backend.heartbeat
+```
+
+显示配置中的心跳信息
+
+
+
+###### 显示可以使用的管理命令
+
+```sql
+show @@help
+```
+
+
+
+###### 显示心跳中数据源实例中的状态
+
+navite连接与jdbc连接使用相同的数据源配置,指向相同的服务器,那么它们的数据源实例只有一个
+
+```sql
+show @@backend.instance
+```
+
+NAME  数据源名字
+
+ALIVE 是否存活
+
+READABLE 是否可以选择为读节点
+
+TYPE 数据源类型
+
+SESSION_COUNT 当前连接数量
+
+WEIGHT 负载均衡权重
+
+MASTER是否主节点
+
+HOST连接信息
+
+PORT连接端口
+
+LIMIT_SESSION_COUNT连接限制数量
+
+REPLICA所在集群名字
+
+
+
+###### 显示逻辑库配置
+
+```sql
+show @@metadata.schema
+```
+
+显示配置中的逻辑库信息
+
+
+
+###### 显示逻辑表配置
+
+```sql
+show @@metadata.schema.table
+```
+
+显示配置中的逻辑表信息
+
+
+
+###### 显示reactor线程状态
+
+reactor是mycat2的io线程,主要处理透传响应与接收报文,解析sql等任务
+
+```sql
+show @@reactor
+```
+
+THREAD_NAME线程名字
+
+THREAD_ID 线程ID
+
+CUR_SESSION_ID当前正在处理的前端,后端会话ID
+
+BUFFER_POOL_SNAPSHOT 网络缓冲区池快照
+
+LAST_ACTIVE_TIME 最近活跃时间
+
+
+
+###### 显示集群状态
+
+```sql
+show @@backend.replica
+```
+
+
+
+NAME 集群名字
+
+SWITCH_TYPE 切换类型
+
+MAX_REQUEST_COUNT 获取连接的时候尝试请求的次数
+
+TYPE 集群类型
+
+WRITE_DS 写节点列表
+
+READ_DS 读节点列表
+
+WRITE_L写节点负载均衡算法
+
+READ_L读节点负载均衡算法
+
+
+
+
+
+###### 显示定时器状态
+
+```sql
+show @@schedule
+```
+
+
+
+###### 显示sql统计信息
+
+```sql
+show @@stat
+```
+
+
+
+COMPILE_TIME 编译SQL的耗时
+
+RBO_TIME 规则优化耗时
+
+CBO_TIME 代价优化与生成执行器耗时
+
+CONNECTION_POOL_TIME 连接池获取连接耗时
+
+CONNECTION_QUERY_TIME 发起查询到获得响应耗时
+
+EXECUTION_TIME 执行引擎耗时
+
+TOTAL_TIME 查询总耗时
+
+
+
+###### 重置sql统计信息
+
+```sql
+reset @@stat
+```
+
+
+
+###### 显示线程池状态
+
+```sql
+show @@threadPool
+```
+
+
+
+NAME 线程池名字
+
+POOL_SIZE 线程最大数量
+
+ACTIVE_COUNT 活跃线程数
+
+TASK_QUEUE_SIZE 等待队列大小
+
+COMPLETED_TASK 完成的任务数量
+
+TOTAL_TASK 总任务数量
+
+
+
+###### 设置数据源实例状态
+
+```sql
+switch @@backend.instance = {name:'xxx' ,alive:'true' ,readable:'true'} 
+```
+
+name是数据源名字
+
+alive是数据源可用状态,值 true|false
+
+readable是数据源可读状态,值 true|false
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 集群切换
+
+```
+switch @@backend.replica = {name:'xxx'} 
+```
+
+name是数据源名字
+
+手动触发集群切换
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 心跳开关
+
+```sql
+switch @@backend.heartbeat = {true|false}
+```
+
+当有心跳配置的时候,可以进心跳进行开启关闭
+
+心跳会自动修改数据源实例的状态,关闭心跳可以自行通过上面的命令修改状态
+
+此命令供外部服务修改mycat里的数据源实例状态,可以以此支持多种集群服务
+
+
+
+###### 显示心跳定时器是否正在运行
+
+```sql
+show @@backend.heartbeat.running
+```
+
+
+
+###### 配置更新
+
+```sql
+reload @@config by file
+```
+
+修改本地的mycat.yml就可更新,支持更新metadata与jdbc数据源.请在低峰时段执行,配置更新停止IO请求,尽量选择没有事务的一刻进行更新,不保证配置前后一致性等问题
+
+
+
+###### 显示服务器信息
+
+```
+show @@server
+```
+
+
+
+##### Mycat2可视化监控
+
+Mycat2可视化监控,使用Grafana和prometheus实现:
+
+https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
+
+可配合模板JVM dashboard
+
+
+
+###### 参考配置
+
+https://github.com/MyCATApache/Mycat2/blob/master/example/src/test/resources/io/mycat/example/manager/mycat.yml
+
+
+
+```yaml
+plug:
+  extra: [
+           "io.mycat.exporter.PrometheusExporter"
+     ]
+```
+
+此配置默认开启7066端口.并提供以下url供查询监控信息
+
+http://127.0.0.1:7066/metrics
+
+供Prometheus查询
+
+
+
+```yaml
+properties:
+  prometheusPort: 7066
+```
+
+此配置可以更改io.mycat.exporter.PrometheusExporter开启的端口
+
+
+
+###### 监控信息
+
+Gauge类型
+
+buffer_pool_counter:内存块计数
+
+client_connection:客户端计数
+
+native_mysql_connection:native连接计数
+
+instance_connection:物理实例计数
+
+jdbc_connection:jdbc连接计数
+
+mycat_cpu_utility:cpu利用率
+
+heartbeat_stat:心跳请求至响应时间
+
+instance_acitve:物理实例存活是否存活
+
+replica_available_value:集群是否可用
+
+sql_stat:sql各阶段时间统计
+
+thread_pool_active:连接池活跃线程统计
+
+
+
+如果有什么建议可以提交issue或者与作者沟通
+
+
+
+## 更新日志
 
 具体看git记录
 
 2020-5-5拦截器,元数据配置发生变更
+
+2020-6-19后,mycat.yml中的server设置发生变化
+
+2020-6-23后添加hint,MycatCommand配置
+
+2020-6-30后添加extra配置

@@ -171,7 +171,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
 
     public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0, boolean forUpdate) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(3);
+        hepProgramBuilder.addMatchLimit(1);
         hepProgramBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
         hepProgramBuilder.addRuleInstance(LimitPushRemoveRule.INSTANCE);
         HepProgram build = hepProgramBuilder.build();

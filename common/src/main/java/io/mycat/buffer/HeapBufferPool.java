@@ -70,6 +70,11 @@ public class HeapBufferPool implements BufferPool {
     }
 
     @Override
+    public int trace() {
+        return trace.get();
+    }
+
+    @Override
     public void recycle(ByteBuffer theBuf) {
         trace.decrementAndGet();
     }

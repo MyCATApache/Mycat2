@@ -68,5 +68,5 @@ public interface Response {
     void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply);
 
     void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply);
-
+    void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator);
 }

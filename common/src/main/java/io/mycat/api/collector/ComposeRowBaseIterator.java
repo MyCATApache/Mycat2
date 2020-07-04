@@ -129,7 +129,7 @@ public class ComposeRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public java.util.Date  getDate(int columnIndex) {
         return current.getDate(columnIndex);
     }
 
