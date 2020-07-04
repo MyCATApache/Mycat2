@@ -20,12 +20,16 @@
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
+
     <version>1.11-05</version>
+
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
+
     <version>1.11-05</version>
+
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>

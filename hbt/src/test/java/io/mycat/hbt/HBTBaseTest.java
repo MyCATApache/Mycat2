@@ -9,6 +9,7 @@ import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.JoinSchema;
 import io.mycat.hbt.ast.query.RenameSchema;
 import io.mycat.hbt.parser.HBTParser;
+import io.mycat.mock.Db1;
 import io.mycat.mock.MockDBClientMediator;
 import io.mycat.upondb.MycatDBClientBasedConfig;
 import io.mycat.util.SplitUtil;

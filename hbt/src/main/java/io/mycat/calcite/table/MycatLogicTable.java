@@ -17,11 +17,13 @@ package io.mycat.calcite.table;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.metadata.GlobalTableHandler;
+import io.mycat.metadata.ShardingTable;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -41,8 +43,8 @@ import java.util.*;
 @Getter
 public class MycatLogicTable extends MycatTableBase implements TranslatableTable {
     final TableHandler table;
-    final List<MycatPhysicalTable> dataNodes = new ArrayList<>();
-    final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();
+    final List<MycatPhysicalTable> physicalTables = new ArrayList<>();
+    final Map<String, MycatPhysicalTable> physicalTableMap = new HashMap<>();
     final Statistic statistic;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
 
@@ -54,8 +56,8 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
                 ShardingTableHandler table = (ShardingTableHandler) t;
                 for (DataNode backend : table.getShardingBackends()) {
                     MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, backend);
-                    dataNodes.add(mycatPhysicalTable);
-                    dataNodeMap.put(backend.getUniqueName(), mycatPhysicalTable);
+                    physicalTables.add(mycatPhysicalTable);
+                    physicalTableMap.put(backend.getUniqueName(), mycatPhysicalTable);
                 }
                 ImmutableList.Builder<ImmutableBitSet> indexes = ImmutableList.builder();
                 try {
@@ -123,8 +125,8 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
             GlobalTableHandler table = (GlobalTableHandler) t;
             for (Map.Entry<String, BackendTableInfo> stringBackendTableInfoEntry : table.getDataNodeMap().entrySet()) {
                 MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, stringBackendTableInfoEntry.getValue());
-                dataNodes.add(mycatPhysicalTable);
-                dataNodeMap.put(stringBackendTableInfoEntry.getValue().getUniqueName(), mycatPhysicalTable);
+                physicalTables.add(mycatPhysicalTable);
+                physicalTableMap.put(stringBackendTableInfoEntry.getValue().getUniqueName(), mycatPhysicalTable);
             }
             ImmutableList.Builder<ImmutableBitSet> builder = ImmutableList.builder();
 
@@ -178,7 +180,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
     }
 
     public MycatPhysicalTable getMycatPhysicalTable(String uniqueName) {
-        return dataNodeMap.get(uniqueName);
+        return physicalTableMap.get(uniqueName);
     }
 
 
@@ -189,7 +191,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        throw new UnsupportedOperationException();
+        return  (Enumerable)Linq4j.singletonEnumerable(new Long[]{1L});
     }
 
     @Override

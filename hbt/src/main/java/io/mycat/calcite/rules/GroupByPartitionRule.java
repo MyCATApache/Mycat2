@@ -43,7 +43,7 @@ public class GroupByPartitionRule extends RelOptRule {
                                     TableHandler tableHandler = logicTable.getTable();
                                     if (tableHandler instanceof ShardingTable) {
                                         ShardingTable handler = (ShardingTable) tableHandler;
-                                        return logicTable.getDataNodes().size() > 1;
+                                        return logicTable.getPhysicalTables().size() > 1;
                                     }
                                     return false;
                                 }

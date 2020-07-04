@@ -16,7 +16,11 @@ public interface DataNode extends java.lang.Comparable<DataNode> {
     }
 
     default public String getUniqueName() {
-        return getTargetName() + "." + getTargetSchemaTable();
+        String targetName = getTargetName();
+        if (targetName == null) {
+            return getTargetSchemaTable();
+        }
+        return targetName + "." + getTargetSchemaTable();
     }
 
     default public int compareTo(DataNode o) {
