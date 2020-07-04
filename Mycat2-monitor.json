@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 15,
-  "iteration": 1593590043226,
+  "iteration": 1593676032267,
   "links": [],
   "panels": [
     {
@@ -51,6 +51,8 @@
         "y": 0
       },
       "id": 30,
+      "interval": "1m",
+      "maxDataPoints": 100,
       "options": {
         "orientation": "auto",
         "reduceOptions": {
@@ -72,7 +74,7 @@
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeShift": null,
       "title": "CPU利用率",
       "type": "gauge"
@@ -116,6 +118,7 @@
       },
       "hiddenSeries": false,
       "id": 8,
+      "interval": "1m",
       "legend": {
         "avg": false,
         "current": false,
@@ -127,6 +130,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 1000,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -150,7 +154,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
       "title": "连接mycat2 客户端数量",
@@ -229,6 +233,7 @@
       },
       "hiddenSeries": false,
       "id": 26,
+      "interval": "1m",
       "legend": {
         "avg": false,
         "current": false,
@@ -240,6 +245,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -262,7 +268,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
       "title": "线程池活跃线程数量",
@@ -336,6 +342,8 @@
         "y": 21
       },
       "id": 24,
+      "interval": "",
+      "maxDataPoints": 1000,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -358,7 +366,7 @@
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeShift": null,
       "title": "集群信息",
       "type": "stat"
@@ -393,6 +401,8 @@
         "y": 26
       },
       "id": 28,
+      "interval": "30s",
+      "maxDataPoints": 1000,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -411,11 +421,12 @@
         {
           "expr": "instance_acitve{job=\"$job\",instance=\"$instance\"}",
           "interval": "",
+          "intervalFactor": 3,
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeShift": null,
       "title": "数据源存活",
       "type": "stat"
@@ -457,7 +468,9 @@
         "y": 32
       },
       "hiddenSeries": false,
+      "hideTimeOverride": false,
       "id": 22,
+      "interval": "60s",
       "legend": {
         "avg": false,
         "current": false,
@@ -469,6 +482,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 100,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -488,13 +502,14 @@
           "expr": "heartbeat_stat{job=\"$job\",instance=\"$instance\"}",
           "format": "heatmap",
           "instant": false,
-          "interval": "",
+          "interval": "60",
+          "intervalFactor": 10,
           "legendFormat": "",
           "refId": "A"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
       "title": "心跳信息",
@@ -503,6 +518,12 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {}
+        }
+      ],
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -537,6 +558,10 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "Prometheus",
       "description": "",
       "fieldConfig": {
@@ -561,44 +586,110 @@
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 13,
         "w": 24,
         "x": 0,
         "y": 45
       },
+      "hiddenSeries": false,
       "id": 18,
-      "options": {
-        "showHeader": true
+      "interval": "30m",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "maxDataPoints": 100,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
       "pluginVersion": "7.0.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "expr": "sql_stat{time_type=\"COMPILE_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
+          "intervalFactor": 10,
           "legendFormat": "",
           "refId": "A"
         },
         {
-          "expr": "sql_stat{time_type=\"RBO_TIME\"}",
+          "expr": "sql_stat{time_type=\"RBO_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
+          "intervalFactor": 10,
           "legendFormat": "",
           "refId": "B"
         },
         {
-          "expr": "sql_stat{time_type=\"CBO_TIME\"}",
+          "expr": "sql_stat{time_type=\"CBO_TIME\",job=\"$job\",instance=\"$instance\"}",
           "format": "table",
           "interval": "",
+          "intervalFactor": 10,
           "legendFormat": "",
           "refId": "C"
         }
       ],
-      "timeFrom": null,
+      "thresholds": [],
+      "timeFrom": "1h",
+      "timeRegions": [],
       "timeShift": null,
       "title": "SQL编译优化时间",
-      "type": "table"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:258",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:259",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "datasource": "Prometheus",
@@ -631,6 +722,8 @@
         "y": 58
       },
       "id": 16,
+      "interval": "1h",
+      "maxDataPoints": 100,
       "options": {
         "showHeader": true
       },
@@ -644,12 +737,16 @@
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeShift": null,
       "title": "后端数据库查询响应时间",
       "type": "table"
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
@@ -673,17 +770,42 @@
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 9,
         "w": 24,
         "x": 0,
         "y": 66
       },
+      "hiddenSeries": false,
       "id": 14,
-      "options": {
-        "showHeader": true
+      "interval": "1m",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "maxDataPoints": 100,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
       "pluginVersion": "7.0.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "expr": "sql_stat{time_type=\"EXECUTION_TIME\",job=\"$job\",instance=\"$instance\"}",
@@ -693,12 +815,54 @@
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "thresholds": [],
+      "timeFrom": "1h",
+      "timeRegions": [],
       "timeShift": null,
       "title": "SQL执行器时间",
-      "type": "table"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:171",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:172",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
@@ -722,17 +886,40 @@
         },
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 10,
         "w": 24,
         "x": 0,
         "y": 75
       },
+      "hiddenSeries": false,
       "id": 10,
-      "options": {
-        "showHeader": true
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
       "pluginVersion": "7.0.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "expr": "sql_stat{time_type=\"TOTAL_TIME\",job=\"$job\",instance=\"$instance\"}",
@@ -742,10 +929,48 @@
           "refId": "A"
         }
       ],
+      "thresholds": [],
       "timeFrom": null,
+      "timeRegions": [],
       "timeShift": null,
       "title": "SQL总查询时间",
-      "type": "table"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:84",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:85",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "aliasColors": {},
@@ -784,6 +1009,7 @@
       },
       "hiddenSeries": false,
       "id": 2,
+      "interval": "2m",
       "legend": {
         "avg": false,
         "current": false,
@@ -795,6 +1021,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 9000,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -817,28 +1044,28 @@
           "refId": "A"
         },
         {
-          "expr": "jdbc_connection{type=\"total\"}",
+          "expr": "jdbc_connection{type=\"total\",job=\"$job\",instance=\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "legendFormat": "",
           "refId": "B"
         },
         {
-          "expr": "native_mysql_connection{type=\"total\"}",
+          "expr": "native_mysql_connection{type=\"total\",job=\"$job\",instance=\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "legendFormat": "",
           "refId": "C"
         },
         {
-          "expr": "instance_connection{type=\"total\"}",
+          "expr": "instance_connection{type=\"total\",job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "D"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
       "title": "mycat2所有连接数",
@@ -886,37 +1113,24 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "description": "显示mycat2正在使用连接数",
+      "description": "mycat2 使用连接数",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "custom": {}
         },
         "overrides": []
       },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 6,
+        "h": 9,
         "w": 24,
         "x": 0,
         "y": 93
       },
       "hiddenSeries": false,
-      "id": 4,
+      "id": 32,
+      "interval": "1m",
       "legend": {
         "avg": false,
         "current": false,
@@ -928,12 +1142,12 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 1000,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.0.4",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -949,17 +1163,17 @@
           "refId": "B"
         },
         {
-          "expr": "native_mysql_connection{type=\"use\"}",
+          "expr": "native_mysql_connection{type=\"use\",job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "C"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
-      "title": "mycat2正在使用连接数",
+      "title": "mycat2 使用连接数",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -975,7 +1189,7 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:3863",
+          "$$hashKey": "object:2168",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -984,7 +1198,7 @@
           "show": true
         },
         {
-          "$$hashKey": "object:3864",
+          "$$hashKey": "object:2169",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -1017,10 +1231,11 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 102
       },
       "hiddenSeries": false,
       "id": 6,
+      "interval": "5m",
       "legend": {
         "avg": false,
         "current": false,
@@ -1032,6 +1247,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxDataPoints": 1000,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -1052,14 +1268,14 @@
           "refId": "B"
         },
         {
-          "expr": "native_mysql_connection{type=\"idle\"}",
+          "expr": "native_mysql_connection{type=\"idle\",job=\"$job\",instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "",
           "refId": "C"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
+      "timeFrom": "1h",
       "timeRegions": [],
       "timeShift": null,
       "title": "mycat2 native闲置连接数",
@@ -1102,7 +1318,7 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": false,
   "schemaVersion": 25,
   "style": "dark",
   "tags": [],
@@ -1112,8 +1328,8 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "127.0.0.1:7066",
-          "value": "127.0.0.1:7066"
+          "text": "7066",
+          "value": "7066"
         },
         "datasource": "$datasource",
         "definition": "label_values(jvm_info{job=\"$job\"},instance)",
@@ -1177,17 +1393,21 @@
     ]
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2020-07-01T12:59:13.861Z",
+    "to": "2020-07-01T17:28:47.687Z"
   },
   "timepicker": {
     "hidden": false,
     "refresh_intervals": [
-      "10s"
+      "10s",
+      "30s",
+      "60s",
+      "1m",
+      "2m"
     ]
   },
   "timezone": "",
   "title": "Mycat2-monitor",
   "uid": "nl-RGWMGz",
-  "version": 6
+  "version": 17
 }

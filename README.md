@@ -2413,6 +2413,43 @@ USER_NAME 登录的用户名
 
 HOST 客户端连接地址
 
+SCHEMA 当前schema,与sql解析有关
+
+AFFECTED_ROWS AFFECTED_ROWS
+
+AUTOCOMMIT 是否自动提交
+
+IN_TRANSACTION 是否处于事务状态
+
+CHARSET  字符编码,一般是utf8
+
+CHARSET_INDEX 对应mysql的字符编码序号
+
+OPEN 连接是否打开
+
+SERVER_CAPABILITIES 服务器能力数字
+
+ISOLATION 事务隔离级别
+
+LAST_ERROR_CODE 最后一次错误码
+
+LAST_INSERT_ID 插入自增主键ID
+
+LAST_MESSAGE 最后一次错误信息
+
+PROCESS_STATE 请求处理状态,正在接收,正在处理,完成
+
+WARNING_COUNT 警告数量
+
+MYSQL_SESSION_ID 如果代理
+
+TRANSACTION_TYPE  事务类型,XA,Proxy,Local
+
+TRANSCATION_SNAPSHOT 事务管理器状态快照
+
+CANCEL_FLAG 当前执行的任务是否已经被取消
+
+
 
 
 ###### 显示native连接

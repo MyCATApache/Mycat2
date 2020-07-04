@@ -26,7 +26,7 @@ public class HeartbeatCollector  extends Collector {
             ResultSetBuilder resultSet = ShowHeartbeatCommand.getResultSet();
             RowBaseIterator rowBaseIterator = resultSet.build();
             MycatRowMetaData metaData = rowBaseIterator.getMetaData();
-            List<String> columnList = metaData.getColumnList();
+            List<String> columnList = ImmutableList.of("NAME");
             List<Map<String, Object>> resultSetMap = rowBaseIterator.getResultSetMap();
             GaugeMetricFamily gaugeMetricFamily = new GaugeMetricFamily("heartbeat_stat",
                     "heartbeat_stat",

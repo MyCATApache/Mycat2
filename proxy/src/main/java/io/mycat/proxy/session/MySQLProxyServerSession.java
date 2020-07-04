@@ -86,7 +86,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                             if (session.lastWritePacket() != null) {
                                 writeToChannel();
                             } else {
-                                throw new AssertionError();
+                                LOGGER.debug("no response data , may be it is longdata sessionId:{}", sessionId());
                             }
                         }
 
