@@ -1,6 +1,6 @@
 package io.mycat.command;
 
-import io.mycat.MycatDataContext;
+import io.mycat.BindValue;
 import io.mycat.proxy.session.MycatSession;
 
 import java.util.Map;
@@ -28,7 +28,7 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
 
     @Override
     public void handleContentOfFilename(byte[] sql, MycatSession session) {
-        run(session, () ->dispatcher. handleContentOfFilename(sql, session));
+        run(session, () -> dispatcher.handleContentOfFilename(sql, session));
     }
 
     @Override
@@ -48,12 +48,12 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
 
     @Override
     public void handleInitDb(String db, MycatSession session) {
-        run(session, () ->dispatcher. handleInitDb(db, session));
+        run(session, () -> dispatcher.handleInitDb(db, session));
     }
 
     @Override
     public void handlePing(MycatSession session) {
-        run(session, () ->dispatcher. handlePing(session));
+        run(session, () -> dispatcher.handlePing(session));
     }
 
     @Override
@@ -103,7 +103,7 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
 
     @Override
     public void handleProcessKill(long connectionId, MycatSession session) {
-        run(session, () ->dispatcher. handleProcessKill(connectionId, session));
+        run(session, () -> dispatcher.handleProcessKill(connectionId, session));
     }
 
     @Override
@@ -138,7 +138,7 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
 
     @Override
     public void handlePrepareStatement(byte[] sql, MycatSession session) {
-        run(session, () ->dispatcher. handlePrepareStatement(sql, session));
+        run(session, () -> dispatcher.handlePrepareStatement(sql, session));
     }
 
     @Override
@@ -147,8 +147,8 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
     }
 
     @Override
-    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams, byte[] rest, MycatSession session) {
-        run(session, () -> dispatcher.handlePrepareStatementExecute(rawPayload, statementId, flags, numParams, rest, session));
+    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
+        run(session, () -> dispatcher.handlePrepareStatementExecute(rawPayload, statementId, flags, params, values, session));
     }
 
     @Override
@@ -168,9 +168,13 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
 
     @Override
     public int getNumParamsByStatementId(long statementId, MycatSession session) {
-        MycatDataContext dataContext = session.unwrap(MycatDataContext.class);
-        return dataContext.getNumParamsByStatementId(statementId);
+        return dispatcher.getNumParamsByStatementId(statementId, session);
     }
 
     protected abstract void run(MycatSession session, Runnable runnable);
+
+    @Override
+    public byte[] getLongData(int i, MycatSession mycat) {
+        return dispatcher.getLongData(i,mycat);
+    }
 }

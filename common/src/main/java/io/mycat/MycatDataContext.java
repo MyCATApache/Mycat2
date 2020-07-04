@@ -5,6 +5,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
@@ -88,8 +89,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
         return !getCancelFlag().get();
     }
 
-    int getNumParamsByStatementId(long statementId);
-
     void run(Runnable runnable);
 
     boolean isReadOnly();
@@ -105,4 +104,5 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public String resolveDatasourceTargetName(String targetName);
 
+    Map<Long,PreparedStatement> prepareInfo();
 }

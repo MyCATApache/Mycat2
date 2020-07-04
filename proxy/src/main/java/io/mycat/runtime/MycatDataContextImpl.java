@@ -20,6 +20,8 @@ import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -59,7 +61,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private TransactionSession transactionSession = new ProxyTransactionSession(this);
     private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
-
+    private final Map<Long,PreparedStatement> preparedStatementMap = new HashMap<>();
     public MycatDataContextImpl(TransactionSessionRunner runner) {
         this.runner = runner;
     }
@@ -261,11 +263,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
-    public int getNumParamsByStatementId(long statementId) {
-        return 0;
-    }
-
-    @Override
     public void run(Runnable runnable) {
         runner.run(this, runnable);
     }
@@ -313,6 +310,11 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     public String resolveDatasourceTargetName(String targetName) {
         return transactionSession.resolveFinalTargetName(targetName);
+    }
+
+    @Override
+    public Map<Long, PreparedStatement> prepareInfo() {
+        return preparedStatementMap;
     }
 
     @Override
