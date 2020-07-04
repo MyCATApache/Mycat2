@@ -17,6 +17,7 @@ package io.mycat;
 import io.mycat.config.*;
 import io.mycat.util.YamlUtil;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@EqualsAndHashCode
 public class MycatConfig {
     List<PatternRootConfig> interceptors = new ArrayList<>();
     ShardingQueryRootConfig metadata = new ShardingQueryRootConfig();
@@ -32,6 +34,7 @@ public class MycatConfig {
     ClusterRootConfig cluster = new ClusterRootConfig();
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
+    ManagerConfig manager = new ManagerConfig();
     Map<String, Object> properties;
 
     ///expend
@@ -46,6 +49,7 @@ public class MycatConfig {
 
     @Data
     @NoArgsConstructor
+    @EqualsAndHashCode
     public static class SqlsGroup {
         List<PatternRootConfig> sqls = new ArrayList<>();
     }

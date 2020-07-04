@@ -19,4 +19,5 @@ public enum MycatResultSetType {
   UPDATEOK,
   ERROR,
   RRESULTSET_BYTEBUFFER,
+  BINARY_RRESULTSET
 }

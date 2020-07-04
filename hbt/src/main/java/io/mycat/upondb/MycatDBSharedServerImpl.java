@@ -13,28 +13,20 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
-import io.mycat.MycatConnection;
-import io.mycat.PlanRunner;
-import io.mycat.TextUpdateInfo;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.prepare.*;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt.HBTRunners;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.ParseContext;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.metadata.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Types;
@@ -48,7 +40,7 @@ import java.util.function.Function;
 public class MycatDBSharedServerImpl implements MycatDBSharedServer {
     private static final AtomicLong PREPARE_ID_GENERATOR = new AtomicLong(0);
     private final Map<Long, PrepareObject> PREPARE_MAP = new HashMap<>();
-    private static final ConcurrentHashMap<Byte, Object> singletons = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Byte, Object> singletons = new ConcurrentHashMap<>();
 
     public <T> T getComponent(Byte key, Function<Byte, T> factory) {
         return (T) singletons.computeIfAbsent(key, factory);
@@ -101,13 +93,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
     public MycatSQLPrepareObject prepare(String templateSql, Long id, SQLStatement sqlStatement, MycatDBContext dbContext) {
         String defaultSchema = dbContext.getSchema();
         if (sqlStatement instanceof SQLSelectStatement) {
-            SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
-            SQLTableSource from = queryBlock.getFrom();
-            if (from != null) {
-                return complieQuery(templateSql, id, sqlStatement, dbContext);
-            } else {
-                return getPrepareObject(templateSql, dbContext);
-            }
+            return complieQuery(templateSql, id, sqlStatement, dbContext);
         }
         MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
         int variantRefCount = getVariantRefCount(sqlStatement);
@@ -163,7 +149,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 //    }
 
     @NotNull
-    private MycatSQLPrepareObject getPrepareObject(String templateSql, MycatDBContext dbContext) {
+    private MycatSQLPrepareObject selectNoTable(String templateSql, MycatDBContext dbContext) {
         return new MycatSQLPrepareObject(null, dbContext, templateSql, false) {
 
             @Override
@@ -179,7 +165,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
             @Override
             public PlanRunner plan(List<Object> params) {
-                return new PlanRunner (){
+                return new PlanRunner() {
                     @Override
                     public List<String> explain() {
                         return Arrays.asList("direct query sql:", templateSql);
@@ -187,9 +173,9 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
                     @Override
                     public RowBaseIterator run() {
-                        String firstReplicaDataSource = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
+                        String firstReplicaDataSource = ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
                         MycatConnection connection = dbContext.getConnection(firstReplicaDataSource);
-                        return connection.executeQuery(null,templateSql);
+                        return connection.executeQuery(null, templateSql);
                     }
                 };
             }
@@ -411,20 +397,21 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
     @NotNull
     private MycatSQLPrepareObject complieQuery(String sql, Long id, SQLStatement
             sqlStatement, MycatDBContext dataContext) {
-        SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
-        boolean forUpdate = queryBlock.isForUpdate();
+
+        SQLSelect select = ((SQLSelectStatement) sqlStatement).getSelect();
+
+        SQLSelectQuery query = select.getQuery();
+        SqlNode sqlNode;
+        boolean forUpdate = false;
+        if (query instanceof SQLSelectQueryBlock) {
+            SQLSelectQueryBlock queryBlock = (SQLSelectQueryBlock) query;
+            forUpdate = queryBlock.isForUpdate();
+        }
         MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(calciteMySqlNodeVisitor);
-        SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-        MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(dataContext);
-        SqlValidatorImpl sqlValidator = planner.getSqlValidator();
-        sqlNode = sqlValidator.validate(sqlNode);
-        MycatRowMetaData parameterRowType = null;
-        if (id != null) {
-            parameterRowType = new CalciteRowMetaData(sqlValidator.getParameterRowType(sqlNode).getFieldList());
-        }
-        MycatRowMetaData resultRowType = new CalciteRowMetaData(sqlValidator.getValidatedNodeType(sqlNode).getFieldList());
-        return new MycatCalciteSQLPrepareObject(id, sql, sqlNode, parameterRowType, resultRowType, forUpdate, dataContext);
+        sqlNode = calciteMySqlNodeVisitor.getSqlNode();
+        return new FastMycatCalciteSQLPrepareObject(id, sql, sqlNode, null, null, forUpdate, dataContext);
+
     }
 
 

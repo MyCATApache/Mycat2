@@ -14,14 +14,15 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 
-public class PartitionByLatestMonth extends RuleFunction {
+public class PartitionByLatestMonth extends SingleValueRuleFunction {
 
   private int splitOneDay;
   private int hourSpan;
@@ -33,7 +34,7 @@ public class PartitionByLatestMonth extends RuleFunction {
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     TemporalAccessor date = this.formatter.parse(columnValue);
     int day = date.get(ChronoField.DAY_OF_YEAR);
     int hour = date.get(ChronoField.HOUR_OF_DAY);
@@ -41,17 +42,12 @@ public class PartitionByLatestMonth extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return calculateSequenceRange(this, beginValue, endValue);
   }
 
   @Override
-  public int getPartitionNum() {
-    return -1;
-  }
-
-  @Override
-  public void init(Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
     this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
     this.splitOneDay = Integer.parseInt(prot.get("splitOneDay"));
     hourSpan = 24 / splitOneDay;

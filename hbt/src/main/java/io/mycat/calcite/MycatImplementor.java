@@ -15,7 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.SchemaInfo;
+import io.mycat.DataNode;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -43,12 +43,12 @@ public class MycatImplementor extends RelToSqlConverter {
         try {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
-                SchemaInfo schemaInfo = physicalTable.getBackendTableInfo().getSchemaInfo();
+                DataNode backendTableInfo = physicalTable.getBackendTableInfo();
                 SqlIdentifier identifier;
-                if (schemaInfo.getTargetSchema() == null) {
-                    identifier = new SqlIdentifier(Collections.singletonList(schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                if (backendTableInfo.getSchema() == null) {
+                    identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);
                 } else {
-                    identifier = new SqlIdentifier(Arrays.asList(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()), SqlParserPos.ZERO);
+                    identifier = new SqlIdentifier(Arrays.asList(backendTableInfo.getSchema(), backendTableInfo.getTable()), SqlParserPos.ZERO);
                 }
                 return result(identifier, ImmutableList.of(Clause.FROM), e, null);
             } else {
@@ -103,15 +103,16 @@ public class MycatImplementor extends RelToSqlConverter {
         return super.visit(e);
     }
 
-    /**
-     * 该union输入是超过2个节点的,union 别名 问题
-     * @param e
-     * @return
-     */
+//    /**
+//     * 该union输入是超过2个节点的,union 别名 问题
+//     * @param e
+//     * @return
+//     */
 //    @Override
 //    public Result visit(Union e) {
 //        if (!e.isDistinct()) {
-//            List<RelNode> unions =e.getInputs();
+//            ArrayList<RelNode> unions = new ArrayList<>();
+//            CalciteUtls.collect(e, unions);
 //            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
 //            relBuilder.pushAll(unions);
 //            relBuilder.union(e.all, unions.size());
@@ -120,7 +121,7 @@ public class MycatImplementor extends RelToSqlConverter {
 //            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
 //                final Result result = visitChild(input.i, input.e);
 //                if (node == null) {
-//                    node = result.asSelect().;//修改点 会添加别名???
+//                    node = result.subSelect();//修改点 会添加别名???
 //                } else {
 //                    SqlSetOperator sqlSetOperator = e.all
 //                            ? SqlStdOperatorTable.UNION_ALL
@@ -132,9 +133,8 @@ public class MycatImplementor extends RelToSqlConverter {
 //                    Expressions.list(Clause.SET_OP);
 //            return result(node, clauses, e, null);
 //        }
-//        return super.visit(e).qualifiedContext().implementor().setOpToSql().resetAlias();
+//        return super.visit(e);
 //    }
-//
 
 
     @Override

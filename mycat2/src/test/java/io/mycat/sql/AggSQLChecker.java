@@ -46,8 +46,8 @@ public class AggSQLChecker extends BaseChecker  {
         check("select id,COUNT(DISTINCT user_id) from db1.travelrecord GROUP BY id", "(1,1)(999999999,1)");
         check("select MAX(id) from db1.travelrecord", "(999999999)");
         check("select MIN(id) from db1.travelrecord", "(1)");
-        check("select id,sum(id) from db1.travelrecord GROUP BY id", "(1,1)(999999999,999999999)");
-        check("select id,avg(id) from db1.travelrecord GROUP BY id", "(1,1)(999999999,999999999)");
+        check("select id,sum(id) from db1.travelrecord GROUP BY id order by id limit 2", "(1,1)(999999999,999999999)");
+        check("select id,avg(id) from db1.travelrecord GROUP BY id order by id limit 2", "(1,1.0)(999999999,9.99999999E8)");
 
         check("select id from db1.travelrecord order by id asc", "(1)(999999999)");
         check("select id from db1.travelrecord order by id desc", "(999999999)(1)");

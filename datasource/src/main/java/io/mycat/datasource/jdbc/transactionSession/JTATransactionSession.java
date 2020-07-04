@@ -17,16 +17,18 @@ package io.mycat.datasource.jdbc.transactionSession;
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
+import io.mycat.XATranscationStatusUtil;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -99,7 +101,12 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     @SneakyThrows
     public void close() {
         if (isInTransaction() && userTransaction != null) {
-            this.userTransaction.setRollbackOnly();
+            try {
+                this.userTransaction.rollback();
+            } catch (Throwable e) {
+                LOGGER.error("", e);
+                this.userTransaction.setRollbackOnly();
+            }
             this.userTransaction = null;
             this.bindThread = null;
         }
@@ -111,9 +118,28 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
         return TransactionType.JDBC_TRANSACTION_TYPE;
     }
 
+
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
         return ThreadUsageEnum.BINDING_THREADING;
+    }
+
+    /////////////////////////////////////////debug////////////////////////////////////////////////
+    @Override
+    public synchronized Dumper snapshot() {
+        Dumper top = super.snapshot();
+        String useTransaction = Optional.ofNullable(this.userTransaction)
+                .map(i -> {
+                    try {
+                        return XATranscationStatusUtil.toText(i.getStatus());
+                    } catch (SystemException e) {
+                        return e.getMessage();
+                    }
+                }).orElse("");
+        Optional<Thread> bindThread = Optional.ofNullable(this.bindThread);
+        String name = bindThread.map(i -> i.getName()).orElse("");
+        Long id = bindThread.map(i -> i.getId()).orElse(null);
+        return top.addText("threadName", name).addText("threadId", id).addText("useTransactionStatus", useTransaction);
     }
 
 }

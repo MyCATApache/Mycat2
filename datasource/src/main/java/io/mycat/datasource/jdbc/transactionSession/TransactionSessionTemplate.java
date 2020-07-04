@@ -6,18 +6,27 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
+import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
-    protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
+    protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
     protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
     final MycatDataContext dataContext;
     protected final ConcurrentLinkedQueue<AutoCloseable> closeResourceQueue = new ConcurrentLinkedQueue<>();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
 
     public TransactionSessionTemplate(MycatDataContext dataContext) {
         this.dataContext = dataContext;
@@ -107,7 +116,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.dataContext.setInTransaction(inTranscation);
     }
 
-    public void close() {
+    public synchronized void close() {
         check();
         for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
             DefaultConnection value = stringDefaultConnectionEntry.getValue();
@@ -134,11 +143,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         if (!isInTransaction()) {
             Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
             for (Map.Entry<String, DefaultConnection> entry : entries) {
-                Connection rawConnection = entry.getValue().getRawConnection();
-                if (!rawConnection.getAutoCommit()) {
-                    rawConnection.rollback();
+                DefaultConnection value = entry.getValue();
+                if (value != null) {
+                    value.close();
                 }
-                rawConnection.close();
             }
             updateConnectionMap.clear();
             dataSourceNearness.clear();
@@ -171,4 +179,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         closeResourceQueue.add(closeable);
     }
 
+    @Override
+    public Dumper snapshot() {
+        return Dumper.create()
+                .addText("jdbcCon", String.join(",", this.updateConnectionMap.keySet()))
+                .addText("closeQueueSize", String.valueOf(closeResourceQueue.size()));
+    }
 }

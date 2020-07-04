@@ -21,7 +21,7 @@ public interface Response {
 
     void sendOk();
 
-    void evalSimpleSql(SQLStatement  evalSimpleSql);
+    void evalSimpleSql(SQLStatement evalSimpleSql);
 
     default void proxySelect(String defaultTargetName, SQLSelectStatement statement) {
         proxySelect(defaultTargetName, statement.toString());
@@ -42,13 +42,18 @@ public interface Response {
     void sendError(String errorMessage, int errorCode);
 
     /**
-     *
      * @param defErrorCommandClass 可空
      * @param map
      */
     void sendExplain(Class defErrorCommandClass, Object map);
 
     void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier);
+
+    default public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator) {
+        sendResultSet(rowBaseIterator, () -> {
+            throw new UnsupportedOperationException();
+        });
+    }
 
     void sendResponse(MycatResponse[] mycatResponses, Supplier<List<String>> explainSupplier);
 
@@ -63,5 +68,5 @@ public interface Response {
     void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply);
 
     void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply);
-
+    void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator);
 }

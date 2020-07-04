@@ -1,7 +1,9 @@
 package io.mycat.util;
 
+import java.util.Set;
+
 public interface MySQLFunction {
-    public String getFunctionName();
+    public Set<String> getFunctionNames();
 
     int getArgumentSize();
 

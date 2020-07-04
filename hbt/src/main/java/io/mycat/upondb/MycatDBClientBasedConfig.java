@@ -1,7 +1,7 @@
 package io.mycat.upondb;
 
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import lombok.Builder;
 import lombok.Getter;
 

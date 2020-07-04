@@ -49,7 +49,7 @@ public class DefaultConnection implements MycatConnection {
         if (autocommit != null) {
             connection.setAutoCommit(autocommit);
         }
-        connection.setReadOnly(readOnly);
+//        connection.setReadOnly(readOnly);
         connection.setTransactionIsolation(transactionIsolation);
     }
 
@@ -129,13 +129,9 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public void setReadyOnly(boolean readyOnly) {
-        try {
-            if (connection.isReadOnly() != readyOnly) {
-                this.connection.setReadOnly(readyOnly);
-            }
-        } catch (SQLException e) {
-            throw new MycatException(e);
-        }
+        //            if (connection.isReadOnly() != readyOnly) {
+//                this.connection.setReadOnly(readyOnly);
+//            }
     }
 
     public JdbcDataSource getDataSource() {

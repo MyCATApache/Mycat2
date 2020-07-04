@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
@@ -51,9 +52,9 @@ public class MySQLSessionManager implements
         BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
-    final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
-    final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
-    final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
+    final ConcurrentHashMap<Integer, MySQLClientSession> allSessions = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, LinkedList<MySQLClientSession>> idleDatasourcehMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, MySQLPayloadWriter> clearTask = new ConcurrentHashMap<>();
 
 //  private ProxyRuntime runtime;
 
@@ -80,9 +81,20 @@ public class MySQLSessionManager implements
     @Override
     public void getIdleSessionsOfIdsOrPartial(MySQLDatasource datasource, List<SessionIdAble> ids,
                                               PartialType partialType,
-                                              SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
+                                              SessionCallBack<MySQLClientSession> arg) {
         Objects.requireNonNull(datasource);
+        SessionCallBack<MySQLClientSession> asyncTaskCallBack = new SessionCallBack<MySQLClientSession>() {
+            @Override
+            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//                datasource.tryIncrementUsedCounter();//设置正在使用的数量
+                arg.onSession(session, sender, attr);
+            }
 
+            @Override
+            public void onException(Exception exception, Object sender, Object attr) {
+                arg.onException(exception, sender, attr);
+            }
+        };
         try {
             for (; ; ) {//禁止循环里没有return
                 MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
@@ -115,12 +127,12 @@ public class MySQLSessionManager implements
     /**
      * @param ids 如果id失效 设置为-id
      */
-    public MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+    private MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
                                                               List<SessionIdAble> ids, PartialType partialType) {
         MySQLClientSession session = null;
         //dataSource
         if (datasource != null && (ids == null || ids.isEmpty())) {
-            LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
+            LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource.getName());
             for (; ; ) {
                 if (group == null || group.isEmpty()) {
                     return null;
@@ -200,6 +212,9 @@ public class MySQLSessionManager implements
             assert !session.isIdle();
             /////////////////////////////////////////
 
+//            session.getDatasource().decrementUsedCounter();
+            ////////////////////////////////////////
+
             if (shouldClear(session)) {
                 return;
             }
@@ -209,7 +224,8 @@ public class MySQLSessionManager implements
             session.setIdle(true);
             session.switchNioHandler(IdleHandler.INSTANCE);
             session.change2ReadOpts();
-            idleDatasourcehMap.computeIfAbsent(session.getDatasource(), (l) -> new LinkedList<>()).add(session);
+            LinkedList<MySQLClientSession> idleList = idleDatasourcehMap.computeIfAbsent(session.getDatasource().getName(), (l) -> new LinkedList<>());
+            idleList.add(session);
             MycatMonitor.onAddIdleMysqlSession(session);
         } catch (Exception e) {
             LOGGER.error("{}", e);
@@ -287,11 +303,11 @@ public class MySQLSessionManager implements
         Collection<MySQLClientSession> allSessions = Collections
                 .unmodifiableCollection(this.allSessions.values());
         for (MySQLClientSession s : allSessions) {
-            if (s.getDatasource().equals(key)) {
+            if (s.getDatasource().getName().equals(key.getName())) {
                 this.allSessions.remove(s.sessionId());
             }
         }
-        LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(key);
+        LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(key.getName());
         if (sessions != null) {
             for (MySQLClientSession session : sessions) {
                 try {
@@ -301,7 +317,7 @@ public class MySQLSessionManager implements
                 }
             }
         }
-        idleDatasourcehMap.remove(key);
+        idleDatasourcehMap.remove(key.getName());
     }
 
     /*
@@ -313,15 +329,19 @@ public class MySQLSessionManager implements
     @Override
     public void idleConnectCheck() {
         MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-        idleDatasourcehMap.forEach((mySQLDatasource, v) -> {
-            if (v == null) {
+
+        idleDatasourcehMap.forEach((name, v) -> {
+            MySQLClientSession session = Optional.ofNullable(idleDatasourcehMap.get(name)).map(i -> i.getFirst()).orElse(null);
+            if (session == null) {
                 return;
             }
-            long idleTimeout = mySQLDatasource.getIdleTimeout();
+            MySQLDatasource datasource  = session.getDatasource();
+
+            long idleTimeout = datasource.getIdleTimeout();
             long hearBeatTime = System.currentTimeMillis() - idleTimeout;
             long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
-            int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());//每次最多检测10个，分多次检测
-            LinkedList<MySQLClientSession> group = idleDatasourcehMap.get(mySQLDatasource);
+            int maxConsInOneCheck = Math.min(10, datasource.getSessionMinCount());//每次最多检测10个，分多次检测
+            LinkedList<MySQLClientSession> group = idleDatasourcehMap.get(name);
             List<MySQLClientSession> checkList = new ArrayList<>();
             //发送心跳
             if (null != group) {
@@ -331,17 +351,14 @@ public class MySQLSessionManager implements
                 }
             }
             int idleCount = group == null ? 0 : group.size();
-            int createCount = 0;
-            if (mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
-                createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3;
-            }
-            if (createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
-                createByLittle(mySQLDatasource, createCount);
-            } else if (idleCount - checkList.size() > mySQLDatasource.getSessionMinCount()
+            int createCount =Math.max(0,datasource.getSessionMinCount()-datasource.getConnectionCounter());
+            if (createCount > 0) {
+                createByLittle(datasource, createCount);
+            } else if (idleCount - checkList.size() > datasource.getSessionMinCount()
                     && group != null) {
                 //关闭多余连接
-                closeByMany(mySQLDatasource,
-                        idleCount - checkList.size() - mySQLDatasource.getSessionMinCount());
+                closeByMany(datasource,
+                        idleCount - checkList.size() - datasource.getSessionMinCount());
             }
 
         });
@@ -601,6 +618,7 @@ public class MySQLSessionManager implements
             assert session != null;
             assert reason != null;
             session.getDatasource().decrementSessionCounter();
+
             allSessions.remove(session.sessionId());
             MycatMonitor.onCloseMysqlSession(session, normal, reason);
             removeIdleSession(session);
@@ -625,7 +643,7 @@ public class MySQLSessionManager implements
     /**
      * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
      */
-    public void getSessionCallback(MySQLDatasource datasource, List<SessionManager.SessionIdAble> ids, Object sender,
+    private void getSessionCallback(MySQLDatasource datasource, List<SessionManager.SessionIdAble> ids, Object sender,
                                    SessionCallBack<MySQLClientSession> asynTaskCallBack) {
         Objects.requireNonNull(datasource);
         Objects.requireNonNull(asynTaskCallBack);

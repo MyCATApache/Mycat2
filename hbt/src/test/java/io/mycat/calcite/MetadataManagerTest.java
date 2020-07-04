@@ -1,6 +1,6 @@
 package io.mycat.calcite;
 
-import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.MetadataManagerBuilder;
 import org.junit.Assert;
@@ -26,11 +26,11 @@ public class MetadataManagerTest {
         return MetadataManager.INSTANCE.rewriteSQL(currentSchema, sql);
     }
 
-    public List<BackendTableInfo> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
+    public List<DataNode> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
         return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, startValue, endValue);
     }
 
-    public BackendTableInfo getBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
+    public DataNode getBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
         return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, partitionValue);
     }
 
@@ -100,13 +100,13 @@ public class MetadataManagerTest {
     public void test7() {
         String sql = "DELETE FROM travelrecord WHERE id = '2' ";
         String id = "2";
-        BackendTableInfo backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", id);
-        String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getSchemaInfo().getTargetSchemaTable(), id);
+        DataNode backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", id);
+        String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getTargetSchemaTable(), id);
     }
 
     @Test
     public void test8() {
-        List<BackendTableInfo> backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", "1", String.valueOf(Integer.MAX_VALUE));
+        List<DataNode> backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", "1", String.valueOf(Integer.MAX_VALUE));
         Assert.assertEquals(9, backEndTableInfo.size());
     }
 }

@@ -295,13 +295,7 @@ public class JDBCConnection implements BackendConnection {
 		if(isTxReadonly() == txReadonly) {
 			return;
 		}
-		try
-		{
-			con.setReadOnly(txReadonly);
-		} catch (SQLException e)
-		{
-			LOGGER.warn("set setReadOnly error:",e);
-		}
+		//			con.setReadOnly(txReadonly);
 	}
     private void syncIsolation(int nativeIsolation)
     {

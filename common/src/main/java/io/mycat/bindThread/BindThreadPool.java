@@ -14,8 +14,8 @@
  */
 package io.mycat.bindThread;
 
-import io.mycat.ExecutorUtil;
 import io.mycat.MycatException;
+import io.mycat.MycatWorkerProcessor;
 import io.mycat.ScheduleUtil;
 
 import java.io.Closeable;
@@ -26,12 +26,14 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThread> {
 
     final ConcurrentHashMap<KEY, PROCESS> map = new ConcurrentHashMap<>();
     final ArrayBlockingQueue<PROCESS> idleList;
     final ArrayBlockingQueue<PengdingJob> pending;
+    private long keeplive;
     final Function<BindThreadPool, PROCESS> processFactory;
     final Consumer<Exception> exceptionHandler;
     final AtomicInteger threadCounter = new AtomicInteger(0);
@@ -49,27 +51,31 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     }
 
     public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
-                          TimeUnit timeoutUnit, int minThread, int maxThread,
+                          TimeUnit timeoutUnit,
+                          int minThread,
+                          int maxThread,
+                          long keeplive,
                           Function<BindThreadPool, PROCESS> processFactory,
                           Consumer<Exception> exceptionHandler) {
         this.waitTaskTimeout = waitTaskTimeout;
         this.timeoutUnit = timeoutUnit;
         this.minThread = minThread;
-        this.maxThread = maxThread + 1;
+        this.maxThread = maxThread ;
         this.idleList = new ArrayBlockingQueue<>(maxThread);
         this.pending = new ArrayBlockingQueue<>(
                 maxPengdingLimit < 0 ? 65535 : maxPengdingLimit);
+        this.keeplive = keeplive;
         this.processFactory = processFactory;
         this.exceptionHandler = exceptionHandler;
-       this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+        this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
             try {
                 pollTask();
-            }catch (Exception e){
+            } catch (Exception e) {
                 exceptionHandler.accept(e);
             }
         }, 1, 1, TimeUnit.MILLISECONDS);
         //   , 1, 1, TimeUnit.MILLISECONDS
-        this.noBindingPool = ExecutorUtil.create("noBindingExecutor", maxThread);
+        this.noBindingPool = MycatWorkerProcessor.INSTANCE.getMycatWorker();
     }
 
     void pollTask() {
@@ -98,8 +104,8 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         if (poll == null) {
             long now = System.currentTimeMillis();
             long currentTimeMillis = now - lastPollTaskTime;
-            long l = TimeUnit.SECONDS.convert(currentTimeMillis, TimeUnit.MILLISECONDS);
-            if (l > 60) {
+            long l = timeoutUnit.convert(currentTimeMillis, TimeUnit.MILLISECONDS);
+            if (l > keeplive) {
                 tryDecThread();
             }
         } else {
@@ -133,24 +139,24 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     }
 
     public void run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
-            ScheduleUtil.TimerTask timerFuture = ScheduleUtil.getTimerFuture(new Closeable() {
-                @Override
-                public void close() throws IOException {
-                    task.onException(key,new MycatException("task timeout"));
-                }
-            }, waitTaskTimeout, timeoutUnit);
-                Future<?> submit = noBindingPool.submit(() -> {
-                    try {
-                        task.accept(key, null);
-                    } catch (Exception e) {
-                        task.onException(key, e);
-                        exceptionHandler.accept(e);
-                    } finally {
-                        timerFuture.setFinished();
-                        task.finallyAccept(key, null);
+        ScheduleUtil.TimerTask timerFuture = ScheduleUtil.getTimerFuture(new Closeable() {
+            @Override
+            public void close() throws IOException {
+                task.onException(key, new MycatException("task timeout"));
+            }
+        }, waitTaskTimeout, timeoutUnit);
+        Future<?> submit = noBindingPool.submit(() -> {
+            try {
+                task.accept(key, null);
+            } catch (Exception e) {
+                task.onException(key, e);
+                exceptionHandler.accept(e);
+            } finally {
+                timerFuture.setFinished();
+                task.finallyAccept(key, null);
 
-                    }
-                });
+            }
+        });
     }
 
     public boolean runOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
@@ -214,5 +220,41 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         BindThreadKey getKey();
 
         BindThreadCallback getTask();
+    }
+
+    public int getIdleListSize() {
+        return idleList.size();
+    }
+
+    public int getThreadCounter() {
+        return threadCounter.get();
+    }
+
+    public int getMinThread() {
+        return minThread;
+    }
+
+    public int getMaxThread() {
+        return maxThread;
+    }
+
+    public long getWaitTaskTimeout() {
+        return waitTaskTimeout;
+    }
+
+    public TimeUnit getTimeoutUnit() {
+        return timeoutUnit;
+    }
+
+    public long getLastPollTaskTime() {
+        return lastPollTaskTime;
+    }
+
+    public int getPendingSize() {
+        return pending.size();
+    }
+
+    public long getCompletedTasks() {
+        return Stream.concat(map.values().stream(), idleList.stream()).mapToLong(i -> i.getCompletedTasks()).sum();
     }
 }

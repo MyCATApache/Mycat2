@@ -3,7 +3,6 @@ package io.mycat;
 import io.mycat.beans.mysql.InformationSchema;
 import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
 
 import java.util.ArrayList;
 import java.util.List;

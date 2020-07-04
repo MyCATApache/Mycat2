@@ -35,6 +35,7 @@ public class MycatTransientSQLTableScan extends TableScan {
 
     @Override
     public RelWriter explainTerms(RelWriter pw) {
+        //名称唯一 此id是rel内部生成唯一的
         return pw.item("id",id).item("targetName",this.convention.targetName).item("sql", getSql());
     }
 
@@ -49,8 +50,8 @@ public class MycatTransientSQLTableScan extends TableScan {
         return sql.get();
     }
 
-    private MycatConvention getMycatConvention() {
-        return (MycatConvention) getConvention();
+    public MycatConvention getMycatConvention() {
+        return convention;
     }
 
 }

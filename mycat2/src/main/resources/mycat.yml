@@ -53,7 +53,10 @@ plug:
     {name: 'db1_travelrecord', clazz: io.mycat.plug.sequence.SequenceMySQLGenerator ,args: "sql : SELECT db1.mycat_seq_nextval('GLOBAL') , targetName:defaultDs"},
     {name: 'db1_address', clazz: io.mycat.plug.sequence.SequenceSnowflakeGenerator ,args: 'workerId:1'},
     ]
-
+server:
+  ip: 0.0.0.0
+  port: 8066
+  reactorNumber: 1
 properties:
   key: value
 

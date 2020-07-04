@@ -20,7 +20,7 @@ import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatReflectiveSchema;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.upondb.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;

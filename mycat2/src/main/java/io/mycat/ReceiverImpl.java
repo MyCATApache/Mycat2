@@ -13,6 +13,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.TransactionSessionUtil;
 import io.mycat.util.Response;
@@ -119,8 +120,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void proxyDDL(SQLStatement statement) {
-        String datasourceNameByRandom = ReplicaSelectorRuntime.INSTANCE.getFirstReplicaDataSource();
-        ExplainDetail detail = getExplainDetail(datasourceNameByRandom, statement.toString(), QUERY_MASTER);
+        String replicaDataSource = ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource();
+        ExplainDetail detail = getExplainDetail(replicaDataSource, statement.toString(), QUERY_MASTER);
         this.execute(detail);
     }
 
@@ -180,7 +181,11 @@ public class ReceiverImpl implements Response {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session, Arrays.asList(message.split("\n")));
     }
-
+    public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator){
+        sendResultSet(rowBaseIterator, () -> {
+            throw new UnsupportedOperationException();
+        });
+    }
     @Override
     public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier) {
         if (!this.explainMode) {
@@ -288,6 +293,7 @@ public class ReceiverImpl implements Response {
         boolean master = details.needStartTransaction || session.isInTransaction() || !session.isAutocommit() || details.globalTableUpdate || details.executeType.isMaster();
         MycatDataContext client = Objects.requireNonNull(session.unwrap(MycatDataContext.class));
         Map<String, List<String>> tasks = resolveDataSourceName(details.getBalance(), master, Objects.requireNonNull(details.targets));
+        details.setTargets(tasks);
         ExecuteType executeType = details.executeType;
         if (this.explainMode) {
             sendExplain(null, "execute:" + details);
@@ -312,7 +318,7 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            if ((executeType == QUERY_MASTER || executeType == QUERY) && MycatDatasourceUtil.isJdbcDatasource(datasourceName)) {
+            if ((executeType == QUERY_MASTER || executeType == QUERY)) {
                 block(mycat -> {
                     switch (executeType) {
                         case QUERY_MASTER:
@@ -326,6 +332,7 @@ public class ReceiverImpl implements Response {
                             throw new IllegalStateException("Unexpected value: " + executeType);
                     }
                 });
+                return;
             }
         }
         block(mycat -> {
@@ -357,6 +364,11 @@ public class ReceiverImpl implements Response {
         detail.globalTableUpdate = true;
         detail.setTargets(toMap(apply));
         this.execute(detail);
+    }
+
+    @Override
+    public void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator) {
+        sendResponse(new MycatResponse[]{new BinaryResultSetResponse(rowBaseIterator.get())}, null);
     }
 
 
@@ -398,7 +410,10 @@ public class ReceiverImpl implements Response {
                         session.getIsolation());
                 return;
             }
-            throw new IllegalArgumentException();
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName)) {
+                UpdateRowIteratorResponse updateRowIteratorResponse = connection.executeUpdate(sql, true, 0);
+                writeToMycatSession(session, updateRowIteratorResponse);
+            }
         }));
     }
 

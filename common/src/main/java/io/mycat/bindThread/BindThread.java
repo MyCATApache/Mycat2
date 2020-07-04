@@ -25,12 +25,14 @@ import java.util.concurrent.LinkedTransferQueue;
 
 public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends BindThreadCallback> extends
         Thread {
-    final Logger LOGGER = LoggerFactory.getLogger(BindThread.class);
+    final static Logger LOGGER = LoggerFactory.getLogger(BindThread.class);
     final BlockingQueue<PROCESS> blockingDeque = new LinkedTransferQueue<>();//todo optimization
     final BindThreadPool manager;
     long startTime;
     volatile KEY key;
     private long endTime;
+
+   long completedTasks = 0;
 
     public BindThread(BindThreadPool manager) {
         this.manager = manager;
@@ -93,6 +95,8 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         } catch (Exception e) {
             manager.exceptionHandler.accept(e);
             exception = e;
+        }finally {
+            completedTasks++;
         }
         this.endTime = System.currentTimeMillis();
         LOGGER.debug("thread execute time:{} {} ", this.endTime - this.startTime, "Millis");
@@ -119,30 +123,10 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     }
 
     public void close() {
-//    super.close();
-        //this.interrupt();
+
     }
 
-//  public AutocommitConnection getAutocommitConnection(JdbcDataSource dataSource) {
-//    return dataSource.getReplica().getAutocomitConnection(dataSource);
-//  }
-//
-//  public LocalTransactionConnection getLocalTransactionConnection(JdbcDataSource dataSource,
-//      int transactionIsolation) {
-//    return dataSource.getReplica().getLocalTransactionConnection(dataSource, transactionIsolation);
-//  }
-//
-//  public XATransactionConnection getXATransactionConnection(JdbcDataSource dataSource,
-//      int transactionIsolation) {
-//    return dataSource.getReplica().getXATransactionConnection(dataSource, transactionIsolation);
-//  }
-//
-//  public TransactionSession getTransactionSession() {
-//    return transactionSession;
-//  }
-//
-//
-//  public GRuntime getRuntime() {
-//    return manager.metadata;
-//  }
+    public long getCompletedTasks() {
+        return completedTasks;
+    }
 }

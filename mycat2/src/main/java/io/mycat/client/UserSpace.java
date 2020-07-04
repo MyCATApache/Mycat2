@@ -1,8 +1,6 @@
 package io.mycat.client;
 
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatResponse;
@@ -45,7 +43,6 @@ public class UserSpace {
     private final TransactionType defaultTransactionType;
     private final Matcher<Map<String, Object>> matcher;
     private final Map<String, Task> cacheMap = new ConcurrentHashMap<>();
-    final static private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public UserSpace(String userName, TransactionType defaultTransactionType, Matcher matcher, List<CacheTask> cacheTaskList) {
         this.userName = Objects.requireNonNull(userName);
@@ -149,7 +146,8 @@ public class UserSpace {
 
             @Override
             public void start(CacheConfig cacheConfig) {
-                timer.scheduleAtFixedRate(() -> executorService.execute(() -> {
+                NameableExecutor mycatWorker = MycatWorkerProcessor.INSTANCE.getMycatWorker();
+                timer.scheduleAtFixedRate(() -> mycatWorker.execute(() -> {
                             try {
                                 cache(cacheConfig);
                             } catch (Exception e) {

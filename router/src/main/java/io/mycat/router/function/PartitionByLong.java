@@ -14,7 +14,9 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.router.RuleFunction;
+import io.mycat.TableHandler;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.SingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 
 import java.util.Map;
@@ -22,7 +24,7 @@ import java.util.Map;
 /**
  * @author jamie12221 date 2019-05-02 23:36
  **/
-public class PartitionByLong extends RuleFunction {
+public class PartitionByLong extends SingleValueRuleFunction {
 
   private PartitionUtil partitionUtil;
   @Override
@@ -31,14 +33,14 @@ public class PartitionByLong extends RuleFunction {
   }
 
   @Override
-  public void init(Map<String, String> properties, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
     int[] count = (toIntArray(properties.get("partitionCount")));
     int[] length = toIntArray(properties.get("partitionLength"));
     partitionUtil = new PartitionUtil(count, length);
   }
 
   @Override
-  public int calculate(String columnValue) {
+  public int calculateIndex(String columnValue) {
     try {
       long key = Long.parseLong(columnValue);
       key = (key >>> 32) ^ key;
@@ -51,12 +53,8 @@ public class PartitionByLong extends RuleFunction {
   }
 
   @Override
-  public int[] calculateRange(String beginValue, String endValue) {
+  public int[] calculateIndexRange(String beginValue, String endValue) {
     return null;
   }
 
-  @Override
-  public int getPartitionNum() {
-    return partitionUtil.getPartitionNum();
-  }
 }

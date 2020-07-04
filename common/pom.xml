@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.07-SNAPSHOT</version>
+    <version>1.11-05</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,7 @@
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>config</artifactId>
-      <version>1.07-SNAPSHOT</version>
+      <version>1.11-05</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
     <dependency>
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.11</version>
+      <version>8.0.16</version>
     </dependency>
   </dependencies>
 

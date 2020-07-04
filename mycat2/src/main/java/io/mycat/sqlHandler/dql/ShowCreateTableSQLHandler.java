@@ -9,17 +9,17 @@ import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.TableHandler;
+import io.mycat.TableHandler;
 import io.mycat.sqlHandler.AbstractSQLHandler;
 import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
+
 import java.sql.JDBCType;
 import java.util.Arrays;
 
-@Resource
+
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override
@@ -40,12 +40,12 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
                     ((SQLIdentifierExpr)((SQLPropertyExpr) nameExpr).getOwner()).normalizedName();
             tableName = SQLUtils.normalize(((SQLPropertyExpr) nameExpr).getName());
         }else {
-            response.sendError(new MycatException("unsupport name :"+nameExpr));
+            response.proxyShow(ast);
             return ExecuteCode.PERFORMED;
         }
         TableHandler table = MetadataManager.INSTANCE.getTable(schemaName, tableName);
         if (table == null){
-            response.sendError(new MycatException("table "+ schemaName+"."+tableName+" is not existed"));
+            response.proxyShow(ast);
             return ExecuteCode.PERFORMED;
         }
         String createTableSQL = table.getCreateTableSQL();

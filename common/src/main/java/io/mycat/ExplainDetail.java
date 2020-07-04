@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@ToString
+
 @Builder
 @Data
 public class ExplainDetail {
@@ -32,5 +32,10 @@ public class ExplainDetail {
         list.add("needStartTransaction = " + needStartTransaction);
         list.add("forceProxy = " + forceProxy);
         return list;
+    }
+
+    @Override
+    public String toString() {
+        return  String.join("\n",toExplain());
     }
 }

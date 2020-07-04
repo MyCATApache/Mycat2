@@ -23,7 +23,7 @@ public class TransactionSessionUtil {
     }
 
     public static MycatConnection getDefaultConnection(String replicaName, boolean update, String strategy, TransactionSession transactionSession) {
-        LoadBalanceStrategy loadBalanceByBalanceName = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(strategy);
+        LoadBalanceStrategy loadBalanceByBalanceName = PlugRuntime.INSTANCE.getLoadBalanceByBalanceName(strategy);
         PhysicsInstanceImpl datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, update, loadBalanceByBalanceName);
         String name;
         if (datasource == null) {

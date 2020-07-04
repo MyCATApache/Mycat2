@@ -15,13 +15,9 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.SchemaInfo;
-import io.mycat.metadata.ShardingTableHandler;
-import io.mycat.metadata.TableHandler;
+import io.mycat.*;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.queryCondition.DataMappingEvaluator;
-import io.mycat.queryCondition.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
@@ -50,14 +46,14 @@ public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
     public static List<QueryBackendTask> getQueryBackendTasks(ShardingTableHandler table, List<RexNode> filters, int[] projects) {
-        List<BackendTableInfo> calculate = getBackendTableInfos(table, filters);
+        List<DataNode> calculate = getBackendTableInfos(table, filters);
 
 
         //
         List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         List<QueryBackendTask> list = new ArrayList<>();
-        for (BackendTableInfo backendTableInfo : calculate) {
+        for (DataNode backendTableInfo : calculate) {
             String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
             QueryBackendTask queryBackendTask = new QueryBackendTask(backendTableInfo.getTargetName(), backendTaskSQL);
             list.add(queryBackendTask);
@@ -76,7 +72,7 @@ public class CalciteUtls {
         }
     }
 
-    public static List<BackendTableInfo> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
+    public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
         ArrayList<RexNode> where = new ArrayList<>();
@@ -94,11 +90,10 @@ public class CalciteUtls {
     }
 
     @NotNull
-    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, BackendTableInfo backendTableInfo) {
-        SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
-        String targetSchema = schemaInfo.getTargetSchema();
-        String targetTable = schemaInfo.getTargetTable();
-        String targetSchemaTable = schemaInfo.getTargetSchemaTable();
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, DataNode backendTableInfo) {
+        String targetSchema = backendTableInfo.getSchema();
+        String targetTable = backendTableInfo.getTable();
+        String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 

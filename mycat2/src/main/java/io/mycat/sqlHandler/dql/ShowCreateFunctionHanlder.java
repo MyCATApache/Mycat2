@@ -6,9 +6,9 @@ import io.mycat.sqlHandler.ExecuteCode;
 import io.mycat.sqlHandler.SQLRequest;
 import io.mycat.util.Response;
 
-import javax.annotation.Resource;
 
-@Resource
+
+
 public class ShowCreateFunctionHanlder  extends AbstractSQLHandler<com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement> {
 
     @Override

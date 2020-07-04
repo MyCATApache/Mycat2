@@ -15,7 +15,7 @@
 
 package io.mycat.config;
 
-import lombok.Data;
+import lombok.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,12 +27,39 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Data
+@EqualsAndHashCode
 public class ServerConfig {
     private String ip = "127.0.0.1";
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();
     private String handlerName;
-    private Worker worker = new Worker();
+    private ThreadPoolExecutorConfig bindTransactionPool =  ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(0)
+            .maxPoolSize(512)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
+    private ThreadPoolExecutorConfig workerPool =  ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(Runtime.getRuntime().availableProcessors())
+            .maxPoolSize(1024)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
+    private ThreadPoolExecutorConfig timeWorkerPool = ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(0)
+            .maxPoolSize(2)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
     private TimerConfig timer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
@@ -56,14 +83,34 @@ public class ServerConfig {
         }
     }
 
+    /**
+     *                               int corePoolSize,
+     *                               int maximumPoolSize,
+     *                               long keepAliveTime,
+     *                               TimeUnit unit
+     */
     @Data
-    public static class Worker {
-        private int minThread = 2;
-        private int maxThread = 1024;
-        private int waitTaskTimeout = 60;
+    @ToString
+    @Builder
+    public static class ThreadPoolExecutorConfig {
+        private int corePoolSize = 0;
+        private int maxPoolSize = 1024;
+        private long keepAliveTime = 60;
+        private long taskTimeout = 600;
         private String timeUnit = TimeUnit.SECONDS.toString();
-        private int maxPengdingLimit = 65535;
-        private boolean close = false;
+        private int maxPendingLimit = 65535;
+
+        public ThreadPoolExecutorConfig() {
+        }
+
+        public ThreadPoolExecutorConfig(int corePoolSize, int maxPoolSize, long keepAliveTime, long taskTimeout, String timeUnit, int maxPendingLimit) {
+            this.corePoolSize = corePoolSize;
+            this.maxPoolSize = maxPoolSize;
+            this.keepAliveTime = keepAliveTime;
+            this.taskTimeout = taskTimeout;
+            this.timeUnit = timeUnit;
+            this.maxPendingLimit = maxPendingLimit;
+        }
     }
 
     @Data
