@@ -51,6 +51,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                         } else {
                             return getTable().getShardingBackends();
                         }
+                        break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
@@ -63,7 +64,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                 }
             }
         }
-        return getTable().getShardingBackends();
+        return res.isEmpty()?getTable().getShardingBackends():res;
     }
 
     public static int[] toIntArray(String string) {

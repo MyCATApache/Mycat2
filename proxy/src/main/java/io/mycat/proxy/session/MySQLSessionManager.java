@@ -175,7 +175,7 @@ public class MySQLSessionManager implements
             MySQLClientSession mySQLClientSession = source.get(id);
             if (mySQLClientSession.isIdle()) {
                 LinkedList<MySQLClientSession> sessions = this.idleDatasourcehMap
-                        .get(mySQLClientSession.getDatasource());
+                        .get(mySQLClientSession.getDatasource().getName());
                 sessions.remove(mySQLClientSession);
                 return mySQLClientSession;
             }
@@ -284,7 +284,7 @@ public class MySQLSessionManager implements
             assert session != null;
             assert session.getDatasource() != null;
             LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap
-                    .get(session.getDatasource());
+                    .get(session.getDatasource().getName());
             if (mySQLSessions != null) {
                 mySQLSessions.remove(session);
             }
@@ -366,7 +366,8 @@ public class MySQLSessionManager implements
     }
 
     private void closeByMany(MySQLDatasource mySQLDatasource, int closeCount) {
-        LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
+        LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource.getName());
+
         for (int i = 0; i < closeCount; i++) {
             MySQLClientSession mySQLClientSession = group.removeFirst();
             if (mySQLClientSession != null) {

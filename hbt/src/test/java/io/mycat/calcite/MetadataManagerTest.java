@@ -40,7 +40,8 @@ public class MetadataManagerTest {
         Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord WHERE id = 1");
         Map.Entry<String, List<String>> next = rs.entrySet().iterator().next();
         List<String> sql = next.getValue();
-        Assert.assertTrue(sql.get(0).toLowerCase().contains("db1.travelrecord"));
+        String s = sql.get(0).toLowerCase();
+        Assert.assertTrue(s.contains("db1.travelrecord"));
     }
 
     /**

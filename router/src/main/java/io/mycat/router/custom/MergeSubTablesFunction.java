@@ -45,6 +45,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                         } else {
                             return getTable().getShardingBackends();
                         }
+                        break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
@@ -57,7 +58,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 }
             }
         }
-        return getTable().getShardingBackends();
+        return res.isEmpty()? getTable().getShardingBackends():res;
     }
 
 
