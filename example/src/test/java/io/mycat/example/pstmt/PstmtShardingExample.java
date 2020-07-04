@@ -7,22 +7,17 @@ import io.mycat.example.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.util.NetUtil;
 import lombok.SneakyThrows;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class PstmtShardingExample {
     @SneakyThrows
     public static void main(String[] args) {
-        String resource = Paths.get( PstmtShardingExample.class.getResource("").toURI()).toAbsolutePath().toString();
+        String resource = Paths.get(PstmtShardingExample.class.getResource("").toURI()).toAbsolutePath().toString();
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
         ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(PstmtShardingExample.class);
@@ -48,8 +43,8 @@ public class PstmtShardingExample {
         }
         try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
             PreparedStatement preparedStatement = mySQLConnection.prepareStatement("select * from db1.travelrecord where id =? and user_id = ?");
-            preparedStatement.setInt(1,1);
-            preparedStatement.setInt(2,2);
+            preparedStatement.setInt(1, 1);
+            preparedStatement.setInt(2, 2);
             String s = TextConvertor.dumpResultSet(preparedStatement.executeQuery());
             System.out.println(s);
         }

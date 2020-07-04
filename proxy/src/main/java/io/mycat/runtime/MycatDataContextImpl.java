@@ -313,7 +313,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
-    public Map<Long, PreparedStatement> prepareInfo() {
+    public Map<Long, PreparedStatement> getPrepareInfo() {
         return preparedStatementMap;
     }
 

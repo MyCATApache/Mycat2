@@ -104,5 +104,5 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public String resolveDatasourceTargetName(String targetName);
 
-    Map<Long,PreparedStatement> prepareInfo();
+    Map<Long,PreparedStatement> getPrepareInfo();
 }

@@ -43,5 +43,5 @@ public interface PrepareStatementParserHelper {
   int getNumParamsByStatementId(long statementId, MycatSession session);
 
 
-  byte[] getLongData(int i, MycatSession mycat);
+  byte[] getLongData(long statementId, int i, MycatSession mycat);
 }

@@ -42,9 +42,9 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.sql.JDBCType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author chen junwen
@@ -56,7 +56,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
-
+    private static boolean useServerPrepStmts = Optional.ofNullable(RootHelper.INSTANCE.getConfigProvider().currentConfig())
+            .map(i -> i.getProperties()).map(i -> i.get("useServerPrepStmts")).isPresent();
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
@@ -104,6 +105,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
+        if (!useServerPrepStmts){
+            ReceiverImpl receiver = new ReceiverImpl(session);
+            receiver.sendError(new MycatException("unsupported useServerPrepStmts"));
+            return;
+        }
         MycatDataContext dataContext = session.getDataContext();
         boolean deprecateEOF = session.isDeprecateEOF();
         String sql = new String(sqlBytes);
@@ -146,7 +152,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
         MycatRowMetaData params = paramsBuilder.build().getMetaData();
         long stmtId = PrepareStatementManager.INSTANCE.register(sql, params.getColumnCount());
-        Map<Long, PreparedStatement> statementMap = dataContext.prepareInfo();
+        Map<Long, PreparedStatement> statementMap = dataContext.getPrepareInfo();
         statementMap.put(stmtId, new PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
 
         DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
@@ -170,7 +176,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                         session.getServerStatusValue()), true);
             }
             return;
-        } else if ( info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount()> 0) {
+        } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
             for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
             }
@@ -208,7 +214,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
-        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.prepareInfo();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.appendLongData(paramId, data);
@@ -219,18 +225,23 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
-        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.prepareInfo();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         String sql = preparedStatement.getSqlByBindValue(values);
         MycatDBClientMediator client = MycatDBs.createClient(dataContext);
-        RowBaseIterator baseIterator = client.query(sql);
-        ReceiverImpl receiver = new ReceiverImpl(session);
-        receiver.sendBinaryResultSet(() -> baseIterator);
+        try {
+            RowBaseIterator baseIterator = client.query(sql);
+            ReceiverImpl receiver = new ReceiverImpl(session);
+            receiver.sendBinaryResultSet(() -> baseIterator);
+        } finally {
+            client.close();
+        }
     }
+
     @Override
     public void handlePrepareStatementClose(long statementId, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
-        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.prepareInfo();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
         session.onHandlerFinishedClear();
     }
@@ -243,7 +254,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handlePrepareStatementReset(long statementId, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
-        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.prepareInfo();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.resetLongData();
@@ -257,7 +268,16 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public byte[] getLongData(int i, MycatSession mycat) {
-        return new byte[0];
+    public byte[] getLongData(long statementId, int paramId, MycatSession mycat) {
+        PreparedStatement preparedStatement = mycat.getDataContext().getPrepareInfo().get(statementId);
+        if (preparedStatement == null) {
+            return null;
+        }
+        ByteArrayOutputStream byteArrayOutputStream = preparedStatement.getLongData(paramId);
+        if (byteArrayOutputStream == null) {
+            return null;
+        }
+
+        return byteArrayOutputStream.toByteArray();
     }
 }

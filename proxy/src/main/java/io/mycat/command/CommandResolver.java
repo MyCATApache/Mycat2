@@ -133,7 +133,7 @@ public class CommandResolver {
                 case MySQLCommandType.COM_STMT_EXECUTE: {
                     MycatMonitor.onExecuteCommandStart(mycat);
                     MycatDataContext dataContext = mycat.getDataContext();
-                    dataContext.prepareInfo();
+                    dataContext.getPrepareInfo();
                     try {
                         byte[] rawPayload = curPacket.getEOFStringBytes(curPacket.packetReadStartIndex());
                         curPacket.readByte();
@@ -161,7 +161,7 @@ public class CommandResolver {
                                 if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
                                     bv.isNull = true;
                                 } else {
-                                    byte[] longData = commandHandler.getLongData(i,mycat);
+                                    byte[] longData = commandHandler.getLongData(statementId,i,mycat);
                                     if (longData == null) {
                                         BindValueUtil.read(curPacket, bv, StandardCharsets.UTF_8);
                                     } else {

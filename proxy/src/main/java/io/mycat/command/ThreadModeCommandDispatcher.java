@@ -174,7 +174,7 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
     protected abstract void run(MycatSession session, Runnable runnable);
 
     @Override
-    public byte[] getLongData(int i, MycatSession mycat) {
-        return dispatcher.getLongData(i,mycat);
+    public byte[] getLongData(long statementId, int i, MycatSession mycat) {
+        return dispatcher.getLongData(statementId, i,mycat);
     }
 }
