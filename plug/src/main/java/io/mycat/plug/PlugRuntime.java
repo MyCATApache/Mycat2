@@ -92,6 +92,9 @@ public enum PlugRuntime {
     }
 
     public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
+        if (manager == null) {
+            manager = new LoadBalanceManager();
+        }
         return manager.getLoadBalanceByBalanceName(name);
     }
 
