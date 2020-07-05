@@ -95,7 +95,7 @@ plug:
     ]
 
 properties:
-  key: value
+  useServerPrepStmts: true
 
 #lib start
 #lib end
