@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class PstmtShardingExample {
@@ -40,6 +41,16 @@ public class PstmtShardingExample {
         if (thread != null) {
             thread.start();
             Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+        }
+        try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
+            PreparedStatement preparedStatement = mySQLConnection.prepareStatement("INSERT INTO `db1`.`travelrecord` (`id`,`user_id`) VALUES (?,?);");
+            ThreadLocalRandom current = ThreadLocalRandom.current();
+            for (int i = 0; i < 600; i++) {
+                preparedStatement.setInt(1,i);
+                preparedStatement.setInt(2,current.nextInt());
+                preparedStatement.addBatch();
+            }
+            preparedStatement.executeBatch();
         }
         try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
             PreparedStatement preparedStatement = mySQLConnection.prepareStatement("select * from db1.travelrecord where id =? and user_id = ?");

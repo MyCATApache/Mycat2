@@ -23,10 +23,12 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
@@ -105,7 +107,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
-        if (!useServerPrepStmts){
+        if (!useServerPrepStmts) {
             ReceiverImpl receiver = new ReceiverImpl(session);
             receiver.sendError(new MycatException("unsupported useServerPrepStmts"));
             return;
@@ -230,9 +232,15 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         String sql = preparedStatement.getSqlByBindValue(values);
         MycatDBClientMediator client = MycatDBs.createClient(dataContext);
         try {
-            RowBaseIterator baseIterator = client.query(sql);
-            ReceiverImpl receiver = new ReceiverImpl(session);
-            receiver.sendBinaryResultSet(() -> baseIterator);
+            if (preparedStatement.isQuery()) {
+                RowBaseIterator baseIterator = client.query(sql);
+                ReceiverImpl receiver = new ReceiverImpl(session);
+                receiver.sendBinaryResultSet(() -> baseIterator);
+            } else {
+                RowBaseIterator baseIterator = client.query(sql);
+                ReceiverImpl receiver = new ReceiverImpl(session);
+                receiver.sendResponse(new MycatResponse[]{(UpdateRowIteratorResponse) baseIterator}, null);
+            }
         } finally {
             client.close();
         }
@@ -278,6 +286,28 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             return null;
         }
 
-        return byteArrayOutputStream.toByteArray();
+        byte[] bytes = byteArrayOutputStream.toByteArray();
+        byteArrayOutputStream.reset();
+        return bytes;
+    }
+
+    @Override
+    public BindValue[] getLastBindValue(long statementId, MycatSession mycat) {
+        Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
+        PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return null;
+        }
+        return preparedStatement.getBindValues();
+    }
+
+    @Override
+    public void saveBindValue(long statementId, BindValue[] values, MycatSession mycat) {
+        Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
+        PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return ;
+        }
+         preparedStatement.setBindValues(values);
     }
 }
