@@ -14,11 +14,10 @@
  */
 package io.mycat.thread;
 
-import io.mycat.bindThread.BindThread;
-import io.mycat.bindThread.BindThreadKey;
-import io.mycat.bindThread.BindThreadPool;
+import io.mycat.bindthread.BindThread;
+import io.mycat.bindthread.BindThreadKey;
+import io.mycat.bindthread.BindThreadPool;
 import io.mycat.config.ServerConfig;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

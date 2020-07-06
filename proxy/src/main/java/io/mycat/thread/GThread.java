@@ -14,12 +14,9 @@
  */
 package io.mycat.thread;
 
-import io.mycat.bindThread.BindThread;
-import io.mycat.bindThread.BindThreadPool;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.bindthread.BindThread;
+import io.mycat.bindthread.BindThreadPool;
 import io.mycat.proxy.reactor.SessionThread;
-import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

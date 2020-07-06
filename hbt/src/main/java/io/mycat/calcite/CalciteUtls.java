@@ -17,7 +17,7 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.queryCondition.DataMappingEvaluator;
+import io.mycat.querycondition.DataMappingEvaluator;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;

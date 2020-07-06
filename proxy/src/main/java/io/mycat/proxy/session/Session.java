@@ -15,13 +15,10 @@
 package io.mycat.proxy.session;
 
 import io.mycat.Wrapper;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.router.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +26,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.channels.SocketChannel;
-import java.text.MessageFormat;
 
 /**
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session

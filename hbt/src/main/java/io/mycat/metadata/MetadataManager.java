@@ -40,7 +40,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.queryCondition.*;
+import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import lombok.SneakyThrows;

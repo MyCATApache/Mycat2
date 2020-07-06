@@ -16,9 +16,6 @@ package io.mycat.proxy.handler;
 
 import io.mycat.command.CommandResolver;
 import io.mycat.command.ThreadModeCommandHanlderImpl;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.session.MycatSession;

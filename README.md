@@ -952,7 +952,7 @@ xa
 当数据源提供者为
 
 ```yaml
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider
 ```
 
 
@@ -968,7 +968,7 @@ datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDat
 例如
 
 ```yaml
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider
 ```
 
 当使用此数据源提供者的时候使用workerPool线程池,当设置xa事务的时候,是使用此DruidDatasourceProvider实现的事务是本地事务,多个连接commit在阶段失败,已经commit的连接不能回滚
@@ -1032,7 +1032,7 @@ datasource:
    initSqlsGetConnection: false
   }
   ]
-  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
 ```
 

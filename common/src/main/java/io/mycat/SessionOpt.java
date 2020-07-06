@@ -1,7 +1,7 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.bindThread.BindThreadKey;
+import io.mycat.bindthread.BindThreadKey;
 /**
  * @author Junwen Chen
  **/

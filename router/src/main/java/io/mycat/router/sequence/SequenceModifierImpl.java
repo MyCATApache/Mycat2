@@ -16,10 +16,8 @@
 package io.mycat.router.sequence;
 
 import io.mycat.api.MySQLAPIRuntime;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.sequenceModifier.ModifyCallback;
-import io.mycat.sequenceModifier.SequenceModifier;
+import io.mycat.sequencemodifier.ModifyCallback;
+import io.mycat.sequencemodifier.SequenceModifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

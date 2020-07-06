@@ -14,17 +14,13 @@
  */
 package io.mycat.proxy.monitor;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
-import io.mycat.util.DynaClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

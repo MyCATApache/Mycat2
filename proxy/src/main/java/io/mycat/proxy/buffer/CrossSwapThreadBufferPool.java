@@ -15,10 +15,7 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.MycatException;
-import io.mycat.beans.MySQLDatasource;
 import io.mycat.buffer.BufferPool;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

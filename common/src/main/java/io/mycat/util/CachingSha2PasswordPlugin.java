@@ -31,9 +31,6 @@ package io.mycat.util;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.ServerVersion;
-import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

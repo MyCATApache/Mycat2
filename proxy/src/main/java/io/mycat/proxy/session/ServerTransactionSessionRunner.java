@@ -2,9 +2,9 @@ package io.mycat.proxy.session;
 
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.bindThread.BindThread;
-import io.mycat.bindThread.BindThreadCallback;
-import io.mycat.bindThread.BindThreadKey;
+import io.mycat.bindthread.BindThread;
+import io.mycat.bindthread.BindThreadCallback;
+import io.mycat.bindthread.BindThreadKey;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.thread.GThreadPool;
 import org.jetbrains.annotations.NotNull;

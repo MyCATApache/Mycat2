@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.reactor;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

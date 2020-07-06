@@ -1,8 +1,5 @@
 package io.mycat.router.util;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.router.sequence.SequenceModifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

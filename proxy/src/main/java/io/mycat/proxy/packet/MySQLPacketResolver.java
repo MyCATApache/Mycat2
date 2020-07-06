@@ -18,9 +18,6 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.*;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

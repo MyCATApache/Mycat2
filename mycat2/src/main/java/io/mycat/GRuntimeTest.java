@@ -14,7 +14,7 @@
  */
 package io.mycat;
 
-import io.mycat.bindThread.BindThreadKey;
+import io.mycat.bindthread.BindThreadKey;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
