@@ -7,11 +7,14 @@ import io.mycat.example.TestUtil;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.util.NetUtil;
 import lombok.SneakyThrows;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -42,15 +45,35 @@ public class PstmtShardingExample {
             thread.start();
             Thread.sleep(TimeUnit.SECONDS.toMillis(10));
         }
+//        try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
+//            PreparedStatement preparedStatement = mySQLConnection.prepareStatement("INSERT INTO `db1`.`travelrecord` (`id`,`user_id`) VALUES (?,?);");
+//            ThreadLocalRandom current = ThreadLocalRandom.current();
+//            for (int i = 0; i < 600; i++) {
+//                preparedStatement.setInt(1,i);
+//                preparedStatement.setInt(2,current.nextInt());
+//                preparedStatement.addBatch();
+//            }
+//            preparedStatement.executeBatch();
+//        }
         try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
-            PreparedStatement preparedStatement = mySQLConnection.prepareStatement("INSERT INTO `db1`.`travelrecord` (`id`,`user_id`) VALUES (?,?);");
+            try(Statement statement1 = mySQLConnection.createStatement()){
+                statement1.execute("delete `db1`.`travelrecord`");
+            }
+            PreparedStatement preparedStatement = mySQLConnection.prepareStatement("INSERT INTO `db1`.`travelrecord` (`id`,`user_id`) VALUES (?,?)");
             ThreadLocalRandom current = ThreadLocalRandom.current();
-            for (int i = 0; i < 600; i++) {
+            for (int i = 1; i <= 600; i++) {
                 preparedStatement.setInt(1,i);
                 preparedStatement.setInt(2,current.nextInt());
                 preparedStatement.addBatch();
             }
             preparedStatement.executeBatch();
+            Statement statement = mySQLConnection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select count(*) from db1.travelrecord");
+            long aLong = 0;
+            while (resultSet.next()){
+                aLong= resultSet.getLong(1);
+            }
+            Assert.assertEquals(600,aLong);
         }
         try (Connection mySQLConnection = TestUtil.getPstmtMySQLConnection()) {
             PreparedStatement preparedStatement = mySQLConnection.prepareStatement("select * from db1.travelrecord where id =? and user_id = ?");
