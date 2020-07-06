@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>io.mycat</groupId>
-            <artifactId>mycat2</artifactId>
+            <artifactId>hbt</artifactId>
             <version>1.11-05</version>
         </dependency>
 

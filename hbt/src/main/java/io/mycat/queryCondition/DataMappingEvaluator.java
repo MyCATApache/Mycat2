@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
 public class DataMappingEvaluator {
     private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
 
-    public  void assignment(boolean or, String columnName, String value) {
-        getRangeVariables(columnName).add(new RangeVariable(columnName,or, RangeVariableType.EQUAL, value));
+    public void assignment(boolean or, String columnName, String value) {
+        getRangeVariables(columnName).add(new RangeVariable(columnName, or, RangeVariableType.EQUAL, value));
     }
 
-    public    void assignmentRange(boolean or, String columnName, String begin, String end) {
-        getRangeVariables(columnName).add(new RangeVariable(columnName,or, RangeVariableType.RANGE, begin, end));
+    public void assignmentRange(boolean or, String columnName, String begin, String end) {
+        getRangeVariables(columnName).add(new RangeVariable(columnName, or, RangeVariableType.RANGE, begin, end));
     }
 
     private Set<RangeVariable> getRangeVariables(String columnName) {
@@ -73,10 +73,10 @@ public class DataMappingEvaluator {
             }
         }
         if (res.isEmpty()) {
-            return (List)allBackends;
+            return (List) allBackends;
         } else {
             if (allBackends.isEmpty()) {
-                return (List)res;
+                return (List) res;
             }
             return res.stream().filter(allBackends::contains).collect(Collectors.toList());
         }
@@ -88,7 +88,7 @@ public class DataMappingEvaluator {
             routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
         }
         if (routeIndexSortedSet.isEmpty()) {
-            return (List)logicTable.getShardingBackends();
+            return (List) logicTable.getShardingBackends();
         } else {
             return routeIndexSortedSet;
         }
@@ -99,13 +99,7 @@ public class DataMappingEvaluator {
     }
 
     private List<DataNode> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
-        @NonNull SimpleColumnInfo columnInfo = target.getColumnInfo();
-        Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.getColumnName());
-        if (rangeVariables == null) {
-           return (List)target.getFunction().getTable().getShardingBackends();
-        } else {
-            return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
-        }
+        return calculate(target.getFunction(), columnMap.values().stream().flatMap(i -> i.stream()).collect(Collectors.toSet())).stream().sorted().collect(Collectors.toList());
     }
 
     private List<DataNode> calculate(CustomRuleFunction ruleFunction, Set<RangeVariable> values) {
