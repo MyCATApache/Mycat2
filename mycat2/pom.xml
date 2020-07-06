@@ -12,6 +12,11 @@
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.8</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-dist -->
         <dependency>
             <groupId>com.github.oshi</groupId>
