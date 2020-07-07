@@ -238,6 +238,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 receiver.sendBinaryResultSet(() -> baseIterator);
             } else {
                 RowBaseIterator baseIterator = client.query(sql);
+                baseIterator.next();//触发计算
                 ReceiverImpl receiver = new ReceiverImpl(session);
                 receiver.sendResponse(new MycatResponse[]{(UpdateRowIteratorResponse) baseIterator}, null);
             }

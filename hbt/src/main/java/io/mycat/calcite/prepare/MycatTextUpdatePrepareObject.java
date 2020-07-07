@@ -80,7 +80,6 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
 
                     }
                 }, dbContext.getServerStatus());
-                mergeUpdateRowIterator.next();
                 return mergeUpdateRowIterator;
             }
         };
