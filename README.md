@@ -2748,6 +2748,10 @@ show @@server
 
 ##### Mycat2可视化监控
 
+
+
+#### Promethous监控
+
 Mycat2可视化监控,使用Grafana和prometheus实现:
 
 https://github.com/MyCATApache/Mycat2/blob/master/Mycat2-monitor.json
@@ -2815,6 +2819,74 @@ thread_pool_active:连接池活跃线程统计
 
 
 如果有什么建议可以提交issue或者与作者沟通
+
+
+
+#### Zabbix监控
+
+
+
+###### 安装zabbix_server
+
+/etc/zabbix/zabbix_server.conf
+
+添加下面配置
+
+```ini
+JavaGateway=127.0.0.1
+JavaGatewayPort=10052
+StartJavaPollers=5
+```
+
+
+
+###### 安装zabbix_java_gateway
+
+/etc/zabbix/zabbix_java_gateway.conf
+
+```ini
+LISTEN_IP="127.0.0.1"
+LISTEN_PORT=10052
+PID_FILE="/var/run/zabbix/zabbix_java.pid"
+START_POLLERS=5
+```
+
+
+
+###### zabbix web添加jmx监控
+
+配置->主机->创建主机
+
+​	JMX接口
+
+​			IP地址: Mycat或者其他java程序的IP
+
+​			端口:jmx开启的端口
+
+
+
+###### 查看监控
+
+监测->最新数据
+
+
+
+###### 日志文件
+
+/var/log/zabbix/zabbix_server.log
+
+
+
+###### JVM启动参数参考
+
+```ini
+-Dcom.sun.management.jmxremote
+-Dcom.sun.management.jmxremote.port=1984
+-Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false
+```
+
+该参数可以在wrapper.conf里面配置
 
 
 
