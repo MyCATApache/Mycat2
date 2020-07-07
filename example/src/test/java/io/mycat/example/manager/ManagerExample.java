@@ -189,6 +189,7 @@ public class ManagerExample {
                 logicSchemaConfig1.setSchemaName("TESTDB");
                 mycatHttpConfigServer.setConfig(newConfig);
                 statement.execute("reload @@config by file");
+                Thread.sleep(1000);//todo check   Assert.assertTrue(show_databases.contains("TESTDB")); fail
 
                 String show_databases = TestUtil.getString(statement.executeQuery("show databases"));
                 Assert.assertTrue(show_databases.contains("TESTDB"));
