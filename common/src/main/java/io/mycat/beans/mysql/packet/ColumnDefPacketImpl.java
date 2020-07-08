@@ -80,7 +80,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnName = getBytes(resultSetMetaData.getColumnLabel(columnIndex));
             this.columnOrgName = getBytes(resultSetMetaData.getColumnName(columnIndex));
             this.columnNextLength = 0xC;
-            this.columnLength = resultSetMetaData.getColumnDisplaySize(columnIndex);
+            this.columnLength = 256;
             this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
             this.columnCharsetSet = 0x21;
