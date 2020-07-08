@@ -2842,7 +2842,7 @@ StartJavaPollers=5
 
 ###### 安装zabbix_java_gateway
 
-/etc/zabbix/zabbix_java_gateway.conf
+/etc/zabbix/zabbix_java_gateway.conf 参考配置
 
 ```ini
 LISTEN_IP="127.0.0.1"
@@ -2857,11 +2857,17 @@ START_POLLERS=5
 
 配置->主机->创建主机
 
+​	主机配置页
+
 ​	JMX接口
 
 ​			IP地址: Mycat或者其他java程序的IP
 
 ​			端口:jmx开启的端口
+
+​	模板配置页
+
+​			添加Template App Generic Java JMX模板
 
 
 
