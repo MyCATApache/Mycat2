@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.TranslatableTable;
@@ -39,7 +40,7 @@ import java.util.*;
  * @author Junwen Chen
  **/
 @Getter
-public class MycatLogicTable extends MycatTableBase implements TranslatableTable {
+public class MycatLogicTable extends MycatTableBase implements TranslatableTable , ProjectableFilterableTable {
     final TableHandler table;
     final List<MycatPhysicalTable> dataNodes = new ArrayList<>();
     final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();

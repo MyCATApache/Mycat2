@@ -13,7 +13,7 @@ public class ShowCreateFunctionHanlder  extends AbstractSQLHandler<com.alibaba.f
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

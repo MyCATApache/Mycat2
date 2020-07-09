@@ -14,7 +14,7 @@ public class ShowDatabaseSQLHandler extends AbstractSQLHandler<SQLShowDatabasesS
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

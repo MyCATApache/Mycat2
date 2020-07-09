@@ -157,6 +157,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
         hepProgramBuilder = new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
                 .addRuleCollection(ImmutableList.of(
+                        PushDownLogicTableRule.LogicalTable,
                         PushDownLogicTableRule.BindableTableScan
                 ));
 
@@ -407,24 +408,25 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
              */
 //            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
+//            ProjectSetOpTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
 //            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段
             AggregateValuesRule.INSTANCE,
             //sort
-            SortJoinCopyRule.INSTANCE,
-            SortJoinTransposeRule.INSTANCE,
-            SortProjectTransposeRule.INSTANCE,
-            SortRemoveConstantKeysRule.INSTANCE,
-            SortRemoveRule.INSTANCE,
-            SortUnionTransposeRule.INSTANCE,
-            SortUnionTransposeRule.MATCH_NULL_FETCH,
+//            SortJoinCopyRule.INSTANCE,#产生多余的sort
+//            SortJoinTransposeRule.INSTANCE,
+//            SortProjectTransposeRule.INSTANCE,
+//            SortRemoveConstantKeysRule.INSTANCE,
+//            SortRemoveRule.INSTANCE,
+//            SortUnionTransposeRule.INSTANCE,
+//            SortUnionTransposeRule.MATCH_NULL_FETCH,
             SubQueryRemoveRule.FILTER,
             SubQueryRemoveRule.JOIN,
             SubQueryRemoveRule.PROJECT);
 
     public RelNode pullUpUnion(RelNode relNode1) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(PULL_RULES.size());
+        hepProgramBuilder.addMatchLimit(1024);
         hepProgramBuilder.addRuleCollection(PULL_RULES);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(relNode1);
