@@ -1,18 +1,32 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.hbt4.MycatConvention;
+import io.mycat.hbt4.physical.MergeSort;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.rules.AggregateUnionTransposeRule;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.fun.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.*;
 
 public class RBO extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
+    RelOptPlanner planner;
 
     static {
         nextConvertor.put(TableScan.class,
@@ -29,7 +43,7 @@ public class RBO extends RelShuttleImpl {
 
     @Override
     public RelNode visit(TableScan scan) {
-        return View.of(scan,scan.getTable().unwrap(MycatTable.class).computeDataNode());
+        return View.of(scan, scan.getTable().unwrap(MycatTable.class).computeDataNode());
     }
 
     @Override
@@ -157,18 +171,105 @@ public class RBO extends RelShuttleImpl {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
         }
-        input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
-        return View.of(input,dataNodeInfo);
+        if (dataNodeInfo == null) {
+            return sort.copy(input.getTraitSet(), ImmutableList.of(input));
+        }
+        int size = dataNodeInfo.size();
+        if (size == 1) {
+            input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
+            return View.of(input, dataNodeInfo);
+        } else {
+            RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+            RexNode offset = sort.offset == null ? rexBuilder.makeExactLiteral(BigDecimal.ZERO) : sort.offset;
+            RexNode fetch = sort.fetch == null ? rexBuilder.makeExactLiteral(BigDecimal.valueOf(Long.MAX_VALUE)) : sort.fetch;
+            input = LogicalSort.create(input, sort.getCollation()
+                    , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
+                    , rexBuilder.makeCall(SqlStdOperatorTable.PLUS, offset, fetch));
+            input = View.of(input, dataNodeInfo);
+            return new MergeSort(
+                    input.getCluster(),
+                    input.getTraitSet().replace(MycatConvention.INSTANCE),
+                    input,
+                    sort.collation, offset, fetch);
+        }
     }
 
-    private static RelNode aggregate(RelNode input, LogicalAggregate aggregate) {
+    private static final Map<Class<? extends SqlAggFunction>, Boolean>
+            SUPPORTED_AGGREGATES = new IdentityHashMap<>();
+
+    static {
+        SUPPORTED_AGGREGATES.put(SqlMinMaxAggFunction.class, true);
+        SUPPORTED_AGGREGATES.put(SqlCountAggFunction.class, true);
+        SUPPORTED_AGGREGATES.put(SqlSumAggFunction.class, true);
+        SUPPORTED_AGGREGATES.put(SqlSumEmptyIsZeroAggFunction.class, true);
+        SUPPORTED_AGGREGATES.put(SqlAnyValueAggFunction.class, true);
+        SUPPORTED_AGGREGATES.put(SqlBitOpAggFunction.class, true);
+    }
+
+    private RelNode aggregate(RelNode input, LogicalAggregate aggregate) {
+        RelOptCluster cluster = input.getCluster();
         DataNodeInfo dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
         }
-        input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
-        return View.of(input,dataNodeInfo);
+        if (dataNodeInfo == null) {
+            input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+            return input;
+        }
+        int size = dataNodeInfo.size();
+        if (size == 1) {
+            input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+            return View.of(input, dataNodeInfo);
+        } else {
+            if (!(input instanceof Union)) {
+                input = LogicalUnion.create(ImmutableList.of(input, input), true);
+                input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+            }
+            HepProgramBuilder hepProgram = new HepProgramBuilder();
+            hepProgram.addMatchLimit(1);
+            hepProgram.addRuleInstance(AggregateUnionTransposeRule.INSTANCE);
+            HepPlanner planner = new HepPlanner(hepProgram.build());
+            planner.setRoot(input);
+            RelNode bestExp = planner.findBestExp();
+            MultiView multiView = new MultiView(cluster.traitSetOf(MycatConvention.INSTANCE),
+                    bestExp.getInput(0).getInput(0),
+                    dataNodeInfo);
+            return aggregate.copy(input.getTraitSet(), ImmutableList.of(multiView));
+        }
+    }
+
+    private static List<AggregateCall> transformAggCalls(RelNode input, int groupCount,
+                                                         List<AggregateCall> origCalls) {
+        final List<AggregateCall> newCalls = new ArrayList<>();
+        for (Ord<AggregateCall> ord : Ord.zip(origCalls)) {
+            final AggregateCall origCall = ord.e;
+            if (origCall.isDistinct()
+                    || !SUPPORTED_AGGREGATES.containsKey(origCall.getAggregation()
+                    .getClass())) {
+                return null;
+            }
+            final SqlAggFunction aggFun;
+            final RelDataType aggType;
+            if (origCall.getAggregation() == SqlStdOperatorTable.COUNT) {
+                aggFun = SqlStdOperatorTable.SUM0;
+                // count(any) is always not null, however nullability of sum might
+                // depend on the number of columns in GROUP BY.
+                // Here we use SUM0 since we are sure we will not face nullable
+                // inputs nor we'll face empty set.
+                aggType = null;
+            } else {
+                aggFun = origCall.getAggregation();
+                aggType = origCall.getType();
+            }
+            AggregateCall newCall =
+                    AggregateCall.create(aggFun, origCall.isDistinct(),
+                            origCall.isApproximate(), origCall.ignoreNulls(),
+                            ImmutableList.of(groupCount + ord.i), -1, origCall.collation,
+                            groupCount, input, aggType, origCall.getName());
+            newCalls.add(newCall);
+        }
+        return newCalls;
     }
 
     private static RelNode union(List<RelNode> inputs, LogicalUnion union) {
@@ -180,7 +281,15 @@ public class RBO extends RelShuttleImpl {
     }
 
     private static RelNode join(RelNode left, RelNode right, LogicalJoin join) {
-        return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+        if (left instanceof View&&right instanceof View){
+            DataNodeInfo dataNode1 = ((View) left).getDataNode();
+            DataNodeInfo dataNode2 = ((View) right).getDataNode();
+            if (Objects.equals(dataNode1,dataNode2)){
+                return View.of( join.copy(join.getTraitSet(), ImmutableList.of(((View) left).getRelNode(), ((View) right).getRelNode())));
+            }
+        } {
+            return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+        }
     }
 
     private static RelNode filter(RelNode input, LogicalFilter filter) {
@@ -193,10 +302,10 @@ public class RBO extends RelShuttleImpl {
             RexNode condition = filter.getCondition();
             RelOptTable table = input.getTable();
             MycatTable sTable = table.unwrap(MycatTable.class);
-            return View.of(filter.copy(input.getTraitSet(), ImmutableList.of(input)),  sTable.computeDataNode(condition));
+            return View.of(filter.copy(input.getTraitSet(), ImmutableList.of(input)), sTable.computeDataNode(condition));
         }
         input = filter.copy(input.getTraitSet(), ImmutableList.of(input));
-        return View.of(input,dataNodeInfo);
+        return View.of(input, dataNodeInfo);
     }
 
     private static RelNode project(RelNode input, LogicalProject project) {
@@ -206,7 +315,7 @@ public class RBO extends RelShuttleImpl {
             input = ((View) input).getRelNode();
         }
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
-        return View.of(input,dataNodeInfo);
+        return View.of(input, dataNodeInfo);
     }
 
 }

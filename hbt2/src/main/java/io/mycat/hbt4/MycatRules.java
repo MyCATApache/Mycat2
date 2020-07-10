@@ -189,8 +189,7 @@ public class MycatRules {
                 new MycatIntersectRule(out, relBuilderFactory),
                 new MycatMinusRule(out, relBuilderFactory),
                 new MycatTableModificationRule(out, relBuilderFactory),
-                new MycatValuesRule(out, relBuilderFactory),
-                new MycatViewRule(out, relBuilderFactory));
+                new MycatValuesRule(out, relBuilderFactory));
     }
 
 

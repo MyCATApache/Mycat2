@@ -38,7 +38,8 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        SqlParser sqlParser = SqlParser.create("(select count(1) from travelrecord where id = 1 limit ?) union all (select count(1) from travelrecord where id = 1 limit 2)");
+        SqlParser sqlParser = SqlParser.create(
+                "(select count(1) from travelrecord limit ? offset ?) union all (select count(1) from travelrecord where id = 1 limit 2)");
         SqlNode sqlNode = sqlParser.parseQuery();
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
         MetadataManager.INSTANCE.load(RootHelper.INSTANCE.bootConfig(Main.class).currentConfig());
@@ -82,6 +83,8 @@ public class Main {
         }
         MycatRel relNode1 = (MycatRel)optimizeWithCBO(relNode, cluster);
         Map<String,Object> context = new HashMap<>();
+        context.put("?0",0);
+        context.put("?1",1);
         ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context);
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();

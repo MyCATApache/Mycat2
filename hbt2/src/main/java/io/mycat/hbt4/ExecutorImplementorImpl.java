@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.hbt3.MultiView;
+import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.physical.*;
@@ -27,6 +29,7 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -196,7 +199,7 @@ public class ExecutorImplementorImpl implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatSort mycatSort) {
-        Executor executor = implementInput((MycatRel) mycatSort.getInput());
+        Executor executor = implementInput((MycatRel) mycatSort);
         RelDataType inputRowType = mycatSort.getInput().getRowType();
         RelCollation collation = mycatSort.getCollation();
         List<RelFieldCollation> fieldCollations = collation.getFieldCollations();
@@ -204,18 +207,34 @@ public class ExecutorImplementorImpl implements ExecutorImplementor {
             Comparator<Row> comparator = comparator(mycatSort);
             executor = new MycatSortExecutor(comparator, executor);
         }
-        if (mycatSort.offset != null || mycatSort.fetch != null) {
-            final long offset =
-                    mycatSort.offset == null
+        RexNode offset = mycatSort.offset;
+        RexNode fetch = mycatSort.fetch;
+        if (offset != null || fetch != null) {
+            offset = resolveDynamicParam(offset);
+            fetch = resolveDynamicParam(fetch);
+            final long offsetValue =
+                    offset == null
                             ? 0
-                            : ((RexLiteral) mycatSort.offset).getValueAs(Integer.class);
-            final long fetch =
-                    mycatSort.fetch == null
+                            : ((RexLiteral) offset).getValueAs(Integer.class);
+            final long fetchValue =
+                    fetch == null
                             ? Long.MAX_VALUE
-                            : ((RexLiteral) mycatSort.fetch).getValueAs(Integer.class);
-            executor = new MycatLimitExecutor(offset, fetch, executor);
+                            : ((RexLiteral) fetch).getValueAs(Integer.class);
+            executor = new MycatLimitExecutor(offsetValue, fetchValue, executor);
         }
         return executor;
+    }
+
+    private RexNode resolveDynamicParam(RexNode node) {
+        if (node == null) {
+            return null;
+        }
+        if (node instanceof RexDynamicParam) {
+            RelDataType type = node.getType();
+            Object o = context.get(((RexDynamicParam) node).getName());
+            return MycatCalciteSupport.INSTANCE.RexBuilder.makeLiteral(o, type, true);
+        }
+        return node;
     }
 
     @Override
@@ -281,6 +300,16 @@ public class ExecutorImplementorImpl implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatQuery mycatQuery) {
+        return new ScanExecutor();
+    }
+
+    @Override
+    public Executor implement(MultiView multiView) {
+        return new ScanExecutor();
+    }
+
+    @Override
+    public Executor implement(View view) {
         return new ScanExecutor();
     }
 

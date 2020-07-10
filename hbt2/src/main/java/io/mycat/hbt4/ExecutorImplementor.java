@@ -1,6 +1,8 @@
 package io.mycat.hbt4;
 
 
+import io.mycat.hbt3.MultiView;
+import io.mycat.hbt3.View;
 import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.physical.*;
 
@@ -53,6 +55,10 @@ public interface ExecutorImplementor {
     Executor implement(TopN topN);
 
     Executor implement(MycatQuery mycatQuery);
+
+    Executor implement(MultiView multiView);
+
+    Executor implement(View view);
 
 //    Executor implement(BottomView bottomView);
 }
