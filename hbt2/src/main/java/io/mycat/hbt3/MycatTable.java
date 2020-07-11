@@ -1,7 +1,9 @@
 package io.mycat.hbt3;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.TableHandler;
 import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.hbt4.ShardingInfo;
 import io.mycat.router.ShardingTableHandler;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -20,7 +22,8 @@ public class MycatTable extends MycatLogicTable   {
     public MycatTable(TableHandler t) {
         super(t);
     }
-    public DataNodeInfo computeDataNode(RexNode condition) {
+    public PartInfo computeDataNode(RexNode condition) {
+        ShardingTableHandler table = (ShardingTableHandler) getTable();
         if (condition.getKind() == SqlKind.EQUALS) {
             RexCall rexNode = (RexCall) condition;
             List<RexNode> operands = new ArrayList<>(rexNode.getOperands());
@@ -45,43 +48,25 @@ public class MycatTable extends MycatLogicTable   {
             };
             if (columnName != null && value != null) {
                 Integer apply = function.apply(columnName, value);
-                return new DataNodeInfo() {
-                    @Override
-                    public int size() {
-                        return 1;
-                    }
 
-                    @Override
-                    public String toString() {
-                        ShardingTableHandler table = (ShardingTableHandler) getTable();
-
-                        return MessageFormat.format("{0}[{1}]",
-                                table.getSchemaName() + "." + table.getTableName(),
-                                size()
-                        );
-                    }
-                };
+                PartImpl part = new PartImpl(MessageFormat.format("{0}[{1}]",
+                        table.getSchemaName() + "." + table.getTableName(),
+                    1));
+                return new SinglePartInfo(part);
             }
         }
         return computeDataNode();
     }
 
-    public DataNodeInfo computeDataNode() {
-        return new DataNodeInfo() {
-            @Override
-            public int size() {
-                return  MycatTable.this.getDataNodes().size();
-            }
+    public PartInfo computeDataNode() {
+        ShardingTableHandler table = (ShardingTableHandler) getTable();
+        String schemaName = table.getSchemaName();
+        String tableName = table.getTableName();
+        int size = table.getShardingBackends().size();
+        return new RangePartInfo(schemaName,tableName,0,size);
+    }
 
-            @Override
-            public String toString() {
-                ShardingTableHandler table = (ShardingTableHandler)getTable();
-
-                return MessageFormat.format("{0}[{1}]",
-                        table.getSchemaName()+"."+table.getTableName(),size()
-
-                );
-            }
-        };
+    public ShardingInfo getShardingInfo() {
+        return new ShardingInfo(ImmutableList.of(),ImmutableList.of(),1,"");
     }
 }

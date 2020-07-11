@@ -28,18 +28,31 @@ import java.util.stream.Collectors;
 
 
 public class MycatSchema extends AbstractSchema {
-  private final ImmutableMap<String, Table> tables;
-  private final Collection<TableHandler> collect;
-  public MycatSchema(Collection<TableHandler> collect) {
-    this.collect = collect.stream().distinct().collect(Collectors.toList());
-    final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-    for (TableHandler collectionName :  this.collect) {
-      builder.put(collectionName.getTableName(), new MycatTable(collectionName));
+    private final ImmutableMap<String, Table> tables;
+    private final ImmutableMap<String, MycatTable> mycatTables;
+    private final Collection<TableHandler> collect;
+
+    public MycatSchema(Collection<TableHandler> collect) {
+        this.collect = collect.stream().distinct().collect(Collectors.toList());
+        final ImmutableMap.Builder<String, Table> tablebuilder = ImmutableMap.builder();
+        final ImmutableMap.Builder<String, MycatTable> mycatTableBuilder = ImmutableMap.builder();
+        for (TableHandler collectionName : this.collect) {
+            String tableName = collectionName.getTableName();
+            MycatTable mycatTable = new MycatTable(collectionName);
+            mycatTableBuilder.put(tableName, mycatTable);
+            tablebuilder.put(tableName, mycatTable);
+        }
+        this.tables = tablebuilder.build();
+        this.mycatTables = mycatTableBuilder.build();
     }
-    this .tables = builder.build();
-  }
-  @SneakyThrows
-  @Override protected Map<String, Table> getTableMap() {
-    return tables;
+
+    @SneakyThrows
+    @Override
+    protected Map<String, Table> getTableMap() {
+        return tables;
+    }
+
+  public Map<String, MycatTable> getMycatTables() {
+    return mycatTables;
   }
 }

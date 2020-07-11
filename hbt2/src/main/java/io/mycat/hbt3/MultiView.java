@@ -5,7 +5,7 @@ import org.apache.calcite.rel.RelNode;
 
 public class MultiView extends View  {
 
-    public MultiView(RelTraitSet relTrait, RelNode input, DataNodeInfo dataNode) {
+    public MultiView(RelTraitSet relTrait, RelNode input, PartInfo dataNode) {
         super(relTrait, input, dataNode);
     }
 }

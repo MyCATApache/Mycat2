@@ -6,16 +6,16 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 
 public class View extends AbstractRelNode implements MycatRel {
     RelNode relNode;
-    DataNodeInfo dataNode;
+    PartInfo dataNode;
 
-    public View(RelTraitSet relTrait,RelNode input,DataNodeInfo dataNode) {
+    public View(RelTraitSet relTrait, RelNode input, PartInfo dataNode) {
         super(input.getCluster(), input.getTraitSet());
         this.dataNode = dataNode;
         this.rowType = input.getRowType();
@@ -27,14 +27,17 @@ public class View extends AbstractRelNode implements MycatRel {
         return new View(input.getTraitSet().replace(MycatConvention.INSTANCE),input,null);
     }
 
-    public static RelNode of(RelNode input, DataNodeInfo dataNodeInfo) {
+    public static RelNode of(RelNode input, PartInfo dataNodeInfo) {
         return new View(input.getTraitSet().replace(MycatConvention.INSTANCE),input,dataNodeInfo);
     }
 
-    @NotNull
+
     public String getSql() {
         return MycatCalciteSupport.INSTANCE.convertToSql(relNode,
                 MysqlSqlDialect.DEFAULT, false);
+    }
+    public String getSql(Map<String,Object> context) {
+        return getSql();//@todo
     }
 
 //    @Override
@@ -46,7 +49,7 @@ public class View extends AbstractRelNode implements MycatRel {
         return relNode;
     }
 
-    public DataNodeInfo getDataNode() {
+    public PartInfo getDataNode() {
         return dataNode;
     }
 

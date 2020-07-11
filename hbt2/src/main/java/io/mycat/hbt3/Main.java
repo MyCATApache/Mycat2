@@ -3,11 +3,10 @@ package io.mycat.hbt3;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.RootHelper;
+import io.mycat.TableHandler;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.ExecutorImplementorImpl;
-import io.mycat.hbt4.MycatConvention;
-import io.mycat.hbt4.MycatRel;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.hbt4.*;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.mpp.Row;
@@ -30,21 +29,24 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        SqlParser sqlParser = SqlParser.create(
-                "(select count(1) from travelrecord limit ? offset ?) union all (select count(1) from travelrecord where id = 1 limit 2)");
+        String s = "(select count(1) from travelrecord) union all (select count(1) from travelrecord where id = 1 limit 2)";
+        SqlParser sqlParser = SqlParser.create(s, MycatCalciteSupport.INSTANCE.SQL_PARSER_CONFIG);
+
         SqlNode sqlNode = sqlParser.parseQuery();
+
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
         MetadataManager.INSTANCE.load(RootHelper.INSTANCE.bootConfig(Main.class).currentConfig());
         for (Map.Entry<String, SchemaHandler> entry : MetadataManager.INSTANCE.getSchemaMap().entrySet()) {
-            plus.add(entry.getKey(), new MycatSchema(entry.getValue().logicTables().values()));
+            Collection<TableHandler> tables = entry.getValue().logicTables().values();
+            String schemaName = entry.getKey();
+            MycatSchema schema = new MycatSchema(tables);
+            plus.add(schemaName,schema);
+            Map<String, MycatTable> mycatTables = schema.getMycatTables();
         }
 
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
@@ -74,25 +76,30 @@ public class Main {
         RelRoot finalRoot = root2.withRel(
                 RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         RelNode logPlan = finalRoot.rel;
-        logPlan =  optimizeWithRBO(logPlan);
+        logPlan = optimizeWithRBO(logPlan);
         RBO rbo = new RBO();
         RelNode relNode = logPlan.accept(rbo);
         if (relNode instanceof View) {
             String sql = ((View) relNode).getSql();
             System.out.println(sql);
         }
-        MycatRel relNode1 = (MycatRel)optimizeWithCBO(relNode, cluster);
-        Map<String,Object> context = new HashMap<>();
-        context.put("?0",0);
-        context.put("?1",1);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context);
-        Executor implement = relNode1.implement(executorImplementor);
-        implement.open();
-        Iterator<Row> iterator = implement.iterator();
-        while (iterator.hasNext()){
-            Row next = iterator.next();
-            System.out.println(next);
+        MycatRel relNode1 = (MycatRel) optimizeWithCBO(relNode, cluster);
+        Map<String, Object> context = new HashMap<>();
+        context.put("?0", 0);
+        context.put("?1", 1);
+        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
+            RelDataType rowType = relNode1.getRowType();
+            CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
+            ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, datasourceFactory);
+            Executor implement = relNode1.implement(executorImplementor);
+            implement.open();
+            Iterator<Row> iterator = implement.iterator();
+            while (iterator.hasNext()) {
+                Row next = iterator.next();
+                System.out.println(next);
+            }
         }
+
     }
 
 
@@ -100,7 +107,7 @@ public class Main {
         return k.isInstance(a);
     }
 
-//    private static RelNode hep(RelNode parent, RelNode cur) {
+    //    private static RelNode hep(RelNode parent, RelNode cur) {
 //        List<RelNode> inputs = cur.getInputs();
 //        if (inputs != null) {
 //            for (RelNode input : inputs) {
@@ -149,14 +156,15 @@ public class Main {
 //        }
 //        return null;
 //    }
-private static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
-    RelOptPlanner planner = cluster.getPlanner();
-    planner.clear();
-    MycatConvention.INSTANCE.register(planner);
-    logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
-    planner.setRoot(logPlan);
-    return planner.findBestExp();
-}
+    private static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
+        RelOptPlanner planner = cluster.getPlanner();
+        planner.clear();
+        MycatConvention.INSTANCE.register(planner);
+        logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
+        planner.setRoot(logPlan);
+        return planner.findBestExp();
+    }
+
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             JoinPushTransitivePredicatesRule.INSTANCE,
             JoinPushTransitivePredicatesRule.INSTANCE,
@@ -178,6 +186,7 @@ private static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
             ReduceExpressionsRule.PROJECT_INSTANCE,
             FilterMergeRule.INSTANCE
     );
+
     private static RelNode optimizeWithRBO(RelNode logPlan) {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(1024);

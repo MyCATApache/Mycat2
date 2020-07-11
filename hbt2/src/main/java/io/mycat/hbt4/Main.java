@@ -28,7 +28,6 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -104,7 +103,6 @@ public class Main {
         phyPlan.explain(explainWriter);
         StringBuilder text = explainWriter.getText();
         System.out.println(text);
-        Executor executor = phyPlan.implement(new ExecutorImplementorImpl(Collections.emptyMap()));
         return null;
     }
 
