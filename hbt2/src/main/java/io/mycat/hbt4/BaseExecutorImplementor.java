@@ -41,9 +41,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
-    final Map<String, Object> context;
+    final Map<Object, Object> context;
 
-    public BaseExecutorImplementor(Map<String, Object> context) {
+    public BaseExecutorImplementor(Map<Object, Object> context) {
         this.context = context;
     }
 

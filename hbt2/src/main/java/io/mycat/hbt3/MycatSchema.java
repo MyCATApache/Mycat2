@@ -17,42 +17,34 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableMap;
-import io.mycat.TableHandler;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-
+@Data
 public class MycatSchema extends AbstractSchema {
-    private final ImmutableMap<String, Table> tables;
-    private final ImmutableMap<String, MycatTable> mycatTables;
-    private final Collection<TableHandler> collect;
+    private List<String> createTableSqls = new ArrayList<>();
+    private String schemaName;
+    private DrdsConst drdsConst;
+    private transient ImmutableMap<String, MycatTable> mycatTableMap = ImmutableMap.of();
 
-    public MycatSchema(Collection<TableHandler> collect) {
-        this.collect = collect.stream().distinct().collect(Collectors.toList());
-        final ImmutableMap.Builder<String, Table> tablebuilder = ImmutableMap.builder();
-        final ImmutableMap.Builder<String, MycatTable> mycatTableBuilder = ImmutableMap.builder();
-        for (TableHandler collectionName : this.collect) {
-            String tableName = collectionName.getTableName();
-            MycatTable mycatTable = new MycatTable(collectionName);
-            mycatTableBuilder.put(tableName, mycatTable);
-            tablebuilder.put(tableName, mycatTable);
+    public void init() {
+        ImmutableMap.Builder<String, MycatTable> builder = ImmutableMap.builder();
+        for (String sql : createTableSqls) {
+            MycatTable table = new MycatTable(this.schemaName, sql,drdsConst);
+            builder.put(table.getTableName(), table);
         }
-        this.tables = tablebuilder.build();
-        this.mycatTables = mycatTableBuilder.build();
+        this.mycatTableMap = builder.build();
     }
 
     @SneakyThrows
     @Override
     protected Map<String, Table> getTableMap() {
-        return tables;
+        return (Map) mycatTableMap;
     }
-
-  public Map<String, MycatTable> getMycatTables() {
-    return mycatTables;
-  }
 }

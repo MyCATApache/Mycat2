@@ -1,40 +1,56 @@
 package io.mycat.hbt4;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.util.List;
 
 @EqualsAndHashCode
+@Getter
 public class ShardingInfo {
     final List<String> schemaKeys;
+    final String schemaFun;
     final List<String> tableKeys;
-    final int size;
+    final String tableFun;
+    final int datasourceSize;
+    final int schemaSize;
+    final int tableSize;
     final String name;
+    final Type type;
 
-    public ShardingInfo(List<String> schemaKeys, List<String> tableKeys, int size, String name) {
+    public ShardingInfo(Type type,
+                        List<String> schemaKeys, List<String> tableKeys,
+                        String schemaFun, String tableFun,
+                        int datasourceSize,
+                        int schemaSize, int tableSize,
+                        String name) {
+        this.type = type;
         this.schemaKeys = schemaKeys;
         this.tableKeys = tableKeys;
-        this.size = size;
+        this.schemaFun = schemaFun;
+        this.tableFun = tableFun;
+        this.datasourceSize = datasourceSize;
+        this.schemaSize = schemaSize;
+        this.tableSize = tableSize;
         this.name = name;
     }
 
-    public List<String> getSchemaKeys() {
-        return schemaKeys;
+    public int size(){
+        return datasourceSize*schemaSize*tableSize;
     }
 
-    public List<String> getTableKeys() {
-        return tableKeys;
+    public boolean isBroadCast() {
+     return type == Type.broadCast;
     }
-
-    public int getSize() {
-        return size;
+    public boolean isNormal() {
+        return type == Type.normal;
     }
-
-    public String getName() {
-        return name;
+    public boolean isSharding() {
+        return type == Type.sharding;
     }
-
-    public boolean isGlobal() {
-        return size == 1&&schemaKeys.isEmpty()&&tableKeys.isEmpty();
+    public enum Type{
+        broadCast,
+        normal,
+        sharding
     }
 }

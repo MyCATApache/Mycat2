@@ -1,14 +1,16 @@
 package io.mycat.hbt3;
 
 import org.apache.calcite.rel.RelNode;
-
-import java.util.List;
-import java.util.Map;
+import org.apache.calcite.sql.util.SqlString;
 
 public interface Part {
-    String getName();
+    int getMysqlIndex();
 
-    List<Object> collectParams(Map<String, Object> context);
+    int getSchemaIndex();
 
-    String getSql(RelNode node);
+    SqlString getSql(RelNode node);
+    public String getBackendTableName(MycatTable mycatTable);
+
+    public String getBackendSchemaName(MycatTable mycatTable);
+
 }

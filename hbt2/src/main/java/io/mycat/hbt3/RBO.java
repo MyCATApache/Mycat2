@@ -247,7 +247,7 @@ public class RBO extends RelShuttleImpl {
                     MycatTable s = ((View) right).getRelNode().getTable().unwrap(MycatTable.class);
                     ShardingInfo l = m.getShardingInfo();
                     ShardingInfo r = s.getShardingInfo();
-                    boolean canPush = (l.isGlobal() || r.isGlobal());
+                    boolean canPush = (m.isBroadCast() || s.isBroadCast());
                     if (!canPush) {
                         if (Objects.deepEquals(l, r)) {
                             List<IntPair> pairs = joinInfo.pairs();
@@ -255,9 +255,9 @@ public class RBO extends RelShuttleImpl {
                             for (IntPair pair : pairs) {
                                 String s1 = m.getRowType().getFieldNames().get(pair.source);
                                 String s2 = s.getRowType().getFieldNames().get(pair.target);
-                                if (l.getSchemaKeys().contains(s1) && r.getSchemaKeys().contains(s1)
+                                if (Objects.deepEquals(l.getSchemaKeys(),r.getSchemaKeys())
                                         &&
-                                        l.getTableKeys().contains(s1) && r.getTableKeys().contains(s2)) {
+                                        Objects.deepEquals( l.getTableKeys(),r.getTableKeys())) {
                                     size--;
                                 }else {
                                     break;

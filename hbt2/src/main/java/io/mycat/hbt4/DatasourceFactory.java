@@ -1,7 +1,8 @@
 package io.mycat.hbt4;
 
-import io.mycat.hbt3.Part;
+public interface DatasourceFactory extends AutoCloseable {
 
-public interface DatasourceFactory extends AutoCloseable{
-    Executor create(Part... parts);
+    Executor create(int index, String sql, Object[] objects);
+
+    public void createTableIfNotExisted(int index, String createTableSql);
 }

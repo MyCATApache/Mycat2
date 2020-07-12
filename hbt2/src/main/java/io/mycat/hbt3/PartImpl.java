@@ -1,26 +1,91 @@
 package io.mycat.hbt3;
 
-import lombok.AllArgsConstructor;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.util.SqlString;
 
 import java.util.List;
-import java.util.Map;
 
-@AllArgsConstructor
+
 public class PartImpl implements Part {
-    String name;
-    @Override
-    public String getName() {
-        return name;
+    int schemaIndex;
+    int tableIndex;
+    int mysqlIndex;
+
+    public PartImpl(int datasourceSize, int schemaIndex, int tableIndex) {
+        this.schemaIndex = schemaIndex;
+        this.tableIndex = tableIndex;
+        this.mysqlIndex = schemaIndex % datasourceSize;
     }
 
     @Override
-    public List<Object> collectParams(Map<String, Object> context) {
-        return null;
+    public int getMysqlIndex() {
+        return mysqlIndex;
     }
 
     @Override
-    public String getSql(RelNode relNode) {
-        return null;
+    public int getSchemaIndex() {
+        return schemaIndex;
     }
+
+    @Override
+    public SqlString getSql(RelNode node) {
+        SqlDialect dialect = MysqlSqlDialect.DEFAULT;
+        ToSQL toSQL = new ToSQL(schemaIndex, tableIndex, dialect);
+
+        SqlImplementor.Result result = toSQL.dispatch(node);
+        SqlNode sqlNode = result.asStatement();
+        return sqlNode.toSqlString(dialect, false);
+    }
+
+    public class ToSQL extends RelToSqlConverter {
+        int schemaIndex;
+        int tableIndex;
+
+        public ToSQL(int schemaIndex, int tableIndex, SqlDialect dialect) {
+            super(dialect);
+            this.schemaIndex = schemaIndex;
+            this.tableIndex = tableIndex;
+        }
+
+        @Override
+        public Result visit(TableScan e) {
+            if (e.getTable() != null) {
+                MycatTable mycatTable = e.getTable().unwrap(MycatTable.class);
+                if (mycatTable != null) {
+                    if (mycatTable.isSharding()) {
+                        String schemaName = getBackendSchemaName(mycatTable);
+                        String tableName = getBackendTableName(mycatTable);
+                        final List<String> qualifiedName = ImmutableList.of(schemaName, tableName);
+                        SqlIdentifier sqlIdentifier = new SqlIdentifier(qualifiedName, SqlParserPos.ZERO);
+                        return result(sqlIdentifier, ImmutableList.of(Clause.FROM), e, null);
+                    }
+                }
+            }
+            return super.visit(e);
+        }
+
+
+        @Override
+        public Result dispatch(RelNode e) {
+            return super.dispatch(e);
+        }
+    }
+
+    public String getBackendTableName(MycatTable mycatTable) {
+        return mycatTable.getTableName() + "_" + tableIndex;
+    }
+
+    public String getBackendSchemaName(MycatTable mycatTable) {
+        return mycatTable.getSchemaName() + "_" + schemaIndex;
+    }
+
 }
