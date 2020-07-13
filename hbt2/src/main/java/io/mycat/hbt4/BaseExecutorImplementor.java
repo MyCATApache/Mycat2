@@ -37,13 +37,12 @@ import org.objenesis.instantiator.util.UnsafeUtils;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
-    final Map<Object, Object> context;
+    final List<Object> context;
 
-    public BaseExecutorImplementor(Map<Object, Object> context) {
+    public BaseExecutorImplementor(List< Object> context) {
         this.context = context;
     }
 
@@ -227,7 +226,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         }
         if (node instanceof RexDynamicParam) {
             RelDataType type = node.getType();
-            Object o = context.get(((RexDynamicParam) node).getName());
+            Object o = context.get(((RexDynamicParam) node).getIndex());
             return MycatCalciteSupport.INSTANCE.RexBuilder.makeLiteral(o, type, true);
         }
         return node;

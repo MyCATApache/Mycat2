@@ -10,12 +10,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Map;
+import java.util.List;
 
 public class ExecutorImplementorImpl extends BaseExecutorImplementor {
     private final DatasourceFactory factory;
 
-    public ExecutorImplementorImpl(Map<Object, Object> context, DatasourceFactory factory) {
+    public ExecutorImplementorImpl(List<Object> context, DatasourceFactory factory) {
         super(context);
         this.factory = factory;
     }

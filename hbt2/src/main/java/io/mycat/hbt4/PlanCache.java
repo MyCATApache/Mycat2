@@ -1,26 +1,23 @@
 package io.mycat.hbt4;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import lombok.SneakyThrows;
-
-import java.util.concurrent.Callable;
+import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentHashMap;
 
 public enum PlanCache {
     INSTANCE;
-    Cache<String, Plan> cache = CacheBuilder.newBuilder()
-            .maximumSize(65535)
-            .build();
+    ConcurrentHashMap<String, PriorityQueue<Plan>> cache = new ConcurrentHashMap<>();
 
-    public Plan get(String sql) {
-        return cache.getIfPresent(sql);
-    }
-    @SneakyThrows
-    public Plan get(String sql, Callable<Plan> callable) {
-        return cache.get(sql,callable);
+    public Plan getMinCostPlan(String sql) {
+        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
+        if (plans.isEmpty()){
+            return null;
+        }else {
+            return plans.poll();
+        }
     }
     public void put(String sql,Plan plan){
-        cache.put(sql,plan);
+        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
+        plans.add(plan);
     }
 
 }

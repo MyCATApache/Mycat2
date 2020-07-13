@@ -2,6 +2,7 @@
     "autoCreateTable": true,
     "datasourceNum": 1,
     "shardingSchemaNum": 8,
+    "planCache": true,
     "schemas": {
         "db1": ["CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) dbpartition by hash(id)"]
     }

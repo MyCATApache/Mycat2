@@ -1,5 +1,7 @@
 package io.mycat.hbt3;
 
+import io.mycat.hbt4.DatasourceFactoryImpl;
+import io.mycat.hbt4.PlanCache;
 import io.mycat.util.JsonUtil;
 
 import java.io.File;
@@ -16,7 +18,13 @@ public class Main {
         String text = asCharSource(new File(resource.toURI()), StandardCharsets.UTF_8).read();
         DrdsConfig config = JsonUtil.from(text, DrdsConfig.class);
         DrdsRunner drdsRunners = new DrdsRunner();
-        drdsRunners.doAction(config, defaultSchema, sql, new ResultSetHanlderImpl());
+        ResultSetHanlderImpl resultSetHanlder = new ResultSetHanlderImpl();
+        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
+            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, resultSetHanlder);
+        } catch (Throwable throwable) {
+            resultSetHanlder.onError(throwable);
+        }
+
     }
 
 }

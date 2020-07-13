@@ -10,10 +10,11 @@ import java.util.Map;
 
 @Data
 public class DrdsConfig implements DrdsConst {
-    final int shardingSchemaNum = 8;
-    final int datasourceNum = 1;
-    final boolean autoCreateTable = true;
-    final Map<String,List<String>> schemas = new HashMap<>();
+     int shardingSchemaNum = 8;
+     int datasourceNum = 1;
+     boolean autoCreateTable = true;
+     boolean planCache = false;
+     Map<String, List<String>> schemas = new HashMap<>();
 
     public static void main(String[] args) {
         DrdsConfig drdsConfig = new DrdsConfig();
