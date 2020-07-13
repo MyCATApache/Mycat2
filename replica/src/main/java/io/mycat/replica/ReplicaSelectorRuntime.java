@@ -210,14 +210,20 @@ public enum ReplicaSelectorRuntime {
     }
 
 
-    public PhysicsInstance registerDatasource(String dataSourceName, SessionCounter sessionCounter) {
+    /**
+     *
+     * @param dataSourceName
+     * @param sessionCounter
+     * @return 是否注册成功
+     */
+    public boolean registerDatasource(String dataSourceName, SessionCounter sessionCounter) {
         PhysicsInstance instance = this.physicsInstanceMap.get(dataSourceName);
         if (instance == null) {
-            throw new MycatException(dataSourceName + " is not existed");
+           return false;
         }
         PhysicsInstanceImpl physicsInstance = (PhysicsInstanceImpl) instance;
         physicsInstance.addSessionCounter(sessionCounter);
-        return physicsInstance;
+        return true;
     }
 
 
