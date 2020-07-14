@@ -117,7 +117,7 @@
                 <executions>
                     <execution>
                         <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <phase>package</phase> <!-- 指定在打包节点执行jar包合并操作 -->
+                       <!--   <phase>package</phase>  指定在打包节点执行jar包合并操作 -->
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -260,11 +260,9 @@
                                         <include name="mycat/bin/**"/>
                                         <include name="mycat/conf/**"/>
                                         <include name="mycat/logs"/>
-                                        <include name="mycat/lib/mycat2**"/>
-                                        <include name="mycat/lib/wrapper**"/>
-                                        <include name="mycat/lib/libwrapper**"/>
+                                        <include name="mycat/lib/**"/>
                                     </tarfileset>
-                                    <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
+                                    <tarfileset dir="${project.basedir}/../example/src/main/resources/io" filemode="755">
                                         <include name="**"/>
                                     </tarfileset>
                                     <tarfileset dir="${project.basedir}/..">
