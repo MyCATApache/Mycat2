@@ -63,12 +63,6 @@
             <artifactId>pattern</artifactId>
             <version>1.11-05</version>
         </dependency>
-
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>proxy</artifactId>
-            <version>1.11-05</version>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.collections</groupId>
             <artifactId>eclipse-collections-api</artifactId>
@@ -96,38 +90,12 @@
             <artifactId>guava</artifactId>
             <version>28.1-jre</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-parent -->
-        <dependency>
-            <groupId>org.apache.crail</groupId>
-            <artifactId>crail-parent</artifactId>
-            <version>1.1-incubating</version>
-            <type>pom</type>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-storage -->
-        <dependency>
-            <groupId>org.apache.crail</groupId>
-            <artifactId>crail-storage</artifactId>
-            <version>1.1-incubating</version>
-        </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>booster</artifactId>
             <version>1.11-05</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>booster</artifactId>
-            <version>1.11-05</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>1.1.21</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
     <build>
         <plugins>
