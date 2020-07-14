@@ -9,13 +9,14 @@ import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.commands.ExecuteCommand;
 import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.TransactionSessionUtil;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.datasource.jdbc.TransactionSessionUtil;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public class ReceiverImpl implements Response {
             block(session -> {
                 try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(target)) {
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql.toString())) {
-                        sendResultSet(()->rowBaseIterator, () -> {
+                        sendResultSet(() -> rowBaseIterator, () -> {
                             throw new UnsupportedOperationException();
                         });
                     }
@@ -128,6 +129,26 @@ public class ReceiverImpl implements Response {
     @Override
     public void proxyShow(SQLStatement statement) {
         proxyDDL(statement);
+    }
+
+    @Override
+    public void tryBroadcast(SQLStatement statement) {
+        String sql = statement.toString();
+        JdbcConnectionManager connectionManager = JdbcRuntime.INSTANCE.getConnectionManager();
+        List<String> infos = new ArrayList<>();
+        for (String datasourceName : connectionManager.getDatasourceInfo().keySet()) {
+            try (DefaultConnection connection = connectionManager.getConnection(datasourceName)) {
+                RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
+                this.sendResultSet(() -> rowBaseIterator);
+                return;
+            } catch (Throwable e) {
+                infos.add("数据源:" + datasourceName + " : " + e + "");
+                continue;
+            }
+        }
+        MycatException mycatException = new MycatException("物理分片不存在能够正确处理:\n" + statement + " \n" + String.join(",\n", infos));
+        LOGGER.error("", mycatException);
+        this.sendError(mycatException);
     }
 
     @Override
@@ -181,11 +202,13 @@ public class ReceiverImpl implements Response {
         String message = defErrorCommandClass == null ? Objects.toString(map) : Objects.toString(defErrorCommandClass) + ":" + Objects.toString(map);
         writePlan(session, Arrays.asList(message.split("\n")));
     }
-    public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator){
+
+    public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator) {
         sendResultSet(rowBaseIterator, () -> {
             throw new UnsupportedOperationException();
         });
     }
+
     @Override
     public void sendResultSet(Supplier<RowBaseIterator> rowBaseIterator, Supplier<List<String>> explainSupplier) {
         if (!this.explainMode) {

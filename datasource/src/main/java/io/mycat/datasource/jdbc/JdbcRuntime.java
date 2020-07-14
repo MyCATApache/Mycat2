@@ -25,7 +25,7 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
+import io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;

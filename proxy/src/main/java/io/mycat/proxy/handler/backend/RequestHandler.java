@@ -15,8 +15,6 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.MycatException;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.handler.NIOHandler;

@@ -17,8 +17,6 @@ package io.mycat.api.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

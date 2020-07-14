@@ -166,7 +166,7 @@ public interface MySQLServerSession<T> {
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
    */
   default void writeColumnEndPacket() {
-    if (isDeprecateEOF()) {
+    if (false) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
       writeBytes(bytes,false);

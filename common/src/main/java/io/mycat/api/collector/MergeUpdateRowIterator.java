@@ -5,9 +5,10 @@ import java.util.Iterator;
 public class MergeUpdateRowIterator extends UpdateRowIteratorResponse {
     private Iterator<UpdateRowIteratorResponse> iteratorIterator;
 
-    public MergeUpdateRowIterator(Iterator<UpdateRowIteratorResponse> iteratorIterator,int serverStatus) {
+    public MergeUpdateRowIterator(Iterator<UpdateRowIteratorResponse> iteratorIterator, int serverStatus) {
         super(0, 0, serverStatus);
         this.iteratorIterator = iteratorIterator;
+        this.next = false;
     }
 
     @Override
@@ -17,7 +18,7 @@ public class MergeUpdateRowIterator extends UpdateRowIteratorResponse {
             while (iteratorIterator.hasNext()) {
                 try (UpdateRowIteratorResponse next = iteratorIterator.next()) {
                     this.updateCount += next.getUpdateCount();
-                    this.lastInsertId += next.getLastInsertId();
+                    this.lastInsertId = Math.max(this.lastInsertId, next.getLastInsertId());
                 }
             }
             return true;

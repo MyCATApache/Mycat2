@@ -235,9 +235,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (null == orderBy && null == offset && null == fetch) {
             sqlNode = union;
         } else {
-            if (orderBySqlNode == null) {
-                orderBySqlNode = SqlNodeList.EMPTY;
-            }
+            //org/apache/calcite/calcite-core/1.23.0/calcite-core-1.23.0-sources.jar!/org/apache/calcite/sql/validate/SqlValidatorImpl.java:1353
             sqlNode = new SqlOrderBy(SqlParserPos.ZERO, union, orderBySqlNode, offset, fetch);
         }
 
@@ -380,9 +378,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     , fetch
             );
         } else {
-            if (orderBySqlNode == null) {
-                orderBySqlNode = SqlNodeList.EMPTY;
-            }
+
             if (hints == null || SqlNodeList.isEmptyList(hints)) {
                 this.sqlNode = new SqlSelect(SqlParserPos.ZERO
                         , keywordList
@@ -392,7 +388,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         , groupBySqlNode
                         , having
                         , null
-                        , SqlNodeList.EMPTY
+                        , null
                         , null
                         , null,null
                 );
@@ -767,7 +763,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         orderByList = new SqlNodeList(orderList.getList(), SqlParserPos.ZERO);
                         orderList.getList().clear();
                     } else {
-                        orderByList = SqlNodeList.EMPTY;
+                        orderByList =null;
                     }
 
                     sqlNode = new SqlOrderBy(SqlParserPos.ZERO
@@ -1499,7 +1495,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     private SqlNodeList convertOrderby(SQLOrderBy orderBy) {
         if (orderBy == null) {
-            return new SqlNodeList(new ArrayList(), SqlParserPos.ZERO);
+            //org/apache/calcite/calcite-core/1.23.0/calcite-core-1.23.0-sources.jar!/org/apache/calcite/sql/validate/SqlValidatorImpl.java:1353
+            return null;//
         }
 
         List<SQLSelectOrderByItem> items = orderBy.getItems();

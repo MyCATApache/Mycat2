@@ -4,11 +4,7 @@ import io.mycat.RootHelper;
 import io.mycat.ScheduleUtil;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
-import io.mycat.client.InterceptorRuntime;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

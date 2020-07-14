@@ -170,6 +170,9 @@ public class CommandResolver {
                                 }
                                 values[i] = bv;
                             }
+                            commandHandler.saveBindValue(statementId,values,mycat);
+                        }else {
+                            values = commandHandler.getLastBindValue(statementId,mycat);
                         }
                         mycat.resetCurrentProxyPayload();
                         commandHandler

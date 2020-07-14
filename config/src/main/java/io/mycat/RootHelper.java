@@ -37,7 +37,7 @@ public enum RootHelper {
         String className = System.getProperty(configProviderKeyName);
 
         if (className == null) {
-            className = FileConfigProvider.class.getName();
+            className = TemplateFileConfigProviderImpl.class.getName();
         }
         String configResourceKeyName = "MYCAT_HOME";
         String path = System.getProperty(configResourceKeyName);

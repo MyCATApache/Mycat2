@@ -51,7 +51,7 @@ datasource:
                   initSqlsGetConnection: true
                 }
   ]
-  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider
   timer: {initialDelay: 10, period: 15, timeUnit: SECONDS}
 cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
   close: true  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果

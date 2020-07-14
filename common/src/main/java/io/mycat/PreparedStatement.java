@@ -23,19 +23,25 @@
  */
 package io.mycat;
 
+import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.expr.*;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.parser.ParserException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * @author mycat, CrazyPig
@@ -54,6 +60,7 @@ public class PreparedStatement {
      * </pre>
      */
     private Map<Long, ByteArrayOutputStream> longDataMap;
+    private BindValue[] bindValues;
 
     public PreparedStatement(long id, SQLStatement statement, int parametersNumber) {
         this.id = id;
@@ -69,6 +76,10 @@ public class PreparedStatement {
 
     public SQLStatement getStatement() {
         return statement;
+    }
+
+    public boolean isQuery() {
+        return statement instanceof SQLSelectStatement;
     }
 
     public int getParametersNumber() {
@@ -113,17 +124,22 @@ public class PreparedStatement {
 
     /**
      * 组装sql语句,替换动态参数为实际参数值
+     * @param values
      */
-    public String getSqlByBindValue(io.mycat.BindValue[] values) {
+    public String getSqlByBindValue(BindValue[] values) {
+        if (this.bindValues != values){
+            throw new AssertionError();
+        }
         SQLStatement sqlStatement = statement.clone();
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             int index;
+
             @Override
             public void endVisit(SQLVariantRefExpr x) {
                 if ("?".equalsIgnoreCase(x.getName())) {
                     Object o = null;
-                    if (index < values.length) {
-                        io.mycat.BindValue value = values[index++];
+                    if (index < bindValues.length) {
+                        io.mycat.BindValue value = bindValues[index++];
                         if (!value.isNull) {
                             o = value.getJavaObject();
                         }
@@ -136,5 +152,42 @@ public class PreparedStatement {
         });
         return sqlStatement.toString();
     }
+    public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
+        if (o == null) {
+            return new SQLNullExpr();
+        }
 
+        if (o instanceof String) {
+            return new SQLCharExpr((String) o);
+        }
+
+        if (o instanceof BigDecimal) {
+            return new SQLDecimalExpr((BigDecimal) o);
+        }
+
+        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
+            return new SQLIntegerExpr((Number) o);
+        }
+
+        if (o instanceof Number) {
+            return new SQLNumberExpr((Number) o);
+        }
+
+        if (o instanceof Date) {
+            return new SQLTimestampExpr((Date) o, timeZone);
+        }
+
+        throw new ParserException("not support class : " + o.getClass());
+    }
+    public static SQLExpr fromJavaObject(Object o) {
+        return fromJavaObject(o, null);
+    }
+
+    public BindValue[] getBindValues() {
+        return bindValues;
+    }
+
+    public void setBindValues(BindValue[] bindValues) {
+        this.bindValues = bindValues;
+    }
 }

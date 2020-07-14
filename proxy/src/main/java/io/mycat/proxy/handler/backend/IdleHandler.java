@@ -16,8 +16,6 @@ package io.mycat.proxy.handler.backend;
 
 
 import io.mycat.MycatException;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;

@@ -15,10 +15,7 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.MycatException;
-import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

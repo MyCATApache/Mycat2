@@ -177,4 +177,14 @@ public abstract class ThreadModeCommandDispatcher implements CommandDispatcher {
     public byte[] getLongData(long statementId, int i, MycatSession mycat) {
         return dispatcher.getLongData(statementId, i,mycat);
     }
+
+    @Override
+    public BindValue[] getLastBindValue(long statementId, MycatSession mycat) {
+        return dispatcher.getLastBindValue(statementId, mycat);
+    }
+
+    @Override
+    public void saveBindValue(long statementId, BindValue[] values, MycatSession mycat) {
+        dispatcher.saveBindValue(statementId, values, mycat);
+    }
 }

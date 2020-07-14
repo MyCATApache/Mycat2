@@ -14,8 +14,8 @@
  */
 package io.mycat.thread;
 
-import io.mycat.bindThread.BindThreadCallback;
-import io.mycat.bindThread.BindThreadKey;
+import io.mycat.bindthread.BindThreadCallback;
+import io.mycat.bindthread.BindThreadKey;
 import io.mycat.proxy.session.Session;
 
 /**

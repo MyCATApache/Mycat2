@@ -58,7 +58,7 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
             @Override
             public RowBaseIterator run() {
                 Iterator<TextUpdateInfo> iterator = getTextUpdateInfoIterator(params);
-                return new MergeUpdateRowIterator(new Iterator<UpdateRowIteratorResponse>() {
+                MergeUpdateRowIterator mergeUpdateRowIterator = new MergeUpdateRowIterator(new Iterator<UpdateRowIteratorResponse>() {
                     @Override
                     public boolean hasNext() {
                         return iterator.hasNext();
@@ -71,15 +71,16 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
                         MycatConnection connection = dbContext.getConnection(targetName);
                         long updateCount = 0;
                         long lastInsertId = 0;
-                        for (String sql :          next.sqls()) {
-                            UpdateRowIteratorResponse mycatUpdateResponse =connection.executeUpdate(sql,true,dbContext.getServerStatus());
+                        for (String sql : next.sqls()) {
+                            UpdateRowIteratorResponse mycatUpdateResponse = connection.executeUpdate(sql, true, dbContext.getServerStatus());
                             updateCount += mycatUpdateResponse.getUpdateCount();
                             lastInsertId = Math.max(mycatUpdateResponse.getLastInsertId(), lastInsertId);
                         }
-                        return new UpdateRowIteratorResponse(updateCount, lastInsertId,dbContext.getServerStatus());
+                        return new UpdateRowIteratorResponse(updateCount, lastInsertId, dbContext.getServerStatus());
 
                     }
-                },dbContext.getServerStatus());
+                }, dbContext.getServerStatus());
+                return mergeUpdateRowIterator;
             }
         };
     }

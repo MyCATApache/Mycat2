@@ -19,8 +19,6 @@ package io.mycat.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

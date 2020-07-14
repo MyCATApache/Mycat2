@@ -4,8 +4,6 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
@@ -13,7 +11,6 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.replica.heartbeat.HeartbeatFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

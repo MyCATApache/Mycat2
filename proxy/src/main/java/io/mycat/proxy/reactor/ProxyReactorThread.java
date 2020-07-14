@@ -15,11 +15,8 @@
 package io.mycat.proxy.reactor;
 
 import io.mycat.buffer.BufferPool;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
-import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.util.nio.SelectorUtil;

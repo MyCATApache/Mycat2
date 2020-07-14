@@ -16,11 +16,8 @@ package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import org.slf4j.Logger;

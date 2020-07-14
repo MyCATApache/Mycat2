@@ -43,5 +43,10 @@ public interface PrepareStatementParserHelper {
   int getNumParamsByStatementId(long statementId, MycatSession session);
 
 
+
   byte[] getLongData(long statementId, int i, MycatSession mycat);
+
+  BindValue[] getLastBindValue(long statementId, MycatSession mycat);
+
+  void  saveBindValue(long statementId, BindValue[] values, MycatSession mycat);
 }
