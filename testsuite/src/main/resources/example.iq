@@ -1,0 +1,13 @@
+# comment
+!set outputformat mysql
+!use db1
+select 1;
+
++---+
+| 1 |
++---+
+| 1 |
++---+
+(1 row)
+
+!ok
