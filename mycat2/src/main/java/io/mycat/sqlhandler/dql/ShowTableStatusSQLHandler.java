@@ -1,8 +1,16 @@
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLName;
+import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
 import io.mycat.MycatDataContext;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.SchemaHandler;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
@@ -11,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.JDBCType;
+import java.util.Optional;
 
 /**
  * chenjunwen
@@ -22,7 +31,22 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
 
-        response.tryBroadcast(request.getAst());
+        MySqlShowTableStatusStatement ast = request.getAst();
+        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
+            ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
+        }
+        SQLName database = ast.getDatabase();
+        if (database == null){
+            response.sendError(new MycatException("NO DATABASES SELECTED"));
+            return ExecuteCode.PERFORMED;
+        }
+        Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        if (targetName != null) {
+            response.proxySelect(targetName, ast.toString());
+        } else {
+            response.tryBroadcast(ast);
+        }
         return ExecuteCode.PERFORMED;
 //        MySqlShowTableStatusStatement ast = request.getAst();
 //        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {

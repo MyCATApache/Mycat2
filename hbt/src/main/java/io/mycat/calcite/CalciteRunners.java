@@ -29,6 +29,7 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.Litmus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +48,8 @@ public class CalciteRunners {
         SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         recorder.start();
         recorder.addRecord(SqlRecorderType.AT_START, sql, start);
-        SqlNode parse = planner.parse(sql);
-        SqlNode validate = planner.validate(parse);
+        planner.parse();
+        SqlNode validate = planner.validate(sqlNode);
         RelNode relNode = planner.convert(validate);
         long cro = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.COMPILE_SQL, sql, cro - start);
