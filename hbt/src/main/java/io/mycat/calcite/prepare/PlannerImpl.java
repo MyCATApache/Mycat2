@@ -153,7 +153,7 @@ public class PlannerImpl implements Planner, ViewExpander {
         state = State.STATE_1_RESET;
     }
 
-    private void ready() {
+    public void ready() {
         switch (state) {
             case STATE_0_CLOSED:
                 reset();
