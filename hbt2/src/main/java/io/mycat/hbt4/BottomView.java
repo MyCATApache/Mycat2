@@ -19,6 +19,7 @@ package io.mycat.hbt4;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.hbt3.MycatTable;
 import lombok.Getter;
 import org.apache.calcite.plan.*;
@@ -30,7 +31,6 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -105,14 +105,14 @@ public class BottomView extends TableScan implements MycatRel {
 
     public String getSql() {
         MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
-        return MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
+        return MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MycatSqlDialect.DEFAULT, false);
     }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         MycatTransientTable transientTable = table.unwrap(MycatTransientTable.class);
 
-        String sql = MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MysqlSqlDialect.DEFAULT, false);
+        String sql = MycatCalciteSupport.INSTANCE.convertToSql(transientTable.getRelNode(), MycatSqlDialect.DEFAULT, false);
         List<DataNode> dataNodes = transientTable.getDataNodes();
 
         return writer

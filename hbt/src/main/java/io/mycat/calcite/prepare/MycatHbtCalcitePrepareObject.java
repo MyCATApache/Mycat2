@@ -6,13 +6,13 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +45,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
             @Override
             public List<String> explain() {
-                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT, false),
+                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false),
                         null,
                         MycatCalciteSupport.INSTANCE.dumpMetaData(relNode.getRowType()),
                         MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),

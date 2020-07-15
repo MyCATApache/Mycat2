@@ -31,7 +31,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -71,7 +70,7 @@ public class MycatRelBuilder extends RelBuilder {
 
     @NotNull
     private MycatConvention getConvertion(String targetName) {
-        return MycatConvention.of(targetName,  new MysqlSqlDialect(MysqlSqlDialect.DEFAULT_CONTEXT){
+        return MycatConvention.of(targetName,  new MycatSqlDialect(MycatSqlDialect.DEFAULT_CONTEXT){
             @Override
             public SqlNode getCastSpec(RelDataType type) {
                 return super.getCastSpec(type);
@@ -186,7 +185,7 @@ public class MycatRelBuilder extends RelBuilder {
      * @return
      */
     public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
-        MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
+        MycatConvention convention = MycatConvention.of(targetName, MycatSqlDialect.DEFAULT);
         MycatSQLTableScan transientTable = new MycatSQLTableScan(convention,relDataType,sql);
         id++;
         RelOptTable relOptTable = RelOptTableImpl.create(

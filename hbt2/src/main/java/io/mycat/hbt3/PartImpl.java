@@ -15,6 +15,7 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatSqlDialect;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
@@ -22,7 +23,6 @@ import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlString;
 
@@ -52,7 +52,7 @@ public class PartImpl implements Part {
 
     @Override
     public SqlString getSql(RelNode node) {
-        SqlDialect dialect = MysqlSqlDialect.DEFAULT;
+        SqlDialect dialect = MycatSqlDialect.DEFAULT;
         ToSQL toSQL = new ToSQL(schemaIndex, tableIndex, dialect);
 
         SqlImplementor.Result result = toSQL.dispatch(node);

@@ -17,12 +17,12 @@
 package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatSqlDialect;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public interface MycatRel extends RelNode {
     }
 
     public static SqlImplementor.Context explainRex(List<String> fieldList) {
-        return new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, fieldList.size()) {
+        return new SqlImplementor.Context(MycatSqlDialect.DEFAULT, fieldList.size()) {
                 @Override
                 public SqlNode field(int ordinal) {
                     String fieldName = fieldList.get(ordinal);

@@ -15,11 +15,11 @@
 package io.mycat.hbt3;
 
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.hbt4.*;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,7 @@ public class View extends AbstractRelNode implements MycatRel {
 
     public String getSql() {
         return MycatCalciteSupport.INSTANCE.convertToSql(relNode,
-                MysqlSqlDialect.DEFAULT, false);
+                MycatSqlDialect.DEFAULT, false);
     }
     public String getSql(Map<String,Object> context) {
         return getSql();//@todo

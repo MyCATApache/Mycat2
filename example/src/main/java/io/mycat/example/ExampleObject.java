@@ -33,7 +33,7 @@ public class ExampleObject {
     public static boolean test = false;
     public static String resultDir = null;
     public static boolean exit = false;
-    public static boolean server = false;
+    public static boolean server = true;
 
     public static void main(String[] args, Class<?> currentClass) throws Exception {
 

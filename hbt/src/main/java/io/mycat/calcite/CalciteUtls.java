@@ -16,8 +16,8 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.*;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.querycondition.DataMappingEvaluator;
+import io.mycat.router.ShardingTableHandler;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
@@ -26,7 +26,6 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +128,7 @@ public class CalciteUtls {
             return "";
         }
         RexNode rexNode = RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, filters);
-        SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, rawColumns.size()) {
+        SqlImplementor.Context context = new SqlImplementor.Context(MycatSqlDialect.DEFAULT, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {
                 String fieldName = rawColumns.get(ordinal).getColumnName();
@@ -138,7 +137,7 @@ public class CalciteUtls {
             }
         };
         try {
-            return " where " + context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
+            return " where " + context.toSql(null, rexNode).toSqlString(MycatSqlDialect.DEFAULT).getSql();
         } catch (Exception e) {
             LOGGER.warn("不能生成对应的sql", e);
         }

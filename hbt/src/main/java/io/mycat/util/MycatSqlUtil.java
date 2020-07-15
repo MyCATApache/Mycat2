@@ -4,8 +4,8 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
+import io.mycat.calcite.MycatSqlDialect;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ public class MycatSqlUtil {
         MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(calciteMySqlNodeVisitor);
         SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-        return sqlNode.toSqlString(MysqlSqlDialect.DEFAULT).getSql();
+        return sqlNode.toSqlString(MycatSqlDialect.DEFAULT).getSql();
     }
 
 
