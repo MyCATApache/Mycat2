@@ -65,7 +65,7 @@ public class ExampleObject {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 e.printStackTrace(pw);
-                message = pw.toString();
+                message =sw.toString();
             }
             System.out.println("-----------------------ok-------------------------");
             if (resultDir != null) {
