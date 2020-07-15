@@ -393,7 +393,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         , null,null
                 );
 
-                if ((!SqlNodeList.isEmptyList(orderBySqlNode))
+                if (orderBySqlNode!=null&&(!SqlNodeList.isEmptyList(orderBySqlNode))
                         || offset != null
                         || fetch != null
                 ) {
