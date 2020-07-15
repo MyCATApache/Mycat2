@@ -1,4 +1,4 @@
-package io.mycat.testsuite;
+package io.mycat.testsuite.tools;
 
 import java.util.List;
 

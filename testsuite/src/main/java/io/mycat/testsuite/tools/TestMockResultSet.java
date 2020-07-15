@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mycat.testsuite;
+package io.mycat.testsuite.tools;
 
 import com.alibaba.druid.mock.MockResultSetMetaData;
 import com.alibaba.druid.util.jdbc.ResultSetBase;

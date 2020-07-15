@@ -1,4 +1,4 @@
-package io.mycat.testsuite;
+package io.mycat.testsuite.tools;
 
 import com.google.common.collect.ImmutableList;
 

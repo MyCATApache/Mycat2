@@ -1,4 +1,4 @@
-package io.mycat.testsuite;
+package io.mycat.testsuite.tools;
 
 import net.hydromatic.quidem.Command;
 import net.hydromatic.quidem.CommandHandler;
