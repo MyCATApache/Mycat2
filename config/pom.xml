@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-      <version>1.11-05</version>
+      <version>1.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
