@@ -14,7 +14,6 @@
  */
 package io.mycat.pattern;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +135,7 @@ public interface GPatternDFG {
             public GPatternSeq nextToken;
             public State nextState;
             private String name;
-            private final Object2ObjectOpenHashMap<GPatternToken, State> success = new Object2ObjectOpenHashMap<GPatternToken, State>();
+            private final HashMap<GPatternToken, State> success = new HashMap<GPatternToken, State>();
             private State matcher;
             private int id = Integer.MIN_VALUE;
             private boolean end = false;
