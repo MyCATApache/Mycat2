@@ -1,6 +1,5 @@
 package io.mycat.calcite.table;
 
-import io.mycat.calcite.MycatConvention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -15,12 +14,12 @@ import java.util.List;
 public class MycatSQLTableScan extends SingeTargetSQLTable implements ScannableTable, TransientTable, TranslatableTable {
     final RelDataType relDataType;
     final String sql;
-    final MycatConvention convention;
+    public final String targetName;
 
-    public MycatSQLTableScan(MycatConvention convention, RelDataType relDataType, String sql) {
+    public MycatSQLTableScan( RelDataType relDataType,String targetName, String sql) {
         this.relDataType = relDataType;
         this.sql = sql;
-        this.convention = convention;
+        this.targetName = targetName;
     }
 
     @Override
@@ -30,11 +29,11 @@ public class MycatSQLTableScan extends SingeTargetSQLTable implements ScannableT
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, () -> sql);
+        return new MycatTransientSQLTableScan(context.getCluster(), targetName, relOptTable, () -> sql);
     }
 
     public String getTargetName() {
-        return convention.targetName;
+        return targetName;
     }
 
     public String getSql() {
