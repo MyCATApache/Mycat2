@@ -1,6 +1,4 @@
-package io.mycat.sqlRecorder;
-
-import com.google.common.cache.Cache;
+package io.mycat.sqlrecorder;
 
 import java.util.List;
 import java.util.Map;

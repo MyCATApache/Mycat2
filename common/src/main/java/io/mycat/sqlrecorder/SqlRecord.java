@@ -1,4 +1,4 @@
-package io.mycat.sqlRecorder;
+package io.mycat.sqlrecorder;
 
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;

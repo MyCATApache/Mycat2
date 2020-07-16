@@ -1,4 +1,4 @@
-package io.mycat.sqlRecorder;
+package io.mycat.sqlrecorder;
 
 /**
  * PARSE_SQL,

@@ -1,8 +1,8 @@
 package io.mycat.exporter;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.sqlRecorder.SqlRecord;
-import io.mycat.sqlRecorder.SqlRecorderRuntime;
+import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.prometheus.client.Collector;
 import io.prometheus.client.GaugeMetricFamily;
 import org.slf4j.Logger;

@@ -1,6 +1,5 @@
-package io.mycat.sqlRecorder;
+package io.mycat.sqlrecorder;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 

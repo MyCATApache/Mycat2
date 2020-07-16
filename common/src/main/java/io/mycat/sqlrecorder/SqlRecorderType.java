@@ -1,4 +1,4 @@
-package io.mycat.sqlRecorder;
+package io.mycat.sqlrecorder;
 
 public enum  SqlRecorderType {
     AT_START,
