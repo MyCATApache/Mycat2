@@ -3,10 +3,7 @@ package io.mycat.calcite.prepare;
 import io.mycat.PlanRunner;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.CalciteRunners;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatSqlDialect;
+import io.mycat.calcite.*;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.ast.base.Schema;
@@ -56,8 +53,11 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     }
 
     public RelNode getRelNode(List<Object> params) {
-        HBTQueryConvertor hbtConvertor = new HBTQueryConvertor(params, mycatCalciteDataContext);
-        return hbtConvertor.handle(schema);
+        MycatRelBuilder mycatRelBuilder = MycatRelBuilder.create(mycatCalciteDataContext);
+        HBTQueryConvertor hbtConvertor = new HBTQueryConvertor(params,mycatRelBuilder, mycatCalciteDataContext);
+        RelNode handle = hbtConvertor.handle(schema);
+        MycatCalcitePlanner mycatCalcitePlanner = new MycatCalcitePlanner(mycatCalciteDataContext);
+        return mycatCalcitePlanner.pushDownBySQL(handle,false);
     }
 
 }

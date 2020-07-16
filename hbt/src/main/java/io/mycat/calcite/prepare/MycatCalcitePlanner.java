@@ -401,7 +401,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             AggregateUnionTransposeRule.INSTANCE,//该实现可能有问题
             AggregateUnionAggregateRule.INSTANCE,
             AggregateProjectMergeRule.INSTANCE,
-            AggregateRemoveRule.INSTANCE,
+//            AggregateRemoveRule.INSTANCE,该规则会内部使用VolcanoPlanner
             AggregateProjectPullUpConstantsRule.INSTANCE2,
             /**
              *

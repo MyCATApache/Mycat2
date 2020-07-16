@@ -15,15 +15,19 @@
 package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.table.MycatSQLTableScan;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt3.MultiView;
 import io.mycat.hbt3.Part;
 import io.mycat.hbt3.PartInfo;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.MycatUnionAllExecutor;
+import io.mycat.mpp.Row;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class ExecutorImplementorImpl extends BaseExecutorImplementor {
@@ -56,6 +60,34 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
         ImmutableList<Integer> dynamicParameters = sql.getDynamicParameters();
         Object[] objects = getPzarameters(dynamicParameters);
         return factory.create(part.getMysqlIndex(),sql.getSql(), objects);
+    }
+
+    @Override
+    public Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan) {
+        return new Executor() {
+            private Iterator<Object[]> iterator;
+
+            @Override
+            public void open() {
+                this.iterator = mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class)
+                        .scan(null).iterator();
+            }
+
+            @Override
+            public Row next() {
+                if (iterator.hasNext()) {
+                    return Row.of(iterator.next());
+                }else {
+                    return null;
+                }
+            }
+
+            @Override
+            public void close() {
+
+            }
+
+        };
     }
 
     @NotNull

@@ -42,9 +42,6 @@ public class MycatIntersectRule extends MycatConverterRule {
 
     public RelNode convert(RelNode rel) {
         final Intersect intersect = (Intersect) rel;
-        if (intersect.all) {
-            return null; // INTERSECT ALL not implemented
-        }
         final RelTraitSet traitSet =
                 intersect.getTraitSet().replace(out);
         return new MycatIntersect(rel.getCluster(), traitSet,

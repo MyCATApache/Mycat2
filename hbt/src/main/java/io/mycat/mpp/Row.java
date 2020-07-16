@@ -27,7 +27,11 @@ public class Row {
     row.values = new Object[size];
     return row;
   }
-
+  public static Row of(Object[] objects){
+    Row row = new Row();
+    row.values = objects;
+    return row;
+  }
   public void set(int i, Object object) {
     values[i] = object;
   }

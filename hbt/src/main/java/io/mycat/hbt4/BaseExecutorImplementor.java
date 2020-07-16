@@ -17,6 +17,7 @@ package io.mycat.hbt4;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.UnmodifiableIterator;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt3.PartInfo;
 import io.mycat.hbt3.View;
@@ -30,6 +31,7 @@ import org.apache.calcite.interpreter.JaninoRexCompiler;
 import org.apache.calcite.interpreter.Scalar;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
+import org.apache.calcite.linq4j.JoinType;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.apache.calcite.linq4j.function.Function1;
@@ -45,25 +47,22 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     final List<Object> context;
 
-    public BaseExecutorImplementor(List< Object> context) {
+    public BaseExecutorImplementor(List<Object> context) {
         this.context = context;
     }
 
     @Override
     @SneakyThrows
     public Executor implement(MycatJoin mycatJoin) {
-
+        RexNode condition = mycatJoin.getCondition();
         JoinInfo joinInfo = mycatJoin.analyzeCondition();
         ImmutableList<RexNode> nonEquiConditions = joinInfo.nonEquiConditions;//不等价条件
 
@@ -71,7 +70,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int[] rightKeys = joinInfo.leftKeys.toIntArray();
         boolean generateNullsOnLeft = mycatJoin.getJoinType().generatesNullsOnLeft();
         boolean generateNullsOnRight = mycatJoin.getJoinType().generatesNullsOnRight();
-
+        int leftFieldCount = mycatJoin.getLeft().getRowType().getFieldCount();
+        int rightFieldCount = mycatJoin.getRight().getRowType().getFieldCount();
 
         Executor[] executors = implementInputs(mycatJoin);
 
@@ -82,7 +82,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
         JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
         Scalar scalar = compiler.compile(ImmutableList.of(
-                RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, nonEquiConditions)),
+                condition),
                 combinedRowType(mycatJoin.getInputs())
         );
         Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
@@ -103,7 +103,15 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             }
             return values;
         };
-        final Function2<Row, Row, Row> resultSelector = (v0, v1) -> v0.compose(v1);
+        final Function2<Row, Row, Row> resultSelector = (v0, v1) -> {
+            if (v0 == null) {
+                v0 = Row.create(leftFieldCount);
+            }
+            if (v1 == null) {
+                v1 = Row.create(rightFieldCount);
+            }
+            return v0.compose(v1);
+        };
         final EqualityComparer<Object[]> comparer = new EqualityComparer<Object[]>() {
             @Override
             public boolean equal(Object[] v1, Object[] v2) {
@@ -120,17 +128,43 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             return scalar.execute(o) == Boolean.TRUE;
         };
 
-        Enumerable<Row> rows = EnumerableDefaults.hashJoin(
-                outer,
-                inner,
-                outerKeySelector,
-                innerKeySelector,
-                resultSelector,
-                comparer,
-                generateNullsOnLeft,
-                generateNullsOnRight,
-                predicate);
-        return new MycatJoinExecutor(executors, rows);
+
+        return new Executor() {
+            private List<Row> innerRows;
+            Iterator<Row> iterator;
+
+            @Override
+            public void open() {
+                for (Executor executor : executors) {
+                    executor.open();
+                }
+                if (this.innerRows == null) {
+                    this.innerRows = inner.toList();
+                }
+                iterator = EnumerableDefaults.nestedLoopJoin(
+                        outer,
+                        Linq4j.asEnumerable(innerRows),
+                        predicate, resultSelector, JoinType.valueOf(mycatJoin.getJoinType().name()))
+                        .iterator();
+            }
+
+            @Override
+            public Row next() {
+                if (iterator.hasNext()) {
+                    return iterator.next();
+                } else {
+                    return null;
+                }
+            }
+
+            @Override
+            public void close() {
+                for (Executor executor : executors) {
+                    executor.close();
+                }
+
+            }
+        };
     }
 
     @Override
@@ -188,12 +222,80 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatIntersect mycatIntersect) {
-        return null;
+        Executor[] executors = implementInputs(mycatIntersect);
+        Enumerable[] enumerables = Arrays.asList(executors)
+                .stream().map(i -> Linq4j.asEnumerable(i)).toArray(i -> new Enumerable[i]);
+
+
+        return new Executor() {
+            private Iterator<Row> enumerable;
+
+            @Override
+            public void open() {
+                for (Executor executor : executors) {
+                    executor.open();
+                }
+                this.enumerable = Arrays.asList(enumerables).stream().reduce((l, r) -> {
+                    return l.intersect(r, mycatIntersect.all);
+                }).get().iterator();
+            }
+
+            @Override
+            public Row next() {
+                if (enumerable.hasNext()) {
+                    return (enumerable.next());
+                } else {
+                    return null;
+                }
+            }
+
+            @Override
+            public void close() {
+                for (Executor executor : executors) {
+                    executor.close();
+                }
+
+            }
+        };
     }
 
     @Override
     public Executor implement(MycatMinus mycatMinus) {
-        return null;
+        Executor[] executors = implementInputs(mycatMinus);
+        Enumerable[] enumerables = Arrays.asList(executors)
+                .stream().map(i -> Linq4j.asEnumerable(i)).toArray(i -> new Enumerable[i]);
+
+
+        return new Executor() {
+            private Iterator<Row> enumerable;
+
+            @Override
+            public void open() {
+                for (Executor executor : executors) {
+                    executor.open();
+                }
+                this.enumerable = Arrays.asList(enumerables).stream().reduce((l, r) -> {
+                    return l.except(r, mycatMinus.all);
+                }).get().iterator();
+            }
+
+            @Override
+            public Row next() {
+                if (enumerable.hasNext()) {
+                    return enumerable.next();
+                } else {
+                    return null;
+                }
+            }
+
+            @Override
+            public void close() {
+                for (Executor executor : executors) {
+                    executor.close();
+                }
+
+            }
+        };
     }
 
     @Override
@@ -202,8 +304,47 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
+    @SneakyThrows
     public Executor implement(MycatValues mycatValues) {
-        return null;
+        final List<RexNode> nodes = new ArrayList<>();
+        for (ImmutableList<RexLiteral> tuple : mycatValues.tuples) {
+            nodes.addAll(tuple);
+        }
+        int fieldCount = mycatValues.getRowType().getFieldCount();
+        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
+        final Scalar scalar = compiler.compile(nodes, MycatCalciteSupport.INSTANCE
+                .TypeFactory.builder().build());
+        final Object[] values = new Object[nodes.size()];
+        Context context = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+        scalar.execute(context, values);
+        final ImmutableList.Builder<org.apache.calcite.interpreter.Row> rows = ImmutableList.builder();
+        Object[] subValues = new Object[fieldCount];
+        for (int i = 0; i < values.length; i += fieldCount) {
+            System.arraycopy(values, i, subValues, 0, fieldCount);
+            rows.add(org.apache.calcite.interpreter.Row.asCopy(subValues));
+        }
+        ImmutableList<org.apache.calcite.interpreter.Row> rows1 = rows.build();
+        return new Executor() {
+            private UnmodifiableIterator<org.apache.calcite.interpreter.Row> iterator;
+
+            @Override
+            public void open() {
+                this.iterator = rows1.iterator();
+            }
+
+            @Override
+            public Row next() {
+                if (this.iterator.hasNext()) {
+                    return Row.of(this.iterator.next().copyValues());
+                }
+                return null;
+            }
+
+            @Override
+            public void close() {
+
+            }
+        };
     }
 
     @Override
@@ -327,7 +468,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             RelNode input = inputs.get(i);
             if (input instanceof MycatRel) {
                 executors[i] = ((MycatRel) input).implement(this);
-            }else {
+            } else {
                 throw new UnsupportedOperationException();
             }
         }

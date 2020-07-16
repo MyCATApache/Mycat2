@@ -44,4 +44,28 @@ public interface Executor extends Iterable<Row>{
             }
         };
     }
+
+
+    @NotNull
+    default Iterator<Object[]> outputBbjectIterator() {
+        return new Iterator<Object[]>() {
+            Object[] row;
+
+            @Override
+            public boolean hasNext() {
+                Row next = Executor.this.next();
+                if (next != null){
+                    row = next.values;
+                    return true;
+                }else {
+                    return false;
+                }
+            }
+
+            @Override
+            public Object[] next() {
+                return row;
+            }
+        };
+    }
 }

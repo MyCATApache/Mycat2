@@ -38,6 +38,7 @@ import org.apache.calcite.sql.SqlKind;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Getter
 public class MycatTable extends AbstractTable {
@@ -69,7 +70,7 @@ public class MycatTable extends AbstractTable {
         MySqlExtPartition exPartition = sqlStatement.getExtPartition();
         SQLName storedBy = sqlStatement.getStoredBy();
         SQLName distributeByType = sqlStatement.getDistributeByType();
-
+        Function function;
         if (dbPartitionBy != null) {
             int dbPartitionNum = Optional.ofNullable(sqlStatement.getDbPartitions())
                     .map(i -> ((SQLNumericLiteralExpr) i).getNumber().intValue())
@@ -86,6 +87,30 @@ public class MycatTable extends AbstractTable {
                 int startIndex = Integer.parseInt(arguments.get(1).toString());
             } else if ("UNI_HASH".equalsIgnoreCase(methodName)) {
                 schemaColumnsbuilder.add(arguments.get(0).toString());
+            } else if ("STR_HASH".equalsIgnoreCase(methodName)) {
+                schemaColumnsbuilder.add(arguments.get(0).toString());
+                int startIndex = -1;
+                int endIndex = -1;
+                int varType = 0;
+                int randSeed = 31;
+                if (arguments.size() > 1) {
+                    startIndex = Integer.parseInt(arguments.get(1).toString());
+                    endIndex = Integer.parseInt(arguments.get(2).toString());
+                }
+                if (arguments.size() > 3) {
+                    varType = Integer.parseInt(arguments.get(3).toString());
+                }
+                if (arguments.size() > 4) {
+                    randSeed = Integer.parseInt(arguments.get(4).toString());
+                }
+                String value = null;
+                if (value == null){
+                    value = "";
+                }
+                if (startIndex>=0&&endIndex>=0){
+                    value=   value.substring(startIndex,endIndex);
+                }
+
             } else if ("HASH".equalsIgnoreCase(methodName)) {
                 schemaColumnsbuilder.add(arguments.get(0).toString());
             } else {
@@ -117,7 +142,7 @@ public class MycatTable extends AbstractTable {
 
     public PartInfo computeDataNode(RexNode condition) {
         if (isBroadCast()) {
-            return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(),-1, -1));
+            return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(), -1, -1));
         }
         if (condition.getKind() == SqlKind.EQUALS) {
             RexCall rexNode = (RexCall) condition;
@@ -135,7 +160,7 @@ public class MycatTable extends AbstractTable {
             if (rexNode2 instanceof RexLiteral) {
                 value = ((RexLiteral) rexNode2).getValue();
             }
-            if (columnName != null && value != null) {
+            if (columnName != null) {
                 String schemaFun = shardingInfo.getSchemaFun();
                 String tableFun = shardingInfo.getTableFun();
                 if (schemaFun != null) {
@@ -145,12 +170,19 @@ public class MycatTable extends AbstractTable {
                             case "HASH": {
                                 if (value instanceof Number) {
                                     int l = ((Number) value).intValue() % shardingInfo.getSchemaSize();
-                                    return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(),l, 0));
+                                    return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(), l, 0));
+                                }
+                                if (value == null) {
+                                    value = "";
                                 }
                                 if (value instanceof String) {
                                     int l = value.hashCode() % shardingInfo.getSchemaSize();
-                                    return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(),l, 0));
+                                    return new SinglePartInfo(new PartImpl(shardingInfo.getDatasourceSize(), l, 0));
                                 }
+                                throw new IllegalArgumentException("unsupported type:" + value.getClass());
+                            }
+                            case "STR_HASH": {
+
                             }
                         }
                     }
@@ -162,7 +194,7 @@ public class MycatTable extends AbstractTable {
     }
 
     public PartInfo computeDataNode() {
-        return new RangePartInfo(0, 1, shardingInfo);
+        return new RangePartInfo(0, shardingInfo.size(), shardingInfo);
     }
 
     public ShardingInfo getShardingInfo() {

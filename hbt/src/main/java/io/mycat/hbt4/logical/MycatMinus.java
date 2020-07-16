@@ -34,7 +34,6 @@ public class MycatMinus extends Minus implements MycatRel {
     public MycatMinus(RelOptCluster cluster, RelTraitSet traitSet,
                       List<RelNode> inputs, boolean all) {
         super(cluster, traitSet, inputs, all);
-        assert !all;
     }
 
     public MycatMinus copy(RelTraitSet traitSet, List<RelNode> inputs,

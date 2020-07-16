@@ -29,7 +29,7 @@ public class MycatSQLTableScan extends SingeTargetSQLTable implements ScannableT
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return new MycatTransientSQLTableScan(context.getCluster(), targetName, relOptTable, () -> sql);
+        return new MycatTransientSQLTableScan(context.getCluster(), targetName, relOptTable, sql);
     }
 
     public String getTargetName() {

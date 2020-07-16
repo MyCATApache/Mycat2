@@ -48,15 +48,7 @@ public class MycatJoinRule extends MycatConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         final Join join = (Join) rel;
-        switch (join.getJoinType()) {
-            case SEMI:
-            case ANTI:
-                // It's not possible to convert semi-joins or anti-joins. They have fewer columns
-                // than regular joins.
-                return null;
-            default:
-                return convert(join, true);
-        }
+        return convert(join, true);
     }
 
     /**
@@ -76,9 +68,6 @@ public class MycatJoinRule extends MycatConverterRule {
                                 input.getTraitSet().replace(out));
             }
             newInputs.add(input);
-        }
-        if (convertInputTraits && !canJoinOnCondition(join.getCondition())) {
-            return null;
         }
         try {
             return new MycatJoin(

@@ -84,12 +84,8 @@ public class HBTQueryConvertor {
     private MycatCalciteDataContext context;
     private final MetaDataFetcher metaDataFetcher;
 
-    public HBTQueryConvertor(MycatCalciteDataContext context) {
-        this(Collections.emptyList(), context);
-    }
-
-    public HBTQueryConvertor(List<Object> params, MycatCalciteDataContext context) {
-        this.relBuilder = MycatRelBuilder.create(context);
+    public HBTQueryConvertor(List<Object> params, MycatRelBuilder relBuilder, MycatCalciteDataContext context) {
+        this.relBuilder =relBuilder;
         this.params = params;
         this.relBuilder.clear();
         this.context = Objects.requireNonNull(context);
@@ -317,7 +313,7 @@ public class HBTQueryConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTQueryConvertor queryOp = new HBTQueryConvertor(params, context);
+                HBTQueryConvertor queryOp = new HBTQueryConvertor(params,relBuilder, context);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {

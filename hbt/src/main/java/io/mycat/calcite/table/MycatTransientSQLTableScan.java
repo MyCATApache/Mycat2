@@ -1,5 +1,9 @@
 package io.mycat.calcite.table;
 
+import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExecutorImplementor;
+import io.mycat.hbt4.ExplainWriter;
+import io.mycat.hbt4.MycatRel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -7,13 +11,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-public class MycatTransientSQLTableScan extends TableScan {
-    final Supplier<String> sql;
+public class MycatTransientSQLTableScan extends TableScan implements MycatRel {
+    final String sql;
     final String targetName;
 
-    public MycatTransientSQLTableScan(RelOptCluster cluster, String targetName, RelOptTable relOptTable, Supplier<String> sql) {
+    public MycatTransientSQLTableScan(RelOptCluster cluster, String targetName, RelOptTable relOptTable, String sql) {
         super(cluster, cluster.traitSetOf(io.mycat.hbt4.MycatConvention.INSTANCE), relOptTable);
         this.sql = sql;
         this.targetName = targetName;
@@ -28,7 +31,19 @@ public class MycatTransientSQLTableScan extends TableScan {
     }
 
     public String getSql() {
-        return sql.get();
+        return sql;
     }
 
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        return writer.name("MycatTransientSQLTableScan").into()
+                .item("target",targetName)
+                .item("sql",sql)
+                .ret();
+    }
+
+    @Override
+    public Executor implement(ExecutorImplementor implementor) {
+        return implementor.implement(this);
+    }
 }

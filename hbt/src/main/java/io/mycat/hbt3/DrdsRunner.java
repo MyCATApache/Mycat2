@@ -162,7 +162,7 @@ public class DrdsRunner {
         logPlan = optimizeWithRBO(logPlan);
         RBO rbo = new RBO();
         RelNode relNode = logPlan.accept(rbo);
-        return (MycatRel) optimizeWithCBO(relNode, cluster);
+        return (MycatRel) optimizeWithCBO(relNode);
     }
 
     public SqlNode parseSql(String sql) throws SqlParseException {
@@ -210,8 +210,9 @@ public class DrdsRunner {
         }
     }
 
-    public static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
-        RelOptPlanner planner = cluster.getPlanner();
+    public static RelNode optimizeWithCBO(RelNode logPlan) {
+        RelOptCluster cluster = logPlan.getCluster();
+        RelOptPlanner planner =cluster.getPlanner();
         planner.clear();
         MycatConvention.INSTANCE.register(planner);
         logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));

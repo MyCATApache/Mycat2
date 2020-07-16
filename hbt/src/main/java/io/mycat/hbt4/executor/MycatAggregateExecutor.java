@@ -98,12 +98,12 @@ public class MycatAggregateExecutor implements Executor {
                 group.send(row);
             }
         }
-       this.iter =  groups.stream().flatMap(i->i.end()).iterator();
+        this.iter = groups.stream().flatMap(i -> i.end()).iterator();
     }
 
     @Override
     public Row next() {
-        if(iter.hasNext()){
+        if (iter.hasNext()) {
             return iter.next();
         }
         return null;
@@ -199,6 +199,8 @@ public class MycatAggregateExecutor implements Executor {
             }
             return new UdaAccumulatorFactory(
                     AggregateFunctionImpl.create(clazz), call, true);
+        } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
+            return ()->new AvgAccumulator(call);
         } else {
             final JavaTypeFactory typeFactory =
                     (JavaTypeFactory) rel.getCluster().getTypeFactory();
@@ -297,6 +299,38 @@ public class MycatAggregateExecutor implements Executor {
 
         public Object end() {
             return cnt;
+        }
+    }
+
+    /**
+     * Accumulator for calls to the COUNT function.
+     */
+    private static class AvgAccumulator implements Accumulator {
+        private final AggregateCall call;
+        long cnt;
+        double sum;
+
+        AvgAccumulator(AggregateCall call) {
+            this.call = call;
+            cnt = 0;
+            sum = 0;
+        }
+
+        public void send(Row row) {
+            boolean notNull = true;
+            Integer integer = call.getArgList().get(0);
+            Number object = (Number)row.getObject(integer);
+            if (object == null) {
+                notNull = false;
+            }
+            if (notNull) {
+                cnt++;
+                sum+=object.doubleValue();
+            }
+        }
+
+        public Object end() {
+            return sum / cnt;
         }
     }
 

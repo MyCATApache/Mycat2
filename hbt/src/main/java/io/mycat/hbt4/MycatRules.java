@@ -19,6 +19,7 @@ package io.mycat.hbt4;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.logical.*;
+import io.mycat.hbt4.logical.rules.MycatMinusRule;
 import io.mycat.hbt4.logical.rules.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.InvalidRelException;
