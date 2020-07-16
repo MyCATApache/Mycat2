@@ -53,7 +53,7 @@ public class ExampleObject {
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
         if (server && !NetUtil.isHostConnectable("0.0.0.0", 8066)) {
-            ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(BoosterExample.class);
+            ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(currentClass);
             MycatCore.INSTANCE.init(bootConfig);
         }
         if (test) {
