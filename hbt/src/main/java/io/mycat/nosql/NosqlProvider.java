@@ -1,4 +1,4 @@
-package io.mycat.hbt2.nosql;
+package io.mycat.nosql;
 
 /**
  * nosql提供商

@@ -1,4 +1,4 @@
-package io.mycat.hbt2.nosql;
+package io.mycat.nosql;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
