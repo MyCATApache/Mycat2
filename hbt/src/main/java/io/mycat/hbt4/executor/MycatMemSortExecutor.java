@@ -17,16 +17,18 @@ package io.mycat.hbt4.executor;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 
 public class MycatMemSortExecutor implements Executor {
     private final Executor input;
     private final Comparator<Row> comparator;
     private Iterator<Row> iterator;
-    private ArrayList<Row> output = null;
+    private List<Row> output = null;
 
     public MycatMemSortExecutor(Comparator<Row> comparator, Executor input) {
         this.comparator = comparator;
@@ -37,13 +39,8 @@ public class MycatMemSortExecutor implements Executor {
     public void open() {
         if (output == null) {
             input.open();
-            Iterator<Row> iterator = input.iterator();
-            output = new ArrayList<>();
-            while (iterator.hasNext()) {
-                output.add(iterator.next());
-            }
+            output = StreamSupport.stream( input.spliterator(),false).parallel().sorted(comparator).collect(Collectors.toList());
             input.close();
-            output.sort(comparator);
             this.iterator = output.iterator();
         }
     }
@@ -59,6 +56,7 @@ public class MycatMemSortExecutor implements Executor {
     @Override
     public void close() {
         input.close();
+        output = null;
     }
 
     @Override
