@@ -317,7 +317,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        MycatImplementor mycatImplementor = new MycatImplementor(dialect);
+        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT);
         input= RelOptUtil.createCastRel(input,input.getRowType(),true);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
