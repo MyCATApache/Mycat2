@@ -55,4 +55,9 @@ public class MycatMultiViewExecutor implements Executor {
             executor.close();
         }
     }
+
+    @Override
+    public boolean isRewindSupported() {
+        return false;
+    }
 }

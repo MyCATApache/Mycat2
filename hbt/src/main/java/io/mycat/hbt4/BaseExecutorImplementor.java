@@ -28,110 +28,59 @@ import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
 import org.apache.calcite.interpreter.Scalar;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.function.EqualityComparer;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     final List<Object> context;
+    private TempResultSetFactory tempResultSetFactory;
 
-    public BaseExecutorImplementor(List< Object> context) {
+    public BaseExecutorImplementor(List<Object> context, TempResultSetFactory tempResultSetFactory) {
         this.context = context;
+        this.tempResultSetFactory = tempResultSetFactory;
     }
 
     @Override
     @SneakyThrows
-    public Executor implement(MycatJoin mycatJoin) {
-
+    public Executor implement(MycatNestedLoopJoin mycatJoin) {
+        RexNode condition = mycatJoin.getCondition();
         JoinInfo joinInfo = mycatJoin.analyzeCondition();
-        ImmutableList<RexNode> nonEquiConditions = joinInfo.nonEquiConditions;//不等价条件
-
-        int[] leftKeys = joinInfo.leftKeys.toIntArray();
-        int[] rightKeys = joinInfo.leftKeys.toIntArray();
-        boolean generateNullsOnLeft = mycatJoin.getJoinType().generatesNullsOnLeft();
-        boolean generateNullsOnRight = mycatJoin.getJoinType().generatesNullsOnRight();
-
-
+        int leftFieldCount = mycatJoin.getLeft().getRowType().getFieldCount();
+        int rightFieldCount = mycatJoin.getRight().getRowType().getFieldCount();
         Executor[] executors = implementInputs(mycatJoin);
-
-
-        //开始编译
         Executor leftSource = executors[0];
         Executor rightSource = executors[1];
-
         JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
         Scalar scalar = compiler.compile(ImmutableList.of(
-                RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, nonEquiConditions)),
+                condition),
                 combinedRowType(mycatJoin.getInputs())
         );
         Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
-
-        final Enumerable<Row> outer = Linq4j.asEnumerable(leftSource);
-        final Enumerable<Row> inner = Linq4j.asEnumerable(rightSource);
-        final Function1<Row, Object[]> outerKeySelector = a0 -> {
-            Object[] values = new Object[leftKeys.length];
-            for (int i = 0; i < values.length; i++) {
-                values[i] = a0.values[leftKeys[i]];
-            }
-            return values;
-        };
-        final Function1<Row, Object[]> innerKeySelector = a0 -> {
-            Object[] values = new Object[rightKeys.length];
-            for (int i = 0; i < values.length; i++) {
-                values[i] = a0.values[rightKeys[i]];
-            }
-            return values;
-        };
-        final Function2<Row, Row, Row> resultSelector = (v0, v1) -> v0.compose(v1);
-        final EqualityComparer<Object[]> comparer = new EqualityComparer<Object[]>() {
-            @Override
-            public boolean equal(Object[] v1, Object[] v2) {
-                return Arrays.equals(v1, v2);//todo 隐式转换比较
-            }
-
-            @Override
-            public int hashCode(Object[] row) {
-                return Arrays.hashCode(row);
-            }
-        };
+        final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
         Predicate2<Row, Row> predicate = (v0, v1) -> {
             o.values = resultSelector.apply(v0, v1).values;
             return scalar.execute(o) == Boolean.TRUE;
         };
-
-        Enumerable<Row> rows = EnumerableDefaults.hashJoin(
-                outer,
-                inner,
-                outerKeySelector,
-                innerKeySelector,
-                resultSelector,
-                comparer,
-                generateNullsOnLeft,
-                generateNullsOnRight,
-                predicate);
-        return new MycatJoinExecutor(executors, rows);
+        return new MycatNestedLoopJoinExecutor(mycatJoin.getJoinType(), leftSource, rightSource, resultSelector, predicate, tempResultSetFactory);
     }
+
 
     @Override
     public Executor implement(MycatCalc mycatCalc) {
@@ -176,7 +125,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     public Executor implement(MycatAggregate mycatAggregate) {
         Executor input = implementInput(mycatAggregate);
-        return new MycatAggregateExecutor(input, mycatAggregate);
+        return new MycatHashAggExecutor(input, mycatAggregate);
     }
 
     @Override
@@ -188,12 +137,14 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatIntersect mycatIntersect) {
-        return null;
+        Executor[] executors = implementInputs(mycatIntersect);
+        return new MycatIntersectExecutor(executors, mycatIntersect.all);
     }
 
     @Override
     public Executor implement(MycatMinus mycatMinus) {
-        return null;
+        Executor[] executors = implementInputs(mycatMinus);
+        return new MycatMinusExecutor(executors, mycatMinus.all);
     }
 
     @Override
@@ -202,8 +153,30 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
+    @SneakyThrows
     public Executor implement(MycatValues mycatValues) {
-        return null;
+        final List<RexNode> nodes = new ArrayList<>();
+        for (ImmutableList<RexLiteral> tuple : mycatValues.tuples) {
+            nodes.addAll(tuple);
+        }
+        int fieldCount = mycatValues.getRowType().getFieldCount();
+        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
+        final Scalar scalar = compiler.compile(nodes, MycatCalciteSupport.INSTANCE
+                .TypeFactory.builder().build());
+        final Object[] values = new Object[nodes.size()];
+        Context context = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+        scalar.execute(context, values);
+        final ImmutableList.Builder<Row> rows = ImmutableList.builder();
+
+
+        for (int i = 0; i < values.length; i+=fieldCount) {
+            Object[] r = new Object[fieldCount];
+            for (int j = i,k=0; k < fieldCount; j++,k++) {
+                r[k] =  values[j];
+                rows.add(Row.of(r));
+            }
+        }
+        return new MycatValuesExecutor(rows.build());
     }
 
     @Override
@@ -212,26 +185,36 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         RelDataType inputRowType = mycatSort.getInput().getRowType();
         RelCollation collation = mycatSort.getCollation();
         List<RelFieldCollation> fieldCollations = collation.getFieldCollations();
-        if (!fieldCollations.isEmpty()) {
-            Comparator<Row> comparator = comparator(mycatSort);
-            executor = new MycatSortExecutor(comparator, executor);
-        }
         RexNode offset = mycatSort.offset;
         RexNode fetch = mycatSort.fetch;
+
+
+        Comparator<Row> comparator = null;
+        long offsetValue = 0;
+        long fetchValue = 0;
+        if (!fieldCollations.isEmpty()) {
+            comparator = comparator(mycatSort);
+        }
+
         if (offset != null || fetch != null) {
             offset = resolveDynamicParam(offset);
             fetch = resolveDynamicParam(fetch);
-            final long offsetValue =
+            offsetValue =
                     offset == null
                             ? 0
-                            : ((RexLiteral) offset).getValueAs(Integer.class);
-            final long fetchValue =
-                    fetch == null
-                            ? Long.MAX_VALUE
-                            : ((RexLiteral) fetch).getValueAs(Integer.class);
-            executor = new MycatLimitExecutor(offsetValue, fetchValue, executor);
+                            : ((RexLiteral) offset).getValueAs(Long.class);
+
+            fetchValue = fetch == null
+                    ? Long.MAX_VALUE
+                    : ((RexLiteral) fetch).getValueAs(Long.class);
         }
-        return executor;
+        if (comparator != null && (offset != null || fetch != null)) {
+            return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+        }
+        if (comparator != null) {
+            return new MycatMemSortExecutor(comparator, executor);
+        }
+        return new MycatLimitExecutor(offsetValue, fetchValue, executor);
     }
 
     private RexNode resolveDynamicParam(RexNode node) {
@@ -279,6 +262,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(NestedLoopJoin nestedLoopJoin) {
+//        RexNode condition = nestedLoopJoin.getCondition();
+//        RelNode leftExecutor = implementInput(nestedLoopJoin.getLeft());
+//        RelNode right = nestedLoopJoin.getRight();
+
         return null;
     }
 
@@ -315,6 +302,37 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         return new ScanExecutor();
     }
 
+    @Override
+    @SneakyThrows
+    public Executor implement(MycatHashJoin mycatHashJoin) {
+        Executor[] executors = implementInputs(mycatHashJoin);
+        JoinRelType joinType = mycatHashJoin.getJoinType();
+
+        JoinInfo joinInfo = mycatHashJoin.analyzeCondition();
+        ImmutableList<RexNode> nonEquiConditions = joinInfo.nonEquiConditions;//不等价条件
+
+        int[] leftKeys = joinInfo.leftKeys.toIntArray();
+        int[] rightKeys = joinInfo.leftKeys.toIntArray();
+        boolean generateNullsOnLeft = mycatHashJoin.getJoinType().generatesNullsOnLeft();
+        boolean generateNullsOnRight = mycatHashJoin.getJoinType().generatesNullsOnRight();
+        int leftFieldCount = mycatHashJoin.getLeft().getRowType().getFieldCount();
+        int rightFieldCount = mycatHashJoin.getRight().getRowType().getFieldCount();
+        RelDataType resultRelDataType = combinedRowType(mycatHashJoin.getInputs());
+        return new MycatHashJoinExecutor(mycatHashJoin,joinType,
+                executors[0],
+                executors[1],
+                nonEquiConditions,
+                leftKeys,
+                rightKeys,
+                generateNullsOnLeft,
+                generateNullsOnRight,
+                leftFieldCount,
+                rightFieldCount,
+                resultRelDataType,tempResultSetFactory);
+    }
+
+
+
     private Executor implementInput(MycatRel rel) {
         return implementInputs(rel)[0];
     }
@@ -327,7 +345,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             RelNode input = inputs.get(i);
             if (input instanceof MycatRel) {
                 executors[i] = ((MycatRel) input).implement(this);
-            }else {
+            } else {
                 throw new UnsupportedOperationException();
             }
         }

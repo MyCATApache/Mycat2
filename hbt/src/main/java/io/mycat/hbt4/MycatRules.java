@@ -19,9 +19,9 @@ package io.mycat.hbt4;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.logical.*;
+import io.mycat.hbt4.logical.rules.MycatMinusRule;
 import io.mycat.hbt4.logical.rules.*;
 import org.apache.calcite.plan.*;
-import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
@@ -74,12 +74,8 @@ public class MycatRules {
             (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
                 final RelOptCluster cluster = left.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(left.getConvention());
-                try {
-                    return new MycatJoin(cluster, traitSet, left, right, condition,
-                            variablesSet, joinType);
-                } catch (InvalidRelException e) {
-                    throw new AssertionError(e);
-                }
+                return new MycatNestedLoopJoin(cluster, traitSet, left, right, condition,
+                        variablesSet, joinType);
             };
 
     static final RelFactories.CorrelateFactory CORRELATE_FACTORY =

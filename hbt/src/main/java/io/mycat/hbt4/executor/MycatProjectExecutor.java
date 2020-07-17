@@ -37,12 +37,18 @@ public class MycatProjectExecutor implements Executor {
         if (next == null){
             return null;
         }
-        mycatScalar.execute(next,next);
-        return next;
+        Row res = Row.create(next.size());
+        mycatScalar.execute(next,res);
+        return res;
     }
 
     @Override
     public void close() {
         executor.close();
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return executor.isRewindSupported();
     }
 }

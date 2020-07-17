@@ -15,6 +15,7 @@
 package io.mycat.hbt4;
 
 
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt3.MultiView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.logical.*;
@@ -22,7 +23,7 @@ import io.mycat.hbt4.physical.*;
 
 public interface ExecutorImplementor {
 
-    Executor implement(MycatJoin mycatJoin);
+    Executor implement(MycatNestedLoopJoin mycatJoin);
 
     Executor implement(MycatCalc mycatCalc);
 
@@ -73,6 +74,10 @@ public interface ExecutorImplementor {
     Executor implement(MultiView multiView);
 
     Executor implement(View view);
+
+    Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan);
+
+    Executor implement(MycatHashJoin mycatHashJoin);
 
 //    Executor implement(BottomView bottomView);
 }

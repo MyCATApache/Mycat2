@@ -38,7 +38,6 @@ public class MycatIntersect
             List<RelNode> inputs,
             boolean all) {
         super(cluster, traitSet, inputs, all);
-        assert !all;
     }
 
     public MycatIntersect copy(

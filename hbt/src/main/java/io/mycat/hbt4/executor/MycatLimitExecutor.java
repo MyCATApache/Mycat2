@@ -27,7 +27,7 @@ public class MycatLimitExecutor implements Executor {
     private long fetch;
     private Iterator<Row> iterator;
 
-    public MycatLimitExecutor(long offset,long fetch, Executor input) {
+    public MycatLimitExecutor(long offset, long fetch, Executor input) {
         this.offset = offset;
         this.fetch = fetch;
         this.input = input;
@@ -36,26 +36,12 @@ public class MycatLimitExecutor implements Executor {
     @Override
     public void open() {
         input.open();
-        Iterable<Row> iterable = () -> new Iterator<Row>() {
-            Row row = null;
-
-            @Override
-            public boolean hasNext() {
-                row = input.next();
-                return row != null;
-            }
-
-            @Override
-            public Row next() {
-                return row;
-            }
-        };
-      this.iterator = StreamSupport.stream(iterable.spliterator(), false).skip(offset).limit(fetch).iterator();
+        this.iterator = StreamSupport.stream(input.spliterator(), false).skip(offset).limit(fetch).iterator();
     }
 
     @Override
     public Row next() {
-        if(iterator.hasNext()){
+        if (iterator.hasNext()) {
             return iterator.next();
         }
         return null;
@@ -64,5 +50,10 @@ public class MycatLimitExecutor implements Executor {
     @Override
     public void close() {
         input.close();
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return false;
     }
 }

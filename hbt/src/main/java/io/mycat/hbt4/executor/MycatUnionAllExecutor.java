@@ -35,18 +35,22 @@ public class MycatUnionAllExecutor implements Executor {
 
     @Override
     public Row next() {
-        Executor executor = executors[index];
-        Row row = executor.next();
-        if (row == null) {
-            executor.close();
-            index++;
-            if (index >= executors.length) {
-                return null;
-            } else {
-                return next();
+        if (index < executors.length) {
+            Executor executor = executors[index];
+            Row row = executor.next();
+            if (row == null) {
+                executor.close();
+                index++;
+                if (index >= executors.length) {
+                    return null;
+                } else {
+                    return next();
+                }
             }
+            return row;
+        } else {
+            return null;
         }
-        return row;
     }
 
     @Override
@@ -54,5 +58,10 @@ public class MycatUnionAllExecutor implements Executor {
         for (Executor executor : executors) {
             executor.close();
         }
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return false;
     }
 }

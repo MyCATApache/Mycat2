@@ -80,4 +80,8 @@ public class MycatCalc extends SingleRel implements MycatRel {
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
     }
+
+    public RexProgram getProgram() {
+        return program;
+    }
 }

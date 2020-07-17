@@ -24,6 +24,7 @@ import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt4.*;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.mpp.Row;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -98,7 +99,7 @@ public class DrdsRunner {
         RelDataType rowType = relNode1.getRowType();
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
         resultSetHanlder.onMetadata(calciteRowMetaData);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(parameters, datasourceFactory);
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(parameters, datasourceFactory,new TempResultSetFactoryImpl());
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();
         Iterator<Row> iterator = implement.iterator();
@@ -162,7 +163,7 @@ public class DrdsRunner {
         logPlan = optimizeWithRBO(logPlan);
         RBO rbo = new RBO();
         RelNode relNode = logPlan.accept(rbo);
-        return (MycatRel) optimizeWithCBO(relNode, cluster);
+        return (MycatRel) optimizeWithCBO(relNode);
     }
 
     public SqlNode parseSql(String sql) throws SqlParseException {
@@ -210,8 +211,9 @@ public class DrdsRunner {
         }
     }
 
-    public static RelNode optimizeWithCBO(RelNode logPlan, RelOptCluster cluster) {
-        RelOptPlanner planner = cluster.getPlanner();
+    public static RelNode optimizeWithCBO(RelNode logPlan) {
+        RelOptCluster cluster = logPlan.getCluster();
+        RelOptPlanner planner =cluster.getPlanner();
         planner.clear();
         MycatConvention.INSTANCE.register(planner);
         logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));

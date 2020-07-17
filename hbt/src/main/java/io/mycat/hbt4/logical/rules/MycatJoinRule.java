@@ -18,16 +18,17 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatJoin;
-import org.apache.calcite.rel.InvalidRelException;
+import io.mycat.hbt4.logical.MycatHashJoin;
+import io.mycat.hbt4.logical.MycatNestedLoopJoin;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -48,15 +49,7 @@ public class MycatJoinRule extends MycatConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         final Join join = (Join) rel;
-        switch (join.getJoinType()) {
-            case SEMI:
-            case ANTI:
-                // It's not possible to convert semi-joins or anti-joins. They have fewer columns
-                // than regular joins.
-                return null;
-            default:
-                return convert(join, true);
-        }
+        return convert(join, true);
     }
 
     /**
@@ -68,38 +61,53 @@ public class MycatJoinRule extends MycatConverterRule {
      * @return A new MycatJoin
      */
     public RelNode convert(Join join, boolean convertInputTraits) {
+        JoinInfo info = join.analyzeCondition();
+        RelOptCluster cluster = join.getCluster();
+        RexBuilder rexBuilder = cluster.getRexBuilder();
+        RelNode left = join.getLeft();
+        RelNode right = join.getRight();
         final List<RelNode> newInputs = new ArrayList<>();
         for (RelNode input : join.getInputs()) {
             if (convertInputTraits && input.getConvention() != getOutTrait()) {
-                input =
-                        convert(input,
-                                input.getTraitSet().replace(out));
+                input = convert(input, input.getTraitSet().replace(out));
             }
             newInputs.add(input);
         }
-        if (convertInputTraits && !canJoinOnCondition(join.getCondition())) {
-            return null;
-        }
-        try {
-            return new MycatJoin(
-                    join.getCluster(),
-                    join.getTraitSet().replace(out),
-                    newInputs.get(0),
-                    newInputs.get(1),
-                    join.getCondition(),
+        left = newInputs.get(0);
+        right = newInputs.get(1);
+
+        final boolean hasEquiKeys = !info.leftKeys.isEmpty()
+                && !info.rightKeys.isEmpty();
+        if (hasEquiKeys) {
+            final RexNode equi = info.getEquiCondition(left, right, rexBuilder);
+            final RexNode condition;
+            if (info.isEqui()) {
+                condition = equi;
+            } else {
+                final RexNode nonEqui = RexUtil.composeConjunction(rexBuilder, info.nonEquiConditions);
+                condition = RexUtil.composeConjunction(rexBuilder, Arrays.asList(equi, nonEqui));
+            }
+            return MycatHashJoin.create(
+                    left,
+                    right,
+                    condition,
                     join.getVariablesSet(),
                     join.getJoinType());
-        } catch (InvalidRelException e) {
-
-            return null;
         }
+        return new MycatNestedLoopJoin(
+                join.getCluster(),
+                join.getTraitSet().replace(out),
+                left,
+                right,
+                join.getCondition(),
+                join.getVariablesSet(),
+                join.getJoinType());
     }
 
     /**
-     * Returns whether a condition is supported by {@link MycatJoin}.
+     * Returns whether a condition is supported by {@link MycatNestedLoopJoin}.
      *
      * <p>Corresponds to the capabilities of
-     * {@link SqlImplementor#convertConditionToSqlNode}.
      *
      * @param node Condition
      * @return Whether condition is supported
