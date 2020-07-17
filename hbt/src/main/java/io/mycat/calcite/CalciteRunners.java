@@ -12,6 +12,7 @@ import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExecutorImplementorImpl;
 import io.mycat.hbt4.MycatRel;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.sqlrecorder.SqlRecorder;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.sqlrecorder.SqlRecorderType;
@@ -96,12 +97,12 @@ public class CalciteRunners {
         fork(sql, calciteDataContext, map);
         long cbo = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(ImmutableList.of(),null);
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(ImmutableList.of(),null,new TempResultSetFactoryImpl());
         Executor executor = mycatRel.implement(executorImplementor);
         long execution_start = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
         executor.open();
-        Enumerator<Object[]> enumerator = Linq4j.iterableEnumerator( ()-> executor.outputBbjectIterator());
+        Enumerator<Object[]> enumerator = Linq4j.iterableEnumerator( ()-> executor.outputObjectIterator());
 
         return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator,
                 () -> {

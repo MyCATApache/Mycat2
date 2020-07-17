@@ -44,4 +44,9 @@ public class ScanExecutor implements Executor {
     public void close() {
 
     }
+
+    @Override
+    public boolean isRewindSupported() {
+        return false;
+    }
 }

@@ -21,20 +21,22 @@ import io.mycat.hbt3.MultiView;
 import io.mycat.hbt3.Part;
 import io.mycat.hbt3.PartInfo;
 import io.mycat.hbt3.View;
+import io.mycat.hbt4.executor.MycatJdbcExecutor;
 import io.mycat.hbt4.executor.MycatUnionAllExecutor;
-import io.mycat.mpp.Row;
+import io.mycat.hbt4.executor.TempResultSetFactory;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class ExecutorImplementorImpl extends BaseExecutorImplementor {
     private final DatasourceFactory factory;
 
-    public ExecutorImplementorImpl(List<Object> context, DatasourceFactory factory) {
-        super(context);
+    public ExecutorImplementorImpl(List<Object> context,
+                                   DatasourceFactory factory,
+                                   TempResultSetFactory tempResultSetFactory) {
+        super(context,tempResultSetFactory);
         this.factory = factory;
     }
 
@@ -48,7 +50,7 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
             RelNode relNode = multiView.getRelNode();
             SqlString sql = part.getSql(relNode);
             Object[] objects1 = getPzarameters(sql.getDynamicParameters());
-            executors[i++] = factory.create(part.getMysqlIndex(),sql.getSql(), objects1);
+            executors[i++] = factory.create(part.getMysqlIndex(), sql.getSql(), objects1);
         }
         return new MycatUnionAllExecutor(executors);
     }
@@ -59,43 +61,20 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
         SqlString sql = part.getSql(view.getRelNode());
         ImmutableList<Integer> dynamicParameters = sql.getDynamicParameters();
         Object[] objects = getPzarameters(dynamicParameters);
-        return factory.create(part.getMysqlIndex(),sql.getSql(), objects);
+        return factory.create(part.getMysqlIndex(), sql.getSql(), objects);
     }
 
     @Override
     public Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan) {
-        return new Executor() {
-            private Iterator<Object[]> iterator;
-
-            @Override
-            public void open() {
-                this.iterator = mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class)
-                        .scan(null).iterator();
-            }
-
-            @Override
-            public Row next() {
-                if (iterator.hasNext()) {
-                    return Row.of(iterator.next());
-                }else {
-                    return null;
-                }
-            }
-
-            @Override
-            public void close() {
-
-            }
-
-        };
+        return new MycatJdbcExecutor(mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class));
     }
 
     @NotNull
     public Object[] getPzarameters(ImmutableList<Integer> dynamicParameters) {
         Object[] objects;
-        if (dynamicParameters!=null){
-            objects =dynamicParameters.stream().map(i -> context.get(i)).toArray();
-        }else {
+        if (dynamicParameters != null) {
+            objects = dynamicParameters.stream().map(i -> context.get(i)).toArray();
+        } else {
             objects = new Object[]{};
         }
         return objects;

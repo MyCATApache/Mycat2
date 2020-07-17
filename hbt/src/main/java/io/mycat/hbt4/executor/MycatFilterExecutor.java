@@ -51,4 +51,9 @@ public class MycatFilterExecutor implements Executor {
     public void close() {
         input.close();
     }
+
+    @Override
+    public boolean isRewindSupported() {
+        return input.isRewindSupported();
+    }
 }

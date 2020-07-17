@@ -24,6 +24,7 @@ import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt4.*;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.mpp.Row;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -98,7 +99,7 @@ public class DrdsRunner {
         RelDataType rowType = relNode1.getRowType();
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
         resultSetHanlder.onMetadata(calciteRowMetaData);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(parameters, datasourceFactory);
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(parameters, datasourceFactory,new TempResultSetFactoryImpl());
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();
         Iterator<Row> iterator = implement.iterator();

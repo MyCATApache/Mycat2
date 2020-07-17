@@ -22,9 +22,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 public class MycatUnionDistinctExecutor implements Executor {
-    int index = 0;
-    final Executor[] executors;
+    private final Executor[] executors;
     private Iterator<Row> iterator;
+    private HashSet<Row> output = null;
 
     public MycatUnionDistinctExecutor(Executor[] executors) {
         this.executors = executors;
@@ -32,19 +32,21 @@ public class MycatUnionDistinctExecutor implements Executor {
 
     @Override
     public void open() {
-        for (Executor executor : executors) {
-            executor.open();
-        }
-        HashSet<Row> set = new HashSet<>();
-        for (Executor executor : executors) {
-            Row row = executor.next();
-            if (row == null) {
-                executor.close();
-            } else {
-                set.add(row);
+        if (output == null) {
+            for (Executor executor : executors) {
+                executor.open();
+            }
+            output = new HashSet<>();
+            for (Executor executor : executors) {
+                Row row = executor.next();
+                if (row == null) {
+                    executor.close();
+                } else {
+                    output.add(row);
+                }
             }
         }
-        this.iterator = set.iterator();
+        this.iterator = output.iterator();
     }
 
     @Override
@@ -60,5 +62,10 @@ public class MycatUnionDistinctExecutor implements Executor {
         for (Executor executor : executors) {
             executor.close();
         }
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return true;
     }
 }

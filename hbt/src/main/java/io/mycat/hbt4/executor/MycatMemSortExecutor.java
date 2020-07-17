@@ -17,44 +17,40 @@ package io.mycat.hbt4.executor;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.stream.StreamSupport;
 
 
-public class MycatSortExecutor implements Executor {
+public class MycatMemSortExecutor implements Executor {
     private final Executor input;
     private final Comparator<Row> comparator;
     private Iterator<Row> iterator;
+    private ArrayList<Row> output = null;
 
-    public MycatSortExecutor( Comparator<Row> comparator,Executor input) {
+    public MycatMemSortExecutor(Comparator<Row> comparator, Executor input) {
         this.comparator = comparator;
         this.input = input;
     }
 
     @Override
     public void open() {
-        input.open();
-        Iterable<Row> iterable = () -> new Iterator<Row>() {
-            Row row = null;
-
-            @Override
-            public boolean hasNext() {
-                row = input.next();
-                return row != null;
+        if (output == null) {
+            input.open();
+            Iterator<Row> iterator = input.iterator();
+            output = new ArrayList<>();
+            while (iterator.hasNext()) {
+                output.add(iterator.next());
             }
-
-            @Override
-            public Row next() {
-                return row;
-            }
-        };
-        iterator = StreamSupport.stream(iterable.spliterator(), false).sorted(comparator).iterator();
+            input.close();
+            output.sort(comparator);
+            this.iterator = output.iterator();
+        }
     }
 
     @Override
     public Row next() {
-        if(iterator.hasNext()){
+        if (iterator.hasNext()) {
             return iterator.next();
         }
         return null;
@@ -63,5 +59,10 @@ public class MycatSortExecutor implements Executor {
     @Override
     public void close() {
         input.close();
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return true;
     }
 }

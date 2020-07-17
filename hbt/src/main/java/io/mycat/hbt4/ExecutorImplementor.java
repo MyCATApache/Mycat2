@@ -23,7 +23,7 @@ import io.mycat.hbt4.physical.*;
 
 public interface ExecutorImplementor {
 
-    Executor implement(MycatJoin mycatJoin);
+    Executor implement(MycatNestedLoopJoin mycatJoin);
 
     Executor implement(MycatCalc mycatCalc);
 
@@ -76,6 +76,8 @@ public interface ExecutorImplementor {
     Executor implement(View view);
 
     Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan);
+
+    Executor implement(MycatHashJoin mycatHashJoin);
 
 //    Executor implement(BottomView bottomView);
 }

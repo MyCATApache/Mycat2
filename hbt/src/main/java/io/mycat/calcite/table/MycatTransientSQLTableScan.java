@@ -34,6 +34,10 @@ public class MycatTransientSQLTableScan extends TableScan implements MycatRel {
         return sql;
     }
 
+    public String getTargetName() {
+        return targetName;
+    }
+
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         return writer.name("MycatTransientSQLTableScan").into()

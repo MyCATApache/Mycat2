@@ -45,9 +45,11 @@ public interface Executor extends Iterable<Row>{
         };
     }
 
+    public  boolean isRewindSupported() ;
+
 
     @NotNull
-    default Iterator<Object[]> outputBbjectIterator() {
+    default Iterator<Object[]> outputObjectIterator() {
         return new Iterator<Object[]>() {
             Object[] row;
 

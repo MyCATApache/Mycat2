@@ -56,7 +56,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class MycatAggregateExecutor implements Executor {
+public class MycatHashAggExecutor implements Executor {
     private final List<Grouping> groups = new ArrayList<>();
     private final ImmutableBitSet unionGroups;
     private final int outputRowLength;
@@ -65,7 +65,7 @@ public class MycatAggregateExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
-    public MycatAggregateExecutor(Executor input, Aggregate rel) {
+    public MycatHashAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
         ImmutableBitSet union = ImmutableBitSet.of();
@@ -91,11 +91,13 @@ public class MycatAggregateExecutor implements Executor {
 
     @Override
     public void open() {
-        input.open();
-        Row row = null;
-        while ((row = input.next()) != null) {
-            for (Grouping group : groups) {
-                group.send(row);
+        if (iter == null) {
+            input.open();
+            Row row = null;
+            while ((row = input.next()) != null) {
+                for (Grouping group : groups) {
+                    group.send(row);
+                }
             }
         }
         this.iter = groups.stream().flatMap(i -> i.end()).iterator();
@@ -112,6 +114,11 @@ public class MycatAggregateExecutor implements Executor {
     @Override
     public void close() {
         input.close();
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return true;
     }
 
     private AccumulatorFactory getAccumulator(final AggregateCall call,
@@ -200,7 +207,7 @@ public class MycatAggregateExecutor implements Executor {
             return new UdaAccumulatorFactory(
                     AggregateFunctionImpl.create(clazz), call, true);
         } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
-            return ()->new AvgAccumulator(call);
+            return () -> new AvgAccumulator(call);
         } else {
             final JavaTypeFactory typeFactory =
                     (JavaTypeFactory) rel.getCluster().getTypeFactory();
@@ -319,13 +326,13 @@ public class MycatAggregateExecutor implements Executor {
         public void send(Row row) {
             boolean notNull = true;
             Integer integer = call.getArgList().get(0);
-            Number object = (Number)row.getObject(integer);
+            Number object = (Number) row.getObject(integer);
             if (object == null) {
                 notNull = false;
             }
             if (notNull) {
                 cnt++;
-                sum+=object.doubleValue();
+                sum += object.doubleValue();
             }
         }
 

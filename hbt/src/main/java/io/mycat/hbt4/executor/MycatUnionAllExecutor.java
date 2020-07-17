@@ -59,4 +59,9 @@ public class MycatUnionAllExecutor implements Executor {
             executor.close();
         }
     }
+
+    @Override
+    public boolean isRewindSupported() {
+        return false;
+    }
 }
