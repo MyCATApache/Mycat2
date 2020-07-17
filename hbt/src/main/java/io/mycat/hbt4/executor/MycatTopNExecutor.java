@@ -43,7 +43,7 @@ public class MycatTopNExecutor implements Executor {
                 }
             }
         }
-        for (int i = 0; i < offset; i++) {
+        for (int i = 0; i < offset && !queue.isEmpty(); i++) {
             queue.poll();
         }
         this.iterator = queue.iterator();
