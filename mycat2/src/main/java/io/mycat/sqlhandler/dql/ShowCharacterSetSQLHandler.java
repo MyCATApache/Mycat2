@@ -14,7 +14,7 @@ public class ShowCharacterSetSQLHandler extends AbstractSQLHandler<MySqlShowChar
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowCharacterSetStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

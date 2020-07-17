@@ -124,6 +124,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             FilterAggregateTransposeRule.INSTANCE,
             FilterCorrelateRule.INSTANCE,
             FilterJoinRule.FILTER_ON_JOIN,
+            FilterJoinRule.DUMB_FILTER_ON_JOIN,
             FilterMergeRule.INSTANCE,
             FilterMultiJoinMergeRule.INSTANCE,
             FilterProjectTransposeRule.INSTANCE,
@@ -132,11 +133,12 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             FilterSetOpTransposeRule.INSTANCE,
             FilterProjectTransposeRule.INSTANCE,
             SemiJoinFilterTransposeRule.INSTANCE,
+            ProjectJoinTransposeRule.INSTANCE,
 //        ReduceExpressionsRule.FILTER_INSTANCE,
 //        ReduceExpressionsRule.JOIN_INSTANCE,
             //https://issues.apache.org/jira/browse/CALCITE-4045
 //        ReduceExpressionsRule.PROJECT_INSTANCE,
-            ProjectFilterTransposeRule.INSTANCE,
+//            ProjectFilterTransposeRule.INSTANCE,//产生子查询
             FilterTableScanRule.INSTANCE,
             JoinPushTransitivePredicatesRule.INSTANCE,
             JoinPushTransitivePredicatesRule.INSTANCE,
@@ -157,6 +159,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
         hepProgramBuilder = new HepProgramBuilder()
                 .addMatchLimit(FILTER.size())
                 .addRuleCollection(ImmutableList.of(
+                        PushDownLogicTableRule.LogicalTable,
                         PushDownLogicTableRule.BindableTableScan
                 ));
 
@@ -379,18 +382,18 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
     //目的是消除project,减少产生的子查询 所以添加 project 相关
     static final ImmutableSet<RelOptRule> PULL_RULES = ImmutableSet.of(
             UnionEliminatorRule.INSTANCE,
-            UnionMergeRule.INTERSECT_INSTANCE,
+//            UnionMergeRule.INTERSECT_INSTANCE,
             UnionMergeRule.INSTANCE,
-            UnionMergeRule.MINUS_INSTANCE,
+//            UnionMergeRule.MINUS_INSTANCE,
 //            UnionPullUpConstantsRule.INSTANCE,
             UnionToDistinctRule.INSTANCE,
-            ProjectCorrelateTransposeRule.INSTANCE,
-            ProjectFilterTransposeRule.INSTANCE,
+//            ProjectCorrelateTransposeRule.INSTANCE,
+//            ProjectFilterTransposeRule.INSTANCE,
             ProjectJoinJoinRemoveRule.INSTANCE,
             ProjectJoinRemoveRule.INSTANCE,
-            ProjectJoinTransposeRule.INSTANCE,
+//            ProjectJoinTransposeRule.INSTANCE,
             ProjectMergeRule.INSTANCE,
-            ProjectMultiJoinMergeRule.INSTANCE,
+//            ProjectMultiJoinMergeRule.INSTANCE,
             ProjectRemoveRule.INSTANCE,
             JoinUnionTransposeRule.LEFT_UNION,
             JoinUnionTransposeRule.RIGHT_UNION,
@@ -407,24 +410,25 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
              */
 //            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
+//            ProjectSetOpTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
 //            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段
             AggregateValuesRule.INSTANCE,
             //sort
-            SortJoinCopyRule.INSTANCE,
-            SortJoinTransposeRule.INSTANCE,
-            SortProjectTransposeRule.INSTANCE,
-            SortRemoveConstantKeysRule.INSTANCE,
+//            SortJoinCopyRule.INSTANCE,#产生多余的sort
+//            SortJoinTransposeRule.INSTANCE,
+//            SortProjectTransposeRule.INSTANCE,
+//            SortRemoveConstantKeysRule.INSTANCE,
             SortRemoveRule.INSTANCE,
-            SortUnionTransposeRule.INSTANCE,
-            SortUnionTransposeRule.MATCH_NULL_FETCH,
+//            SortUnionTransposeRule.INSTANCE,
+//            SortUnionTransposeRule.MATCH_NULL_FETCH,
             SubQueryRemoveRule.FILTER,
             SubQueryRemoveRule.JOIN,
             SubQueryRemoveRule.PROJECT);
 
     public RelNode pullUpUnion(RelNode relNode1) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(PULL_RULES.size());
+        hepProgramBuilder.addMatchLimit(1024);
         hepProgramBuilder.addRuleCollection(PULL_RULES);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         planner2.setRoot(relNode1);

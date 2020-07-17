@@ -14,7 +14,7 @@ public class ShowProcedureStatusSQLHandler extends AbstractSQLHandler<MySqlShowP
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowProcedureStatusStatement> request, MycatDataContext dataContext, Response response) {
-        response.sendOk();
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

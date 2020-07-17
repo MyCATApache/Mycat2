@@ -14,7 +14,7 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLShowIndexesStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

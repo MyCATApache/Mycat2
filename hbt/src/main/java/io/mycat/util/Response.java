@@ -35,6 +35,8 @@ public interface Response {
 
     void proxyShow(SQLStatement statement);
 
+    void tryBroadcast(SQLStatement statement);
+
     void multiUpdate(String string, Iterator<TextUpdateInfo> apply);
 
     void multiInsert(String string, Iterator<TextUpdateInfo> apply);

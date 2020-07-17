@@ -14,7 +14,7 @@ public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProce
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

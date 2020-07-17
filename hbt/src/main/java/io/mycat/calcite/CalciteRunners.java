@@ -47,8 +47,8 @@ public class CalciteRunners {
         SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         recorder.start();
         recorder.addRecord(SqlRecorderType.AT_START, sql, start);
-        planner.parse();
-        SqlNode validate = planner.validate(sqlNode);
+        SqlNode parse = planner.parse(sql);
+        SqlNode validate = planner.validate(parse);
         RelNode relNode = planner.convert(validate);
         long cro = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.COMPILE_SQL, sql, cro - start);

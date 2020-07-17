@@ -142,6 +142,7 @@ public enum MycatdbCommand implements MycatCommand {
         SQLStatement statement = null;
         try {
             String text = req.getText();
+            logger.info(text);
             Iterator<SQLStatement> iterator = parse(text);
             while (iterator.hasNext()) {
                 statement = iterator.next();

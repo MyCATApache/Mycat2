@@ -18,7 +18,7 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
     @Override
     protected ExecuteCode onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) {
         SQLShowColumnsStatement ast = request.getAst();
-        response.proxyShow(ast);
+        response.tryBroadcast(ast);
         return ExecuteCode.PERFORMED;
 //        response.proxyShow(ast);
 //        return ExecuteCode.PERFORMED;

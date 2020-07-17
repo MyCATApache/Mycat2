@@ -14,7 +14,7 @@ public class ShowDatabaseStatusSQLHandler extends AbstractSQLHandler<MySqlShowDa
 
     @Override
     protected ExecuteCode onExecute(SQLRequest<MySqlShowDatabaseStatusStatement> request, MycatDataContext dataContext, Response response) {
-        response.proxyShow(request.getAst());
+        response.tryBroadcast(request.getAst());
         return ExecuteCode.PERFORMED;
     }
 }

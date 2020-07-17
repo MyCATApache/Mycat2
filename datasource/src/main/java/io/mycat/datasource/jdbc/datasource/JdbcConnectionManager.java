@@ -84,8 +84,10 @@ public class JdbcConnectionManager implements ConnectionManager {
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
-        Objects.requireNonNull(name);
-        JdbcDataSource key = dataSourceMap.get(name);
+        JdbcDataSource key = Optional.ofNullable(dataSourceMap.get(name))
+                .orElseGet(()->{
+                  return dataSourceMap.get( ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name,true,null));
+                });
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {
                 return ++operand;
@@ -100,7 +102,7 @@ public class JdbcConnectionManager implements ConnectionManager {
                 try {
                     return defaultConnection;
                 } finally {
-                    LOGGER.info("获取连接:{}",defaultConnection);
+                    LOGGER.info("获取连接:{} {}",name,defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
