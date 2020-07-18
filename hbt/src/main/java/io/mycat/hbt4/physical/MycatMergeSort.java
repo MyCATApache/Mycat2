@@ -26,15 +26,21 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexNode;
 
-public class MergeSort extends Sort implements MycatRel {
+public class MycatMergeSort extends Sort implements MycatRel {
 
-    public MergeSort(RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
+    public MycatMergeSort(RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
         super(cluster, traits, child, collation, offset, fetch);
     }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        return null;
+        writer.name("MycatMergeSort").into();
+        for (RelNode relNode : getInputs()) {
+            MycatRel relNode1 = (MycatRel) relNode;
+            relNode1.explain(writer);
+        }
+
+        return writer.ret();
     }
 
     @Override
@@ -44,6 +50,6 @@ public class MergeSort extends Sort implements MycatRel {
 
     @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
-        return new MergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+        return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
 }

@@ -17,12 +17,16 @@ package io.mycat.hbt3;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.hbt4.*;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 public class View extends AbstractRelNode implements MycatRel {
@@ -30,8 +34,8 @@ public class View extends AbstractRelNode implements MycatRel {
     PartInfo dataNode;
 
     public View(RelTraitSet relTrait, RelNode input, PartInfo dataNode) {
-        super(input.getCluster(), input.getTraitSet());
-        this.dataNode = dataNode;
+        super(input.getCluster(),relTrait);
+        this.dataNode = Objects.requireNonNull(dataNode);
         this.rowType = input.getRowType();
         this.relNode = input;
         this.traitSet = relTrait;
@@ -83,5 +87,11 @@ public class View extends AbstractRelNode implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        RelOptCost relOptCost = super.computeSelfCost(planner, mq);
+        return relOptCost;
     }
 }

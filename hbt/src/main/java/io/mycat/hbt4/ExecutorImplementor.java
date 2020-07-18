@@ -55,7 +55,7 @@ public interface ExecutorImplementor {
 
     Executor implement(MemSort memSort);
 
-    Executor implement(MergeSort mergeSort);
+    Executor implement(MycatMergeSort mergeSort);
 
     Executor implement(NestedLoopJoin nestedLoopJoin);
 
@@ -63,7 +63,7 @@ public interface ExecutorImplementor {
 
     Executor implement(SortAgg sortAgg);
 
-    Executor implement(SortMergeJoin sortMergeJoin);
+    Executor implement(MycatSortMergeJoin sortMergeJoin);
 
     Executor implement(SortMergeSemiJoin sortMergeSemiJoin);
 

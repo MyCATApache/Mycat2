@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.ShardingInfo;
-import io.mycat.hbt4.physical.MergeSort;
+import io.mycat.hbt4.physical.MycatMergeSort;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -202,7 +202,7 @@ public class RBO extends RelShuttleImpl {
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexBuilder.makeCall(SqlStdOperatorTable.PLUS, offset, fetch));
             input = View.of(input, dataNodeInfo);
-            return new MergeSort(
+            return new MycatMergeSort(
                     input.getCluster(),
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
                     input,
@@ -314,7 +314,11 @@ public class RBO extends RelShuttleImpl {
             input = ((View) input).getRelNode();
         }
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
-        return View.of(input, dataNodeInfo);
+        if (dataNodeInfo==null){
+            return input;
+        }else {
+            return View.of(input, dataNodeInfo);
+        }
     }
 
 }

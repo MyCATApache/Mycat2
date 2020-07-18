@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.logical.rules.MycatMinusRule;
 import io.mycat.hbt4.logical.rules.*;
+import io.mycat.hbt4.rules.MycatMergeJoinRule;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
@@ -175,7 +176,7 @@ public class MycatRules {
     public static List<RelOptRule> rules(MycatConvention out,
                                          RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
-                new MycatJoinRule(out, relBuilderFactory),
+//                new MycatJoinRule(out, relBuilderFactory),
                 new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
@@ -185,7 +186,8 @@ public class MycatRules {
                 new MycatIntersectRule(out, relBuilderFactory),
                 new MycatMinusRule(out, relBuilderFactory),
                 new MycatTableModificationRule(out, relBuilderFactory),
-                new MycatValuesRule(out, relBuilderFactory));
+                new MycatValuesRule(out, relBuilderFactory),
+                new MycatMergeJoinRule(out,relBuilderFactory));
     }
 
 

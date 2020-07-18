@@ -41,6 +41,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.jetbrains.annotations.NotNull;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.ArrayList;
@@ -181,14 +182,15 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatSort mycatSort) {
-        Executor executor = implementInput((MycatRel) mycatSort);
-        RelDataType inputRowType = mycatSort.getInput().getRowType();
+        return createSort(mycatSort, false);
+    }
+
+    @NotNull
+    public Executor createSort(Sort mycatSort, boolean mergeSort) {
         RelCollation collation = mycatSort.getCollation();
         List<RelFieldCollation> fieldCollations = collation.getFieldCollations();
         RexNode offset = mycatSort.offset;
         RexNode fetch = mycatSort.fetch;
-
-
         Comparator<Row> comparator = null;
         long offsetValue = 0;
         long fetchValue = 0;
@@ -208,13 +210,20 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     ? Long.MAX_VALUE
                     : ((RexLiteral) fetch).getValueAs(Long.class);
         }
-        if (comparator != null && (offset != null || fetch != null)) {
-            return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+        if (mergeSort){
+            Executor[] executors = implementInputs(mycatSort);
+            return new MycatMergeSortExecutor(comparator, offsetValue, fetchValue, executors);
+        }else {
+            Executor executor = implementInput((MycatRel) mycatSort);
+            boolean isTopN = comparator != null && (offset != null || fetch != null);
+            if (isTopN) {
+                return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+            }
+            if (comparator != null) {
+                return new MycatMemSortExecutor(comparator, executor);
+            }
+            return new MycatLimitExecutor(offsetValue, fetchValue, executor);
         }
-        if (comparator != null) {
-            return new MycatMemSortExecutor(comparator, executor);
-        }
-        return new MycatLimitExecutor(offsetValue, fetchValue, executor);
     }
 
     private RexNode resolveDynamicParam(RexNode node) {
@@ -256,8 +265,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(MergeSort mergeSort) {
-        return null;
+    public Executor implement(MycatMergeSort mergeSort) {
+       return createSort(mergeSort,true);
     }
 
     @Override
@@ -280,8 +289,20 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(SortMergeJoin sortMergeJoin) {
-        return null;
+    public Executor implement(MycatSortMergeJoin sortMergeJoin) {
+        Executor[] executors = implementInputs(sortMergeJoin);
+        JoinRelType joinType = sortMergeJoin.getJoinType();
+
+        JoinInfo joinInfo = sortMergeJoin.analyzeCondition();
+        ImmutableList<RexNode> nonEquiConditions = joinInfo.nonEquiConditions;//不等价条件
+
+        int[] leftKeys = joinInfo.leftKeys.toIntArray();
+        int[] rightKeys = joinInfo.leftKeys.toIntArray();
+        int leftFieldCount = sortMergeJoin.getLeft().getRowType().getFieldCount();
+        int rightFieldCount = sortMergeJoin.getRight().getRowType().getFieldCount();
+        RelDataType resultRelDataType = combinedRowType(sortMergeJoin.getInputs());
+        return new MycatMergeJoinExecutor(sortMergeJoin,joinType,executors[0],executors[1]
+        ,nonEquiConditions,leftKeys,rightKeys,leftFieldCount,rightFieldCount,resultRelDataType);
     }
 
     @Override
@@ -305,7 +326,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     @SneakyThrows
     public Executor implement(MycatHashJoin mycatHashJoin) {
-        Executor[] executors = implementInputs(mycatHashJoin);
+            Executor[] executors = implementInputs(mycatHashJoin);
         JoinRelType joinType = mycatHashJoin.getJoinType();
 
         JoinInfo joinInfo = mycatHashJoin.analyzeCondition();

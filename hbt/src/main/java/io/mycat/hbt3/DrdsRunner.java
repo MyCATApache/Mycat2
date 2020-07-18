@@ -76,7 +76,7 @@ public class DrdsRunner {
         }
         List<Object> parameters;
         String parameterizedString;
-        if (config.isPlanCache()) {
+        if (false) {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(originalSql);
             StringBuilder sb = new StringBuilder(originalSql.length());
             MySqlOutputVisitor mySqlOutputVisitor = new MySqlOutputVisitor(sb, true);
