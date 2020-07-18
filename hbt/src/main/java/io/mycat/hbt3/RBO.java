@@ -219,17 +219,17 @@ public class RBO extends RelShuttleImpl {
             input = ((View) input).getRelNode();
         }
         if (dataNodeInfo == null) {
-            input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+            input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return input;
         }
         int size = dataNodeInfo.size();
         if (size == 1) {
-            input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+            input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return View.of(input, dataNodeInfo);
         } else {
             if (!(input instanceof Union)) {
                 input = LogicalUnion.create(ImmutableList.of(input, input), true);
-                input = aggregate.copy(input.getTraitSet(), ImmutableList.of(input));
+                input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
             hepProgram.addMatchLimit(1);
@@ -240,7 +240,7 @@ public class RBO extends RelShuttleImpl {
             MultiView multiView = new MultiView(cluster.traitSetOf(MycatConvention.INSTANCE),
                     bestExp.getInput(0).getInput(0),
                     dataNodeInfo);
-            return aggregate.copy(input.getTraitSet(), ImmutableList.of(multiView));
+            return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
         }
     }
 
@@ -301,9 +301,9 @@ public class RBO extends RelShuttleImpl {
             RexNode condition = filter.getCondition();
             RelOptTable table = input.getTable();
             MycatTable sTable = table.unwrap(MycatTable.class);
-            return View.of(filter.copy(input.getTraitSet(), ImmutableList.of(input)), sTable.computeDataNode(condition));
+            return View.of(filter.copy(filter.getTraitSet(), ImmutableList.of(input)), sTable.computeDataNode(condition));
         }
-        input = filter.copy(input.getTraitSet(), ImmutableList.of(input));
+        input = filter.copy(filter.getTraitSet(), ImmutableList.of(input));
         return View.of(input, dataNodeInfo);
     }
 
