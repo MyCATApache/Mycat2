@@ -61,7 +61,7 @@ public interface ExecutorImplementor {
 
     Executor implement(SemiHashJoin semiHashJoin);
 
-    Executor implement(SortAgg sortAgg);
+    Executor implement(MycatSortAgg sortAgg);
 
     Executor implement(MycatSortMergeJoin sortMergeJoin);
 

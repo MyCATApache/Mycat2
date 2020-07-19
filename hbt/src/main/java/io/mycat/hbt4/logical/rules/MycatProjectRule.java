@@ -57,7 +57,7 @@ public class MycatProjectRule extends MycatConverterRule {
     public RelNode convert(RelNode rel) {
         final Project project = (Project) rel;
         return MycatProject.create(
-                project.getInput(),
+                convert(project.getInput(),rel.getTraitSet().replace(MycatConvention.INSTANCE)),
                 project.getProjects(),
                 project.getRowType());
     }

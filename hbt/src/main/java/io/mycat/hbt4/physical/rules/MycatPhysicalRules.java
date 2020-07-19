@@ -36,7 +36,7 @@ public class MycatPhysicalRules {
                 new MergeSortRule(out, relBuilderFactory),
                 new NestedLoopJoinRule(out, relBuilderFactory),
                 new SemiHashJoinRule(out, relBuilderFactory),
-                new SortAggRule(out, relBuilderFactory),
+                new MycatSortAggRule(out, relBuilderFactory),
                 new SortMergeJoinRule(out, relBuilderFactory),
                 new SortMergeSemiJoinRule(out, relBuilderFactory),
                 new TopNRule(out, relBuilderFactory)

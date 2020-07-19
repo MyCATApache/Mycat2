@@ -27,7 +27,7 @@ import static com.google.common.io.Files.asCharSource;
 public class Main {
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        String sql = "select * from (select id from travelrecord order by id limit 1) t join (select id from travelrecord order by id limit 1) t2 on t.id = t2.id";
+        String sql = "select sum(t2.id) from (select t.id from travelrecord  as t order by t.id limit 1) as t2 group by t2.id";
         URL resource = Main.class.getResource("/drds.json");
         String text = asCharSource(new File(resource.toURI()), StandardCharsets.UTF_8).read();
         DrdsConfig config = JsonUtil.from(text, DrdsConfig.class);

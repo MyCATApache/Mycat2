@@ -88,7 +88,9 @@ public class DrdsRunner {
             parameterizedString = originalSql;
         }
         MycatRel relNode1 = createRelNode(config, planCache, defaultSchemaName, parameterizedString, plus);
-
+        ExplainWriter explain = relNode1.explain(new ExplainWriter());
+        String s = explain.toString();
+        System.out.println(s);
         execute(resultSetHanlder, factory, parameters, relNode1);
     }
 
@@ -169,7 +171,7 @@ public class DrdsRunner {
     public SqlNode parseSql(String sql) throws SqlParseException {
         boolean fast = true;
         SqlNode sqlNode;
-        if (fast) {
+        if (true) {
             MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             sqlStatement.accept(mycatCalciteMySqlNodeVisitor);

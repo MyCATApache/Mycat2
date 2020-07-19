@@ -14,6 +14,7 @@
  */
 package io.mycat.hbt4;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -41,6 +42,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
@@ -289,8 +291,9 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(SortAgg sortAgg) {
-        return null;
+    public Executor implement(MycatSortAgg sortAgg) {
+        Executor executor = implementInput(sortAgg);
+        return new MycatSortAggExecutor(executor,sortAgg);
     }
 
     @Override
@@ -377,16 +380,27 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         return executors;
     }
 
-    private Comparator<Row> comparator(Sort rel) {
-        if (rel.getCollation().getFieldCollations().size() == 1) {
-            return comparator(rel.getCollation().getFieldCollations().get(0));
-        }
-        return Ordering.compound(
-                Iterables.transform(rel.getCollation().getFieldCollations(),
-                        this::comparator));
+    public static Comparator<Row> comparator(Sort rel) {
+        List<RelFieldCollation> fieldCollations = rel.getCollation().getFieldCollations();
+        return comparator(fieldCollations);
     }
 
-    private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
+    @NotNull
+    public static Comparator<Row> comparator(List<RelFieldCollation> fieldCollations) {
+        if (fieldCollations.size() == 1) {
+            return comparator(fieldCollations.get(0));
+        }
+        return Ordering.compound(
+                Iterables.transform(fieldCollations, new Function<RelFieldCollation, Comparator<? super Row>>() {
+                    @Nullable
+                    @Override
+                    public Comparator<? super Row> apply(@Nullable RelFieldCollation input) {
+                        return comparator(input);
+                    }
+                }));
+    }
+
+    public static Comparator<Row> comparator(RelFieldCollation fieldCollation) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
         final int x = fieldCollation.getFieldIndex();
         switch (fieldCollation.direction) {
