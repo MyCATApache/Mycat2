@@ -170,10 +170,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         final ImmutableList.Builder<Row> rows = ImmutableList.builder();
 
 
-        for (int i = 0; i < values.length; i+=fieldCount) {
+        for (int i = 0; i < values.length; i += fieldCount) {
             Object[] r = new Object[fieldCount];
-            for (int j = i,k=0; k < fieldCount; j++,k++) {
-                r[k] =  values[j];
+            for (int j = i, k = 0; k < fieldCount; j++, k++) {
+                r[k] = values[j];
                 rows.add(Row.of(r));
             }
         }
@@ -210,10 +210,15 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     ? Long.MAX_VALUE
                     : ((RexLiteral) fetch).getValueAs(Long.class);
         }
-        if (mergeSort){
+        if (mergeSort) {
             Executor[] executors = implementInputs(mycatSort);
-            return new MycatMergeSortExecutor(comparator, offsetValue, fetchValue, executors);
-        }else {
+            MycatMergeSortExecutor mycatMergeSortExecutor = new MycatMergeSortExecutor(comparator, executors);
+            if ((offset != null || fetch != null)) {
+                return new MycatLimitExecutor(offsetValue, fetchValue, mycatMergeSortExecutor);
+            } else {
+                return mycatMergeSortExecutor;
+            }
+        } else {
             Executor executor = implementInput((MycatRel) mycatSort);
             boolean isTopN = comparator != null && (offset != null || fetch != null);
             if (isTopN) {
@@ -266,7 +271,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatMergeSort mergeSort) {
-       return createSort(mergeSort,true);
+        return createSort(mergeSort, true);
     }
 
     @Override
@@ -301,8 +306,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = sortMergeJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = sortMergeJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(sortMergeJoin.getInputs());
-        return new MycatMergeJoinExecutor(sortMergeJoin,joinType,executors[0],executors[1]
-        ,nonEquiConditions,leftKeys,rightKeys,leftFieldCount,rightFieldCount,resultRelDataType);
+        return new MycatMergeJoinExecutor(sortMergeJoin, joinType, executors[0], executors[1]
+                , nonEquiConditions, leftKeys, rightKeys, leftFieldCount, rightFieldCount, resultRelDataType);
     }
 
     @Override
@@ -326,7 +331,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     @SneakyThrows
     public Executor implement(MycatHashJoin mycatHashJoin) {
-            Executor[] executors = implementInputs(mycatHashJoin);
+        Executor[] executors = implementInputs(mycatHashJoin);
         JoinRelType joinType = mycatHashJoin.getJoinType();
 
         JoinInfo joinInfo = mycatHashJoin.analyzeCondition();
@@ -339,7 +344,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = mycatHashJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = mycatHashJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(mycatHashJoin.getInputs());
-        return new MycatHashJoinExecutor(mycatHashJoin,joinType,
+        return new MycatHashJoinExecutor(mycatHashJoin, joinType,
                 executors[0],
                 executors[1],
                 nonEquiConditions,
@@ -349,9 +354,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 generateNullsOnRight,
                 leftFieldCount,
                 rightFieldCount,
-                resultRelDataType,tempResultSetFactory);
+                resultRelDataType, tempResultSetFactory);
     }
-
 
 
     private Executor implementInput(MycatRel rel) {
