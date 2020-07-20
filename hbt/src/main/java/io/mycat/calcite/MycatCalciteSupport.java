@@ -325,7 +325,6 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        try {
             MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT);
             input = RelOptUtil.createCastRel(input, input.getRowType(), true);
             SqlImplementor.Result implement = mycatImplementor.implement(input);
@@ -335,9 +334,6 @@ public enum MycatCalciteSupport implements Context {
             sql = sql.replaceAll("\r", " ");
             sql = sql.replaceAll("\n", " ");
             return sql + (forUpdate ? " for update" : "");
-        }catch (Throwable e){
-            return "";
-        }
     }
 
     public String convertToMycatRelNodeText(RelNode node, MycatCalciteDataContext dataContext) {

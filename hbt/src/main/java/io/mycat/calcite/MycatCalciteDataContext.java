@@ -147,8 +147,6 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
         MycatDBClientBasedConfig config = based.config();
         for (Map.Entry<String, SchemaHandler> stringConcurrentHashMapEntry : config.getSchemaMap().entrySet()) {
             SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
-//            ScalarFunction scalarFunction = ScalarFunctionImpl.create(MycatFunctions.class,"DATE_FORMAT");
-//            schemaPlus.add("DATE_FORMAT",scalarFunction);
             for (Map.Entry<String, TableHandler> entry : stringConcurrentHashMapEntry.getValue().logicTables().entrySet()) {
                 TableHandler logicTable = entry.getValue();
                 MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
