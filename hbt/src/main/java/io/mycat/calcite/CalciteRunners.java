@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.Litmus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

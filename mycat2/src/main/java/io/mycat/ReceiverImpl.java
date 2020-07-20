@@ -478,7 +478,14 @@ public class ReceiverImpl implements Response {
 
     public void block(Consumer<MycatSession> consumer) {
         if (!session.isIOThreadMode()) {
-            session.getDataContext().block(() -> consumer.accept(session));
+            session.getDataContext().block(() -> {
+                try {
+                    consumer.accept(session);
+                }catch (Throwable e){
+                    session.setLastMessage(e);
+                    session.writeErrorEndPacketBySyncInProcessError();
+                }
+            });
         } else {
             consumer.accept(session);
         }

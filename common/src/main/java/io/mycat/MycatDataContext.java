@@ -100,6 +100,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void close();
 
+    //need catch exception
     void block(Runnable runnable);
 
     public String resolveDatasourceTargetName(String targetName);
