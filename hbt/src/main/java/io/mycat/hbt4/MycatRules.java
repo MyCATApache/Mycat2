@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.logical.rules.MycatMinusRule;
 import io.mycat.hbt4.logical.rules.*;
+import io.mycat.hbt4.physical.rules.MycatSortAggRule;
+import io.mycat.hbt4.rules.MycatMergeJoinRule;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
@@ -179,13 +181,16 @@ public class MycatRules {
                 new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
-                new MycatAggregateRule(out, relBuilderFactory),
+//                new MycatAggregateRule(out, relBuilderFactory),
                 new MycatSortRule(out, relBuilderFactory),
                 new MycatUnionRule(out, relBuilderFactory),
                 new MycatIntersectRule(out, relBuilderFactory),
                 new MycatMinusRule(out, relBuilderFactory),
                 new MycatTableModificationRule(out, relBuilderFactory),
-                new MycatValuesRule(out, relBuilderFactory));
+                new MycatValuesRule(out, relBuilderFactory),
+                new MycatMergeJoinRule(out,relBuilderFactory),
+                new MycatSortAggRule(out,relBuilderFactory)
+                );
     }
 
 

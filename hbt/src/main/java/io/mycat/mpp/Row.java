@@ -13,7 +13,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class Row {
+public class Row implements Comparable<Row> {
     public Object[] values;
 
     @NotNull
@@ -66,17 +66,8 @@ public class Row {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Row row = (Row) o;
-
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        int length = values.length;
-        for (int i = 0; i < length; i++) {
-          if (compare(values[i], row.values[i]) != 0) {
-              return false;
-          }
-        }
-        return true;
+        return compareTo(row) == 0;
     }
 
     @Override
@@ -138,4 +129,18 @@ public class Row {
         throw new IllegalArgumentException("unsupported comparable objects " + a.getClass() + " ('" + a + "') vs " + b.getClass() + " ('" + b + "')");
     }
 
+    @Override
+    public int compareTo(Row o) {
+        if (o == null) {
+            return 1;
+        }
+        int length = this.values.length;
+        for (int i = 0; i < length; i++) {
+            int compare = compare(this.values[i], o.values[i]);
+            if (compare != 0) {
+                return compare;
+            }
+        }
+        return 0;
+    }
 }

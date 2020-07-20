@@ -15,26 +15,31 @@
 package io.mycat.hbt4.physical;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExecutorImplementor;
 import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.MycatRel;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 
-public class SortMergeJoin extends Join implements MycatRel {
-    public SortMergeJoin(RelOptCluster cluster,
-                            RelTraitSet traitSet,
-                            RelNode left,
-                            RelNode right,
-                            RexNode condition,
-                            JoinRelType joinType) {
-        super(cluster, traitSet, ImmutableList.of(), left, right, condition, ImmutableSet.of(), joinType);
+import java.util.Set;
+
+public class MycatSortMergeJoin extends Join implements MycatRel {
+    public MycatSortMergeJoin(RelOptCluster cluster,
+                              RelTraitSet traitSet,
+                              RelNode left,
+                              RelNode right,
+                              RexNode condition,
+                              Set<CorrelationId> variablesSet, JoinRelType joinType) {
+        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     @Override
@@ -42,7 +47,18 @@ public class SortMergeJoin extends Join implements MycatRel {
         return MycatRel.explainJoin(this, "SortMergeJoin",writer);
     }
 
-
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        // We assume that the inputs are sorted. The price of sorting them has
+        // already been paid. The cost of the join is therefore proportional to the
+        // input and output size.
+        final double rightRowCount = right.estimateRowCount(mq);
+        final double leftRowCount = left.estimateRowCount(mq);
+        final double rowCount = mq.getRowCount(this);
+        final double d = leftRowCount + rightRowCount + rowCount;
+        RelOptCost relOptCost = planner.getCostFactory().makeCost(d, 0, 0);
+        return relOptCost;
+    }
 
     @Override
     public Executor implement(ExecutorImplementor implementor) {
@@ -51,6 +67,6 @@ public class SortMergeJoin extends Join implements MycatRel {
 
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new SortMergeJoin(getCluster(),traitSet,left,right,conditionExpr,joinType);
+        return new MycatSortMergeJoin(getCluster(),traitSet,left,right,conditionExpr, getVariablesSet(), joinType);
     }
 }

@@ -17,11 +17,11 @@ package io.mycat.hbt4.logical;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.*;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -45,18 +45,24 @@ public class MycatProject
         assert getConvention() instanceof MycatConvention;
     }
 
+    /** Creates an MycatProject, specifying row type rather than field
+     * names. */
+    public static MycatProject create(final RelNode input,
+                                           final List<? extends RexNode> projects, RelDataType rowType) {
+        final RelOptCluster cluster = input.getCluster();
+        final RelMetadataQuery mq = cluster.getMetadataQuery();
+        final RelTraitSet traitSet =
+                cluster.traitSet().replace(MycatConvention.INSTANCE)
+                        .replaceIfs(RelCollationTraitDef.INSTANCE,
+                                () -> RelMdCollation.project(mq, input, projects));
+        return new MycatProject(cluster, traitSet, input, projects, rowType);
+    }
+
 
     @Override
     public MycatProject copy(RelTraitSet traitSet, RelNode input,
                              List<RexNode> projects, RelDataType rowType) {
         return new MycatProject(getCluster(), traitSet, input, projects, rowType);
-    }
-
-    @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
-                                      RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq)
-                .multiplyBy(MycatConvention.COST_MULTIPLIER);
     }
 
 

@@ -55,15 +55,15 @@ public interface ExecutorImplementor {
 
     Executor implement(MemSort memSort);
 
-    Executor implement(MergeSort mergeSort);
+    Executor implement(MycatMergeSort mergeSort);
 
     Executor implement(NestedLoopJoin nestedLoopJoin);
 
     Executor implement(SemiHashJoin semiHashJoin);
 
-    Executor implement(SortAgg sortAgg);
+    Executor implement(MycatSortAgg sortAgg);
 
-    Executor implement(SortMergeJoin sortMergeJoin);
+    Executor implement(MycatSortMergeJoin sortMergeJoin);
 
     Executor implement(SortMergeSemiJoin sortMergeSemiJoin);
 

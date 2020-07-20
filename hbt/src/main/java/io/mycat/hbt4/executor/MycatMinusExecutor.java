@@ -25,10 +25,10 @@ public class MycatMinusExecutor implements Executor {
             for (Executor executor : executors) {
                 executor.open();
             }
-            Enumerable<Row> acc = Linq4j.emptyEnumerable();
+            Enumerable<Row> acc = Linq4j.asEnumerable(executors[0]);
             for (Executor i : executors) {
-                Enumerable<Row> rows = Linq4j.asEnumerable(i);
-                acc = acc.except(rows, all);
+                if (i == executors[0]) continue;
+                acc = acc.except(Linq4j.asEnumerable(i), all);
             }
             this.enumerables = acc;
             for (Executor executor : executors) {

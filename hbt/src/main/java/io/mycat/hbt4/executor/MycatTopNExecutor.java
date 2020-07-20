@@ -30,7 +30,6 @@ public class MycatTopNExecutor implements Executor {
         if (iterator == null) {
             executor.open();
             Iterator<Row> iterator = executor.iterator();
-            long count = 0;
             while (iterator.hasNext()) {
                 Row row = iterator.next();
                 if (queue.size() < this.size) {
@@ -42,9 +41,10 @@ public class MycatTopNExecutor implements Executor {
                     }
                 }
             }
-        }
-        for (int i = 0; i < offset; i++) {
-            queue.poll();
+            for (int i = 0; i < offset && !queue.isEmpty(); i++) {
+                queue.poll();
+            }
+            executor.close();
         }
         this.iterator = queue.iterator();
     }

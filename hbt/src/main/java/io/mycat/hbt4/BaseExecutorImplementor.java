@@ -14,6 +14,7 @@
  */
 package io.mycat.hbt4;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -41,6 +42,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.ArrayList;
@@ -169,10 +172,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         final ImmutableList.Builder<Row> rows = ImmutableList.builder();
 
 
-        for (int i = 0; i < values.length; i+=fieldCount) {
+        for (int i = 0; i < values.length; i += fieldCount) {
             Object[] r = new Object[fieldCount];
-            for (int j = i,k=0; k < fieldCount; j++,k++) {
-                r[k] =  values[j];
+            for (int j = i, k = 0; k < fieldCount; j++, k++) {
+                r[k] = values[j];
                 rows.add(Row.of(r));
             }
         }
@@ -181,14 +184,15 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
     @Override
     public Executor implement(MycatSort mycatSort) {
-        Executor executor = implementInput((MycatRel) mycatSort);
-        RelDataType inputRowType = mycatSort.getInput().getRowType();
+        return createSort(mycatSort, false);
+    }
+
+    @NotNull
+    public Executor createSort(Sort mycatSort, boolean mergeSort) {
         RelCollation collation = mycatSort.getCollation();
         List<RelFieldCollation> fieldCollations = collation.getFieldCollations();
         RexNode offset = mycatSort.offset;
         RexNode fetch = mycatSort.fetch;
-
-
         Comparator<Row> comparator = null;
         long offsetValue = 0;
         long fetchValue = 0;
@@ -208,13 +212,25 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     ? Long.MAX_VALUE
                     : ((RexLiteral) fetch).getValueAs(Long.class);
         }
-        if (comparator != null && (offset != null || fetch != null)) {
-            return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+        if (mergeSort) {
+            Executor[] executors = implementInputs(mycatSort);
+            MycatMergeSortExecutor mycatMergeSortExecutor = new MycatMergeSortExecutor(comparator, executors);
+            if ((offset != null || fetch != null)) {
+                return new MycatLimitExecutor(offsetValue, fetchValue, mycatMergeSortExecutor);
+            } else {
+                return mycatMergeSortExecutor;
+            }
+        } else {
+            Executor executor = implementInput((MycatRel) mycatSort);
+            boolean isTopN = comparator != null && (offset != null || fetch != null);
+            if (isTopN) {
+                return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+            }
+            if (comparator != null) {
+                return new MycatMemSortExecutor(comparator, executor);
+            }
+            return new MycatLimitExecutor(offsetValue, fetchValue, executor);
         }
-        if (comparator != null) {
-            return new MycatMemSortExecutor(comparator, executor);
-        }
-        return new MycatLimitExecutor(offsetValue, fetchValue, executor);
     }
 
     private RexNode resolveDynamicParam(RexNode node) {
@@ -256,8 +272,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(MergeSort mergeSort) {
-        return null;
+    public Executor implement(MycatMergeSort mergeSort) {
+        return createSort(mergeSort, true);
     }
 
     @Override
@@ -275,13 +291,26 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(SortAgg sortAgg) {
-        return null;
+    public Executor implement(MycatSortAgg sortAgg) {
+        Executor executor = implementInput(sortAgg);
+        return new MycatSortAggExecutor(executor,sortAgg);
     }
 
     @Override
-    public Executor implement(SortMergeJoin sortMergeJoin) {
-        return null;
+    public Executor implement(MycatSortMergeJoin sortMergeJoin) {
+        Executor[] executors = implementInputs(sortMergeJoin);
+        JoinRelType joinType = sortMergeJoin.getJoinType();
+
+        JoinInfo joinInfo = sortMergeJoin.analyzeCondition();
+        ImmutableList<RexNode> nonEquiConditions = joinInfo.nonEquiConditions;//不等价条件
+
+        int[] leftKeys = joinInfo.leftKeys.toIntArray();
+        int[] rightKeys = joinInfo.leftKeys.toIntArray();
+        int leftFieldCount = sortMergeJoin.getLeft().getRowType().getFieldCount();
+        int rightFieldCount = sortMergeJoin.getRight().getRowType().getFieldCount();
+        RelDataType resultRelDataType = combinedRowType(sortMergeJoin.getInputs());
+        return new MycatMergeJoinExecutor(sortMergeJoin, joinType, executors[0], executors[1]
+                , nonEquiConditions, leftKeys, rightKeys, leftFieldCount, rightFieldCount, resultRelDataType);
     }
 
     @Override
@@ -318,7 +347,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = mycatHashJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = mycatHashJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(mycatHashJoin.getInputs());
-        return new MycatHashJoinExecutor(mycatHashJoin,joinType,
+        return new MycatHashJoinExecutor(mycatHashJoin, joinType,
                 executors[0],
                 executors[1],
                 nonEquiConditions,
@@ -328,9 +357,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 generateNullsOnRight,
                 leftFieldCount,
                 rightFieldCount,
-                resultRelDataType,tempResultSetFactory);
+                resultRelDataType, tempResultSetFactory);
     }
-
 
 
     private Executor implementInput(MycatRel rel) {
@@ -352,16 +380,27 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         return executors;
     }
 
-    private Comparator<Row> comparator(Sort rel) {
-        if (rel.getCollation().getFieldCollations().size() == 1) {
-            return comparator(rel.getCollation().getFieldCollations().get(0));
-        }
-        return Ordering.compound(
-                Iterables.transform(rel.getCollation().getFieldCollations(),
-                        this::comparator));
+    public static Comparator<Row> comparator(Sort rel) {
+        List<RelFieldCollation> fieldCollations = rel.getCollation().getFieldCollations();
+        return comparator(fieldCollations);
     }
 
-    private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
+    @NotNull
+    public static Comparator<Row> comparator(List<RelFieldCollation> fieldCollations) {
+        if (fieldCollations.size() == 1) {
+            return comparator(fieldCollations.get(0));
+        }
+        return Ordering.compound(
+                Iterables.transform(fieldCollations, new Function<RelFieldCollation, Comparator<? super Row>>() {
+                    @Nullable
+                    @Override
+                    public Comparator<? super Row> apply(@Nullable RelFieldCollation input) {
+                        return comparator(input);
+                    }
+                }));
+    }
+
+    public static Comparator<Row> comparator(RelFieldCollation fieldCollation) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
         final int x = fieldCollation.getFieldIndex();
         switch (fieldCollation.direction) {

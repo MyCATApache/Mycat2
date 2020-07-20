@@ -18,7 +18,7 @@ package io.mycat.hbt4.physical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.physical.MergeSort;
+import io.mycat.hbt4.physical.MycatMergeSort;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -35,6 +35,6 @@ public class MergeSortRule extends MycatConverterRule {
 
     public RelNode convert(RelNode rel) {
         final Sort Sort = (Sort) rel;
-        return new MergeSort(Sort.getCluster(),Sort.getCluster().traitSetOf(out),Sort.getInput(),Sort.getCollation(),Sort.offset,Sort.fetch);
+        return new MycatMergeSort(Sort.getCluster(),Sort.getCluster().traitSetOf(out),Sort.getInput(),Sort.getCollation(),Sort.offset,Sort.fetch);
     }
 }

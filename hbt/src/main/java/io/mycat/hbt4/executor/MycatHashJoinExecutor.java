@@ -77,14 +77,15 @@ public class MycatHashJoinExecutor implements Executor {
             originOuter.open();
             originInner.open();
             Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
-            if (!outer.isRewindSupported()) {
-                outer = tempResultSetFactory.makeRewind(outer);
-                outer.open();
-            }
-            if (!inner.isRewindSupported()) {
-                inner = tempResultSetFactory.makeRewind(inner);
-                inner.open();
-            }
+////////////////////////////////////check////////////////////////////////////////////////
+//            if (!outer.isRewindSupported()) {
+//                outer = tempResultSetFactory.makeRewind(outer);
+//                outer.open();
+//            }
+//            if (!inner.isRewindSupported()) {
+//                inner = tempResultSetFactory.makeRewind(inner);
+//                inner.open();
+//            }
             Enumerable<Row> outerEnumerate = Linq4j.asEnumerable(outer);
             Enumerable<Row> innerEnumerate = Linq4j.asEnumerable(inner);
             final Function1<Row, Row> outerKeySelector = a0 -> {
