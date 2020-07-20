@@ -100,13 +100,12 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
         Scalar scalar = compiler.compile(childExps, inputRowType);
         Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
-        MycatScalar mycatScalar = (input, output) -> {
+        return new MycatProjectExecutor( (input) -> {
             o.values = input.values;
             Object[] outputValues = new Object[outputSize];
             scalar.execute(o, outputValues);
-            output.values = outputValues;
-        };
-        return new MycatProjectExecutor(mycatScalar, executors[0]);
+            return Row.of(outputValues);
+        }, executors[0]);
     }
 
     @Override

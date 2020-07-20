@@ -17,11 +17,13 @@ package io.mycat.hbt4.executor;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 
+import java.util.function.Function;
+
 public class MycatProjectExecutor implements Executor {
-    private MycatScalar mycatScalar;
+    private Function<Row,Row> mycatScalar;
     private Executor executor;
 
-    public MycatProjectExecutor(MycatScalar mycatScalar, Executor executor) {
+    public MycatProjectExecutor(Function<Row,Row> mycatScalar, Executor executor) {
         this.mycatScalar = mycatScalar;
         this.executor = executor;
     }
@@ -37,9 +39,7 @@ public class MycatProjectExecutor implements Executor {
         if (next == null){
             return null;
         }
-        Row res = Row.create(next.size());
-        mycatScalar.execute(next,res);
-        return res;
+        return mycatScalar.apply(next);
     }
 
     @Override
