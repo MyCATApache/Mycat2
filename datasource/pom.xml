@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.11-05</version>
+    <version>1.12-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -13,29 +13,24 @@
 
 <dependencies>
   <dependency>
-    <groupId>com.google.protobuf</groupId>
-    <artifactId>protobuf-java</artifactId>
-    <version>3.11.1</version>
-  </dependency>
-  <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
-    <version>1.11-05</version>
+    <version>1.12-SNAPSHOT</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
-    <version>1.11-05</version>
+    <version>1.12-SNAPSHOT</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>plug</artifactId>
-    <version>1.11-05</version>
+    <version>1.12-SNAPSHOT</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>replica</artifactId>
-    <version>1.11-05</version>
+    <version>1.12-SNAPSHOT</version>
   </dependency>
   <dependency>
     <groupId>com.zaxxer</groupId>

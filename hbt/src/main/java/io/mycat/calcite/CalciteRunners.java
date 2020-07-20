@@ -1,39 +1,35 @@
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
-import io.mycat.calcite.rules.StreamUnionRule;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.sqlRecorder.SqlRecorder;
-import io.mycat.sqlRecorder.SqlRecorderRuntime;
-import io.mycat.sqlRecorder.SqlRecorderType;
+import io.mycat.hbt3.DrdsRunner;
+import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExecutorImplementorImpl;
+import io.mycat.hbt4.MycatRel;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
+import io.mycat.sqlrecorder.SqlRecorder;
+import io.mycat.sqlrecorder.SqlRecorderRuntime;
+import io.mycat.sqlrecorder.SqlRecorderType;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.TimeProvider;
 import lombok.SneakyThrows;
-import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
-import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
-import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.plan.hep.HepPlanner;
-import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Litmus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -84,46 +80,30 @@ public class CalciteRunners {
     public static RowBaseIterator run(String sql, MycatCalciteDataContext calciteDataContext, RelNode relNode) {
         SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
+
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 SingeTargetSQLTable unwrap = scan.getTable().unwrap(SingeTargetSQLTable.class);
                 if (unwrap != null && !unwrap.existsEnumerable()) {
-                    List<SingeTargetSQLTable> tables = map.computeIfAbsent(unwrap.getTargetName(), s -> new ArrayList<>(2));
+                    String targetName = calciteDataContext.getUponDBContext().resolveFinalTargetName(unwrap.getTargetName());
+                    List<SingeTargetSQLTable> tables = map.computeIfAbsent(targetName, s -> new ArrayList<>(2));
                     tables.add(unwrap);
                 }
                 return super.visit(scan);
             }
         });
-
-        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addMatchLimit(64);
-
-        hepProgramBuilder.addRuleInstance(StreamUnionRule.INSTANCE);
-        final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
-        planner2.setRoot(relNode);
-        relNode = planner2.findBestExp();
-
-        //check
-        relNode.accept(new RelShuttleImpl() {
-            @Override
-            public RelNode visit(LogicalUnion union) {
-                if (union.getInputs().size() > 2) {
-                    throw new AssertionError("union input more 2");
-                }
-                return super.visit(union);
-            }
-        });
+       MycatRel mycatRel = (MycatRel)DrdsRunner.optimizeWithCBO(relNode);
         long startGetConnectionTime = TimeProvider.INSTANCE.now();
         fork(sql, calciteDataContext, map);
         long cbo = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
-        ArrayBindable bindable1 = Interpreters.bindable(relNode);
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(ImmutableList.of(),null,new TempResultSetFactoryImpl());
+        Executor executor = mycatRel.implement(executorImplementor);
         long execution_start = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
-//        EnumerableInterpretable.toBindable()
-        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-        Enumerator<Object[]> enumerator = bind.enumerator();
+        executor.open();
+        Enumerator<Object[]> enumerator = Linq4j.iterableEnumerator( ()-> executor.outputObjectIterator());
 
         return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator,
                 () -> {

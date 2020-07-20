@@ -1399,8 +1399,6 @@ HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlan
 
 ## 已知限制问题
 
-###### 不支持服务器预处理
-
 ###### proxy事务模式
 
 开启事务后的操作只能是同一个分片
@@ -2266,7 +2264,7 @@ SQL被'SET NAMES utf8mb4'替换
 
 
 
-## 实验性sql
+### 实验性sql
 
 
 
@@ -2359,7 +2357,30 @@ SHOW TABLES;
 
 
 
-#### Mycat2管理与监控相关
+### 服务器预处理
+
+在配置
+
+```yml
+properties:
+  useServerPrepStmts: true
+```
+
+添加useServerPrepStmts属性即可开启mycat服务器预处理功能
+
+支持
+
+blob数据
+
+批处理插入
+
+
+
+对于查询请求,Mycat会把预处理查询转换成文本查询再处理
+
+
+
+### Mycat2管理与监控相关
 
 配置9066管理端
 

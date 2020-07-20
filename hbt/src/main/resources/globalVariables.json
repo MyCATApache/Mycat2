@@ -1,0 +1,2535 @@
+{
+  "map": {
+    "@@global.version_comment": {
+      "clazz": "java.lang.String",
+      "columnName": "@@version_comment",
+      "enumObject": "version_comment",
+      "jdbcType": "VARCHAR",
+      "value": "MySQL Community Server - GPL"
+    },
+    "@@session.lc_messages": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.lc_messages",
+      "enumObject": "lc_messages",
+      "jdbcType": "VARCHAR",
+      "value": "en_US"
+    },
+    "@@global.innodb_change_buffering": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.innodb_change_buffering",
+      "enumObject": "innodb_change_buffering",
+      "jdbcType": "VARCHAR",
+      "value": "all"
+    },
+    "@@session.group_concat_max_len": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.group_concat_max_len",
+      "enumObject": "group_concat_max_len",
+      "jdbcType": "BIGINT",
+      "value": 1048576
+    },
+    "@@global.innodb_lock_wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_lock_wait_timeout",
+      "enumObject": "innodb_lock_wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 50
+    },
+    "@@session.lc_time_names": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.lc_time_names",
+      "enumObject": "lc_time_names",
+      "jdbcType": "VARCHAR",
+      "value": "en_US"
+    },
+    "@@session.character_set_results": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_results",
+      "enumObject": "character_set_results",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@session.character_set_server": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_server",
+      "enumObject": "character_set_server",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@session.query_cache_type": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.query_cache_type",
+      "enumObject": "query_cache_type",
+      "jdbcType": "VARCHAR",
+      "value": "OFF"
+    },
+    "@@global.delay_key_write": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.delay_key_write",
+      "enumObject": "delay_key_write",
+      "jdbcType": "VARCHAR",
+      "value": "ON"
+    },
+    "@@global.read_only": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.read_only",
+      "enumObject": "read_only",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_adaptive_flushing": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_adaptive_flushing",
+      "enumObject": "innodb_adaptive_flushing",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_cmp_per_index_enabled": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_cmp_per_index_enabled",
+      "enumObject": "innodb_cmp_per_index_enabled",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.max_seeks_for_key": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_seeks_for_key",
+      "enumObject": "max_seeks_for_key",
+      "jdbcType": "BIGINT",
+      "value": 4294967295
+    },
+    "@@global.sync_master_info": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sync_master_info",
+      "enumObject": "sync_master_info",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@session.default_week_format": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.default_week_format",
+      "enumObject": "default_week_format",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.multi_range_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.multi_range_count",
+      "enumObject": "multi_range_count",
+      "jdbcType": "BIGINT",
+      "value": 256
+    },
+    "@@global.log_warnings": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.log_warnings",
+      "enumObject": "log_warnings",
+      "jdbcType": "BIGINT",
+      "value": 2
+    },
+    "@@session.max_join_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_join_size",
+      "enumObject": "max_join_size",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709551615
+    },
+    "@@global.innodb_read_ahead_threshold": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_read_ahead_threshold",
+      "enumObject": "innodb_read_ahead_threshold",
+      "jdbcType": "BIGINT",
+      "value": 56
+    },
+    "@@session.profiling_history_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.profiling_history_size",
+      "enumObject": "profiling_history_size",
+      "jdbcType": "BIGINT",
+      "value": 15
+    },
+    "@@global.max_sp_recursion_depth": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_sp_recursion_depth",
+      "enumObject": "max_sp_recursion_depth",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.character_set_filesystem": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_filesystem",
+      "enumObject": "character_set_filesystem",
+      "jdbcType": "VARCHAR",
+      "value": "binary"
+    },
+    "@@global.innodb_max_purge_lag_delay": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_max_purge_lag_delay",
+      "enumObject": "innodb_max_purge_lag_delay",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.old_alter_table": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.old_alter_table",
+      "enumObject": "old_alter_table",
+      "jdbcType": "VARCHAR",
+      "value": "DEFAULT"
+    },
+    "@@global.table_open_cache": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.table_open_cache",
+      "enumObject": "table_open_cache",
+      "jdbcType": "BIGINT",
+      "value": 2000
+    },
+    "@@session.collation_server": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.collation_server",
+      "enumObject": "collation_server",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_unicode_ci"
+    },
+    "@@session.div_precision_increment": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.div_precision_increment",
+      "enumObject": "div_precision_increment",
+      "jdbcType": "BIGINT",
+      "value": 4
+    },
+    "@@global.optimizer_switch": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.optimizer_switch",
+      "enumObject": "optimizer_switch",
+      "jdbcType": "VARCHAR",
+      "value": "index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=off,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on,split_materialized=on"
+    },
+    "@@global.innodb_old_blocks_pct": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_old_blocks_pct",
+      "enumObject": "innodb_old_blocks_pct",
+      "jdbcType": "BIGINT",
+      "value": 37
+    },
+    "@@global.query_cache_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.query_cache_limit",
+      "enumObject": "query_cache_limit",
+      "jdbcType": "BIGINT",
+      "value": 1048576
+    },
+    "@@session.wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.wait_timeout",
+      "enumObject": "wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 28800
+    },
+    "@@global.init_connect": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.init_connect",
+      "enumObject": "init_connect",
+      "jdbcType": "VARCHAR",
+      "value": "SET NAMES utf8mb4"
+    },
+    "@@global.tx_read_only": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.tx_read_only",
+      "enumObject": "tx_read_only",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_disable_sort_file_cache": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_disable_sort_file_cache",
+      "enumObject": "innodb_disable_sort_file_cache",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.net_read_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.net_read_timeout",
+      "enumObject": "net_read_timeout",
+      "jdbcType": "BIGINT",
+      "value": 30
+    },
+    "@@session.preload_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.preload_buffer_size",
+      "enumObject": "preload_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 32768
+    },
+    "@@global.innodb_ft_aux_table": {
+      "columnName": "@@global.innodb_ft_aux_table",
+      "enumObject": "innodb_ft_aux_table",
+      "jdbcType": "VARCHAR"
+    },
+    "@@global.innodb_ft_enable_stopword": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_ft_enable_stopword",
+      "enumObject": "innodb_ft_enable_stopword",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.old_passwords": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.old_passwords",
+      "enumObject": "old_passwords",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.auto_increment_increment": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.auto_increment_increment",
+      "enumObject": "auto_increment_increment",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.rand_seed1": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.rand_seed1",
+      "enumObject": "rand_seed1",
+      "jdbcType": "BIGINT",
+      "value": 382489119
+    },
+    "@@session.sql_notes": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_notes",
+      "enumObject": "sql_notes",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.rand_seed2": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.rand_seed2",
+      "enumObject": "rand_seed2",
+      "jdbcType": "BIGINT",
+      "value": 783083967
+    },
+    "@@global.innodb_spin_wait_delay": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_spin_wait_delay",
+      "enumObject": "innodb_spin_wait_delay",
+      "jdbcType": "BIGINT",
+      "value": 4
+    },
+    "@@session.query_prealloc_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.query_prealloc_size",
+      "enumObject": "query_prealloc_size",
+      "jdbcType": "BIGINT",
+      "value": 24576
+    },
+    "@@global.sql_safe_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_safe_updates",
+      "enumObject": "sql_safe_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.sql_warnings": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_warnings",
+      "enumObject": "sql_warnings",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.big_tables": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.big_tables",
+      "enumObject": "big_tables",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.old_alter_table": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.old_alter_table",
+      "enumObject": "old_alter_table",
+      "jdbcType": "VARCHAR",
+      "value": "DEFAULT"
+    },
+    "@@global.sync_binlog": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sync_binlog",
+      "enumObject": "sync_binlog",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.binlog_stmt_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.binlog_stmt_cache_size",
+      "enumObject": "binlog_stmt_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 32768
+    },
+    "@@global.innodb_tmpdir": {
+      "columnName": "@@global.innodb_tmpdir",
+      "enumObject": "innodb_tmpdir",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.myisam_sort_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.myisam_sort_buffer_size",
+      "enumObject": "myisam_sort_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 134216704
+    },
+    "@@global.innodb_stats_on_metadata": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_stats_on_metadata",
+      "enumObject": "innodb_stats_on_metadata",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.last_insert_id": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.last_insert_id",
+      "enumObject": "last_insert_id",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.key_cache_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.key_cache_block_size",
+      "enumObject": "key_cache_block_size",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.slave_transaction_retries": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.slave_transaction_retries",
+      "enumObject": "slave_transaction_retries",
+      "jdbcType": "BIGINT",
+      "value": 10
+    },
+    "@@session.identity": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.identity",
+      "enumObject": "identity",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.auto_increment_offset": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.auto_increment_offset",
+      "enumObject": "auto_increment_offset",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.tx_isolation": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.tx_isolation",
+      "enumObject": "tx_isolation",
+      "jdbcType": "VARCHAR",
+      "value": "REPEATABLE-READ"
+    },
+    "@@global.flush_time": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.flush_time",
+      "enumObject": "flush_time",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.collation_connection": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.collation_connection",
+      "enumObject": "collation_connection",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_unicode_ci"
+    },
+    "@@global.bulk_insert_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.bulk_insert_buffer_size",
+      "enumObject": "bulk_insert_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 8388608
+    },
+    "@@session.max_heap_table_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_heap_table_size",
+      "enumObject": "max_heap_table_size",
+      "jdbcType": "BIGINT",
+      "value": 16777216
+    },
+    "@@global.sql_log_off": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_log_off",
+      "enumObject": "sql_log_off",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.ft_boolean_syntax": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.ft_boolean_syntax",
+      "enumObject": "ft_boolean_syntax",
+      "jdbcType": "VARCHAR",
+      "value": "+ -><()~*:\"\"&|"
+    },
+    "@@global.character_set_connection": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_connection",
+      "enumObject": "character_set_connection",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.max_join_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_join_size",
+      "enumObject": "max_join_size",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709551615
+    },
+    "@@global.innodb_flush_neighbors": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_flush_neighbors",
+      "enumObject": "innodb_flush_neighbors",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.slave_max_allowed_packet": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.slave_max_allowed_packet",
+      "enumObject": "slave_max_allowed_packet",
+      "jdbcType": "BIGINT",
+      "value": 1073741824
+    },
+    "@@global.innodb_file_format": {
+      "columnName": "@@global.innodb_file_format",
+      "enumObject": "innodb_file_format",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.max_delayed_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_delayed_threads",
+      "enumObject": "max_delayed_threads",
+      "jdbcType": "BIGINT",
+      "value": 20
+    },
+    "@@session.collation_database": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.collation_database",
+      "enumObject": "collation_database",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_general_ci"
+    },
+    "@@global.binlog_format": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.binlog_format",
+      "enumObject": "binlog_format",
+      "jdbcType": "VARCHAR",
+      "value": "MIXED"
+    },
+    "@@global.innodb_log_compressed_pages": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_log_compressed_pages",
+      "enumObject": "innodb_log_compressed_pages",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.default_storage_engine": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.default_storage_engine",
+      "enumObject": "default_storage_engine",
+      "jdbcType": "VARCHAR",
+      "value": "InnoDB"
+    },
+    "@@global.myisam_data_pointer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.myisam_data_pointer_size",
+      "enumObject": "myisam_data_pointer_size",
+      "jdbcType": "BIGINT",
+      "value": 6
+    },
+    "@@global.sql_quote_show_create": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_quote_show_create",
+      "enumObject": "sql_quote_show_create",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.interactive_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.interactive_timeout",
+      "enumObject": "interactive_timeout",
+      "jdbcType": "BIGINT",
+      "value": 28800
+    },
+    "@@global.sql_big_selects": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_big_selects",
+      "enumObject": "sql_big_selects",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.max_allowed_packet": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_allowed_packet",
+      "enumObject": "max_allowed_packet",
+      "jdbcType": "BIGINT",
+      "value": 134217728
+    },
+    "@@global.innodb_compression_level": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_compression_level",
+      "enumObject": "innodb_compression_level",
+      "jdbcType": "BIGINT",
+      "value": 6
+    },
+    "@@global.innodb_sync_spin_loops": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_sync_spin_loops",
+      "enumObject": "innodb_sync_spin_loops",
+      "jdbcType": "BIGINT",
+      "value": 30
+    },
+    "@@global.innodb_stats_method": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.innodb_stats_method",
+      "enumObject": "innodb_stats_method",
+      "jdbcType": "VARCHAR",
+      "value": "nulls_equal"
+    },
+    "@@session.session_track_system_variables": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.session_track_system_variables",
+      "enumObject": "session_track_system_variables",
+      "jdbcType": "VARCHAR",
+      "value": "autocommit,character_set_client,character_set_connection,character_set_results,time_zone"
+    },
+    "@@session.character_set_client": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_client",
+      "enumObject": "character_set_client",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@session.sql_safe_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_safe_updates",
+      "enumObject": "sql_safe_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_buffer_pool_dump_pct": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_buffer_pool_dump_pct",
+      "enumObject": "innodb_buffer_pool_dump_pct",
+      "jdbcType": "BIGINT",
+      "value": 25
+    },
+    "@@global.rpl_semi_sync_slave_enabled": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.rpl_semi_sync_slave_enabled",
+      "enumObject": "rpl_semi_sync_slave_enabled",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.binlog_checksum": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.binlog_checksum",
+      "enumObject": "binlog_checksum",
+      "jdbcType": "VARCHAR",
+      "value": "CRC32"
+    },
+    "@@global.completion_type": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.completion_type",
+      "enumObject": "completion_type",
+      "jdbcType": "VARCHAR",
+      "value": "NO_CHAIN"
+    },
+    "@@global.sql_log_bin": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_log_bin",
+      "enumObject": "sql_log_bin",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.sql_select_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sql_select_limit",
+      "enumObject": "sql_select_limit",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709551615
+    },
+    "@@global.innodb_max_undo_log_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_max_undo_log_size",
+      "enumObject": "innodb_max_undo_log_size",
+      "jdbcType": "BIGINT",
+      "value": 10485760
+    },
+    "@@global.default_storage_engine": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.default_storage_engine",
+      "enumObject": "default_storage_engine",
+      "jdbcType": "VARCHAR",
+      "value": "InnoDB"
+    },
+    "@@global.innodb_max_purge_lag": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_max_purge_lag",
+      "enumObject": "innodb_max_purge_lag",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.thread_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.thread_cache_size",
+      "enumObject": "thread_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 256
+    },
+    "@@global.init_slave": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.init_slave",
+      "enumObject": "init_slave",
+      "jdbcType": "VARCHAR",
+      "value": ""
+    },
+    "@@global.innodb_adaptive_hash_index": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_adaptive_hash_index",
+      "enumObject": "innodb_adaptive_hash_index",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.slow_launch_time": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.slow_launch_time",
+      "enumObject": "slow_launch_time",
+      "jdbcType": "BIGINT",
+      "value": 2
+    },
+    "@@global.innodb_max_dirty_pages_pct": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@global.innodb_max_dirty_pages_pct",
+      "enumObject": "innodb_max_dirty_pages_pct",
+      "jdbcType": "DOUBLE",
+      "value": 75.0
+    },
+    "@@global.rpl_semi_sync_master_wait_no_slave": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.rpl_semi_sync_master_wait_no_slave",
+      "enumObject": "rpl_semi_sync_master_wait_no_slave",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.binlog_format": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.binlog_format",
+      "enumObject": "binlog_format",
+      "jdbcType": "VARCHAR",
+      "value": "MIXED"
+    },
+    "@@global.myisam_stats_method": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.myisam_stats_method",
+      "enumObject": "myisam_stats_method",
+      "jdbcType": "VARCHAR",
+      "value": "NULLS_UNEQUAL"
+    },
+    "@@global.rpl_semi_sync_slave_trace_level": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.rpl_semi_sync_slave_trace_level",
+      "enumObject": "rpl_semi_sync_slave_trace_level",
+      "jdbcType": "BIGINT",
+      "value": 32
+    },
+    "@@global.innodb_thread_sleep_delay": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_thread_sleep_delay",
+      "enumObject": "innodb_thread_sleep_delay",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@global.optimizer_prune_level": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.optimizer_prune_level",
+      "enumObject": "optimizer_prune_level",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.max_binlog_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_binlog_cache_size",
+      "enumObject": "max_binlog_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709547520
+    },
+    "@@global.net_retry_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.net_retry_count",
+      "enumObject": "net_retry_count",
+      "jdbcType": "BIGINT",
+      "value": 10
+    },
+    "@@global.range_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.range_alloc_block_size",
+      "enumObject": "range_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 4096
+    },
+    "@@session.character_set_database": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_database",
+      "enumObject": "character_set_database",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.innodb_random_read_ahead": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_random_read_ahead",
+      "enumObject": "innodb_random_read_ahead",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.join_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.join_buffer_size",
+      "enumObject": "join_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 262144
+    },
+    "@@session.myisam_stats_method": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.myisam_stats_method",
+      "enumObject": "myisam_stats_method",
+      "jdbcType": "VARCHAR",
+      "value": "NULLS_UNEQUAL"
+    },
+    "@@global.innodb_autoextend_increment": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_autoextend_increment",
+      "enumObject": "innodb_autoextend_increment",
+      "jdbcType": "BIGINT",
+      "value": 64
+    },
+    "@@session.max_user_connections": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.max_user_connections",
+      "enumObject": "max_user_connections",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.max_seeks_for_key": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_seeks_for_key",
+      "enumObject": "max_seeks_for_key",
+      "jdbcType": "BIGINT",
+      "value": 4294967295
+    },
+    "@@global.master_verify_checksum": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.master_verify_checksum",
+      "enumObject": "master_verify_checksum",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.max_insert_delayed_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_insert_delayed_threads",
+      "enumObject": "max_insert_delayed_threads",
+      "jdbcType": "BIGINT",
+      "value": 20
+    },
+    "@@global.query_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.query_cache_size",
+      "enumObject": "query_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 1048576
+    },
+    "@@session.read_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.read_buffer_size",
+      "enumObject": "read_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 131072
+    },
+    "@@global.concurrent_insert": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.concurrent_insert",
+      "enumObject": "concurrent_insert",
+      "jdbcType": "VARCHAR",
+      "value": "AUTO"
+    },
+    "@@global.collation_server": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.collation_server",
+      "enumObject": "collation_server",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_unicode_ci"
+    },
+    "@@global.innodb_buffer_pool_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_buffer_pool_size",
+      "enumObject": "innodb_buffer_pool_size",
+      "jdbcType": "BIGINT",
+      "value": 2147483648
+    },
+    "@@global.log_queries_not_using_indexes": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.log_queries_not_using_indexes",
+      "enumObject": "log_queries_not_using_indexes",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.long_query_time": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@session.long_query_time",
+      "enumObject": "long_query_time",
+      "jdbcType": "DOUBLE",
+      "value": 10.0
+    },
+    "@@global.sql_slave_skip_counter": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sql_slave_skip_counter",
+      "enumObject": "sql_slave_skip_counter",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.innodb_strict_mode": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.innodb_strict_mode",
+      "enumObject": "innodb_strict_mode",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.automatic_sp_privileges": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.automatic_sp_privileges",
+      "enumObject": "automatic_sp_privileges",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.read_rnd_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.read_rnd_buffer_size",
+      "enumObject": "read_rnd_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 262144
+    },
+    "@@session.net_retry_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.net_retry_count",
+      "enumObject": "net_retry_count",
+      "jdbcType": "BIGINT",
+      "value": 10
+    },
+    "@@global.event_scheduler": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.event_scheduler",
+      "enumObject": "event_scheduler",
+      "jdbcType": "VARCHAR",
+      "value": "OFF"
+    },
+    "@@global.table_definition_cache": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.table_definition_cache",
+      "enumObject": "table_definition_cache",
+      "jdbcType": "BIGINT",
+      "value": 400
+    },
+    "@@session.query_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.query_alloc_block_size",
+      "enumObject": "query_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 16384
+    },
+    "@@session.tx_read_only": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.tx_read_only",
+      "enumObject": "tx_read_only",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_flush_sync": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_flush_sync",
+      "enumObject": "innodb_flush_sync",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.character_set_client": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_client",
+      "enumObject": "character_set_client",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@session.sql_select_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.sql_select_limit",
+      "enumObject": "sql_select_limit",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709551615
+    },
+    "@@global.innodb_monitor_reset": {
+      "columnName": "@@global.innodb_monitor_reset",
+      "enumObject": "innodb_monitor_reset",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.sql_log_off": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_log_off",
+      "enumObject": "sql_log_off",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_buffer_pool_filename": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.innodb_buffer_pool_filename",
+      "enumObject": "innodb_buffer_pool_filename",
+      "jdbcType": "VARCHAR",
+      "value": "ib_buffer_pool"
+    },
+    "@@global.innodb_old_blocks_time": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_old_blocks_time",
+      "enumObject": "innodb_old_blocks_time",
+      "jdbcType": "BIGINT",
+      "value": 1000
+    },
+    "@@global.sync_relay_log_info": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sync_relay_log_info",
+      "enumObject": "sync_relay_log_info",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@global.general_log_file": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.general_log_file",
+      "enumObject": "general_log_file",
+      "jdbcType": "VARCHAR",
+      "value": "DESKTOP-UFME005.log"
+    },
+    "@@session.transaction_prealloc_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.transaction_prealloc_size",
+      "enumObject": "transaction_prealloc_size",
+      "jdbcType": "BIGINT",
+      "value": 4096
+    },
+    "@@global.innodb_flushing_avg_loops": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_flushing_avg_loops",
+      "enumObject": "innodb_flushing_avg_loops",
+      "jdbcType": "BIGINT",
+      "value": 30
+    },
+    "@@global.max_insert_delayed_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_insert_delayed_threads",
+      "enumObject": "max_insert_delayed_threads",
+      "jdbcType": "BIGINT",
+      "value": 20
+    },
+    "@@global.slave_sql_verify_checksum": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.slave_sql_verify_checksum",
+      "enumObject": "slave_sql_verify_checksum",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.keep_files_on_create": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.keep_files_on_create",
+      "enumObject": "keep_files_on_create",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.optimizer_search_depth": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.optimizer_search_depth",
+      "enumObject": "optimizer_search_depth",
+      "jdbcType": "BIGINT",
+      "value": 62
+    },
+    "@@global.profiling_history_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.profiling_history_size",
+      "enumObject": "profiling_history_size",
+      "jdbcType": "BIGINT",
+      "value": 15
+    },
+    "@@session.innodb_ft_enable_stopword": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.innodb_ft_enable_stopword",
+      "enumObject": "innodb_ft_enable_stopword",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.log_output": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.log_output",
+      "enumObject": "log_output",
+      "jdbcType": "VARCHAR",
+      "value": "FILE"
+    },
+    "@@session.join_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.join_buffer_size",
+      "enumObject": "join_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 262144
+    },
+    "@@global.character_set_database": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_database",
+      "enumObject": "character_set_database",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.collation_database": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.collation_database",
+      "enumObject": "collation_database",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_unicode_ci"
+    },
+    "@@global.max_binlog_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_binlog_size",
+      "enumObject": "max_binlog_size",
+      "jdbcType": "BIGINT",
+      "value": 1073741824
+    },
+    "@@session.max_allowed_packet": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_allowed_packet",
+      "enumObject": "max_allowed_packet",
+      "jdbcType": "BIGINT",
+      "value": 134217728
+    },
+    "@@session.completion_type": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.completion_type",
+      "enumObject": "completion_type",
+      "jdbcType": "VARCHAR",
+      "value": "NO_CHAIN"
+    },
+    "@@global.slave_net_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.slave_net_timeout",
+      "enumObject": "slave_net_timeout",
+      "jdbcType": "BIGINT",
+      "value": 60
+    },
+    "@@session.foreign_key_checks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.foreign_key_checks",
+      "enumObject": "foreign_key_checks",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_buffer_pool_load_now": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_buffer_pool_load_now",
+      "enumObject": "innodb_buffer_pool_load_now",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.session_track_schema": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.session_track_schema",
+      "enumObject": "session_track_schema",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_stats_persistent": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_stats_persistent",
+      "enumObject": "innodb_stats_persistent",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.sql_buffer_result": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_buffer_result",
+      "enumObject": "sql_buffer_result",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.query_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.query_alloc_block_size",
+      "enumObject": "query_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 16384
+    },
+    "@@global.innodb_stats_sample_pages": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_stats_sample_pages",
+      "enumObject": "innodb_stats_sample_pages",
+      "jdbcType": "BIGINT",
+      "value": 8
+    },
+    "@@session.optimizer_search_depth": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.optimizer_search_depth",
+      "enumObject": "optimizer_search_depth",
+      "jdbcType": "BIGINT",
+      "value": 62
+    },
+    "@@global.innodb_flush_log_at_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_flush_log_at_timeout",
+      "enumObject": "innodb_flush_log_at_timeout",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_status_output_locks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_status_output_locks",
+      "enumObject": "innodb_status_output_locks",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_large_prefix": {
+      "columnName": "@@global.innodb_large_prefix",
+      "enumObject": "innodb_large_prefix",
+      "jdbcType": "VARCHAR"
+    },
+    "@@global.stored_program_cache": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.stored_program_cache",
+      "enumObject": "stored_program_cache",
+      "jdbcType": "BIGINT",
+      "value": 256
+    },
+    "@@global.delayed_insert_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.delayed_insert_limit",
+      "enumObject": "delayed_insert_limit",
+      "jdbcType": "BIGINT",
+      "value": 100
+    },
+    "@@global.rpl_semi_sync_master_enabled": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.rpl_semi_sync_master_enabled",
+      "enumObject": "rpl_semi_sync_master_enabled",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.max_error_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_error_count",
+      "enumObject": "max_error_count",
+      "jdbcType": "BIGINT",
+      "value": 64
+    },
+    "@@global.relay_log_purge": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.relay_log_purge",
+      "enumObject": "relay_log_purge",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_ft_num_word_optimize": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_ft_num_word_optimize",
+      "enumObject": "innodb_ft_num_word_optimize",
+      "jdbcType": "BIGINT",
+      "value": 2000
+    },
+    "@@global.auto_increment_offset": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.auto_increment_offset",
+      "enumObject": "auto_increment_offset",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.time_zone": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.time_zone",
+      "enumObject": "time_zone",
+      "jdbcType": "VARCHAR",
+      "value": "SYSTEM"
+    },
+    "@@session.default_tmp_storage_engine": {
+      "columnName": "@@session.default_tmp_storage_engine",
+      "enumObject": "default_tmp_storage_engine",
+      "jdbcType": "VARCHAR"
+    },
+    "@@global.innodb_purge_rseg_truncate_frequency": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_purge_rseg_truncate_frequency",
+      "enumObject": "innodb_purge_rseg_truncate_frequency",
+      "jdbcType": "BIGINT",
+      "value": 128
+    },
+    "@@global.innodb_online_alter_log_max_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_online_alter_log_max_size",
+      "enumObject": "innodb_online_alter_log_max_size",
+      "jdbcType": "BIGINT",
+      "value": 134217728
+    },
+    "@@global.max_sort_length": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_sort_length",
+      "enumObject": "max_sort_length",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.profiling": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.profiling",
+      "enumObject": "profiling",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.sql_warnings": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_warnings",
+      "enumObject": "sql_warnings",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.low_priority_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.low_priority_updates",
+      "enumObject": "low_priority_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.binlog_row_image": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.binlog_row_image",
+      "enumObject": "binlog_row_image",
+      "jdbcType": "VARCHAR",
+      "value": "FULL"
+    },
+    "@@global.foreign_key_checks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.foreign_key_checks",
+      "enumObject": "foreign_key_checks",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.thread_pool_stall_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.thread_pool_stall_limit",
+      "enumObject": "thread_pool_stall_limit",
+      "jdbcType": "BIGINT",
+      "value": 500
+    },
+    "@@global.div_precision_increment": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.div_precision_increment",
+      "enumObject": "div_precision_increment",
+      "jdbcType": "BIGINT",
+      "value": 4
+    },
+    "@@global.interactive_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.interactive_timeout",
+      "enumObject": "interactive_timeout",
+      "jdbcType": "BIGINT",
+      "value": 28800
+    },
+    "@@session.net_buffer_length": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.net_buffer_length",
+      "enumObject": "net_buffer_length",
+      "jdbcType": "BIGINT",
+      "value": 16384
+    },
+    "@@global.preload_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.preload_buffer_size",
+      "enumObject": "preload_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 32768
+    },
+    "@@global.query_prealloc_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.query_prealloc_size",
+      "enumObject": "query_prealloc_size",
+      "jdbcType": "BIGINT",
+      "value": 24576
+    },
+    "@@session.unique_checks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.unique_checks",
+      "enumObject": "unique_checks",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.character_set_filesystem": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_filesystem",
+      "enumObject": "character_set_filesystem",
+      "jdbcType": "VARCHAR",
+      "value": "binary"
+    },
+    "@@session.sql_buffer_result": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_buffer_result",
+      "enumObject": "sql_buffer_result",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_flush_log_at_trx_commit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_flush_log_at_trx_commit",
+      "enumObject": "innodb_flush_log_at_trx_commit",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.timestamp": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@session.timestamp",
+      "enumObject": "timestamp",
+      "jdbcType": "DOUBLE",
+      "value": 1.586962974939652E9
+    },
+    "@@session.net_read_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.net_read_timeout",
+      "enumObject": "net_read_timeout",
+      "jdbcType": "BIGINT",
+      "value": 30
+    },
+    "@@session.collation_connection": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.collation_connection",
+      "enumObject": "collation_connection",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4_unicode_ci"
+    },
+    "@@global.innodb_fast_shutdown": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_fast_shutdown",
+      "enumObject": "innodb_fast_shutdown",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_purge_batch_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_purge_batch_size",
+      "enumObject": "innodb_purge_batch_size",
+      "jdbcType": "BIGINT",
+      "value": 300
+    },
+    "@@global.binlog_direct_non_transactional_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.binlog_direct_non_transactional_updates",
+      "enumObject": "binlog_direct_non_transactional_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.wait_timeout",
+      "enumObject": "wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 28800
+    },
+    "@@global.innodb_rollback_segments": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_rollback_segments",
+      "enumObject": "innodb_rollback_segments",
+      "jdbcType": "BIGINT",
+      "value": 128
+    },
+    "@@session.sql_mode": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.sql_mode",
+      "enumObject": "sql_mode",
+      "jdbcType": "VARCHAR",
+      "value": "IGNORE_SPACE,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    },
+    "@@session.auto_increment_increment": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.auto_increment_increment",
+      "enumObject": "auto_increment_increment",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_fill_factor": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_fill_factor",
+      "enumObject": "innodb_fill_factor",
+      "jdbcType": "BIGINT",
+      "value": 100
+    },
+    "@@global.max_binlog_stmt_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_binlog_stmt_cache_size",
+      "enumObject": "max_binlog_stmt_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 18446744073709547520
+    },
+    "@@global.read_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.read_buffer_size",
+      "enumObject": "read_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 131072
+    },
+    "@@session.range_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.range_alloc_block_size",
+      "enumObject": "range_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 4096
+    },
+    "@@global.autocommit": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.autocommit",
+      "enumObject": "autocommit",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.character_set_results": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_results",
+      "enumObject": "character_set_results",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.local_infile": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.local_infile",
+      "enumObject": "local_infile",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.max_tmp_tables": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_tmp_tables",
+      "enumObject": "max_tmp_tables",
+      "jdbcType": "BIGINT",
+      "value": 32
+    },
+    "@@global.innodb_ft_enable_diag_print": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_ft_enable_diag_print",
+      "enumObject": "innodb_ft_enable_diag_print",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.key_cache_division_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.key_cache_division_limit",
+      "enumObject": "key_cache_division_limit",
+      "jdbcType": "BIGINT",
+      "value": 100
+    },
+    "@@session.max_length_for_sort_data": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_length_for_sort_data",
+      "enumObject": "max_length_for_sort_data",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.sort_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sort_buffer_size",
+      "enumObject": "sort_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 2097152
+    },
+    "@@session.myisam_repair_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.myisam_repair_threads",
+      "enumObject": "myisam_repair_threads",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.default_tmp_storage_engine": {
+      "columnName": "@@global.default_tmp_storage_engine",
+      "enumObject": "default_tmp_storage_engine",
+      "jdbcType": "VARCHAR"
+    },
+    "@@global.long_query_time": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@global.long_query_time",
+      "enumObject": "long_query_time",
+      "jdbcType": "DOUBLE",
+      "value": 10.0
+    },
+    "@@global.min_examined_row_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.min_examined_row_limit",
+      "enumObject": "min_examined_row_limit",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.sql_log_bin": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_log_bin",
+      "enumObject": "sql_log_bin",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.lock_wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.lock_wait_timeout",
+      "enumObject": "lock_wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 86400
+    },
+    "@@session.tx_isolation": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.tx_isolation",
+      "enumObject": "tx_isolation",
+      "jdbcType": "VARCHAR",
+      "value": "REPEATABLE-READ"
+    },
+    "@@global.character_set_server": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.character_set_server",
+      "enumObject": "character_set_server",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.innodb_log_checksums": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_log_checksums",
+      "enumObject": "innodb_log_checksums",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.tmp_table_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.tmp_table_size",
+      "enumObject": "tmp_table_size",
+      "jdbcType": "BIGINT",
+      "value": 16777216
+    },
+    "@@global.innodb_monitor_enable": {
+      "columnName": "@@global.innodb_monitor_enable",
+      "enumObject": "innodb_monitor_enable",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.max_sp_recursion_depth": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_sp_recursion_depth",
+      "enumObject": "max_sp_recursion_depth",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_ft_server_stopword_table": {
+      "columnName": "@@global.innodb_ft_server_stopword_table",
+      "enumObject": "innodb_ft_server_stopword_table",
+      "jdbcType": "VARCHAR"
+    },
+    "@@global.log_bin_trust_function_creators": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.log_bin_trust_function_creators",
+      "enumObject": "log_bin_trust_function_creators",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.log_slow_admin_statements": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.log_slow_admin_statements",
+      "enumObject": "log_slow_admin_statements",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.query_cache_type": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.query_cache_type",
+      "enumObject": "query_cache_type",
+      "jdbcType": "VARCHAR",
+      "value": "OFF"
+    },
+    "@@global.group_concat_max_len": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.group_concat_max_len",
+      "enumObject": "group_concat_max_len",
+      "jdbcType": "BIGINT",
+      "value": 1048576
+    },
+    "@@global.slave_exec_mode": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.slave_exec_mode",
+      "enumObject": "slave_exec_mode",
+      "jdbcType": "VARCHAR",
+      "value": "STRICT"
+    },
+    "@@global.max_heap_table_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_heap_table_size",
+      "enumObject": "max_heap_table_size",
+      "jdbcType": "BIGINT",
+      "value": 16777216
+    },
+    "@@session.optimizer_prune_level": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.optimizer_prune_level",
+      "enumObject": "optimizer_prune_level",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.session_track_schema": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.session_track_schema",
+      "enumObject": "session_track_schema",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_table_locks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_table_locks",
+      "enumObject": "innodb_table_locks",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.pseudo_slave_mode": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.pseudo_slave_mode",
+      "enumObject": "pseudo_slave_mode",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_buffer_pool_dump_at_shutdown": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_buffer_pool_dump_at_shutdown",
+      "enumObject": "innodb_buffer_pool_dump_at_shutdown",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.max_sort_length": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_sort_length",
+      "enumObject": "max_sort_length",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.innodb_undo_log_truncate": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_undo_log_truncate",
+      "enumObject": "innodb_undo_log_truncate",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.sql_mode": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.sql_mode",
+      "enumObject": "sql_mode",
+      "jdbcType": "VARCHAR",
+      "value": "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    },
+    "@@session.optimizer_switch": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.optimizer_switch",
+      "enumObject": "optimizer_switch",
+      "jdbcType": "VARCHAR",
+      "value": "index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=off,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on,split_materialized=on"
+    },
+    "@@global.max_delayed_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_delayed_threads",
+      "enumObject": "max_delayed_threads",
+      "jdbcType": "BIGINT",
+      "value": 20
+    },
+    "@@global.innodb_max_dirty_pages_pct_lwm": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@global.innodb_max_dirty_pages_pct_lwm",
+      "enumObject": "innodb_max_dirty_pages_pct_lwm",
+      "jdbcType": "DOUBLE",
+      "value": 0.0
+    },
+    "@@session.innodb_lock_wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.innodb_lock_wait_timeout",
+      "enumObject": "innodb_lock_wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 50
+    },
+    "@@global.myisam_sort_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.myisam_sort_buffer_size",
+      "enumObject": "myisam_sort_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 134216704
+    },
+    "@@global.innodb_print_all_deadlocks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_print_all_deadlocks",
+      "enumObject": "innodb_print_all_deadlocks",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.max_relay_log_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_relay_log_size",
+      "enumObject": "max_relay_log_size",
+      "jdbcType": "BIGINT",
+      "value": 1073741824
+    },
+    "@@global.myisam_max_sort_file_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.myisam_max_sort_file_size",
+      "enumObject": "myisam_max_sort_file_size",
+      "jdbcType": "BIGINT",
+      "value": 2146435072
+    },
+    "@@global.innodb_change_buffer_max_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_change_buffer_max_size",
+      "enumObject": "innodb_change_buffer_max_size",
+      "jdbcType": "BIGINT",
+      "value": 25
+    },
+    "@@global.key_cache_age_threshold": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.key_cache_age_threshold",
+      "enumObject": "key_cache_age_threshold",
+      "jdbcType": "BIGINT",
+      "value": 300
+    },
+    "@@global.sql_auto_is_null": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_auto_is_null",
+      "enumObject": "sql_auto_is_null",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.default_week_format": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.default_week_format",
+      "enumObject": "default_week_format",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.binlog_direct_non_transactional_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.binlog_direct_non_transactional_updates",
+      "enumObject": "binlog_direct_non_transactional_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.bulk_insert_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.bulk_insert_buffer_size",
+      "enumObject": "bulk_insert_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 8388608
+    },
+    "@@global.max_write_lock_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_write_lock_count",
+      "enumObject": "max_write_lock_count",
+      "jdbcType": "BIGINT",
+      "value": 4294967295
+    },
+    "@@global.innodb_deadlock_detect": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_deadlock_detect",
+      "enumObject": "innodb_deadlock_detect",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_io_capacity_max": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_io_capacity_max",
+      "enumObject": "innodb_io_capacity_max",
+      "jdbcType": "BIGINT",
+      "value": 2000
+    },
+    "@@session.tmp_table_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.tmp_table_size",
+      "enumObject": "tmp_table_size",
+      "jdbcType": "BIGINT",
+      "value": 16777216
+    },
+    "@@global.slow_query_log_file": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.slow_query_log_file",
+      "enumObject": "slow_query_log_file",
+      "jdbcType": "VARCHAR",
+      "value": "DESKTOP-UFME005-slow.log"
+    },
+    "@@global.innodb_compression_pad_pct_max": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_compression_pad_pct_max",
+      "enumObject": "innodb_compression_pad_pct_max",
+      "jdbcType": "BIGINT",
+      "value": 50
+    },
+    "@@session.character_set_connection": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.character_set_connection",
+      "enumObject": "character_set_connection",
+      "jdbcType": "VARCHAR",
+      "value": "utf8mb4"
+    },
+    "@@global.innodb_replication_delay": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_replication_delay",
+      "enumObject": "innodb_replication_delay",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.keep_files_on_create": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.keep_files_on_create",
+      "enumObject": "keep_files_on_create",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_buffer_pool_dump_now": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_buffer_pool_dump_now",
+      "enumObject": "innodb_buffer_pool_dump_now",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.slave_parallel_workers": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.slave_parallel_workers",
+      "enumObject": "slave_parallel_workers",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_stats_persistent_sample_pages": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_stats_persistent_sample_pages",
+      "enumObject": "innodb_stats_persistent_sample_pages",
+      "jdbcType": "BIGINT",
+      "value": 20
+    },
+    "@@global.session_track_state_change": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.session_track_state_change",
+      "enumObject": "session_track_state_change",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.rpl_semi_sync_master_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.rpl_semi_sync_master_timeout",
+      "enumObject": "rpl_semi_sync_master_timeout",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@global.innodb_lru_scan_depth": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_lru_scan_depth",
+      "enumObject": "innodb_lru_scan_depth",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.innodb_buffer_pool_load_abort": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_buffer_pool_load_abort",
+      "enumObject": "innodb_buffer_pool_load_abort",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.sync_relay_log": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.sync_relay_log",
+      "enumObject": "sync_relay_log",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@global.innodb_file_per_table": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_file_per_table",
+      "enumObject": "innodb_file_per_table",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_commit_concurrency": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_commit_concurrency",
+      "enumObject": "innodb_commit_concurrency",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.transaction_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.transaction_alloc_block_size",
+      "enumObject": "transaction_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 8192
+    },
+    "@@global.innodb_default_row_format": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.innodb_default_row_format",
+      "enumObject": "innodb_default_row_format",
+      "jdbcType": "VARCHAR",
+      "value": "dynamic"
+    },
+    "@@global.eq_range_index_dive_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.eq_range_index_dive_limit",
+      "enumObject": "eq_range_index_dive_limit",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.eq_range_index_dive_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.eq_range_index_dive_limit",
+      "enumObject": "eq_range_index_dive_limit",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_adaptive_flushing_lwm": {
+      "clazz": "java.lang.Double",
+      "columnName": "@@global.innodb_adaptive_flushing_lwm",
+      "enumObject": "innodb_adaptive_flushing_lwm",
+      "jdbcType": "DOUBLE",
+      "value": 10.0
+    },
+    "@@session.session_track_state_change": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.session_track_state_change",
+      "enumObject": "session_track_state_change",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_compression_failure_threshold_pct": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_compression_failure_threshold_pct",
+      "enumObject": "innodb_compression_failure_threshold_pct",
+      "jdbcType": "BIGINT",
+      "value": 5
+    },
+    "@@session.lock_wait_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.lock_wait_timeout",
+      "enumObject": "lock_wait_timeout",
+      "jdbcType": "BIGINT",
+      "value": 86400
+    },
+    "@@global.read_rnd_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.read_rnd_buffer_size",
+      "enumObject": "read_rnd_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 262144
+    },
+    "@@global.innodb_monitor_reset_all": {
+      "columnName": "@@global.innodb_monitor_reset_all",
+      "enumObject": "innodb_monitor_reset_all",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.query_cache_wlock_invalidate": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.query_cache_wlock_invalidate",
+      "enumObject": "query_cache_wlock_invalidate",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.profiling": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.profiling",
+      "enumObject": "profiling",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.sql_notes": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sql_notes",
+      "enumObject": "sql_notes",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.host_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.host_cache_size",
+      "enumObject": "host_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 1103
+    },
+    "@@global.delayed_queue_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.delayed_queue_size",
+      "enumObject": "delayed_queue_size",
+      "jdbcType": "BIGINT",
+      "value": 1000
+    },
+    "@@global.max_connect_errors": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_connect_errors",
+      "enumObject": "max_connect_errors",
+      "jdbcType": "BIGINT",
+      "value": 100
+    },
+    "@@session.min_examined_row_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.min_examined_row_limit",
+      "enumObject": "min_examined_row_limit",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.myisam_repair_threads": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.myisam_repair_threads",
+      "enumObject": "myisam_repair_threads",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_stats_transient_sample_pages": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_stats_transient_sample_pages",
+      "enumObject": "innodb_stats_transient_sample_pages",
+      "jdbcType": "BIGINT",
+      "value": 8
+    },
+    "@@global.session_track_transaction_info": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.session_track_transaction_info",
+      "enumObject": "session_track_transaction_info",
+      "jdbcType": "VARCHAR",
+      "value": "OFF"
+    },
+    "@@global.server_id": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.server_id",
+      "enumObject": "server_id",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_adaptive_max_sleep_delay": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_adaptive_max_sleep_delay",
+      "enumObject": "innodb_adaptive_max_sleep_delay",
+      "jdbcType": "BIGINT",
+      "value": 150000
+    },
+    "@@global.innodb_strict_mode": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_strict_mode",
+      "enumObject": "innodb_strict_mode",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_concurrency_tickets": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_concurrency_tickets",
+      "enumObject": "innodb_concurrency_tickets",
+      "jdbcType": "BIGINT",
+      "value": 5000
+    },
+    "@@global.net_buffer_length": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.net_buffer_length",
+      "enumObject": "net_buffer_length",
+      "jdbcType": "BIGINT",
+      "value": 16384
+    },
+    "@@session.net_write_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.net_write_timeout",
+      "enumObject": "net_write_timeout",
+      "jdbcType": "BIGINT",
+      "value": 60
+    },
+    "@@global.max_user_connections": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.max_user_connections",
+      "enumObject": "max_user_connections",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.max_tmp_tables": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.max_tmp_tables",
+      "enumObject": "max_tmp_tables",
+      "jdbcType": "BIGINT",
+      "value": 32
+    },
+    "@@session.multi_range_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.multi_range_count",
+      "enumObject": "multi_range_count",
+      "jdbcType": "BIGINT",
+      "value": 256
+    },
+    "@@global.slave_compressed_protocol": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.slave_compressed_protocol",
+      "enumObject": "slave_compressed_protocol",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.max_prepared_stmt_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_prepared_stmt_count",
+      "enumObject": "max_prepared_stmt_count",
+      "jdbcType": "BIGINT",
+      "value": 16382
+    },
+    "@@global.query_cache_min_res_unit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.query_cache_min_res_unit",
+      "enumObject": "query_cache_min_res_unit",
+      "jdbcType": "BIGINT",
+      "value": 4096
+    },
+    "@@global.old_passwords": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.old_passwords",
+      "enumObject": "old_passwords",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.slow_query_log": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.slow_query_log",
+      "enumObject": "slow_query_log",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.sync_frm": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.sync_frm",
+      "enumObject": "sync_frm",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.max_error_count": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_error_count",
+      "enumObject": "max_error_count",
+      "jdbcType": "BIGINT",
+      "value": 64
+    },
+    "@@global.myisam_use_mmap": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.myisam_use_mmap",
+      "enumObject": "myisam_use_mmap",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.transaction_alloc_block_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.transaction_alloc_block_size",
+      "enumObject": "transaction_alloc_block_size",
+      "jdbcType": "BIGINT",
+      "value": 8192
+    },
+    "@@global.max_relay_log_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_relay_log_size",
+      "enumObject": "max_relay_log_size",
+      "jdbcType": "BIGINT",
+      "value": 1073741824
+    },
+    "@@session.session_track_transaction_info": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.session_track_transaction_info",
+      "enumObject": "session_track_transaction_info",
+      "jdbcType": "VARCHAR",
+      "value": "OFF"
+    },
+    "@@global.updatable_views_with_limit": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.updatable_views_with_limit",
+      "enumObject": "updatable_views_with_limit",
+      "jdbcType": "VARCHAR",
+      "value": "YES"
+    },
+    "@@global.max_length_for_sort_data": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_length_for_sort_data",
+      "enumObject": "max_length_for_sort_data",
+      "jdbcType": "BIGINT",
+      "value": 1024
+    },
+    "@@global.binlog_cache_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.binlog_cache_size",
+      "enumObject": "binlog_cache_size",
+      "jdbcType": "BIGINT",
+      "value": 32768
+    },
+    "@@global.innodb_log_write_ahead_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_log_write_ahead_size",
+      "enumObject": "innodb_log_write_ahead_size",
+      "jdbcType": "BIGINT",
+      "value": 8192
+    },
+    "@@global.innodb_status_output": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_status_output",
+      "enumObject": "innodb_status_output",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_undo_logs": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_undo_logs",
+      "enumObject": "innodb_undo_logs",
+      "jdbcType": "BIGINT",
+      "value": 128
+    },
+    "@@session.low_priority_updates": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.low_priority_updates",
+      "enumObject": "low_priority_updates",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.net_write_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.net_write_timeout",
+      "enumObject": "net_write_timeout",
+      "jdbcType": "BIGINT",
+      "value": 60
+    },
+    "@@global.rpl_semi_sync_master_trace_level": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.rpl_semi_sync_master_trace_level",
+      "enumObject": "rpl_semi_sync_master_trace_level",
+      "jdbcType": "BIGINT",
+      "value": 32
+    },
+    "@@global.innodb_stats_include_delete_marked": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_stats_include_delete_marked",
+      "enumObject": "innodb_stats_include_delete_marked",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.transaction_prealloc_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.transaction_prealloc_size",
+      "enumObject": "transaction_prealloc_size",
+      "jdbcType": "BIGINT",
+      "value": 4096
+    },
+    "@@session.sql_quote_show_create": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_quote_show_create",
+      "enumObject": "sql_quote_show_create",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_ft_user_stopword_table": {
+      "columnName": "@@global.innodb_ft_user_stopword_table",
+      "enumObject": "innodb_ft_user_stopword_table",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.updatable_views_with_limit": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.updatable_views_with_limit",
+      "enumObject": "updatable_views_with_limit",
+      "jdbcType": "VARCHAR",
+      "value": "YES"
+    },
+    "@@global.key_buffer_size": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.key_buffer_size",
+      "enumObject": "key_buffer_size",
+      "jdbcType": "BIGINT",
+      "value": 134217728
+    },
+    "@@global.lc_messages": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.lc_messages",
+      "enumObject": "lc_messages",
+      "jdbcType": "VARCHAR",
+      "value": "en_US"
+    },
+    "@@global.innodb_checksum_algorithm": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.innodb_checksum_algorithm",
+      "enumObject": "innodb_checksum_algorithm",
+      "jdbcType": "VARCHAR",
+      "value": "crc32"
+    },
+    "@@global.session_track_system_variables": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.session_track_system_variables",
+      "enumObject": "session_track_system_variables",
+      "jdbcType": "VARCHAR",
+      "value": "autocommit,character_set_client,character_set_connection,character_set_results,time_zone"
+    },
+    "@@global.license": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.license",
+      "enumObject": "license",
+      "jdbcType": "VARCHAR",
+      "value": "gpl"
+    },
+    "@@global.lower_case_table_names": {
+      "clazz": "java.lang.Integer",
+      "columnName": "@@global.lower_case_table_names",
+      "enumObject": "lower_case_table_names",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.system_time_zone": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.system_time_zone",
+      "enumObject": "system_time_zone",
+      "jdbcType": "VARCHAR",
+      "value": "unknown"
+    },
+    "@@global.transaction_isolation": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.tx_isolation",
+      "enumObject": "transaction_isolation",
+      "jdbcType": "VARCHAR",
+      "value": "REPEATABLE-READ"
+    },
+    "@@session.transaction_isolation": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.transaction_isolation",
+      "enumObject": "transaction_isolation",
+      "jdbcType": "VARCHAR",
+      "value": "REPEATABLE-READ"
+    },
+    "@@global.time_zone": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.time_zone",
+      "enumObject": "time_zone",
+      "jdbcType": "VARCHAR",
+      "value": "SYSTEM"
+    },
+    "@@session.autocommit": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.autocommit",
+      "enumObject": "autocommit",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.log_slow_slave_statements": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.log_slow_slave_statements",
+      "enumObject": "log_slow_slave_statements",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.query_cache_wlock_invalidate": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.query_cache_wlock_invalidate",
+      "enumObject": "query_cache_wlock_invalidate",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_ft_result_cache_limit": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.innodb_ft_result_cache_limit",
+      "enumObject": "innodb_ft_result_cache_limit",
+      "jdbcType": "BIGINT",
+      "value": 2000000000
+    },
+    "@@session.pseudo_thread_id": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@session.pseudo_thread_id",
+      "enumObject": "pseudo_thread_id",
+      "jdbcType": "BIGINT",
+      "value": 23
+    },
+    "@@global.secure_auth": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.secure_auth",
+      "enumObject": "secure_auth",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.general_log": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.general_log",
+      "enumObject": "general_log",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.rpl_semi_sync_master_wait_point": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.rpl_semi_sync_master_wait_point",
+      "enumObject": "rpl_semi_sync_master_wait_point",
+      "jdbcType": "VARCHAR",
+      "value": "AFTER_COMMIT"
+    },
+    "@@global.max_connections": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.max_connections",
+      "enumObject": "max_connections",
+      "jdbcType": "BIGINT",
+      "value": 10000
+    },
+    "@@global.innodb_optimize_fulltext_only": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_optimize_fulltext_only",
+      "enumObject": "innodb_optimize_fulltext_only",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.lc_time_names": {
+      "clazz": "java.lang.String",
+      "columnName": "@@global.lc_time_names",
+      "enumObject": "lc_time_names",
+      "jdbcType": "VARCHAR",
+      "value": "en_US"
+    },
+    "@@global.big_tables": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.big_tables",
+      "enumObject": "big_tables",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@session.binlog_row_image": {
+      "clazz": "java.lang.String",
+      "columnName": "@@session.binlog_row_image",
+      "enumObject": "binlog_row_image",
+      "jdbcType": "VARCHAR",
+      "value": "FULL"
+    },
+    "@@global.unique_checks": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.unique_checks",
+      "enumObject": "unique_checks",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.delayed_insert_timeout": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.delayed_insert_timeout",
+      "enumObject": "delayed_insert_timeout",
+      "jdbcType": "BIGINT",
+      "value": 300
+    },
+    "@@global.expire_logs_days": {
+      "clazz": "java.math.BigInteger",
+      "columnName": "@@global.expire_logs_days",
+      "enumObject": "expire_logs_days",
+      "jdbcType": "BIGINT",
+      "value": 0
+    },
+    "@@global.innodb_monitor_disable": {
+      "columnName": "@@global.innodb_monitor_disable",
+      "enumObject": "innodb_monitor_disable",
+      "jdbcType": "VARCHAR"
+    },
+    "@@session.sql_big_selects": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_big_selects",
+      "enumObject": "sql_big_selects",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@global.innodb_stats_auto_recalc": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@global.innodb_stats_auto_recalc",
+      "enumObject": "innodb_stats_auto_recalc",
+      "jdbcType": "BIGINT",
+      "value": 1
+    },
+    "@@session.sql_auto_is_null": {
+      "clazz": "java.lang.Long",
+      "columnName": "@@session.sql_auto_is_null",
+      "enumObject": "sql_auto_is_null",
+      "jdbcType": "BIGINT",
+      "value": 0
+    }
+  }
+}

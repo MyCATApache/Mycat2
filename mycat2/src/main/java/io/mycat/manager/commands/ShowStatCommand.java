@@ -3,8 +3,8 @@ package io.mycat.manager.commands;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
-import io.mycat.sqlRecorder.SqlRecord;
-import io.mycat.sqlRecorder.SqlRecorderRuntime;
+import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.Response;
 
 import java.sql.JDBCType;

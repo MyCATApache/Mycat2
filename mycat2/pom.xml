@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.11-05</version>
+        <version>1.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -45,44 +45,23 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>pattern</artifactId>
-            <version>1.11-05</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>proxy</artifactId>
-            <version>1.11-05</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections-api</artifactId>
-            <version>10.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>10.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>8.3.0</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/au.com.bytecode/opencsv -->
         <dependency>
@@ -96,38 +75,12 @@
             <artifactId>guava</artifactId>
             <version>28.1-jre</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-parent -->
-        <dependency>
-            <groupId>org.apache.crail</groupId>
-            <artifactId>crail-parent</artifactId>
-            <version>1.1-incubating</version>
-            <type>pom</type>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-storage -->
-        <dependency>
-            <groupId>org.apache.crail</groupId>
-            <artifactId>crail-storage</artifactId>
-            <version>1.1-incubating</version>
-        </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>booster</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>booster</artifactId>
-            <version>1.11-05</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>1.1.21</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
     <build>
         <plugins>
@@ -149,7 +102,7 @@
                 <executions>
                     <execution>
                         <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <phase>package</phase> <!-- 指定在打包节点执行jar包合并操作 -->
+                       <!--   <phase>package</phase>  指定在打包节点执行jar包合并操作 -->
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -292,11 +245,9 @@
                                         <include name="mycat/bin/**"/>
                                         <include name="mycat/conf/**"/>
                                         <include name="mycat/logs"/>
-                                        <include name="mycat/lib/mycat2**"/>
-                                        <include name="mycat/lib/wrapper**"/>
-                                        <include name="mycat/lib/libwrapper**"/>
+                                        <include name="mycat/lib/**"/>
                                     </tarfileset>
-                                    <tarfileset dir="${project.basedir}/../example/src/test/resources/io" filemode="755">
+                                    <tarfileset dir="${project.basedir}/../example/src/main/resources/io" filemode="755">
                                         <include name="**"/>
                                     </tarfileset>
                                     <tarfileset dir="${project.basedir}/..">

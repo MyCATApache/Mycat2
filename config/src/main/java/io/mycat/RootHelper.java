@@ -18,7 +18,6 @@ import lombok.SneakyThrows;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public enum RootHelper {
     INSTANCE;
@@ -37,7 +36,7 @@ public enum RootHelper {
         String className = System.getProperty(configProviderKeyName);
 
         if (className == null) {
-            className = TemplateFileConfigProviderImpl.class.getName();
+            className = FileConfigProvider.class.getName();
         }
         String configResourceKeyName = "MYCAT_HOME";
         String path = System.getProperty(configResourceKeyName);

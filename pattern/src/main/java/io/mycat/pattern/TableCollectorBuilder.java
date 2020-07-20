@@ -14,8 +14,6 @@
  */
 package io.mycat.pattern;
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-
 import java.util.*;
 
 /**
@@ -25,7 +23,7 @@ import java.util.*;
  **/
 public class TableCollectorBuilder {
     final Map<String, Integer> schemaHash = new HashMap<>();
-    final IntObjectHashMap<TableCollector.TableInfo> map = new IntObjectHashMap<>();
+    final HashMap<Integer,TableCollector.TableInfo> map = new HashMap<>();
     final int dotHash;
     private final GPatternIdRecorder recorder;
     private final Map<String, Map<String, TableCollector.TableInfo>> schemaInfos = new HashMap<>();

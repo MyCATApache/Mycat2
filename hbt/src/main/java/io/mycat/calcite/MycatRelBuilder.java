@@ -30,8 +30,6 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -39,7 +37,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -65,47 +62,9 @@ public class MycatRelBuilder extends RelBuilder {
 
     public  RelNode makeTransientSQLScan(String targetName, RelNode input,boolean forUpdate) {
         RelDataType rowType = input.getRowType();
-        MycatConvention convention = getConvertion(targetName);
-        return makeBySql(targetName,rowType,MycatCalciteSupport.INSTANCE.convertToSql(input, convention.dialect,forUpdate));
+        return makeBySql(targetName,rowType,MycatCalciteSupport.INSTANCE.convertToSql(input,MycatSqlDialect.DEFAULT,forUpdate));
     }
 
-    @NotNull
-    private MycatConvention getConvertion(String targetName) {
-        return MycatConvention.of(targetName,  new MysqlSqlDialect(MysqlSqlDialect.DEFAULT_CONTEXT){
-            @Override
-            public SqlNode getCastSpec(RelDataType type) {
-                return super.getCastSpec(type);
-            }
-
-            @Override
-            public String quoteIdentifier(String val) {
-                return super.quoteIdentifier(val);
-            }
-
-            @Override
-            public StringBuilder quoteIdentifier(StringBuilder buf, String val) {
-                return super.quoteIdentifier(buf, val);
-            }
-
-            @Override
-            public StringBuilder quoteIdentifier(StringBuilder buf, List<String> identifiers) {
-                return super.quoteIdentifier(buf, identifiers);
-            }
-
-            @Override
-            public void quoteStringLiteral(StringBuilder buf, String charsetName, String val) {
-                buf.append(literalQuoteString);
-                buf.append(val);
-                buf.append(literalEndQuoteString);
-            }
-
-            @Override
-            public void quoteStringLiteralUnicode(StringBuilder buf, String val) {
-                super.quoteStringLiteralUnicode(buf, val);
-            }
-
-        });
-    }
 
 
     /**
@@ -186,14 +145,13 @@ public class MycatRelBuilder extends RelBuilder {
      * @return
      */
     public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
-        MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
-        MycatSQLTableScan transientTable = new MycatSQLTableScan(convention,relDataType,sql);
+        MycatSQLTableScan transientTable = new MycatSQLTableScan(relDataType,targetName,sql);
         id++;
         RelOptTable relOptTable = RelOptTableImpl.create(
                 this.getRelOptSchema(),
                 relDataType,
                 transientTable,
                 ImmutableList.of(id +"$"+targetName, id+sql));//名称唯一
-        return new MycatTransientSQLTableScan(this.getCluster(), convention, relOptTable, () -> sql);
+        return new MycatTransientSQLTableScan(this.getCluster(), targetName, relOptTable, sql);
     }
 }

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.11-05</version>
+        <version>1.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,22 +16,22 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>plug</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba.fastsql</groupId>
@@ -44,13 +44,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.10</version>
             <scope>provided</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/junit/junit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
         <dependency>

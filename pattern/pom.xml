@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.11-05</version>
+        <version>1.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -33,37 +33,6 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.9</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-core</artifactId>
-            <version>1.21</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-generator-annprocess -->
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-generator-annprocess</artifactId>
-            <version>1.21</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections-api</artifactId>
-            <version>10.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>10.0.0</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
         <dependency>
             <groupId>com.alibaba.fastsql</groupId>
@@ -71,12 +40,6 @@
             <version>2.0.0_preview_973</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/it.unimi.dsi/fastutil -->
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>8.3.0</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.reflections/reflections -->
         <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
@@ -92,12 +55,12 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>hbt</artifactId>
-            <version>1.11-05</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
         <dependency>

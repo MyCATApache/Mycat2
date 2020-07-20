@@ -1,10 +1,8 @@
 package io.mycat.combinator;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.util.Pair;
 import lombok.SneakyThrows;
-import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.tuple.Tuples;
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -26,7 +24,7 @@ public class ReMatchersBenchmark {
     }
 
     private static void add(ImmutableList.Builder<Pair<String, String>> builder, String s) {
-        builder.add(Tuples.pair(s, s));
+        builder.add(Pair.of(s, s));
     }
 
     public ReMatchersBenchmark() {

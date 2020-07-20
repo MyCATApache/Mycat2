@@ -32,4 +32,12 @@ public class MycatSqlDialect extends MysqlSqlDialect {
         }
         return super.getCastSpec(type);
     }
+
+    @Override
+    public void quoteStringLiteral(StringBuilder buf, String charsetName, String val) {
+        buf.append(literalQuoteString);
+        buf.append(val);
+        buf.append(literalEndQuoteString);
+    }
+
 }
