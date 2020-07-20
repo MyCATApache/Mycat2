@@ -206,23 +206,26 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return ExecuteCode.PERFORMED;
         }
         dataContext.block(() -> {
+            try {
+                ///////////////////////////////////mycatdb////////////////////////////////////////////////
+                MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
 
-            ///////////////////////////////////mycatdb////////////////////////////////////////////////
-            MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
-
-            MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
-                    .innerQueryPrepareObject(statement.toString(), mycatDBContext);
-            PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
-            if (plan instanceof MycatSqlPlanner) {
-                ProxyInfo proxyInfo = ((MycatSqlPlanner) plan).tryGetProxyInfo();
-                if (proxyInfo != null) {
-                    String sql = proxyInfo.getSql();
-                    String targetName = proxyInfo.getTargetName();
-                    receiver.proxySelect(targetName, sql);
-                    return;
+                MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
+                        .innerQueryPrepareObject(statement.toString(), mycatDBContext);
+                PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
+                if (plan instanceof MycatSqlPlanner) {
+                    ProxyInfo proxyInfo = ((MycatSqlPlanner) plan).tryGetProxyInfo();
+                    if (proxyInfo != null) {
+                        String sql = proxyInfo.getSql();
+                        String targetName = proxyInfo.getTargetName();
+                        receiver.proxySelect(targetName, sql);
+                        return;
+                    }
                 }
+                receiver.sendResultSet(() -> plan.run(), plan::explain);
+            } catch (Throwable e) {
+                receiver.sendError(e);
             }
-            receiver.sendResultSet(() -> plan.run(), plan::explain);
         });
 
         return ExecuteCode.PERFORMED;

@@ -44,6 +44,9 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.ScalarFunction;
+import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
@@ -85,6 +88,7 @@ public enum MycatCalciteSupport implements Context {
     public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
     public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
+    public final Map<String, Function > functions = new HashMap<>();
     /*
 
     new SqlParserImplFactory() {
@@ -127,7 +131,8 @@ public enum MycatCalciteSupport implements Context {
             .withRelBuilderFactory(relBuilderFactory).build();
 
     public final SqlValidator.Config getValidatorConfig() {
-       return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance());
+       return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance())
+               .withTypeCoercionEnabled(true);
 //                .withSqlConformance(calciteConnectionConfig.conformance());
     }
 
@@ -188,6 +193,9 @@ public enum MycatCalciteSupport implements Context {
         map.put(MycatTypeSystem.class, TypeSystem);
         map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
         map.put(RexExecutor.class, RexUtil.EXECUTOR);
+
+        ScalarFunction scalarFunction = ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class,"eval");
+        functions.put("date_format",scalarFunction);
     }
 
     private CalciteConnectionConfig connectionConfig() {
@@ -317,15 +325,19 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT);
-        input= RelOptUtil.createCastRel(input,input.getRowType(),true);
-        SqlImplementor.Result implement = mycatImplementor.implement(input);
-        SqlNode sqlNode = implement.asStatement();
-        String sql = sqlNode.toSqlString(dialect, false).getSql();
-        sql = sql.trim();
-        sql = sql.replaceAll("\r", " ");
-        sql = sql.replaceAll("\n", " ");
-        return sql + (forUpdate ? " for update" : "");
+        try {
+            MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT);
+            input = RelOptUtil.createCastRel(input, input.getRowType(), true);
+            SqlImplementor.Result implement = mycatImplementor.implement(input);
+            SqlNode sqlNode = implement.asStatement();
+            String sql = sqlNode.toSqlString(dialect, false).getSql();
+            sql = sql.trim();
+            sql = sql.replaceAll("\r", " ");
+            sql = sql.replaceAll("\n", " ");
+            return sql + (forUpdate ? " for update" : "");
+        }catch (Throwable e){
+            return "";
+        }
     }
 
     public String convertToMycatRelNodeText(RelNode node, MycatCalciteDataContext dataContext) {
@@ -355,4 +367,8 @@ public enum MycatCalciteSupport implements Context {
                 .map(preComputationSQLTable ->
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
     }
+
+
+
+
 }

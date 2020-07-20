@@ -16,11 +16,11 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.mycat.TableHandler;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatReflectiveSchema;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.TableHandler;
 import io.mycat.upondb.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -139,11 +139,16 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 //        return uponDBContext.update(targetName, sqls);
 //    }
 
+
+
     public static SchemaPlus getSchema(MycatDBClientBased based) {
-        SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
+        SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
+        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k,v));
         MycatDBClientBasedConfig config = based.config();
         for (Map.Entry<String, SchemaHandler> stringConcurrentHashMapEntry : config.getSchemaMap().entrySet()) {
             SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
+//            ScalarFunction scalarFunction = ScalarFunctionImpl.create(MycatFunctions.class,"DATE_FORMAT");
+//            schemaPlus.add("DATE_FORMAT",scalarFunction);
             for (Map.Entry<String, TableHandler> entry : stringConcurrentHashMapEntry.getValue().logicTables().entrySet()) {
                 TableHandler logicTable = entry.getValue();
                 MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
