@@ -18,16 +18,16 @@ public class MycatFunctions {
             LocalDate date = LocalDate.parse(dateText,BASIC_ISO_DATE);
 
             Locale locale = Locale.getDefault();
-            format= format.replace("%a",date.getDayOfWeek().getDisplayName(TextStyle.SHORT,locale));
-            format =format.replace("%b",date.getMonth().getDisplayName(TextStyle.SHORT,locale));
-            format= format.replace("%c",date.getMonthValue()+"");
-            format= format.replace("%Y",String.format("%04d",date.getYear()));
-            format= format.replace("%y",String.format("%02d",date.getYear()));
-            format= format.replace("%m",String.format("%02d", date.getMonthValue()));
-            format= format.replace("%M",date.getMonth().getDisplayName(TextStyle.FULL,locale));
-            format= format.replace("%d",String.format("%02d", date.getDayOfMonth()));
-            format= format.replace("%e",String.format("%01d", date.getDayOfMonth()));
-            format= format.replace("%c",String.format("%01d", date.getMonthValue()));
+            format= format.replaceAll("%a",date.getDayOfWeek().getDisplayName(TextStyle.SHORT,locale));
+            format =format.replaceAll("%b",date.getMonth().getDisplayName(TextStyle.SHORT,locale));
+            format= format.replaceAll("%c",date.getMonthValue()+"");
+            format= format.replaceAll("%Y",String.format("%04d",date.getYear()));
+            format= format.replaceAll("%y",String.format("%02d",date.getYear()));
+            format= format.replaceAll("%m",String.format("%02d", date.getMonthValue()));
+            format= format.replaceAll("%M",date.getMonth().getDisplayName(TextStyle.FULL,locale));
+            format= format.replaceAll("%d",String.format("%02d", date.getDayOfMonth()));
+            format= format.replaceAll("%e",String.format("%01d", date.getDayOfMonth()));
+            format= format.replaceAll("%c",String.format("%01d", date.getMonthValue()));
 
             if (!format.contains("%")){
                 return format;
