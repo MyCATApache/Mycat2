@@ -34,7 +34,7 @@ public class MycatFunctions {
             }
             String datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
             try(DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(datasource)){
-                RowBaseIterator rowBaseIterator = connection.executeQuery("select data_format(" + dateText + ")");
+                RowBaseIterator rowBaseIterator = connection.executeQuery("select data_format('" + dateText +"','"+format+ "')");
                return rowBaseIterator.getString(1);
             }
         }
