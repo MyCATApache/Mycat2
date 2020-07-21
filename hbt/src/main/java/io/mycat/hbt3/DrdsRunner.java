@@ -98,10 +98,12 @@ public class DrdsRunner {
                         DatasourceFactory datasourceFactory,
                         List<Object> parameters,
                         MycatRel relNode1) {
+
         RelDataType rowType = relNode1.getRowType();
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
         resultSetHanlder.onMetadata(calciteRowMetaData);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(parameters, datasourceFactory,new TempResultSetFactoryImpl());
+        MycatContext context = new MycatContext();
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, datasourceFactory,new TempResultSetFactoryImpl());
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();
         Iterator<Row> iterator = implement.iterator();

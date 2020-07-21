@@ -79,5 +79,7 @@ public interface ExecutorImplementor {
 
     Executor implement(MycatHashJoin mycatHashJoin);
 
+    Executor implement(MycatCorrelate mycatCorrelate);
+
 //    Executor implement(BottomView bottomView);
 }

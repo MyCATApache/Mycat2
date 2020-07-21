@@ -28,12 +28,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 public class ExecutorImplementorImpl extends BaseExecutorImplementor {
     private final DatasourceFactory factory;
 
-    public ExecutorImplementorImpl(List<Object> context,
+    public ExecutorImplementorImpl(MycatContext context,
                                    DatasourceFactory factory,
                                    TempResultSetFactory tempResultSetFactory) {
         super(context,tempResultSetFactory);
@@ -73,7 +71,8 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
     public Object[] getPzarameters(ImmutableList<Integer> dynamicParameters) {
         Object[] objects;
         if (dynamicParameters != null) {
-            objects = dynamicParameters.stream().map(i -> context.get(i)).toArray();
+//            objects = dynamicParameters.stream().map(i -> context.get(i)).toArray();
+            objects = null;
         } else {
             objects = new Object[]{};
         }

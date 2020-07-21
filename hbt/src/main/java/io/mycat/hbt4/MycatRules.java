@@ -181,7 +181,7 @@ public class MycatRules {
                 new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
-//                new MycatAggregateRule(out, relBuilderFactory),
+                new MycatAggregateRule(out, relBuilderFactory),
                 new MycatSortRule(out, relBuilderFactory),
                 new MycatUnionRule(out, relBuilderFactory),
                 new MycatIntersectRule(out, relBuilderFactory),
@@ -189,7 +189,8 @@ public class MycatRules {
                 new MycatTableModificationRule(out, relBuilderFactory),
                 new MycatValuesRule(out, relBuilderFactory),
                 new MycatMergeJoinRule(out,relBuilderFactory),
-                new MycatSortAggRule(out,relBuilderFactory)
+                new MycatSortAggRule(out,relBuilderFactory),
+                new MycatCorrelateRule(out,relBuilderFactory)
                 );
     }
 

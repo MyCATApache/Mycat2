@@ -304,7 +304,12 @@ public class RBO extends RelShuttleImpl {
             return View.of(filter.copy(filter.getTraitSet(), ImmutableList.of(input)), sTable.computeDataNode(condition));
         }
         input = filter.copy(filter.getTraitSet(), ImmutableList.of(input));
-        return View.of(input, dataNodeInfo);
+        if (dataNodeInfo!=null){
+            return View.of(input, dataNodeInfo);
+        }else {
+            return input;
+        }
+
     }
 
     private static RelNode project(RelNode input, LogicalProject project) {

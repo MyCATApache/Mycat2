@@ -15,8 +15,11 @@
 package io.mycat.hbt4.executor;
 
 
-import io.mycat.mpp.Row;
+import io.mycat.hbt4.MycatContext;
 
 public interface MycatScalar {
-    void execute(Row input, Row output);
+    Object execute(MycatContext context);
+    void execute(MycatContext context, Object[] results);
+//    void execute(Object[] inputs, Object[] results);
+//    Object execute(Object[] inputs);
 }
