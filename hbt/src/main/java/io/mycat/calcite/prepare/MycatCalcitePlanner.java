@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.rules.LimitPushRemoveRule;
+import io.mycat.calcite.rules.MycatProjectTransportRule;
 import io.mycat.calcite.rules.PushDownLogicTableRule;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatSQLTableScan;
@@ -194,7 +195,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                 /**
                  * 跳过集合操作,不能下推union
                  */
-                if (other instanceof SetOp){
+                if (other instanceof SetOp) {
                     return super.visit(other);
                 }
                 if (cache.get(other) == Boolean.TRUE) {
@@ -210,7 +211,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                 return super.visit(other);
             }
         };
-        return  Objects.requireNonNull(bestExp1.accept(relHomogeneousShuttle1));
+        return Objects.requireNonNull(bestExp1.accept(relHomogeneousShuttle1));
     }
 
     /**
@@ -403,12 +404,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             AggregateProjectMergeRule.INSTANCE,
 //            AggregateRemoveRule.INSTANCE,该规则会内部使用VolcanoPlanner
             AggregateProjectPullUpConstantsRule.INSTANCE2,
-            /**
-             *
-             * at org.apache.calcite.rel.rules.PushProjector.getAdjustments(PushProjector.java:572)
-             * 	at org.apache.calcite.rel.rules.ProjectSetOpTransposeRule.onMatch(ProjectSetOpTransposeRule.java:92)
-             */
-//            ProjectSetOpTransposeRule.INSTANCE,//该实现可能有问题
+            MycatProjectTransportRule.INSTANCE,//org.apache.calcite.rel.rules.ProjectSetOpTransposeRule 该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
 //            ProjectSetOpTransposeRule.INSTANCE,
             AggregateCaseToFilterRule.INSTANCE,
@@ -498,9 +494,9 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                         cache.put(other, Boolean.TRUE);
                     }
                     //修正,不能影响上面流程
-                    if (other instanceof SetOp||other instanceof Correlate) {
+                    if (other instanceof SetOp || other instanceof Correlate) {
                         cache.put(other, false);//没有事务并行查询->总是并行查询
-                        margeList.put(other,ImmutableList.of("a","b"));//强制使union的数据源不一致,这样就不会下推union
+                        margeList.put(other, ImmutableList.of("a", "b"));//强制使union的数据源不一致,这样就不会下推union
                         return other;
                     }
                     return other;

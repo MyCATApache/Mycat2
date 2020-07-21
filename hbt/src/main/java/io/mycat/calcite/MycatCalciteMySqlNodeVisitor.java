@@ -455,7 +455,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (x.getAlias() != null) {
             SqlIdentifier alias = new SqlIdentifier(x.computeAlias(), SqlParserPos.ZERO);
             SqlBasicCall as = new SqlBasicCall(SqlStdOperatorTable.AS, new SqlNode[] { table, alias },
-                                               SqlParserPos.ZERO);
+                    SqlParserPos.ZERO);
             sqlNode = as;
         } else {
             sqlNode = table;
@@ -485,55 +485,55 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         switch (joinType) {
             case COMMA:
                 this.sqlNode = new SqlJoin(SqlParserPos.ZERO, left,
-                                           SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
-                                           JoinType.COMMA.symbol(SqlParserPos.ZERO), right,
-                                           JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
-                                           null);
+                        SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
+                        JoinType.COMMA.symbol(SqlParserPos.ZERO), right,
+                        JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
+                        null);
                 break;
             case JOIN:
             case INNER_JOIN:
                 if (condition == null) {
                     this.sqlNode = new SqlJoin(SqlParserPos.ZERO
-                                                , left
-                                                , SqlLiteral.createBoolean(false, SqlParserPos.ZERO)
-                                                , JoinType.COMMA.symbol(SqlParserPos.ZERO)
-                                                , right
-                                                , conditionType
-                                                , null);
+                            , left
+                            , SqlLiteral.createBoolean(false, SqlParserPos.ZERO)
+                            , JoinType.COMMA.symbol(SqlParserPos.ZERO)
+                            , right
+                            , conditionType
+                            , null);
                 } else {
                     this.sqlNode = new SqlJoin(SqlParserPos.ZERO, left
-                                                , SqlLiteral.createBoolean(false, SqlParserPos.ZERO)
-                                                , JoinType.INNER.symbol(SqlParserPos.ZERO), right
-                                                , conditionType
-                                                , condition);
+                            , SqlLiteral.createBoolean(false, SqlParserPos.ZERO)
+                            , JoinType.INNER.symbol(SqlParserPos.ZERO), right
+                            , conditionType
+                            , condition);
                 }
                 break;
             case LEFT_OUTER_JOIN:
                 this.sqlNode = new SqlJoin(SqlParserPos.ZERO,
-                                           left,
-                                           SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
-                                           JoinType.LEFT.symbol(SqlParserPos.ZERO),
-                                           right,
-                                           conditionType,
-                                           condition);
+                        left,
+                        SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
+                        JoinType.LEFT.symbol(SqlParserPos.ZERO),
+                        right,
+                        conditionType,
+                        condition);
                 break;
             case RIGHT_OUTER_JOIN:
                 this.sqlNode = new SqlJoin(SqlParserPos.ZERO,
-                                           left,
-                                           SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
-                                           JoinType.RIGHT.symbol(SqlParserPos.ZERO),
-                                           right,
-                                           conditionType,
-                                           condition);
+                        left,
+                        SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
+                        JoinType.RIGHT.symbol(SqlParserPos.ZERO),
+                        right,
+                        conditionType,
+                        condition);
                 break;
             case NATURAL_JOIN:
                 this.sqlNode = new SqlJoin(SqlParserPos.ZERO,
-                                           left,
-                                           SqlLiteral.createBoolean(true, SqlParserPos.ZERO),
-                                           JoinType.COMMA.symbol(SqlParserPos.ZERO),
-                                           right,
-                                           JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
-                                           null);
+                        left,
+                        SqlLiteral.createBoolean(true, SqlParserPos.ZERO),
+                        JoinType.COMMA.symbol(SqlParserPos.ZERO),
+                        right,
+                        JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
+                        null);
                 break;
             case CROSS_JOIN:
                 this.sqlNode = new SqlJoin(SqlParserPos.ZERO,
@@ -560,9 +560,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         , JoinType.FULL.symbol(SqlParserPos.ZERO)
                         , right
                         , condition == null
-                            ? JoinConditionType.NONE.symbol(SqlParserPos.ZERO)
-                            : conditionType
-                            , condition);
+                        ? JoinConditionType.NONE.symbol(SqlParserPos.ZERO)
+                        : conditionType
+                        , condition);
                 break;
             default:
                 throw new UnsupportedOperationException("unsupported : " + joinType);
@@ -666,7 +666,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         SqlOperator sqlOperator = new SqlCastFunction();
 
         this.sqlNode = new CalciteSqlBasicCall(sqlOperator, new SqlNode[]{ sqlNode, sqlDataTypeSpec}, SqlParserPos.ZERO,
-                                               false, functionQualifier);
+                false, functionQualifier);
         return false;
     }
 
@@ -1077,7 +1077,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     }
                 }
             }
-                break;
+            break;
             case IsNot:
                 if(rightExpr instanceof SQLNullExpr) {
                     operator = SqlStdOperatorTable.IS_NOT_NULL;
@@ -1274,7 +1274,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         this.sqlNode = functionOperator.createCall(functionQualifier,
                 SqlParserPos.ZERO,
                 SqlParserUtil.toNodeArray(argNodes)
-                );
+        );
 
         SQLOrderBy withinGroup = x.getWithinGroup();
         if (withinGroup != null) {
@@ -1408,10 +1408,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         this.sqlNode = new CalciteSqlBasicCall(functionOperator,
-                                               SqlParserUtil.toNodeArray(argNodes),
-                                               SqlParserPos.ZERO,
-                                               false,
-                                               functionQualifier);
+                SqlParserUtil.toNodeArray(argNodes),
+                SqlParserPos.ZERO,
+                false,
+                functionQualifier);
         return false;
     }
 
@@ -1419,7 +1419,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         SqlNodeList sqlNodes = convertToSqlNodeList(x.getTargetList());
         SqlOperator sqlOperator = x.isNot() ? SqlStdOperatorTable.NOT_IN : SqlStdOperatorTable.IN;
         sqlNode = new SqlBasicCall(sqlOperator, new SqlNode[] { convertToSqlNode(x.getExpr()), sqlNodes },
-                                   SqlParserPos.ZERO);
+                SqlParserPos.ZERO);
 
         return false;
     }
@@ -1442,11 +1442,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case Not:
             case NOT:
                 this.sqlNode = SqlStdOperatorTable.NOT.createCall(SqlParserPos.ZERO,
-                                                                  convertToSqlNode(x.getExpr()));
+                        convertToSqlNode(x.getExpr()));
                 break;
             case Negative:
                 this.sqlNode = SqlStdOperatorTable.UNARY_MINUS.createCall(SqlParserPos.ZERO,
-                                                                          convertToSqlNode(x.getExpr()));
+                        convertToSqlNode(x.getExpr()));
                 break;
             case Compl:
             case BINARY:
@@ -1579,7 +1579,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
             SqlNode funNode = new SqlBasicCall(
                     new SqlUnresolvedFunction(new SqlIdentifier(functionName, SqlParserPos.ZERO), null, null,
-                                              null, null, SqlFunctionCategory.USER_DEFINED_FUNCTION), argNodes,
+                            null, null, SqlFunctionCategory.USER_DEFINED_FUNCTION), argNodes,
                     SqlParserPos.ZERO);
 
             funNodes.add(funNode);
@@ -1765,8 +1765,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         String alias = x.getAlias();
         if (alias != null) {
             sqlNode = new SqlBasicCall(SqlStdOperatorTable.AS
-                        , new SqlNode[] { sqlNode, new SqlIdentifier(alias, SqlParserPos.ZERO) }
-                        , SqlParserPos.ZERO
+                    , new SqlNode[] { sqlNode, new SqlIdentifier(alias, SqlParserPos.ZERO) }
+                    , SqlParserPos.ZERO
             );
         }
         return false;
