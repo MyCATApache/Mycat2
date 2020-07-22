@@ -191,7 +191,7 @@
                             </generatorConfigurations>
                             <jvmSettings>
                                 <initialMemorySize>256M</initialMemorySize>
-                                <maxMemorySize>32G</maxMemorySize>
+                                <maxMemorySize>8192M</maxMemorySize>
                                 <systemProperties>
                                     <systemProperty>MYCAT_HOME=./conf</systemProperty>
                                 </systemProperties>
