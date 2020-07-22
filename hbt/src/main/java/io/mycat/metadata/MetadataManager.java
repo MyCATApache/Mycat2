@@ -532,61 +532,19 @@ public enum MetadataManager {
             schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
             tableName = SQLUtils.normalize(schemaObject.getName());
         }
+        TableHandler logicTable = schemaMap.get(schemaName).logicTables().get(tableName);
+        DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
 
+        for (ColumnValue equalValue : queryDataRange.getEqualValues()) {
+            dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
 
-        Set<DataNode> backEndTableInfos1 = new HashSet<>(1);
-        if (queryDataRange.getEqualValues() != null && !queryDataRange.getEqualValues().isEmpty()) {
-            for (ColumnValue equalValue : queryDataRange.getEqualValues()) {
-                SQLTableSource tableSource = equalValue.getTableSource();
-                if (tableSource instanceof SQLExprTableSource) {
-                    table = (SQLExprTableSource) tableSource;
-                    SchemaObject schemaObject = table.getSchemaObject();
-                    schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
-                    tableName = SQLUtils.normalize(schemaObject.getName());
-
-                    if (fail) {
-                        break;
-                    }
-                    TableHandler logicTable = schemaMap.get(schemaName).logicTables().get(tableName);
-                    if (logicTable.getType() != LogicTableType.SHARDING) {
-                        throw new AssertionError();
-                    }
-                    DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-                    dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
-                    List<DataNode> calculate = dataMappingEvaluator.calculate((ShardingTableHandler) logicTable);
-                    backEndTableInfos1.addAll(calculate);
-                    break;
-                }
-            }
-        } else {
-            List<ColumnRangeValue> rangeValues = queryDataRange.getRangeValues();
-            if (rangeValues != null && !rangeValues.isEmpty()) {
-                for (ColumnRangeValue rangeValue : rangeValues) {
-                    SQLTableSource tableSource = rangeValue.getTableSource();
-                    if (tableSource instanceof SQLExprTableSource) {
-                        table = (SQLExprTableSource) tableSource;
-                        SchemaObject schemaObject = table.getSchemaObject();
-                        schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
-                        tableName = SQLUtils.normalize(schemaObject.getName());
-
-                        if (fail) {
-                            break;
-                        }
-
-                        ShardingTableHandler logicTable = (ShardingTableHandler) schemaMap.get(schemaName).logicTables().get(tableName);
-                        DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-                        dataMappingEvaluator.assignmentRange(false, SQLUtils.normalize(rangeValue.getColumn().getColumnName()), Objects.toString(rangeValue.getBegin()), Objects.toString(rangeValue.getEnd()));
-                        List<DataNode> backendTableInfos = dataMappingEvaluator.calculate(logicTable);
-                        backEndTableInfos1.addAll(backendTableInfos);
-                    }
-                }
-            }
         }
-        if (backEndTableInfos1.isEmpty() && schemaName != null) {
-            TableHandler logicTable = schemaMap.get(schemaName).logicTables().get(tableName);
-            backEndTableInfos1.addAll(((ShardingTableHandler) logicTable).getShardingBackends());
+        List<ColumnRangeValue> rangeValues1 = queryDataRange.getRangeValues();
+        for (ColumnRangeValue columnRangeValue : rangeValues1) {
+            dataMappingEvaluator.assignmentRange(false, columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()),Objects.toString(columnRangeValue.getEnd()));
         }
-        return new Rrs(backEndTableInfos1, table);
+        List<DataNode> calculate = dataMappingEvaluator.calculate((ShardingTableHandler) logicTable);
+        return new Rrs(calculate, table);
     }
 
     public List<DataNode> getMapBackEndTableInfo(String schemaName, String tableName, Map<String, String> map) {
@@ -638,15 +596,15 @@ public enum MetadataManager {
     }
 
     public static class Rrs {
-        Set<DataNode> backEndTableInfos;
+        Collection<DataNode> backEndTableInfos;
         SQLExprTableSource table;
 
-        public Rrs(Set<DataNode> backEndTableInfos, SQLExprTableSource table) {
+        public Rrs(Collection<DataNode> backEndTableInfos, SQLExprTableSource table) {
             this.backEndTableInfos = backEndTableInfos;
             this.table = table;
         }
 
-        public Set<DataNode> getBackEndTableInfos() {
+        public Collection<DataNode> getBackEndTableInfos() {
             return backEndTableInfos;
         }
 
