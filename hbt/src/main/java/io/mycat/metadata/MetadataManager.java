@@ -139,7 +139,7 @@ public enum MetadataManager {
                         .flatMap(i -> Stream.concat(i.getGlobalTables().keySet().stream(),
                                 i.getShadingTables().keySet().stream())).collect(Collectors.toSet());
                 for (String tableName : tableNames) {
-                    if (!set.contains(tableName)&&!set.contains("`"+tableName+"`")) {
+                    if (!set.contains(tableName) && !set.contains("`" + tableName + "`")) {
                         schemaHandler.logicTables().remove(tableName);
                     }
                 }
@@ -554,10 +554,8 @@ public enum MetadataManager {
                     DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
                     dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
                     List<DataNode> calculate = dataMappingEvaluator.calculate((ShardingTableHandler) logicTable);
-                    if (calculate.size() == 1) {
-                        backEndTableInfos1.addAll(calculate);
-                        break;
-                    }
+                    backEndTableInfos1.addAll(calculate);
+                    break;
                 }
             }
         } else {
