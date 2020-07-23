@@ -407,7 +407,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             MycatProjectTransportRule.INSTANCE,//org.apache.calcite.rel.rules.ProjectSetOpTransposeRule 该实现可能有问题
             ProjectSortTransposeRule.INSTANCE,
 //            ProjectSetOpTransposeRule.INSTANCE,
-            AggregateCaseToFilterRule.INSTANCE,
+//            AggregateCaseToFilterRule.INSTANCE,丢失条件，错误下推
 //            AggregateFilterTransposeRule.INSTANCE,#该改造产生有问题的group by字段
             AggregateValuesRule.INSTANCE,
             //sort
