@@ -15,10 +15,7 @@
 package io.mycat;
 
 import com.alibaba.fastjson.JSONObject;
-import io.mycat.config.ClusterRootConfig;
-import io.mycat.config.DatasourceRootConfig;
-import io.mycat.config.PatternRootConfig;
-import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.config.*;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.YamlUtil;
 import lombok.Builder;
@@ -28,6 +25,7 @@ import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -37,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 
 public class FileConfigProvider implements ConfigProvider {
@@ -93,12 +92,38 @@ public class FileConfigProvider implements ConfigProvider {
                     clusters.addAll(clusterConfigs);
                     return main;
                 });
+        List<ShardingQueryRootConfig.LogicSchemaConfig> logicSchemaConfigs = Optional.ofNullable(this.config)
+                .map(m -> m.getMetadata())
+                .map(m -> m.getSchemas())
+                .map(m -> m.stream().filter(i -> i.getGenerator() != null).collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+        for (ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig : logicSchemaConfigs) {
+            Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
+            if (shadingTables == null) {
+                shadingTables = new HashMap<>();
+                logicSchemaConfig.setShadingTables(shadingTables);
+            }
+            Map<String, GlobalTableConfig> globalTables = logicSchemaConfig.getGlobalTables();
+            if (globalTables == null) {
+                globalTables = new HashMap<>();
+                logicSchemaConfig.setGlobalTables(globalTables);
+            }
+            ShardingQueryRootConfig.Generator generator = logicSchemaConfig.getGenerator();
+            String clazz = generator.getClazz();
+            Class<?> aClass = Class.forName(clazz);
+            Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
+            TableConfigGenerator tableConfigGenerator = (TableConfigGenerator) declaredConstructor.newInstance(this.config,logicSchemaConfig,generator.getListOptions(),generator.getKvOptions());
+            shadingTables.putAll(tableConfigGenerator.generateShardingTable());
+            globalTables.putAll(tableConfigGenerator.generateGlobalTable());
+        }
+
         logger.warn("----------------------------------Combined configuration----------------------------------");
         logger.info(YamlUtil.dump(this.config));
-    }
+}
 
     /**
      * 根据初始化信息生成配置
+     *
      * @param rootClass
      * @param config
      * @return
@@ -107,7 +132,7 @@ public class FileConfigProvider implements ConfigProvider {
     private String getConfigPath(Class rootClass, Map<String, String> config) throws URISyntaxException {
         String path = config.get("path");
         if (path == null) {
-            if (rootClass == null){
+            if (rootClass == null) {
                 rootClass = FileConfigProvider.class;
             }
             URI uri = rootClass.getResource("/mycat.yml").toURI();
@@ -209,11 +234,11 @@ public class FileConfigProvider implements ConfigProvider {
         return defaultPath;
     }
 
-    @Getter
-    @Builder
-    @ToString
-    static class ReplicaInfo {
-        String replicaName;
-        List<String> dataSourceList;
-    }
+@Getter
+@Builder
+@ToString
+static class ReplicaInfo {
+    String replicaName;
+    List<String> dataSourceList;
+}
 }

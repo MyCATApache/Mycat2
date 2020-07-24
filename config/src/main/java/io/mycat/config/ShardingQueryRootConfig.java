@@ -34,8 +34,20 @@ public class ShardingQueryRootConfig {
     public static final class LogicSchemaConfig {
         String schemaName;
         String targetName;
+        Generator generator;
         Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
         Map<String, GlobalTableConfig> globalTables = new HashMap<>();
+
+    }
+
+    @AllArgsConstructor
+    @Data
+    @Builder
+    @NoArgsConstructor
+    public static final class Generator {
+        String clazz;
+        List<String> listOptions;
+        Map<String, String> kvOptions;
     }
 
     @AllArgsConstructor
