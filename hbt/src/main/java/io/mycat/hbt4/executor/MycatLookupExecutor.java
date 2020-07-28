@@ -40,7 +40,7 @@ public class MycatLookupExecutor implements Executor {
         this.relNode = relNode;
     }
 
-    public static Executor create(RelNode relNode) {
+    public static MycatLookupExecutor create(RelNode relNode) {
         return new MycatLookupExecutor(relNode);
     }
 

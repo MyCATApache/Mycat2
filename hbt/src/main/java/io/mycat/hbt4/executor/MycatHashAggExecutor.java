@@ -82,6 +82,7 @@ public class MycatHashAggExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
+
     public MycatHashAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
@@ -105,6 +106,9 @@ public class MycatHashAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
+    public MycatHashAggExecutor create(Executor input, Aggregate rel) {
+        return new MycatHashAggExecutor(input, rel);
+    }
 
     @Override
     public void open() {

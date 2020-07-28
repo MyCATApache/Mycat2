@@ -30,11 +30,13 @@ public class MycatMemSortExecutor implements Executor {
     private Iterator<Row> iterator;
     private List<Row> output = null;
 
-    public MycatMemSortExecutor(Comparator<Row> comparator, Executor input) {
+    protected MycatMemSortExecutor(Comparator<Row> comparator, Executor input) {
         this.comparator = comparator;
         this.input = input;
     }
-
+    MycatMemSortExecutor create(Comparator<Row> comparator, Executor input) {
+       return new MycatMemSortExecutor(comparator, input);
+    }
     @Override
     public void open() {
         if (output == null) {

@@ -28,7 +28,11 @@ public class MycatCorrelateExecutor implements Executor {
     private final Iterator<Row> iterator;
     private Enumerable<Row> correlateJoin;
 
-    public MycatCorrelateExecutor(Enumerable<Row> correlateJoin) {
+    public MycatCorrelateExecutor create(Enumerable<Row> correlateJoin) {
+        return new MycatCorrelateExecutor(correlateJoin);
+    }
+
+    protected MycatCorrelateExecutor(Enumerable<Row> correlateJoin) {
         this.correlateJoin = correlateJoin;
         this.iterator = this.correlateJoin.iterator();
     }

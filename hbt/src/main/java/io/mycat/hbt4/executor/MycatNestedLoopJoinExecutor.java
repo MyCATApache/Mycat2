@@ -36,7 +36,7 @@ public class MycatNestedLoopJoinExecutor implements Executor {
     private TempResultSetFactory tempResultSetFactory;
     private Iterator<Row> iterator;
 
-    public MycatNestedLoopJoinExecutor(JoinRelType joinType, Executor leftSource, Executor rightSource, Function2<Row, Row, Row> resultSelector, Predicate2<Row, Row> predicate, TempResultSetFactory tempResultSetFactory) {
+    protected MycatNestedLoopJoinExecutor(JoinRelType joinType, Executor leftSource, Executor rightSource, Function2<Row, Row, Row> resultSelector, Predicate2<Row, Row> predicate, TempResultSetFactory tempResultSetFactory) {
         this.joinType = joinType;
         this.leftSource = leftSource;
         this.rightSource = originalRightSource = rightSource;
@@ -45,13 +45,20 @@ public class MycatNestedLoopJoinExecutor implements Executor {
         this.tempResultSetFactory = tempResultSetFactory;
     }
 
+    public MycatMinusExecutor create(Executor[] executors, boolean all) {
+        return new MycatMinusExecutor(
+                executors,
+                all
+        );
+    }
+
     @Override
     public void open() {
         JoinType joinType = JoinType.valueOf(this.joinType.name());
         if (iterator == null) {
             leftSource.open();
             rightSource.open();
-            if (!joinType.generatesNullsOnLeft()&&!rightSource.isRewindSupported()) {
+            if (!joinType.generatesNullsOnLeft() && !rightSource.isRewindSupported()) {
                 rightSource = tempResultSetFactory.makeRewind(originalRightSource);
                 rightSource.open();
                 originalRightSource.close();
@@ -60,7 +67,7 @@ public class MycatNestedLoopJoinExecutor implements Executor {
         this.iterator = EnumerableDefaults.nestedLoopJoin(
                 Linq4j.asEnumerable(leftSource),
                 Linq4j.asEnumerable(rightSource),
-                predicate, resultSelector,joinType )
+                predicate, resultSelector, joinType)
                 .iterator();
     }
 
@@ -77,7 +84,7 @@ public class MycatNestedLoopJoinExecutor implements Executor {
     public void close() {
         leftSource.close();
         originalRightSource.close();
-        if (rightSource!=null) {
+        if (rightSource != null) {
             rightSource.close();
         }
         rightSource = null;

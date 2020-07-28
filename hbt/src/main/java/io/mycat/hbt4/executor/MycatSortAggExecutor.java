@@ -27,7 +27,10 @@ import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
 import org.apache.calcite.interpreter.Scalar;
-import org.apache.calcite.linq4j.*;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
@@ -72,7 +75,7 @@ public class MycatSortAggExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
-    public MycatSortAggExecutor(Executor input, Aggregate rel) {
+    protected MycatSortAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
         ImmutableBitSet union = ImmutableBitSet.of();
@@ -95,6 +98,13 @@ public class MycatSortAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
+    public MycatSortAggExecutor create(Executor input, Aggregate rel) {
+        return new MycatSortAggExecutor(
+                input,
+                rel
+        );
+    }
+
 
     @Override
     public void open() {
@@ -112,7 +122,7 @@ public class MycatSortAggExecutor implements Executor {
                 Row row1 = Row.create(ints.length);
                 int index = 0;
                 for (int anInt : ints) {
-                    row1.values[index]=  a0.getObject(anInt);
+                    row1.values[index] = a0.getObject(anInt);
                     index++;
                 }
                 return row1;
@@ -140,9 +150,9 @@ public class MycatSortAggExecutor implements Executor {
                     Row rb = Row.create(outputRowLength);
                     int index = 0;
                     for (Integer groupPos : unionGroups) {
-                            if (groupSet.get(groupPos)) {
-                                rb.set(index, key.getObject(index));
-                            }
+                        if (groupSet.get(groupPos)) {
+                            rb.set(index, key.getObject(index));
+                        }
                         // need to set false when not part of grouping set.
                         index++;
                     }
@@ -915,8 +925,8 @@ public class MycatSortAggExecutor implements Executor {
      * adds a bridge method that implements {@link Scalar#execute(Context)}, and
      * compiles.
      */
-    static MycatScalar  baz(ParameterExpression context_,
-                      ParameterExpression outputValues_, BlockStatement block) {
+    static MycatScalar baz(ParameterExpression context_,
+                           ParameterExpression outputValues_, BlockStatement block) {
         final List<MemberDeclaration> declarations = new ArrayList<>();
 
         // public void execute(Context, Object[] outputValues)
@@ -957,7 +967,7 @@ public class MycatSortAggExecutor implements Executor {
         }
     }
 
-    static MycatScalar  getScalar(ClassDeclaration expr, String s)
+    static MycatScalar getScalar(ClassDeclaration expr, String s)
             throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
@@ -974,6 +984,6 @@ public class MycatSortAggExecutor implements Executor {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation(true, true, true);
         }
-        return (MycatScalar ) cbe.createInstance(new StringReader(s));
+        return (MycatScalar) cbe.createInstance(new StringReader(s));
     }
 }

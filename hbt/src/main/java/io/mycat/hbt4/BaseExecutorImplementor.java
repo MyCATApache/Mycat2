@@ -334,7 +334,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = sortMergeJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = sortMergeJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(sortMergeJoin.getInputs());
-        return new MycatMergeJoinExecutor(sortMergeJoin,
+        return new MycatMergeJoinExecutor(
                 joinType,
                 executors[0],
                 executors[1],
@@ -380,7 +380,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = mycatHashJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = mycatHashJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(mycatHashJoin.getInputs());
-        return new MycatHashJoinExecutor(mycatHashJoin, joinType,
+        return new MycatHashJoinExecutor(joinType,
                 executors[0],
                 executors[1],
                 nonEquiConditions,
@@ -390,7 +390,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 generateNullsOnRight,
                 leftFieldCount,
                 rightFieldCount,
-                resultRelDataType, tempResultSetFactory);
+                resultRelDataType);
     }
 
     public static class Cor {

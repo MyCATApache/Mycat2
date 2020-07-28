@@ -40,7 +40,7 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
     private Enumerable<Row> leftEnumerable;
     Function1<List<Row>, Enumerable<Row>> inner;
 
-    public MycatBatchNestedLoopJoinExecutor(JoinType joinType,
+    protected MycatBatchNestedLoopJoinExecutor(JoinType joinType,
                                             Executor leftInput,
                                             MycatLookupExecutor rightInput,
                                             int leftExecuterFieldCount,

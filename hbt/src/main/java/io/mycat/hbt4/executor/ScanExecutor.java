@@ -19,25 +19,35 @@ import io.mycat.mpp.Row;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
 public class ScanExecutor implements Executor {
 
     private Iterator<Row> iter;
 
+    public ScanExecutor(Iterator<Row> iter) {
+        this.iter = iter;
+    }
+
     @Override
     public void open() {
-        List<Object[]> objects = Arrays.asList(
-                new Object[]{1L,1L,1L,1L,1L,1L,1L},
-                new Object[]{1L,1L,1L,1L,1L,1L,1L}
-                );
-        this.iter = objects.stream().map(i->new Row(i)).iterator();
+
+    }
+
+    public static ScanExecutor createDemo() {
+        return new ScanExecutor(Arrays.asList(
+                new Object[]{1L, 1L, 1L, 1L, 1L, 1L, 1L},
+                new Object[]{1L, 1L, 1L, 1L, 1L, 1L, 1L}
+        ).stream().map(r -> Row.of(r)).iterator());
+    }
+
+    public static ScanExecutor create(Iterator<Row> iter) {
+        return new ScanExecutor(iter);
     }
 
     @Override
     public Row next() {
         boolean b = iter.hasNext();
-        if (b){
+        if (b) {
             return iter.next();
         }
         return null;

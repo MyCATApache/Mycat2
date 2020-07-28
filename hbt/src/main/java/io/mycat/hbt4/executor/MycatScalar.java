@@ -19,7 +19,6 @@ import io.mycat.hbt4.MycatContext;
 
 public interface MycatScalar {
     Object execute(MycatContext context);
+
     void execute(MycatContext context, Object[] results);
-//    void execute(Object[] inputs, Object[] results);
-//    Object execute(Object[] inputs);
 }

@@ -1,10 +1,24 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.MycatContext;
 import io.mycat.hbt4.MycatRexCompiler;
-import io.mycat.hbt4.physical.MycatSortMergeJoin;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Enumerable;
@@ -23,7 +37,6 @@ import org.objenesis.instantiator.util.UnsafeUtils;
 import java.util.Iterator;
 
 public class MycatMergeJoinExecutor implements Executor {
-    private MycatSortMergeJoin sortMergeJoin;
     private final JoinRelType joinType;
     private final Executor outer;
     private final Executor inner;
@@ -36,16 +49,15 @@ public class MycatMergeJoinExecutor implements Executor {
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
 
-    public MycatMergeJoinExecutor(MycatSortMergeJoin sortMergeJoin, JoinRelType joinType,
-                                  Executor outer,
-                                  Executor inner,
-                                  ImmutableList<RexNode> nonEquiConditions,
-                                  int[] leftKeys,
-                                  int[] rightKeys,
-                                  int leftFieldCount,
-                                  int rightFieldCount,
-                                  RelDataType resultRelDataType) {
-        this.sortMergeJoin = sortMergeJoin;
+    protected MycatMergeJoinExecutor(JoinRelType joinType,
+                                     Executor outer,
+                                     Executor inner,
+                                     ImmutableList<RexNode> nonEquiConditions,
+                                     int[] leftKeys,
+                                     int[] rightKeys,
+                                     int leftFieldCount,
+                                     int rightFieldCount,
+                                     RelDataType resultRelDataType) {
         this.joinType = joinType;
         this.outer = outer;
         this.inner = inner;
@@ -56,7 +68,27 @@ public class MycatMergeJoinExecutor implements Executor {
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
     }
-
+    public MycatMergeJoinExecutor create(
+                                     JoinRelType joinType,
+                                     Executor outer,
+                                     Executor inner,
+                                     ImmutableList<RexNode> nonEquiConditions,
+                                     int[] leftKeys,
+                                     int[] rightKeys,
+                                     int leftFieldCount,
+                                     int rightFieldCount,
+                                     RelDataType resultRelDataType) {
+        return new MycatMergeJoinExecutor(joinType,
+                outer,
+                inner,
+                nonEquiConditions,
+                leftKeys,
+                rightKeys,
+                leftFieldCount,
+                rightFieldCount,
+                resultRelDataType
+                );
+    }
     @Override
     @SneakyThrows
     public void open() {
@@ -82,7 +114,7 @@ public class MycatMergeJoinExecutor implements Executor {
             };
             final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
             RexNode nonEquiCondition = RexUtil.composeConjunction(
-                    this.sortMergeJoin.getCluster().getRexBuilder(),
+                    MycatCalciteSupport.INSTANCE.RexBuilder,
                     nonEquiConditions, true);
             Predicate2<Row, Row> nonEquiConditionPredicate = null;
             if (nonEquiCondition != null) {

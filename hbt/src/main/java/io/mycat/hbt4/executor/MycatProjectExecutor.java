@@ -20,12 +20,19 @@ import io.mycat.mpp.Row;
 import java.util.function.Function;
 
 public class MycatProjectExecutor implements Executor {
-    private Function<Row,Row> mycatScalar;
+    private Function<Row, Row> mycatScalar;
     private Executor executor;
 
-    public MycatProjectExecutor(Function<Row,Row> mycatScalar, Executor executor) {
+    protected MycatProjectExecutor(Function<Row, Row> mycatScalar, Executor executor) {
         this.mycatScalar = mycatScalar;
         this.executor = executor;
+    }
+
+    public MycatProjectExecutor create(Function<Row, Row> mycatScalar, Executor executor) {
+        return new MycatProjectExecutor(
+                mycatScalar,
+                executor
+        );
     }
 
     @Override
@@ -36,7 +43,7 @@ public class MycatProjectExecutor implements Executor {
     @Override
     public Row next() {
         Row next = executor.next();
-        if (next == null){
+        if (next == null) {
             return null;
         }
         return mycatScalar.apply(next);

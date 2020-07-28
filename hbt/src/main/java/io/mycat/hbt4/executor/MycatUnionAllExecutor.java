@@ -22,8 +22,12 @@ public class MycatUnionAllExecutor implements Executor {
     int index = 0;
     final Executor[] executors;
 
-    public MycatUnionAllExecutor(Executor[] executors) {
+    protected MycatUnionAllExecutor(Executor[] executors) {
         this.executors = executors;
+    }
+
+    public static MycatUnionAllExecutor create(Executor[] executors) {
+        return new MycatUnionAllExecutor(executors);
     }
 
     @Override
