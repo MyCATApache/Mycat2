@@ -27,7 +27,10 @@ public class ScanExecutor implements Executor {
 
     @Override
     public void open() {
-        List<Object[]> objects = Arrays.asList(new Object[]{1L},new Object[]{2L});
+        List<Object[]> objects = Arrays.asList(
+                new Object[]{1L,1L,1L,1L,1L,1L,1L},
+                new Object[]{1L,1L,1L,1L,1L,1L,1L}
+                );
         this.iter = objects.stream().map(i->new Row(i)).iterator();
     }
 

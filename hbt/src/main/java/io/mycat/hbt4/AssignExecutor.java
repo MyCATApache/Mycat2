@@ -7,12 +7,14 @@ import java.util.Objects;
 public class AssignExecutor implements Executor {
     final Executor executor;
     final MycatContext context;
-    final int[] assignMap;
 
-    public AssignExecutor(Executor input, MycatContext context, int[] assignMap) {
+    public AssignExecutor(Executor input, MycatContext context) {
         this.executor = Objects.requireNonNull(input);
         this.context = Objects.requireNonNull(context);
-        this.assignMap = Objects.requireNonNull(assignMap);
+    }
+
+    public static AssignExecutor create(Executor input, MycatContext context) {
+        return new AssignExecutor(input,context);
     }
 
     @Override
@@ -26,11 +28,7 @@ public class AssignExecutor implements Executor {
         if (row == null) {
             return null;
         }
-        Object[] values = row.getValues();
-        Object[] slots = context.getSlots();
-        for (int i = 0; i < assignMap.length; i++) {
-            slots[i] = values[assignMap[i]];
-        }
+        context.slots = row.getValues();
         return row;
     }
 

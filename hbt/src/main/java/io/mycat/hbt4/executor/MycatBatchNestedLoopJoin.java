@@ -1,11 +1,7 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.ExecutorImplementor;
-import io.mycat.hbt4.ExplainWriter;
-import io.mycat.hbt4.MycatRel;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import io.mycat.hbt4.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -18,6 +14,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 
+import java.util.List;
 import java.util.Set;
 
 public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
@@ -39,12 +36,18 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        return null;
+        writer.name("MycatBatchNestedLoopJoin");
+        writer.into();
+        List<RelNode> inputs = getInputs();
+        for (RelNode input : inputs) {
+            ( (MycatRel) input).explain(writer);
+        }
+        return writer.ret();
     }
 
     @Override
     public Executor implement(ExecutorImplementor implementor) {
-        return null;
+        return implementor.implement(this);
     }
 
 
@@ -66,7 +69,7 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
         final RelOptCluster cluster = left.getCluster();
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet =
-                cluster.traitSetOf(EnumerableConvention.INSTANCE)
+                cluster.traitSetOf(MycatConvention.INSTANCE)
                         .replaceIfs(RelCollationTraitDef.INSTANCE,
                                 () -> RelMdCollation.enumerableBatchNestedLoopJoin(mq, left, right, joinType));
         return new MycatBatchNestedLoopJoin(
@@ -80,4 +83,7 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
                 joinType);
     }
 
+    public ImmutableBitSet getRequiredColumns() {
+        return requiredColumns;
+    }
 }

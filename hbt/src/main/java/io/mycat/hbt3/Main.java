@@ -27,7 +27,7 @@ import static com.google.common.io.Files.asCharSource;
 public class Main {
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        String sql = "SELECT * FROM travelrecord t1 WHERE  exists (SELECT t2.id FROM company t2 where t2.id != t1.id)";
+        String sql = "SELECT t1.id FROM travelrecord t1  join company c2 on  t1.id = c2.id ";
         URL resource = Main.class.getResource("/drds.json");
         String text = asCharSource(new File(resource.toURI()), StandardCharsets.UTF_8).read();
         DrdsConfig config = JsonUtil.from(text, DrdsConfig.class);

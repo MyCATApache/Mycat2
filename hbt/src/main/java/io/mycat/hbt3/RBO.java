@@ -283,7 +283,7 @@ public class RBO extends RelShuttleImpl {
                         }
                     }
                     if (canPush) {
-                        return View.of(join.copy(join.getTraitSet(), ImmutableList.of(((View) left).getRelNode(), ((View) right).getRelNode())));
+                        return View.of(join.copy(join.getTraitSet(), ImmutableList.of(((View) left).getRelNode(), ((View) right).getRelNode())),((View) left).getDataNode());
                     }
                 }
             }

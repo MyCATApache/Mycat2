@@ -262,6 +262,7 @@ public class DrdsRunner {
         for (RelTraitDef i : TRAITS) {
             planner.addRelTraitDef(i);
         }
+        FILTER.forEach(f->planner.addRule(f));
         return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
     }
 

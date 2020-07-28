@@ -18,6 +18,7 @@ package io.mycat.hbt4;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import io.mycat.hbt4.executor.MycatBatchNestedLoopJoinRule;
 import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.logical.rules.MycatMinusRule;
 import io.mycat.hbt4.logical.rules.*;
@@ -177,7 +178,7 @@ public class MycatRules {
     public static List<RelOptRule> rules(MycatConvention out,
                                          RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
-                new MycatJoinRule(out, relBuilderFactory),
+//                new MycatJoinRule(out, relBuilderFactory),
                 new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
@@ -190,7 +191,8 @@ public class MycatRules {
                 new MycatValuesRule(out, relBuilderFactory),
                 new MycatMergeJoinRule(out,relBuilderFactory),
                 new MycatSortAggRule(out,relBuilderFactory),
-                new MycatCorrelateRule(out,relBuilderFactory)
+                new MycatCorrelateRule(out,relBuilderFactory),
+                MycatBatchNestedLoopJoinRule.INSTANCE
                 );
     }
 

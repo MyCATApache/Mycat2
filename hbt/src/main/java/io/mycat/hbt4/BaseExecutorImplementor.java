@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.PartInfo;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
@@ -26,7 +27,6 @@ import io.mycat.hbt4.logical.*;
 import io.mycat.hbt4.physical.*;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
-import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Sort;
@@ -51,15 +52,19 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
+    final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
+
     final MycatContext context;
     final Map<String, RexToLixTranslator.InputGetter> ref = new HashMap<>();
     final Map<String, Cor[]> refValue = new HashMap<>();
@@ -88,6 +93,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 condition),
                 combinedRowType(mycatJoin.getInputs())
         );
+        log.info("-------------------complie----------------");
         final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
         MycatContext context =new MycatContext();
         Predicate2<Row, Row> predicate = (v0, v1) -> {
@@ -107,12 +113,13 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @SneakyThrows
     public Executor implement(MycatProject mycatProject) {
         Executor executor = implementInput(mycatProject);
-        if (isCorrelate() && (!executor.isRewindSupported())) {
-            executor = tempResultSetFactory.makeRewind(executor);
-        }
+//        if (isCorrelate() && (!executor.isRewindSupported())) {
+//            executor = tempResultSetFactory.makeRewind(executor);
+//        }
         RelDataType inputRowType = mycatProject.getInput().getRowType();
         List<RexNode> childExps = mycatProject.getChildExps();
         int outputSize = childExps.size();
+        log.info("-------------------complie----------------");
         MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType,this::refInput);
         return new MycatProjectExecutor((input) -> {
             context.values = input.values;
@@ -127,11 +134,12 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     public Executor implement(MycatFilter mycatFilter) {
         Executor input = implementInput(mycatFilter);
 
-        if (isCorrelate() && (!input.isRewindSupported())) {
-            input = tempResultSetFactory.makeRewind(input);
-        }
+//        if (isCorrelate() && (!input.isRewindSupported())) {
+//            input = tempResultSetFactory.makeRewind(input);
+//        }
         RelDataType inputRowType = mycatFilter.getInput().getRowType();
         ImmutableList<RexNode> conditions = ImmutableList.of(mycatFilter.getCondition());
+        log.info("-------------------complie----------------");
         MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput);
         Predicate<Row> predicate = row -> {
             context.values = row.values;
@@ -503,20 +511,19 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     private static class DataContextInputGetter implements RexToLixTranslator.InputGetter {
+        private  final String name;
         private final RelDataTypeFactory typeFactory;
         private final RelDataType rowType;
 
-        DataContextInputGetter(RelDataType rowType,
+        DataContextInputGetter(String name, RelDataType rowType,
                                RelDataTypeFactory typeFactory) {
+            this.name = name;
             this.rowType = rowType;
             this.typeFactory = typeFactory;
         }
 
         public Expression field(BlockBuilder list, int index, Type storageType) {
-            MethodCallExpression recFromCtx = Expressions.call(
-                    DataContext.ROOT,
-                    BuiltInMethod.DATA_CONTEXT_GET.method,
-                    Expressions.constant("inputRecord"));
+            MethodCallExpression recFromCtx = Expressions.call( MycatBuiltInMethod .ROOT,"getSlots");
             Expression recFromCtxCasted =
                     EnumUtils.convert(recFromCtx, Object[].class);
             IndexExpression recordAccess = Expressions.arrayIndex(recFromCtxCasted,
@@ -528,5 +535,79 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             }
             return EnumUtils.convert(recordAccess, storageType);
         }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    @Override
+    public Executor implement(MycatBatchNestedLoopJoin mycatBatchNestedLoopJoin) {
+        Set<CorrelationId> variablesSet = mycatBatchNestedLoopJoin.getVariablesSet();
+        ImmutableBitSet requiredColumns = mycatBatchNestedLoopJoin.getRequiredColumns();
+        Function1<Row, Row> projectJoinKey = createProjectJoinKeys(requiredColumns);
+        System.out.println(projectJoinKey);
+//        variablesSet.forEach(v-> {
+//            String name = v.getName();
+//            ref.put(name, new DataContextInputGetter(
+//                    name,
+//                    mycatBatchNestedLoopJoin.getRight().getRowType(),
+//                    MycatCalciteSupport.INSTANCE.TypeFactory
+//            ));
+//        });
+        try {
+            Executor[] executors = implementInputs(mycatBatchNestedLoopJoin);
+            JoinRelType joinType = mycatBatchNestedLoopJoin.getJoinType();
+            int leftFieldCount = mycatBatchNestedLoopJoin.getLeft().getRowType().getFieldCount();
+            int rightFieldCount = mycatBatchNestedLoopJoin.getRight().getRowType().getFieldCount();
+
+            Executor leftSource = executors[0];
+            MycatLookupExecutor rightSource = (MycatLookupExecutor)executors[1];
+
+            MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(
+                    mycatBatchNestedLoopJoin.getCondition()),
+                    combinedRowType(mycatBatchNestedLoopJoin.getInputs())
+            );
+            final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
+            MycatContext context = new MycatContext();
+            Predicate2<Row, Row> predicate = (v0, v1) -> {
+                context.values = resultSelector.apply(v0, v1).values;
+                return scalar.execute(context) == Boolean.TRUE;
+            };
+            TempResultSetFactory tempResultSetFactory = this.tempResultSetFactory;
+
+            return MycatBatchNestedLoopJoinExecutor.create(
+                    JoinType.valueOf(joinType.name()),
+                    leftSource,
+                    rightSource,
+                    leftFieldCount,
+                    rightFieldCount,
+                    predicate ,
+                    predicate,
+                    tempResultSetFactory,
+                    this.context
+            );
+        }finally {
+//            variablesSet.forEach(n->ref.remove(n.getName()));
+        }
+    }
+
+    @NotNull
+    public Function1<Row, Row> createProjectJoinKeys(ImmutableBitSet requiredColumns) {
+        int[] ints = requiredColumns.toArray();
+        return a0 -> {
+            Row res = Row.create(ints.length);
+            int index = 0;
+            for (int projectIndex : ints) {
+                res.set(index,a0.getObject(projectIndex));
+                index++;
+            }
+            return res;
+        };
+    }
+
+    @Override
+    public Executor implement(MycatLookUpView mycatLookUpView) {
+        return MycatLookupExecutor.create(mycatLookUpView.getRelNode());
     }
 }

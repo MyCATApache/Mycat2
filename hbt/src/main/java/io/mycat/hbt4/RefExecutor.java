@@ -5,6 +5,9 @@ import io.mycat.mpp.Row;
 public class RefExecutor implements Executor  {
     final Executor input;
 
+    public static RefExecutor create(Executor input) {
+        return new RefExecutor(input);
+    }
     public RefExecutor(Executor input) {
         this.input = input;
     }
