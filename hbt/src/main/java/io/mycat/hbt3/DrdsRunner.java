@@ -226,25 +226,25 @@ public class DrdsRunner {
     }
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
-            JoinPushTransitivePredicatesRule.INSTANCE,
-            JoinPushTransitivePredicatesRule.INSTANCE,
-            JoinExtractFilterRule.INSTANCE,
-            FilterJoinRule.FILTER_ON_JOIN,
-            FilterJoinRule.DUMB_FILTER_ON_JOIN,
-            FilterJoinRule.JOIN,
-            FilterCorrelateRule.INSTANCE,
-            FilterAggregateTransposeRule.INSTANCE,
-            FilterMultiJoinMergeRule.INSTANCE,
-            FilterProjectTransposeRule.INSTANCE,
-            FilterRemoveIsNotDistinctFromRule.INSTANCE,
-            FilterSetOpTransposeRule.INSTANCE,
-            FilterProjectTransposeRule.INSTANCE,
-            SemiJoinFilterTransposeRule.INSTANCE,
-            ProjectFilterTransposeRule.INSTANCE,
-            ReduceExpressionsRule.FILTER_INSTANCE,
-            ReduceExpressionsRule.JOIN_INSTANCE,
-            ReduceExpressionsRule.PROJECT_INSTANCE,
-            FilterMergeRule.INSTANCE
+            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            CoreRules.JOIN_EXTRACT_FILTER,
+            CoreRules.FILTER_INTO_JOIN,
+            CoreRules.FILTER_INTO_JOIN_DUMB,
+            CoreRules.JOIN_CONDITION_PUSH,
+            CoreRules.FILTER_CORRELATE,
+            CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+            CoreRules.FILTER_MULTI_JOIN_MERGE,
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
+            CoreRules.FILTER_EXPAND_IS_NOT_DISTINCT_FROM,
+            CoreRules.FILTER_SET_OP_TRANSPOSE,
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
+            CoreRules.SEMI_JOIN_FILTER_TRANSPOSE,
+            CoreRules.PROJECT_FILTER_TRANSPOSE,
+            CoreRules.FILTER_REDUCE_EXPRESSIONS,
+            CoreRules.JOIN_REDUCE_EXPRESSIONS,
+            CoreRules.PROJECT_REDUCE_EXPRESSIONS,
+            CoreRules.FILTER_MERGE
     );
 
     private static RelNode optimizeWithRBO(RelNode logPlan) {

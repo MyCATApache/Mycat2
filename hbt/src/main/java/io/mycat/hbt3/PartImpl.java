@@ -55,7 +55,7 @@ public class PartImpl implements Part {
         SqlDialect dialect = MycatSqlDialect.DEFAULT;
         ToSQL toSQL = new ToSQL(schemaIndex, tableIndex, dialect);
 
-        SqlImplementor.Result result = toSQL.dispatch(node);
+        SqlImplementor.Result result = toSQL.visitRoot(node);
         SqlNode sqlNode = result.asStatement();
         return sqlNode.toSqlString(dialect, false);
     }
@@ -85,12 +85,6 @@ public class PartImpl implements Part {
                 }
             }
             return super.visit(e);
-        }
-
-
-        @Override
-        public Result dispatch(RelNode e) {
-            return super.dispatch(e);
         }
     }
 

@@ -318,8 +318,7 @@ public class MycatSortAggExecutor implements Executor {
                                     new RexToLixTranslator.InputGetterImpl(
                                             Collections.singletonList(
                                                     Pair.of((Expression) inParameter, inputPhysType))),
-                                    conformance)
-                                    .setNullable(currentNullables());
+                                    conformance);
                         }
                     };
 

@@ -30,7 +30,14 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
             Set<CorrelationId> variablesSet,
             ImmutableBitSet requiredColumns,
             JoinRelType joinType) {
-        super(cluster, traits, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster,
+                traits,
+                ImmutableList.of(),
+                left,
+                right,
+                condition,
+                variablesSet,
+                joinType);
         this.requiredColumns = requiredColumns;
     }
 
@@ -40,7 +47,7 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
         writer.into();
         List<RelNode> inputs = getInputs();
         for (RelNode input : inputs) {
-            ( (MycatRel) input).explain(writer);
+            ((MycatRel) input).explain(writer);
         }
         return writer.ret();
     }
