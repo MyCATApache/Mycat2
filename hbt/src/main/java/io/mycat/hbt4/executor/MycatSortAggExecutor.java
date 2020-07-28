@@ -17,6 +17,7 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.BaseExecutorImplementor;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.*;
@@ -325,10 +326,10 @@ public class MycatSortAggExecutor implements Executor {
             agg.implementor.implementAdd(agg.context, addContext);
 
             final ParameterExpression context_ =
-                    Expressions.parameter(Context.class, "context");
+                    Expressions.parameter(MycatContext.class, "context");
             final ParameterExpression outputValues_ =
                     Expressions.parameter(Object[].class, "outputValues");
-            Scalar addScalar = baz(context_, outputValues_, builder2.toBlock());
+            MycatScalar addScalar = baz(context_, outputValues_, builder2.toBlock());
             return new ScalarAccumulatorDef(null, addScalar, null,
                     rel.getInput().getRowType().getFieldCount(), stateSize);
         }
@@ -406,25 +407,25 @@ public class MycatSortAggExecutor implements Executor {
      * Accumulator powered by {@link Scalar} code fragments.
      */
     private static class ScalarAccumulatorDef implements AccumulatorFactory {
-        final Scalar initScalar;
-        final Scalar addScalar;
-        final Scalar endScalar;
-        final Context sendContext;
-        final Context endContext;
+        final MycatScalar initScalar;
+        final MycatScalar addScalar;
+        final MycatScalar endScalar;
+        final MycatContext sendContext;
+        final MycatContext endContext;
         final int rowLength;
         final int accumulatorLength;
 
         @SneakyThrows
-        private ScalarAccumulatorDef(Scalar initScalar, Scalar addScalar,
-                                     Scalar endScalar, int rowLength, int accumulatorLength) {
+        private ScalarAccumulatorDef(MycatScalar initScalar, MycatScalar addScalar,
+                                     MycatScalar endScalar, int rowLength, int accumulatorLength) {
             this.initScalar = initScalar;
             this.addScalar = addScalar;
             this.endScalar = endScalar;
             this.accumulatorLength = accumulatorLength;
             this.rowLength = rowLength;
-            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.sendContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.sendContext.values = new Object[rowLength + accumulatorLength];
-            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.endContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.endContext.values = new Object[accumulatorLength];
         }
 
@@ -914,7 +915,7 @@ public class MycatSortAggExecutor implements Executor {
      * adds a bridge method that implements {@link Scalar#execute(Context)}, and
      * compiles.
      */
-    static Scalar baz(ParameterExpression context_,
+    static MycatScalar  baz(ParameterExpression context_,
                       ParameterExpression outputValues_, BlockStatement block) {
         final List<MemberDeclaration> declarations = new ArrayList<>();
 
@@ -956,7 +957,7 @@ public class MycatSortAggExecutor implements Executor {
         }
     }
 
-    static Scalar getScalar(ClassDeclaration expr, String s)
+    static MycatScalar  getScalar(ClassDeclaration expr, String s)
             throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
@@ -973,6 +974,6 @@ public class MycatSortAggExecutor implements Executor {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation(true, true, true);
         }
-        return (Scalar) cbe.createInstance(new StringReader(s));
+        return (MycatScalar ) cbe.createInstance(new StringReader(s));
     }
 }

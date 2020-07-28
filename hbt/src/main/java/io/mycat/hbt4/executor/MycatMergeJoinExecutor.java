@@ -1,14 +1,12 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
+import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.hbt4.physical.MycatSortMergeJoin;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.Context;
-import org.apache.calcite.interpreter.JaninoRexCompiler;
-import org.apache.calcite.interpreter.Scalar;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.JoinType;
@@ -65,7 +63,7 @@ public class MycatMergeJoinExecutor implements Executor {
         if (rows == null) {
             outer.open();
             inner.open();
-            Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             Enumerable<Row> outerEnumerate = Linq4j.asEnumerable(outer);
             Enumerable<Row> innerEnumerate = Linq4j.asEnumerable(inner);
             final Function1<Row, Row> outerKeySelector = a0 -> {
@@ -86,16 +84,15 @@ public class MycatMergeJoinExecutor implements Executor {
             RexNode nonEquiCondition = RexUtil.composeConjunction(
                     this.sortMergeJoin.getCluster().getRexBuilder(),
                     nonEquiConditions, true);
-            Predicate2<Row,Row> nonEquiConditionPredicate = null;
+            Predicate2<Row, Row> nonEquiConditionPredicate = null;
             if (nonEquiCondition != null) {
-                JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
-                Scalar scalar = compiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
                 nonEquiConditionPredicate = (v0, v1) -> {
                     o.values = v0.values;
                     return scalar.execute(o) == Boolean.TRUE;
                 };
-            }else {
-                nonEquiConditionPredicate=(l,r)->true;
+            } else {
+                nonEquiConditionPredicate = (l, r) -> true;
             }
             rows = EnumerableDefaults.mergeJoin(outerEnumerate,
                     innerEnumerate,
@@ -104,7 +101,7 @@ public class MycatMergeJoinExecutor implements Executor {
                     nonEquiConditionPredicate,
                     resultSelector,
                     JoinType.valueOf(joinType.name())
-                    ,null);
+                    , null);
 
         }
         this.iterator = rows.iterator();

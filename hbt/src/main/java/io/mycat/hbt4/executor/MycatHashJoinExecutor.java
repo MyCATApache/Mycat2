@@ -1,14 +1,12 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
+import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.hbt4.logical.MycatHashJoin;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.Context;
-import org.apache.calcite.interpreter.JaninoRexCompiler;
-import org.apache.calcite.interpreter.Scalar;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Linq4j;
@@ -76,7 +74,7 @@ public class MycatHashJoinExecutor implements Executor {
         if (rows == null) {
             originOuter.open();
             originInner.open();
-            Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
 ////////////////////////////////////check////////////////////////////////////////////////
 //            if (!outer.isRewindSupported()) {
 //                outer = tempResultSetFactory.makeRewind(outer);
@@ -113,10 +111,9 @@ public class MycatHashJoinExecutor implements Executor {
                 case SEMI: {
                     Predicate2<Row,Row> predicate2;
                     if (nonEquiCondition != null) {
-                        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
-                        Scalar scalar = compiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
                         predicate2= (v0, v1) -> {
-                            o.values = resultSelector.apply((Row) v0, (Row) v1).values;
+                            o.values = resultSelector.apply(v0, v1).values;
                             return scalar.execute(o) == Boolean.TRUE;
                         };
                     }else {
@@ -134,8 +131,7 @@ public class MycatHashJoinExecutor implements Executor {
                     rows = EnumerableDefaults.hashJoin(outerEnumerate, innerEnumerate, outerKeySelector, innerKeySelector,
                             resultSelector, compare, generateNullsOnLeft, generateNullsOnRight);
                     if (nonEquiCondition != null) {
-                        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
-                        Scalar scalar = compiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
                         rows = rows.where(v0 -> {
                             o.values = v0.values;
                             return scalar.execute(o) == Boolean.TRUE;

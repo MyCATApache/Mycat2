@@ -583,9 +583,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     leftFieldCount,
                     rightFieldCount,
                     predicate ,
-                    predicate,
-                    tempResultSetFactory,
-                    this.context
+                    predicate
             );
         }finally {
 //            variablesSet.forEach(n->ref.remove(n.getName()));

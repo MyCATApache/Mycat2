@@ -1,7 +1,20 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.MycatContext;
 import io.mycat.mpp.Row;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
@@ -14,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class MycatBatchNestedLoopJoinExecutor implements Executor {
-    private MycatContext context;
     final JoinType joinType;
     final Executor leftInput;
     MycatLookupExecutor rightInput;
@@ -24,7 +36,6 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
     final static int batchSize = 1000;
     final Predicate2<Row, Row> lookup;
     final Predicate2<Row, Row> nonEqualCondition;
-    final TempResultSetFactory tempResultSetFactory;
     private Iterator<Row> iterator;
     private Enumerable<Row> leftEnumerable;
     Function1<List<Row>, Enumerable<Row>> inner;
@@ -35,9 +46,7 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
                                             int leftExecuterFieldCount,
                                             int rightExecuterFieldCount,
                                             Predicate2<Row, Row> lookup,
-                                            Predicate2<Row, Row> nonEqualCondition,
-                                            TempResultSetFactory tempResultSetFactory,
-                                            MycatContext context) {
+                                            Predicate2<Row, Row> nonEqualCondition) {
         this.joinType = joinType;
         this.leftInput = leftInput;
         this.originRightInput = rightInput;
@@ -46,8 +55,6 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
         this.rightExecuterFieldCount = rightExecuterFieldCount;
         this.lookup = lookup;
         this.nonEqualCondition = nonEqualCondition;
-        this.tempResultSetFactory = tempResultSetFactory;
-        this.context = context;
     }
 
     public static MycatBatchNestedLoopJoinExecutor create(
@@ -57,9 +64,7 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
             int leftExecuterFieldCount,
             int rightExecuterFieldCount,
             Predicate2<Row, Row> lookup,
-            Predicate2<Row, Row> nonEqualCondition,
-            TempResultSetFactory tempResultSetFactory,
-            MycatContext context) {
+            Predicate2<Row, Row> nonEqualCondition) {
         return new MycatBatchNestedLoopJoinExecutor(
                 joinType,
                 leftInput,
@@ -67,23 +72,16 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
                 leftExecuterFieldCount,
                 rightExecuterFieldCount,
                 lookup,
-                nonEqualCondition,
-                tempResultSetFactory,
-                context);
+                nonEqualCondition
+        );
     }
 
     @Override
     public void open() {
         if (this.iterator == null) {
             leftInput.open();
-//            if (!rightInput.isRewindSupported()) {
-//                rightInput.open();
-//                rightInput = tempResultSetFactory.makeRewind(rightInput);
-//                originRightInput.close();
-//            }
             rightInput.open();
             this.leftEnumerable = Linq4j.asEnumerable(leftInput);
-            Enumerable<Row> rightEnumerable = Linq4j.asEnumerable(rightInput);
             inner = inlist -> {
                 rightInput.setIn(inlist);
                 rightInput.open();

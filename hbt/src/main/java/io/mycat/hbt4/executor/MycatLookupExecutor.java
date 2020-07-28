@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.hbt4.executor;
 
 import io.mycat.calcite.MycatCalciteSupport;
@@ -12,12 +26,15 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 
-import java.util.HashSet;
 import java.util.List;
 
+/**
+ * it must be on the right of MycatBatchNestedLoopJoinExecutor
+ */
 public class MycatLookupExecutor implements Executor {
 
-    private RelNode relNode;
+    private final RelNode relNode;
+    private String currentSql;
 
     public MycatLookupExecutor(RelNode relNode) {
         this.relNode = relNode;
@@ -28,7 +45,7 @@ public class MycatLookupExecutor implements Executor {
     }
 
     void setIn(List<Row> args) {
-        HashSet<Row> rows = new HashSet<>(args);
+        //convert relNode to sql with cor variable
         RelNode accept = this.relNode.accept(new RexShuttle() {
             @Override
             public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
@@ -44,8 +61,7 @@ public class MycatLookupExecutor implements Executor {
                 return super.visitFieldAccess(fieldAccess);
             }
         });
-        String s = MycatCalciteSupport.INSTANCE.convertToSql(accept, MycatSqlDialect.DEFAULT, false);
-        System.out.println(s);
+       this.currentSql = MycatCalciteSupport.INSTANCE.convertToSql(accept, MycatSqlDialect.DEFAULT, false);
     }
 
     @Override
@@ -65,6 +81,6 @@ public class MycatLookupExecutor implements Executor {
 
     @Override
     public boolean isRewindSupported() {
-        return false;
+        return true;
     }
 }
