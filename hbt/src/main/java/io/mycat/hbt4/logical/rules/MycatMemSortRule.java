@@ -18,39 +18,47 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.rel.MycatCalc;
+import io.mycat.hbt4.logical.rel.MycatMemSort;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Calc;
-import org.apache.calcite.rex.RexMultisetUtil;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.function.Predicate;
 
 /**
- * Rule to convert a {@link Calc} to an
- * {@link MycatCalcRule}.
+ * Rule to convert a {@link Sort} to an
+ * {@link MycatMemSortRule}.
  */
-public class MycatCalcRule extends MycatConverterRule {
+public class MycatMemSortRule extends MycatConverterRule {
+
     /**
-     * Creates a MycatCalcRule.
+     * Creates a MycatSortRule.
      */
-    public MycatCalcRule(MycatConvention out,
-                         RelBuilderFactory relBuilderFactory) {
-        super(Calc.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
-                out, relBuilderFactory, "MycatCalcRule");
+    public MycatMemSortRule(MycatConvention out,
+                            RelBuilderFactory relBuilderFactory) {
+        super(Sort.class, (Predicate<RelNode>) r -> true, MycatRules.convention, out,
+                relBuilderFactory, "MycatSortRule");
     }
 
     public RelNode convert(RelNode rel) {
-        final Calc calc = (Calc) rel;
+        return convert((Sort) rel);
+    }
 
-        // If there's a multiset, let FarragoMultisetSplitter work on it
-        // first.
-        if (RexMultisetUtil.containsMultiset(calc.getProgram())) {
-            return null;
-        }
+    /**
+     * Converts a {@code Sort} into a {@code MycatSort}.
+     *
+     * @param sort Sort operator to convert
+     * @return A new MycatSort
+     */
+    public RelNode convert(Sort sort) {
+        final RelTraitSet traitSet = sort.getTraitSet().replace(out);
 
-        return MycatCalc.create(rel.getTraitSet().replace(out),
-                convert(calc.getInput(), calc.getTraitSet().replace(out)),
-                calc.getProgram());
+        final RelNode input;
+        input = sort.getInput();
+        return MycatMemSort.create(traitSet,
+                convert(input, out), sort.getCollation(), sort.offset, sort.fetch);
     }
 }
+
+  

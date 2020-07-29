@@ -33,7 +33,7 @@ public class MycatLimitExecutor implements Executor {
         this.input = input;
     }
 
-    public MycatLimitExecutor create(long offset, long fetch, Executor input) {
+    public static MycatLimitExecutor create(long offset, long fetch, Executor input) {
         return new MycatLimitExecutor(offset, fetch, input);
     }
 

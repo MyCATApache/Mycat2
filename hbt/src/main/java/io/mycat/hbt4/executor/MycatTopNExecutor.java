@@ -38,7 +38,7 @@ public class MycatTopNExecutor implements Executor {
         this.size = (int) (offset + fetch);
         this.queue = new PriorityQueue<>(this.size, comparator);
     }
-    public MycatTopNExecutor create(Comparator<Row> comparator, long offset, long fetch, Executor executor) {
+    public static MycatTopNExecutor create(Comparator<Row> comparator, long offset, long fetch, Executor executor) {
         return new MycatTopNExecutor(
                 comparator,
                 offset,

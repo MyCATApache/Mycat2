@@ -32,7 +32,7 @@ public class MycatIntersectExecutor implements Executor {
         this.all = all;
     }
 
-    public MycatIntersectExecutor create(Executor[] executors, boolean all) {
+    public static MycatIntersectExecutor create(Executor[] executors, boolean all) {
         return new MycatIntersectExecutor(executors,all);
     }
 

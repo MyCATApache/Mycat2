@@ -34,7 +34,7 @@ public class MycatMemSortExecutor implements Executor {
         this.comparator = comparator;
         this.input = input;
     }
-    MycatMemSortExecutor create(Comparator<Row> comparator, Executor input) {
+   public static  MycatMemSortExecutor create(Comparator<Row> comparator, Executor input) {
        return new MycatMemSortExecutor(comparator, input);
     }
     @Override

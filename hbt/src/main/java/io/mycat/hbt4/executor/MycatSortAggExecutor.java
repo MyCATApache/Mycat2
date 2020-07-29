@@ -98,7 +98,7 @@ public class MycatSortAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
-    public MycatSortAggExecutor create(Executor input, Aggregate rel) {
+    public static MycatSortAggExecutor create(Executor input, Aggregate rel) {
         return new MycatSortAggExecutor(
                 input,
                 rel
@@ -185,7 +185,7 @@ public class MycatSortAggExecutor implements Executor {
 
     @Override
     public boolean isRewindSupported() {
-        return true;
+        return input.isRewindSupported();
     }
 
     private AccumulatorFactory getAccumulator(final AggregateCall call,

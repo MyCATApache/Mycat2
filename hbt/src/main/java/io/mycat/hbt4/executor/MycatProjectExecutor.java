@@ -28,7 +28,7 @@ public class MycatProjectExecutor implements Executor {
         this.executor = executor;
     }
 
-    public MycatProjectExecutor create(Function<Row, Row> mycatScalar, Executor executor) {
+    public static MycatProjectExecutor create(Function<Row, Row> mycatScalar, Executor executor) {
         return new MycatProjectExecutor(
                 mycatScalar,
                 executor

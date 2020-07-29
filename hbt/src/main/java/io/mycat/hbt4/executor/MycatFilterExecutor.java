@@ -24,7 +24,7 @@ public class MycatFilterExecutor implements Executor {
     private final Predicate<Row> predicate;
     private final Executor input;
 
-    public MycatFilterExecutor create(Predicate<Row> predicate, Executor input) {
+    public static MycatFilterExecutor create(Predicate<Row> predicate, Executor input) {
         return new MycatFilterExecutor(predicate,input);
     }
 

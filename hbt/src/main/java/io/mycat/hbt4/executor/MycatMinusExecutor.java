@@ -32,7 +32,7 @@ public class MycatMinusExecutor implements Executor {
         this.all = all;
     }
 
-    public MycatMinusExecutor create(Executor[] executors, boolean all) {
+    public static MycatMinusExecutor create(Executor[] executors, boolean all) {
         return new MycatMinusExecutor(
                 executors,
                 all

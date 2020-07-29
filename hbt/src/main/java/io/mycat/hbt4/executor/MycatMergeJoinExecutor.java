@@ -68,7 +68,7 @@ public class MycatMergeJoinExecutor implements Executor {
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
     }
-    public MycatMergeJoinExecutor create(
+    public static MycatMergeJoinExecutor create(
                                      JoinRelType joinType,
                                      Executor outer,
                                      Executor inner,

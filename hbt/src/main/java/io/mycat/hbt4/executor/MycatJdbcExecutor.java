@@ -30,7 +30,7 @@ public class MycatJdbcExecutor implements Executor {
         this.tableScan = tableScan;
     }
 
-    public MycatJdbcExecutor create(MycatSQLTableScan tableScan) {
+    public static MycatJdbcExecutor create(MycatSQLTableScan tableScan) {
         return new MycatJdbcExecutor(tableScan);
     }
 

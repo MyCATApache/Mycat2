@@ -106,7 +106,7 @@ public class MycatHashAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
-    public MycatHashAggExecutor create(Executor input, Aggregate rel) {
+    public static MycatHashAggExecutor create(Executor input, Aggregate rel) {
         return new MycatHashAggExecutor(input, rel);
     }
 

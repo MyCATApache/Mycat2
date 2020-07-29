@@ -36,7 +36,13 @@ public class MycatNestedLoopJoinExecutor implements Executor {
     private TempResultSetFactory tempResultSetFactory;
     private Iterator<Row> iterator;
 
-    protected MycatNestedLoopJoinExecutor(JoinRelType joinType, Executor leftSource, Executor rightSource, Function2<Row, Row, Row> resultSelector, Predicate2<Row, Row> predicate, TempResultSetFactory tempResultSetFactory) {
+    protected MycatNestedLoopJoinExecutor(
+            JoinRelType joinType,
+            Executor leftSource,
+            Executor rightSource,
+            Function2<Row, Row, Row> resultSelector,
+            Predicate2<Row, Row> predicate,
+            TempResultSetFactory tempResultSetFactory) {
         this.joinType = joinType;
         this.leftSource = leftSource;
         this.rightSource = originalRightSource = rightSource;
@@ -45,10 +51,21 @@ public class MycatNestedLoopJoinExecutor implements Executor {
         this.tempResultSetFactory = tempResultSetFactory;
     }
 
-    public MycatMinusExecutor create(Executor[] executors, boolean all) {
-        return new MycatMinusExecutor(
-                executors,
-                all
+    public static MycatNestedLoopJoinExecutor create(
+            JoinRelType joinType,
+            Executor leftSource,
+            Executor rightSource,
+            Function2<Row, Row, Row> resultSelector,
+            Predicate2<Row, Row> predicate,
+            TempResultSetFactory tempResultSetFactory
+    ) {
+        return new MycatNestedLoopJoinExecutor(
+                joinType,
+                leftSource,
+                rightSource,
+                resultSelector,
+                predicate,
+                tempResultSetFactory
         );
     }
 

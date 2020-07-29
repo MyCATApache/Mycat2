@@ -23,8 +23,7 @@ import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.PartInfo;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
-import io.mycat.hbt4.logical.*;
-import io.mycat.hbt4.physical.*;
+import io.mycat.hbt4.logical.rel.*;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
@@ -42,10 +41,7 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -82,8 +78,12 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     @SneakyThrows
     public Executor implement(MycatNestedLoopJoin mycatJoin) {
+        return createNestedLoopJoin(mycatJoin);
+    }
+
+    @NotNull
+    public Executor createNestedLoopJoin(Join mycatJoin) {
         RexNode condition = mycatJoin.getCondition();
-        JoinInfo joinInfo = mycatJoin.analyzeCondition();
         int leftFieldCount = mycatJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = mycatJoin.getRight().getRowType().getFieldCount();
         Executor[] executors = implementInputs(mycatJoin);
@@ -95,18 +95,18 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         );
         log.info("-------------------complie----------------");
         final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
-        MycatContext context =new MycatContext();
+        MycatContext context = new MycatContext();
         Predicate2<Row, Row> predicate = (v0, v1) -> {
             context.values = resultSelector.apply(v0, v1).values;
             return scalar.execute(context) == Boolean.TRUE;
         };
-        return new MycatNestedLoopJoinExecutor(mycatJoin.getJoinType(), leftSource, rightSource, resultSelector, predicate, tempResultSetFactory);
+        return MycatNestedLoopJoinExecutor.create(mycatJoin.getJoinType(), leftSource, rightSource, resultSelector, predicate, tempResultSetFactory);
     }
 
 
     @Override
     public Executor implement(MycatCalc mycatCalc) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -120,8 +120,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         List<RexNode> childExps = mycatProject.getChildExps();
         int outputSize = childExps.size();
         log.info("-------------------complie----------------");
-        MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType,this::refInput);
-        return new MycatProjectExecutor((input) -> {
+        MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput);
+        return MycatProjectExecutor.create((input) -> {
             context.values = input.values;
             Object[] outputValues = new Object[outputSize];
             scalar.execute(context, outputValues);
@@ -145,41 +145,41 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             context.values = row.values;
             return scalar.execute(context) == Boolean.TRUE;
         };
-        return new MycatFilterExecutor(predicate, input);
+        return MycatFilterExecutor.create(predicate, input);
     }
 
-    public RexToLixTranslator.InputGetter refInput(String name){
+    public RexToLixTranslator.InputGetter refInput(String name) {
         return ref.get(name);
     }
 
     @Override
-    public Executor implement(MycatAggregate mycatAggregate) {
+    public Executor implement(MycatHashAggregate mycatAggregate) {
         Executor input = implementInput(mycatAggregate);
-        return new MycatHashAggExecutor(input, mycatAggregate);
+        return MycatHashAggExecutor.create(input, mycatAggregate);
     }
 
     @Override
     public Executor implement(MycatUnion mycatUnion) {
         Executor[] executors = implementInputs(mycatUnion);
-        if (mycatUnion.all) return new MycatUnionAllExecutor(executors);
-        else return new MycatUnionDistinctExecutor(executors);
+        if (mycatUnion.all) return MycatUnionAllExecutor.create(executors);
+        else return MycatUnionDistinctExecutor.create(executors);
     }
 
     @Override
     public Executor implement(MycatIntersect mycatIntersect) {
         Executor[] executors = implementInputs(mycatIntersect);
-        return new MycatIntersectExecutor(executors, mycatIntersect.all);
+        return MycatIntersectExecutor.create(executors, mycatIntersect.all);
     }
 
     @Override
     public Executor implement(MycatMinus mycatMinus) {
         Executor[] executors = implementInputs(mycatMinus);
-        return new MycatMinusExecutor(executors, mycatMinus.all);
+        return MycatMinusExecutor.create(executors, mycatMinus.all);
     }
 
     @Override
     public Executor implement(MycatTableModify mycatTableModify) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -207,7 +207,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(MycatSort mycatSort) {
+    public Executor implement(MycatMemSort mycatSort) {
         return createSort(mycatSort, false);
     }
 
@@ -240,7 +240,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             Executor[] executors = implementInputs(mycatSort);
             MycatMergeSortExecutor mycatMergeSortExecutor = new MycatMergeSortExecutor(comparator, executors);
             if ((offset != null || fetch != null)) {
-                return new MycatLimitExecutor(offsetValue, fetchValue, mycatMergeSortExecutor);
+                return MycatLimitExecutor.create(offsetValue, fetchValue, mycatMergeSortExecutor);
             } else {
                 return mycatMergeSortExecutor;
             }
@@ -248,12 +248,12 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             Executor executor = implementInput((MycatRel) mycatSort);
             boolean isTopN = comparator != null && (offset != null || fetch != null);
             if (isTopN) {
-                return new MycatTopNExecutor(comparator, offsetValue, fetchValue, executor);
+                return MycatTopNExecutor.create(comparator, offsetValue, fetchValue, executor);
             }
             if (comparator != null) {
-                return new MycatMemSortExecutor(comparator, executor);
+                return MycatMemSortExecutor.create(comparator, executor);
             }
-            return new MycatLimitExecutor(offsetValue, fetchValue, executor);
+            return MycatLimitExecutor.create(offsetValue, fetchValue, executor);
         }
     }
 
@@ -275,25 +275,9 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         return null;
     }
 
-
     @Override
-    public Executor implement(HashAgg hashAgg) {
-        return null;
-    }
-
-    @Override
-    public Executor implement(HashJoin hashJoin) {
-        return null;
-    }
-
-    @Override
-    public Executor implement(MaterializedSemiJoin materializedSemiJoin) {
-        return null;
-    }
-
-    @Override
-    public Executor implement(MemSort memSort) {
-        return null;
+    public Executor implement(MycatMaterializedSemiJoin materializedSemiJoin) {
+        return createNestedLoopJoin(materializedSemiJoin);
     }
 
     @Override
@@ -302,27 +286,23 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(NestedLoopJoin nestedLoopJoin) {
-//        RexNode condition = nestedLoopJoin.getCondition();
-//        RelNode leftExecutor = implementInput(nestedLoopJoin.getLeft());
-//        RelNode right = nestedLoopJoin.getRight();
-
-        return null;
-    }
-
-    @Override
-    public Executor implement(SemiHashJoin semiHashJoin) {
-        return null;
+    public Executor implement(MycatSemiHashJoin semiHashJoin) {
+        return createHashJoin(semiHashJoin);
     }
 
     @Override
     public Executor implement(MycatSortAgg sortAgg) {
         Executor executor = implementInput(sortAgg);
-        return new MycatSortAggExecutor(executor, sortAgg);
+        return MycatSortAggExecutor.create(executor, sortAgg);
     }
 
     @Override
     public Executor implement(MycatSortMergeJoin sortMergeJoin) {
+        return createSortMergeJoin(sortMergeJoin);
+    }
+
+    @NotNull
+    public Executor createSortMergeJoin(Join sortMergeJoin) {
         Executor[] executors = implementInputs(sortMergeJoin);
         JoinRelType joinType = sortMergeJoin.getJoinType();
 
@@ -334,7 +314,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int leftFieldCount = sortMergeJoin.getLeft().getRowType().getFieldCount();
         int rightFieldCount = sortMergeJoin.getRight().getRowType().getFieldCount();
         RelDataType resultRelDataType = combinedRowType(sortMergeJoin.getInputs());
-        return new MycatMergeJoinExecutor(
+        return MycatMergeJoinExecutor.create(
                 joinType,
                 executors[0],
                 executors[1],
@@ -347,13 +327,13 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(SortMergeSemiJoin sortMergeSemiJoin) {
-        return null;
+    public Executor implement(MycatSortMergeSemiJoin sortMergeSemiJoin) {
+        return createSortMergeJoin(sortMergeSemiJoin);
     }
 
     @Override
-    public Executor implement(TopN topN) {
-        return null;
+    public Executor implement(MycatTopN topN) {
+        return createSort(topN, false);
     }
 
     @Override
@@ -361,12 +341,17 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         View view = mycatQuery.getView();
         PartInfo dataNode = view.getDataNode();
         String sql = view.getSql();
-        return new ScanExecutor();
+        return ScanExecutor.createDemo();
     }
 
     @Override
     @SneakyThrows
     public Executor implement(MycatHashJoin mycatHashJoin) {
+        return createHashJoin(mycatHashJoin);
+    }
+
+    @NotNull
+    public Executor createHashJoin(Join mycatHashJoin) {
         Executor[] executors = implementInputs(mycatHashJoin);
         JoinRelType joinType = mycatHashJoin.getJoinType();
 
@@ -442,7 +427,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             }
             return v0.compose(v1);
         };
-        return new MycatCorrelateExecutor(EnumerableDefaults.correlateJoin(JoinType.valueOf(joinType.name()), leftEnumerable, inner, resultSelector));
+        return MycatCorrelateExecutor.create(EnumerableDefaults.correlateJoin(JoinType.valueOf(joinType.name()), leftEnumerable, inner, resultSelector));
 
     }
 
@@ -511,7 +496,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     private static class DataContextInputGetter implements RexToLixTranslator.InputGetter {
-        private  final String name;
+        private final String name;
         private final RelDataTypeFactory typeFactory;
         private final RelDataType rowType;
 
@@ -523,7 +508,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         }
 
         public Expression field(BlockBuilder list, int index, Type storageType) {
-            MethodCallExpression recFromCtx = Expressions.call( MycatBuiltInMethod .ROOT,"getSlots");
+            MethodCallExpression recFromCtx = Expressions.call(MycatBuiltInMethod.ROOT, "getSlots");
             Expression recFromCtxCasted =
                     EnumUtils.convert(recFromCtx, Object[].class);
             IndexExpression recordAccess = Expressions.arrayIndex(recFromCtxCasted,
@@ -562,7 +547,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             int rightFieldCount = mycatBatchNestedLoopJoin.getRight().getRowType().getFieldCount();
 
             Executor leftSource = executors[0];
-            MycatLookupExecutor rightSource = (MycatLookupExecutor)executors[1];
+            MycatLookupExecutor rightSource = (MycatLookupExecutor) executors[1];
 
             MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(
                     mycatBatchNestedLoopJoin.getCondition()),
@@ -582,10 +567,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     rightSource,
                     leftFieldCount,
                     rightFieldCount,
-                    predicate ,
+                    predicate,
                     predicate
             );
-        }finally {
+        } finally {
 //            variablesSet.forEach(n->ref.remove(n.getName()));
         }
     }
@@ -597,7 +582,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             Row res = Row.create(ints.length);
             int index = 0;
             for (int projectIndex : ints) {
-                res.set(index,a0.getObject(projectIndex));
+                res.set(index, a0.getObject(projectIndex));
                 index++;
             }
             return res;

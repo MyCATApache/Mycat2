@@ -19,11 +19,8 @@ package io.mycat.hbt4;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.executor.MycatBatchNestedLoopJoinRule;
-import io.mycat.hbt4.logical.*;
-import io.mycat.hbt4.logical.rules.MycatMinusRule;
+import io.mycat.hbt4.logical.rel.*;
 import io.mycat.hbt4.logical.rules.*;
-import io.mycat.hbt4.physical.rules.MycatSortAggRule;
-import io.mycat.hbt4.rules.MycatMergeJoinRule;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
@@ -69,7 +66,7 @@ public class MycatRules {
             (input, condition, variablesSet) -> {
                 Preconditions.checkArgument(variablesSet.isEmpty(),
                         "MycatFilter does not allow variables");
-                return new MycatFilter(input.getCluster(),
+                return  MycatFilter.create(
                         input.getTraitSet(), input, condition);
             };
 
@@ -77,8 +74,7 @@ public class MycatRules {
             (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
                 final RelOptCluster cluster = left.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(left.getConvention());
-                return new MycatNestedLoopJoin(cluster, traitSet, left, right, condition,
-                        variablesSet, joinType);
+                return MycatNestedLoopJoin.create(ImmutableList.of(), traitSet, left, right, condition, joinType);
             };
 
     static final RelFactories.CorrelateFactory CORRELATE_FACTORY =
@@ -105,7 +101,7 @@ public class MycatRules {
             (input, hints, groupSet, groupSets, aggCalls) -> {
                 final RelOptCluster cluster = input.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(input.getConvention());
-                return new MycatAggregate(cluster, traitSet, input, groupSet,
+                return MycatHashAggregate.create(traitSet, input, groupSet,
                         groupSets, aggCalls);
             };
 
@@ -123,11 +119,11 @@ public class MycatRules {
                 final RelTraitSet traitSet = cluster.traitSetOf(input.getConvention());
                 switch (kind) {
                     case UNION:
-                        return new MycatUnion(cluster, traitSet, inputs, all);
+                        return MycatUnion.create(traitSet, inputs, all);
                     case INTERSECT:
-                        return new MycatIntersect(cluster, traitSet, inputs, all);
+                        return MycatIntersect.create(traitSet, inputs, all);
                     case EXCEPT:
-                        return new MycatMinus(cluster, traitSet, inputs, all);
+                        return MycatMinus.create(traitSet, inputs, all);
                     default:
                         throw new AssertionError("unknown: " + kind);
                 }
@@ -178,22 +174,23 @@ public class MycatRules {
     public static List<RelOptRule> rules(MycatConvention out,
                                          RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
-//                new MycatJoinRule(out, relBuilderFactory),
-                new MycatCalcRule(out, relBuilderFactory),
+                new MycatJoinRule(out, relBuilderFactory),
+//                new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
                 new MycatAggregateRule(out, relBuilderFactory),
-                new MycatSortRule(out, relBuilderFactory),
+                new MycatMemSortRule(out, relBuilderFactory),
                 new MycatUnionRule(out, relBuilderFactory),
                 new MycatIntersectRule(out, relBuilderFactory),
                 new MycatMinusRule(out, relBuilderFactory),
                 new MycatTableModificationRule(out, relBuilderFactory),
                 new MycatValuesRule(out, relBuilderFactory),
-                new MycatMergeJoinRule(out,relBuilderFactory),
-                new MycatSortAggRule(out,relBuilderFactory),
-                new MycatCorrelateRule(out,relBuilderFactory),
+                new MycatMergeJoinRule(out, relBuilderFactory),
+                new MycatSortAggRule(out, relBuilderFactory),
+//                new MycatCorrelateRule(out,relBuilderFactory),
+                new MycatTopNRule(out, relBuilderFactory),
                 MycatBatchNestedLoopJoinRule.INSTANCE
-                );
+        );
     }
 
 

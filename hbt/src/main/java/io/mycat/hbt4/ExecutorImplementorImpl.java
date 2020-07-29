@@ -50,7 +50,7 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
             Object[] objects1 = getPzarameters(sql.getDynamicParameters());
             executors[i++] = factory.create(part.getMysqlIndex(), sql.getSql(), objects1);
         }
-        return new MycatUnionAllExecutor(executors);
+        return  MycatUnionAllExecutor.create(executors);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan) {
-        return new MycatJdbcExecutor(mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class));
+        return  MycatJdbcExecutor.create(mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class));
     }
 
     @NotNull
