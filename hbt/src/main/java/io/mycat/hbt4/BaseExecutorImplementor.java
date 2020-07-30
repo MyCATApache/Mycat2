@@ -593,4 +593,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     public Executor implement(MycatLookUpView mycatLookUpView) {
         return MycatLookupExecutor.create(mycatLookUpView.getRelNode());
     }
+
+    @Override
+    public Executor implement(MycatGather mycatGather) {
+        Executor[] executors = implementInputs(mycatGather);
+        return MycatGatherExecutor.create(Arrays.asList(executors));
+    }
 }

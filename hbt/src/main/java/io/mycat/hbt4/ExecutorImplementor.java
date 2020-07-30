@@ -78,5 +78,7 @@ public interface ExecutorImplementor {
 
     Executor implement(MycatLookUpView mycatLookUpView);
 
+    Executor implement(MycatGather mycatGather);
+
 //    Executor implement(BottomView bottomView);
 }
