@@ -57,7 +57,7 @@ public class ShardingTable implements ShardingTableHandler {
                     break;
                 }
             }
-            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found);
+            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found,table.getSchemaName()+"."+table.getTableName()+" unknown column name:"+entry1.getColumnName());
             return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
         }).collect(Collectors.toMap(k -> k.getShardingType() != null ? k.getShardingType() : NATURE_DATABASE_TABLE, k -> k));
     }
