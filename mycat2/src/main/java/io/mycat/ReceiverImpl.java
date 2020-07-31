@@ -136,7 +136,9 @@ public class ReceiverImpl implements Response {
         String sql = statement.toString();
         JdbcConnectionManager connectionManager = JdbcRuntime.INSTANCE.getConnectionManager();
         List<String> infos = new ArrayList<>();
-        for (String datasourceName : connectionManager.getDatasourceInfo().keySet()) {
+        List<String> keySet =  new ArrayList<>(connectionManager.getDatasourceInfo().keySet());
+        Collections.shuffle(keySet);
+        for (String datasourceName :keySet) {
             try (DefaultConnection connection = connectionManager.getConnection(datasourceName)) {
                 RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
                 this.sendResultSet(() -> rowBaseIterator);
