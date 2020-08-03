@@ -29,12 +29,13 @@ public class MycatSchema extends AbstractSchema {
     private List<String> createTableSqls = new ArrayList<>();
     private String schemaName;
     private DrdsConst drdsConst;
-    private transient ImmutableMap<String, MycatTable> mycatTableMap = ImmutableMap.of();
+    private transient ImmutableMap<String, AbstractMycatTable> mycatTableMap = ImmutableMap.of();
 
     public void init() {
-        ImmutableMap.Builder<String, MycatTable> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, AbstractMycatTable> builder = ImmutableMap.builder();
+        MycatTableFactory tableFactory = drdsConst.getMycatTableFactory();
         for (String sql : createTableSqls) {
-            MycatTable table = new MycatTable(this.schemaName, sql,drdsConst);
+            AbstractMycatTable table = tableFactory.create(this.schemaName, sql,drdsConst);
             builder.put(table.getTableName(), table);
         }
         this.mycatTableMap = builder.build();

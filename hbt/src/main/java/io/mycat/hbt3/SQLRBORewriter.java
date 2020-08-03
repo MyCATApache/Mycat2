@@ -38,8 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class RBO extends RelShuttleImpl {
+public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
+
 
     static {
         nextConvertor.put(TableScan.class,
@@ -54,12 +55,12 @@ public class RBO extends RelShuttleImpl {
                 Project.class, Union.class, Filter.class, Sort.class);
     }
 
-    public RBO() {
+    public SQLRBORewriter() {
     }
 
     @Override
     public RelNode visit(TableScan scan) {
-        return View.of(scan, scan.getTable().unwrap(MycatTable.class).computeDataNode());
+        return View.of(scan, scan.getTable().unwrap(AbstractMycatTable.class).computeDataNode());
     }
 
     @Override
@@ -75,7 +76,7 @@ public class RBO extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (nextConvertor.check(input, Filter.class)) {
+        if (RelMdSqlViews.onFilter(input)) {
             return filter(input, filter);
         } else {
             return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
@@ -90,7 +91,7 @@ public class RBO extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalProject project) {
         RelNode input = project.getInput().accept(this);
-        if (nextConvertor.check(input, Project.class)) {
+        if (RelMdSqlViews.project(input)) {
             return project(input, project);
         } else {
             return project.copy(project.getTraitSet(), ImmutableList.of(input));
@@ -102,7 +103,7 @@ public class RBO extends RelShuttleImpl {
         List<RelNode> inputs = join.getInputs();
         RelNode left = inputs.get(0).accept(this);
         RelNode right = inputs.get(1).accept(this);
-        if (nextConvertor.check(left, Join.class) && (nextConvertor.check(right, Join.class))) {
+        if (RelMdSqlViews.join(left) && (RelMdSqlViews.join(right))) {
             return join(left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
@@ -114,7 +115,7 @@ public class RBO extends RelShuttleImpl {
         List<RelNode> inputs = correlate.getInputs();
         RelNode left = inputs.get(0).accept(this);
         RelNode right = inputs.get(1).accept(this);
-        if (nextConvertor.check(left, Correlate.class) && (nextConvertor.check(right, Correlate.class))) {
+        if (RelMdSqlViews.correlate(left) && (RelMdSqlViews.correlate(right))) {
             return correlate(left, right, correlate);
         } else {
             return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
@@ -144,7 +145,7 @@ public class RBO extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalAggregate aggregate) {
         RelNode input = aggregate.getInput().accept(this);
-        if (nextConvertor.check(input, Aggregate.class)) {
+        if (RelMdSqlViews.aggregate(input)) {
             return aggregate(input, aggregate);
         } else {
             return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
@@ -159,7 +160,7 @@ public class RBO extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalSort sort) {
         RelNode input = sort.getInput().accept(this);
-        if (nextConvertor.check(input, Sort.class)) {
+        if (RelMdSqlViews.sort(input)) {
             return sort(input, sort);
         } else {
             return sort.copy(sort.getTraitSet(), ImmutableList.of(input));
@@ -181,8 +182,8 @@ public class RBO extends RelShuttleImpl {
         return null;
     }
 
-    private static RelNode sort(RelNode input, LogicalSort sort) {
-        PartInfo dataNodeInfo = null;
+    public static RelNode sort(RelNode input, LogicalSort sort) {
+        Distribution dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
@@ -190,8 +191,7 @@ public class RBO extends RelShuttleImpl {
         if (dataNodeInfo == null) {
             return sort.copy(input.getTraitSet(), ImmutableList.of(input));
         }
-        int size = dataNodeInfo.size();
-        if (size == 1) {
+        if (dataNodeInfo.isSingle()) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
             return View.of(input, dataNodeInfo);
         } else {
@@ -202,7 +202,7 @@ public class RBO extends RelShuttleImpl {
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexBuilder.makeCall(SqlStdOperatorTable.PLUS, offset, fetch));
             input = View.of(input, dataNodeInfo);
-            return  MycatMergeSort.create(
+            return MycatMergeSort.create(
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
                     input,
                     sort.collation, offset, fetch);
@@ -210,9 +210,9 @@ public class RBO extends RelShuttleImpl {
     }
 
 
-    private RelNode aggregate(RelNode input, LogicalAggregate aggregate) {
+    public static RelNode aggregate(RelNode input, LogicalAggregate aggregate) {
         RelOptCluster cluster = input.getCluster();
-        PartInfo dataNodeInfo = null;
+        Distribution dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
@@ -221,8 +221,7 @@ public class RBO extends RelShuttleImpl {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return input;
         }
-        int size = dataNodeInfo.size();
-        if (size == 1) {
+        if (dataNodeInfo.isSingle()) {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return View.of(input, dataNodeInfo);
         } else {
@@ -236,28 +235,28 @@ public class RBO extends RelShuttleImpl {
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
-            MultiView multiView = new MultiView(cluster.traitSetOf(MycatConvention.INSTANCE),
+            View multiView = View.of(
                     bestExp.getInput(0).getInput(0),
                     dataNodeInfo);
             return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
         }
     }
 
-    private static RelNode union(List<RelNode> inputs, LogicalUnion union) {
+    public static RelNode union(List<RelNode> inputs, LogicalUnion union) {
         return union.copy(union.getTraitSet(), inputs);
     }
 
-    private static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
+    public static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
         return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
     }
 
-    private RelNode join(RelNode left, RelNode right, LogicalJoin join) {
+    public static RelNode join(RelNode left, RelNode right, LogicalJoin join) {
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
             if (left instanceof View && right instanceof View) {
                 if (((View) left).getRelNode() instanceof LogicalTableScan && ((View) right).getRelNode() instanceof LogicalTableScan) {
-                    MycatTable m = ((View) left).getRelNode().getTable().unwrap(MycatTable.class);
-                    MycatTable s = ((View) right).getRelNode().getTable().unwrap(MycatTable.class);
+                    AbstractMycatTable m = ((View) left).getRelNode().getTable().unwrap(AbstractMycatTable.class);
+                    AbstractMycatTable s = ((View) right).getRelNode().getTable().unwrap(AbstractMycatTable.class);
                     ShardingInfo l = m.getShardingInfo();
                     ShardingInfo r = s.getShardingInfo();
                     boolean canPush = (m.isBroadCast() || s.isBroadCast());
@@ -268,11 +267,9 @@ public class RBO extends RelShuttleImpl {
                             for (IntPair pair : pairs) {
                                 String s1 = m.getRowType().getFieldNames().get(pair.source);
                                 String s2 = s.getRowType().getFieldNames().get(pair.target);
-                                if (Objects.deepEquals(l.getSchemaKeys(),r.getSchemaKeys())
-                                        &&
-                                        Objects.deepEquals( l.getTableKeys(),r.getTableKeys())) {
+                                if (s1.equals(s2)) {
                                     size--;
-                                }else {
+                                } else {
                                     break;
                                 }
                             }
@@ -282,7 +279,7 @@ public class RBO extends RelShuttleImpl {
                         }
                     }
                     if (canPush) {
-                        return View.of(join.copy(join.getTraitSet(), ImmutableList.of(((View) left).getRelNode(), ((View) right).getRelNode())),((View) left).getDataNode());
+                        return View.of(join.copy(join.getTraitSet(), ImmutableList.of(((View) left).getRelNode(), ((View) right).getRelNode())), ((View) left).getDataNode());
                     }
                 }
             }
@@ -290,37 +287,37 @@ public class RBO extends RelShuttleImpl {
         return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
     }
 
-    private static RelNode filter(RelNode input, LogicalFilter filter) {
-        PartInfo dataNodeInfo = null;
+    public static RelNode filter(RelNode input, LogicalFilter filter) {
+        Distribution dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
         }
+        filter = (LogicalFilter) filter.copy(filter.getTraitSet(), ImmutableList.of(input));
         if (input instanceof LogicalTableScan) {
             RexNode condition = filter.getCondition();
             RelOptTable table = input.getTable();
-            MycatTable sTable = table.unwrap(MycatTable.class);
-            return View.of(filter.copy(filter.getTraitSet(), ImmutableList.of(input)), sTable.computeDataNode(condition));
+            AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
+            Distribution distribution = nodes.computeDataNode(condition);
+            return View.of(filter, distribution);
         }
-        input = filter.copy(filter.getTraitSet(), ImmutableList.of(input));
-        if (dataNodeInfo!=null){
+        if (dataNodeInfo != null) {
             return View.of(input, dataNodeInfo);
-        }else {
+        } else {
             return input;
         }
-
     }
 
-    private static RelNode project(RelNode input, LogicalProject project) {
-        PartInfo dataNodeInfo = null;
+    public static RelNode project(RelNode input, LogicalProject project) {
+        Distribution dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDataNode();
             input = ((View) input).getRelNode();
         }
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
-        if (dataNodeInfo==null){
+        if (dataNodeInfo == null) {
             return input;
-        }else {
+        } else {
             return View.of(input, dataNodeInfo);
         }
     }

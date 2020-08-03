@@ -14,12 +14,15 @@
  */
 package io.mycat.hbt3;
 
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import io.mycat.DataNode;
 
-public class MultiView extends View  {
+public abstract class Distribution {
 
-    public MultiView(RelTraitSet relTrait, RelNode input, PartInfo dataNode) {
-        super(relTrait, input, dataNode);
-    }
+    abstract Iterable<DataNode> dataNodes();
+
+
+    abstract String digest();
+
+    abstract boolean isSingle();
+
 }

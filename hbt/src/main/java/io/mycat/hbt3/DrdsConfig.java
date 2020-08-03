@@ -31,11 +31,21 @@ public class DrdsConfig implements DrdsConst {
      Map<String, List<String>> schemas = new HashMap<>();
 
     public static void main(String[] args) {
-        DrdsConfig drdsConfig = new DrdsConfig();
+        DrdsConst drdsConfig = new DrdsConfig();
         Map<String, List<String>> schemas = drdsConfig.getSchemas();
         schemas.put("db1", ImmutableList.of("CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) dbpartition by hash(id)"));
         String s = JsonUtil.toJson(drdsConfig);
         System.out.println(s);
 
+    }
+
+    @Override
+    public MycatTableFactory getMycatTableFactory() {
+        return new MycatTableFactory() {
+            @Override
+            public AbstractMycatTable create(String schemaName, String createTableSql, DrdsConst drdsConst) {
+                return new MycatTableAdapter(schemaName,createTableSql,drdsConst);
+            }
+        };
     }
 }

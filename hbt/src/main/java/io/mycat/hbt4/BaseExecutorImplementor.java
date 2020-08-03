@@ -20,7 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt3.MycatLookUpView;
-import io.mycat.hbt3.PartInfo;
+import io.mycat.hbt3.Distribution;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.rel.*;
@@ -339,7 +339,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     public Executor implement(MycatQuery mycatQuery) {
         View view = mycatQuery.getView();
-        PartInfo dataNode = view.getDataNode();
+        Distribution dataNode = view.getDataNode();
         String sql = view.getSql();
         return ScanExecutor.createDemo();
     }

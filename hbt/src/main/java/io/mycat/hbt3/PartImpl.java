@@ -73,7 +73,7 @@ public class PartImpl implements Part {
         @Override
         public Result visit(TableScan e) {
             if (e.getTable() != null) {
-                MycatTable mycatTable = e.getTable().unwrap(MycatTable.class);
+                AbstractMycatTable mycatTable = e.getTable().unwrap(AbstractMycatTable.class);
                 if (mycatTable != null) {
                     if (mycatTable.isSharding()) {
                         String schemaName = getBackendSchemaName(mycatTable);
@@ -88,11 +88,11 @@ public class PartImpl implements Part {
         }
     }
 
-    public String getBackendTableName(MycatTable mycatTable) {
+    public String getBackendTableName(AbstractMycatTable mycatTable) {
         return mycatTable.getTableName() + "_" + tableIndex;
     }
 
-    public String getBackendSchemaName(MycatTable mycatTable) {
+    public String getBackendSchemaName(AbstractMycatTable mycatTable) {
         return mycatTable.getSchemaName() + "_" + schemaIndex;
     }
 

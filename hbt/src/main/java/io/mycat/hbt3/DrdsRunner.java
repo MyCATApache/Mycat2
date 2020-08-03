@@ -20,6 +20,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableState
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -35,7 +36,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
@@ -53,7 +54,7 @@ import java.util.List;
 
 public class DrdsRunner {
 
-    public void doAction(DrdsConfig config,
+    public void doAction(DrdsConst config,
                          PlanCache planCache,
                          DatasourceFactory factory,
                          String defaultSchemaName,
@@ -103,7 +104,7 @@ public class DrdsRunner {
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
         resultSetHanlder.onMetadata(calciteRowMetaData);
         MycatContext context = new MycatContext();
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, datasourceFactory,new TempResultSetFactoryImpl());
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, datasourceFactory, new TempResultSetFactoryImpl());
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();
         Iterator<Row> iterator = implement.iterator();
@@ -113,7 +114,7 @@ public class DrdsRunner {
         resultSetHanlder.onOk();
     }
 
-    public MycatRel createRelNode(DrdsConfig config, PlanCache planCache, String defaultSchemaName, String sql, SchemaPlus plus) throws SqlParseException {
+    public MycatRel createRelNode(DrdsConst config, PlanCache planCache, String defaultSchemaName, String sql, SchemaPlus plus) throws SqlParseException {
         MycatRel relNode1;
         if (config.isPlanCache()) {
             Plan plan = planCache.getMinCostPlan(sql);
@@ -165,9 +166,9 @@ public class DrdsRunner {
                 RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         RelNode logPlan = finalRoot.project();
         logPlan = optimizeWithRBO(logPlan);
-        RBO rbo = new RBO();
-        RelNode relNode = logPlan.accept(rbo);
-        return (MycatRel) optimizeWithCBO(relNode);
+//        SQLRBORewriter rbo = new SQLRBORewriter();
+//        RelNode relNode = logPlan.accept(rbo);
+        return (MycatRel) optimizeWithCBO(logPlan);
     }
 
     public SqlNode parseSql(String sql) throws SqlParseException {
@@ -187,7 +188,7 @@ public class DrdsRunner {
 
     public static void autoCreateTable(DatasourceFactory datasourceFactory, List<MycatSchema> schemas) {
         for (MycatSchema mycatSchema : schemas) {
-            for (MycatTable table : mycatSchema.getMycatTableMap().values()) {
+            for (AbstractMycatTable table : mycatSchema.getMycatTableMap().values()) {
                 String schemaName = table.getSchemaName();
                 String createTableSql = table.getCreateTableSql();
                 MySqlCreateTableStatement proto = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
@@ -200,16 +201,16 @@ public class DrdsRunner {
                 proto.setDistributeByType(null);
 
                 MySqlCreateTableStatement cur = proto.clone();
+
+                Distribution partInfo = table.computeDataNode();
                 cur.setTableName(table.getTableName());
                 cur.setSchema(schemaName);
-                datasourceFactory.createTableIfNotExisted(0, cur.toString());
-                PartInfo partInfo = table.computeDataNode();
-                for (Part part : partInfo.toPartArray()) {
-                    String backendSchemaName = part.getBackendSchemaName(table);
-                    String backendTableName = part.getBackendTableName(table);
+                for (DataNode dataNode : partInfo.dataNodes()) {
+                    String backendSchemaName = dataNode.getSchema();
+                    String backendTableName = dataNode.getTable();
                     cur.setTableName(backendTableName);
                     cur.setSchema(backendSchemaName);
-                    datasourceFactory.createTableIfNotExisted(part.getMysqlIndex(), cur.toString());
+                    datasourceFactory.createTableIfNotExisted(dataNode.getTargetName(), cur.toString());
                 }
             }
         }
@@ -217,7 +218,7 @@ public class DrdsRunner {
 
     public static RelNode optimizeWithCBO(RelNode logPlan) {
         RelOptCluster cluster = logPlan.getCluster();
-        RelOptPlanner planner =cluster.getPlanner();
+        RelOptPlanner planner = cluster.getPlanner();
         planner.clear();
         MycatConvention.INSTANCE.register(planner);
         logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
@@ -251,6 +252,14 @@ public class DrdsRunner {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(1024);
         builder.addRuleCollection(FILTER);
+        boolean expandPhysicalTable = false;
+        if (expandPhysicalTable){
+            builder.addRuleInstance(MycatTableViewRule.INSTANCE);
+        }else {
+            builder.addRuleInstance(MycatTableViewRule.INSTANCE);
+        }
+        builder.addRuleCollection(MycatSQLViewRules.RULES);
+        builder.addRuleCollection(MycatGatherRules.RULES);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         return planner.findBestExp();
@@ -262,7 +271,7 @@ public class DrdsRunner {
         for (RelTraitDef i : TRAITS) {
             planner.addRelTraitDef(i);
         }
-        FILTER.forEach(f->planner.addRule(f));
+        FILTER.forEach(f -> planner.addRule(f));
         return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
     }
 

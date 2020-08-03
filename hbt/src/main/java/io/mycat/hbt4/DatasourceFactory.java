@@ -18,5 +18,5 @@ public interface DatasourceFactory extends AutoCloseable {
 
     Executor create(int index, String sql, Object[] objects);
 
-    public void createTableIfNotExisted(int index, String createTableSql);
+    public void createTableIfNotExisted(String targetName, String createTableSql);
 }
