@@ -224,7 +224,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
     @SuppressWarnings("deprecation")
     public final RelNode convert(SqlNode sql) {
-        return rel(sql).rel;
+        return rel(sql).project(true);
     }
 
     public RelRoot rel(SqlNode sql) {

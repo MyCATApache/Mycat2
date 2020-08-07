@@ -47,6 +47,7 @@ public class MycatSqlPlanner implements PlanRunner, Proxyable {
     private final MycatSQLPrepareObject prepare;
     private final MycatCalciteDataContext mycatCalciteDataContext;
     private final String sql;
+    private final RelDataType rowType;
 
 
     @SneakyThrows
@@ -55,7 +56,9 @@ public class MycatSqlPlanner implements PlanRunner, Proxyable {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = Objects.requireNonNull(CalciteRunners.compile(planner, sql,sqlNode, prepare.isForUpdate()));
+        CalciteRunners.CompileRes compileRes = CalciteRunners.compile(planner, sql, sqlNode, prepare.isForUpdate());
+        this.relNode = compileRes.getRelNode();
+        this.rowType = compileRes.getResultRowType();
     }
 
     public List<String> explain() {
@@ -70,7 +73,7 @@ public class MycatSqlPlanner implements PlanRunner, Proxyable {
 
     @Override
     public RowBaseIterator run() {
-        return CalciteRunners.run(sql,this.mycatCalciteDataContext, relNode);
+        return CalciteRunners.run(sql,this.mycatCalciteDataContext, relNode,rowType);
     }
 
     public ProxyInfo tryGetProxyInfo() {

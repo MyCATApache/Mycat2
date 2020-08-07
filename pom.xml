@@ -20,7 +20,7 @@
       <module>hbt</module>
       <module>booster</module>
       <module>example</module>
-      <module>autohandler</module>
+<!--      <module>autohandler</module>-->
       <module>testsuite</module>
       <module>statistic</module>
       <module>hbt2</module>

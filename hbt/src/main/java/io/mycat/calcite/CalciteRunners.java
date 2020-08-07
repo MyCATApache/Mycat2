@@ -13,13 +13,13 @@ import io.mycat.sqlRecorder.SqlRecorderRuntime;
 import io.mycat.sqlRecorder.SqlRecorderType;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.TimeProvider;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
-import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
-import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -27,13 +27,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.util.Litmus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,24 +42,33 @@ public class CalciteRunners {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteRunners.class);
 
     @SneakyThrows
-    public static RelNode compile(MycatCalcitePlanner planner, String sql, SqlNode sqlNode , boolean forUpdate) {
+    public static CompileRes compile(MycatCalcitePlanner planner, String sql, SqlNode sqlNode, boolean forUpdate) {
         long start = TimeProvider.INSTANCE.now();
         SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         recorder.start();
         recorder.addRecord(SqlRecorderType.AT_START, sql, start);
         planner.parse();
         SqlNode validate = planner.validate(sqlNode);
-        RelNode relNode = planner.convert(validate);
+        RelNode relNode = planner.rel(validate).project(true);
+        RelDataType resultRowType = relNode.getRowType();
         long cro = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.COMPILE_SQL, sql, cro - start);
         try {
-            return compile(planner, relNode, forUpdate);
+            return compile(planner, relNode, resultRowType, forUpdate);
         } finally {
             recorder.addRecord(SqlRecorderType.RBO, sql, TimeProvider.INSTANCE.now() - cro);
         }
     }
 
-    public static RelNode compile(MycatCalcitePlanner planner, RelNode relNode, boolean forUpdate) {
+    @EqualsAndHashCode
+    @Data
+    @AllArgsConstructor
+    public static class CompileRes {
+        RelNode relNode;
+        RelDataType resultRowType;
+    }
+
+    public static CompileRes compile(MycatCalcitePlanner planner, RelNode relNode, RelDataType resultRowType, boolean forUpdate) {
         try {
             relNode = Objects.requireNonNull(planner.eliminateLogicTable(relNode));
             try {
@@ -72,7 +80,7 @@ public class CalciteRunners {
                 LOGGER.error("", e);
             }
             relNode = Objects.requireNonNull(planner.pushDownBySQL(relNode, forUpdate));
-            return Objects.requireNonNull(relNode);
+            return new CompileRes(Objects.requireNonNull(relNode), resultRowType);
         } catch (Throwable e) {
             LOGGER.error("", e);
             throw e;
@@ -81,7 +89,7 @@ public class CalciteRunners {
 
 
     @SneakyThrows
-    public static RowBaseIterator run(String sql, MycatCalciteDataContext calciteDataContext, RelNode relNode) {
+    public static RowBaseIterator run(String sql, MycatCalciteDataContext calciteDataContext, RelNode relNode, RelDataType resultSetType) {
         SqlRecorder recorder = SqlRecorderRuntime.INSTANCE.getCurrentRecorder();
         Map<String, List<SingeTargetSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
@@ -125,9 +133,9 @@ public class CalciteRunners {
         Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
         Enumerator<Object[]> enumerator = bind.enumerator();
 
-        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(relNode.getRowType()), enumerator,
+        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(resultSetType != null ? resultSetType : relNode.getRowType()), enumerator,
                 () -> {
-                    recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now()-execution_start);
+                    recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now() - execution_start);
                     recorder.addRecord(SqlRecorderType.AT_END, sql, TimeProvider.INSTANCE.now());
                 });
     }
@@ -156,7 +164,7 @@ public class CalciteRunners {
                                 return connection.executeQuery(table.getMetaData(), table.getSql());
                             } finally {
                                 recorder.addRecord(SqlRecorderType.CONNECTION_QUERY_RESPONSE,
-                                        sql, TimeProvider.INSTANCE.now()- start);
+                                        sql, TimeProvider.INSTANCE.now() - start);
                             }
                         });
                 table.setEnumerable(new AbstractEnumerable<Object[]>() {
@@ -202,10 +210,4 @@ public class CalciteRunners {
         }
     }
 
-    @SneakyThrows
-    public static RelNode compile(MycatCalcitePlanner planner, SqlNode sql, boolean forUpdate) {
-        SqlNode validate = planner.validate(sql);
-        RelNode relNode = planner.convert(validate);
-        return compile(planner, relNode, forUpdate);
-    }
 }

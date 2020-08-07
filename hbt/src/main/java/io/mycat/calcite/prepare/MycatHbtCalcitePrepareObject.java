@@ -36,7 +36,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     @Override
     public PlanRunner plan(List<Object> params) {
         RelNode relNode = getRelNode(params);
-        RowBaseIterator run = CalciteRunners.run(MycatCalciteSupport.INSTANCE.convertToHBTText(schema), mycatCalciteDataContext, relNode);
+        RowBaseIterator run = CalciteRunners.run(MycatCalciteSupport.INSTANCE.convertToHBTText(schema), mycatCalciteDataContext, relNode, null);
         return new PlanRunner() {
             @Override
             public RowBaseIterator run() {
