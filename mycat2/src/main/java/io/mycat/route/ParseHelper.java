@@ -61,7 +61,7 @@ public interface ParseHelper {
         TableHandler table = MetadataManager.INSTANCE.getTable(leftTable.getSchema(), leftTable.getTableName());
         if (table!=null){
             if( table  instanceof GlobalTableHandler){
-               return  ((GlobalTableHandler) table).getDataNodeMap().values().stream().map(i->i).collect(Collectors.toSet());
+               return  ((GlobalTableHandler) table).getGlobalDataNode().stream().map(i->i).collect(Collectors.toSet());
             }
         }
         return null;

@@ -61,10 +61,10 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 databaseCollections.addAll(handler.getShardingBackends());
             } else if (tableHandler instanceof GlobalTableHandler) {
                 GlobalTableHandler handler = (GlobalTableHandler) tableHandler;
-                for (BackendTableInfo shardingBackend : handler.getDataNodeMap().values()) {
+                for (DataNode shardingBackend : handler.getGlobalDataNode()) {
                     makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
-                databaseCollections.addAll(handler.getDataNodeMap().values());
+                databaseCollections.addAll(handler.getGlobalDataNode());
             } else {
                 throw new UnsupportedOperationException("UnsupportedOperation :" + tableHandler);
             }

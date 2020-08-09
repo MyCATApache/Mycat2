@@ -1,17 +1,11 @@
 package io.mycat.metadata;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.LogicTableType;
-import io.mycat.TableHandler;
+import io.mycat.*;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.SimpleColumnInfo;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 @Getter
@@ -49,10 +43,23 @@ public class LogicTable {
         this.map = result;
     }
 
-    public static TableHandler createGlobalTable(String schemaName, String tableName, List<BackendTableInfo> backendTableInfos, List<BackendTableInfo> readOnly, LoadBalanceStrategy loadBalance, List<SimpleColumnInfo> columns, String createTableSQL) {
+    public static TableHandler createGlobalTable(String schemaName,
+                                                 String tableName,
+                                                 List<DataNode> backendTableInfos,
+                                                 LoadBalanceStrategy loadBalance,
+                                                 List<SimpleColumnInfo> columns,
+                                                 String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
-        GlobalTable globalTable = new GlobalTable(logicTable, backendTableInfos, readOnly, loadBalance);
-        return globalTable;
+        return new GlobalTable(logicTable, backendTableInfos,loadBalance);
+    }
+
+    public static TableHandler createNormalTable(String schemaName,
+                                                 String tableName,
+                                                 DataNode dataNode,
+                                                 List<SimpleColumnInfo> columns,
+                                                 String createTableSQL) {
+        LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, createTableSQL);
+        return new NormalTable(logicTable, dataNode);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

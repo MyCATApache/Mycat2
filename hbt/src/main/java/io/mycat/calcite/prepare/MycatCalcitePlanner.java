@@ -21,7 +21,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.rules.LimitPushRemoveRule;
 import io.mycat.calcite.rules.MycatProjectTransportRule;
-import io.mycat.calcite.rules.PushDownLogicTableRule;
+//import io.mycat.calcite.rules.PushDownLogicTableRule;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatSQLTableScan;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
@@ -158,12 +158,12 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
         RelNode pushRes = Objects.requireNonNull(planner.findBestExp());
 
         hepProgramBuilder = new HepProgramBuilder()
-                .addMatchLimit(FILTER.size())
-                .addRuleCollection(ImmutableList.of(
-                        PushDownLogicTableRule.LogicalTable,
-                        PushDownLogicTableRule.BindableTableScan
-                ));
-
+                .addMatchLimit(FILTER.size());
+//                .addRuleCollection(ImmutableList.of(
+//                        PushDownLogicTableRule.LogicalTable,
+//                        PushDownLogicTableRule.BindableTableScan
+//                ));
+//@todo
         planner = new HepPlanner(hepProgramBuilder.build());
         planner.setRoot(pushRes);
         return Objects.requireNonNull(planner.findBestExp());

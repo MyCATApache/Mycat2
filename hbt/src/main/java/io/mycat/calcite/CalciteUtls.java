@@ -74,18 +74,15 @@ public class CalciteUtls {
     public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        ArrayList<RexNode> where = new ArrayList<>();
         filters.forEach((filter) -> {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
             boolean success = addOrRootFilter(table, dataMappingRule, filter);
             if (success) {
                 record.merge(dataMappingRule);
             }
-            where.add(filter);
         });
-
         LOGGER.info("optimize filters:{}", filters);
-        return record.calculate(table);
+        return table.function().calculate(record.getColumnMap());
     }
 
     @NotNull

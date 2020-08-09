@@ -108,6 +108,11 @@ public class FileConfigProvider implements ConfigProvider {
                 globalTables = new HashMap<>();
                 logicSchemaConfig.setGlobalTables(globalTables);
             }
+            Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
+            if (normalTables == null) {
+                normalTables = new HashMap<>();
+                logicSchemaConfig.setNormalTables(normalTables);
+            }
             ShardingQueryRootConfig.Generator generator = logicSchemaConfig.getGenerator();
             String clazz = generator.getClazz();
             Class<?> aClass = Class.forName(clazz);

@@ -15,7 +15,12 @@
 package io.mycat.hbt;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLCharacterDataType;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.TableHandler;
 import io.mycat.beans.mycat.JdbcRowMetaData;
@@ -24,13 +29,14 @@ import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
-import io.mycat.calcite.rules.PushDownLogicTableRule;
+//import io.mycat.calcite.rules.PushDownLogicTableRule;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
@@ -200,7 +206,8 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, bindableTableScan);
+//        return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, bindableTableScan);
+        throw new UnsupportedOperationException();//@todo
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -239,26 +246,28 @@ public class HBTQueryConvertor {
         try {
             RelDataType relDataType;
             MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
+
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
+
+            if (sqlStatement instanceof SQLSelectStatement){
+                SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
+                final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                final RelDataTypeFactory.Builder builder = typeFactory.builder();
+                for (SQLSelectItem sqlSelectItem : firstQueryBlock.getSelectList()) {
+                    SQLDataType sqlDataType = sqlSelectItem.computeDataType();
+                    if (sqlDataType == null){
+                        sqlDataType = new SQLCharacterDataType("VARCHAR");
+                    }
+                    SqlTypeName type = HBTCalciteSupport.INSTANCE.getSqlTypeByJdbcValue(sqlDataType.jdbcType());
+                    builder.add(sqlSelectItem.computeAlias(),type);
+                }
+              return  builder.build();
+            }
             MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
             sqlStatement.accept(calciteMySqlNodeVisitor);
             SqlNode parse = calciteMySqlNodeVisitor.getSqlNode();
             planner.parse();
-            parse = parse.accept(new SqlShuttle() {
-                @Override
-                public SqlNode visit(SqlIdentifier id) {
-                    if (id.names.size() == 2) {
-                        String schema = id.names.get(0);
-                        String table = id.names.get(1);
-                        MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
-                        if (logicTable != null) {
-                            TableHandler table1 = logicTable.getTable();
-                            return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
-                        }
-                    }
-                    return super.visit(id);
-                }
-            });
             parse = planner.validate(parse);
             relDataType = planner.convert(parse).getRowType();
             return relDataType;
@@ -439,7 +448,8 @@ public class HBTQueryConvertor {
 
         //消除逻辑表,变成物理表
         if (unwrap != null) {
-            return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, (TableScan) build);
+            //return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, (TableScan) build);
+            throw new UnsupportedOperationException();//@todo
         }
 
         return build;

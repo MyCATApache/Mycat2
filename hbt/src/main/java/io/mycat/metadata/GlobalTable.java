@@ -19,22 +19,16 @@ import java.util.stream.Collectors;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
-    private final List<BackendTableInfo> backendTableInfos;
-    private final List<BackendTableInfo> readOnlyBackendTableInfos;
+    private final List<DataNode> backendTableInfos;
     private final LoadBalanceStrategy balance;
-    private final Map<String, BackendTableInfo> dataNodeMap;
 
 
     public GlobalTable(LogicTable logicTable,
-                       List<BackendTableInfo> backendTableInfos,
-                       List<BackendTableInfo> readOnlyBackendTableInfos,
+                       List<DataNode> backendTableInfos,
                        LoadBalanceStrategy balance) {
         this.logicTable = logicTable;
         this.backendTableInfos = backendTableInfos;
-        this.readOnlyBackendTableInfos = readOnlyBackendTableInfos;
         this.balance = balance;
-
-        this.dataNodeMap = backendTableInfos.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v));
     }
 
     @Override
@@ -52,7 +46,7 @@ public class GlobalTable implements GlobalTableHandler {
 
     @NotNull
     private Iterator<TextUpdateInfo> updateHandler(SQLExprTableSource tableSource,  SQLStatement sqlStatement1) {
-        Iterator<BackendTableInfo> iterator = backendTableInfos.iterator();
+        Iterator<DataNode> iterator = backendTableInfos.iterator();
         return new Iterator<TextUpdateInfo>() {
             @Override
             public boolean hasNext() {
@@ -61,9 +55,8 @@ public class GlobalTable implements GlobalTableHandler {
 
             @Override
             public TextUpdateInfo next() {
-                BackendTableInfo next = iterator.next();
-                SchemaInfo schemaInfo = next.getSchemaInfo();
-                tableSource.setExpr(schemaInfo.getTargetSchemaTable());
+                DataNode next = iterator.next();
+                tableSource.setExpr(next.getTargetSchemaTable());
 
                 return TextUpdateInfo.create(next.getTargetName(), Collections.singletonList(sqlStatement1.toString()));
             }
@@ -141,32 +134,8 @@ public class GlobalTable implements GlobalTableHandler {
         throw new UnsupportedOperationException();
     }
 
-
     @Override
-    public BackendTableInfo getGlobalBackendTableInfoForQuery(boolean update) {
-        return backendTableInfos.get(ThreadLocalRandom.current().nextInt(0, backendTableInfos.size()));
+    public List<DataNode> getGlobalDataNode() {
+        return backendTableInfos;
     }
-
-    @Override
-    public BackendTableInfo getMycatGlobalPhysicalBackendTableInfo(Set<String> context) {
-        return backendTableInfos.get(ThreadLocalRandom.current().nextInt(0, backendTableInfos.size()));
-    }
-
-    @Override
-    public Map<String, BackendTableInfo> getDataNodeMap() {
-        return dataNodeMap;
-    }
-
-    static  final LoadBalanceInfo loadBalanceInfo = new LoadBalanceInfo() {
-
-        @Override
-        public String getName() {
-            return GlobalTable.class.getSimpleName();
-        }
-
-        @Override
-        public int maxRequestCount() {
-            return 0;
-        }
-    };
 }

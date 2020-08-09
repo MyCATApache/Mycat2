@@ -20,10 +20,9 @@ import io.mycat.RangeVariable;
 import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -35,9 +34,9 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
     public abstract String name();
 
     @Override
-    public List<DataNode> calculate(Set<RangeVariable> values) {
+    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
         ArrayList<DataNode> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values) {
+        for (RangeVariable rangeVariable : values.values().stream().flatMap(i->i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////

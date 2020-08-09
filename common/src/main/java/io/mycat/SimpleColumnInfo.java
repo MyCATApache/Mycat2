@@ -37,7 +37,7 @@ public class SimpleColumnInfo {
         this.nullable = nullable;
         this.autoIncrement = autoIncrement;
         this.primaryKey = primaryKey;
-        this.index = index;
+        this.index = index||primaryKey;
     }
 
     /**

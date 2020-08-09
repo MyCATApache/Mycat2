@@ -51,23 +51,6 @@ public class ShardingQueryRootConfig {
         Map<String, String> kvOptions;
     }
 
-    @AllArgsConstructor
-    @Data
-    @Builder
-    public static final class Column {
-        String columnName;
-        SharingFuntionRootConfig.ShardingFuntion function;
-        String shardingType;
-        List<String> map;
-
-        public Column() {
-        }
-
-        public List<String> getMap() {
-            return map == null ? Collections.emptyList() : map;
-        }
-    }
-
     @Data
     @Builder
     @AllArgsConstructor

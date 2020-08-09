@@ -17,6 +17,7 @@ package io.mycat.router;
 import io.mycat.DataNode;
 import io.mycat.RangeVariable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +34,7 @@ public abstract class CustomRuleFunction {
 
     public abstract String name();
 
-    public abstract List<DataNode> calculate(Set<RangeVariable> values);
+    public abstract List<DataNode> calculate(Map<String, Collection<RangeVariable>> values);
 
     protected abstract void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges);
 

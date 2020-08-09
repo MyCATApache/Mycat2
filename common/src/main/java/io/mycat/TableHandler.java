@@ -1,6 +1,7 @@
 package io.mycat;
 
 
+import io.mycat.api.collector.RowBaseIterator;
 
 import java.util.Iterator;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface TableHandler {
+
     public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler();
 
     public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler();

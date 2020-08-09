@@ -15,8 +15,8 @@
 package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.*;
-import io.mycat.metadata.GlobalTableHandler;
+import io.mycat.SimpleColumnInfo;
+import io.mycat.TableHandler;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
@@ -26,134 +26,35 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Statistics;
-import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Junwen Chen
  **/
 @Getter
-public class MycatLogicTable extends MycatTableBase implements TranslatableTable , ProjectableFilterableTable {
+public class MycatLogicTable extends MycatTableBase {
     final TableHandler table;
-    final List<MycatPhysicalTable> dataNodes = new ArrayList<>();
-    final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();
     final Statistic statistic;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
 
     public MycatLogicTable(TableHandler t) {
         this.table = t;
-
-        switch (table.getType()) {
-            case SHARDING: {
-                ShardingTableHandler table = (ShardingTableHandler) t;
-                for (DataNode backend : table.getShardingBackends()) {
-                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, backend);
-                    dataNodes.add(mycatPhysicalTable);
-                    dataNodeMap.put(backend.getUniqueName(), mycatPhysicalTable);
-                }
-                ImmutableList.Builder<ImmutableBitSet> indexes = ImmutableList.builder();
-                try {
-                    SimpleColumnInfo replicaColumnInfo = Optional.ofNullable(table.getReplicaColumnInfo())
-                            .map(i -> i.getColumnInfo()).orElse(null);
-                    SimpleColumnInfo databaseColumnInfo = Optional.ofNullable(table.getDatabaseColumnInfo())
-                            .map(i -> i.getColumnInfo()).orElse(null);
-                    SimpleColumnInfo tableColumnInfo = Optional.ofNullable(table.getTableColumnInfo())
-                            .map(i -> i.getColumnInfo()).orElse(null);
-                    SimpleColumnInfo natureTableColumnInfo = Optional.ofNullable(table.getNatureTableColumnInfo())
-                            .map(i -> i.getColumnInfo()).orElse(null);
-
-                    int index = 0;
-
-                    for (SimpleColumnInfo column : table.getColumns()) {
-                        boolean isIndex = false;
-                        if (column.equals(replicaColumnInfo)) {
-                            isIndex = true;
-                        }
-                        if (column.equals(databaseColumnInfo)) {
-                            isIndex = true;
-                        }
-                        if (column.equals(tableColumnInfo)) {
-                            isIndex = true;
-                        }
-                        if (column.equals(natureTableColumnInfo)) {
-                            isIndex = true;
-                        }
-                        if (column.isPrimaryKey()) {
-                            isIndex = true;
-                        }
-                        if (column.isIndex()) {
-                            isIndex = true;
-                        }
-                        if (isIndex) {
-                            indexes.add(ImmutableBitSet.of(index));
-                        }
-                        index++;
-                    }
-
-                    if (!table.isNatureTable()) {
-                        List<SimpleColumnInfo> columns = table.getColumns();
-                        int replicaColumnInfoIndex = columns.indexOf(table.getReplicaColumnInfo().getColumnInfo());
-                        int databaseColumnInfoIndex = columns.indexOf(table.getDatabaseColumnInfo().getColumnInfo());
-                        int tableColumnInfoIndex = columns.indexOf(table.getTableColumnInfo().getColumnInfo());
-
-
-                        indexes.addAll(Arrays.asList(
-                                ImmutableBitSet.of(replicaColumnInfoIndex, databaseColumnInfoIndex),
-                                ImmutableBitSet.of(replicaColumnInfoIndex, tableColumnInfoIndex),
-                                ImmutableBitSet.of(databaseColumnInfoIndex, tableColumnInfoIndex)
-                        ));
-
-                    }
-
-
-                } catch (Throwable e) {
-                    LOGGER.error("", e);
-                }
-                ImmutableList<ImmutableBitSet> immutableBitSets = indexes.build();
-                statistic = createStatistic(immutableBitSets);
-                break;
-        }
-        case GLOBAL: {
-            GlobalTableHandler table = (GlobalTableHandler) t;
-            for (Map.Entry<String, BackendTableInfo> stringBackendTableInfoEntry : table.getDataNodeMap().entrySet()) {
-                MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, stringBackendTableInfoEntry.getValue());
-                dataNodes.add(mycatPhysicalTable);
-                dataNodeMap.put(stringBackendTableInfoEntry.getValue().getUniqueName(), mycatPhysicalTable);
-            }
-            ImmutableList.Builder<ImmutableBitSet> builder = ImmutableList.builder();
-
-            try {
-                int index = 0;
-                for (SimpleColumnInfo column : table.getColumns()) {
-                    if (column.isIndex() || column.isPrimaryKey()) {
-                        builder.add(ImmutableBitSet.of(index));
-                    }
-                    index++;
-                }
-            }catch (Throwable e){
-                LOGGER.error("",e);
-            }
-
-            ImmutableList<ImmutableBitSet> build = builder.build();
-            statistic = createStatistic(build);
-            break;
-        }
-        default:
-        statistic = Statistics.UNKNOWN;
+        ShardingTableHandler table = (ShardingTableHandler) t;
+        List<SimpleColumnInfo> columns = table.getColumns();
+        List<ImmutableBitSet> immutableBitSets = getIndexes(columns);
+        statistic = createStatistic(immutableBitSets);
     }
-}
 
-    private Statistic createStatistic(ImmutableList<ImmutableBitSet> immutableBitSets) {
-      return new Statistic() {
+    private Statistic createStatistic(List<ImmutableBitSet> immutableBitSets) {
+        return new Statistic() {
             public Double getRowCount() {
-                return StatisticCenter.INSTANCE.getLogicTableRow(table.getSchemaName(),table.getTableName());
+                return StatisticCenter.INSTANCE.getLogicTableRow(table.getSchemaName(), table.getTableName());
             }
 
             public boolean isKey(ImmutableBitSet columns) {
@@ -178,36 +79,32 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
         };
     }
 
-    public MycatPhysicalTable getMycatPhysicalTable(String uniqueName) {
-        return dataNodeMap.get(uniqueName);
-    }
-
-
     @Override
     public TableHandler logicTable() {
         return table;
     }
 
     @Override
-    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(), relOptTable,ImmutableList.of());
-    }
-
-    public MycatPhysicalTable getMycatGlobalPhysicalTable(Set<String> context) {
-        if (table.getType() != LogicTableType.GLOBAL) {
-            throw new AssertionError();
-        }
-        BackendTableInfo globalBackendTableInfo = ((GlobalTableHandler) table).getMycatGlobalPhysicalBackendTableInfo(context);
-        return new MycatPhysicalTable(this, globalBackendTableInfo);
-    }
-
-    @Override
     public Statistic getStatistic() {
         return statistic;
     }
+
+    private  static List<ImmutableBitSet> getIndexes(List<SimpleColumnInfo> columns) {
+        List<ImmutableBitSet> immutableBitSets = Collections.emptyList();
+        ImmutableList.Builder<ImmutableBitSet> indexes = ImmutableList.builder();
+        try {
+            int index = 0;
+            for (SimpleColumnInfo column : columns) {
+                if (column.isIndex()) {
+                    indexes.add(ImmutableBitSet.of(index));
+                }
+                index++;
+            }
+            immutableBitSets = indexes.build();
+        } catch (Throwable e) {
+            LOGGER.error("", e);
+        }
+        return immutableBitSets;
+    }
+
 }

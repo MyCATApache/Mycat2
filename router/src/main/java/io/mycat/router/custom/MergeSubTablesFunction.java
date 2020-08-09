@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -29,9 +30,9 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<DataNode> calculate(Set<RangeVariable> values) {
+    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
         ArrayList<DataNode> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values) {
+        for (RangeVariable rangeVariable : values.values().stream().flatMap(i->i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////

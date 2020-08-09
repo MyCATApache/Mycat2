@@ -26,13 +26,13 @@ public class MetadataManagerTest {
         return MetadataManager.INSTANCE.rewriteSQL(currentSchema, sql);
     }
 
-    public List<DataNode> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
-        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, startValue, endValue);
-    }
+//    public List<DataNode> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
+//        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, startValue, endValue);
+//    }
 
-    public DataNode getBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
-        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, partitionValue);
-    }
+//    public DataNode getBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
+//        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, partitionValue);
+//    }
 
 
     @Test
@@ -97,17 +97,17 @@ public class MetadataManagerTest {
         assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\nVALUES ('2000');]}".toLowerCase(), next2.toString().toLowerCase());
     }
 
-    @Test
-    public void test7() {
-        String sql = "DELETE FROM travelrecord WHERE id = '2' ";
-        String id = "2";
-        DataNode backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", id);
-        String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getTargetSchemaTable(), id);
-    }
-
-    @Test
-    public void test8() {
-        List<DataNode> backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", "1", String.valueOf(Integer.MAX_VALUE));
-        Assert.assertEquals(9, backEndTableInfo.size());
-    }
+//    @Test
+//    public void test7() {
+//        String sql = "DELETE FROM travelrecord WHERE id = '2' ";
+//        String id = "2";
+//        DataNode backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", id);
+//        String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getTargetSchemaTable(), id);
+//    }
+//
+//    @Test
+//    public void test8() {
+//        List<DataNode> backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", "1", String.valueOf(Integer.MAX_VALUE));
+//        Assert.assertEquals(9, backEndTableInfo.size());
+//    }
 }
