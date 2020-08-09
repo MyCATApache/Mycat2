@@ -1,11 +1,17 @@
 package io.mycat.metadata;
 
-import io.mycat.*;
+import io.mycat.DataNode;
+import io.mycat.LogicTableType;
+import io.mycat.SimpleColumnInfo;
+import io.mycat.TableHandler;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
-import lombok.NonNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 @Getter
@@ -32,7 +38,7 @@ public class LogicTable {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.rawColumns = rawColumns;
-        this.createTableSQL = Objects.requireNonNull(createTableSQL,  this.uniqueName+" createTableSQL is not existed");
+        this.createTableSQL = Objects.requireNonNull(createTableSQL, this.uniqueName + " createTableSQL is not existed");
         /////////////////////////////////////////
         this.autoIncrementColumn = rawColumns.stream().filter(i -> i.isAutoIncrement()).findFirst().orElse(null);
         /////////////////////////////////////////
@@ -50,7 +56,7 @@ public class LogicTable {
                                                  List<SimpleColumnInfo> columns,
                                                  String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
-        return new GlobalTable(logicTable, backendTableInfos,loadBalance);
+        return new GlobalTable(logicTable, backendTableInfos, loadBalance);
     }
 
     public static TableHandler createNormalTable(String schemaName,
@@ -60,6 +66,17 @@ public class LogicTable {
                                                  String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, createTableSQL);
         return new NormalTable(logicTable, dataNode);
+    }
+
+    public static ShardingTable createShardingTable(String schemaName,
+                                                    String tableName,
+                                                    List<DataNode> backendTableInfos,
+                                                    List<SimpleColumnInfo> columns,
+                                                    CustomRuleFunction function,
+                                                    Supplier<String> sequence,
+                                                    String createTableSQL) {
+        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
+        return new ShardingTable(logicTable, backendTableInfos, function, sequence);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

@@ -19,21 +19,23 @@ import static io.mycat.SimpleColumnInfo.ShardingType.*;
 @Getter
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
+    private CustomRuleFunction shardingFuntion;
     private final Supplier<String> sequence;
     private final List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
                          List<DataNode> backends,
-                         SharingFuntionRootConfig.ShardingFuntion shardingFuntion,
+                         CustomRuleFunction shardingFuntion,
                          Supplier<String> sequence) {
         this.logicTable = logicTable;
         this.backends = backends == null ? Collections.emptyList() : backends;
+        this.shardingFuntion = shardingFuntion;
         this.sequence = sequence;
     }
 
     @Override
     public CustomRuleFunction function() {
-        return null;
+        return shardingFuntion;
     }
 
     @Override
@@ -105,5 +107,9 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public String getCreateTableSQL() {
         return logicTable.getCreateTableSQL();
+    }
+
+    public void setShardingFuntion(CustomRuleFunction shardingFuntion) {
+        this.shardingFuntion = shardingFuntion;
     }
 }

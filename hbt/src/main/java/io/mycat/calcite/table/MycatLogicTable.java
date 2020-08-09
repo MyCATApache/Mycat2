@@ -15,8 +15,11 @@
 package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
+import io.mycat.metadata.GlobalTableHandler;
+import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
@@ -31,6 +34,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,38 +49,7 @@ public class MycatLogicTable extends MycatTableBase {
 
     public MycatLogicTable(TableHandler t) {
         this.table = t;
-        ShardingTableHandler table = (ShardingTableHandler) t;
-        List<SimpleColumnInfo> columns = table.getColumns();
-        List<ImmutableBitSet> immutableBitSets = getIndexes(columns);
-        statistic = createStatistic(immutableBitSets);
-    }
-
-    private Statistic createStatistic(List<ImmutableBitSet> immutableBitSets) {
-        return new Statistic() {
-            public Double getRowCount() {
-                return StatisticCenter.INSTANCE.getLogicTableRow(table.getSchemaName(), table.getTableName());
-            }
-
-            public boolean isKey(ImmutableBitSet columns) {
-                return immutableBitSets.contains(columns);
-            }
-
-            public List<ImmutableBitSet> getKeys() {
-                return immutableBitSets;
-            }
-
-            public List<RelReferentialConstraint> getReferentialConstraints() {
-                return ImmutableList.of();
-            }
-
-            public List<RelCollation> getCollations() {
-                return ImmutableList.of();
-            }
-
-            public RelDistribution getDistribution() {
-                return RelDistributionTraitDef.INSTANCE.getDefault();
-            }
-        };
+        statistic =Statistics.createStatistic(table.getSchemaName(),table.getTableName(),table.getColumns());
     }
 
     @Override
@@ -87,24 +60,6 @@ public class MycatLogicTable extends MycatTableBase {
     @Override
     public Statistic getStatistic() {
         return statistic;
-    }
-
-    private  static List<ImmutableBitSet> getIndexes(List<SimpleColumnInfo> columns) {
-        List<ImmutableBitSet> immutableBitSets = Collections.emptyList();
-        ImmutableList.Builder<ImmutableBitSet> indexes = ImmutableList.builder();
-        try {
-            int index = 0;
-            for (SimpleColumnInfo column : columns) {
-                if (column.isIndex()) {
-                    indexes.add(ImmutableBitSet.of(index));
-                }
-                index++;
-            }
-            immutableBitSets = indexes.build();
-        } catch (Throwable e) {
-            LOGGER.error("", e);
-        }
-        return immutableBitSets;
     }
 
 }

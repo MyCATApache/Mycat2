@@ -35,23 +35,14 @@ public enum PartitionRuleFunctionManager {
         return (CustomRuleFunction) clz.getDeclaredConstructor().newInstance();
     }
 
-    public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,String columnName, SharingFuntionRootConfig.ShardingFuntion funtion)
+    public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,
+                                                      SharingFuntionRootConfig.ShardingFuntion funtion)
             throws Exception {
         Map<String, String> properties = funtion.getProperties();
         properties = (properties == null) ? Collections.emptyMap() : properties;
         funtion.setProperties(properties);
         CustomRuleFunction rootFunction = createFunction(funtion.getName(), funtion.getClazz());
-        rootFunction.callInit(tableHandler, columnName, funtion.getProperties(), funtion.getRanges());
+        rootFunction.callInit(tableHandler, funtion.getProperties(), funtion.getRanges());
         return rootFunction;
-    }
-
-    public CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,String defaultColumnName, String clazz, Map<String, String> properties, Map<String, String> ranges) {
-        try {
-            CustomRuleFunction function = createFunction(defaultColumnName, clazz);
-            function.callInit(tableHandler,defaultColumnName,properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
-            return function;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

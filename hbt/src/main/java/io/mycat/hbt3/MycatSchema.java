@@ -15,8 +15,11 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
+import io.mycat.calcite.MycatCalciteSupport;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
@@ -35,7 +38,7 @@ public class MycatSchema extends AbstractSchema {
         ImmutableMap.Builder<String, AbstractMycatTable> builder = ImmutableMap.builder();
         MycatTableFactory tableFactory = drdsConst.getMycatTableFactory();
         for (String sql : createTableSqls) {
-            AbstractMycatTable table = tableFactory.create(this.schemaName, sql,drdsConst);
+            AbstractMycatTable table = tableFactory.create(this.schemaName, sql, drdsConst);
             builder.put(table.getTableName(), table);
         }
         this.mycatTableMap = builder.build();
@@ -46,4 +49,10 @@ public class MycatSchema extends AbstractSchema {
     protected Map<String, Table> getTableMap() {
         return (Map) mycatTableMap;
     }
+
+    @Override
+    protected Multimap<String, Function> getFunctionMultimap() {
+        return MycatCalciteSupport.INSTANCE.functions;
+    }
+
 }

@@ -45,7 +45,7 @@ public class MycatImplementor extends RelToSqlConverter {
         try {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
-                DataNode backendTableInfo = physicalTable.getBackendTableInfo();
+                DataNode backendTableInfo = physicalTable.getDataNode();
                 SqlIdentifier identifier;
                 if (backendTableInfo.getSchema() == null) {
                     identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);

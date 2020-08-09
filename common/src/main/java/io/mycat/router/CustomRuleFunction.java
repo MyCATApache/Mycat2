@@ -46,7 +46,7 @@ public abstract class CustomRuleFunction {
         return ranges;
     }
 
-    public synchronized void callInit(ShardingTableHandler tableHandler, String columnName, Map<String, String> properties, Map<String, String> ranges) {
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
         this.properties = properties;
         this.ranges = ranges;
         this.table = tableHandler;

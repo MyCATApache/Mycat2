@@ -487,7 +487,7 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
                     } else {
                         MycatPhysicalTable mycatPhysicalTable = Optional.ofNullable(other.getTable()).map(i -> i.unwrap(MycatPhysicalTable.class)).orElse(null);
                         if (mycatPhysicalTable != null) {
-                            margeList.put(other, Collections.singletonList(mycatPhysicalTable.getTargetName()));
+                            margeList.put(other, Collections.singletonList(mycatPhysicalTable.getDataNode().getTargetName()));
                         } else {
                             margeList.put(other, Collections.emptyList());
                         }

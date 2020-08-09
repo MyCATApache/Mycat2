@@ -43,8 +43,8 @@ import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.function.PartitionRuleFunctionManager;
 import lombok.SneakyThrows;
-import org.apache.calcite.util.NameMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,7 @@ import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
 public enum MetadataManager {
     INSTANCE;
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
-    final ConcurrentHashMap<String,SchemaHandler> schemaMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, SchemaHandler> schemaMap = new ConcurrentHashMap<>();
 
     public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
@@ -208,15 +208,15 @@ public enum MetadataManager {
         TABLE_REPOSITORY.acceptDDL(sql);
     }
 
+    @SneakyThrows
     private void addShardingTable(String schemaName,
                                   String orignalTableName,
                                   ShardingTableConfig tableConfigEntry,
                                   ShardingQueryRootConfig.PrototypeServer prototypeServer,
                                   List<DataNode> backends) {
         //////////////////////////////////////////////
-        final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
-        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backends);
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(s);
@@ -224,9 +224,8 @@ public enum MetadataManager {
             sequence = SequenceGenerator.INSTANCE.getSequence(orignalTableName.toUpperCase());
         }
 
-        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
-
-        ShardingTable shardingTable = new ShardingTable(logicTable, (List) backends, tableConfigEntry.getFunction(), sequence);
+        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, sequence, createTableSQL);
+        shardingTable.setShardingFuntion(PartitionRuleFunctionManager.INSTANCE.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
     }
 
@@ -573,19 +572,6 @@ public enum MetadataManager {
         return new Rrs(calculate, table);
     }
 
-    public List<DataNode> getNatrueBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
-        try {
-            schemaName = schemaName;
-            tableName = tableName;
-            ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
-            DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-            dataMappingEvaluator.assignment(false, startValue, endValue);
-            return logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
-        } catch (Exception e) {
-            LOGGER.error("", e);
-            throw new MycatException("{0} {1} {2} {3} can not calculate", schemaName, tableName, startValue, endValue);
-        }
-    }
 
     public static class Rrs {
         Collection<DataNode> backEndTableInfos;
