@@ -31,57 +31,57 @@ import java.util.Objects;
 
 public class View extends AbstractRelNode implements MycatRel {
     RelNode relNode;
-    PartInfo dataNode;
+    Distribution dataNode;
+    final boolean gather;
 
-    public View(RelTraitSet relTrait, RelNode input, PartInfo dataNode) {
-        super(input.getCluster(),relTrait);
+    public View(RelTraitSet relTrait, RelNode input, Distribution dataNode, boolean gather) {
+        super(input.getCluster(), relTrait);
         this.dataNode = Objects.requireNonNull(dataNode);
         this.rowType = input.getRowType();
         this.relNode = input;
         this.traitSet = relTrait;
+        this.gather = gather;
+    }
+    public static View of(RelNode input, Distribution dataNodeInfo) {
+        return of(input, dataNodeInfo, false);
     }
 
-    public static View of(RelNode input) {
-        return new View(input.getTraitSet().replace(MycatConvention.INSTANCE),input,null);
+    public static View of(RelNode input, Distribution dataNodeInfo, boolean gather) {
+        return new View(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, gather);
     }
 
-    public static RelNode of(RelNode input, PartInfo dataNodeInfo) {
-        return new View(input.getTraitSet().replace(MycatConvention.INSTANCE),input,dataNodeInfo);
+    public static View of(RelTraitSet relTrait, RelNode input, Distribution dataNodeInfo, boolean gather) {
+        return new View(relTrait.replace(MycatConvention.INSTANCE), input, dataNodeInfo, gather);
     }
-
 
     public String getSql() {
         return MycatCalciteSupport.INSTANCE.convertToSql(relNode,
                 MycatSqlDialect.DEFAULT, false);
     }
-    public String getSql(Map<String,Object> context) {
+
+    public String getSql(Map<String, Object> context) {
         return getSql();//@todo
     }
-
-//    @Override
-//    public String toString() {
-//        return super.toString() +" "+ dataNode+ " -> " + getSql();
-//    }
 
     public RelNode getRelNode() {
         return relNode;
     }
 
-    public PartInfo getDataNode() {
+    public Distribution getDataNode() {
         return dataNode;
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        if (!inputs.isEmpty()){
+        if (!inputs.isEmpty()) {
             throw new AssertionError();
         }
-        return new View(traitSet,relNode, dataNode);
+        return new View(traitSet, relNode, dataNode, gather);
     }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        return writer.name("View").into().item("sql",getSql()).ret();
+        return writer.name("View").into().item("sql", getSql()).ret();
     }
 
     @Override
@@ -94,4 +94,9 @@ public class View extends AbstractRelNode implements MycatRel {
         RelOptCost relOptCost = super.computeSelfCost(planner, mq);
         return relOptCost;
     }
+
+    public boolean isGather() {
+        return gather;
+    }
+
 }

@@ -18,7 +18,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatValues;
+import io.mycat.hbt4.logical.rel.MycatValues;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -41,7 +41,7 @@ public class MycatValuesRule extends MycatConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         Values values = (Values) rel;
-        return new MycatValues(values.getCluster(), values.getRowType(),
+        return  MycatValues.create(values.getCluster(), values.getRowType(),
                 values.getTuples(), values.getTraitSet().replace(out));
     }
 }

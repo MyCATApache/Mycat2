@@ -27,11 +27,11 @@ public class DatasourceFactoryImpl implements DatasourceFactory {
 
     @Override
     public Executor create(int index, String sql, Object[] objects) {
-        return new ScanExecutor();
+        return ScanExecutor.createDemo();
     }
 
     @Override
-    public void createTableIfNotExisted(int index, String createTableSql) {
+    public void createTableIfNotExisted(String index, String createTableSql) {
 
     }
 }

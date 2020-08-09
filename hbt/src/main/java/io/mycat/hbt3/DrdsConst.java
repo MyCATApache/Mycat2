@@ -14,8 +14,20 @@
  */
 package io.mycat.hbt3;
 
+import java.util.List;
+import java.util.Map;
+
 public interface DrdsConst {
     public int getDatasourceNum();
 
     public int getShardingSchemaNum();
+
+    public MycatTableFactory getMycatTableFactory();
+
+
+    Map<String, List<String>> getSchemas();
+
+    boolean isAutoCreateTable();
+
+    boolean isPlanCache();
 }

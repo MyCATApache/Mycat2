@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /**
  * Copyright (C) <2020>  <chen junwen>
  * <p>
@@ -16,6 +32,7 @@ package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.*;
@@ -65,6 +82,7 @@ public class MycatHashAggExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
+
     public MycatHashAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
@@ -88,6 +106,9 @@ public class MycatHashAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
+    public static MycatHashAggExecutor create(Executor input, Aggregate rel) {
+        return new MycatHashAggExecutor(input, rel);
+    }
 
     @Override
     public void open() {
@@ -262,15 +283,14 @@ public class MycatHashAggExecutor implements Executor {
                                     new RexToLixTranslator.InputGetterImpl(
                                             Collections.singletonList(
                                                     Pair.of((Expression) inParameter, inputPhysType))),
-                                    conformance)
-                                    .setNullable(currentNullables());
+                                    conformance);
                         }
                     };
 
             agg.implementor.implementAdd(agg.context, addContext);
 
             final ParameterExpression context_ =
-                    Expressions.parameter(Context.class, "context");
+                    Expressions.parameter(MycatContext.class, "context");
             final ParameterExpression outputValues_ =
                     Expressions.parameter(Object[].class, "outputValues");
             Scalar addScalar = baz(context_, outputValues_, builder2.toBlock());
@@ -367,9 +387,9 @@ public class MycatHashAggExecutor implements Executor {
             this.endScalar = endScalar;
             this.accumulatorLength = accumulatorLength;
             this.rowLength = rowLength;
-            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.sendContext.values = new Object[rowLength + accumulatorLength];
-            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.endContext.values = new Object[accumulatorLength];
         }
 

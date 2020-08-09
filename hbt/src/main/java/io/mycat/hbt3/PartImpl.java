@@ -55,7 +55,7 @@ public class PartImpl implements Part {
         SqlDialect dialect = MycatSqlDialect.DEFAULT;
         ToSQL toSQL = new ToSQL(schemaIndex, tableIndex, dialect);
 
-        SqlImplementor.Result result = toSQL.dispatch(node);
+        SqlImplementor.Result result = toSQL.visitRoot(node);
         SqlNode sqlNode = result.asStatement();
         return sqlNode.toSqlString(dialect, false);
     }
@@ -73,7 +73,7 @@ public class PartImpl implements Part {
         @Override
         public Result visit(TableScan e) {
             if (e.getTable() != null) {
-                MycatTable mycatTable = e.getTable().unwrap(MycatTable.class);
+                AbstractMycatTable mycatTable = e.getTable().unwrap(AbstractMycatTable.class);
                 if (mycatTable != null) {
                     if (mycatTable.isSharding()) {
                         String schemaName = getBackendSchemaName(mycatTable);
@@ -86,19 +86,13 @@ public class PartImpl implements Part {
             }
             return super.visit(e);
         }
-
-
-        @Override
-        public Result dispatch(RelNode e) {
-            return super.dispatch(e);
-        }
     }
 
-    public String getBackendTableName(MycatTable mycatTable) {
+    public String getBackendTableName(AbstractMycatTable mycatTable) {
         return mycatTable.getTableName() + "_" + tableIndex;
     }
 
-    public String getBackendSchemaName(MycatTable mycatTable) {
+    public String getBackendSchemaName(AbstractMycatTable mycatTable) {
         return mycatTable.getSchemaName() + "_" + schemaIndex;
     }
 

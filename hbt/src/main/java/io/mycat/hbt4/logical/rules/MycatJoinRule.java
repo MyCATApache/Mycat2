@@ -18,8 +18,10 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatHashJoin;
-import io.mycat.hbt4.logical.MycatNestedLoopJoin;
+import io.mycat.hbt4.logical.rel.MycatHashJoin;
+import io.mycat.hbt4.logical.rel.MycatNestedLoopJoin;
+import io.mycat.hbt4.logical.rel.MycatMaterializedSemiJoin;
+import io.mycat.hbt4.logical.rel.MycatSemiHashJoin;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
@@ -27,7 +29,6 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.tools.RelBuilderFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -49,33 +50,21 @@ public class MycatJoinRule extends MycatConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         final Join join = (Join) rel;
-        return convert(join, true);
+        return convert(join);
     }
 
     /**
      * Converts a {@code Join} into a {@code MycatJoin}.
      *
      * @param join               Join operator to convert
-     * @param convertInputTraits Whether to convert input to {@code join}'s
-     *                           Mycat convention
      * @return A new MycatJoin
      */
-    public RelNode convert(Join join, boolean convertInputTraits) {
+    public RelNode convert(Join join) {
         JoinInfo info = join.analyzeCondition();
         RelOptCluster cluster = join.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
         RelNode left = join.getLeft();
         RelNode right = join.getRight();
-        final List<RelNode> newInputs = new ArrayList<>();
-        for (RelNode input : join.getInputs()) {
-            if (convertInputTraits && input.getConvention() != getOutTrait()) {
-                input = convert(input, input.getTraitSet().replace(out));
-            }
-            newInputs.add(input);
-        }
-        left = newInputs.get(0);
-        right = newInputs.get(1);
-
         final boolean hasEquiKeys = !info.leftKeys.isEmpty()
                 && !info.rightKeys.isEmpty();
         if (hasEquiKeys) {
@@ -87,21 +76,43 @@ public class MycatJoinRule extends MycatConverterRule {
                 final RexNode nonEqui = RexUtil.composeConjunction(rexBuilder, info.nonEquiConditions);
                 condition = RexUtil.composeConjunction(rexBuilder, Arrays.asList(equi, nonEqui));
             }
-            return MycatHashJoin.create(
-                    left,
-                    right,
-                    condition,
-                    join.getVariablesSet(),
+            if (!join.isSemiJoin()) {
+                return MycatHashJoin.create(
+                        join.getHints(),
+                        join.getTraitSet().replace(out),
+                        convert(left, out),
+                        convert(right, out),
+                        condition,
+                        join.getJoinType());
+            } else {
+                return MycatSemiHashJoin.create(
+                        join.getHints(),
+                        join.getTraitSet().replace(out),
+                        convert(left, out),
+                        convert(right, out),
+                        condition,
+                        join.getJoinType());
+            }
+
+        }
+        if (!join.isSemiJoin()) {
+            return MycatMaterializedSemiJoin.create(
+                    join.getHints(),
+                    join.getTraitSet().replace(out),
+                    convert(left, out),
+                    convert(right, out),
+                    join.getCondition(),
+                    join.getJoinType()
+            );
+        } else {
+            return MycatNestedLoopJoin.create(
+                    join.getHints(),
+                    join.getTraitSet().replace(out),
+                    convert(left, out),
+                    convert(right, out),
+                    join.getCondition(),
                     join.getJoinType());
         }
-        return new MycatNestedLoopJoin(
-                join.getCluster(),
-                join.getTraitSet().replace(out),
-                left,
-                right,
-                join.getCondition(),
-                join.getVariablesSet(),
-                join.getJoinType());
     }
 
     /**

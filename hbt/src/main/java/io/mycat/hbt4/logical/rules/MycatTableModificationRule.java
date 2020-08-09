@@ -17,7 +17,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatTableModify;
+import io.mycat.hbt4.logical.rel.MycatTableModify;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;

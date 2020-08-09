@@ -18,7 +18,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatIntersect;
+import io.mycat.hbt4.logical.rel.MycatIntersect;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
@@ -44,7 +44,7 @@ public class MycatIntersectRule extends MycatConverterRule {
         final Intersect intersect = (Intersect) rel;
         final RelTraitSet traitSet =
                 intersect.getTraitSet().replace(out);
-        return new MycatIntersect(rel.getCluster(), traitSet,
-                convertList(intersect.getInputs(), out), false);
+        return  MycatIntersect.create( traitSet,
+                convertList(intersect.getInputs(), out), intersect.all);
     }
 }

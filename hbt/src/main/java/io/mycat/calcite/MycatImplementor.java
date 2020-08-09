@@ -28,6 +28,8 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +39,7 @@ import java.util.List;
  * @author Junwen Chen
  **/
 public class MycatImplementor extends RelToSqlConverter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
     @Override
     public Result visit(TableScan e) {
         try {
@@ -54,6 +57,7 @@ public class MycatImplementor extends RelToSqlConverter {
                 return super.visit(e);
             }
         } catch (Throwable e1) {
+            LOGGER.error("",e1);
             return null;
         }
 
@@ -81,7 +85,7 @@ public class MycatImplementor extends RelToSqlConverter {
 //    }
 
     public Result implement(RelNode node) {
-        return dispatch(node);
+        return visitRoot(node);
     }
 
     /**
@@ -137,8 +141,8 @@ public class MycatImplementor extends RelToSqlConverter {
 
 
     @Override
-    protected Result buildAggregate(Aggregate e, Builder builder,
-                                    List<SqlNode> selectList, List<SqlNode> groupByList) {
+    protected Builder buildAggregate(Aggregate e, Builder builder,
+                                     List<SqlNode> selectList, List<SqlNode> groupByList) {
         for (AggregateCall aggCall : e.getAggCallList()) {
 
             RelDataType type = aggCall.type;
@@ -156,6 +160,6 @@ public class MycatImplementor extends RelToSqlConverter {
             // as there is at least one aggregate function.
             builder.setGroupBy(new SqlNodeList(groupByList, POS));
         }
-        return builder.result();
+        return builder;
     }
 }

@@ -18,14 +18,11 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatProject;
-import io.mycat.hbt4.physical.rules.CheckingUserDefinedFunctionVisitor;
+import io.mycat.hbt4.logical.rel.MycatProject;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilderFactory;
-
-import java.util.function.Predicate;
 
 /**
  * Rule to convert a {@link Project} to
@@ -38,7 +35,7 @@ public class MycatProjectRule extends MycatConverterRule {
      */
     public MycatProjectRule(final MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
-        super(Project.class, (Predicate<Project>) project ->
+        super(Project.class, project ->
                         true,
                 MycatRules.convention, out, relBuilderFactory, "MycatProjectRule");
     }
@@ -57,7 +54,7 @@ public class MycatProjectRule extends MycatConverterRule {
     public RelNode convert(RelNode rel) {
         final Project project = (Project) rel;
         return MycatProject.create(
-                convert(project.getInput(),rel.getTraitSet().replace(MycatConvention.INSTANCE)),
+                convert(project.getInput(),out),
                 project.getProjects(),
                 project.getRowType());
     }

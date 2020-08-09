@@ -19,8 +19,6 @@ package io.mycat.hbt4;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.rel.rules.FilterSetOpTransposeRule;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
 
 public class MycatConvention extends Convention.Impl {
 
@@ -36,7 +34,5 @@ public class MycatConvention extends Convention.Impl {
     for (RelOptRule rule : MycatRules.rules(this)) {
       planner.addRule(rule);
     }
-    planner.addRule(FilterSetOpTransposeRule.INSTANCE);
-    planner.addRule(ProjectRemoveRule.INSTANCE);
   }
 }

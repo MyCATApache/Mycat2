@@ -1,6 +1,5 @@
 package io.mycat.hbt4.executor;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 
@@ -11,8 +10,12 @@ public class MycatValuesExecutor implements Executor {
     private List<Row> rows;
     private Iterator<Row> iter;
 
-    public MycatValuesExecutor(ImmutableList<Row> rows) {
+    public MycatValuesExecutor(List<Row> rows) {
         this.rows = rows;
+    }
+
+    public static MycatValuesExecutor create(List<Row> rows) {
+        return new MycatValuesExecutor(rows);
     }
 
     @Override

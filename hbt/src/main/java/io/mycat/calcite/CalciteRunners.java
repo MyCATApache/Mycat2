@@ -1,6 +1,5 @@
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
@@ -26,7 +25,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.util.Litmus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +96,7 @@ public class CalciteRunners {
         fork(sql, calciteDataContext, map);
         long cbo = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
-        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(ImmutableList.of(),null,new TempResultSetFactoryImpl());
+        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(null,null,new TempResultSetFactoryImpl());
         Executor executor = mycatRel.implement(executorImplementor);
         long execution_start = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);

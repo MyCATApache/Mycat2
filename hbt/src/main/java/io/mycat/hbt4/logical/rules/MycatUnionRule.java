@@ -18,7 +18,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatUnion;
+import io.mycat.hbt4.logical.rel.MycatUnion;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
@@ -45,7 +45,7 @@ public class MycatUnionRule extends MycatConverterRule {
         final Union union = (Union) rel;
         final RelTraitSet traitSet =
                 union.getTraitSet().replace(out);
-        return new MycatUnion(rel.getCluster(), traitSet,
+        return  MycatUnion.create( traitSet,
                 convertList(union.getInputs(), out), union.all);
     }
 }

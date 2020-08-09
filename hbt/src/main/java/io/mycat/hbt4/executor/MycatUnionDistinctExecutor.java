@@ -30,6 +30,10 @@ public class MycatUnionDistinctExecutor implements Executor {
         this.executors = executors;
     }
 
+    public static MycatUnionDistinctExecutor create(Executor[] executors) {
+        return new MycatUnionDistinctExecutor(executors);
+    }
+
     @Override
     public void open() {
         if (output == null) {

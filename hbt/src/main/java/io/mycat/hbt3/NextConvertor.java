@@ -14,6 +14,10 @@
  */
 package io.mycat.hbt3;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.Arrays;
@@ -23,6 +27,7 @@ import java.util.Set;
 
 public class NextConvertor {
     final IdentityHashMap<Class, Set<Class>> map = new IdentityHashMap<Class, Set<Class>>();
+    final Cache<Object, Object> cache = CacheBuilder.newBuilder().maximumSize(8192).build();
 
     public void put(Class key, Class... values) {
         Set<Class> set = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -30,14 +35,29 @@ public class NextConvertor {
         set.addAll(Arrays.asList(values));
     }
 
+    @SneakyThrows
     public boolean check(RelNode input, Class<?> up) {
         if (input instanceof View) {
             input = ((View) input).getRelNode();
         }
-        return innerCheck( input.getClass(), up);
+        Class<? extends RelNode> aClass = input.getClass();
+        return check(aClass, up);
+    }
+    @SneakyThrows
+    public boolean check(Class<? extends RelNode> on, Class<?> up) {
+        Key key = new Key();
+        key.first = on;
+        key.second = up;
+        return Boolean.TRUE == cache.get(key, () -> innerCheck(on, up));
     }
 
-    public boolean innerCheck(Class  inputClass, Class<?> up) {
+    @EqualsAndHashCode
+    static class Key {
+        Class first;
+        Class second;
+    }
+
+    public boolean innerCheck(Class inputClass, Class<?> up) {
         Set<Class> classes = map.get(inputClass);
         if (classes == null) {
             Class need = null;

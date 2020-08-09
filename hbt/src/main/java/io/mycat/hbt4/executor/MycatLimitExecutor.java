@@ -27,10 +27,14 @@ public class MycatLimitExecutor implements Executor {
     private long fetch;
     private Iterator<Row> iterator;
 
-    public MycatLimitExecutor(long offset, long fetch, Executor input) {
+    protected MycatLimitExecutor(long offset, long fetch, Executor input) {
         this.offset = offset;
         this.fetch = fetch;
         this.input = input;
+    }
+
+    public static MycatLimitExecutor create(long offset, long fetch, Executor input) {
+        return new MycatLimitExecutor(offset, fetch, input);
     }
 
     @Override

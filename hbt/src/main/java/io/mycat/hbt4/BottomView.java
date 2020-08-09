@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
-import io.mycat.hbt3.MycatTable;
+import io.mycat.hbt3.AbstractMycatTable;
 import lombok.Getter;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -99,7 +99,7 @@ public class BottomView extends TableScan implements MycatRel {
     }
 
     public boolean isSamePartition(BottomView right) {
-        MycatTable mycatTable = getTable().unwrap(MycatTable.class);
+        AbstractMycatTable mycatTable = getTable().unwrap(AbstractMycatTable.class);
         return true;
     }
 
