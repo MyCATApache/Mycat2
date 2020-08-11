@@ -16,40 +16,37 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
-import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
+import io.mycat.calcite.CalciteUtls;
+import io.mycat.hbt3.AbstractMycatTable;
+import io.mycat.hbt3.Distribution;
+import io.mycat.hbt4.ShardingInfo;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.statistic.StatisticCenter;
 import lombok.Getter;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Junwen Chen
  **/
 @Getter
-public class MycatLogicTable extends MycatTableBase {
+public class MycatLogicTable extends MycatTableBase implements AbstractMycatTable {
     final TableHandler table;
     final Statistic statistic;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
+    private final ShardingInfo shardingInfo;
 
     public MycatLogicTable(TableHandler t) {
         this.table = t;
-        statistic =Statistics.createStatistic(table.getSchemaName(),table.getTableName(),table.getColumns());
+        this.statistic = Statistics.createStatistic(table.getSchemaName(), table.getTableName(), table.getColumns());
+        this.shardingInfo = ShardingInfo.create(t);
     }
 
     @Override
@@ -60,6 +57,44 @@ public class MycatLogicTable extends MycatTableBase {
     @Override
     public Statistic getStatistic() {
         return statistic;
+    }
+
+
+    @Override
+    public Distribution computeDataNode(List<RexNode> conditions) {
+        switch (table.getType()) {
+            case SHARDING:
+                ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+                List<DataNode> backendTableInfos = CalciteUtls.getBackendTableInfos(shardingTableHandler, conditions);
+                return Distribution.of(backendTableInfos, shardingTableHandler.function().name(), Distribution.Type.Sharding);
+            case GLOBAL:
+                return computeDataNode();
+            case NORMAL:
+                return computeDataNode();
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    public Distribution computeDataNode() {
+        switch (table.getType()) {
+            case SHARDING:
+                ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+                return Distribution.of(shardingTableHandler.dataNodes(), shardingTableHandler.function().name(), Distribution.Type.Sharding);
+            case GLOBAL:
+                GlobalTableHandler globalTableHandler = (GlobalTableHandler) this.table;
+                List<DataNode> globalDataNode = globalTableHandler.getGlobalDataNode();
+                int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
+                return Distribution.of(ImmutableList.of(globalDataNode.get(i)), getShardingInfo().getDigest(), Distribution.Type.BroadCast);
+            case NORMAL:
+                DataNode dataNode = ((NormalTableHandler) table).getDataNode();
+                return Distribution.of(ImmutableList.of(dataNode), getShardingInfo().getDigest(), Distribution.Type.PHY);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ShardingInfo getShardingInfo() {
+        return shardingInfo;
     }
 
 }

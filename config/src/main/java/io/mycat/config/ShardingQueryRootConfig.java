@@ -3,7 +3,10 @@ package io.mycat.config;
 import io.mycat.util.YamlUtil;
 import lombok.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @EqualsAndHashCode
@@ -37,8 +40,8 @@ public class ShardingQueryRootConfig {
         Generator generator;
         Map<String, ShardingTableConfig> shadingTables = new HashMap<>();
         Map<String, GlobalTableConfig> globalTables = new HashMap<>();
-        Map<String,NormalTableConfig> normalTables = new HashMap<>();
-
+        Map<String, NormalTableConfig> normalTables = new HashMap<>();
+        Map<String, CustomTableConfig> customTables = new HashMap<>();
     }
 
     @AllArgsConstructor

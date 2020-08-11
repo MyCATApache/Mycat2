@@ -14,8 +14,11 @@
  */
 package io.mycat.hbt4.executor;
 
+import com.google.common.collect.ImmutableMap;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatSqlDialect;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.hbt3.View;
+import io.mycat.hbt4.DatasourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 import org.apache.calcite.rel.RelNode;
@@ -33,20 +36,28 @@ import java.util.List;
  */
 public class MycatLookupExecutor implements Executor {
 
-    private final RelNode relNode;
+    private final View view;
+    private final CalciteRowMetaData metaData;
+    private DatasourceFactory factory;
     private String currentSql;
+    private Executor executor;
 
-    public MycatLookupExecutor(RelNode relNode) {
-        this.relNode = relNode;
+    public MycatLookupExecutor(View view, DatasourceFactory factory) {
+        this.view = view;
+        this.factory = factory;
+        this.metaData = new CalciteRowMetaData(this.view.getRowType().getFieldList());
     }
 
-    public static MycatLookupExecutor create(RelNode relNode) {
-        return new MycatLookupExecutor(relNode);
+    public static MycatLookupExecutor create(View view, DatasourceFactory factory) {
+        return new MycatLookupExecutor(view, factory);
     }
 
     void setIn(List<Row> args) {
+        if (executor!=null){
+            executor.close();
+        }
         //convert relNode to sql with cor variable
-        RelNode accept = this.relNode.accept(new RexShuttle() {
+        RelNode accept = this.view.getRelNode().accept(new RexShuttle() {
             @Override
             public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                 RelDataTypeField field = fieldAccess.getField();
@@ -61,26 +72,29 @@ public class MycatLookupExecutor implements Executor {
                 return super.visitFieldAccess(fieldAccess);
             }
         });
-       this.currentSql = MycatCalciteSupport.INSTANCE.convertToSql(accept, MycatSqlDialect.DEFAULT, false);
+        View newView = View.of(accept, this.view.getDistribution());
+        this.executor = factory.create(metaData, newView.expandToSql(false));
     }
 
     @Override
     public void open() {
-
+        this.executor.open();
     }
 
     @Override
     public Row next() {
-        return null;
+        return this.executor.next();
     }
 
     @Override
     public void close() {
-
+        if (this.executor!=null){
+            this.executor.close();
+        }
     }
 
     @Override
     public boolean isRewindSupported() {
-        return true;
+       throw new UnsupportedOperationException();
     }
 }

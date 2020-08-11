@@ -229,11 +229,16 @@ public class MycatHashAggExecutor implements Executor {
                     AggregateFunctionImpl.create(clazz), call, true);
         } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
             return () -> new AvgAccumulator(call);
+        } else if (call.getAggregation() == SqlStdOperatorTable.SINGLE_VALUE) {
+            return () -> new SingleValueAccumulator(call);
         } else {
             final JavaTypeFactory typeFactory =
                     (JavaTypeFactory) rel.getCluster().getTypeFactory();
             int stateOffset = 0;
             final AggImpState agg = new AggImpState(0, call, false);
+            if (agg.state == null) {
+                agg.state = Collections.emptyList();
+            }
             int stateSize = agg.state.size();
 
             final BlockBuilder builder2 = new BlockBuilder();
@@ -360,7 +365,27 @@ public class MycatHashAggExecutor implements Executor {
             return sum / cnt;
         }
     }
+    /**
+     * Accumulator for calls to the COUNT function.
+     */
+    private static class SingleValueAccumulator implements Accumulator {
+        private final AggregateCall call;
+        Object value;
 
+        SingleValueAccumulator(AggregateCall call) {
+            this.call = call;
+            this.value = null;
+        }
+
+        public void send(Row row) {
+            Integer integer = call.getArgList().get(0);
+            this.value = row.getObject(integer);
+        }
+
+        public Object end() {
+            return  this.value ;
+        }
+    }
     /**
      * Creates an {@link Accumulator}.
      */

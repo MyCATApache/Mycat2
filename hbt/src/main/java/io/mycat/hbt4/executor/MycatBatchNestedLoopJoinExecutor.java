@@ -80,7 +80,6 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
     public void open() {
         if (this.iterator == null) {
             leftInput.open();
-            rightInput.open();
             this.leftEnumerable = Linq4j.asEnumerable(leftInput);
             inner = inlist -> {
                 rightInput.setIn(inlist);

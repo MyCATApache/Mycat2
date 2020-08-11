@@ -23,25 +23,26 @@ import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Data
 public class MycatSchema extends AbstractSchema {
-    private List<String> createTableSqls = new ArrayList<>();
-    private String schemaName;
-    private DrdsConst drdsConst;
-    private transient ImmutableMap<String, AbstractMycatTable> mycatTableMap = ImmutableMap.of();
+    private final String schemaName;
+    private final DrdsConst drdsConst;
+    private final Map<String, Table> mycatTableMap;
 
-    public void init() {
-        ImmutableMap.Builder<String, AbstractMycatTable> builder = ImmutableMap.builder();
-        MycatTableFactory tableFactory = drdsConst.getMycatTableFactory();
-        for (String sql : createTableSqls) {
-            AbstractMycatTable table = tableFactory.create(this.schemaName, sql, drdsConst);
-            builder.put(table.getTableName(), table);
-        }
-        this.mycatTableMap = builder.build();
+    public MycatSchema(DrdsConst drdsConst,
+                       String schemaName,
+                       Map<String, Table> mycatTableMap) {
+        this.schemaName = schemaName;
+        this.drdsConst = drdsConst;
+        this.mycatTableMap = mycatTableMap;
+    }
+
+    public  static MycatSchema create(DrdsConst drdsConst,
+                                      String schemaName,
+                                      Map<String, Table> mycatTableMap){
+        return new MycatSchema(drdsConst,schemaName,mycatTableMap);
     }
 
     @SneakyThrows

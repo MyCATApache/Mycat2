@@ -1,9 +1,6 @@
 package io.mycat.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,5 +10,17 @@ import java.util.List;
 @EqualsAndHashCode
 public class NormalTableConfig {
     String createTableSQL;
-    ShardingQueryRootConfig.BackEndTableInfoConfig dataNode;
+    BackEndTableInfoConfig dataNode;
+
+    @AllArgsConstructor
+    @Data
+    @Builder
+    @EqualsAndHashCode
+    public static class BackEndTableInfoConfig {
+        private String targetName;
+
+        public BackEndTableInfoConfig() {
+
+        }
+    }
 }

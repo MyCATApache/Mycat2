@@ -6,10 +6,10 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 
-public class MycatTableViewRule extends RelOptRule {
-    public final static MycatTableViewRule INSTANCE = new MycatTableViewRule();
+public class MycatPhyTableViewRule extends RelOptRule {
+    public final static MycatPhyTableViewRule INSTANCE = new MycatPhyTableViewRule();
 
-    public MycatTableViewRule() {
+    public MycatPhyTableViewRule() {
         super(operand(LogicalTableScan.class, none()), "MycatTableViewRule");
     }
 

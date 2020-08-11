@@ -16,13 +16,37 @@ package io.mycat.hbt3;
 
 import io.mycat.DataNode;
 
+import java.util.List;
+
 public abstract class Distribution {
 
-    abstract Iterable<DataNode> dataNodes();
+    public abstract List<DataNode> getDataNodes();
 
 
-    abstract String digest();
+    public abstract String digest();
 
+    public
     abstract boolean isSingle();
+
+    public abstract boolean isBroadCast();
+
+    public abstract boolean isSharding();
+
+    public abstract boolean isJoin();
+
+    public static Distribution of(List<DataNode> dataNodeList, String digest, DistributionImpl.Type type) {
+        return new DistributionImpl(dataNodeList, digest, type);
+    }
+
+    abstract public Type type();
+
+    public abstract boolean isPhy();
+
+    public static enum Type {
+        PHY,
+        BroadCast,
+        Sharding,
+        JOIN
+    }
 
 }

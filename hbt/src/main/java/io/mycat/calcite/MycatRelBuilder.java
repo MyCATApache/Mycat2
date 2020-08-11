@@ -49,7 +49,7 @@ import java.util.List;
  * @author Junwen Chen
  **/
 public class MycatRelBuilder extends RelBuilder {
-    int id = 0;
+
     public MycatRelBuilder(Context context, RelOptCluster cluster, RelOptSchema relOptSchema) {
         super(context, cluster, relOptSchema);
     }
@@ -64,8 +64,6 @@ public class MycatRelBuilder extends RelBuilder {
         RelDataType rowType = input.getRowType();
         return makeBySql(targetName,rowType,MycatCalciteSupport.INSTANCE.convertToSql(input,MycatSqlDialect.DEFAULT,forUpdate));
     }
-
-
 
     /**
      * Creates a literal (constant expression).
@@ -146,12 +144,11 @@ public class MycatRelBuilder extends RelBuilder {
      */
     public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
         MycatSQLTableScan transientTable = new MycatSQLTableScan(relDataType,targetName,sql);
-        id++;
         RelOptTable relOptTable = RelOptTableImpl.create(
                 this.getRelOptSchema(),
                 relDataType,
                 transientTable,
-                ImmutableList.of(id +"$"+targetName, id+sql));//名称唯一
+                ImmutableList.of(targetName,sql));//名称唯一
         return new MycatTransientSQLTableScan(this.getCluster(), targetName, relOptTable, sql);
     }
 }

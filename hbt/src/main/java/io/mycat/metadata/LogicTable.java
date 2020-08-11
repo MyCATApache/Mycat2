@@ -4,6 +4,7 @@ import io.mycat.DataNode;
 import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
+import io.mycat.hbt3.CustomTable;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
@@ -77,6 +78,10 @@ public class LogicTable {
                                                     String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
         return new ShardingTable(logicTable, backendTableInfos, function, sequence);
+    }
+
+    public static TableHandler createCustomTable(CustomTable o) {
+        return null;
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

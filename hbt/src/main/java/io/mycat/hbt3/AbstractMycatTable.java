@@ -14,98 +14,28 @@
  */
 package io.mycat.hbt3;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExtPartition;
-import io.mycat.calcite.CalciteConvertors;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.ShardingInfo;
-import lombok.Getter;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Statistics;
-import org.apache.calcite.schema.impl.AbstractTable;
 
-@Getter
-public abstract class AbstractMycatTable extends AbstractTable {
-    protected final String createTableSql;
-    protected final RelDataType relDataType;
-    protected final String schemaName;
-    protected final String tableName;
-    protected final ShardingInfo shardingInfoDigest;
+import java.util.List;
 
-    public AbstractMycatTable(String schemaName, String createTableSql, DrdsConst drdsConst) {
-        this.schemaName = schemaName;
-        this.createTableSql = createTableSql;
-        MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
-        this.tableName = SQLUtils.normalize(sqlStatement.getTableName());
-        this.relDataType = CalciteConvertors.getRelDataType(CalciteConvertors.getColumnInfo(createTableSql),
-                MycatCalciteSupport.INSTANCE.TypeFactory
-        );
-
-        if (sqlStatement.isBroadCast()) {
-            shardingInfoDigest = ShardingInfo.createBroadCast();
-            return;
-        }
-        SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) sqlStatement.getDbPartitionBy();
-        SQLExpr dbPartitions = sqlStatement.getDbPartitions();
-        SQLMethodInvokeExpr tablePartitionBy = (SQLMethodInvokeExpr) sqlStatement.getTablePartitionBy();
-        SQLExpr tablePartitions = sqlStatement.getTablePartitions();
-        MySqlExtPartition exPartition = sqlStatement.getExtPartition();
-        SQLName storedBy = sqlStatement.getStoredBy();
-        SQLName distributeByType = sqlStatement.getDistributeByType();
-
-        shardingInfoDigest = computeShardingInfo(
-                dbPartitionBy,
-                dbPartitions,
-                tablePartitionBy,
-                tablePartitions,
-                exPartition,
-                storedBy,
-                distributeByType
-        );
-
-    }
-
-    public abstract ShardingInfo computeShardingInfo(SQLMethodInvokeExpr dbPartitionBy, SQLExpr dbPartitions, SQLMethodInvokeExpr tablePartitionBy, SQLExpr tablePartitions, MySqlExtPartition exPartition, SQLName storedBy, SQLName distributeByType);
-
-    public abstract Distribution computeDataNode(RexNode condition);
+//@Getter
+public interface AbstractMycatTable {
+    public abstract Distribution computeDataNode(List<RexNode> conditions);
 
     public abstract Distribution computeDataNode();
 
-    public ShardingInfo getShardingInfo() {
-        return shardingInfoDigest;
+    public abstract ShardingInfo getShardingInfo();
+
+    public default boolean isBroadCast() {
+        return getShardingInfo().getType() == ShardingInfo.Type.broadCast;
     }
 
-    @Override
-    public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return this.relDataType;
+    public default boolean isNormal() {
+        return getShardingInfo().getType() == ShardingInfo.Type.normal;
     }
 
-    public RelDataType getRowType() {
-        return getRowType(MycatCalciteSupport.INSTANCE.TypeFactory);
+    public default boolean isSharding() {
+        return getShardingInfo().getType() == ShardingInfo.Type.sharding;
     }
-
-    @Override
-    public Statistic getStatistic() {
-        return Statistics.UNKNOWN;
-    }
-
-    public boolean isBroadCast() {
-        return this.shardingInfoDigest.getType() == ShardingInfo.Type.broadCast;
-    }
-
-    public boolean isNormal() {
-        return this.shardingInfoDigest.getType() == ShardingInfo.Type.normal;
-    }
-
-    public boolean isSharding() {
-        return this.shardingInfoDigest.getType() == ShardingInfo.Type.sharding;
-    }
-
 }

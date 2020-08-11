@@ -21,7 +21,6 @@ import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +31,14 @@ import java.util.stream.Collectors;
 public abstract class SingleValueRuleFunction extends CustomRuleFunction {
 
     public abstract String name();
+
+    private String columnName;
+
+    @Override
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+        super.callInit(tableHandler, properties, ranges);
+        this.columnName = properties.get("columnName");
+    }
 
     @Override
     public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
@@ -48,14 +55,14 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                         if (dataNode != null) {
                             CollectionUtil.setOpAdd(res, dataNode);
                         } else {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
                         if (dataNodes == null || dataNodes.size() == 0) {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         CollectionUtil.setOpAdd(res, dataNodes);
                         break;
@@ -63,7 +70,11 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                 }
             }
         }
-        return res.isEmpty()?getTable().getShardingBackends():res;
+        return res.isEmpty()?getTable().dataNodes():res;
+    }
+
+    public String getColumnName(){
+        return columnName;
     }
 
     public static int[] toIntArray(String string) {
@@ -128,7 +139,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
             return null;
         }
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = table.getShardingBackends();
+        List<DataNode> shardingBackends = table.dataNodes();
         int size = shardingBackends.size();
         if (0 <= i && i < size) {
             return shardingBackends.get(i);
@@ -143,7 +154,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
     public List<DataNode> calculateRange(String beginValue, String endValue) {
         int[] ints = calculateIndexRange(beginValue, endValue);
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = (List) table.getShardingBackends();
+        List<DataNode> shardingBackends = (List) table.dataNodes();
         int size = shardingBackends.size();
         if (ints == null) {
             return shardingBackends;

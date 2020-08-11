@@ -30,6 +30,8 @@
  */
 package io.mycat.hbt4.executor;
 
+import io.mycat.DataNode;
+import io.mycat.hbt3.Distribution;
 import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.MycatConvention;
@@ -93,6 +95,7 @@ public class MycatBatchNestedLoopJoinRule extends RelOptRule {
     public void onMatch(RelOptRuleCall call) {
         final Join join = call.rel(0);
         final View lookupView = call.rel(2);
+
         final int leftFieldCount = join.getLeft().getRowType().getFieldCount();
         final RelOptCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -122,7 +125,7 @@ public class MycatBatchNestedLoopJoinRule extends RelOptRule {
                             input.getIndex() - leftFieldCount);
                 }
                 requiredColumns.set(field);
-                return  rexBuilder.makeFieldAccess(corrVar.get(0), field);
+                return rexBuilder.makeFieldAccess(corrVar.get(0), field);
             }
         });
         List<RexNode> conditionList = new ArrayList<>();
@@ -132,15 +135,23 @@ public class MycatBatchNestedLoopJoinRule extends RelOptRule {
         for (int i = 1; i < batchSize; i++) {
             final int corrIndex = i;
             final RexNode condition2 = condition.accept(new RexShuttle() {
-                @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
+                @Override
+                public RexNode visitCorrelVariable(RexCorrelVariable variable) {
                     return corrVar.get(corrIndex);
                 }
             });
             conditionList.add(condition2);
         }
         // Push a filter with batchSize disjunctions
-        relBuilder.push(lookupView.getRelNode()).filter(relBuilder.or(conditionList));
-        RelNode right = MycatLookUpView.create(relBuilder.build());
+        Distribution distribution = lookupView.getDistribution();
+        List<DataNode> dataNodes = distribution.getDataNodes();
+        for (DataNode dataNode : dataNodes) {
+            RelNode relNode = lookupView.applyDataNode(dataNode);
+        }
+
+        final RelNode lookupRelNode = lookupView.getRelNode();
+        relBuilder.push(lookupRelNode).filter(relBuilder.or(conditionList));
+        RelNode right = MycatLookUpView.create(View.of(relBuilder.build(),lookupView.getDistribution()));
 
         JoinRelType joinType = join.getJoinType();
         call.transformTo(

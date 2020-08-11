@@ -43,7 +43,7 @@ public class TableHandlerMocks {
             }
 
             @Override
-            public List<DataNode> getShardingBackends() {
+            public List<DataNode> dataNodes() {
                 return dataNodes;
             }
 

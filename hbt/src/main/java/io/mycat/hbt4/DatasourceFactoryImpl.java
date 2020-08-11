@@ -14,7 +14,8 @@
  */
 package io.mycat.hbt4;
 
-import io.mycat.hbt4.executor.ScanExecutor;
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
 
 public class DatasourceFactoryImpl implements DatasourceFactory {
 
@@ -24,14 +25,13 @@ public class DatasourceFactoryImpl implements DatasourceFactory {
 
     }
 
-
-    @Override
-    public Executor create(int index, String sql, Object[] objects) {
-        return ScanExecutor.createDemo();
-    }
-
     @Override
     public void createTableIfNotExisted(String index, String createTableSql) {
 
+    }
+
+    @Override
+    public Executor create(CalciteRowMetaData calciteRowMetaData, ImmutableMultimap<String, String> expandToSql) {
+        return null;
     }
 }

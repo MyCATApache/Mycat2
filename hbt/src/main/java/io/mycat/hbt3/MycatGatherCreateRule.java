@@ -28,8 +28,8 @@ public class MycatGatherCreateRule extends RelOptRule {
     @Override
     public void onMatch(RelOptRuleCall call) {
         View rel = call.rel(0);
-        if (!rel.isGather()&&rel.getDataNode().isSingle()){
-            View view = View.of(rel.getTraitSet(),rel.getRelNode(), rel.getDataNode(), true);
+        if (!rel.isGather()&&rel.getDistribution().isSingle()){
+            View view = View.of(rel.getTraitSet(),rel.getRelNode(), rel.getDistribution(), true);
             MycatGather mycatGather = MycatGather.create(rel.getTraitSet(),view);
             call.transformTo(mycatGather, ImmutableMap.of(rel,mycatGather));
         }

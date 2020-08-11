@@ -39,7 +39,7 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
-    public List<DataNode> getShardingBackends() {
+    public List<DataNode> dataNodes() {
         return backends;
     }
 

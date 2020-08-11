@@ -50,7 +50,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -147,61 +146,62 @@ public enum MycatCalciteSupport implements Context {
     }
 
     MycatCalciteSupport() {
+//        try {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
-        configBuilder.parserConfig(SQL_PARSER_CONFIG);
-        configBuilder.typeSystem(TypeSystem);
-        configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
-        SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
-        instance.init();
-        configBuilder.operatorTable(new SqlOperatorTable() {
-            final HashMap<String, SqlOperator> map = new HashMap<>();
-            final HashMap<String, SqlOperator> build = new HashMap<>();
+            Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+            configBuilder.parserConfig(SQL_PARSER_CONFIG);
+            configBuilder.typeSystem(TypeSystem);
+            configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
+            SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
+            instance.init();
+            configBuilder.operatorTable(new SqlOperatorTable() {
+                final HashMap<String, SqlOperator> map = new HashMap<>();
+                final HashMap<String, SqlOperator> build = new HashMap<>();
 
-            {
-                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
-                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-                build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
-                build.put("LOG", SqlStdOperatorTable.LOG10);
-                build.put("PI", SqlStdOperatorTable.PI);
-                build.put("POW", SqlStdOperatorTable.POWER);
-                for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
-                    map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
-                    map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                {
+                    map.put("IFNULL", SqlStdOperatorTable.COALESCE);
+                    build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+                    build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
+                    build.put("LOG", SqlStdOperatorTable.LOG10);
+                    build.put("PI", SqlStdOperatorTable.PI);
+                    build.put("POW", SqlStdOperatorTable.POWER);
+                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
+                        map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
+                        map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                    }
+
                 }
 
-            }
-
-            @Override
-            public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
-                SqlOperator sqlOperator = map.get(opName.getSimple());
-                if (sqlOperator != null) {
-                    operatorList.add(sqlOperator);
+                @Override
+                public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
+                    SqlOperator sqlOperator = map.get(opName.getSimple());
+                    if (sqlOperator != null) {
+                        operatorList.add(sqlOperator);
+                    }
+                    instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
                 }
-                instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
-            }
 
-            @Override
-            public List<SqlOperator> getOperatorList() {
-                return instance.getOperatorList();
-            }
-        });
-        configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
+                @Override
+                public List<SqlOperator> getOperatorList() {
+                    return instance.getOperatorList();
+                }
+            });
+            configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
 
-        this.config = configBuilder.context(this).build();
-        this.calciteConnectionConfig = connectionConfig();
+            this.config = configBuilder.context(this).build();
+            this.calciteConnectionConfig = connectionConfig();
 
-        map.put(FrameworkConfig.class, config);
-        map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
-        map.put(RelDataTypeSystem.class, TypeSystem);
-        map.put(MycatTypeSystem.class, TypeSystem);
-        map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
-        map.put(RexExecutor.class, RexUtil.EXECUTOR);
-
-        ScalarFunction scalarFunction = ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval");
-        functions.put("date_format", scalarFunction);
+            map.put(FrameworkConfig.class, config);
+            map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
+            map.put(RelDataTypeSystem.class, TypeSystem);
+            map.put(MycatTypeSystem.class, TypeSystem);
+            map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
+            map.put(RexExecutor.class, RexUtil.EXECUTOR);
+//        }catch (Throwable e){
+//          System.err.println(e);
+//        }
     }
 
     private CalciteConnectionConfig connectionConfig() {

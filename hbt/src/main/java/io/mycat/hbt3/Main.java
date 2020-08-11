@@ -34,7 +34,7 @@ public class Main {
         DrdsRunner drdsRunners = new DrdsRunner();
         ResultSetHanlderImpl resultSetHanlder = new ResultSetHanlderImpl();
         try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
-            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, resultSetHanlder);
+            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, true);
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             resultSetHanlder.onError(throwable);

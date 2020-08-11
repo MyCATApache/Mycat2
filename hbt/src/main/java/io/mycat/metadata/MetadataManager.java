@@ -27,16 +27,15 @@ import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.CalciteConvertors;
-import io.mycat.config.GlobalTableConfig;
-import io.mycat.config.NormalTableConfig;
-import io.mycat.config.ShardingQueryRootConfig;
-import io.mycat.config.ShardingTableConfig;
+import io.mycat.config.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.hbt3.CustomTable;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
@@ -48,6 +47,8 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -119,10 +120,11 @@ public enum MetadataManager {
                 for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                     String tableName = e.getKey();
                     GlobalTableConfig tableConfigEntry = e.getValue();
+                    List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                     addGlobalTable(schemaName, tableName,
                             tableConfigEntry,
                             shardingQueryRootConfig.getPrototype(),
-                            getBackendTableInfos(tableConfigEntry.getDataNodes())
+                            backendTableInfos
                     );
                 }
                 for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
@@ -133,7 +135,14 @@ public enum MetadataManager {
                             shardingQueryRootConfig.getPrototype()
                     );
                 }
-
+                for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
+                    String tableName = e.getKey();
+                    CustomTableConfig tableConfigEntry = e.getValue();
+                    addCustomTable(schemaName, tableName,
+                            tableConfigEntry,
+                            shardingQueryRootConfig.getPrototype()
+                    );
+                }
             }
             //去掉失效的配置
             //Map<String, SchemaHandler> schemaMap = this.getSchemaMap();
@@ -158,12 +167,45 @@ public enum MetadataManager {
         }
     }
 
+    private void addCustomTable(String schemaName,
+                                String tableName,
+                                CustomTableConfig tableConfigEntry,
+                                ShardingQueryRootConfig.PrototypeServer prototypeServer) {
+        String createTableSQL = tableConfigEntry.getCreateTableSQL();
+        String clazz = tableConfigEntry.getClazz();
+        try {
+            Class<?> aClass = Class.forName(clazz);
+            Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(
+                    String.class,
+                    String.class,
+                    String.class,
+                    Map.class,
+                    List.class);
+            CustomTable o = (CustomTable)declaredConstructor.newInstance(
+                    schemaName,
+                    tableName,
+                    createTableSQL,
+                    tableConfigEntry.getKvOptions(),
+                    tableConfigEntry.getListOptions());
+            addLogicTable(LogicTable.createCustomTable(o));
+
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            LOGGER.error("",e);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void addNormalTable(String schemaName,
                                 String tableName,
                                 NormalTableConfig tableConfigEntry,
                                 ShardingQueryRootConfig.PrototypeServer prototypeServer) {
         //////////////////////////////////////////////
-        List<DataNode> dataNodes = getBackendTableInfos(Collections.singletonList(tableConfigEntry.getDataNode()));
+        List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(tableConfigEntry.getDataNode().getTargetName(),schemaName,tableName));
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);

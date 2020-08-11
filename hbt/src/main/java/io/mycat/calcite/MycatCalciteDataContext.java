@@ -54,46 +54,7 @@ import java.util.function.Function;
  * @author Junwen Chen
  **/
 
-public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
-    private final MycatDBContext uponDBContext;
-    private Map<String, Object> variables;
-
-    public MycatCalciteDataContext(MycatDBContext uponDBContext) {
-        this.uponDBContext = uponDBContext;
-    }
-
-    private ImmutableMap<String, Object> getCalciteLocalVariable() {
-        final long time = System.currentTimeMillis();
-        TimeZone timeZone = TimeZone.getDefault();
-        final long localOffset = timeZone.getOffset(time);
-        final long currentOffset = localOffset;
-        final String systemUser = System.getProperty("user.name");
-        final String user = "sa";
-        final Locale locale = Locale.getDefault();
-        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-        builder.put(Variable.UTC_TIMESTAMP.camelName, time)
-                .put(Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset)
-                .put(Variable.LOCAL_TIMESTAMP.camelName, time + localOffset)
-                .put(Variable.TIME_ZONE.camelName, timeZone)
-                .put(Variable.USER.camelName, user)
-                .put(Variable.SYSTEM_USER.camelName, systemUser)
-                .put(Variable.LOCALE.camelName, locale)
-                .put(Variable.STDIN.camelName, System.in)
-                .put(Variable.STDOUT.camelName, System.out)
-                .put(Variable.STDERR.camelName, System.err)
-                .put(Variable.CANCEL_FLAG.camelName, uponDBContext.cancelFlag());
-        return builder.build();
-    }
-
-    public SchemaPlus getRootSchema() {
-        MycatDBSharedServer uponDBSharedServer = uponDBContext.getUponDBSharedServer();
-        Function<Byte, SchemaPlus> function = aByte -> getSchema(uponDBContext);
-        if (uponDBContext.config().isCache()) {
-            return uponDBSharedServer.getComponent(Components.SCHEMA, function);
-        } else {
-            return function.apply(Components.SCHEMA);
-        }
-    }
+public class MycatCalciteDataContext implements FrameworkConfig {
 
     public JavaTypeFactory getTypeFactory() {
         return MycatCalciteSupport.INSTANCE.TypeFactory;
@@ -101,60 +62,6 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
     public QueryProvider getQueryProvider() {
         return null;
-    }
-
-    public Object get(String name) {
-        Object o = uponDBContext.getVariable(name);
-        if (o == null) {
-            Map<String, Object> variables = uponDBContext.variables();
-            if (variables != null) {
-                Object o1 = variables.get(name);
-                if (o1 != null) {
-                    return o1;
-                }
-            }
-        }
-        if (variables == null) {
-            variables = getCalciteLocalVariable();
-        }
-        return variables.get(name);
-    }
-
-
-//    public void preComputation(PreComputationSQLTable preComputationSQLTable) {
-//        uponDBContext.cache(preComputationSQLTable, preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),
-//                Collections.emptyList(),()->preComputationSQLTable.scan(this).toList());
-//    }
-//
-//    public Enumerable<Object[]> getPreComputation(PreComputationSQLTable preComputationSQLTable) {
-//        Object o = uponDBContext.getCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
-//        if (o != null) {
-//            return Linq4j.asEnumerable((List<Object[]>) o);
-//        } else {
-//            return null;
-//        }
-//    }
-//
-//    public UpdateRowIteratorResponse getUpdateRowIterator(String targetName, List<String> sqls) {
-//        return uponDBContext.update(targetName, sqls);
-//    }
-
-
-
-    public static SchemaPlus getSchema(MycatDBClientBased based) {
-        SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k,v));
-        MycatDBClientBasedConfig config = based.config();
-        for (Map.Entry<String, SchemaHandler> stringConcurrentHashMapEntry : config.getSchemaMap().entrySet()) {
-            SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
-            for (Map.Entry<String, TableHandler> entry : stringConcurrentHashMapEntry.getValue().logicTables().entrySet()) {
-                TableHandler logicTable = entry.getValue();
-                MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
-                schemaPlus.add(entry.getKey(), mycatLogicTable);
-            }
-        }
-        config.getReflectiveSchemas().forEach((key, value) -> plus.add(key, new MycatReflectiveSchema(value)));
-        return plus;
     }
 
     @Override
@@ -241,17 +148,5 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     public RelOptTable.ViewExpander getViewExpander() {
         return MycatCalciteSupport.INSTANCE.config.getViewExpander();
     }
-
-
-    public MycatDBContext getUponDBContext() {
-        return uponDBContext;
-    }
-
-    final static Logger log = LoggerFactory.getLogger(MycatCalciteDataContext.class);
-
-    public AtomicBoolean getCancelFlag() {
-        return DataContext.Variable.CANCEL_FLAG.get(this);
-    }
-
 
 }

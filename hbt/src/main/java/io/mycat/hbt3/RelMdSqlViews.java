@@ -17,11 +17,11 @@ public class RelMdSqlViews {
         nextConvertor.put(TableScan.class,
                 Project.class, Union.class, Aggregate.class, Sort.class, Filter.class, Join.class);
         nextConvertor.put(Filter.class,
-                Project.class, Union.class, Aggregate.class, Sort.class);
+                Project.class, Union.class, Aggregate.class, Sort.class,Filter.class);
         nextConvertor.put(Join.class,
                 Project.class, Union.class, Aggregate.class, Filter.class, Join.class, Sort.class);
         nextConvertor.put(Project.class,
-                Project.class, Union.class, Aggregate.class, Sort.class);
+                Project.class, Union.class, Aggregate.class, Sort.class,Filter.class);
         nextConvertor.put(Aggregate.class,
                 Project.class, Union.class, Filter.class, Sort.class);
 
@@ -47,7 +47,7 @@ public class RelMdSqlViews {
 
     public static boolean filter(RelNode relNode) {
         Objects.requireNonNull(relNode);
-        return nextConvertor.check(relNode.getClass(), Filter.class);
+        return nextConvertor.check(relNode, Filter.class);
     }
 
     public static boolean onJoin(RelNode relNode) {
@@ -57,7 +57,7 @@ public class RelMdSqlViews {
 
     public static boolean join(RelNode relNode) {
         Objects.requireNonNull(relNode);
-        return nextConvertor.check(relNode.getClass(), Join.class);
+        return nextConvertor.check(relNode, Join.class);
     }
 
     public static boolean onProject(RelNode relNode) {
@@ -67,7 +67,7 @@ public class RelMdSqlViews {
 
     public static boolean project(RelNode relNode) {
         Objects.requireNonNull(relNode);
-        return nextConvertor.check(relNode.getClass(), Project.class);
+        return nextConvertor.check(relNode, Project.class);
     }
 
     public static boolean onAggregate(RelNode relNode) {
@@ -77,7 +77,7 @@ public class RelMdSqlViews {
 
     public static boolean aggregate(RelNode relNode) {
         Objects.requireNonNull(relNode);
-        return nextConvertor.check(relNode.getClass(), Aggregate.class);
+        return nextConvertor.check(relNode, Aggregate.class);
     }
 
     public static boolean onRelNode(RelNode base, RelNode relNode) {

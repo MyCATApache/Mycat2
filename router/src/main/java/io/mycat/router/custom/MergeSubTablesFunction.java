@@ -23,6 +23,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     int beginIndex;
     int endIndex;
     private boolean segmentQuery;
+    String columnName;
 
     @Override
     public String name() {
@@ -44,14 +45,14 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                         if (dataNode != null) {
                             CollectionUtil.setOpAdd(res, dataNode);
                         } else {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
                         if (dataNodes == null || dataNodes.size() == 0) {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         CollectionUtil.setOpAdd(res, dataNodes);
                         break;
@@ -59,7 +60,11 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 }
             }
         }
-        return res.isEmpty()? getTable().getShardingBackends():res;
+        return res.isEmpty()? getTable().dataNodes():res;
+    }
+
+    private String getColumnName() {
+        return columnName;
     }
 
 
@@ -103,7 +108,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
         this.tablePrefix = Objects.requireNonNull(properties.get("tablePrefix"), "tablePrefix required ");
         this.beginIndex = Integer.parseInt(Objects.requireNonNull(properties.get("beginIndex"), "beginIndex required "));
         this.endIndex = Integer.parseInt(Objects.requireNonNull(properties.get("endIndex"), "endIndex required "));
-
+        this.columnName= properties.get("columnName");
         String targetName = Objects.requireNonNull(properties.get("targetName"));
         String schema = Objects.requireNonNull(properties.get("schemaName"));
         String table = Objects.requireNonNull(properties.get("tableName"));

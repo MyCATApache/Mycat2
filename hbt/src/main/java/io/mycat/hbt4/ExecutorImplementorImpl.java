@@ -15,10 +15,14 @@
 package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatSQLTableScan;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.MycatJdbcExecutor;
+import io.mycat.hbt4.executor.MycatLookupExecutor;
 import io.mycat.hbt4.executor.TempResultSetFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,13 +39,17 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(View view) {
-
-        return factory.create(0, null, null);
+        return factory.create(new CalciteRowMetaData(view.getRowType().getFieldList()),view.expandToSql(false));
     }
 
     @Override
     public Executor implement(MycatTransientSQLTableScan mycatTransientSQLTableScan) {
-        return  MycatJdbcExecutor.create(mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class));
+        return  MycatJdbcExecutor.create(mycatTransientSQLTableScan.getTable().unwrap(MycatSQLTableScan.class),factory);
+    }
+
+    @Override
+    public Executor implement(MycatLookUpView mycatLookUpView) {
+        return new MycatLookupExecutor(mycatLookUpView.getRelNode(),factory);
     }
 
     @NotNull

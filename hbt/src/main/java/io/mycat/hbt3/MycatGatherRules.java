@@ -11,7 +11,7 @@ public class MycatGatherRules {
 
 
     public static final List<RelOptRule> RULES = Arrays.asList(
-            CREATE_VIEW_RULE,
+//            CREATE_VIEW_RULE,
             GATHER_REMOVE_RULE
             );
 

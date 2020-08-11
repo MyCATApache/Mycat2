@@ -14,9 +14,13 @@
  */
 package io.mycat.hbt4;
 
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+
 public interface DatasourceFactory extends AutoCloseable {
 
-    Executor create(int index, String sql, Object[] objects);
-
     public void createTableIfNotExisted(String targetName, String createTableSql);
+
+    Executor create(MycatRowMetaData  calciteRowMetaData, ImmutableMultimap<String, String> expandToSql);
 }

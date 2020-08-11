@@ -14,16 +14,23 @@
  */
 package io.mycat.calcite.table;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.TableHandler;
+import io.mycat.hbt3.AbstractMycatTable;
+import io.mycat.hbt3.Distribution;
+import io.mycat.hbt4.ShardingInfo;
 import lombok.Getter;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
+
+import java.util.List;
 
 /**
  * @author Junwen Chen
  **/
 @Getter
-public class MycatPhysicalTable extends MycatTableBase {
+public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatTable {
     final MycatLogicTable logicTable;
     final DataNode dataNode;//真实表名
     final Statistic statistic;//MycatLogicTable的构造函数没有statistic
@@ -42,5 +49,20 @@ public class MycatPhysicalTable extends MycatTableBase {
     @Override
     public Statistic getStatistic() {
         return this.statistic;
+    }
+
+    @Override
+    public Distribution computeDataNode(List<RexNode> conditions) {
+        return Distribution.of(ImmutableList.of(dataNode),"phy", Distribution.Type.PHY);
+    }
+
+    @Override
+    public Distribution computeDataNode() {
+        return Distribution.of(ImmutableList.of(dataNode),"phy", Distribution.Type.PHY);
+    }
+
+    @Override
+    public ShardingInfo getShardingInfo() {
+        return null;
     }
 }

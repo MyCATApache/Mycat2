@@ -10,7 +10,7 @@ public class MycatProjectViewRule extends RelOptRule {
     public final static MycatProjectViewRule INSTANCE = new MycatProjectViewRule();
 
     public MycatProjectViewRule() {
-        super(operand(LogicalFilter.class, operand(View.class, none())), "MycatFilterViewRule");
+        super(operand(LogicalProject.class, operand(View.class, none())), "MycatFilterViewRule");
     }
 
     @Override

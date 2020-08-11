@@ -16,11 +16,13 @@ package io.mycat.hbt4;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
+import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.Distribution;
+import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.rel.*;
@@ -119,7 +121,8 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         RelDataType inputRowType = mycatProject.getInput().getRowType();
         List<RexNode> childExps = mycatProject.getChildExps();
         int outputSize = childExps.size();
-        log.info("-------------------complie----------------");
+        log.info("-------------------complie:" +mycatProject+
+                "----------------");
         MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput);
         return MycatProjectExecutor.create((input) -> {
             context.values = input.values;
@@ -236,15 +239,40 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     ? Long.MAX_VALUE
                     : ((RexLiteral) fetch).getValueAs(Long.class);
         }
+
         if (mergeSort) {
-            Executor[] executors = implementInputs(mycatSort);
-            MycatMergeSortExecutor mycatMergeSortExecutor = new MycatMergeSortExecutor(comparator, executors);
-            if ((offset != null || fetch != null)) {
-                return MycatLimitExecutor.create(offsetValue, fetchValue, mycatMergeSortExecutor);
-            } else {
-                return mycatMergeSortExecutor;
+            RelNode input = mycatSort.getInput();
+            if (input instanceof View) {
+                View input1 = (View) input;
+                Distribution distribution = input1.getDistribution();
+                if (!distribution.isSingle()){
+                    List<DataNode> dataNodes = distribution.getDataNodes();
+                    Executor[] executors = new  Executor[dataNodes.size()];
+                    int index = 0;
+                    for (DataNode dataNode : distribution.getDataNodes()) {
+                        RelNode relNode = input1.applyDataNode(dataNode);
+                        View of = View.of(relNode, Distribution.of(ImmutableList.of(dataNode), "", Distribution.Type.PHY));
+                        executors[index++]=(implement(of));
+                    }
+
+                    if (comparator == null) {
+                        comparator = Comparator.naturalOrder();
+                    }
+                    MycatMergeSortExecutor mycatMergeSortExecutor = new MycatMergeSortExecutor(comparator, executors);
+                    if ((offset != null || fetch != null)) {
+                        return MycatLimitExecutor.create(offsetValue, fetchValue, mycatMergeSortExecutor);
+                    } else {
+                        return mycatMergeSortExecutor;
+                    }
+                }else {
+                    return implement(input1);
+                }
+            }else {
+                throw new UnsupportedOperationException();
             }
-        } else {
+        }
+
+        {
             Executor executor = implementInput((MycatRel) mycatSort);
             boolean isTopN = comparator != null && (offset != null || fetch != null);
             if (isTopN) {
@@ -339,7 +367,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     public Executor implement(MycatQuery mycatQuery) {
         View view = mycatQuery.getView();
-        Distribution dataNode = view.getDataNode();
+        Distribution dataNode = view.getDistribution();
         String sql = view.getSql();
         return ScanExecutor.createDemo();
     }
@@ -587,11 +615,6 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             }
             return res;
         };
-    }
-
-    @Override
-    public Executor implement(MycatLookUpView mycatLookUpView) {
-        return MycatLookupExecutor.create(mycatLookUpView.getRelNode());
     }
 
     @Override

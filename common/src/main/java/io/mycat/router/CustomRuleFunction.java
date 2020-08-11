@@ -20,7 +20,6 @@ import io.mycat.RangeVariable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author cjw
@@ -30,7 +29,6 @@ public abstract class CustomRuleFunction {
     protected Map<String, String> properties;
     protected Map<String, String> ranges;
     protected ShardingTableHandler table;
-    protected String columnName;
 
     public abstract String name();
 
@@ -51,14 +49,14 @@ public abstract class CustomRuleFunction {
         this.ranges = ranges;
         this.table = tableHandler;
         init(table, properties, ranges);
-        this.columnName =columnName;
     }
 
     public ShardingTableHandler getTable() {
         return table;
     }
 
-    public String getColumnName() {
-        return columnName;
+    public boolean isSameRule(CustomRuleFunction other) {
+        return false;
     }
+
 }

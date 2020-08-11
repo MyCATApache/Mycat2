@@ -14,7 +14,9 @@
  */
 package io.mycat.hbt4.executor;
 
+import com.google.common.collect.ImmutableMultimap;
 import io.mycat.calcite.table.MycatSQLTableScan;
+import io.mycat.hbt4.DatasourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 
@@ -30,7 +32,8 @@ public class MycatJdbcExecutor implements Executor {
         this.tableScan = tableScan;
     }
 
-    public static MycatJdbcExecutor create(MycatSQLTableScan tableScan) {
+    public static MycatJdbcExecutor create(MycatSQLTableScan tableScan, DatasourceFactory factory) {
+        factory.create(tableScan.getMetaData(), ImmutableMultimap.of(tableScan.getTargetName(),tableScan.getSql()));
         return new MycatJdbcExecutor(tableScan);
     }
 

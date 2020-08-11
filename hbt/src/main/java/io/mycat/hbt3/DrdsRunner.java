@@ -16,29 +16,36 @@ package io.mycat.hbt3;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.EnumeratorRowIterator;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt4.*;
 import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
-import io.mycat.mpp.Row;
+import io.mycat.metadata.SchemaHandler;
+import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -48,30 +55,53 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.JDBCType;
+import java.util.*;
 
 public class DrdsRunner {
+    public List<String> explainSql(DrdsConst config,
+                                   PlanCache planCache,
+                                   String defaultSchemaName,
+                                   String originalSql) {
+        List<String> lines = new ArrayList<>();
+        try (RowBaseIterator rowBaseIterator = doAction(config, planCache, null, defaultSchemaName, originalSql, true)) {
+            while (rowBaseIterator.next()) {
+                lines.add(rowBaseIterator.getString(1));
+            }
+        }
+        return lines;
+    }
+    @SneakyThrows
+    public RowBaseIterator doHbt(DrdsConst config,
+                                    PlanCache planCache,
+                                    DatasourceFactory factory,
+                                    String hbtText){
 
-    public void doAction(DrdsConst config,
-                         PlanCache planCache,
-                         DatasourceFactory factory,
-                         String defaultSchemaName,
-                         String originalSql,
-                         ResultSetHanlder resultSetHanlder) throws Throwable {
+    }
+
+    @SneakyThrows
+    public RowBaseIterator doAction(DrdsConst config,
+                                    PlanCache planCache,
+                                    DatasourceFactory factory,
+                                    String defaultSchemaName,
+                                    String originalSql,
+                                    boolean explain) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
         List<MycatSchema> schemas = new ArrayList<>();
-        config.getSchemas().forEach((schemaName, value) -> {
-            MycatSchema schema = new MycatSchema();
-            schema.setDrdsConst(config);
-            schema.setSchemaName(schemaName);
-            schema.setCreateTableSqls(value);
-            schema.init();
+        for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
+            String schemaName = entry.getKey();
+            SchemaHandler schemaHandler = entry.getValue();
+            Map<String, Table> logicTableMap = new HashMap<>();
+            for (TableHandler tableHandler : schemaHandler.logicTables().values()) {
+                MycatLogicTable logicTable = new MycatLogicTable(tableHandler);
+                logicTableMap.put(logicTable.getTable().getTableName(), logicTable);
+            }
+            MycatSchema schema = MycatSchema.create(config, schemaName, logicTableMap);
             plus.add(schemaName, schema);
             schemas.add(schema);
-        });
-
+        }
         if (config.isAutoCreateTable()) {
             autoCreateTable(factory, schemas);
         }
@@ -89,29 +119,33 @@ public class DrdsRunner {
             parameterizedString = originalSql;
         }
         MycatRel relNode1 = createRelNode(config, planCache, defaultSchemaName, parameterizedString, plus);
-        ExplainWriter explain = relNode1.explain(new ExplainWriter());
-        String s = explain.toString();
-        System.out.println(s);
-        execute(resultSetHanlder, factory, parameters, relNode1);
+        if (explain) {
+            final StringWriter sw = new StringWriter();
+            final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.ALL_ATTRIBUTES, false);
+            relNode1.explain(planWriter);
+            String[] split = sw.getBuffer().toString().split("\n");
+            ResultSetBuilder builder = ResultSetBuilder.create();
+            builder.addColumnInfo("explain", JDBCType.VARCHAR);
+            for (String s : split) {
+                builder.addObjectRowPayload(Arrays.asList(s));
+            }
+            return builder.build();
+        }
+        return execute(factory, parameters, relNode1);
     }
 
-    public void execute(ResultSetHanlder resultSetHanlder,
-                        DatasourceFactory datasourceFactory,
-                        List<Object> parameters,
-                        MycatRel relNode1) {
-
+    public RowBaseIterator execute(
+            DatasourceFactory datasourceFactory,
+            List<Object> parameters,
+            MycatRel relNode1) {
         RelDataType rowType = relNode1.getRowType();
-        CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(rowType.getFieldList());
-        resultSetHanlder.onMetadata(calciteRowMetaData);
         MycatContext context = new MycatContext();
         ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, datasourceFactory, new TempResultSetFactoryImpl());
         Executor implement = relNode1.implement(executorImplementor);
         implement.open();
-        Iterator<Row> iterator = implement.iterator();
-        while (iterator.hasNext()) {
-            resultSetHanlder.onRow(iterator.next());
-        }
-        resultSetHanlder.onOk();
+        return new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()), Linq4j.asEnumerable(() -> implement.outputObjectIterator()).enumerator(),
+                () -> {
+                });
     }
 
     public MycatRel createRelNode(DrdsConst config, PlanCache planCache, String defaultSchemaName, String sql, SchemaPlus plus) throws SqlParseException {
@@ -138,7 +172,7 @@ public class DrdsRunner {
         ///////////////////////////////////////////////////////////////////////////////////
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
-                ImmutableList.of(defaultSchemaName),
+                defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.INSTANCE.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
 
@@ -166,9 +200,40 @@ public class DrdsRunner {
                 RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         RelNode logPlan = finalRoot.project();
         logPlan = optimizeWithRBO(logPlan);
-//        SQLRBORewriter rbo = new SQLRBORewriter();
-//        RelNode relNode = logPlan.accept(rbo);
         return (MycatRel) optimizeWithCBO(logPlan);
+    }
+
+    static boolean isComplex(RelNode logPlan) {
+        ComplexJudged complexJudged = new ComplexJudged();
+        logPlan.accept(complexJudged);
+        return complexJudged.c;
+
+    }
+
+    static class ComplexJudged extends RelShuttleImpl {
+        boolean c = false;
+
+        @Override
+        public RelNode visit(LogicalJoin join) {
+            RelNode left = join.getLeft();
+            RelNode right = join.getRight();
+            RelOptTable leftTable = left.getTable();
+            RelOptTable rightTable = right.getTable();
+            if (leftTable != null && rightTable != null) {
+                AbstractMycatTable leftT = leftTable.unwrap(AbstractMycatTable.class);
+                AbstractMycatTable rightT = rightTable.unwrap(AbstractMycatTable.class);
+                if (leftT != null && rightT != null) {
+                    if (!leftT.computeDataNode().isSingle() && !rightT.computeDataNode().isSingle()) {
+                        c = true;
+                    }
+                } else {
+                    c = true;
+                }
+            } else {
+                c = true;
+            }
+            return super.visit(join);
+        }
     }
 
     public SqlNode parseSql(String sql) throws SqlParseException {
@@ -188,42 +253,46 @@ public class DrdsRunner {
 
     public static void autoCreateTable(DatasourceFactory datasourceFactory, List<MycatSchema> schemas) {
         for (MycatSchema mycatSchema : schemas) {
-            for (AbstractMycatTable table : mycatSchema.getMycatTableMap().values()) {
-                String schemaName = table.getSchemaName();
-                String createTableSql = table.getCreateTableSql();
-                MySqlCreateTableStatement proto = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
-                proto.setDbPartitionBy(null);
-                proto.setDbPartitions(null);
-                proto.setTablePartitionBy(null);
-                proto.setTablePartitions(null);
-                proto.setExPartition(null);
-                proto.setStoredBy(null);
-                proto.setDistributeByType(null);
-
-                MySqlCreateTableStatement cur = proto.clone();
-
-                Distribution partInfo = table.computeDataNode();
-                cur.setTableName(table.getTableName());
-                cur.setSchema(schemaName);
-                for (DataNode dataNode : partInfo.dataNodes()) {
-                    String backendSchemaName = dataNode.getSchema();
-                    String backendTableName = dataNode.getTable();
-                    cur.setTableName(backendTableName);
-                    cur.setSchema(backendSchemaName);
-                    datasourceFactory.createTableIfNotExisted(dataNode.getTargetName(), cur.toString());
-                }
+            for (Table table : mycatSchema.getMycatTableMap().values()) {
+//                String schemaName = table.getSchemaName();
+//                String createTableSql = table.getCreateTableSql();
+//                MySqlCreateTableStatement proto = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
+//                proto.setDbPartitionBy(null);
+//                proto.setDbPartitions(null);
+//                proto.setTablePartitionBy(null);
+//                proto.setTablePartitions(null);
+//                proto.setExPartition(null);
+//                proto.setStoredBy(null);
+//                proto.setDistributeByType(null);
+//
+//                MySqlCreateTableStatement cur = proto.clone();
+//
+//                Distribution partInfo = table.computeDataNode();
+//                cur.setTableName(table.getTableName());
+//                cur.setSchema(schemaName);
+//                for (DataNode dataNode : partInfo.dataNodes()) {
+//                    String backendSchemaName = dataNode.getSchema();
+//                    String backendTableName = dataNode.getTable();
+//                    cur.setTableName(backendTableName);
+//                    cur.setSchema(backendSchemaName);
+//                    datasourceFactory.createTableIfNotExisted(dataNode.getTargetName(), cur.toString());
+//                }
             }
         }
     }
 
-    public static RelNode optimizeWithCBO(RelNode logPlan) {
-        RelOptCluster cluster = logPlan.getCluster();
-        RelOptPlanner planner = cluster.getPlanner();
-        planner.clear();
-        MycatConvention.INSTANCE.register(planner);
-        logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
-        planner.setRoot(logPlan);
-        return planner.findBestExp();
+    public static MycatRel optimizeWithCBO(RelNode logPlan) {
+        if (logPlan instanceof MycatRel) {
+            return (MycatRel) logPlan;
+        } else {
+            RelOptCluster cluster = logPlan.getCluster();
+            RelOptPlanner planner = cluster.getPlanner();
+            planner.clear();
+            MycatConvention.INSTANCE.register(planner);
+            logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
+            planner.setRoot(logPlan);
+            return (MycatRel) planner.findBestExp();
+        }
     }
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
@@ -233,6 +302,7 @@ public class DrdsRunner {
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.FILTER_INTO_JOIN_DUMB,
             CoreRules.JOIN_CONDITION_PUSH,
+            CoreRules.SORT_JOIN_TRANSPOSE,
             CoreRules.FILTER_CORRELATE,
             CoreRules.FILTER_AGGREGATE_TRANSPOSE,
             CoreRules.FILTER_MULTI_JOIN_MERGE,
@@ -249,20 +319,37 @@ public class DrdsRunner {
     );
 
     private static RelNode optimizeWithRBO(RelNode logPlan) {
+        boolean complex = (isComplex(logPlan));
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(1024);
         builder.addRuleCollection(FILTER);
-        boolean expandPhysicalTable = false;
-        if (expandPhysicalTable){
-            builder.addRuleInstance(MycatTableViewRule.INSTANCE);
-        }else {
-            builder.addRuleInstance(MycatTableViewRule.INSTANCE);
+        if (complex) {
+            ImmutableList<RelOptRule> relOptRules = ImmutableList.of(MycatFilterPhyViewRule.INSTANCE,
+                    MycatTablePhyViewRule.INSTANCE,
+                    CoreRules.PROJECT_SET_OP_TRANSPOSE,
+                    CoreRules.FILTER_SET_OP_TRANSPOSE,
+                    CoreRules.JOIN_LEFT_UNION_TRANSPOSE,
+                    CoreRules.JOIN_RIGHT_UNION_TRANSPOSE,
+                    CoreRules.AGGREGATE_UNION_TRANSPOSE,
+                    CoreRules.PROJECT_SET_OP_TRANSPOSE,
+                    CoreRules.FILTER_SET_OP_TRANSPOSE,
+                    CoreRules.AGGREGATE_UNION_TRANSPOSE,
+                    CoreRules.SORT_UNION_TRANSPOSE,
+                    CoreRules.SORT_UNION_TRANSPOSE_MATCH_NULL_FETCH,
+                    CoreRules.UNION_MERGE,
+                    CoreRules.UNION_REMOVE,
+                    CoreRules.PROJECT_MERGE,
+                    CoreRules.FILTER_MERGE
+            );
+            builder.addRuleCollection(relOptRules);
         }
+//        builder.addRuleInstance(MycatTableViewRule.INSTANCE);
         builder.addRuleCollection(MycatSQLViewRules.RULES);
-        builder.addRuleCollection(MycatGatherRules.RULES);
+//        builder.addRuleCollection(MycatGatherRules.RULES);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
-        return planner.findBestExp();
+        RelNode bestExp = planner.findBestExp();
+        return bestExp.accept(new SQLRBORewriter());
     }
 
     private static RelOptCluster newCluster() {

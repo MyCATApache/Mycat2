@@ -95,7 +95,7 @@ public class MycatJoinRule extends MycatConverterRule {
             }
 
         }
-        if (!join.isSemiJoin()) {
+        if (join.isSemiJoin()) {
             return MycatMaterializedSemiJoin.create(
                     join.getHints(),
                     join.getTraitSet().replace(out),

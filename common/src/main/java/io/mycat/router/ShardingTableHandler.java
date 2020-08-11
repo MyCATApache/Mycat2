@@ -10,7 +10,7 @@ public interface ShardingTableHandler extends TableHandler {
 
     CustomRuleFunction function();
 
-    List<DataNode> getShardingBackends();
+    List<DataNode> dataNodes();
 
     List<SimpleColumnInfo> getColumns();
 }

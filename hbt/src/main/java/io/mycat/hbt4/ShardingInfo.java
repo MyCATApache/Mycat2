@@ -14,6 +14,11 @@
  */
 package io.mycat.hbt4;
 
+import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.metadata.NormalTableHandler;
+import io.mycat.router.ShardingTableHandler;
+
 public interface ShardingInfo {
     String getDigest();
 
@@ -25,6 +30,47 @@ public interface ShardingInfo {
         sharding
     }
 
+    public static ShardingInfo create(TableHandler tableHandler) {
+        switch (tableHandler.getType()) {
+            case SHARDING:
+                return  new ShardingInfo() {
+                    @Override
+                    public String getDigest() {
+                        String name = ((ShardingTableHandler) tableHandler).function().name();
+                        return name;
+                    }
+                    @Override
+                    public Type getType() {
+                        return Type.normal;
+                    }
+                };
+            case GLOBAL:
+              return createBroadCast();
+            case NORMAL:
+              return  new ShardingInfo() {
+                  @Override
+                  public String getDigest() {
+                      DataNode dataNode = ((NormalTableHandler) tableHandler).getDataNode();
+                      return dataNode.getTargetName();
+                  }
+                  @Override
+                  public Type getType() {
+                      return Type.normal;
+                  }
+              };
+        }
+        return new ShardingInfo() {
+            @Override
+            public String getDigest() {
+                return Type.broadCast.name();
+            }
+
+            @Override
+            public Type getType() {
+                return Type.broadCast;
+            }
+        };
+    }
     public static ShardingInfo createBroadCast() {
         return new ShardingInfo() {
             @Override

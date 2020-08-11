@@ -6,7 +6,7 @@ metadata: #读写分离无需配置
                   function: {
                     clazz: io.mycat.router.function.PartitionByLong ,
                     name: partitionByLong,
-                    properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}
+                    properties: {partitionCount: '4', partitionLength: '256', columnName: id }, ranges: {}
                   },
                   createTableSQL: 'CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
                   dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
@@ -18,7 +18,7 @@ metadata: #读写分离无需配置
               globalTables: {
                 company:{
                   createTableSQL: 'CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))',
-                  dataNodes: [{targetName: defaultDs2 ,schemaName: db1, tableName: company},{targetName: defaultDs2 ,schemaName: db2, tableName: company}]
+                  dataNodes: [{targetName: defaultDs2}]
                 }
               }
             }]
