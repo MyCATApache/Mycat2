@@ -15,38 +15,35 @@
 package io.mycat.hbt3;
 
 import io.mycat.DataNode;
+import org.apache.calcite.rex.RexNode;
 
 import java.util.List;
 
 public abstract class Distribution {
 
-    public abstract List<DataNode> getDataNodes();
-
-
-    public abstract String digest();
-
-    public
-    abstract boolean isSingle();
+    public abstract Iterable<DataNode> getDataNodes(List<Object> params);
+    public abstract Iterable<DataNode> getDataNodes();
+    public abstract boolean isSingle();
 
     public abstract boolean isBroadCast();
 
     public abstract boolean isSharding();
 
-    public abstract boolean isJoin();
+    public abstract boolean isPartial();
 
-    public static Distribution of(List<DataNode> dataNodeList, String digest, DistributionImpl.Type type) {
-        return new DistributionImpl(dataNodeList, digest, type);
+    public static Distribution of(List<DataNode> dataNodeList, boolean partial ,DistributionImpl.Type type) {
+        return new DistributionImpl(dataNodeList, partial, type);
     }
 
     abstract public Type type();
 
     public abstract boolean isPhy();
 
+
     public static enum Type {
         PHY,
         BroadCast,
-        Sharding,
-        JOIN
+        Sharding
     }
 
 }

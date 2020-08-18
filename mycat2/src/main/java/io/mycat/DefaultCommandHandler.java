@@ -32,6 +32,7 @@ import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.hbt3.DrdsRunner;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.preparestatement.PrepareStatementManager;
 import io.mycat.proxy.MySQLPacketUtil;

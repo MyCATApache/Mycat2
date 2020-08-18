@@ -1,5 +1,8 @@
 package io.mycat.metadata;
 
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
@@ -68,24 +71,24 @@ public class ShardingTable implements ShardingTableHandler {
         return sequence;
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
+//    @Override
+    public Function<MySqlInsertStatement, Iterable<TextUpdateInfo>> insertHandler() {
         return s -> {
-            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.getSql())
+            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.toString())
                     .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
-            return collect.iterator();
+            return collect;
         };
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler() {
-        return s -> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.getSql())
+//    @Override
+    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
+        return (s)-> ()->MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
                 .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler() {
-        return s -> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.getSql())
+//    @Override
+    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
+        return s ->()-> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
                 .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
     }
 

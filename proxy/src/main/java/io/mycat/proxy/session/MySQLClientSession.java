@@ -493,12 +493,12 @@ public class MySQLClientSession extends
   }
 
   @Override
-  public <T> T unwrap(Class<T> iface) throws Exception {
+  public <T> T unwrap(Class<T> iface) {
     return null;
   }
 
   @Override
-  public boolean isWrapperFor(Class<?> iface) throws Exception {
+  public boolean isWrapperFor(Class<?> iface) {
     return false;
   }
 }

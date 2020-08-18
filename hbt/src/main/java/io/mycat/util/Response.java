@@ -15,6 +15,8 @@ public interface Response {
 
     void setExplainMode(boolean bool);
 
+    boolean isExplainMode();
+
     void setHasMore(boolean more);
 
     void sendError(Throwable e);
@@ -37,9 +39,9 @@ public interface Response {
 
     void tryBroadcast(SQLStatement statement);
 
-    void multiUpdate(String string, Iterator<TextUpdateInfo> apply);
+    void multiUpdate(String string, Iterable<TextUpdateInfo> apply);
 
-    void multiInsert(String string, Iterator<TextUpdateInfo> apply);
+    void multiInsert(String string, Iterable<TextUpdateInfo> apply);
 
     void sendError(String errorMessage, int errorCode);
 
@@ -67,8 +69,10 @@ public interface Response {
 
     void execute(ExplainDetail detail);
 
-    void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply);
+    void multiGlobalInsert(String string, Iterable<TextUpdateInfo> apply);
 
-    void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply);
+    void multiGlobalUpdate(String string, Iterable<TextUpdateInfo> apply);
     void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator);
+
+    void sendOk(long lastInsertId, long affectedRow);
 }

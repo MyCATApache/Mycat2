@@ -276,72 +276,7 @@ public class MycatSortAggExecutor implements Executor {
         } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
             return () -> new AvgAccumulator(call);
         } else {
-            final JavaTypeFactory typeFactory =
-                    (JavaTypeFactory) rel.getCluster().getTypeFactory();
-            int stateOffset = 0;
-            final AggImpState agg = new AggImpState(0, call, false);
-            int stateSize = agg.state.size();
-
-            final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType =
-                    PhysTypeImpl.of(typeFactory, rel.getInput().getRowType(),
-                            JavaRowFormat.ARRAY);
-            final RelDataTypeFactory.Builder builder = typeFactory.builder();
-            for (Expression expression : agg.state) {
-                builder.add("a",
-                        typeFactory.createJavaType((Class) expression.getType()));
-            }
-            final PhysType accPhysType =
-                    PhysTypeImpl.of(typeFactory, builder.build(), JavaRowFormat.ARRAY);
-            final ParameterExpression inParameter =
-                    Expressions.parameter(inputPhysType.getJavaRowType(), "in");
-            final ParameterExpression acc_ =
-                    Expressions.parameter(accPhysType.getJavaRowType(), "acc");
-
-            List<Expression> accumulator = new ArrayList<>(stateSize);
-            for (int j = 0; j < stateSize; j++) {
-                accumulator.add(accPhysType.fieldReference(acc_, j + stateOffset));
-            }
-            agg.state = accumulator;
-
-            AggAddContext addContext =
-                    new AggAddContextImpl(builder2, accumulator) {
-                        public List<RexNode> rexArguments() {
-                            List<RexNode> args = new ArrayList<>();
-                            for (int index : agg.call.getArgList()) {
-                                args.add(RexInputRef.of(index, inputPhysType.getRowType()));
-                            }
-                            return args;
-                        }
-
-                        public RexNode rexFilterArgument() {
-                            return agg.call.filterArg < 0
-                                    ? null
-                                    : RexInputRef.of(agg.call.filterArg,
-                                    inputPhysType.getRowType());
-                        }
-
-                        public RexToLixTranslator rowTranslator() {
-                            final SqlConformance conformance =
-                                    SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
-                            return RexToLixTranslator.forAggregation(typeFactory,
-                                    currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl(
-                                            Collections.singletonList(
-                                                    Pair.of((Expression) inParameter, inputPhysType))),
-                                    conformance);
-                        }
-                    };
-
-            agg.implementor.implementAdd(agg.context, addContext);
-
-            final ParameterExpression context_ =
-                    Expressions.parameter(MycatContext.class, "context");
-            final ParameterExpression outputValues_ =
-                    Expressions.parameter(Object[].class, "outputValues");
-            MycatScalar addScalar = baz(context_, outputValues_, builder2.toBlock());
-            return new ScalarAccumulatorDef(null, addScalar, null,
-                    rel.getInput().getRowType().getFieldCount(), stateSize);
+            throw new UnsupportedOperationException();
         }
     }
 

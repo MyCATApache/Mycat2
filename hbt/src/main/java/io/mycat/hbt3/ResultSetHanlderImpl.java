@@ -19,7 +19,7 @@ import io.mycat.mpp.Row;
 
 public class ResultSetHanlderImpl implements ResultSetHanlder {
     @Override
-    public void onOk() {
+    public void onOk(long lastInsertId, long affectedRow) {
 
     }
 

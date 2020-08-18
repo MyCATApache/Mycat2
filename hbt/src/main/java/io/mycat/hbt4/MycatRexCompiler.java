@@ -13,10 +13,8 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.rex.RexProgramBuilder;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -37,20 +35,37 @@ public class MycatRexCompiler {
 
     final static boolean debug = true;
     final static RelDataType EmptyInputRowType = MycatCalciteSupport.INSTANCE.TypeFactory.builder().build();
-    public static MycatScalar compile(List<RexNode> nodes, RelDataType inputRowType){
+    public static MycatScalar compile(List<RexNode> nodes, RelDataType inputRowType,List<Object> params){
         return compile(nodes, inputRowType, a0 -> {
            throw new UnsupportedOperationException();
-        });
+        },params);
     }
     public static MycatScalar compile(List<RexNode> nodes, RelDataType inputRowType,
-                               Function1<String, RexToLixTranslator.InputGetter> inputGetterFunction) {
+                               Function1<String, RexToLixTranslator.InputGetter> inputGetterFunction,
+                                      List<Object> params) {
         if (inputRowType == null) inputRowType = EmptyInputRowType;
         final RexProgramBuilder programBuilder = new RexProgramBuilder(inputRowType, rexBuilder);
+
         for (RexNode node : nodes) {
-            programBuilder.addProject(node, null);
+            node=   node.accept(new RexShuttle(){
+                @Override
+                public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+                    RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                    int index1 = dynamicParam.getIndex();
+                    Object o = params.get(index1);
+                    return rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
+                }
+            });
+            programBuilder.addProject(node,null );
         }
         final RexProgram program = programBuilder.getProgram();
 
+        return compile(inputRowType, inputGetterFunction, program);
+    }
+
+    private static MycatScalar compile(RelDataType inputRowType,
+                                       Function1<String, RexToLixTranslator.InputGetter> inputGetterFunction,
+                                       RexProgram program) {
         final BlockBuilder builder = new BlockBuilder();
         final ParameterExpression context_ =
                 Expressions.parameter(MycatContext.class, "context");
@@ -69,7 +84,7 @@ public class MycatRexCompiler {
                                         PhysTypeImpl.of(javaTypeFactory, inputRowType,
                                                 JavaRowFormat.ARRAY, false))));
         final Function1<String, RexToLixTranslator.InputGetter> correlates = inputGetterFunction;
-        final Expression root = Expressions.parameter(MycatContext.class,"root");
+        final Expression root = Expressions.parameter(MycatContext.class,"context");
         final List<Expression> list =
                 RexToLixTranslator.translateProjects(program, javaTypeFactory,
                         conformance, builder, null, root, inputGetter, correlates);

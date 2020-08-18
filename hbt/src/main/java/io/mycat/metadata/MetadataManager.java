@@ -21,8 +21,11 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
@@ -32,6 +35,7 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.CalciteConvertors;
+import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -43,7 +47,9 @@ import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.function.PartitionRuleFunctionManager;
+import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +58,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -550,7 +557,7 @@ public enum MetadataManager {
                 SimpleColumnInfo simpleColumnInfo = columns.get(index);
                 if (valueText instanceof SQLValuableExpr) {
                     String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
-                    dataMappingEvaluator.assignment(false, simpleColumnInfo.getColumnName(), value);
+                    dataMappingEvaluator.assignment( simpleColumnInfo.getColumnName(), value);
                 }  //                    throw new UnsupportedOperationException();
 
                 index++;
@@ -571,7 +578,7 @@ public enum MetadataManager {
         resolveMetadata(sqlStatement);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
-        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(), currentSchema);
+        Rrs rrs = assignment(conditionCollector.getRootQueryDataRange(), currentSchema);
         Map<String, List<String>> sqls = new HashMap<>();
         for (DataNode endTableInfo : rrs.getBackEndTableInfos()) {
             SQLExprTableSource table = rrs.getTable();
@@ -588,7 +595,6 @@ public enum MetadataManager {
 
     //////////////////////////////////////////calculate///////////////////////////////
     private Rrs assignment(
-            boolean fail,
             QueryDataRange queryDataRange, String wapperSchemaName) {
         String schemaName = wapperSchemaName;
         String tableName = null;
@@ -603,12 +609,12 @@ public enum MetadataManager {
         DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
 
         for (ColumnValue equalValue : queryDataRange.getEqualValues()) {
-            dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
+            dataMappingEvaluator.assignment(equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
 
         }
         List<ColumnRangeValue> rangeValues1 = queryDataRange.getRangeValues();
         for (ColumnRangeValue columnRangeValue : rangeValues1) {
-            dataMappingEvaluator.assignmentRange(false, columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()), Objects.toString(columnRangeValue.getEnd()));
+            dataMappingEvaluator.assignmentRange( columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()), Objects.toString(columnRangeValue.getEnd()));
         }
         List<DataNode> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
         return new Rrs(calculate, table);
@@ -649,4 +655,5 @@ public enum MetadataManager {
         this.schemaMap.clear();
         return this;
     }
+
 }

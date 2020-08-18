@@ -19,9 +19,18 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void switchTransaction(TransactionType transactionSessionType);
 
+    default <T> T getVariable(String target) {
+        return (T) MySQLVariablesUtil.getVariable(this, target);
+    }
+
     <T> T getVariable(MycatDataContextEnum name);
 
     void setVariable(MycatDataContextEnum name, Object value);
+
+    default void setVariable(String target,
+                             Object text) {
+        MySQLVariablesUtil.setVariable(this, target, text);
+    }
 
     default int serverStatus() {
         MySQLServerStatusFlags.Builder builder = MySQLServerStatusFlags.builder();
@@ -105,5 +114,5 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public String resolveDatasourceTargetName(String targetName);
 
-    Map<Long,PreparedStatement> getPrepareInfo();
+    Map<Long, PreparedStatement> getPrepareInfo();
 }

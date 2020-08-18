@@ -31,63 +31,47 @@ public class GlobalTable implements GlobalTableHandler {
         this.balance = balance;
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(s.getSql());
-                MySqlInsertStatement sqlStatement1 = (MySqlInsertStatement) sqlStatement;
-                SQLExprTableSource tableSource = sqlStatement1.getTableSource();
-                return updateHandler(tableSource, sqlStatement1);
-            }
-        };
-    }
+//    @Override
+//    public Function<MySqlInsertStatement, Iterable<ParameterizedValues>> insertHandler() {
+//        return sqlStatement1 -> {
+//            SQLExprTableSource tableSource = sqlStatement1.getTableSource();
+//            return updateHandler(tableSource, sqlStatement1);
+//        };
+//    }
 
-    @NotNull
-    private Iterator<TextUpdateInfo> updateHandler(SQLExprTableSource tableSource,  SQLStatement sqlStatement1) {
-        Iterator<DataNode> iterator = backendTableInfos.iterator();
-        return new Iterator<TextUpdateInfo>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
+//    @NotNull
+//    private Iterable<ParameterizedValues> updateHandler(SQLExprTableSource tableSource,  SQLStatement sqlStatement1) {
+//        return ()->new Iterator<ParameterizedValues>() {
+//            Iterator<DataNode> iterator = backendTableInfos.iterator();
+//            @Override
+//            public boolean hasNext() {
+//                return iterator.hasNext();
+//            }
+//
+//            @Override
+//            public ParameterizedValues next() {
+//                DataNode next = iterator.next();
+//                tableSource.setExpr(next.getTargetSchemaTable());
+//                return TextUpdateInfo.create(next.getTargetName(), Collections.singletonList(sqlStatement1.toString()));
+//            }
+//        };
+//    }
 
-            @Override
-            public TextUpdateInfo next() {
-                DataNode next = iterator.next();
-                tableSource.setExpr(next.getTargetSchemaTable());
+//    @Override
+//    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
+//        return sqlStatement1 -> {
+//            SQLExprTableSource tableSource = (SQLExprTableSource)sqlStatement1.getTableSource();
+//            return updateHandler(tableSource, sqlStatement1);
+//        };
+//    }
 
-                return TextUpdateInfo.create(next.getTargetName(), Collections.singletonList(sqlStatement1.toString()));
-            }
-        };
-    }
-
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(s.getSql());
-                MySqlUpdateStatement sqlStatement1 = (MySqlUpdateStatement) sqlStatement;
-                SQLExprTableSource tableSource = (SQLExprTableSource)sqlStatement1.getTableSource();
-                return updateHandler(tableSource, sqlStatement1);
-            }
-        };
-    }
-
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext parseContext) {
-                SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(parseContext.getSql());
-                MySqlDeleteStatement sqlStatement1 = (MySqlDeleteStatement) sqlStatement;
-                SQLExprTableSource tableSource = (SQLExprTableSource)sqlStatement1.getTableSource();
-                return updateHandler(tableSource, sqlStatement1);
-            }
-        };
-    }
+//    @Override
+//    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
+//        return sqlStatement1 -> {
+//            SQLExprTableSource tableSource = (SQLExprTableSource)sqlStatement1.getTableSource();
+//            return updateHandler(tableSource, sqlStatement1);
+//        };
+//    }
 
     @Override
     public LogicTableType getType() {

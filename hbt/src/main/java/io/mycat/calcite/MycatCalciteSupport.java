@@ -19,14 +19,12 @@ import com.google.common.collect.Multimap;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
-import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -37,7 +35,6 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -55,8 +52,11 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
@@ -141,64 +141,64 @@ public enum MycatCalciteSupport implements Context {
     }
 
 
-    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
-        return new MycatCalciteDataContext(uponDBContext);
-    }
+//    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
+//        return new MycatCalciteDataContext(uponDBContext);
+//    }
 
     MycatCalciteSupport() {
 //        try {
 
-            Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
-            configBuilder.parserConfig(SQL_PARSER_CONFIG);
-            configBuilder.typeSystem(TypeSystem);
-            configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
-            SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
-            instance.init();
-            configBuilder.operatorTable(new SqlOperatorTable() {
-                final HashMap<String, SqlOperator> map = new HashMap<>();
-                final HashMap<String, SqlOperator> build = new HashMap<>();
+        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        configBuilder.parserConfig(SQL_PARSER_CONFIG);
+        configBuilder.typeSystem(TypeSystem);
+        configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
+        SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
+        instance.init();
+        configBuilder.operatorTable(new SqlOperatorTable() {
+            final HashMap<String, SqlOperator> map = new HashMap<>();
+            final HashMap<String, SqlOperator> build = new HashMap<>();
 
-                {
-                    map.put("IFNULL", SqlStdOperatorTable.COALESCE);
-                    build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-                    build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
-                    build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
-                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
-                    build.put("LOG", SqlStdOperatorTable.LOG10);
-                    build.put("PI", SqlStdOperatorTable.PI);
-                    build.put("POW", SqlStdOperatorTable.POWER);
-                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
-                        map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
-                        map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
-                    }
-
+            {
+                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
+                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+                build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
+                build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
+                build.put("LOG", SqlStdOperatorTable.LOG10);
+                build.put("PI", SqlStdOperatorTable.PI);
+                build.put("POW", SqlStdOperatorTable.POWER);
+                for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
+                    map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
+                    map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
                 }
 
-                @Override
-                public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
-                    SqlOperator sqlOperator = map.get(opName.getSimple());
-                    if (sqlOperator != null) {
-                        operatorList.add(sqlOperator);
-                    }
-                    instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
+            }
+
+            @Override
+            public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
+                SqlOperator sqlOperator = map.get(opName.getSimple());
+                if (sqlOperator != null) {
+                    operatorList.add(sqlOperator);
                 }
+                instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
+            }
 
-                @Override
-                public List<SqlOperator> getOperatorList() {
-                    return instance.getOperatorList();
-                }
-            });
-            configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
+            @Override
+            public List<SqlOperator> getOperatorList() {
+                return instance.getOperatorList();
+            }
+        });
+        configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
 
-            this.config = configBuilder.context(this).build();
-            this.calciteConnectionConfig = connectionConfig();
+        this.config = configBuilder.context(this).build();
+        this.calciteConnectionConfig = connectionConfig();
 
-            map.put(FrameworkConfig.class, config);
-            map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
-            map.put(RelDataTypeSystem.class, TypeSystem);
-            map.put(MycatTypeSystem.class, TypeSystem);
-            map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
-            map.put(RexExecutor.class, RexUtil.EXECUTOR);
+        map.put(FrameworkConfig.class, config);
+        map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
+        map.put(RelDataTypeSystem.class, TypeSystem);
+        map.put(MycatTypeSystem.class, TypeSystem);
+        map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
+        map.put(RexExecutor.class, RexUtil.EXECUTOR);
 //        }catch (Throwable e){
 //          System.err.println(e);
 //        }
@@ -240,11 +240,10 @@ public enum MycatCalciteSupport implements Context {
         return config.getParserConfig().parserFactory().getParser(reader);
     }
 
-    public String convertToHBTText(RelNode relNode, MycatCalciteDataContext dataContext) {
-        MycatCalcitePlanner planner = createPlanner(dataContext);
+    public String convertToHBTText(RelNode relNode) {
         Schema schema;
         try {
-            schema = RelNodeConvertor.convertRelNode(planner.convertToMycatRel(relNode));
+            schema = RelNodeConvertor.convertRelNode(relNode);
         } catch (Throwable e) {
             String message = "hbt无法生成";
             LOGGER.warn(message, e);
@@ -316,37 +315,48 @@ public enum MycatCalciteSupport implements Context {
         }
     }
 
-    public MycatCalcitePlanner createPlanner(MycatCalciteDataContext dataContext) {
-        Objects.requireNonNull(dataContext);
-        return new MycatCalcitePlanner(dataContext);
-    }
+//    public MycatCalcitePlanner createPlanner(MycatCalciteDataContext dataContext) {
+//        Objects.requireNonNull(dataContext);
+//        return new MycatCalcitePlanner(dataContext);
+//    }
 
-    public MycatCalcitePlanner createPlanner(MycatDBContext dataContext) {
-        Objects.requireNonNull(dataContext);
-        return new MycatCalcitePlanner(create(dataContext));
-    }
+//    public MycatCalcitePlanner createPlanner(MycatDBContext dataContext) {
+//        Objects.requireNonNull(dataContext);
+//        return new MycatCalcitePlanner(create(dataContext));
+//    }
 
     public CalciteConnectionConfig getCalciteConnectionConfig() {
         return calciteConnectionConfig;
     }
-
-    public String convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT);
-        input = RelOptUtil.createCastRel(input, input.getRowType(), true);
+    public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate){
+        return convertToSql(input,dialect,forUpdate,Collections.emptyList());
+    }
+    public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate,List<Object> params) {
+        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT,params);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
-        String sql = sqlNode.toSqlString(dialect, false).getSql();
-        sql = sql.trim();
-        sql = sql.replaceAll("\r", " ");
-        sql = sql.replaceAll("\n", " ");
-        return sql + (forUpdate ? " for update" : "");
+        if (forUpdate) {
+            sqlNode = SqlForUpdate.OPERATOR.createCall(SqlParserPos.ZERO, sqlNode);
+        }
+        final SqlWriterConfig config = SqlPrettyWriter.config().withDialect(dialect)
+                .withAlwaysUseParentheses(true)
+                .withSelectListItemsOnSeparateLines(false)
+                .withUpdateSetListNewline(false);
+        SqlPrettyWriter writer = new SqlPrettyWriter(config) {
+            @Override
+            public void dynamicParam(int index) {
+                super.dynamicParam(index);
+            }
+        };
+        sqlNode.unparse(writer, 0, 0);
+        return writer.toSqlString();
+
     }
 
-    public String convertToMycatRelNodeText(RelNode node, MycatCalciteDataContext dataContext) {
+    public String convertToMycatRelNodeText(RelNode node) {
         final StringWriter sw = new StringWriter();
         final RelWriter planWriter = new RelWriterImpl(new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
-        RelNode relNode = MycatCalciteSupport.INSTANCE.createPlanner(dataContext).convertToMycatRel(node);
-        relNode.explain(planWriter);
+        node.explain(planWriter);
         return sw.toString();
     }
 

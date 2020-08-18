@@ -35,6 +35,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.Iterator;
+import java.util.List;
 
 public class MycatMergeJoinExecutor implements Executor {
     private final JoinRelType joinType;
@@ -46,6 +47,7 @@ public class MycatMergeJoinExecutor implements Executor {
     private final int leftFieldCount;
     private final int rightFieldCount;
     private final RelDataType resultRelDataType;
+    private List<Object> params;
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
 
@@ -57,7 +59,8 @@ public class MycatMergeJoinExecutor implements Executor {
                                      int[] rightKeys,
                                      int leftFieldCount,
                                      int rightFieldCount,
-                                     RelDataType resultRelDataType) {
+                                     RelDataType resultRelDataType,
+                                     List<Object> params) {
         this.joinType = joinType;
         this.outer = outer;
         this.inner = inner;
@@ -67,17 +70,18 @@ public class MycatMergeJoinExecutor implements Executor {
         this.leftFieldCount = leftFieldCount;
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
+        this.params = params;
     }
     public static MycatMergeJoinExecutor create(
-                                     JoinRelType joinType,
-                                     Executor outer,
-                                     Executor inner,
-                                     ImmutableList<RexNode> nonEquiConditions,
-                                     int[] leftKeys,
-                                     int[] rightKeys,
-                                     int leftFieldCount,
-                                     int rightFieldCount,
-                                     RelDataType resultRelDataType) {
+            JoinRelType joinType,
+            Executor outer,
+            Executor inner,
+            ImmutableList<RexNode> nonEquiConditions,
+            int[] leftKeys,
+            int[] rightKeys,
+            int leftFieldCount,
+            int rightFieldCount,
+            RelDataType resultRelDataType, List<Object> params) {
         return new MycatMergeJoinExecutor(joinType,
                 outer,
                 inner,
@@ -86,7 +90,8 @@ public class MycatMergeJoinExecutor implements Executor {
                 rightKeys,
                 leftFieldCount,
                 rightFieldCount,
-                resultRelDataType
+                resultRelDataType,
+                params
                 );
     }
     @Override
@@ -118,7 +123,7 @@ public class MycatMergeJoinExecutor implements Executor {
                     nonEquiConditions, true);
             Predicate2<Row, Row> nonEquiConditionPredicate = null;
             if (nonEquiCondition != null) {
-                MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType,params);
                 nonEquiConditionPredicate = (v0, v1) -> {
                     o.values = v0.values;
                     return scalar.execute(o) == Boolean.TRUE;

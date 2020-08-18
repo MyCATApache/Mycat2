@@ -53,16 +53,26 @@ public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatT
 
     @Override
     public Distribution computeDataNode(List<RexNode> conditions) {
-        return Distribution.of(ImmutableList.of(dataNode),"phy", Distribution.Type.PHY);
+        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
+    }
+
+    @Override
+    public boolean isSingle(List<RexNode> conditions) {
+        return true;
     }
 
     @Override
     public Distribution computeDataNode() {
-        return Distribution.of(ImmutableList.of(dataNode),"phy", Distribution.Type.PHY);
+        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
     }
 
     @Override
     public ShardingInfo getShardingInfo() {
         return null;
+    }
+
+    @Override
+    public boolean isPartial(List<RexNode> conditions) {
+        return false;
     }
 }

@@ -24,22 +24,22 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.beans.mycat.JdbcRowMetaData;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRelBuilder;
+import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.hbt3.Distribution;
-import io.mycat.hbt3.View;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.SneakyThrows;
+import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -51,23 +51,24 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexCorrelVariable;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.Holder;
-import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -82,19 +83,17 @@ import static io.mycat.hbt.ast.HBTOp.*;
 
 public class HBTQueryConvertor {
     final static Logger log = LoggerFactory.getLogger(HBTQueryConvertor.class);
-    private final MycatRelBuilder relBuilder;
+    private final List<Object> params;
+    private final RelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
     private int joinCount;
     private int paramIndex = 0;
-    private final List<Object> params;
-    private MycatCalciteDataContext context;
     private final MetaDataFetcher metaDataFetcher;
 
-    public HBTQueryConvertor(List<Object> params, MycatRelBuilder relBuilder, MycatCalciteDataContext context) {
-        this.relBuilder = relBuilder;
+    public HBTQueryConvertor(List<Object> params,RelBuilder relBuilder) {
         this.params = params;
+        this.relBuilder = relBuilder;
         this.relBuilder.clear();
-        this.context = Objects.requireNonNull(context);
 
         metaDataFetcher = (targetName, sql) -> {
             try {
@@ -204,14 +203,14 @@ public class HBTQueryConvertor {
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
         Distribution distribution = mycatTable.computeDataNode(build.getChildExps());
-        List<DataNode> dataNodes = distribution.getDataNodes();
+        Iterable<DataNode> dataNodes = distribution.getDataNodes();
         return toPhyTable(mycatTable, dataNodes);
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
         Schema rel = input.getRel();
         RelNode handle = handle(rel);
-        return View.of() relBuilder.makeTransientSQLScan(input.getTargetName(), handle, false);
+        return makeTransientSQLScan(input.getTargetName(), handle, false);
     }
 
     @SneakyThrows
@@ -232,7 +231,7 @@ public class HBTQueryConvertor {
             relDataType = toType(fieldTypes);
         }
         Objects.requireNonNull(relDataType, "无法推导sql结果集类型");
-        return relBuilder.makeBySql(targetName, relDataType, sql);
+        return makeBySql(relDataType,targetName, sql);
     }
 
     private RelDataType tryGetRelDataTypeByParse(String sql) {
@@ -304,7 +303,7 @@ public class HBTQueryConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTQueryConvertor queryOp = new HBTQueryConvertor(params, relBuilder, context);
+                HBTQueryConvertor queryOp = new HBTQueryConvertor( params,relBuilder);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
@@ -431,26 +430,28 @@ public class HBTQueryConvertor {
         //消除逻辑表,变成物理表
         if (mycatLogicTable != null) {
             relBuilder.clear();
-            List<DataNode> dataNodes = mycatLogicTable.computeDataNode().getDataNodes();
+            Iterable<DataNode> dataNodes = mycatLogicTable.computeDataNode().getDataNodes();
             return toPhyTable(mycatLogicTable, dataNodes);
         }
 
         return build;
     }
 
-    private RelNode toPhyTable(MycatLogicTable unwrap, List<DataNode> dataNodes) {
+    private RelNode toPhyTable(MycatLogicTable unwrap, Iterable<DataNode> dataNodes) {
+        int count = 0;
         for (DataNode dataNode : dataNodes) {
             MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(unwrap, dataNode);
             LogicalTableScan tableScan = LogicalTableScan.create(relBuilder.getCluster(),
                     RelOptTableImpl.create(relBuilder.getRelOptSchema(),
                             unwrap.getRowType(),
                             mycatPhysicalTable,
-                            ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())),
+                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
                     ImmutableList.of()
             );
+            count++;
             relBuilder.push(tableScan);
         }
-        return relBuilder.union(true, dataNodes.size()).build();
+        return relBuilder.union(true,count).build();
     }
 
     private RelNode map(MapSchema input) {
@@ -671,5 +672,92 @@ public class HBTQueryConvertor {
             builder.add(fieldSchema.getColumnName(), toType(fieldSchema.getColumnType(), nullable, precision, scale));
         }
         return builder.build();
+    }
+
+    public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
+        RelDataType rowType = input.getRowType();
+        return makeBySql( rowType,targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
+        );
+    }
+
+    /**
+     * Creates a literal (constant expression).
+     */
+    public static RexNode literal(RelDataType type, Object value, boolean allowCast) {
+        final RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        RexNode literal;
+        if (value == null) {
+            literal = rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));
+        } else if (value instanceof Boolean) {
+            literal = rexBuilder.makeLiteral((Boolean) value);
+        } else if (value instanceof BigDecimal) {
+            literal = rexBuilder.makeExactLiteral((BigDecimal) value);
+        } else if (value instanceof Float || value instanceof Double) {
+            literal = rexBuilder.makeApproxLiteral(BigDecimal.valueOf(((Number) value).doubleValue()));
+        } else if (value instanceof Number) {
+            literal = rexBuilder.makeExactLiteral(BigDecimal.valueOf(((Number) value).longValue()));
+        } else if (value instanceof String) {
+            literal = rexBuilder.makeLiteral((String) value);
+        } else if (value instanceof Enum) {
+            literal = rexBuilder.makeLiteral(value, typeFactory.createSqlType(SqlTypeName.SYMBOL), false);
+        } else if (value instanceof byte[]) {
+            literal = rexBuilder.makeBinaryLiteral(new ByteString((byte[]) value));
+        } else if (value instanceof LocalDate) {
+            LocalDate value1 = (LocalDate) value;
+            DateString dateString = new DateString(value1.getYear(), value1.getMonthValue(), value1.getDayOfMonth());
+            literal = rexBuilder.makeDateLiteral(dateString);
+        } else if (value instanceof LocalTime) {
+            LocalTime value1 = (LocalTime) value;
+            TimeString timeString = new TimeString(value1.getHour(), value1.getMinute(), value1.getSecond());
+            literal = rexBuilder.makeTimeLiteral(timeString, -1);
+        } else if (value instanceof LocalDateTime) {
+            LocalDateTime value1 = (LocalDateTime) value;
+            TimestampString timeString = new TimestampString(value1.getYear(), value1.getMonthValue(), value1.getDayOfMonth(), value1.getHour(), value1.getMinute(), value1.getSecond());
+            timeString = timeString.withNanos(value1.getNano());
+            literal = rexBuilder.makeTimestampLiteral(timeString, -1);
+        } else {
+            throw new IllegalArgumentException("cannot convert " + value
+                    + " (" + value.getClass() + ") to a constant");
+        }
+        if (allowCast) {
+            return rexBuilder.makeCast(type, literal);
+        } else {
+            return literal;
+        }
+    }
+
+    public  RelBuilder values(RelDataType rowType, Object... columnValues) {
+        int columnCount = rowType.getFieldCount();
+        final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder =
+                ImmutableList.builder();
+        final List<RexLiteral> valueList = new ArrayList<>();
+        List<RelDataTypeField> fieldList = rowType.getFieldList();
+        for (int i = 0; i < columnValues.length; i++) {
+            RelDataTypeField relDataTypeField = fieldList.get(valueList.size());
+            valueList.add((RexLiteral) literal(relDataTypeField.getType(), columnValues[i], false));
+            if ((i + 1) % columnCount == 0) {
+                listBuilder.add(ImmutableList.copyOf(valueList));
+                valueList.clear();
+            }
+        }
+      return relBuilder.values(listBuilder.build(), rowType);
+    }
+
+    public RexNode literal(Object value) {
+        return literal(null, value, false);
+    }
+
+
+    /**
+     * todo for update
+     *
+     * @param targetName
+     * @param relDataType
+     * @param sql
+     * @return
+     */
+    public MycatTransientSQLTableScan makeBySql(RelDataType relDataType, String targetName, String sql) {
+        return new MycatTransientSQLTableScan(relBuilder.getCluster(),relDataType, targetName, sql);
     }
 }

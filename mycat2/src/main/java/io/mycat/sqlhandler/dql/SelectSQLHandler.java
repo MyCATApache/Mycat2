@@ -9,45 +9,25 @@ import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.optimizer.rules.TableSourceExtractor;
-import com.google.common.collect.ImmutableMultimap;
 import io.mycat.*;
-import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.booster.BoosterRuntime;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.hbt.HBTRunners;
-import io.mycat.hbt.ast.base.Schema;
-import io.mycat.hbt3.DrdsConfig;
-import io.mycat.hbt3.DrdsConst;
-import io.mycat.hbt3.DrdsRunner;
-import io.mycat.hbt4.DatasourceFactory;
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.PlanCache;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
-import io.mycat.mpp.Row;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.route.HBTQueryConvertor2;
-import io.mycat.route.InputHandler;
-import io.mycat.route.ParseContext;
-import io.mycat.route.ResultHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.upondb.MycatDBContext;
+import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Response;
-import io.mycat.util.SQLContext;
 import lombok.Getter;
-import lombok.SneakyThrows;
 
 import java.sql.JDBCType;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
@@ -127,9 +107,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
     protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
                                         SQLRequest<SQLSelectStatement> request, Response receiver) {
-        SQLContext sqlContext = request.getContext();
         SQLSelectStatement statement = request.getAst();
-        MycatDBContext mycatDBContext = sqlContext.getMycatDBContext();
 
 
         ASTCheckCollector collector = new ASTCheckCollector(statement);
@@ -157,7 +135,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         ///////////////////////////////common///////////////////////////////
-        Map<String, SchemaHandler> schemaMap = mycatDBContext.config().getSchemaMap();
+        Map<String, SchemaHandler> schemaMap = MetadataManager.INSTANCE.getSchemaMap();
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
         if (schemaName == null) {
             receiver.sendError(new MycatException("schema is null"));
@@ -166,7 +144,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         Set<String> tables = collector.getTables();
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler == null) {
-            String defaultSchema = sqlContext.getDefaultSchema();
+            String defaultSchema = dataContext.getDefaultSchema();
             if (defaultSchema != null) {
                 schemaHandler = schemaMap.get(defaultSchema);
             } else if (schemaName != null) {
@@ -198,107 +176,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return ExecuteCode.PERFORMED;
         }
 
-        if (false) {
-            ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(), statement);
-            Schema plan = parseContext.getPlan();
-            HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
-            ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
-            if (resultHandler instanceof InputHandler) {
-                InputHandler resultHandler1 = (InputHandler) resultHandler;
-                String targetName = resultHandler1.getTargetName();
-                String sql = resultHandler1.getSql();
-                receiver.proxySelect(targetName, sql);
-                return ExecuteCode.PERFORMED;
-            }
-            HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
-            RowBaseIterator run = hbtRunners.run(plan);
-            receiver.sendResultSet(() -> run, null);
-            return ExecuteCode.PERFORMED;
-        }
-        dataContext.block(() -> {
-            DrdsRunner drdsRunners = new DrdsRunner();
-            DrdsConst drdsConst = new DrdsConfig();
-            receiver.sendResultSet(() -> {
-                try (DatasourceFactory datasourceFactory = new DatasourceFactory() {
-
-                    @Override
-                    public void close() throws Exception {
-
-                    }
-
-                    @Override
-                    public void createTableIfNotExisted(String targetName, String createTableSql) {
-
-                    }
-
-                    @Override
-                    @SneakyThrows
-                    public Executor create(CalciteRowMetaData calciteRowMetaData, ImmutableMultimap<String, String> expandToSql) {
-                        NameableExecutor mycatWorker = MycatWorkerProcessor.INSTANCE.getMycatWorker();
-                        Future<RowBaseIterator> submit = mycatWorker.submit(() -> {
-                            Map<String, Deque<MycatConnection>> connectionMap = JdbcRuntime.INSTANCE.getConnection(expandToSql.keys().iterator());
-                            LinkedList<RowBaseIterator> builder = new LinkedList<>();
-                            for (Map.Entry<String, String> entry : expandToSql.entries()) {
-                                Deque<MycatConnection> connections = connectionMap.get(entry.getKey());
-                                MycatConnection mycatConnection = connections.remove();
-                                String sql = entry.getValue();
-                                builder.add(mycatConnection.executeQuery(calciteRowMetaData, sql));
-                            }
-                            System.out.println(expandToSql);
-                            return ComposeRowBaseIterator.of(builder);
-                        });
-                        return new Executor() {
-                            private MyCatResultSetEnumerator myCatResultSetEnumerator;
-
-                            @Override
-                            @SneakyThrows
-                            public void open() {
-                                if (myCatResultSetEnumerator != null) {
-                                    myCatResultSetEnumerator.close();
-                                }
-
-                                RowBaseIterator rowBaseIterators = submit.get();
-                                AtomicBoolean cancelFlag = new AtomicBoolean();
-                                this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(cancelFlag, rowBaseIterators);
-                            }
-
-                            @Override
-                            public Row next() {
-                                return myCatResultSetEnumerator.moveNext() ? Row.of(myCatResultSetEnumerator.current()) : null;
-                            }
-
-                            @Override
-                            public void close() {
-                                if (myCatResultSetEnumerator != null) {
-                                    myCatResultSetEnumerator.close();
-                                }
-                            }
-
-                            @Override
-                            public boolean isRewindSupported() {
-                                return false;
-                            }
-                        };
-                    }
-                }) {
-                    return drdsRunners.doAction(
-                            drdsConst,
-                            PlanCache.INSTANCE,
-                            datasourceFactory,
-                            dataContext.getDefaultSchema(),
-                            statement.toString(), false);
-                } catch (Exception throwable) {
-                    throw new MycatException(throwable);
-                }
-            }, () -> {
-                return drdsRunners.explainSql(
-                        drdsConst,
-                        PlanCache.INSTANCE,
-                        dataContext.getDefaultSchema(),
-                        statement.toString());
-            });
-        });
-
+        DrdsRunners.runOnDrds(dataContext, receiver, statement);
         return ExecuteCode.PERFORMED;
     }
 

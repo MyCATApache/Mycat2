@@ -16,10 +16,12 @@ import org.apache.calcite.tools.RelBuilder;
 import java.util.List;
 
 public class MycatFilterPhyViewRule extends RelOptRule {
-    public final static MycatFilterPhyViewRule INSTANCE = new MycatFilterPhyViewRule();
 
-    public MycatFilterPhyViewRule() {
+    private OptimizationContext optimizationContext;
+
+    public MycatFilterPhyViewRule(OptimizationContext optimizationContext) {
         super(operand(LogicalFilter.class, operand(LogicalTableScan.class, none())), "MycatFilterPhyViewRule");
+        this.optimizationContext = optimizationContext;
     }
 
     @Override
@@ -27,22 +29,34 @@ public class MycatFilterPhyViewRule extends RelOptRule {
         LogicalFilter filter = call.rel(0);
         LogicalTableScan input = call.rel(1);
         RexNode condition = filter.getCondition();
-        MycatLogicTable nodes = input.getTable().unwrap(MycatLogicTable.class);
-        if (nodes!=null){
-            Distribution distribution = nodes.computeDataNode(ImmutableList.of(condition));
-            List<DataNode> dataNodes = distribution.getDataNodes();
+        MycatLogicTable mycatLogicTable = input.getTable().unwrap(MycatLogicTable.class);
+        if (mycatLogicTable!=null){
+            Distribution distribution = mycatLogicTable.computeDataNode(ImmutableList.of(condition));
+            if (optimizationContext!=null&&distribution.isPartial()){
+                optimizationContext.setPredicateOnPhyView(true);
+            }
+            Iterable<DataNode> dataNodes;
+            if (optimizationContext!=null){
+                optimizationContext.setPredicateOnPhyView(true);
+                dataNodes= distribution.getDataNodes(optimizationContext.params);
+            }else {
+                dataNodes = distribution.getDataNodes();
+            }
             RelBuilder builder = call.builder();
+            builder.clear();
+            int count  = 0;
             for (DataNode dataNode : dataNodes) {
-                MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(nodes , dataNode);
+                MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(mycatLogicTable , dataNode);
                 RelOptTableImpl relOptTable1 = RelOptTableImpl.create(call.builder().getRelOptSchema(),
                         input.getRowType(),
                         mycatPhysicalTable,
-                        ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
+                        ImmutableList.of(dataNode.getSchema(), dataNode.getTable())
                 );
                 builder.push(LogicalTableScan.create(input.getCluster(), relOptTable1, ImmutableList.of())
                 ).filter(filter.getCondition());
+                count++;
             }
-            call.transformTo(builder.union(true, dataNodes.size()).build());
+            call.transformTo(builder.union(true, count).build());
         }
 
 

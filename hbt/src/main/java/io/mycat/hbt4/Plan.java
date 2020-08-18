@@ -14,9 +14,22 @@
  */
 package io.mycat.hbt4;
 
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.hbt3.DrdsRunner;
+import io.mycat.hbt3.DrdsSql;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.rel.RelNode;
 
 public interface Plan extends Comparable<Plan> {
+
     RelOptCost getRelOptCost();
-    public MycatRel getRelNode();
+
+    public MycatRowMetaData rowMetaData();
+
+    public Type getType();
+    public RelNode getRelNode();
+    static public enum Type{
+        PARSE,
+        FINAL
+    }
 }

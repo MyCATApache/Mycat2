@@ -23,6 +23,9 @@ import io.mycat.hbt4.logical.rel.*;
 
 public interface ExecutorImplementor {
 
+
+    void implementRoot(MycatRel rel);
+
     Executor implement(MycatNestedLoopJoin mycatJoin);
 
     Executor implement(MycatCalc mycatCalc);
@@ -76,6 +79,10 @@ public interface ExecutorImplementor {
     Executor implement(MycatLookUpView mycatLookUpView);
 
     Executor implement(MycatGather mycatGather);
+
+    Executor implement(MycatInsertRel mycatInsertRel);
+
+    Executor implement(MycatUpdateRel mycatUpdateRel);
 
 //    Executor implement(BottomView bottomView);
 }

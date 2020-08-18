@@ -14,8 +14,6 @@
  */
 package io.mycat.hbt3;
 
-import io.mycat.hbt4.DatasourceFactoryImpl;
-import io.mycat.hbt4.PlanCache;
 import io.mycat.util.JsonUtil;
 
 import java.io.File;
@@ -31,14 +29,14 @@ public class Main {
         URL resource = Main.class.getResource("/drds.json");
         String text = asCharSource(new File(resource.toURI()), StandardCharsets.UTF_8).read();
         DrdsConfig config = JsonUtil.from(text, DrdsConfig.class);
-        DrdsRunner drdsRunners = new DrdsRunner();
+//        DrdsRunner drdsRunners = new DrdsRunner();
         ResultSetHanlderImpl resultSetHanlder = new ResultSetHanlderImpl();
-        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
-            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, true);
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-            resultSetHanlder.onError(throwable);
-        }
+//        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
+//            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, true);
+//        } catch (Throwable throwable) {
+//            throwable.printStackTrace();
+//            resultSetHanlder.onError(throwable);
+//        }
 
     }
 

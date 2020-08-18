@@ -6,10 +6,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
-
 
 import java.util.Collections;
 import java.util.List;
@@ -24,11 +21,10 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
         if (items == null) {
             items = Collections.emptyList();
         }
-        MycatDBClientMediator client = MycatDBs.createClient(dataContext);
         for (SQLAssignItem item : items) {
             String name = Objects.toString(item.getTarget()).toLowerCase();
             String value = Objects.toString(item.getValue());
-            client.setVariable(name, value);
+            dataContext.setVariable(name, value);
         }
         response.sendOk();
         return ExecuteCode.PERFORMED;

@@ -14,13 +14,26 @@
  */
 package io.mycat.hbt4;
 
-import com.google.common.collect.ImmutableMultimap;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
+import com.google.common.collect.ImmutableList;
+import lombok.Data;
+
+import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
 
 public interface DatasourceFactory extends AutoCloseable {
 
+    public void open();
+
     public void createTableIfNotExisted(String targetName, String createTableSql);
 
-    Executor create(MycatRowMetaData  calciteRowMetaData, ImmutableMultimap<String, String> expandToSql);
+    Map<String, Connection> getConnections(List<String> targets);
+
+    void regist(ImmutableList<String> asList);
+
+    Connection getConnection(String key);
+
+    List<Connection> getTmpConnections(List<String> targets);
+
+    void recycleTmpConnections(List<Connection> connections);
 }

@@ -2,25 +2,13 @@ package io.mycat.sqlhandler.dql;
 
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatDataContext;
-import io.mycat.RootHelper;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mysql.InformationSchema;
-import io.mycat.beans.mysql.InformationSchemaRuntime;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.router.ShowStatementRewriter;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.upondb.MycatDBClientBasedConfig;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
-import java.util.*;
 
 /**
  * chenjunwen

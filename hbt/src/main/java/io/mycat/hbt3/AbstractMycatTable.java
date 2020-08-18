@@ -23,6 +23,8 @@ import java.util.List;
 public interface AbstractMycatTable {
     public abstract Distribution computeDataNode(List<RexNode> conditions);
 
+    public abstract boolean isSingle(List<RexNode> conditions);
+
     public abstract Distribution computeDataNode();
 
     public abstract ShardingInfo getShardingInfo();
@@ -38,4 +40,6 @@ public interface AbstractMycatTable {
     public default boolean isSharding() {
         return getShardingInfo().getType() == ShardingInfo.Type.sharding;
     }
+
+    boolean isPartial(List<RexNode> conditions);
 }

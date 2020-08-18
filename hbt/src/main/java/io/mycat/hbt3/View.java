@@ -15,7 +15,6 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -23,6 +22,7 @@ import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.hbt4.*;
+import io.mycat.util.Pair;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,30 +31,27 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.sql.util.SqlString;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 
 public class View extends AbstractRelNode implements MycatRel {
     RelNode relNode;
     Distribution distribution;
-    final boolean gather;
 
-    public View(RelTraitSet relTrait, RelNode input, Distribution dataNode, boolean gather) {
-        super(input.getCluster(),relTrait);
+    public View(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
+        super(input.getCluster(), relTrait);
         this.distribution = Objects.requireNonNull(dataNode);
         this.rowType = input.getRowType();
         this.relNode = input;
         this.traitSet = relTrait;
-        this.gather = gather;
     }
 //    public View(RelTraitSet relTrait, List<RelNode> inputs, Distribution dataNode, boolean gather) {
 //        super(inputs.get(0).getCluster(),relTrait);
@@ -66,26 +63,15 @@ public class View extends AbstractRelNode implements MycatRel {
 //    public static View of(List<RelNode> input, Distribution dataNodeInfo) {
 //        return new View(input.get(0).getTraitSet().replace(MycatConvention.INSTANCE),input,dataNodeInfo,false);
 //    }
+
     public static View of(RelNode input, Distribution dataNodeInfo) {
-        return of(input, dataNodeInfo, false);
+        return new View(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
     }
 
-    public static View of(RelNode input, Distribution dataNodeInfo, boolean gather) {
-        return new View(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, gather);
+    public static View of(RelTraitSet relTrait, RelNode input, Distribution dataNodeInfo) {
+        return new View(relTrait.replace(MycatConvention.INSTANCE), input, dataNodeInfo);
     }
 
-    public static View of(RelTraitSet relTrait, RelNode input, Distribution dataNodeInfo, boolean gather) {
-        return new View(relTrait.replace(MycatConvention.INSTANCE), input, dataNodeInfo, gather);
-    }
-
-    public String getSql() {
-        return MycatCalciteSupport.INSTANCE.convertToSql(relNode,
-                MycatSqlDialect.DEFAULT, false);
-    }
-
-    public String getSql(Map<String, Object> context) {
-        return getSql();//@todo
-    }
 
     public RelNode getRelNode() {
         return relNode;
@@ -97,7 +83,7 @@ public class View extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new View(traitSet,relNode,distribution,gather);
+        return new View(traitSet, relNode, distribution);
     }
 
     @Override
@@ -132,6 +118,10 @@ public class View extends AbstractRelNode implements MycatRel {
         return writer.name("View").into().item("sql", getSql()).ret();
     }
 
+    public String getSql() {
+        return MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false).getSql();
+    }
+
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
@@ -143,12 +133,9 @@ public class View extends AbstractRelNode implements MycatRel {
         return relOptCost;
     }
 
-    public boolean isGather() {
-        return gather;
-    }
 
     public RelNode expandToPhyRelNode() {
-        if (this.distribution.isSingle() || this.distribution.isBroadCast()) {
+        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
             return applyDataNode(dataNode);
         } else {
@@ -178,15 +165,15 @@ public class View extends AbstractRelNode implements MycatRel {
 //        }
 //    }
 
-    public ImmutableMultimap<String, String> expandToSql(boolean update) {
+    public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params) {
         if (this.distribution.isSingle() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
-            String sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update);
+            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update,params);
             return ImmutableMultimap.of(dataNode.getTargetName(), sql);
         } else {
-            ImmutableMultimap.Builder<String, String> builder = ImmutableMultimap.builder();
-            for (DataNode dataNode : this.distribution.getDataNodes()) {
-                String sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update);
+            ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
+            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
+                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update,params);
                 builder.put(dataNode.getTargetName(), sql);
             }
             return builder.build();
@@ -203,7 +190,7 @@ public class View extends AbstractRelNode implements MycatRel {
                     RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
                             scan.getRowType(),
                             physicalTable,
-                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(),dataNode.getTable())
+                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())
                     );
                     return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
                 }
@@ -211,5 +198,7 @@ public class View extends AbstractRelNode implements MycatRel {
             }
         });
     }
+
+
 
 }

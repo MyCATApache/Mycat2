@@ -31,7 +31,6 @@ import java.util.List;
      * Table-modification operator implemented in Mycat convention.
      */
     public  class MycatTableModify extends TableModify implements MycatRel {
-    private final Expression expression;
 
     public MycatTableModify(RelOptCluster cluster,
                             RelTraitSet traitSet,
@@ -42,19 +41,8 @@ import java.util.List;
                             List<String> updateColumnList,
                             List<RexNode> sourceExpressionList,
                             boolean flattened) {
-        super(cluster, traitSet, table, catalogReader, input, operation,
+        super(cluster, traitSet.replace(MycatConvention.INSTANCE), table, catalogReader, input, operation,
                 updateColumnList, sourceExpressionList, flattened);
-        assert input.getConvention() instanceof MycatConvention;
-        assert getConvention() instanceof MycatConvention;
-        final ModifiableTable modifiableTable =
-                table.unwrap(ModifiableTable.class);
-        if (modifiableTable == null) {
-            throw new AssertionError(); // TODO: user error in validator
-        }
-        this.expression = table.getExpression(Queryable.class);
-        if (expression == null) {
-            throw new AssertionError(); // TODO: user error in validator
-        }
     }
 
     @Override

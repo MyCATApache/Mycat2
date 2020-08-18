@@ -45,6 +45,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 
@@ -143,14 +144,9 @@ public class MycatBatchNestedLoopJoinRule extends RelOptRule {
             conditionList.add(condition2);
         }
         // Push a filter with batchSize disjunctions
-        Distribution distribution = lookupView.getDistribution();
-        List<DataNode> dataNodes = distribution.getDataNodes();
-        for (DataNode dataNode : dataNodes) {
-            RelNode relNode = lookupView.applyDataNode(dataNode);
-        }
 
         final RelNode lookupRelNode = lookupView.getRelNode();
-        relBuilder.push(lookupRelNode).filter(relBuilder.or(conditionList));
+        relBuilder.push(lookupRelNode).filter(relBuilder.call(SqlStdOperatorTable.OR,conditionList));
         RelNode right = MycatLookUpView.create(View.of(relBuilder.build(),lookupView.getDistribution()));
 
         JoinRelType joinType = join.getJoinType();

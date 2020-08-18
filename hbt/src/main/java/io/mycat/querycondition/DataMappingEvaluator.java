@@ -16,11 +16,8 @@ package io.mycat.querycondition;
 
 import io.mycat.*;
 import io.mycat.router.CustomRuleFunction;
-import io.mycat.router.ShardingTableHandler;
-import lombok.NonNull;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -28,12 +25,12 @@ import java.util.stream.Collectors;
 public class DataMappingEvaluator {
     private final Map<String, Collection<RangeVariable>> columnMap = new HashMap<>();
 
-    public void assignment(boolean or, String columnName, String value) {
-        getRangeVariables(columnName).add(new RangeVariable(columnName, or, RangeVariableType.EQUAL, value));
+    public void assignment(String columnName, String value) {
+        getRangeVariables(columnName).add(new RangeVariable(columnName, RangeVariableType.EQUAL, value));
     }
 
-    public void assignmentRange(boolean or, String columnName, String begin, String end) {
-        getRangeVariables(columnName).add(new RangeVariable(columnName, or, RangeVariableType.RANGE, begin, end));
+    public void assignmentRange(String columnName, String begin, String end) {
+        getRangeVariables(columnName).add(new RangeVariable(columnName, RangeVariableType.RANGE, begin, end));
     }
 
     private Collection<RangeVariable> getRangeVariables(String columnName) {

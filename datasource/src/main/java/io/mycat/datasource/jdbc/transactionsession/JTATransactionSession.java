@@ -14,10 +14,7 @@
  */
 package io.mycat.datasource.jdbc.transactionsession;
 
-import io.mycat.MycatDataContext;
-import io.mycat.ThreadUsageEnum;
-import io.mycat.TransactionSession;
-import io.mycat.XATranscationStatusUtil;
+import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -28,6 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
+import java.sql.Connection;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -77,25 +78,14 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
         this.bindThread = null;
     }
 
-    @Override
-    @SneakyThrows
-    protected DefaultConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly) {
-        return updateConnectionMap.compute(jdbcDataSource,
-                (dataSource, absractConnection) -> {
-                    if (absractConnection != null && !absractConnection.isClosed()) {
-                        return absractConnection;
-                    } else {
-                        return JdbcRuntime.INSTANCE//jta不使用连接本身的autocommit开启事务
-                                .getConnection(jdbcDataSource, null, transactionIsolation, readOnly);
-                    }
-                });
-    }
-
 
     @Override
     public String name() {
         return "xa";
     }
+
+
+
 
     @Override
     @SneakyThrows
@@ -140,6 +130,12 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
         String name = bindThread.map(i -> i.getName()).orElse("");
         Long id = bindThread.map(i -> i.getId()).orElse(null);
         return top.addText("threadName", name).addText("threadId", id).addText("useTransactionStatus", useTransaction);
+    }
+
+    @Override
+    public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
+        return JdbcRuntime.INSTANCE//jta不使用连接本身的autocommit开启事务
+                .getConnection(name, null, transactionIsolation, readOnly);
     }
 
 }

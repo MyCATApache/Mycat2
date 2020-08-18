@@ -35,6 +35,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.Iterator;
+import java.util.List;
 
 public class MycatHashJoinExecutor implements Executor {
     private final JoinRelType joinType;
@@ -50,6 +51,7 @@ public class MycatHashJoinExecutor implements Executor {
     private final int leftFieldCount;
     private final int rightFieldCount;
     private final RelDataType resultRelDataType;
+    private List<Object> params;
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
 
@@ -63,7 +65,7 @@ public class MycatHashJoinExecutor implements Executor {
                                  boolean generateNullsOnRight,
                                  int leftFieldCount,
                                  int rightFieldCount,
-                                 RelDataType resultRelDataType) {
+                                 RelDataType resultRelDataType, List<Object> params) {
         this.joinType = joinType;
         this.originOuter = this.outer = outer;
         this.originInner = this.inner = inner;
@@ -75,6 +77,7 @@ public class MycatHashJoinExecutor implements Executor {
         this.leftFieldCount = leftFieldCount;
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
+        this.params = params;
     }
 
     public MycatHashJoinExecutor create(
@@ -88,7 +91,8 @@ public class MycatHashJoinExecutor implements Executor {
             boolean generateNullsOnRight,
             int leftFieldCount,
             int rightFieldCount,
-            RelDataType resultRelDataType
+            RelDataType resultRelDataType,
+            List<Object> params
     ) {
         return new MycatHashJoinExecutor(
                 joinType,
@@ -101,7 +105,8 @@ public class MycatHashJoinExecutor implements Executor {
                 generateNullsOnRight,
                 leftFieldCount,
                 rightFieldCount,
-                resultRelDataType
+                resultRelDataType,
+                params
         );
     }
 
@@ -148,7 +153,8 @@ public class MycatHashJoinExecutor implements Executor {
                 case SEMI: {
                     Predicate2<Row, Row> predicate2;
                     if (nonEquiCondition != null) {
-                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition),
+                                resultRelDataType,params);
                         predicate2 = (v0, v1) -> {
                             o.values = resultSelector.apply(v0, v1).values;
                             return scalar.execute(o) == Boolean.TRUE;
@@ -168,7 +174,8 @@ public class MycatHashJoinExecutor implements Executor {
                     rows = EnumerableDefaults.hashJoin(outerEnumerate, innerEnumerate, outerKeySelector, innerKeySelector,
                             resultSelector, compare, generateNullsOnLeft, generateNullsOnRight);
                     if (nonEquiCondition != null) {
-                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                        MycatScalar scalar = MycatRexCompiler
+                                .compile(ImmutableList.of(nonEquiCondition), resultRelDataType,params);
                         rows = rows.where(v0 -> {
                             o.values = v0.values;
                             return scalar.execute(o) == Boolean.TRUE;

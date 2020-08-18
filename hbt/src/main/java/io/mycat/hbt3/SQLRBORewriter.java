@@ -26,10 +26,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
-import org.apache.calcite.rel.rules.AggregateUnionTransposeRule;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -52,9 +53,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 Project.class, Union.class, Filter.class, Sort.class);
     }
 
+    private OptimizationContext optimizationContext;
 
 
-    public SQLRBORewriter() {
+    public SQLRBORewriter(OptimizationContext optimizationContext) {
+        this.optimizationContext = optimizationContext;
     }
 
     @Override
@@ -80,7 +83,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
         if (RelMdSqlViews.filter(input)) {
-            return filter(input, filter);
+            return filter(input, filter, optimizationContext);
         } else {
             return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
         }
@@ -137,7 +140,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalIntersect intersect) {
-        return null;
+        for (RelNode input : intersect.getInputs()) {
+            RelNode accept = input.accept(this);
+        }
+
+        return intersect;
     }
 
     @Override
@@ -199,12 +206,17 @@ public class SQLRBORewriter extends RelShuttleImpl {
             return View.of(input, dataNodeInfo);
         } else {
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-            Number offset = sort.offset == null ? 0 : (Number) ((RexLiteral) sort.offset).getValue();
-            Number fetch = sort.fetch == null ? Long.MAX_VALUE : (Number) ((RexLiteral) sort.fetch).getValue();
-            BigDecimal offsetPlusFetch = BigDecimal.valueOf(offset.longValue() + fetch.longValue());
+            RexNode rexNode;
+            if (sort.offset==null&&sort.fetch!=null){
+                rexNode= sort.fetch;
+            }else if (sort.offset!=null&&sort.fetch==null){
+                rexNode = sort.offset;
+            }else {
+                rexNode = rexBuilder.makeCall(SqlStdOperatorTable.PLUS, sort.offset, sort.fetch);
+            }
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
-                    , rexBuilder.makeExactLiteral(offsetPlusFetch));
+                    , rexNode);
             input = View.of(input, dataNodeInfo);
             return MycatMergeSort.create(
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
@@ -229,20 +241,28 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return View.of(input, dataNodeInfo);
         } else {
+            RelNode backup = input;
             if (!(input instanceof Union)) {
                 input = LogicalUnion.create(ImmutableList.of(input, input), true);
                 input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             }
             HepProgramBuilder hepProgram = new HepProgramBuilder();
             hepProgram.addMatchLimit(1);
-            hepProgram.addRuleInstance(AggregateUnionTransposeRule.INSTANCE);
+            hepProgram.addRuleInstance(CoreRules.AGGREGATE_UNION_TRANSPOSE);
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
-            View multiView = View.of(
-                    bestExp.getInput(0).getInput(0),
-                    dataNodeInfo);
-            return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
+            if (bestExp instanceof Union && bestExp.getInputs().size() == 2 && bestExp.getInput(0) instanceof Aggregate && bestExp.getInput(1) instanceof Aggregate) {
+                View multiView = View.of(
+                        bestExp.getInput(0).getInput(0),
+                        dataNodeInfo);
+                return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
+            } else {
+                return View.of(
+                        backup,
+                        dataNodeInfo);
+            }
+
         }
     }
 
@@ -327,12 +347,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
     }
 
-    public static RelNode filter(RelNode input, LogicalFilter filter) {
+    public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {
         Distribution dataNodeInfo = null;
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDistribution();
             input = ((View) input).getRelNode();
-
         }
 
         if (input instanceof LogicalTableScan) {
@@ -340,6 +359,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelOptTable table = input.getTable();
             AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
             Distribution distribution = nodes.computeDataNode(ImmutableList.of(condition));
+            if (optimizationContext != null && distribution.isPartial()) {
+                optimizationContext.setPredicateOnView(true);
+            }
             return View.of(filter.copy(filter.getTraitSet(), (input), condition), distribution);
         }
         filter = (LogicalFilter) filter.copy(filter.getTraitSet(), ImmutableList.of(input));

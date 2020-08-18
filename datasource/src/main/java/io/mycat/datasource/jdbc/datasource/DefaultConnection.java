@@ -161,7 +161,8 @@ public class DefaultConnection implements MycatConnection {
     }
 
     @Override
-    public <T> T unwrap(Class<T> iface) throws Exception {
+    @SneakyThrows
+    public <T> T unwrap(Class<T> iface)  {
         if (Connection.class == iface) {
             return (T) connection;
         }
@@ -169,7 +170,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
     @Override
-    public boolean isWrapperFor(Class<?> iface) throws Exception {
+    public boolean isWrapperFor(Class<?> iface) {
         return unwrap(iface) != null;
     }
 }

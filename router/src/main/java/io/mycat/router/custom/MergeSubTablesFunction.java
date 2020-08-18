@@ -133,6 +133,11 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
         };
     }
 
+    @Override
+    public boolean isShardingKey(String name) {
+        return this.columnName.equals(name);
+    }
+
     private DataNode getDataNode(String tableName) {
         return new DataNode() {
             @Override

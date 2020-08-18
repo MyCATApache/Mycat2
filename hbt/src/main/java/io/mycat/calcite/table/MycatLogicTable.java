@@ -16,20 +16,26 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 import io.mycat.calcite.CalciteUtls;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt3.AbstractMycatTable;
 import io.mycat.hbt3.Distribution;
+import io.mycat.hbt3.LazyRexDistribution;
 import io.mycat.hbt4.ShardingInfo;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
-import org.apache.calcite.rex.RexNode;
+import lombok.NonNull;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.sql.SqlKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -65,8 +71,20 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
         switch (table.getType()) {
             case SHARDING:
                 ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
-                List<DataNode> backendTableInfos = CalciteUtls.getBackendTableInfos(shardingTableHandler, conditions);
-                return Distribution.of(backendTableInfos, shardingTableHandler.function().name(), Distribution.Type.Sharding);
+                return LazyRexDistribution.of(this,conditions,(paras)->{
+                    List<RexNode> rexNodes = new ArrayList<>();
+                    for (RexNode condition : conditions) {
+                        rexNodes.add(condition.accept(new RexShuttle(){
+                            @Override
+                            public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+                                RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                                Object o = paras.get(dynamicParam.getIndex());
+                                return rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
+                            }
+                        }));
+                    }
+                 return  CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
+                });
             case GLOBAL:
                 return computeDataNode();
             case NORMAL:
@@ -75,19 +93,45 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
         throw new UnsupportedOperationException();
     }
 
+
+    @Override
+    public boolean isSingle(List<RexNode> conditions) {
+        ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+        int size = shardingTableHandler.dataNodes().size();
+        if (size == 1) {
+            return true;
+        }
+        List<SimpleColumnInfo> columns = shardingTableHandler.getColumns();
+        if (conditions.size() == 1) {
+            RexNode rexNode = conditions.get(0);
+            if (rexNode.getKind() == SqlKind.EQUALS) {
+                RexCall node = (RexCall) rexNode;
+                List<RexNode> operands = node.getOperands();
+                RexNode rexNode1 = CalciteUtls.unCastWrapper(operands.get(0));
+                RexNode rexNode2 = CalciteUtls.unCastWrapper(operands.get(1));
+                if (rexNode1 instanceof RexInputRef && (rexNode2 instanceof RexLiteral || rexNode2 instanceof RexDynamicParam)) {
+                    int index = ((RexInputRef) rexNode1).getIndex();
+                    @NonNull String columnName = columns.get(index).getColumnName();
+                    return shardingTableHandler.function().isShardingKey(columnName);
+                }
+            }
+        }
+        return false;
+    }
+
     public Distribution computeDataNode() {
         switch (table.getType()) {
             case SHARDING:
                 ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
-                return Distribution.of(shardingTableHandler.dataNodes(), shardingTableHandler.function().name(), Distribution.Type.Sharding);
+                return Distribution.of(shardingTableHandler.dataNodes(), false, Distribution.Type.Sharding);
             case GLOBAL:
                 GlobalTableHandler globalTableHandler = (GlobalTableHandler) this.table;
                 List<DataNode> globalDataNode = globalTableHandler.getGlobalDataNode();
                 int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
-                return Distribution.of(ImmutableList.of(globalDataNode.get(i)), getShardingInfo().getDigest(), Distribution.Type.BroadCast);
+                return Distribution.of(ImmutableList.of(globalDataNode.get(i)), false, Distribution.Type.BroadCast);
             case NORMAL:
                 DataNode dataNode = ((NormalTableHandler) table).getDataNode();
-                return Distribution.of(ImmutableList.of(dataNode), getShardingInfo().getDigest(), Distribution.Type.PHY);
+                return Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY);
         }
         throw new UnsupportedOperationException();
     }
@@ -95,6 +139,16 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
     @Override
     public ShardingInfo getShardingInfo() {
         return shardingInfo;
+    }
+
+    @Override
+    public boolean isPartial(List<RexNode> conditions) {
+        ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+        int size = shardingTableHandler.dataNodes().size();
+        if (size > 1) {
+            return isSingle(conditions);
+        }
+        return false;
     }
 
 }

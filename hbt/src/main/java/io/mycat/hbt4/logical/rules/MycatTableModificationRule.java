@@ -43,11 +43,6 @@ public  class MycatTableModificationRule extends MycatConverterRule {
     public RelNode convert(RelNode rel) {
         final TableModify modify =
                 (TableModify) rel;
-        final ModifiableTable modifiableTable =
-                modify.getTable().unwrap(ModifiableTable.class);
-        if (modifiableTable == null) {
-            return null;
-        }
         final RelTraitSet traitSet =
                 modify.getTraitSet().replace(out);
         return new MycatTableModify(

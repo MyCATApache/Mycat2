@@ -170,4 +170,8 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         return res;
     }
 
+    @Override
+   public boolean isShardingKey(String name) {
+        return this.columnName.equalsIgnoreCase(name);
+    }
 }

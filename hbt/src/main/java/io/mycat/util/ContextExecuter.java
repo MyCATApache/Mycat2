@@ -9,15 +9,24 @@ import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.MySQLVariablesUtil;
+import io.mycat.MycatDataContext;
+import io.mycat.upondb.MycatDBContext;
+import io.mycat.upondb.MysqlFunctions;
 import lombok.AllArgsConstructor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@AllArgsConstructor
+
 public class ContextExecuter extends MySqlASTVisitorAdapter {
-    private final SQLContext context;
+    private final MycatDataContext  context;
+    static final Map<String, MySQLFunction> functions = new HashMap<>();
+    public ContextExecuter(MycatDataContext  context) {
+        this.context = context;
+    }
 
     @Override
     public boolean visit(SQLMethodInvokeExpr x) {
@@ -25,28 +34,25 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
         String methodName = x.getMethodName();
         SQLObject parent = x.getParent();
         if (parent instanceof SQLReplaceable) {
-            Map<String, MySQLFunction> functions = context.functions();
-            if (functions != null) {
-                MySQLFunction mySQLFunction = functions.get(methodName);
-                if (mySQLFunction != null) {
-                    String[] strings = arguments.stream().map(i -> SQLUtils.normalize(Objects.toString(i))).toArray(i -> new String[i]);
-                    Object res = mySQLFunction.eval(context, strings);
-                    SQLExpr sqlExpr;
-                    if (res instanceof SQLValuableExpr){
-                        sqlExpr =(SQLValuableExpr) res;
-                    }else {
-                        sqlExpr = SQLExprUtils.fromJavaObject(res);
-                    }
-                    sqlExpr.setParent(parent);
-                    ((SQLReplaceable) parent).replace(x, sqlExpr);
+            MySQLFunction mySQLFunction = functions.get(methodName);
+            if (mySQLFunction != null) {
+                String[] strings = arguments.stream().map(i -> SQLUtils.normalize(Objects.toString(i))).toArray(i -> new String[i]);
+                Object res = mySQLFunction.eval(context, strings);
+                SQLExpr sqlExpr;
+                if (res instanceof SQLValuableExpr){
+                    sqlExpr =(SQLValuableExpr) res;
+                }else {
+                    sqlExpr = SQLExprUtils.fromJavaObject(res);
+                }
+                sqlExpr.setParent(parent);
+                ((SQLReplaceable) parent).replace(x, sqlExpr);
 
-                    try {
-                        if (parent instanceof SQLSelectItem) {
-                            ((SQLSelectItem) parent).setAlias(x.toString());
-                        }
-                    } catch (Throwable ignored) {
-
+                try {
+                    if (parent instanceof SQLSelectItem) {
+                        ((SQLSelectItem) parent).setAlias(x.toString());
                     }
+                } catch (Throwable ignored) {
+
                 }
             }
         }
@@ -56,7 +62,7 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
     @Override
     public boolean visit(SQLExprTableSource x) {
         String schema = x.getSchema();
-        if (schema == null) {
+        if (schema == null&&context.getDefaultSchema()!=null) {
             x.setSchema(context.getDefaultSchema());
         }
         return super.visit(x);
@@ -80,7 +86,7 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
             SQLObject replacePointer = parent.getParent();
             if (replacePointer instanceof SQLReplaceable) {
                 String alias = replacePointer.toString();
-                Object sqlVariantRef = context.getSQLVariantRef(parent.toString().toLowerCase());
+                Object sqlVariantRef = context.getVariable(parent.toString().toLowerCase());
                 if (sqlVariantRef != null) {
                     if (sqlVariantRef instanceof Boolean) {
                         if (Boolean.TRUE.equals(sqlVariantRef)) {
@@ -102,7 +108,7 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
                 }
             }
         } else if (parent instanceof SQLReplaceable) {
-            Object sqlVariantRef = context.getSQLVariantRef(x.toString().toLowerCase());
+            Object sqlVariantRef = context.getVariable(x.toString().toLowerCase());
             if (sqlVariantRef != null) {
                 SQLExpr sqlExpr = SQLExprUtils.fromJavaObject(sqlVariantRef);
                 sqlExpr.setParent(parent);
@@ -115,5 +121,21 @@ public class ContextExecuter extends MySqlASTVisitorAdapter {
             }
         }
         return super.visit(x);
+    }
+
+    static {
+        addFunction(MysqlFunctions.next_value_for);
+        addFunction(MysqlFunctions.last_insert_id);
+        addFunction(MysqlFunctions.current_user);
+        addFunction(MysqlFunctions.CURRENT_DATE);
+//        addFunction(MysqlFunctions.NOW);
+    }
+
+    static void addFunction(MySQLFunction function) {
+        for (String functionName : function.getFunctionNames()) {
+            functions.put(functionName, function);
+            functions.put(functionName.toUpperCase(), function);
+            functions.put(functionName.toLowerCase(), function);
+        }
     }
 }

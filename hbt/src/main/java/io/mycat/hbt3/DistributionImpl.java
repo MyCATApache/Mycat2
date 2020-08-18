@@ -6,19 +6,24 @@ import java.util.List;
 
 public class DistributionImpl extends Distribution {
     final List<DataNode> dataNodeList;
-    final String digest;
     final Type type;
+    final boolean partial;
 
 
     public DistributionImpl(List<DataNode> dataNodeList,
-                            String digest,
-    Type type) {
+                            boolean partial,
+                            Type type) {
+        this.partial = partial;
         this.type = type;
         if (dataNodeList.isEmpty()) {
             throw new AssertionError();
         }
         this.dataNodeList = dataNodeList;
-        this.digest = digest;
+    }
+
+    @Override
+    public Iterable<DataNode> getDataNodes(List<Object> params) {
+        return dataNodeList;
     }
 
     @Override
@@ -27,33 +32,28 @@ public class DistributionImpl extends Distribution {
     }
 
     @Override
-    public   String digest() {
-        return digest;
-    }
-
-    @Override
-    public  boolean isSingle() {
+    public boolean isSingle() {
         return dataNodeList.size() == 1;
     }
 
     @Override
-    public  boolean isBroadCast() {
+    public boolean isBroadCast() {
         return false;
     }
 
     @Override
-    public  boolean isSharding() {
+    public boolean isSharding() {
         return false;
     }
 
     @Override
-    public  boolean isJoin() {
-        return false;
+    public boolean isPartial() {
+        return partial;
     }
 
     @Override
     public Type type() {
-        return   this.type;
+        return this.type;
     }
 
     @Override

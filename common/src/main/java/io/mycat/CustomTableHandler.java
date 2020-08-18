@@ -6,20 +6,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class CustomTableHandler implements TableHandler {
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
-        return null;
-    }
-
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler() {
-        return null;
-    }
-
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler() {
-        return null;
-    }
 
     @Override
     public LogicTableType getType() {

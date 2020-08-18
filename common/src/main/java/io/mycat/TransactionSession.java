@@ -14,13 +14,17 @@
  */
 package io.mycat;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.util.Dumper;
+
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Junwen Chen
  **/
-public interface TransactionSession extends Dumpable{
+public interface TransactionSession extends Dumpable {
 
     public final static String LOCAL = "local";
     public final static String XA = "xa";
@@ -42,7 +46,11 @@ public interface TransactionSession extends Dumpable{
 
     boolean isAutocommit();
 
-    MycatConnection getConnection(String targetName);
+    default MycatConnection getConnection(String targetName) {
+        return getConnection(ImmutableList.of(targetName)).get(targetName).getFirst();
+    }
+
+    Map<String, Deque<MycatConnection>> getConnection(List<String> targetNames);
 
     void reset();
 
@@ -70,5 +78,4 @@ public interface TransactionSession extends Dumpable{
     public void doAction();
 
     public void addCloseResource(AutoCloseable closeable);
-
 }

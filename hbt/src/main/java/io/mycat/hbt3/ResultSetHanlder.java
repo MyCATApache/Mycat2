@@ -18,7 +18,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.mpp.Row;
 
 public interface ResultSetHanlder {
-   void onOk();
+   void onOk(long lastInsertId, long affectedRow);
    void onMetadata(MycatRowMetaData mycatRowMetaData);
    void onRow(Row row);
    void onError(Throwable e);

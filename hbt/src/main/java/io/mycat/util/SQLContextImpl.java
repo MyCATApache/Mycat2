@@ -4,15 +4,13 @@ import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.MysqlFunctions;
 import lombok.Data;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public class SQLContextImpl implements SQLContext {
-    static final Map<String, MySQLFunction> functions = new HashMap<>();
+
     private MycatDBClientMediator mycatDBClientMediator;
 
     public SQLContextImpl(MycatDBClientMediator mycatDBClientMediator) {
@@ -43,7 +41,7 @@ public class SQLContextImpl implements SQLContext {
 
     @Override
     public Map<String, MySQLFunction> functions() {
-        return functions;
+        return null;
     }
 
     @Override
@@ -310,19 +308,5 @@ public class SQLContextImpl implements SQLContext {
 //        };
 //    }
 
-    static {
-        addFunction(MysqlFunctions.next_value_for);
-        addFunction(MysqlFunctions.last_insert_id);
-        addFunction(MysqlFunctions.current_user);
-        addFunction(MysqlFunctions.CURRENT_DATE);
-//        addFunction(MysqlFunctions.NOW);
-    }
 
-    static void addFunction(MySQLFunction function) {
-        for (String functionName : function.getFunctionNames()) {
-            functions.put(functionName, function);
-            functions.put(functionName.toUpperCase(), function);
-            functions.put(functionName.toLowerCase(), function);
-        }
-    }
 }

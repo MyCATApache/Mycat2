@@ -14,9 +14,14 @@
  */
 package io.mycat.hbt4.executor;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.MycatWorkerProcessor;
+import io.mycat.NameableExecutor;
+import io.mycat.api.collector.ComposeFutureRowBaseIterator;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.DatasourceFactory;
 import io.mycat.hbt4.Executor;
@@ -28,8 +33,16 @@ import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.sql.util.SqlString;
 
+import java.sql.Connection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
 
 /**
  * it must be on the right of MycatBatchNestedLoopJoinExecutor
@@ -39,22 +52,29 @@ public class MycatLookupExecutor implements Executor {
     private final View view;
     private final CalciteRowMetaData metaData;
     private DatasourceFactory factory;
-    private String currentSql;
-    private Executor executor;
+    private List<Object> params;
+    private MyCatResultSetEnumerator myCatResultSetEnumerator = null;
+    private List<Connection> tmpConnections;
 
-    public MycatLookupExecutor(View view, DatasourceFactory factory) {
+    public MycatLookupExecutor(View view, DatasourceFactory factory, List<Object> params) {
         this.view = view;
         this.factory = factory;
+        this.params = params;
         this.metaData = new CalciteRowMetaData(this.view.getRowType().getFieldList());
     }
 
-    public static MycatLookupExecutor create(View view, DatasourceFactory factory) {
-        return new MycatLookupExecutor(view, factory);
+    public static MycatLookupExecutor create(View view, DatasourceFactory factory, List<Object> params) {
+        return new MycatLookupExecutor(view, factory, params);
     }
 
     void setIn(List<Row> args) {
-        if (executor!=null){
-            executor.close();
+        if (myCatResultSetEnumerator != null) {
+            myCatResultSetEnumerator.close();
+            myCatResultSetEnumerator = null;
+        }
+        if (tmpConnections != null) {
+            factory.recycleTmpConnections(tmpConnections);
+            tmpConnections = null;
         }
         //convert relNode to sql with cor variable
         RelNode accept = this.view.getRelNode().accept(new RexShuttle() {
@@ -73,28 +93,51 @@ public class MycatLookupExecutor implements Executor {
             }
         });
         View newView = View.of(accept, this.view.getDistribution());
-        this.executor = factory.create(metaData, newView.expandToSql(false));
+        ImmutableMultimap<String, SqlString> expandToSqls = newView.expandToSql(false, params);
+
+        MycatWorkerProcessor instance = MycatWorkerProcessor.INSTANCE;
+        NameableExecutor mycatWorker = instance.getMycatWorker();
+        LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
+        this.tmpConnections = factory.getTmpConnections(expandToSqls.keys().asList());
+        int i = 0;
+        for (Map.Entry<String, SqlString> entry : expandToSqls.entries()) {
+            Connection connection = tmpConnections.get(i);
+            String target = entry.getKey();
+            SqlString sql = entry.getValue();
+            futureArrayList.add(mycatWorker.submit(() -> executeQuery(connection, metaData, sql, params)));
+            i++;
+        }
+        AtomicBoolean flag = new AtomicBoolean();
+        ComposeFutureRowBaseIterator composeFutureRowBaseIterator = new ComposeFutureRowBaseIterator(metaData, futureArrayList);
+        this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(flag, composeFutureRowBaseIterator);
     }
 
     @Override
     public void open() {
-        this.executor.open();
+
     }
 
     @Override
     public Row next() {
-        return this.executor.next();
+        if (myCatResultSetEnumerator.moveNext()) {
+            return Row.of(myCatResultSetEnumerator.current());
+        }
+        return null;
     }
 
     @Override
     public void close() {
-        if (this.executor!=null){
-            this.executor.close();
+        if (this.myCatResultSetEnumerator != null) {
+            this.myCatResultSetEnumerator.close();
+        }
+        if (tmpConnections != null) {
+            factory.recycleTmpConnections(tmpConnections);
+            tmpConnections = null;
         }
     }
 
     @Override
     public boolean isRewindSupported() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 }
