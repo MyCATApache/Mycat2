@@ -1,33 +1,25 @@
-metadata: #读写分离无需配置
+metadata:
   schemas: [{
               schemaName: 'db1' ,   targetName: 'repli',
               shadingTables: {
                 travelrecord: {
-                  columns: [{
-                              columnName: id ,#分片字段信息,显式提供,
-                              shardingType: NATURE_DATABASE_TABLE ,#类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
-                              function: {
-                                clazz: io.mycat.router.function.PartitionByLong ,
-                                name: partitionByLong,
-                                properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}
-                              }
-                            }],
-                  createTableSQL: 'CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
+                  function: {
+                    clazz: io.mycat.router.function.PartitionByLong ,
+                    name: partitionByLong,
+                    properties: {partitionCount: '1', partitionLength: '1024',columnName: id }, ranges: {}
+                  },
                   dataNodes: [{targetName: repli ,schemaName: db1, tableName: travelrecord}] #9999999999
                 },
               },
-              globalTables: {
+              normalTables: {
                 company:{
-                  createTableSQL: 'CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))',
-                  dataNodes: [{targetName: defaultDs2 ,schemaName: db1, tableName: company},{targetName: defaultDs2 ,schemaName: db2, tableName: company}]
+                  dataNode: {targetName: defaultDs2,schemaName: db1, tableName: company}
                 },
                 travelrecordWrite:{
-                  createTableSQL: 'CREATE TABLE `travelrecordWrite` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
-                  dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord}]
+                  dataNode: {targetName: defaultDs,schemaName: db1, tableName: travelrecord}
                 },
                 travelrecordRead: {
-                  createTableSQL: 'CREATE TABLE `travelrecordRead` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
-                  dataNodes: [{targetName: defaultDs2 ,schemaName: db1, tableName: travelrecord}]
+                  dataNode: {targetName: defaultDs2,schemaName: db1, tableName: travelrecord}
                 }
               }
             }]

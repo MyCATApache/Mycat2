@@ -65,6 +65,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
+import static io.mycat.calcite.CalciteConvertors.columnInfoListBySQL;
 import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
 
 /**
@@ -212,7 +213,10 @@ public enum MetadataManager {
                                 NormalTableConfig tableConfigEntry,
                                 ShardingQueryRootConfig.PrototypeServer prototypeServer) {
         //////////////////////////////////////////////
-        List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(tableConfigEntry.getDataNode().getTargetName(),schemaName,tableName));
+        NormalTableConfig.BackEndTableInfoConfig dataNode = tableConfigEntry.getDataNode();
+        List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
+              Optional.ofNullable( dataNode.getSchemaName()).orElse(schemaName),
+                Optional.ofNullable(  dataNode.getTableName()).orElse(tableName)));
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
@@ -379,28 +383,33 @@ public enum MetadataManager {
         if (backends == null || backends.isEmpty()) {
             return null;
         }
-        try {
-            DataNode backendTableInfo = backends.get(0);
-            String targetName = backendTableInfo.getTargetName();
-            String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-            String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
-                String sql = "SHOW CREATE TABLE " + targetSchemaTable;
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
-                    while (rowBaseIterator.next()) {
-                        String string = rowBaseIterator.getString(2);
-                        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                        MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
+        for (DataNode backend : backends) {
+            try {
+                DataNode backendTableInfo = backends.get(0);
+                String targetName = backendTableInfo.getTargetName();
+                String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
+                String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
+                    String sql = "SHOW CREATE TABLE " + targetSchemaTable;
+                    try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
+                        while (rowBaseIterator.next()) {
+                            String string = rowBaseIterator.getString(2);
+                            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+                            MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
 
-                        sqlStatement1.setTableName(SQLUtils.normalize(tableName));
-                        sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
-                        return sqlStatement1.toString();
+                            sqlStatement1.setTableName(SQLUtils.normalize(tableName));
+                            sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                            return sqlStatement1.toString();
+                        }
                     }
                 }
+            } catch (Throwable e) {
+                LOGGER.error("can not get create table sql from:"+backend.getTargetName()+backend.getTargetSchemaTable(),e);
+               continue;
             }
-        } catch (Throwable e) {
-            LOGGER.error("无法根据jdbc连接获取建表sql:{} {}", backends, e);
         }
+
+
         return null;
     }
 

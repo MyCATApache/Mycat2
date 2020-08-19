@@ -21,8 +21,12 @@ import io.mycat.hbt3.AbstractMycatTable;
 import io.mycat.hbt3.Distribution;
 import io.mycat.hbt4.ShardingInfo;
 import lombok.Getter;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.schema.TranslatableTable;
 
 import java.util.List;
 
@@ -30,7 +34,7 @@ import java.util.List;
  * @author Junwen Chen
  **/
 @Getter
-public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatTable {
+public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatTable, TranslatableTable {
     final MycatLogicTable logicTable;
     final DataNode dataNode;//真实表名
     final Statistic statistic;//MycatLogicTable的构造函数没有statistic
@@ -74,5 +78,10 @@ public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatT
     @Override
     public boolean isPartial(List<RexNode> conditions) {
         return false;
+    }
+
+    @Override
+    public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+        return LogicalTableScan.create(context.getCluster(),relOptTable,ImmutableList.of());
     }
 }

@@ -18,6 +18,8 @@ public class NormalTableConfig {
     @EqualsAndHashCode
     public static class BackEndTableInfoConfig {
         private String targetName;
+        private String schemaName;
+        private String tableName;
 
         public BackEndTableInfoConfig() {
 

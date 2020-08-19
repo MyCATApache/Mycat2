@@ -32,11 +32,13 @@ import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.hbt3.DrdsConfig;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.preparestatement.PrepareStatementManager;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import org.slf4j.Logger;
@@ -230,22 +232,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
-        String sql = preparedStatement.getSqlByBindValue(values);
-        MycatDBClientMediator client = MycatDBs.createClient(dataContext);
-        try {
-            if (preparedStatement.isQuery()) {
-                RowBaseIterator baseIterator = client.query(sql);
-                ReceiverImpl receiver = new ReceiverImpl(session);
-                receiver.sendBinaryResultSet(() -> baseIterator);
-            } else {
-                RowBaseIterator baseIterator = client.query(sql);
-                baseIterator.next();//触发计算
-                ReceiverImpl receiver = new ReceiverImpl(session);
-                receiver.sendResponse(new MycatResponse[]{(UpdateRowIteratorResponse) baseIterator}, null);
-            }
-        } finally {
-            client.close();
-        }
+        SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
+        DrdsConfig config = new DrdsConfig();
+        throw new UnsupportedOperationException();
     }
 
     @Override

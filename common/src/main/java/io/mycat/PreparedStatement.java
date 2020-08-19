@@ -127,6 +127,10 @@ public class PreparedStatement {
      * @param values
      */
     public String getSqlByBindValue(BindValue[] values) {
+        SQLStatement sqlStatement = getSQLStatementByBindValue(values);
+        return sqlStatement.toString();
+    }
+    public SQLStatement getSQLStatementByBindValue(BindValue[] values) {
         if (this.bindValues != values){
             throw new AssertionError();
         }
@@ -150,7 +154,7 @@ public class PreparedStatement {
                 super.endVisit(x);
             }
         });
-        return sqlStatement.toString();
+        return sqlStatement;
     }
     public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
         if (o == null) {
