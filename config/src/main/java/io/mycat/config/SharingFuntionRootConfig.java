@@ -27,7 +27,6 @@ public class SharingFuntionRootConfig {
         Map<String, String> properties = new HashMap<>();
         Map<String, String> ranges = new HashMap<>();
 
-
         public ShardingFuntion() {
         }
     }

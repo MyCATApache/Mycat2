@@ -11,6 +11,5 @@ import lombok.Getter;
 @Builder
 public class SQLRequest<Statement> {
     private final Statement ast;
-    private final SQLContext context;
     private final MycatRequest request;
 }

@@ -17,6 +17,7 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.BaseExecutorImplementor;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.*;
@@ -26,7 +27,10 @@ import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
 import org.apache.calcite.interpreter.Scalar;
-import org.apache.calcite.linq4j.*;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
@@ -71,7 +75,7 @@ public class MycatSortAggExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
-    public MycatSortAggExecutor(Executor input, Aggregate rel) {
+    protected MycatSortAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
         ImmutableBitSet union = ImmutableBitSet.of();
@@ -94,6 +98,13 @@ public class MycatSortAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
+    public static MycatSortAggExecutor create(Executor input, Aggregate rel) {
+        return new MycatSortAggExecutor(
+                input,
+                rel
+        );
+    }
+
 
     @Override
     public void open() {
@@ -111,7 +122,7 @@ public class MycatSortAggExecutor implements Executor {
                 Row row1 = Row.create(ints.length);
                 int index = 0;
                 for (int anInt : ints) {
-                    row1.values[index]=  a0.getObject(anInt);
+                    row1.values[index] = a0.getObject(anInt);
                     index++;
                 }
                 return row1;
@@ -139,9 +150,9 @@ public class MycatSortAggExecutor implements Executor {
                     Row rb = Row.create(outputRowLength);
                     int index = 0;
                     for (Integer groupPos : unionGroups) {
-                            if (groupSet.get(groupPos)) {
-                                rb.set(index, key.getObject(index));
-                            }
+                        if (groupSet.get(groupPos)) {
+                            rb.set(index, key.getObject(index));
+                        }
                         // need to set false when not part of grouping set.
                         index++;
                     }
@@ -174,7 +185,7 @@ public class MycatSortAggExecutor implements Executor {
 
     @Override
     public boolean isRewindSupported() {
-        return true;
+        return input.isRewindSupported();
     }
 
     private AccumulatorFactory getAccumulator(final AggregateCall call,
@@ -265,73 +276,7 @@ public class MycatSortAggExecutor implements Executor {
         } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
             return () -> new AvgAccumulator(call);
         } else {
-            final JavaTypeFactory typeFactory =
-                    (JavaTypeFactory) rel.getCluster().getTypeFactory();
-            int stateOffset = 0;
-            final AggImpState agg = new AggImpState(0, call, false);
-            int stateSize = agg.state.size();
-
-            final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType =
-                    PhysTypeImpl.of(typeFactory, rel.getInput().getRowType(),
-                            JavaRowFormat.ARRAY);
-            final RelDataTypeFactory.Builder builder = typeFactory.builder();
-            for (Expression expression : agg.state) {
-                builder.add("a",
-                        typeFactory.createJavaType((Class) expression.getType()));
-            }
-            final PhysType accPhysType =
-                    PhysTypeImpl.of(typeFactory, builder.build(), JavaRowFormat.ARRAY);
-            final ParameterExpression inParameter =
-                    Expressions.parameter(inputPhysType.getJavaRowType(), "in");
-            final ParameterExpression acc_ =
-                    Expressions.parameter(accPhysType.getJavaRowType(), "acc");
-
-            List<Expression> accumulator = new ArrayList<>(stateSize);
-            for (int j = 0; j < stateSize; j++) {
-                accumulator.add(accPhysType.fieldReference(acc_, j + stateOffset));
-            }
-            agg.state = accumulator;
-
-            AggAddContext addContext =
-                    new AggAddContextImpl(builder2, accumulator) {
-                        public List<RexNode> rexArguments() {
-                            List<RexNode> args = new ArrayList<>();
-                            for (int index : agg.call.getArgList()) {
-                                args.add(RexInputRef.of(index, inputPhysType.getRowType()));
-                            }
-                            return args;
-                        }
-
-                        public RexNode rexFilterArgument() {
-                            return agg.call.filterArg < 0
-                                    ? null
-                                    : RexInputRef.of(agg.call.filterArg,
-                                    inputPhysType.getRowType());
-                        }
-
-                        public RexToLixTranslator rowTranslator() {
-                            final SqlConformance conformance =
-                                    SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
-                            return RexToLixTranslator.forAggregation(typeFactory,
-                                    currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl(
-                                            Collections.singletonList(
-                                                    Pair.of((Expression) inParameter, inputPhysType))),
-                                    conformance)
-                                    .setNullable(currentNullables());
-                        }
-                    };
-
-            agg.implementor.implementAdd(agg.context, addContext);
-
-            final ParameterExpression context_ =
-                    Expressions.parameter(Context.class, "context");
-            final ParameterExpression outputValues_ =
-                    Expressions.parameter(Object[].class, "outputValues");
-            Scalar addScalar = baz(context_, outputValues_, builder2.toBlock());
-            return new ScalarAccumulatorDef(null, addScalar, null,
-                    rel.getInput().getRowType().getFieldCount(), stateSize);
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -407,25 +352,25 @@ public class MycatSortAggExecutor implements Executor {
      * Accumulator powered by {@link Scalar} code fragments.
      */
     private static class ScalarAccumulatorDef implements AccumulatorFactory {
-        final Scalar initScalar;
-        final Scalar addScalar;
-        final Scalar endScalar;
-        final Context sendContext;
-        final Context endContext;
+        final MycatScalar initScalar;
+        final MycatScalar addScalar;
+        final MycatScalar endScalar;
+        final MycatContext sendContext;
+        final MycatContext endContext;
         final int rowLength;
         final int accumulatorLength;
 
         @SneakyThrows
-        private ScalarAccumulatorDef(Scalar initScalar, Scalar addScalar,
-                                     Scalar endScalar, int rowLength, int accumulatorLength) {
+        private ScalarAccumulatorDef(MycatScalar initScalar, MycatScalar addScalar,
+                                     MycatScalar endScalar, int rowLength, int accumulatorLength) {
             this.initScalar = initScalar;
             this.addScalar = addScalar;
             this.endScalar = endScalar;
             this.accumulatorLength = accumulatorLength;
             this.rowLength = rowLength;
-            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.sendContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.sendContext.values = new Object[rowLength + accumulatorLength];
-            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.endContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.endContext.values = new Object[accumulatorLength];
         }
 
@@ -915,8 +860,8 @@ public class MycatSortAggExecutor implements Executor {
      * adds a bridge method that implements {@link Scalar#execute(Context)}, and
      * compiles.
      */
-    static Scalar baz(ParameterExpression context_,
-                      ParameterExpression outputValues_, BlockStatement block) {
+    static MycatScalar baz(ParameterExpression context_,
+                           ParameterExpression outputValues_, BlockStatement block) {
         final List<MemberDeclaration> declarations = new ArrayList<>();
 
         // public void execute(Context, Object[] outputValues)
@@ -957,7 +902,7 @@ public class MycatSortAggExecutor implements Executor {
         }
     }
 
-    static Scalar getScalar(ClassDeclaration expr, String s)
+    static MycatScalar getScalar(ClassDeclaration expr, String s)
             throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
@@ -974,6 +919,6 @@ public class MycatSortAggExecutor implements Executor {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation(true, true, true);
         }
-        return (Scalar) cbe.createInstance(new StringReader(s));
+        return (MycatScalar) cbe.createInstance(new StringReader(s));
     }
 }

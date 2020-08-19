@@ -1,9 +1,6 @@
 package io.mycat.runtime;
 
-import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
-import io.mycat.ThreadUsageEnum;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -13,8 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -29,6 +25,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     public String name() {
         return "xa";
     }
+
+
 
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
@@ -88,24 +86,17 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     }
 
     @Override
-    protected DefaultConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly) {
-        Objects.requireNonNull(jdbcDataSource);
-        return updateConnectionMap.compute(jdbcDataSource,
-                (dataSource, absractConnection) -> {
-                    if (absractConnection != null && !absractConnection.isClosed()) {
-                        return absractConnection;
-                    } else {
-                        return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
-                    }
-                });
-    }
-
-    @Override
     public Dumper snapshot() {
         return super.snapshot()
                 .addText("name",name())
                 .addText("threadUsage",getThreadUsageEnum())
                 .addText("transactionType",this.transactionType());
+    }
+
+    @Override
+    public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
+        return JdbcRuntime.INSTANCE
+                .getConnection(name, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
+
     }
 }

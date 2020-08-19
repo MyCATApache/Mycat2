@@ -15,11 +15,17 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.table.MycatSQLTableScan;
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.hbt3.View;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -32,6 +38,7 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.NlsString;
 import org.slf4j.Logger;
@@ -99,12 +106,38 @@ public class RelNodeConvertor {
                 return logicalCorrelate(relNode);
             }
         }
-        if (relNode instanceof TableScan) {
+        if (relNode instanceof MycatTransientSQLTableScan) {
             List<FieldType> fields = getFields(relNode);
-            TableScan relNode1 = (TableScan) relNode;
-            MycatSQLTableScan unwrap = relNode1.getTable().unwrap(MycatSQLTableScan.class);
-            if (unwrap != null) {
-                return new FromSqlSchema(fields, unwrap.getTargetName(), unwrap.getSql());
+            MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) relNode;
+            return new FromSqlSchema(fields, tableScan.getTargetName(), tableScan.getSql());
+        }
+        if (relNode instanceof View) {
+            List<FieldType> fields = getFields(relNode);
+            View tableScan = (View) relNode;
+            ImmutableMultimap<String, SqlString> stringStringImmutableMultimap = tableScan.expandToSql(false,Collections.emptyList());
+            List<Schema> fromSqlSchemas = stringStringImmutableMultimap.entries().stream().map(i -> new FromSqlSchema(fields, i.getKey(), i.getValue().getSql())).collect(Collectors.toList());
+            if (fromSqlSchemas.size() > 1) {
+                return new SetOpSchema(HBTOp.UNION_ALL, fromSqlSchemas);
+            } else {
+                return fromSqlSchemas.get(0);
+            }
+        }
+        if (relNode instanceof LogicalTableScan) {
+            List<FieldType> fields = getFields(relNode);
+            LogicalTableScan tableScan = (LogicalTableScan) relNode;
+            MycatPhysicalTable physicalTable = tableScan.getTable().unwrap(MycatPhysicalTable.class);
+            if (physicalTable != null) {
+                DataNode dataNode = physicalTable.getDataNode();
+                String targetName = dataNode.getTargetName();
+                String sql = "select * from " + dataNode.getTargetSchemaTable();
+                return new FromSqlSchema(fields, targetName, sql);
+            }
+            MycatLogicTable mycatLogicTable = tableScan.getTable().unwrap(MycatLogicTable.class);
+            if (mycatLogicTable != null) {
+                TableHandler tableHandler = mycatLogicTable.logicTable();
+                String schemaName = tableHandler.getSchemaName();
+                String tableName = tableHandler.getTableName();
+                return new FromTableSchema(ImmutableList.of(schemaName, tableName));
             }
         }
         throw new UnsupportedOperationException();
@@ -410,7 +443,7 @@ public class RelNodeConvertor {
                         index = expr.getIndex();
                     } else {
                         pre = "$$";
-                        index =  expr.getIndex()-leftCount;
+                        index = expr.getIndex() - leftCount;
                     }
                     return new Identifier(pre + index);
                 }

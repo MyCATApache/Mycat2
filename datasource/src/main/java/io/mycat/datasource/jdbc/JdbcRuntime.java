@@ -66,16 +66,6 @@ public enum JdbcRuntime {
         return connectionManager.getConnection(name, true, TRANSACTION_REPEATABLE_READ, false);
     }
 
-    public synchronized Map<String, Deque<MycatConnection>> getConnection(Iterator<String> targets) {
-        Map<String, Deque<MycatConnection>> map = new HashMap<>();
-        while (targets.hasNext()) {
-            String targetName = targets.next();
-            Deque<MycatConnection> mycatConnections = map.computeIfAbsent(targetName, s -> new LinkedList<>());
-            mycatConnections.add(getConnection(targetName));
-        }
-        return map;
-    }
-
     public void closeConnection(DefaultConnection connection) {
         connectionManager.closeConnection(connection);
     }

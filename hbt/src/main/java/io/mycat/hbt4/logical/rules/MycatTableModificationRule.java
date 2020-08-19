@@ -17,7 +17,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatTableModify;
+import io.mycat.hbt4.logical.rel.MycatTableModify;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
@@ -43,11 +43,6 @@ public  class MycatTableModificationRule extends MycatConverterRule {
     public RelNode convert(RelNode rel) {
         final TableModify modify =
                 (TableModify) rel;
-        final ModifiableTable modifiableTable =
-                modify.getTable().unwrap(ModifiableTable.class);
-        if (modifiableTable == null) {
-            return null;
-        }
         final RelTraitSet traitSet =
                 modify.getTraitSet().replace(out);
         return new MycatTableModify(

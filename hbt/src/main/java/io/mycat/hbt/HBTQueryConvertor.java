@@ -15,60 +15,64 @@
 package io.mycat.hbt;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
-import io.mycat.TableHandler;
+import io.mycat.DataNode;
 import io.mycat.beans.mycat.JdbcRowMetaData;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatRelBuilder;
-import io.mycat.calcite.prepare.MycatCalcitePlanner;
-import io.mycat.calcite.rules.PushDownLogicTableRule;
+import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
+import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.hbt3.Distribution;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.Bindables;
+import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexCorrelVariable;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.Holder;
-import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.math.BigDecimal;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.builder;
 import static io.mycat.hbt.ast.HBTOp.*;
+
+//import io.mycat.calcite.rules.PushDownLogicTableRule;
 
 /**
  * @author jamie12221
@@ -76,36 +80,33 @@ import static io.mycat.hbt.ast.HBTOp.*;
 
 public class HBTQueryConvertor {
     final static Logger log = LoggerFactory.getLogger(HBTQueryConvertor.class);
-    private final MycatRelBuilder relBuilder;
+    private final List<Object> params;
+    private final RelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
     private int joinCount;
     private int paramIndex = 0;
-    private final List<Object> params;
-    private MycatCalciteDataContext context;
     private final MetaDataFetcher metaDataFetcher;
 
-    public HBTQueryConvertor(List<Object> params, MycatRelBuilder relBuilder, MycatCalciteDataContext context) {
-        this.relBuilder =relBuilder;
+    public HBTQueryConvertor(List<Object> params, RelBuilder relBuilder) {
         this.params = params;
+        this.relBuilder = relBuilder;
         this.relBuilder.clear();
-        this.context = Objects.requireNonNull(context);
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                MycatDBContext uponDBContext = context.getUponDBContext();
-                if (uponDBContext != null) {
-                    String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-                    JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
-                    try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
-                        try (Statement statement = connection1.createStatement()) {
-                            statement.setMaxRows(0);
-                            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                                return FieldTypes.getFieldTypes(new JdbcRowMetaData(resultSet.getMetaData()));
-                            }
+                String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+                JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+                try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
+                    try (Statement statement = connection1.createStatement()) {
+                        statement.setMaxRows(0);
+                        try (ResultSet resultSet = statement.executeQuery(sql)) {
+                            ResultSetMetaData metaData = resultSet.getMetaData();
+                            JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                            return FieldTypes.getFieldTypes(jdbcRowMetaData);
                         }
-                    } catch (SQLException e) {
-                        log.warn("{}", e);
                     }
+                } catch (SQLException e) {
+                    log.warn("{}", e);
                 }
                 return null;
             } catch (Throwable e) {
@@ -182,12 +183,18 @@ public class HBTQueryConvertor {
                 case CORRELATE_INNER_JOIN:
                 case CORRELATE_LEFT_JOIN:
                     return correlate((CorrelateSchema) input);
+                case MODIFY_FROM_SQL:
+                    return modifyFromSql((ModifyFromSql) input);
                 default:
             }
         } finally {
             relBuilder.clear();
         }
         throw new UnsupportedOperationException(input.getOp().getFun());
+    }
+
+    private RelNode modifyFromSql(ModifyFromSql input) {
+        throw new UnsupportedOperationException();
     }
 
     public RelNode filterFromTable(FilterFromTableSchema input) {
@@ -198,15 +205,17 @@ public class HBTQueryConvertor {
         relBuilder.as(names.get(names.size() - 1));
         relBuilder.filter(toRex(input.getFilter()));
         Filter build = (Filter) relBuilder.build();
-        Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, bindableTableScan);
+        MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
+        Distribution distribution = mycatTable.computeDataNode(build.getChildExps());
+        Iterable<DataNode> dataNodes = distribution.getDataNodes(Collections.emptyList());
+        return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
         Schema rel = input.getRel();
         RelNode handle = handle(rel);
-        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle, false);
+        return makeTransientSQLScan(input.getTargetName(), handle, false);
     }
 
     @SneakyThrows
@@ -216,52 +225,41 @@ public class HBTQueryConvertor {
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType = null;
         if (fieldTypes == null || fieldTypes.isEmpty()) {
-
-            if (relDataType == null) {
-                relDataType = tryGetRelDataTypeByParse(targetName, sql);
-            }
-
+            relDataType = tryGetRelDataTypeByParse(sql);
             if (relDataType == null) {
                 List<FieldType> fieldTypeList = metaDataFetcher.query(targetName, sql);
                 if (fieldTypeList != null) {
                     relDataType = toType(fieldTypeList);
                 }
-
             }
         } else {
             relDataType = toType(fieldTypes);
         }
         Objects.requireNonNull(relDataType, "无法推导sql结果集类型");
-        return relBuilder.makeBySql(targetName, relDataType, sql);
+        return makeBySql(relDataType, targetName, sql);
     }
 
-    private RelDataType tryGetRelDataTypeByParse(String targetName, String sql) {
+    private RelDataType tryGetRelDataTypeByParse(String sql) {
         try {
-            RelDataType relDataType;
-            MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
-            sqlStatement.accept(calciteMySqlNodeVisitor);
-            SqlNode parse = calciteMySqlNodeVisitor.getSqlNode();
-            planner.parse();
-            parse = parse.accept(new SqlShuttle() {
-                @Override
-                public SqlNode visit(SqlIdentifier id) {
-                    if (id.names.size() == 2) {
-                        String schema = id.names.get(0);
-                        String table = id.names.get(1);
-                        MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
-                        if (logicTable != null) {
-                            TableHandler table1 = logicTable.getTable();
-                            return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
-                        }
+            MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
+            if (sqlStatement instanceof SQLSelectStatement) {
+                SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
+                final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                final RelDataTypeFactory.Builder builder = typeFactory.builder();
+                for (SQLSelectItem sqlSelectItem : firstQueryBlock.getSelectList()) {
+                    SQLDataType sqlDataType = sqlSelectItem.computeDataType();
+                    if (sqlDataType == null) {
+                        return null;
                     }
-                    return super.visit(id);
+                    SqlTypeName type = HBTCalciteSupport.INSTANCE.getSqlTypeByJdbcValue(sqlDataType.jdbcType());
+                    if (type == null) {
+                        return null;
+                    }
+                    builder.add(sqlSelectItem.toString(), type);
                 }
-            });
-            parse = planner.validate(parse);
-            relDataType = planner.convert(parse).getRowType();
-            return relDataType;
+                return builder.build();
+            }
         } catch (Throwable e) {
             log.warn("", e);
         }
@@ -313,7 +311,7 @@ public class HBTQueryConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTQueryConvertor queryOp = new HBTQueryConvertor(params,relBuilder, context);
+                HBTQueryConvertor queryOp = new HBTQueryConvertor(params, relBuilder);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
@@ -325,8 +323,12 @@ public class HBTQueryConvertor {
                 relBuilder.push(relNode);
             }
             if (input.getCondition() != null) {
-                RexNode rexNode = toRex(input.getCondition());
-
+                RexNode rexNode = null;
+                try {
+                    rexNode = toRex(input.getCondition());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 Set<CorrelationId> collect = correlVariableMap.values().stream().filter(i -> i instanceof RexCorrelVariable)
                         .map(i -> i.id)
                         .collect(Collectors.toSet());
@@ -368,7 +370,11 @@ public class HBTQueryConvertor {
         if (size > 2) {
             throw new UnsupportedOperationException("set op size must equals 2");
         }
-        RelBuilder relBuilder = this.relBuilder.pushAll(handle(input.getSchemas()));
+        List<RelNode> nodeList = handle(input.getSchemas());
+        if (nodeList.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        RelBuilder relBuilder = this.relBuilder.pushAll(nodeList);
         switch (input.getOp()) {
             case UNION_DISTINCT:
                 return relBuilder.union(false, size).build();
@@ -435,14 +441,33 @@ public class HBTQueryConvertor {
     private RelNode fromTable(FromTableSchema input) {
         List<String> collect = new ArrayList<>(input.getNames());
         RelNode build = relBuilder.scan(collect).as(collect.get(collect.size() - 1)).build();
-        MycatLogicTable unwrap = build.getTable().unwrap(MycatLogicTable.class);
+        MycatLogicTable mycatLogicTable = build.getTable().unwrap(MycatLogicTable.class);
 
         //消除逻辑表,变成物理表
-        if (unwrap != null) {
-            return PushDownLogicTableRule.BindableTableScan.toPhyTable(relBuilder, (TableScan) build);
+        if (mycatLogicTable != null) {
+            relBuilder.clear();
+            Iterable<DataNode> dataNodes = mycatLogicTable.computeDataNode().getDataNodes();
+            return toPhyTable(mycatLogicTable, dataNodes);
         }
 
         return build;
+    }
+
+    private RelNode toPhyTable(MycatLogicTable unwrap, Iterable<DataNode> dataNodes) {
+        int count = 0;
+        for (DataNode dataNode : dataNodes) {
+            MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(unwrap, dataNode);
+            LogicalTableScan tableScan = LogicalTableScan.create(relBuilder.getCluster(),
+                    RelOptTableImpl.create(relBuilder.getRelOptSchema(),
+                            unwrap.getRowType(),
+                            mycatPhysicalTable,
+                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
+                    ImmutableList.of()
+            );
+            count++;
+            relBuilder.push(tableScan);
+        }
+        return relBuilder.union(true, count).build();
     }
 
     private RelNode map(MapSchema input) {
@@ -522,6 +547,7 @@ public class HBTQueryConvertor {
                     String substring = value.substring(1);
                     if (joinCount > 1) {
                         if (substring.startsWith("$")) {
+                            ImmutableList<RexNode> fields = relBuilder.fields();
                             return relBuilder.field(2, 1, Integer.parseInt(substring.substring(1)));
                         }
                         return relBuilder.field(2, 0, Integer.parseInt(substring));
@@ -663,5 +689,92 @@ public class HBTQueryConvertor {
             builder.add(fieldSchema.getColumnName(), toType(fieldSchema.getColumnType(), nullable, precision, scale));
         }
         return builder.build();
+    }
+
+    public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
+        RelDataType rowType = input.getRowType();
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
+        );
+    }
+
+    /**
+     * Creates a literal (constant expression).
+     */
+    public static RexNode literal(RelDataType type, Object value, boolean allowCast) {
+        final RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        RexNode literal;
+        if (value == null) {
+            literal = rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));
+        } else if (value instanceof Boolean) {
+            literal = rexBuilder.makeLiteral((Boolean) value);
+        } else if (value instanceof BigDecimal) {
+            literal = rexBuilder.makeExactLiteral((BigDecimal) value);
+        } else if (value instanceof Float || value instanceof Double) {
+            literal = rexBuilder.makeApproxLiteral(BigDecimal.valueOf(((Number) value).doubleValue()));
+        } else if (value instanceof Number) {
+            literal = rexBuilder.makeExactLiteral(BigDecimal.valueOf(((Number) value).longValue()));
+        } else if (value instanceof String) {
+            literal = rexBuilder.makeLiteral((String) value);
+        } else if (value instanceof Enum) {
+            literal = rexBuilder.makeLiteral(value, typeFactory.createSqlType(SqlTypeName.SYMBOL), false);
+        } else if (value instanceof byte[]) {
+            literal = rexBuilder.makeBinaryLiteral(new ByteString((byte[]) value));
+        } else if (value instanceof LocalDate) {
+            LocalDate value1 = (LocalDate) value;
+            DateString dateString = new DateString(value1.getYear(), value1.getMonthValue(), value1.getDayOfMonth());
+            literal = rexBuilder.makeDateLiteral(dateString);
+        } else if (value instanceof LocalTime) {
+            LocalTime value1 = (LocalTime) value;
+            TimeString timeString = new TimeString(value1.getHour(), value1.getMinute(), value1.getSecond());
+            literal = rexBuilder.makeTimeLiteral(timeString, -1);
+        } else if (value instanceof LocalDateTime) {
+            LocalDateTime value1 = (LocalDateTime) value;
+            TimestampString timeString = new TimestampString(value1.getYear(), value1.getMonthValue(), value1.getDayOfMonth(), value1.getHour(), value1.getMinute(), value1.getSecond());
+            timeString = timeString.withNanos(value1.getNano());
+            literal = rexBuilder.makeTimestampLiteral(timeString, -1);
+        } else {
+            throw new IllegalArgumentException("cannot convert " + value
+                    + " (" + value.getClass() + ") to a constant");
+        }
+        if (allowCast) {
+            return rexBuilder.makeCast(type, literal);
+        } else {
+            return literal;
+        }
+    }
+
+    public RelBuilder values(RelDataType rowType, Object... columnValues) {
+        int columnCount = rowType.getFieldCount();
+        final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder =
+                ImmutableList.builder();
+        final List<RexLiteral> valueList = new ArrayList<>();
+        List<RelDataTypeField> fieldList = rowType.getFieldList();
+        for (int i = 0; i < columnValues.length; i++) {
+            RelDataTypeField relDataTypeField = fieldList.get(valueList.size());
+            valueList.add((RexLiteral) literal(relDataTypeField.getType(), columnValues[i], false));
+            if ((i + 1) % columnCount == 0) {
+                listBuilder.add(ImmutableList.copyOf(valueList));
+                valueList.clear();
+            }
+        }
+        return relBuilder.values(listBuilder.build(), rowType);
+    }
+
+    public RexNode literal(Object value) {
+        return literal(null, value, false);
+    }
+
+
+    /**
+     * todo for update
+     *
+     * @param targetName
+     * @param relDataType
+     * @param sql
+     * @return
+     */
+    public MycatTransientSQLTableScan makeBySql(RelDataType relDataType, String targetName, String sql) {
+        return new MycatTransientSQLTableScan(relBuilder.getCluster(), relDataType, targetName, sql);
     }
 }

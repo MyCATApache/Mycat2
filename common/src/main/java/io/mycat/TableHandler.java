@@ -1,18 +1,21 @@
 package io.mycat;
 
 
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface TableHandler {
-    public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler();
-
-    public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler();
-
-    public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler();
+//
+//    public Function<MySqlInsertStatement, Iterable<ParameterizedValues>> insertHandler();
+//
+//    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler();
+//
+//    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler();
 
     public LogicTableType getType();
 

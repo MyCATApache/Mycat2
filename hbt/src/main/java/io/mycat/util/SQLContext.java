@@ -6,7 +6,9 @@ import java.util.Collections;
 import java.util.Map;
 
 public interface SQLContext {
+
     MycatDBContext getMycatDBContext();
+
     Object getSQLVariantRef(String target);
 
     Map<String, Object> getParameters();
@@ -21,35 +23,11 @@ public interface SQLContext {
         setParameters(Collections.emptyMap());
     }
 
-//    SelectStatementHandler selectStatementHandler();
-//
-//    InsertStatementHandler insertStatementHandler();
-//
-//    DeleteStatementHandler deleteStatementHandler();
-//
-//    LoaddataStatementHandler loaddataStatementHandler();
-//
-//    SetStatementHandler setStatementHandler();
-//
-//    TCLStatementHandler tclStatementHandler();
-
     void setDefaultSchema(String simpleName);
-
-//    UtilityStatementHandler utilityStatementHandler();
-//    ReplaceStatementHandler replaceStatementHandler();
-//    DDLStatementHandler ddlStatementHandler();
-//
-//    ShowStatementHandler showStatementHandler();
-//
-//    UpdateStatementHandler updateStatementHandler();
 
    default String simplySql(String explain){
        return explain;
    }
 
     long lastInsertId();
-
-//    TruncateStatementHandler truncateStatementHandler();
-//
-//    HintStatementHanlder hintStatementHanlder();
 }

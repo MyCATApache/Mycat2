@@ -13,27 +13,17 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.booster.BoosterRuntime;
-import io.mycat.calcite.prepare.MycatSQLPrepareObject;
-import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.hbt.HBTRunners;
-import io.mycat.hbt.ast.base.Schema;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.route.HBTQueryConvertor2;
-import io.mycat.route.InputHandler;
-import io.mycat.route.ParseContext;
-import io.mycat.route.ResultHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.upondb.MycatDBContext;
-import io.mycat.upondb.MycatDBSharedServer;
-import io.mycat.upondb.ProxyInfo;
+import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Response;
-import io.mycat.util.SQLContext;
 import lombok.Getter;
 
 import java.sql.JDBCType;
@@ -117,9 +107,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
     protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
                                         SQLRequest<SQLSelectStatement> request, Response receiver) {
-        SQLContext sqlContext = request.getContext();
         SQLSelectStatement statement = request.getAst();
-        MycatDBContext mycatDBContext = sqlContext.getMycatDBContext();
 
 
         ASTCheckCollector collector = new ASTCheckCollector(statement);
@@ -147,7 +135,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         ///////////////////////////////common///////////////////////////////
-        Map<String, SchemaHandler> schemaMap = mycatDBContext.config().getSchemaMap();
+        Map<String, SchemaHandler> schemaMap = MetadataManager.INSTANCE.getSchemaMap();
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
         if (schemaName == null) {
             receiver.sendError(new MycatException("schema is null"));
@@ -156,7 +144,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         Set<String> tables = collector.getTables();
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler == null) {
-            String defaultSchema = sqlContext.getDefaultSchema();
+            String defaultSchema = dataContext.getDefaultSchema();
             if (defaultSchema != null) {
                 schemaHandler = schemaMap.get(defaultSchema);
             } else if (schemaName != null) {
@@ -188,46 +176,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return ExecuteCode.PERFORMED;
         }
 
-        if (false) {
-            ParseContext parseContext = ParseContext.of(dataContext.getDefaultSchema(), statement);
-            Schema plan = parseContext.getPlan();
-            HBTQueryConvertor2 hbtQueryConvertor2 = new HBTQueryConvertor2();
-            ResultHandler resultHandler = hbtQueryConvertor2.complie(plan);
-            if (resultHandler instanceof InputHandler) {
-                InputHandler resultHandler1 = (InputHandler) resultHandler;
-                String targetName = resultHandler1.getTargetName();
-                String sql = resultHandler1.getSql();
-                receiver.proxySelect(targetName, sql);
-                return ExecuteCode.PERFORMED;
-            }
-            HBTRunners hbtRunners = new HBTRunners(mycatDBContext);
-            RowBaseIterator run = hbtRunners.run(plan);
-            receiver.sendResultSet(() -> run, null);
-            return ExecuteCode.PERFORMED;
-        }
-        dataContext.block(() -> {
-            try {
-                ///////////////////////////////////mycatdb////////////////////////////////////////////////
-                MycatDBSharedServer uponDBSharedServer = mycatDBContext.getUponDBSharedServer();
-
-                MycatSQLPrepareObject mycatSQLPrepareObject = uponDBSharedServer
-                        .innerQueryPrepareObject(statement.toString(), mycatDBContext);
-                PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
-                if (plan instanceof MycatSqlPlanner) {
-                    ProxyInfo proxyInfo = ((MycatSqlPlanner) plan).tryGetProxyInfo();
-                    if (proxyInfo != null) {
-                        String sql = proxyInfo.getSql();
-                        String targetName = proxyInfo.getTargetName();
-                        receiver.proxySelect(targetName, sql);
-                        return;
-                    }
-                }
-                receiver.sendResultSet(() -> plan.run(), plan::explain);
-            } catch (Throwable e) {
-                receiver.sendError(e);
-            }
-        });
-
+        DrdsRunners.runOnDrds(dataContext, receiver, statement);
         return ExecuteCode.PERFORMED;
     }
 

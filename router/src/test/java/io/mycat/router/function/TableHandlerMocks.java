@@ -1,6 +1,10 @@
 package io.mycat.router.function;
 
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 
 import java.util.ArrayList;
@@ -35,34 +39,15 @@ public class TableHandlerMocks {
             dataNodes.add(dataNode);
         }
         return new ShardingTableHandler() {
+
             @Override
-            public boolean isNatureTable() {
-                return false;
+            public CustomRuleFunction function() {
+               throw new UnsupportedOperationException();
             }
 
             @Override
-            public List<DataNode> getShardingBackends() {
+            public List<DataNode> dataNodes() {
                 return dataNodes;
-            }
-
-            @Override
-            public SimpleColumnInfo.ShardingInfo getNatureTableColumnInfo() {
-                return null;
-            }
-
-            @Override
-            public SimpleColumnInfo.ShardingInfo getReplicaColumnInfo() {
-                return null;
-            }
-
-            @Override
-            public SimpleColumnInfo.ShardingInfo getDatabaseColumnInfo() {
-                return null;
-            }
-
-            @Override
-            public SimpleColumnInfo.ShardingInfo getTableColumnInfo() {
-                return null;
             }
 
             @Override
@@ -70,20 +55,6 @@ public class TableHandlerMocks {
                 return null;
             }
 
-            @Override
-            public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
-                return null;
-            }
-
-            @Override
-            public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler() {
-                return null;
-            }
-
-            @Override
-            public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler() {
-                return null;
-            }
 
             @Override
             public LogicTableType getType() {

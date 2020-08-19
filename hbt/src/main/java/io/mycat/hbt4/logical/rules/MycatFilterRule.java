@@ -18,13 +18,10 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatFilter;
-import io.mycat.hbt4.physical.rules.CheckingUserDefinedFunctionVisitor;
+import io.mycat.hbt4.logical.rel.MycatFilter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.tools.RelBuilderFactory;
-
-import java.util.function.Predicate;
 
 /**
  * Rule to convert a {@link Filter} to
@@ -38,7 +35,7 @@ public class MycatFilterRule extends MycatConverterRule {
     public MycatFilterRule(MycatConvention out,
                            RelBuilderFactory relBuilderFactory) {
         super(Filter.class,
-                (Predicate<Filter>) r -> !userDefinedFunctionInFilter(r),
+                r -> true,
                 MycatRules.convention, out, relBuilderFactory, "MycatFilterRule");
     }
 
@@ -50,12 +47,9 @@ public class MycatFilterRule extends MycatConverterRule {
 
     public RelNode convert(RelNode rel) {
         final Filter filter = (Filter) rel;
-
-        return new MycatFilter(
-                rel.getCluster(),
+        return  MycatFilter.create(
                 rel.getTraitSet().replace(out),
-                convert(filter.getInput(),
-                        filter.getInput().getTraitSet().replace(out)),
+                convert(filter.getInput(),out),
                 filter.getCondition());
     }
 }

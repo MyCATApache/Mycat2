@@ -16,7 +16,7 @@ import java.util.Set;
 public class ShardingRwExample  extends ExampleObject {
     @SneakyThrows
     public static void main(String[] args) throws Exception {
-        main(args, ShardingXAFailExample .class);
+        main(args, ShardingRwExample .class);
     }
 
     @Test

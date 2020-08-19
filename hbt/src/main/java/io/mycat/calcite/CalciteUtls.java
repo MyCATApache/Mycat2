@@ -74,18 +74,15 @@ public class CalciteUtls {
     public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        ArrayList<RexNode> where = new ArrayList<>();
         filters.forEach((filter) -> {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
             boolean success = addOrRootFilter(table, dataMappingRule, filter);
             if (success) {
                 record.merge(dataMappingRule);
             }
-            where.add(filter);
         });
-
         LOGGER.info("optimize filters:{}", filters);
-        return record.calculate(table);
+        return table.function().calculate(record.getColumnMap());
     }
 
     @NotNull
@@ -150,16 +147,16 @@ public class CalciteUtls {
             int size = operands.size();
             int count = 0;
             for (RexNode operand : operands) {
-                if (addFilter(table, evaluator, operand, true)) {
+                if (addFilter(table, evaluator, operand)) {
                     ++count;
                 }
             }
             return count == size;
         }
-        return addFilter(table, evaluator, filter, false);
+        return addFilter(table, evaluator, filter);
     }
 
-    public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+    public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
         List<SimpleColumnInfo> rowOrder = table.getColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
@@ -180,7 +177,7 @@ public class CalciteUtls {
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
                                     String startValue = ((RexLiteral) start).getValue2().toString();
                                     String endValue = ((RexLiteral) end).getValue2().toString();
-                                    evaluator.assignmentRange(or, rowOrder.get(index).getColumnName(), startValue, endValue);
+                                    evaluator.assignmentRange(rowOrder.get(index).getColumnName(), startValue, endValue);
                                     trueList[i] = trueList[i] || true;
                                     trueList[j] = trueList[j] || true;
                                 }
@@ -190,7 +187,7 @@ public class CalciteUtls {
                 }
                 for (int k = 0; k < size; k++) {
                     if (!trueList[k]) {
-                        if (!addFilter(table, evaluator, operands.get(k), or)) {
+                        if (!addFilter(table, evaluator, operands.get(k))) {
                             return false;
                         }
                     }
@@ -210,7 +207,7 @@ public class CalciteUtls {
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
-                evaluator.assignment(or, rowOrder.get(index).getColumnName(), value);
+                evaluator.assignment( rowOrder.get(index).getColumnName(), value);
                 return true;
             }
 
@@ -218,7 +215,7 @@ public class CalciteUtls {
         return false;
     }
 
-    private static RexNode unCastWrapper(RexNode left) {
+    public static RexNode unCastWrapper(RexNode left) {
         if (left.isA(SqlKind.CAST)) {
             left = ((RexCall) left).operands.get(0);
         }

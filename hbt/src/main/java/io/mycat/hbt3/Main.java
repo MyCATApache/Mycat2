@@ -14,8 +14,6 @@
  */
 package io.mycat.hbt3;
 
-import io.mycat.hbt4.DatasourceFactoryImpl;
-import io.mycat.hbt4.PlanCache;
 import io.mycat.util.JsonUtil;
 
 import java.io.File;
@@ -27,18 +25,18 @@ import static com.google.common.io.Files.asCharSource;
 public class Main {
     public static void main(String[] args) throws Exception {
         String defaultSchema = "db1";
-        String sql = "select sum(t2.id) from (select t.id from travelrecord  as t order by t.id limit 1) as t2 group by t2.id";
+        String sql = "SELECT t1.id FROM travelrecord t1  join company c2 on  t1.id = c2.id ";
         URL resource = Main.class.getResource("/drds.json");
         String text = asCharSource(new File(resource.toURI()), StandardCharsets.UTF_8).read();
         DrdsConfig config = JsonUtil.from(text, DrdsConfig.class);
-        DrdsRunner drdsRunners = new DrdsRunner();
+//        DrdsRunner drdsRunners = new DrdsRunner();
         ResultSetHanlderImpl resultSetHanlder = new ResultSetHanlderImpl();
-        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
-            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, resultSetHanlder);
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-            resultSetHanlder.onError(throwable);
-        }
+//        try (DatasourceFactoryImpl datasourceFactory = new DatasourceFactoryImpl()) {
+//            drdsRunners.doAction(config, PlanCache.INSTANCE, datasourceFactory, defaultSchema, sql, true);
+//        } catch (Throwable throwable) {
+//            throwable.printStackTrace();
+//            resultSetHanlder.onError(throwable);
+//        }
 
     }
 

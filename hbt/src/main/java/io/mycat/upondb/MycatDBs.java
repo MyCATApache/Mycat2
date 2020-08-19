@@ -89,7 +89,7 @@ public class MycatDBs {
 
             @Override
             public MycatDBSharedServer getUponDBSharedServer() {
-                return new MycatDBSharedServerImpl();
+                return null;
             }
 
             @Override
@@ -195,7 +195,7 @@ public class MycatDBs {
 
             @Override
             public SQLContext sqlContext() {
-                return new SQLContextImpl(this);
+                return null;
             }
 
             @Override

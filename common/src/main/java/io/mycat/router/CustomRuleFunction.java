@@ -17,9 +17,9 @@ package io.mycat.router;
 import io.mycat.DataNode;
 import io.mycat.RangeVariable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author cjw
@@ -29,11 +29,10 @@ public abstract class CustomRuleFunction {
     protected Map<String, String> properties;
     protected Map<String, String> ranges;
     protected ShardingTableHandler table;
-    protected String columnName;
 
     public abstract String name();
 
-    public abstract List<DataNode> calculate(Set<RangeVariable> values);
+    public abstract List<DataNode> calculate(Map<String, Collection<RangeVariable>> values);
 
     protected abstract void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges);
 
@@ -45,19 +44,21 @@ public abstract class CustomRuleFunction {
         return ranges;
     }
 
-    public synchronized void callInit(ShardingTableHandler tableHandler, String columnName, Map<String, String> properties, Map<String, String> ranges) {
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
         this.properties = properties;
         this.ranges = ranges;
         this.table = tableHandler;
         init(table, properties, ranges);
-        this.columnName =columnName;
     }
 
     public ShardingTableHandler getTable() {
         return table;
     }
 
-    public String getColumnName() {
-        return columnName;
+
+
+    public boolean isSameRule(CustomRuleFunction other) {
+        return false;
     }
+ public abstract    boolean isShardingKey(String name);
 }

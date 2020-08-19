@@ -1,10 +1,12 @@
 package io.mycat.datasource.jdbc.transactionsession;
 
+import com.google.common.collect.ImmutableMap;
 import io.mycat.DataSourceNearness;
 import io.mycat.MycatConnection;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
@@ -13,10 +15,8 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.sql.Connection;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -72,14 +72,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         updateConnectionMap.clear();
     }
 
-    @Override
-    public MycatConnection getConnection(
-            String targetName) {
-        doAction();
-        String dataSourceByTargetName = Objects.requireNonNull(dataSourceNearness.getDataSourceByTargetName(targetName));
-        return callBackConnection(dataSourceByTargetName, isAutocommit(), getTransactionIsolation(), isReadOnly());
-    }
-
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
@@ -95,7 +87,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     abstract protected void callBackRollback();
 
-    abstract protected MycatConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly);
 
     public int getServerStatus() {
         return dataContext.serverStatus();
@@ -185,4 +176,54 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                 .addText("jdbcCon", String.join(",", this.updateConnectionMap.keySet()))
                 .addText("closeQueueSize", String.valueOf(closeResourceQueue.size()));
     }
+
+    public Map<String, Deque<MycatConnection>> getConnection(List<String> targetNames) {
+        return callBackConnections(targetNames, false, Connection.TRANSACTION_REPEATABLE_READ, false);
+    }
+
+    protected Map<String, Deque<MycatConnection>> callBackConnections(List<String> jdbcDataSources,
+                                                                      boolean autocommit,
+                                                                      int transactionIsolation,
+                                                                      boolean readOnly) {
+        if (jdbcDataSources.size() == 1) {
+            String jdbcDataSource = jdbcDataSources.get(0);
+            MycatConnection defaultConnection = updateConnectionMap.compute(jdbcDataSource,
+                    (dataSource, absractConnection) -> {
+                        if (absractConnection != null && !absractConnection.isClosed()) {
+                            return absractConnection;
+                        } else {
+                            return getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
+                        }
+                    });
+            LinkedList<MycatConnection> linkedList = new LinkedList<>();
+            linkedList.add(defaultConnection);
+            return ImmutableMap.of(jdbcDataSource, linkedList);
+        }
+        Map<String, Deque<MycatConnection>> res = new HashMap<>();
+        List<String> needAdd = new ArrayList<>();
+        for (String key : jdbcDataSources) {
+            Deque<MycatConnection> mycatConnections = res.computeIfAbsent(key, s -> new LinkedList<>());
+            if (mycatConnections.isEmpty()) {
+                MycatConnection connection = updateConnectionMap.get(key);
+                if (connection != null) {
+                    mycatConnections.add(connection);
+                } else {
+                    needAdd.add(key);
+                }
+            } else {
+                needAdd.add(key);
+            }
+        }
+        synchronized (JdbcRuntime.INSTANCE) {
+            for (String jdbcDataSource : needAdd) {
+                Deque<MycatConnection> mycatConnections = res.computeIfAbsent(jdbcDataSource, s -> new LinkedList<>());
+                DefaultConnection connection = getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
+                addCloseResource(connection);
+                mycatConnections.add(connection);
+            }
+            return res;
+        }
+    }
+
+    abstract public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly);
 }

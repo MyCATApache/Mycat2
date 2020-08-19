@@ -55,16 +55,16 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             List<DataNode> databaseCollections= new ArrayList<>();
             if (tableHandler instanceof ShardingTableHandler) {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
-                for (DataNode shardingBackend : handler.getShardingBackends()) {
+                for (DataNode shardingBackend : handler.dataNodes()) {
                     makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
-                databaseCollections.addAll(handler.getShardingBackends());
+                databaseCollections.addAll(handler.dataNodes());
             } else if (tableHandler instanceof GlobalTableHandler) {
                 GlobalTableHandler handler = (GlobalTableHandler) tableHandler;
-                for (BackendTableInfo shardingBackend : handler.getDataNodeMap().values()) {
+                for (DataNode shardingBackend : handler.getGlobalDataNode()) {
                     makeTask(ast, sqlAndDatasoureMap, shardingBackend);
                 }
-                databaseCollections.addAll(handler.getDataNodeMap().values());
+                databaseCollections.addAll(handler.getGlobalDataNode());
             } else {
                 throw new UnsupportedOperationException("UnsupportedOperation :" + tableHandler);
             }

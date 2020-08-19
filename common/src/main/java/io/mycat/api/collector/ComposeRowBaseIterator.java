@@ -27,6 +27,9 @@ public class ComposeRowBaseIterator implements RowBaseIterator {
     public static ComposeRowBaseIterator of(RowBaseIterator... iterators) {
         return new ComposeRowBaseIterator(new LinkedList<>(Arrays.asList(iterators)));
     }
+    public static ComposeRowBaseIterator of(LinkedList<RowBaseIterator> seq) {
+        return new ComposeRowBaseIterator(seq);
+    }
 
     public ComposeRowBaseIterator(LinkedList<RowBaseIterator> seq) {
         this.seq = seq;

@@ -1,5 +1,8 @@
 package io.mycat.metadata;
 
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
@@ -19,55 +22,27 @@ import static io.mycat.SimpleColumnInfo.ShardingType.*;
 @Getter
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
-
-    private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo databaseColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo tableColumnInfo;
+    private CustomRuleFunction shardingFuntion;
     private final Supplier<String> sequence;
     private final List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
-                         List<DataNode> backends, List<ShardingQueryRootConfig.Column> columns, Supplier<String> sequence) {
+                         List<DataNode> backends,
+                         CustomRuleFunction shardingFuntion,
+                         Supplier<String> sequence) {
         this.logicTable = logicTable;
         this.backends = backends == null ? Collections.emptyList() : backends;
+        this.shardingFuntion = shardingFuntion;
         this.sequence = sequence;
-
-        Map<SimpleColumnInfo.ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo = getShardingInfo(this, logicTable.getRawColumns(), columns);
-        this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
-        this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
-        this.databaseColumnInfo = shardingInfo.get(MAP_SCHEMA);
-        this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
-
-    }
-
-    private static Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> getShardingInfo(
-            ShardingTableHandler table,
-            List<SimpleColumnInfo> columns,
-            List<ShardingQueryRootConfig.Column> columnMap) {
-        return columnMap.stream().map(entry1 -> {
-            SharingFuntionRootConfig.ShardingFuntion function = entry1.getFunction();
-            CustomRuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
-                    getRuleAlgorithm(table, entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
-            SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.parse(entry1.getShardingType());
-            SimpleColumnInfo found = null;
-            for (SimpleColumnInfo i : columns) {
-                if (entry1.getColumnName().equals(i.getColumnName())) {
-                    found = i;
-                    break;
-                }
-            }
-            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found,table.getSchemaName()+"."+table.getTableName()+" unknown column name:"+entry1.getColumnName());
-            return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
-        }).collect(Collectors.toMap(k -> k.getShardingType() != null ? k.getShardingType() : NATURE_DATABASE_TABLE, k -> k));
-    }
-
-    public boolean isNatureTable() {
-        return natureTableColumnInfo != null;
     }
 
     @Override
-    public List<DataNode> getShardingBackends() {
+    public CustomRuleFunction function() {
+        return shardingFuntion;
+    }
+
+    @Override
+    public List<DataNode> dataNodes() {
         return backends;
     }
 
@@ -96,38 +71,25 @@ public class ShardingTable implements ShardingTableHandler {
         return sequence;
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> insertHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.getSql())
-                        .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
-                return collect.iterator();
-            }
+//    @Override
+    public Function<MySqlInsertStatement, Iterable<TextUpdateInfo>> insertHandler() {
+        return s -> {
+            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.toString())
+                    .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
+            return collect;
         };
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> updateHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                return MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.getSql())
-                        .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-            }
-        };
+//    @Override
+    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
+        return (s)-> ()->MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
+                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
     }
 
-    @Override
-    public Function<ParseContext, Iterator<TextUpdateInfo>> deleteHandler() {
-        return new Function<ParseContext, Iterator<TextUpdateInfo>>() {
-            @Override
-            public Iterator<TextUpdateInfo> apply(ParseContext s) {
-                return MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.getSql())
-                        .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-            }
-        };
+//    @Override
+    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
+        return s ->()-> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
+                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
     }
 
     @Override
@@ -148,5 +110,9 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public String getCreateTableSQL() {
         return logicTable.getCreateTableSQL();
+    }
+
+    public void setShardingFuntion(CustomRuleFunction shardingFuntion) {
+        this.shardingFuntion = shardingFuntion;
     }
 }

@@ -97,7 +97,7 @@ public enum StatisticCenter {
     }
 
     private void computeGlobalRowCount(GlobalTable globalTable) {
-        BackendTableInfo backendTableInfo = globalTable.getDataNodeMap().entrySet().iterator().next().getValue();
+        DataNode backendTableInfo = globalTable.getGlobalDataNode().iterator().next();
 
 
         String targetName = backendTableInfo.getTargetName();
@@ -112,9 +112,8 @@ public enum StatisticCenter {
             updateRowCount(logicKey, value);
 
             //物理表
-            globalTable.getDataNodeMap().values().stream().map(tableInfo -> {
-                SchemaInfo schemaInfo1 = tableInfo.getSchemaInfo();
-                return Key.of(schemaInfo1.getTargetSchema(), schemaInfo1.getTargetTable(), tableInfo.getTargetName());
+            globalTable.getGlobalDataNode().stream().map(tableInfo -> {
+                return Key.of(tableInfo.getSchema(), tableInfo.getTable(), tableInfo.getTargetName());
             }).forEach(key -> {
                 updateRowCount(key, value);
             });

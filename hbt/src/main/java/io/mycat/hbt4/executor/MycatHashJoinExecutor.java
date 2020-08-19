@@ -1,14 +1,26 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.logical.MycatHashJoin;
+import io.mycat.hbt4.MycatContext;
+import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.Context;
-import org.apache.calcite.interpreter.JaninoRexCompiler;
-import org.apache.calcite.interpreter.Scalar;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Linq4j;
@@ -23,9 +35,9 @@ import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.Iterator;
+import java.util.List;
 
 public class MycatHashJoinExecutor implements Executor {
-    private MycatHashJoin mycatHashJoin;
     private final JoinRelType joinType;
     private Executor outer;
     private Executor inner;
@@ -39,11 +51,11 @@ public class MycatHashJoinExecutor implements Executor {
     private final int leftFieldCount;
     private final int rightFieldCount;
     private final RelDataType resultRelDataType;
-    private TempResultSetFactory tempResultSetFactory;
+    private List<Object> params;
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
 
-    public MycatHashJoinExecutor(MycatHashJoin mycatHashJoin, JoinRelType joinType,
+    public MycatHashJoinExecutor(JoinRelType joinType,
                                  Executor outer,
                                  Executor inner,
                                  ImmutableList<RexNode> nonEquiConditions,
@@ -53,9 +65,7 @@ public class MycatHashJoinExecutor implements Executor {
                                  boolean generateNullsOnRight,
                                  int leftFieldCount,
                                  int rightFieldCount,
-                                 RelDataType resultRelDataType,
-                                 TempResultSetFactory tempResultSetFactory) throws InstantiationException {
-        this.mycatHashJoin = mycatHashJoin;
+                                 RelDataType resultRelDataType, List<Object> params) {
         this.joinType = joinType;
         this.originOuter = this.outer = outer;
         this.originInner = this.inner = inner;
@@ -67,7 +77,37 @@ public class MycatHashJoinExecutor implements Executor {
         this.leftFieldCount = leftFieldCount;
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
-        this.tempResultSetFactory = tempResultSetFactory;
+        this.params = params;
+    }
+
+    public MycatHashJoinExecutor create(
+            JoinRelType joinType,
+            Executor outer,
+            Executor inner,
+            ImmutableList<RexNode> nonEquiConditions,
+            int[] leftKeys,
+            int[] rightKeys,
+            boolean generateNullsOnLeft,
+            boolean generateNullsOnRight,
+            int leftFieldCount,
+            int rightFieldCount,
+            RelDataType resultRelDataType,
+            List<Object> params
+    ) {
+        return new MycatHashJoinExecutor(
+                joinType,
+                outer,
+                inner,
+                nonEquiConditions,
+                leftKeys,
+                rightKeys,
+                generateNullsOnLeft,
+                generateNullsOnRight,
+                leftFieldCount,
+                rightFieldCount,
+                resultRelDataType,
+                params
+        );
     }
 
     @Override
@@ -76,7 +116,7 @@ public class MycatHashJoinExecutor implements Executor {
         if (rows == null) {
             originOuter.open();
             originInner.open();
-            Context o = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
 ////////////////////////////////////check////////////////////////////////////////////////
 //            if (!outer.isRewindSupported()) {
 //                outer = tempResultSetFactory.makeRewind(outer);
@@ -105,22 +145,22 @@ public class MycatHashJoinExecutor implements Executor {
             final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
             final EqualityComparer<Row> compare = null;
 
-           RexNode nonEquiCondition = RexUtil.composeConjunction(
-                    this.mycatHashJoin.getCluster().getRexBuilder(),
+            RexNode nonEquiCondition = RexUtil.composeConjunction(
+                    MycatCalciteSupport.INSTANCE.RexBuilder,
                     nonEquiConditions, true);
             switch (joinType) {
                 case ANTI:
                 case SEMI: {
-                    Predicate2<Row,Row> predicate2;
+                    Predicate2<Row, Row> predicate2;
                     if (nonEquiCondition != null) {
-                        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
-                        Scalar scalar = compiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
-                        predicate2= (v0, v1) -> {
-                            o.values = resultSelector.apply((Row) v0, (Row) v1).values;
+                        MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(nonEquiCondition),
+                                resultRelDataType,params);
+                        predicate2 = (v0, v1) -> {
+                            o.values = resultSelector.apply(v0, v1).values;
                             return scalar.execute(o) == Boolean.TRUE;
                         };
-                    }else {
-                        predicate2 = (i,y)->true;
+                    } else {
+                        predicate2 = (i, y) -> true;
                     }
                     rows = EnumerableDefaults.semiJoin(outerEnumerate,
                             innerEnumerate,
@@ -134,8 +174,8 @@ public class MycatHashJoinExecutor implements Executor {
                     rows = EnumerableDefaults.hashJoin(outerEnumerate, innerEnumerate, outerKeySelector, innerKeySelector,
                             resultSelector, compare, generateNullsOnLeft, generateNullsOnRight);
                     if (nonEquiCondition != null) {
-                        JaninoRexCompiler compiler = new JaninoRexCompiler(MycatCalciteSupport.INSTANCE.RexBuilder);
-                        Scalar scalar = compiler.compile(ImmutableList.of(nonEquiCondition), resultRelDataType);
+                        MycatScalar scalar = MycatRexCompiler
+                                .compile(ImmutableList.of(nonEquiCondition), resultRelDataType,params);
                         rows = rows.where(v0 -> {
                             o.values = v0.values;
                             return scalar.execute(o) == Boolean.TRUE;
@@ -150,7 +190,7 @@ public class MycatHashJoinExecutor implements Executor {
 
     @Override
     public Row next() {
-        if (this.iterator.hasNext()){
+        if (this.iterator.hasNext()) {
             return this.iterator.next();
         }
         return null;
@@ -168,7 +208,6 @@ public class MycatHashJoinExecutor implements Executor {
     public boolean isRewindSupported() {
         return true;
     }
-
 
 
 }

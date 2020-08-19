@@ -14,7 +14,7 @@ import java.util.List;
 @EqualsAndHashCode
 public class ShardingTableConfig {
     List<ShardingQueryRootConfig.BackEndTableInfoConfig> dataNodes;
-    List<ShardingQueryRootConfig.Column> columns = new ArrayList<>();
+    SharingFuntionRootConfig.ShardingFuntion function;
     String createTableSQL;
 
     public ShardingTableConfig() {

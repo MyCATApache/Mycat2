@@ -21,41 +21,51 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
+import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.CalciteConvertors;
-import io.mycat.config.GlobalTableConfig;
-import io.mycat.config.ShardingQueryRootConfig;
-import io.mycat.config.ShardingTableConfig;
+import io.mycat.calcite.prepare.MycatSQLPrepareObject;
+import io.mycat.config.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.hbt3.CustomTable;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.function.PartitionRuleFunctionManager;
+import io.mycat.upondb.MycatDBContext;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
+import static io.mycat.calcite.CalciteConvertors.columnInfoListBySQL;
 import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
 
 /**
@@ -109,19 +119,37 @@ public enum MetadataManager {
                 for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                     String tableName = e.getKey();
                     ShardingTableConfig tableConfigEntry = e.getValue();
-                    addShardingTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
+                    addShardingTable(schemaName, tableName,
+                            tableConfigEntry,
+                            shardingQueryRootConfig.getPrototype(),
+                            getBackendTableInfos(tableConfigEntry.getDataNodes()));
                 }
 
                 for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                     String tableName = e.getKey();
                     GlobalTableConfig tableConfigEntry = e.getValue();
+                    List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                     addGlobalTable(schemaName, tableName,
                             tableConfigEntry,
                             shardingQueryRootConfig.getPrototype(),
-                            getBackendTableInfos(tableConfigEntry.getDataNodes()),
-                            getBackendTableInfos(tableConfigEntry.getDataNodes())
+                            backendTableInfos
                     );
-
+                }
+                for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
+                    String tableName = e.getKey();
+                    NormalTableConfig tableConfigEntry = e.getValue();
+                    addNormalTable(schemaName, tableName,
+                            tableConfigEntry,
+                            shardingQueryRootConfig.getPrototype()
+                    );
+                }
+                for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
+                    String tableName = e.getKey();
+                    CustomTableConfig tableConfigEntry = e.getValue();
+                    addCustomTable(schemaName, tableName,
+                            tableConfigEntry,
+                            shardingQueryRootConfig.getPrototype()
+                    );
                 }
             }
             //去掉失效的配置
@@ -147,12 +175,59 @@ public enum MetadataManager {
         }
     }
 
+    private void addCustomTable(String schemaName,
+                                String tableName,
+                                CustomTableConfig tableConfigEntry,
+                                ShardingQueryRootConfig.PrototypeServer prototypeServer) {
+        String createTableSQL = tableConfigEntry.getCreateTableSQL();
+        String clazz = tableConfigEntry.getClazz();
+        try {
+            Class<?> aClass = Class.forName(clazz);
+            Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(
+                    String.class,
+                    String.class,
+                    String.class,
+                    Map.class,
+                    List.class);
+            CustomTable o = (CustomTable)declaredConstructor.newInstance(
+                    schemaName,
+                    tableName,
+                    createTableSQL,
+                    tableConfigEntry.getKvOptions(),
+                    tableConfigEntry.getListOptions());
+            addLogicTable(LogicTable.createCustomTable(o));
+
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            LOGGER.error("",e);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addNormalTable(String schemaName,
+                                String tableName,
+                                NormalTableConfig tableConfigEntry,
+                                ShardingQueryRootConfig.PrototypeServer prototypeServer) {
+        //////////////////////////////////////////////
+        NormalTableConfig.BackEndTableInfoConfig dataNode = tableConfigEntry.getDataNode();
+        List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
+              Optional.ofNullable( dataNode.getSchemaName()).orElse(schemaName),
+                Optional.ofNullable(  dataNode.getTableName()).orElse(tableName)));
+        String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
+                .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
+        addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, createTableSQL));
+    }
+
     private void addGlobalTable(String schemaName,
                                 String orignalTableName,
                                 GlobalTableConfig tableConfigEntry,
                                 ShardingQueryRootConfig.PrototypeServer prototypeServer,
-                                List<BackendTableInfo> backendTableInfos,
-                                List<BackendTableInfo> readOnly) {
+                                List<DataNode> backendTableInfos) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
@@ -162,7 +237,7 @@ public enum MetadataManager {
 
         LoadBalanceStrategy loadBalance = PlugRuntime.INSTANCE.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, readOnly, loadBalance, columns, createTableSQL));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, createTableSQL));
     }
 
 
@@ -171,7 +246,7 @@ public enum MetadataManager {
 
     }
 
-    private List<BackendTableInfo> getBackendTableInfos(List<ShardingQueryRootConfig.BackEndTableInfoConfig> stringListEntry) {
+    private List<DataNode> getBackendTableInfos(List<ShardingQueryRootConfig.BackEndTableInfoConfig> stringListEntry) {
         if (stringListEntry == null) {
             return Collections.emptyList();
         }
@@ -186,11 +261,15 @@ public enum MetadataManager {
         TABLE_REPOSITORY.acceptDDL(sql);
     }
 
-    private void addShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
+    @SneakyThrows
+    private void addShardingTable(String schemaName,
+                                  String orignalTableName,
+                                  ShardingTableConfig tableConfigEntry,
+                                  ShardingQueryRootConfig.PrototypeServer prototypeServer,
+                                  List<DataNode> backends) {
         //////////////////////////////////////////////
-        final String tableName = orignalTableName;
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
-        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backends);
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(s);
@@ -198,9 +277,8 @@ public enum MetadataManager {
             sequence = SequenceGenerator.INSTANCE.getSequence(orignalTableName.toUpperCase());
         }
 
-        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
-
-        ShardingTable shardingTable = new ShardingTable(logicTable, (List) backends, tableConfigEntry.getColumns(), sequence);
+        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, sequence, createTableSQL);
+        shardingTable.setShardingFuntion(PartitionRuleFunctionManager.INSTANCE.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
     }
 
@@ -224,7 +302,7 @@ public enum MetadataManager {
                                                         String schemaName,
                                                         String tableName,
                                                         String createTableSQL,
-                                                        List<BackendTableInfo> backends) {
+                                                        List<DataNode> backends) {
         List<SimpleColumnInfo> columns = null;
         /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -255,7 +333,7 @@ public enum MetadataManager {
         ////////////////////////////////////////////////////////////////////////////////////////////////
         if (columns == null && backends != null && !backends.isEmpty()) {
             try {
-                BackendTableInfo backendTableInfo = backends.get(0);
+                DataNode backendTableInfo = backends.get(0);
                 String targetName = backendTableInfo.getTargetName();
                 String schema = backendTableInfo.getSchema();
                 String table = backendTableInfo.getTable();
@@ -275,13 +353,13 @@ public enum MetadataManager {
         return columns;
     }
 
-    private List<SimpleColumnInfo> getColumnInfoBySelectSQLOnJdbc(List<BackendTableInfo> backends) {
+    private List<SimpleColumnInfo> getColumnInfoBySelectSQLOnJdbc(List<DataNode> backends) {
         if (backends.isEmpty()) {
             return null;
         }
-        BackendTableInfo backendTableInfo = backends.get(0);
+        DataNode backendTableInfo = backends.get(0);
         String targetName = backendTableInfo.getTargetName();
-        String targetSchemaTable = backendTableInfo.getSchemaInfo().getTargetSchemaTable();
+        String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
         String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
         try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
             Connection rawConnection = connection.getRawConnection();
@@ -301,32 +379,37 @@ public enum MetadataManager {
         return null;
     }
 
-    private static String getCreateTableSQLByJDBC(String schemaName, String tableName, List<BackendTableInfo> backends) {
+    private static String getCreateTableSQLByJDBC(String schemaName, String tableName, List<DataNode> backends) {
         if (backends == null || backends.isEmpty()) {
             return null;
         }
-        try {
-            BackendTableInfo backendTableInfo = backends.get(0);
-            String targetName = backendTableInfo.getTargetName();
-            String targetSchemaTable = backendTableInfo.getSchemaInfo().getTargetSchemaTable();
-            String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
-                String sql = "SHOW CREATE TABLE " + targetSchemaTable;
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
-                    while (rowBaseIterator.next()) {
-                        String string = rowBaseIterator.getString(2);
-                        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                        MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
+        for (DataNode backend : backends) {
+            try {
+                DataNode backendTableInfo = backends.get(0);
+                String targetName = backendTableInfo.getTargetName();
+                String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
+                String name = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
+                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(name)) {
+                    String sql = "SHOW CREATE TABLE " + targetSchemaTable;
+                    try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
+                        while (rowBaseIterator.next()) {
+                            String string = rowBaseIterator.getString(2);
+                            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+                            MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
 
-                        sqlStatement1.setTableName(SQLUtils.normalize(tableName));
-                        sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
-                        return sqlStatement1.toString();
+                            sqlStatement1.setTableName(SQLUtils.normalize(tableName));
+                            sqlStatement1.setSchema(SQLUtils.normalize(schemaName));//顺序不能颠倒
+                            return sqlStatement1.toString();
+                        }
                     }
                 }
+            } catch (Throwable e) {
+                LOGGER.error("can not get create table sql from:"+backend.getTargetName()+backend.getTargetSchemaTable(),e);
+               continue;
             }
-        } catch (Throwable e) {
-            LOGGER.error("无法根据jdbc连接获取建表sql:{} {}", backends, e);
         }
+
+
         return null;
     }
 
@@ -483,12 +566,12 @@ public enum MetadataManager {
                 SimpleColumnInfo simpleColumnInfo = columns.get(index);
                 if (valueText instanceof SQLValuableExpr) {
                     String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
-                    dataMappingEvaluator.assignment(false, simpleColumnInfo.getColumnName(), value);
+                    dataMappingEvaluator.assignment( simpleColumnInfo.getColumnName(), value);
                 }  //                    throw new UnsupportedOperationException();
 
                 index++;
             }
-            List<DataNode> calculate = dataMappingEvaluator.calculate(logicTable);
+            List<DataNode> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
             if (calculate.size() != 1) {
                 throw new UnsupportedOperationException("插入语句多于1个目标:" + valuesList);
             }
@@ -504,7 +587,7 @@ public enum MetadataManager {
         resolveMetadata(sqlStatement);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
-        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(), currentSchema);
+        Rrs rrs = assignment(conditionCollector.getRootQueryDataRange(), currentSchema);
         Map<String, List<String>> sqls = new HashMap<>();
         for (DataNode endTableInfo : rrs.getBackEndTableInfos()) {
             SQLExprTableSource table = rrs.getTable();
@@ -521,7 +604,6 @@ public enum MetadataManager {
 
     //////////////////////////////////////////calculate///////////////////////////////
     private Rrs assignment(
-            boolean fail,
             QueryDataRange queryDataRange, String wapperSchemaName) {
         String schemaName = wapperSchemaName;
         String tableName = null;
@@ -532,68 +614,21 @@ public enum MetadataManager {
             schemaName = SQLUtils.normalize(schemaObject.getSchema().getName());
             tableName = SQLUtils.normalize(schemaObject.getName());
         }
-        TableHandler logicTable = schemaMap.get(schemaName).logicTables().get(tableName);
+        ShardingTableHandler logicTable = (ShardingTableHandler) schemaMap.get(schemaName).logicTables().get(tableName);
         DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
 
         for (ColumnValue equalValue : queryDataRange.getEqualValues()) {
-            dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
+            dataMappingEvaluator.assignment(equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
 
         }
         List<ColumnRangeValue> rangeValues1 = queryDataRange.getRangeValues();
         for (ColumnRangeValue columnRangeValue : rangeValues1) {
-            dataMappingEvaluator.assignmentRange(false, columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()),Objects.toString(columnRangeValue.getEnd()));
+            dataMappingEvaluator.assignmentRange( columnRangeValue.getColumn().computeAlias(), Objects.toString(columnRangeValue.getBegin()), Objects.toString(columnRangeValue.getEnd()));
         }
-        List<DataNode> calculate = dataMappingEvaluator.calculate((ShardingTableHandler) logicTable);
+        List<DataNode> calculate = logicTable.function().calculate(dataMappingEvaluator.getColumnMap());
         return new Rrs(calculate, table);
     }
 
-    public List<DataNode> getMapBackEndTableInfo(String schemaName, String tableName, Map<String, String> map) {
-        try {
-            schemaName = schemaName;
-            tableName = tableName;
-            ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
-            DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                dataMappingEvaluator.assignment(false, entry.getKey(), entry.getValue());
-            }
-            return dataMappingEvaluator.calculate(logicTable);
-        } catch (Exception e) {
-            LOGGER.error("", e);
-            throw new MycatException("{0} {1} {2} can not calculate", schemaName, tableName, Objects.toString(map));
-        }
-    }
-
-    public DataNode getNatrueBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
-        try {
-            schemaName = schemaName;
-            tableName = tableName;
-            ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
-            return getBackendTableInfo(partitionValue, logicTable);
-        } catch (Exception e) {
-            LOGGER.error("", e);
-            throw new MycatException("{0} {1} {2} can not calculate", schemaName, tableName, partitionValue);
-        }
-    }
-
-    private DataNode getBackendTableInfo(String partitionValue, ShardingTableHandler logicTable) {
-        DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-        dataMappingEvaluator.assignment(false, logicTable.getNatureTableColumnInfo().getColumnInfo().getColumnName(), partitionValue);
-        return dataMappingEvaluator.calculate(logicTable).get(0);
-    }
-
-    public List<DataNode> getNatrueBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
-        try {
-            schemaName = schemaName;
-            tableName = tableName;
-            ShardingTableHandler logicTable = (ShardingTableHandler) this.schemaMap.get(schemaName).logicTables().get(tableName);
-            DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-            dataMappingEvaluator.assignment(false, startValue, endValue);
-            return dataMappingEvaluator.calculate(logicTable);
-        } catch (Exception e) {
-            LOGGER.error("", e);
-            throw new MycatException("{0} {1} {2} {3} can not calculate", schemaName, tableName, startValue, endValue);
-        }
-    }
 
     public static class Rrs {
         Collection<DataNode> backEndTableInfos;
@@ -629,4 +664,5 @@ public enum MetadataManager {
         this.schemaMap.clear();
         return this;
     }
+
 }

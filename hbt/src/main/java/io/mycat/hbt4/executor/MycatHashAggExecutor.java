@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /**
  * Copyright (C) <2020>  <chen junwen>
  * <p>
@@ -16,8 +32,10 @@ package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.MycatContext;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
+import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.enumerable.impl.AggAddContextImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -29,6 +47,7 @@ import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.impl.AggregateFunctionImpl;
@@ -65,6 +84,7 @@ public class MycatHashAggExecutor implements Executor {
     private final Aggregate rel;
     private Iterator<Row> iter;
 
+
     public MycatHashAggExecutor(Executor input, Aggregate rel) {
         this.input = input;
         this.rel = rel;
@@ -88,6 +108,9 @@ public class MycatHashAggExecutor implements Executor {
         accumulatorFactories = builder.build();
     }
 
+    public static MycatHashAggExecutor create(Executor input, Aggregate rel) {
+        return new MycatHashAggExecutor(input, rel);
+    }
 
     @Override
     public void open() {
@@ -208,76 +231,13 @@ public class MycatHashAggExecutor implements Executor {
                     AggregateFunctionImpl.create(clazz), call, true);
         } else if (call.getAggregation() == SqlStdOperatorTable.AVG) {
             return () -> new AvgAccumulator(call);
+        } else if (call.getAggregation() == SqlStdOperatorTable.SINGLE_VALUE) {
+            return () -> new SingleValueAccumulator(call);
         } else {
-            final JavaTypeFactory typeFactory =
-                    (JavaTypeFactory) rel.getCluster().getTypeFactory();
-            int stateOffset = 0;
-            final AggImpState agg = new AggImpState(0, call, false);
-            int stateSize = agg.state.size();
-
-            final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType =
-                    PhysTypeImpl.of(typeFactory, rel.getInput().getRowType(),
-                            JavaRowFormat.ARRAY);
-            final RelDataTypeFactory.Builder builder = typeFactory.builder();
-            for (Expression expression : agg.state) {
-                builder.add("a",
-                        typeFactory.createJavaType((Class) expression.getType()));
-            }
-            final PhysType accPhysType =
-                    PhysTypeImpl.of(typeFactory, builder.build(), JavaRowFormat.ARRAY);
-            final ParameterExpression inParameter =
-                    Expressions.parameter(inputPhysType.getJavaRowType(), "in");
-            final ParameterExpression acc_ =
-                    Expressions.parameter(accPhysType.getJavaRowType(), "acc");
-
-            List<Expression> accumulator = new ArrayList<>(stateSize);
-            for (int j = 0; j < stateSize; j++) {
-                accumulator.add(accPhysType.fieldReference(acc_, j + stateOffset));
-            }
-            agg.state = accumulator;
-
-            AggAddContext addContext =
-                    new AggAddContextImpl(builder2, accumulator) {
-                        public List<RexNode> rexArguments() {
-                            List<RexNode> args = new ArrayList<>();
-                            for (int index : agg.call.getArgList()) {
-                                args.add(RexInputRef.of(index, inputPhysType.getRowType()));
-                            }
-                            return args;
-                        }
-
-                        public RexNode rexFilterArgument() {
-                            return agg.call.filterArg < 0
-                                    ? null
-                                    : RexInputRef.of(agg.call.filterArg,
-                                    inputPhysType.getRowType());
-                        }
-
-                        public RexToLixTranslator rowTranslator() {
-                            final SqlConformance conformance =
-                                    SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
-                            return RexToLixTranslator.forAggregation(typeFactory,
-                                    currentBlock(),
-                                    new RexToLixTranslator.InputGetterImpl(
-                                            Collections.singletonList(
-                                                    Pair.of((Expression) inParameter, inputPhysType))),
-                                    conformance)
-                                    .setNullable(currentNullables());
-                        }
-                    };
-
-            agg.implementor.implementAdd(agg.context, addContext);
-
-            final ParameterExpression context_ =
-                    Expressions.parameter(Context.class, "context");
-            final ParameterExpression outputValues_ =
-                    Expressions.parameter(Object[].class, "outputValues");
-            Scalar addScalar = baz(context_, outputValues_, builder2.toBlock());
-            return new ScalarAccumulatorDef(null, addScalar, null,
-                    rel.getInput().getRowType().getFieldCount(), stateSize);
+          throw new UnsupportedOperationException();
         }
     }
+
 
     /**
      * Accumulator for calls to the COUNT function.
@@ -340,7 +300,27 @@ public class MycatHashAggExecutor implements Executor {
             return sum / cnt;
         }
     }
+    /**
+     * Accumulator for calls to the COUNT function.
+     */
+    private static class SingleValueAccumulator implements Accumulator {
+        private final AggregateCall call;
+        Object value;
 
+        SingleValueAccumulator(AggregateCall call) {
+            this.call = call;
+            this.value = null;
+        }
+
+        public void send(Row row) {
+            Integer integer = call.getArgList().get(0);
+            this.value = row.getObject(integer);
+        }
+
+        public Object end() {
+            return  this.value ;
+        }
+    }
     /**
      * Creates an {@link Accumulator}.
      */
@@ -367,9 +347,9 @@ public class MycatHashAggExecutor implements Executor {
             this.endScalar = endScalar;
             this.accumulatorLength = accumulatorLength;
             this.rowLength = rowLength;
-            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.sendContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.sendContext.values = new Object[rowLength + accumulatorLength];
-            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(Context.class);
+            this.endContext = (Context) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
             this.endContext.values = new Object[accumulatorLength];
         }
 

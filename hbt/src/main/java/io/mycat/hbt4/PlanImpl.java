@@ -14,30 +14,49 @@
  */
 package io.mycat.hbt4;
 
+import com.google.common.collect.ImmutableList;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.hbt3.DrdsRunner;
+import io.mycat.hbt3.DrdsSql;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.rel.RelNode;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 public class PlanImpl implements Plan {
+    private final Type type;
     private final RelOptCost relOptCost;
-    private final MycatRel relNode1;
+    private final RelNode relNode1;
 
-    public PlanImpl(RelOptCost relOptCost, MycatRel relNode1) {
-
+    public PlanImpl(Type type, RelOptCost relOptCost, RelNode relNode1) {
+        this.type = type;
         this.relOptCost = relOptCost;
-        this.relNode1 = relNode1;
+        this.relNode1 = Objects.requireNonNull(relNode1);
     }
 
     @Override
     public int compareTo(@NotNull Plan o) {
-        return this.relOptCost.isLt(o.getRelOptCost())?1:-1;
+        return this.relOptCost.isLt(o.getRelOptCost()) ? 1 : -1;
     }
 
     @Override
     public RelOptCost getRelOptCost() {
         return relOptCost;
     }
+
+
     @Override
-    public MycatRel getRelNode() {
+    public MycatRowMetaData rowMetaData() {
+        return null;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
+    }
+
+    public RelNode getRelNode() {
         return relNode1;
     }
 }

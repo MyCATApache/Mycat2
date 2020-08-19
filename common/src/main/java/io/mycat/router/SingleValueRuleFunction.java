@@ -20,10 +20,8 @@ import io.mycat.RangeVariable;
 import io.mycat.util.CollectionUtil;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -34,10 +32,18 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
 
     public abstract String name();
 
+    private String columnName;
+
     @Override
-    public List<DataNode> calculate(Set<RangeVariable> values) {
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+        super.callInit(tableHandler, properties, ranges);
+        this.columnName = properties.get("columnName");
+    }
+
+    @Override
+    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
         ArrayList<DataNode> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values) {
+        for (RangeVariable rangeVariable : values.values().stream().flatMap(i->i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////
@@ -49,14 +55,14 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                         if (dataNode != null) {
                             CollectionUtil.setOpAdd(res, dataNode);
                         } else {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
                         if (dataNodes == null || dataNodes.size() == 0) {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         CollectionUtil.setOpAdd(res, dataNodes);
                         break;
@@ -64,7 +70,11 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
                 }
             }
         }
-        return res.isEmpty()?getTable().getShardingBackends():res;
+        return res.isEmpty()?getTable().dataNodes():res;
+    }
+
+    public String getColumnName(){
+        return columnName;
     }
 
     public static int[] toIntArray(String string) {
@@ -129,7 +139,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
             return null;
         }
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = table.getShardingBackends();
+        List<DataNode> shardingBackends = table.dataNodes();
         int size = shardingBackends.size();
         if (0 <= i && i < size) {
             return shardingBackends.get(i);
@@ -144,7 +154,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
     public List<DataNode> calculateRange(String beginValue, String endValue) {
         int[] ints = calculateIndexRange(beginValue, endValue);
         ShardingTableHandler table = getTable();
-        List<DataNode> shardingBackends = (List) table.getShardingBackends();
+        List<DataNode> shardingBackends = (List) table.dataNodes();
         int size = shardingBackends.size();
         if (ints == null) {
             return shardingBackends;
@@ -160,4 +170,8 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
         return res;
     }
 
+    @Override
+   public boolean isShardingKey(String name) {
+        return this.columnName.equalsIgnoreCase(name);
+    }
 }

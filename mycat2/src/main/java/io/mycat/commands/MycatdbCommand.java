@@ -9,6 +9,8 @@ import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.client.MycatRequest;
+import io.mycat.hbt3.DrdsConfig;
+import io.mycat.hbt3.DrdsRunner;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -16,8 +18,6 @@ import io.mycat.sqlhandler.dcl.*;
 import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
 import io.mycat.util.ContextExecuter;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+
 /**
  * @author Junwen Chen
  **/
@@ -100,32 +101,18 @@ public enum MycatdbCommand implements MycatCommand {
 
     @Override
     public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
-        MycatDBClientMediator client = MycatDBs.createClient(context);
         try {
             SQLStatement statement = SQLUtils.parseSingleMysqlStatement(request.getText());
-            statement.accept(new ContextExecuter(client.sqlContext()));
+            statement.accept(new ContextExecuter(context));
             for (SQLHandler sqlHandler : sqlHandlers) {
-                ExecuteCode executeCode = sqlHandler.explain(new SQLRequest<>(statement, client.sqlContext(), request), context, response);
+                ExecuteCode executeCode = sqlHandler.explain(new SQLRequest<>(statement, request), context, response);
                 if (executeCode == ExecuteCode.PERFORMED) {
                     return true;
                 }
             }
             response.sendError(new MycatException("no support query. sql={} class={}", request.getText(), statement.getClass()));
         } catch (Throwable e) {
-            boolean isRun = false;
-            try {
-                final String finalSql = request.getText().trim();
-                if (finalSql.startsWith("execute ")) {
-                    response.sendResultSet(()->client.executeRel(finalSql), () -> client.explainRel(finalSql));
-                    isRun = true;
-                }
-            } catch (Throwable e1) {
-                logger.error("", e1);
-            } finally {
-                if (!isRun) {
-                    response.sendError(e);
-                }
-            }
+            response.sendError(e);
             return true;
         }
         return true;
@@ -138,17 +125,20 @@ public enum MycatdbCommand implements MycatCommand {
 
     private void executeQuery(MycatRequest req, MycatDataContext dataContext, Response receiver) {
         int totalSqlMaxCode = 0;
-        MycatDBClientMediator db = MycatDBs.createClient(dataContext);
         SQLStatement statement = null;
         try {
             String text = req.getText();
+            if (isHbt(text)){
+                executeHbt(dataContext,text.substring(12),receiver);
+                return;
+            }
             logger.info(text);
             Iterator<SQLStatement> iterator = parse(text);
             while (iterator.hasNext()) {
                 statement = iterator.next();
-                statement.accept(new ContextExecuter(db.sqlContext()));
+                statement.accept(new ContextExecuter(dataContext));
                 receiver.setHasMore(iterator.hasNext());
-                SQLRequest<SQLStatement> request = new SQLRequest<>(statement, db.sqlContext(), req);
+                SQLRequest<SQLStatement> request = new SQLRequest<>(statement, req);
                 try {
                     ExecuteCode executeCode = ExecuteCode.NOT_PERFORMED;
                     for (SQLHandler sqlHandler : sqlHandlers) {
@@ -167,28 +157,27 @@ public enum MycatdbCommand implements MycatCommand {
             if (!(statement instanceof com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExecuteStatement)) {
                 logger.error("no support query. sql={} class={}", req.getText(), statement.getClass());
                 receiver.proxyShow(statement);
-            }else {
+            } else {
                 throw new RuntimeException("may be hbt");
             }
         } catch (Throwable e) {
-            boolean isRun = false;
-            try {
-                String trim = req.getText().trim();
-                String pre = "execute plan ";
-                if (trim.toLowerCase().startsWith(pre)) {
-                    final String finalSql = trim.substring(pre.length());
-                    receiver.sendResultSet(()->db.executeRel(finalSql), () -> db.explainRel(finalSql));
-                    isRun = true;
-                }
-            } catch (Throwable e1) {
-                logger.error("", e1);
-            } finally {
-                if (!isRun) {
-                    receiver.sendError(e);
-                }
-            }
-            return;
+            receiver.sendError(e);
         }
+    }
+
+    private boolean isHbt(String text) {
+        boolean hbt = false;
+        char c = text.charAt(0);
+        if ((c=='e'||c=='E')&&text.length()>12){
+            hbt = "execute plan".equalsIgnoreCase( text.substring(0, 12));
+        }else {
+            hbt = false;
+        }
+        return hbt;
+    }
+
+    private void executeHbt(MycatDataContext dataContext, String substring, Response receiver) {
+        DrdsRunners.runHbtOnDrds(dataContext,receiver,substring);
     }
 
     @NotNull

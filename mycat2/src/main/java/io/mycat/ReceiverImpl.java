@@ -49,6 +49,11 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
+    public boolean isExplainMode() {
+        return this.explainMode;
+    }
+
+    @Override
     public void setHasMore(boolean more) {
         if (more) {
             sendError(new MycatException("unsupport multi statements"));
@@ -154,26 +159,25 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void multiUpdate(String string, Iterator<TextUpdateInfo> apply) {
+    public void multiUpdate(String string, Iterable<TextUpdateInfo> apply) {
         ExplainDetail detail = getExplainDetail(string, "", ExecuteType.UPDATE);
         detail.setTargets(toMap(apply));
         this.execute(detail);
     }
 
     @Override
-    public void multiInsert(String string, Iterator<TextUpdateInfo> apply) {
+    public void multiInsert(String string, Iterable<TextUpdateInfo> apply) {
         ExplainDetail detail = getExplainDetail(string, "", ExecuteType.INSERT);
         detail.setTargets(toMap(apply));
         this.execute(detail);
     }
 
     @NotNull
-    public static Map<String, List<String>> toMap(Iterator<TextUpdateInfo> apply) {
+    public static Map<String, List<String>> toMap(Iterable<TextUpdateInfo> apply) {
         Map<String, List<String>> map = new HashMap<>();
-        while (apply.hasNext()) {
-            TextUpdateInfo next = apply.next();
-            List<String> sqls = next.sqls();
-            String targetName = next.targetName();
+        for (TextUpdateInfo textUpdateInfo : apply) {
+            List<String> sqls = textUpdateInfo.sqls();
+            String targetName = textUpdateInfo.targetName();
             List<String> strings = map.computeIfAbsent(targetName, s -> new ArrayList<>(1));
             strings.addAll(sqls);
         }
@@ -376,7 +380,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void multiGlobalInsert(String string, Iterator<TextUpdateInfo> apply) {
+    public void multiGlobalInsert(String string, Iterable<TextUpdateInfo> apply) {
         ExplainDetail detail = getExplainDetail(string, "", ExecuteType.INSERT);
         detail.globalTableUpdate = true;
         detail.setTargets(toMap(apply));
@@ -384,7 +388,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void multiGlobalUpdate(String string, Iterator<TextUpdateInfo> apply) {
+    public void multiGlobalUpdate(String string, Iterable<TextUpdateInfo> apply) {
         ExplainDetail detail = getExplainDetail(string, "", ExecuteType.UPDATE);
         detail.globalTableUpdate = true;
         detail.setTargets(toMap(apply));
@@ -394,6 +398,13 @@ public class ReceiverImpl implements Response {
     @Override
     public void sendBinaryResultSet(Supplier<RowBaseIterator> rowBaseIterator) {
         sendResponse(new MycatResponse[]{new BinaryResultSetResponse(rowBaseIterator.get())}, null);
+    }
+
+    @Override
+    public void sendOk(long lastInsertId, long affectedRow) {
+        session.setLastInsertId(lastInsertId);
+        session.setAffectedRows(affectedRow);
+        session.writeOkEndPacket();
     }
 
 

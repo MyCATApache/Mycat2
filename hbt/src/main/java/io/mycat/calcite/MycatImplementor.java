@@ -18,17 +18,18 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,12 +38,15 @@ import java.util.List;
  * @author Junwen Chen
  **/
 public class MycatImplementor extends RelToSqlConverter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
+    private final List<Object> params;
+
     @Override
     public Result visit(TableScan e) {
         try {
             MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
             if (physicalTable != null) {
-                DataNode backendTableInfo = physicalTable.getBackendTableInfo();
+                DataNode backendTableInfo = physicalTable.getDataNode();
                 SqlIdentifier identifier;
                 if (backendTableInfo.getSchema() == null) {
                     identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);
@@ -54,34 +58,20 @@ public class MycatImplementor extends RelToSqlConverter {
                 return super.visit(e);
             }
         } catch (Throwable e1) {
+            LOGGER.error("",e1);
             return null;
         }
 
     }
-//    public static String toString(RelNode node) {
-//        try {
-//            MycatImplementor dataNodeSqlConverter = new MycatImplementor();
-//            SqlImplementor.Result visit = dataNodeSqlConverter.visitChild(0, node);
-//            SqlNode sqlNode = visit.asStatement();
-//            return sqlNode.toSqlString(MysqlSqlDialect.DEFAULT).getSql();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 
-    public MycatImplementor(SqlDialect dialect) {
+    public MycatImplementor(SqlDialect dialect, List<Object> params) {
         super(dialect);
+        this.params = params;
     }
 
-//    /** @see #dispatch */
-//    public Result visit(MycatTransientSQLTableScan scan) {
-//        return scan.implement();
-
-//    }
 
     public Result implement(RelNode node) {
-        return dispatch(node);
+        return visitRoot(node);
     }
 
     /**
@@ -102,43 +92,9 @@ public class MycatImplementor extends RelToSqlConverter {
         return super.visit(e);
     }
 
-//    /**
-//     * 该union输入是超过2个节点的,union 别名 问题
-//     * @param e
-//     * @return
-//     */
-//    @Override
-//    public Result visit(Union e) {
-//        if (!e.isDistinct()) {
-//            ArrayList<RelNode> unions = new ArrayList<>();
-//            CalciteUtls.collect(e, unions);
-//            RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(e.getCluster(), null);
-//            relBuilder.pushAll(unions);
-//            relBuilder.union(e.all, unions.size());
-//            e = (Union) relBuilder.build();
-//            SqlNode node = null;
-//            for (Ord<RelNode> input : Ord.zip(e.getInputs())) {
-//                final Result result = visitChild(input.i, input.e);
-//                if (node == null) {
-//                    node = result.subSelect();//修改点 会添加别名???
-//                } else {
-//                    SqlSetOperator sqlSetOperator = e.all
-//                            ? SqlStdOperatorTable.UNION_ALL
-//                            : SqlStdOperatorTable.UNION;
-//                    node = sqlSetOperator.createCall(POS, node, result.asSelect());
-//                }
-//            }
-//            final List<Clause> clauses =
-//                    Expressions.list(Clause.SET_OP);
-//            return result(node, clauses, e, null);
-//        }
-//        return super.visit(e);
-//    }
-
-
     @Override
-    protected Result buildAggregate(Aggregate e, Builder builder,
-                                    List<SqlNode> selectList, List<SqlNode> groupByList) {
+    protected Builder buildAggregate(Aggregate e, Builder builder,
+                                     List<SqlNode> selectList, List<SqlNode> groupByList) {
         for (AggregateCall aggCall : e.getAggCallList()) {
 
             RelDataType type = aggCall.type;
@@ -156,6 +112,30 @@ public class MycatImplementor extends RelToSqlConverter {
             // as there is at least one aggregate function.
             builder.setGroupBy(new SqlNodeList(groupByList, POS));
         }
-        return builder.result();
+        return builder;
+    }
+
+    @Override
+    public Result visit(Sort e) {
+        RexNode fetch = e.fetch;
+        if (fetch!=null&&fetch.getKind()==SqlKind.PLUS){
+            RexCall fetch1 = (RexCall) fetch;
+            if (fetch1.getOperands().size()==2&&!params.isEmpty()){
+                List<RexNode> operands = fetch1.getOperands();
+                RexNode offsetRexNode = operands.get(0);
+                RexNode limitRexNode = operands.get(1);
+                if (offsetRexNode instanceof RexDynamicParam&&limitRexNode instanceof RexDynamicParam){
+                    RexDynamicParam left = (RexDynamicParam)operands.get(0);
+                    RexDynamicParam right =  (RexDynamicParam)operands.get(1);
+                    Number first = (Number) params.get(left.getIndex());
+                    Number second = (Number) params.get(right.getIndex());
+                    RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                    e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
+                            BigDecimal.valueOf(first.longValue()+second.longValue())));
+                }
+            }
+
+        }
+        return super.visit(e);
     }
 }

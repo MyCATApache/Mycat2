@@ -23,8 +23,8 @@ public interface Part {
     int getSchemaIndex();
 
     SqlString getSql(RelNode node);
-    public String getBackendTableName(MycatTable mycatTable);
+    public String getBackendTableName(AbstractMycatTable mycatTable);
 
-    public String getBackendSchemaName(MycatTable mycatTable);
+    public String getBackendSchemaName(AbstractMycatTable mycatTable);
 
 }

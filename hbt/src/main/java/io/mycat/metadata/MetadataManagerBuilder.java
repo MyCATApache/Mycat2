@@ -45,14 +45,13 @@ public class MetadataManagerBuilder {
         );
 
         Map<String, String> properties = new HashMap<>();
+        properties.put("column","id");
         properties.put("partitionCount", "2,1");
         properties.put("partitionLength", "256,512");
 
-        ShardingTableConfig build = ShardingTableConfig.builder()
-                .columns(Arrays.asList(ShardingQueryRootConfig.Column.builder()
-                        .columnName("id").function(SharingFuntionRootConfig.ShardingFuntion.builder().name("partitionByLong")
-                                .clazz("io.mycat.router.function.PartitionByLong").properties(properties).ranges(Collections.emptyMap())
-                                .build()).shardingType(SimpleColumnInfo.ShardingType.NATURE_DATABASE_TABLE.name()).build()))
+        ShardingTableConfig build = ShardingTableConfig.builder().function(SharingFuntionRootConfig.ShardingFuntion.builder().name("partitionByLong")
+                .clazz("io.mycat.router.function.PartitionByLong").properties(properties).ranges(Collections.emptyMap())
+                .build())
                 .createTableSQL("CREATE TABLE `travelrecord` (\n" +
                         "  `id` bigint(20) NOT NULL,\n" +
                         "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +

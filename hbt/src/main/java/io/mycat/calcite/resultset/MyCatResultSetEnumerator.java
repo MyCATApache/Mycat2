@@ -9,7 +9,7 @@ import java.sql.Date;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MyCatResultSetEnumerator<T> implements Enumerator<T> {
+public class MyCatResultSetEnumerator implements Enumerator<Object[]> {
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerator.class);
 
     final AtomicBoolean CANCEL_FLAG;
@@ -24,7 +24,7 @@ public class MyCatResultSetEnumerator<T> implements Enumerator<T> {
 
 
     @Override
-    public T current() {
+    public Object[] current() {
         Object[] res = new Object[columnCount];
         for (int i = 0, j = 1; i < columnCount; i++, j++) {
             Object object = rowBaseIterator.getObject(j);
@@ -34,7 +34,7 @@ public class MyCatResultSetEnumerator<T> implements Enumerator<T> {
                 res[i] = object;
             }
         }
-        return (T) res;
+        return (Object[]) res;
     }
 
     @Override

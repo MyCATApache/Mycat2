@@ -31,7 +31,7 @@ import org.apache.calcite.sql.SqlNode;
 /**
  * @author Junwen Chen
  **/
-public abstract class MycatTableBase extends AbstractTable implements ProjectableFilterableTable {
+public abstract class MycatTableBase extends AbstractTable  {
 
     public abstract <T> TableHandler logicTable();
 

@@ -3,6 +3,7 @@ package io.mycat.upondb;
 import com.alibaba.fastsql.sql.ast.expr.SQLDateExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLDateTimeExpr;
 import com.google.common.collect.ImmutableSet;
+import io.mycat.MycatDataContext;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.util.MySQLFunction;
 import io.mycat.util.SQLContext;
@@ -27,11 +28,10 @@ public class MysqlFunctions {
         }
 
         @Override
-        public Object eval(SQLContext context, Object[] args) {
+        public Object eval(MycatDataContext context, Object[] args) {
             String name = args[0].toString().replaceAll("MYCATSEQ_", "");
             Supplier<String> sequence = SequenceGenerator.INSTANCE.getSequence(name);
-            String s = sequence.get();
-            return s;
+            return sequence.get();
         }
     };
 
@@ -47,8 +47,8 @@ public class MysqlFunctions {
         }
 
         @Override
-        public Object eval(SQLContext context, Object[] args) {
-            return context.lastInsertId();
+        public Object eval(MycatDataContext  context, Object[] args) {
+            return context.getLastInsertId();
         }
     };
 
@@ -65,8 +65,8 @@ public class MysqlFunctions {
         }
 
         @Override
-        public Object eval(SQLContext context, Object[] args) {
-            return context.getSQLVariantRef("current_user");
+        public Object eval(MycatDataContext  context, Object[] args) {
+            return context.getVariable("current_user");
         }
     };
 
@@ -82,7 +82,7 @@ public class MysqlFunctions {
         }
 
         @Override
-        public Object eval(SQLContext context, Object[] args) {
+        public Object eval(MycatDataContext  context, Object[] args) {
             return LocalDate.now().toString();
         }
     };
@@ -98,7 +98,7 @@ public class MysqlFunctions {
         }
 
         @Override
-        public Object eval(SQLContext context, Object[] args) {
+        public Object eval(MycatDataContext  context, Object[] args) {
             return  LocalDateTime.now().toString();
         }
     };

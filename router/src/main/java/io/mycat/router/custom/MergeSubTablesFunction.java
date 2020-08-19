@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -22,6 +23,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     int beginIndex;
     int endIndex;
     private boolean segmentQuery;
+    String columnName;
 
     @Override
     public String name() {
@@ -29,9 +31,9 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
-    public List<DataNode> calculate(Set<RangeVariable> values) {
+    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
         ArrayList<DataNode> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values) {
+        for (RangeVariable rangeVariable : values.values().stream().flatMap(i->i.stream()).collect(Collectors.toList())) {
             //匹配字段名
             if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
                 ///////////////////////////////////////////////////////////////
@@ -43,14 +45,14 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                         if (dataNode != null) {
                             CollectionUtil.setOpAdd(res, dataNode);
                         } else {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         break;
                     }
                     case RANGE: {
                         List<DataNode> dataNodes = this.calculateRange(begin, end);
                         if (dataNodes == null || dataNodes.size() == 0) {
-                            return getTable().getShardingBackends();
+                            return getTable().dataNodes();
                         }
                         CollectionUtil.setOpAdd(res, dataNodes);
                         break;
@@ -58,7 +60,11 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 }
             }
         }
-        return res.isEmpty()? getTable().getShardingBackends():res;
+        return res.isEmpty()? getTable().dataNodes():res;
+    }
+
+    private String getColumnName() {
+        return columnName;
     }
 
 
@@ -102,7 +108,7 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
         this.tablePrefix = Objects.requireNonNull(properties.get("tablePrefix"), "tablePrefix required ");
         this.beginIndex = Integer.parseInt(Objects.requireNonNull(properties.get("beginIndex"), "beginIndex required "));
         this.endIndex = Integer.parseInt(Objects.requireNonNull(properties.get("endIndex"), "endIndex required "));
-
+        this.columnName= properties.get("columnName");
         String targetName = Objects.requireNonNull(properties.get("targetName"));
         String schema = Objects.requireNonNull(properties.get("schemaName"));
         String table = Objects.requireNonNull(properties.get("tableName"));
@@ -125,6 +131,11 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 return table;
             }
         };
+    }
+
+    @Override
+    public boolean isShardingKey(String name) {
+        return this.columnName.equals(name);
     }
 
     private DataNode getDataNode(String tableName) {

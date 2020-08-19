@@ -18,7 +18,7 @@ package io.mycat.hbt4.logical.rules;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
-import io.mycat.hbt4.logical.MycatCalc;
+import io.mycat.hbt4.logical.rel.MycatCalc;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rex.RexMultisetUtil;
@@ -49,7 +49,7 @@ public class MycatCalcRule extends MycatConverterRule {
             return null;
         }
 
-        return new MycatCalc(rel.getCluster(), rel.getTraitSet().replace(out),
+        return MycatCalc.create(rel.getTraitSet().replace(out),
                 convert(calc.getInput(), calc.getTraitSet().replace(out)),
                 calc.getProgram());
     }
