@@ -29,6 +29,16 @@ EXPLAIN SELECT id FROM db1.travelrecord WHERE id = 1;
 EXECUTE plan fromSql(repli,'SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` = 1')
 ```
 
+
+
+2020-8-19 mycat2 master分支引入了新的查询引擎,服务器预处理功能与sql缓存功能暂时不可用
+
+而且配置有所变更,正在完善相关文档
+
+
+
+## master
+
 ## 安装包下载
 
 https://github.com/MyCATApache/Mycat2/releases
