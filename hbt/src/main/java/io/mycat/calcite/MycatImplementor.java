@@ -118,16 +118,23 @@ public class MycatImplementor extends RelToSqlConverter {
     @Override
     public Result visit(Sort e) {
         RexNode fetch = e.fetch;
-        if (fetch.getKind()==SqlKind.PLUS){
+        if (fetch!=null&&fetch.getKind()==SqlKind.PLUS){
             RexCall fetch1 = (RexCall) fetch;
-            List<RexNode> operands = fetch1.getOperands();
-            RexDynamicParam left = (RexDynamicParam)operands.get(0);
-            RexDynamicParam right =  (RexDynamicParam)operands.get(1);
-            Number first = (Number) params.get(left.getIndex());
-            Number second = (Number) params.get(right.getIndex());
-            RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-            e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
-                    BigDecimal.valueOf(first.longValue()+second.longValue())));
+            if (fetch1.getOperands().size()==2&&!params.isEmpty()){
+                List<RexNode> operands = fetch1.getOperands();
+                RexNode offsetRexNode = operands.get(0);
+                RexNode limitRexNode = operands.get(1);
+                if (offsetRexNode instanceof RexDynamicParam&&limitRexNode instanceof RexDynamicParam){
+                    RexDynamicParam left = (RexDynamicParam)operands.get(0);
+                    RexDynamicParam right =  (RexDynamicParam)operands.get(1);
+                    Number first = (Number) params.get(left.getIndex());
+                    Number second = (Number) params.get(right.getIndex());
+                    RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                    e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
+                            BigDecimal.valueOf(first.longValue()+second.longValue())));
+                }
+            }
+
         }
         return super.visit(e);
     }

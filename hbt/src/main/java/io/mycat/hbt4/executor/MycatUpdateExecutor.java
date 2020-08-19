@@ -22,10 +22,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.apply;
@@ -35,7 +32,7 @@ import static java.sql.Statement.NO_GENERATED_KEYS;
 public class MycatUpdateExecutor implements Executor {
     private final Distribution values;
     private final SQLStatement sqlStatement;
-    private final List<Object> parameters;
+    private  List<Object> parameters;
     private final HashSet<GroupKey> groupKeys;
     private DatasourceFactory factory;
     public long lastInsertId = 0;
@@ -105,8 +102,11 @@ public class MycatUpdateExecutor implements Executor {
             Objects.requireNonNull(tableSource);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            String sql = sqlStatement.toParameterizedString();
-
+            StringBuilder sb = new StringBuilder();
+            List<Object> outparameters = new ArrayList<>();
+             MycatPreparedStatementUtil.collect(sqlStatement,sb,parameters,outparameters);
+            String sql =sb.toString();
+            this.parameters = outparameters;
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             groupHashMap.add(key);
         }

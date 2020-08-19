@@ -22,6 +22,7 @@ import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.Group;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -44,13 +45,14 @@ public class MycatInsertExecutor implements Executor {
     private List<Object> params;
     public long lastInsertId = 0;
     public long affectedRow = 0;
+    public String sequence;
 
     public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DatasourceFactory factory, List<Object> params) {
         this.mycatInsertRel = mycatInsertRel;
         this.factory = factory;
         this.params = params;
 
-        boolean multi = (params.get(0) instanceof List);
+        boolean multi = !params.isEmpty()&&(params.get(0) instanceof List);
         if (multi) {
             this.groupMap = runMultiParams();
         } else {
@@ -59,13 +61,17 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public boolean isProxy(){
-       return groupMap.keySet().size()==1;
+       return params.isEmpty()&&mycatInsertRel.getFinalAutoIncrementIndex()!=-1&& groupMap.keySet().size()==1;
     }
 
     public Pair<String,String> getSingleSql(){
         Map.Entry<GroupKey, Group> entry = groupMap.entrySet().iterator().next();
         GroupKey key = entry.getKey();
         String parameterizedSql = key.getParameterizedSql();
+        LinkedList<List<Object>> args = entry.getValue().getArgs();
+        if (args.isEmpty()&&mycatInsertRel.getFinalAutoIncrementIndex()!=-1){
+            return Pair.of(key.getTarget(),parameterizedSql);
+        }
         MySqlInsertStatement sqlStatement = (MySqlInsertStatement)SQLUtils.parseSingleMysqlStatement(parameterizedSql);
         Group value = entry.getValue();
         List<SQLInsertStatement.ValuesClause> valuesList = sqlStatement.getValuesList();
@@ -115,11 +121,13 @@ public class MycatInsertExecutor implements Executor {
         valuesList.clear();
 
         Map<GroupKey, Group> group = new HashMap<>();
+        ArrayList<Object> params = new ArrayList<>(this.params);
         for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
             boolean fillSequence = finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement();
             String sequence = null;
             if (fillSequence) {
                 sequence = stringSupplier.get();
+                params.add(sequence);
             }
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, params, valuesClause.getValues(), sequence);
             List<DataNode> dataNodes = function.calculate((Map) variables);
@@ -136,11 +144,9 @@ public class MycatInsertExecutor implements Executor {
 
 
             List<Object> outParams = new ArrayList<>();
-            MycatPreparedStatementUtil.collect(template.getValues(), params, outParams);
-            if (fillSequence) {
-                outParams.add(sequence);
-            }
-            String sql = template.toParameterizedString();
+            StringBuilder sb = new StringBuilder();
+            MycatPreparedStatementUtil.collect2(template,sb,params, outParams);
+            String sql =sb.toString();
             GroupKey key = new GroupKey();
             key.setTarget(dataNode.getTargetName());
             key.setParameterizedSql(sql);

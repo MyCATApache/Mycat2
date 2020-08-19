@@ -25,6 +25,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.google.common.collect.ImmutableList;
@@ -36,8 +37,6 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -45,9 +44,7 @@ import io.mycat.hbt.ast.base.Schema;
 import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.hbt4.*;
-import io.mycat.hbt4.executor.MycatInsertExecutor;
-import io.mycat.hbt4.executor.MycatUpdateExecutor;
-import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
+import io.mycat.hbt4.executor.MycatPreparedStatementUtil;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.metadata.*;
@@ -55,7 +52,6 @@ import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -64,12 +60,11 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataQueryBase;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -78,18 +73,23 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
 
 public class DrdsRunner {
+    final static Logger log = LoggerFactory.getLogger(DrdsRunner.class);
     DrdsConst config;
     DatasourceFactory factory;
     PlanCache planCache;
@@ -114,6 +114,8 @@ public class DrdsRunner {
 
     @SneakyThrows
     public MycatRel doHbt(String hbtText) {
+        log.debug("reveice hbt");
+        log.debug(hbtText);
         HBTParser hbtParser = new HBTParser(hbtText);
         ParseNode statement = hbtParser.statement();
         SchemaConvertor schemaConvertor = new SchemaConvertor();
@@ -128,6 +130,17 @@ public class DrdsRunner {
         RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
         HBTQueryConvertor hbtQueryConvertor = new HBTQueryConvertor(Collections.emptyList(), relBuilder);
         RelNode relNode = hbtQueryConvertor.complie(originSchema);
+        relNode = relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(TableScan scan) {
+                AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
+                if (table != null) {
+                    return View.of(scan, table.computeDataNode());
+
+                }
+                return super.visit(scan);
+            }
+        });
         return optimizeWithCBO(relNode);
     }
 
@@ -147,19 +160,14 @@ public class DrdsRunner {
 
             @Override
             public DrdsSql next() {
-                StringBuilder sb = new StringBuilder();
+
                 List<Object> params = new ArrayList<>();
-                MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(params, sb, true);
-                parameterVisitor.setShardingSupport(false);
-                parameterVisitor.setParameterizedMergeInList(false);
-                if (inputParameters != null) {
-                    parameterVisitor.setInputParameters(inputParameters);
-                }
                 SQLStatement sqlStatement = iterator.next();
-                sqlStatement.accept(parameterVisitor);
+                StringBuilder sb = new StringBuilder();
+                MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
                 String string = sb.toString();
-                sqlStatement  =SQLUtils.parseSingleMysqlStatement(string);
-                return DrdsSql.of(sqlStatement,string , parameterVisitor.getParameters());
+                sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+                return DrdsSql.of(sqlStatement, string, params);
             }
         };
     }
@@ -205,7 +213,7 @@ public class DrdsRunner {
         return builder.build();
     }
 
-    public void execute(MycatRel relNode1,ExecutorImplementor executorImplementor) {
+    public void execute(MycatRel relNode1, ExecutorImplementor executorImplementor) {
         String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode1);
         executorImplementor.implementRoot(relNode1);
         return;
@@ -240,6 +248,7 @@ public class DrdsRunner {
 
             @Override
             public DrdsSql next() {
+                RelOptCluster cluster = newCluster();
                 DrdsSql drdsSql = iterator.next();
                 MycatRel rel;
                 Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
@@ -248,7 +257,7 @@ public class DrdsRunner {
                         case PARSE:
                             drdsSql.setRelNode(minCostPlan.getRelNode());
                             OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                            rel = dispatch( optimizationContext, drdsSql, plus);
+                            rel = dispatch(optimizationContext, drdsSql, plus);
                             break;
                         case FINAL:
                             rel = (MycatRel) minCostPlan.getRelNode();
@@ -256,9 +265,9 @@ public class DrdsRunner {
                         default:
                             throw new UnsupportedOperationException();
                     }
-                }else {
+                } else {
                     OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                    rel = dispatch( optimizationContext, drdsSql, plus);
+                    rel = dispatch(optimizationContext, drdsSql, plus);
                 }
                 drdsSql.setRelNode(rel);
                 return drdsSql;
@@ -267,8 +276,8 @@ public class DrdsRunner {
     }
 
     public MycatRel dispatch(OptimizationContext optimizationContext,
-                              DrdsSql drdsSql,
-                              SchemaPlus plus) {
+                             DrdsSql drdsSql,
+                             SchemaPlus plus) {
         SQLStatement sqlStatement = drdsSql.getSqlStatement();
         if (sqlStatement instanceof SQLSelectStatement) {
             return compileQuery(dataContext.getDefaultSchema(), optimizationContext, plus, drdsSql);
@@ -354,7 +363,7 @@ public class DrdsRunner {
         return compileQuery(dataContext.getDefaultSchema(), optimizationContext, plus, drdsSql);
     }
 
-    private MycatRel compileUpdate(TableHandler logicTable, MycatDataContext dataContext,OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
+    private MycatRel compileUpdate(TableHandler logicTable, MycatDataContext dataContext, OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
         return compileQuery(dataContext.getDefaultSchema(), optimizationContext, plus, drdsSql);
     }
 
@@ -403,7 +412,18 @@ public class DrdsRunner {
                 metaColumns.add(autoIncrementColumn);
                 mySqlInsertStatement.addColumn(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
                 SQLVariantRefExpr sqlVariantRefExpr = new SQLVariantRefExpr("?");
-                sqlVariantRefExpr.setIndex(-1);
+                class CountIndex extends MySqlASTVisitorAdapter {
+                    int currentIndex = -1;
+
+                    @Override
+                    public void endVisit(SQLVariantRefExpr x) {
+                        currentIndex = Math.max(x.getIndex(), currentIndex);
+                        super.endVisit(x);
+                    }
+                }
+                CountIndex countIndex = new CountIndex();
+                mySqlInsertStatement.accept(countIndex);
+                sqlVariantRefExpr.setIndex(countIndex.currentIndex + 1);
                 for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
                     valuesClause.addValue(sqlVariantRefExpr);
                 }
@@ -420,19 +440,16 @@ public class DrdsRunner {
                                   SchemaPlus plus,
                                   DrdsSql drdsSql) {
         SQLStatement sqlStatement = drdsSql.getSqlStatement();
-        RelNode logPlan ;
-        if (drdsSql.getRelNode() !=null){
-            if (drdsSql.getRelNode() instanceof MycatRel){
-                return (MycatRel)drdsSql.getRelNode();
+        RelNode logPlan;
+        if (drdsSql.getRelNode() != null) {
+            if (drdsSql.getRelNode() instanceof MycatRel) {
+                return (MycatRel) drdsSql.getRelNode();
             }
             logPlan = drdsSql.getRelNode();
-        }else {
+        } else {
             logPlan = getRelRoot(defaultSchemaName, plus, sqlStatement);
         }
-        JaninoRelMetadataProvider janinoRelMetadataProvider = RelMetadataQueryBase.THREAD_PROVIDERS.get();
-        if (janinoRelMetadataProvider==null){
-            RelMetadataQueryBase.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.DEFAULT);
-        }
+
         if (logPlan instanceof TableModify) {
             LogicalTableModify tableModify = (LogicalTableModify) logPlan;
             switch (tableModify.getOperation()) {
@@ -448,10 +465,10 @@ public class DrdsRunner {
         if (!optimizationContext.predicateOnPhyView && !optimizationContext.predicateOnView) {
             //全表扫描
             optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
-        }else if (!optimizationContext.predicateOnPhyView && optimizationContext.predicateOnView) {
+        } else if (!optimizationContext.predicateOnPhyView && optimizationContext.predicateOnView) {
             //缓存rel
             optimizationContext.saveParameterized(drdsSql.getParameterizedString(), cboLogPlan);
-        }else {
+        } else {
             //仅缓存sql解析
             optimizationContext.saveParse(drdsSql.getParameterizedString(), logPlan);
         }
@@ -468,10 +485,16 @@ public class DrdsRunner {
                 MycatCalciteSupport.INSTANCE.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
 
-        SqlValidator validator = SqlValidatorUtil.newValidator(MycatCalciteSupport.INSTANCE.config.getOperatorTable(),
-                catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory, MycatCalciteSupport.INSTANCE.getValidatorConfig());
+        SqlValidator validator =
 
+                new SqlValidatorImpl(MycatCalciteSupport.INSTANCE.config.getOperatorTable(), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                        MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
+                    @Override
+                    protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
 
+                        super.inferUnknownTypes(inferredType, scope, node);
+                    }
+                };
         SqlNode validated = validator.validate(sqlNode);
         RelOptCluster cluster = newCluster();
         RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
@@ -617,7 +640,7 @@ public class DrdsRunner {
         boolean complex = (isComplex(logPlan));
         optimizationContext.setComplex(complex);
         HepProgramBuilder builder = new HepProgramBuilder();
-        builder.addMatchLimit(1024);
+        builder.addMatchLimit(128);
         builder.addRuleCollection(FILTER);
         if (complex) {
             MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
@@ -651,7 +674,12 @@ public class DrdsRunner {
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        return bestExp.accept(new SQLRBORewriter(optimizationContext));
+        String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(bestExp);
+        System.out.println(s);
+        RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext));
+        s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(accept);
+        System.out.println(s);
+        return accept;
     }
 
     public static RelOptCluster newCluster() {

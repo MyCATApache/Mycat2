@@ -28,7 +28,6 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
@@ -97,6 +96,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalProject project) {
         RelNode input = project.getInput().accept(this);
+        if (input instanceof LogicalTableScan) {
+            LogicalTableScan logicalTableScan = (LogicalTableScan) input;
+            RelOptTable table = logicalTableScan.getTable();
+            AbstractMycatTable abstractMycatTable = table.unwrap(AbstractMycatTable.class);
+            Distribution distribution = abstractMycatTable.computeDataNode();
+            return View.of(logicalTableScan, distribution);
+        }
         if (RelMdSqlViews.project(input)) {
             return project(input, project);
         } else {
@@ -205,13 +211,23 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
             return View.of(input, dataNodeInfo);
         } else {
+            if (sort.offset == null && sort.fetch == null) {
+                input = LogicalSort.create(input, sort.getCollation()
+                        , null
+                        , null);
+                input = View.of(input, dataNodeInfo);
+                return MycatMergeSort.create(
+                        input.getTraitSet().replace(MycatConvention.INSTANCE),
+                        input,
+                        sort.collation, sort.offset, sort.fetch);
+            }
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
             RexNode rexNode;
-            if (sort.offset==null&&sort.fetch!=null){
-                rexNode= sort.fetch;
-            }else if (sort.offset!=null&&sort.fetch==null){
+            if (sort.offset == null && sort.fetch != null) {
+                rexNode = sort.fetch;
+            } else if (sort.offset != null && sort.fetch == null) {
                 rexNode = sort.offset;
-            }else {
+            } else {
                 rexNode = rexBuilder.makeCall(SqlStdOperatorTable.PLUS, sort.offset, sort.fetch);
             }
             input = LogicalSort.create(input, sort.getCollation()
@@ -252,7 +268,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             HepPlanner planner = new HepPlanner(hepProgram.build());
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
-            if (bestExp instanceof Union && bestExp.getInputs().size() == 2 && bestExp.getInput(0) instanceof Aggregate && bestExp.getInput(1) instanceof Aggregate) {
+            if (bestExp instanceof Aggregate && ((Aggregate) bestExp).getInput() instanceof Union) {
                 View multiView = View.of(
                         bestExp.getInput(0).getInput(0),
                         dataNodeInfo);

@@ -41,7 +41,7 @@ public interface ShardingInfo {
                     }
                     @Override
                     public Type getType() {
-                        return Type.normal;
+                        return Type.sharding;
                     }
                 };
             case GLOBAL:

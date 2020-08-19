@@ -17,7 +17,6 @@ package io.mycat.hbt;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
@@ -33,6 +32,7 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
+import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.hbt3.Distribution;
 import io.mycat.metadata.MetadataManager;
@@ -62,10 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -90,7 +87,7 @@ public class HBTQueryConvertor {
     private int paramIndex = 0;
     private final MetaDataFetcher metaDataFetcher;
 
-    public HBTQueryConvertor(List<Object> params,RelBuilder relBuilder) {
+    public HBTQueryConvertor(List<Object> params, RelBuilder relBuilder) {
         this.params = params;
         this.relBuilder = relBuilder;
         this.relBuilder.clear();
@@ -103,7 +100,9 @@ public class HBTQueryConvertor {
                     try (Statement statement = connection1.createStatement()) {
                         statement.setMaxRows(0);
                         try (ResultSet resultSet = statement.executeQuery(sql)) {
-                            return FieldTypes.getFieldTypes(new JdbcRowMetaData(resultSet.getMetaData()));
+                            ResultSetMetaData metaData = resultSet.getMetaData();
+                            JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                            return FieldTypes.getFieldTypes(jdbcRowMetaData);
                         }
                     }
                 } catch (SQLException e) {
@@ -184,12 +183,18 @@ public class HBTQueryConvertor {
                 case CORRELATE_INNER_JOIN:
                 case CORRELATE_LEFT_JOIN:
                     return correlate((CorrelateSchema) input);
+                case MODIFY_FROM_SQL:
+                    return modifyFromSql((ModifyFromSql) input);
                 default:
             }
         } finally {
             relBuilder.clear();
         }
         throw new UnsupportedOperationException(input.getOp().getFun());
+    }
+
+    private RelNode modifyFromSql(ModifyFromSql input) {
+        throw new UnsupportedOperationException();
     }
 
     public RelNode filterFromTable(FilterFromTableSchema input) {
@@ -203,8 +208,8 @@ public class HBTQueryConvertor {
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
         Distribution distribution = mycatTable.computeDataNode(build.getChildExps());
-        Iterable<DataNode> dataNodes = distribution.getDataNodes();
-        return toPhyTable(mycatTable, dataNodes);
+        Iterable<DataNode> dataNodes = distribution.getDataNodes(Collections.emptyList());
+        return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -231,7 +236,7 @@ public class HBTQueryConvertor {
             relDataType = toType(fieldTypes);
         }
         Objects.requireNonNull(relDataType, "无法推导sql结果集类型");
-        return makeBySql(relDataType,targetName, sql);
+        return makeBySql(relDataType, targetName, sql);
     }
 
     private RelDataType tryGetRelDataTypeByParse(String sql) {
@@ -245,10 +250,13 @@ public class HBTQueryConvertor {
                 for (SQLSelectItem sqlSelectItem : firstQueryBlock.getSelectList()) {
                     SQLDataType sqlDataType = sqlSelectItem.computeDataType();
                     if (sqlDataType == null) {
-                        sqlDataType = new SQLCharacterDataType("VARCHAR");
+                        return null;
                     }
                     SqlTypeName type = HBTCalciteSupport.INSTANCE.getSqlTypeByJdbcValue(sqlDataType.jdbcType());
-                    builder.add(sqlSelectItem.computeAlias(), type);
+                    if (type == null) {
+                        return null;
+                    }
+                    builder.add(sqlSelectItem.toString(), type);
                 }
                 return builder.build();
             }
@@ -303,7 +311,7 @@ public class HBTQueryConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTQueryConvertor queryOp = new HBTQueryConvertor( params,relBuilder);
+                HBTQueryConvertor queryOp = new HBTQueryConvertor(params, relBuilder);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
@@ -315,8 +323,12 @@ public class HBTQueryConvertor {
                 relBuilder.push(relNode);
             }
             if (input.getCondition() != null) {
-                RexNode rexNode = toRex(input.getCondition());
-
+                RexNode rexNode = null;
+                try {
+                    rexNode = toRex(input.getCondition());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 Set<CorrelationId> collect = correlVariableMap.values().stream().filter(i -> i instanceof RexCorrelVariable)
                         .map(i -> i.id)
                         .collect(Collectors.toSet());
@@ -358,7 +370,11 @@ public class HBTQueryConvertor {
         if (size > 2) {
             throw new UnsupportedOperationException("set op size must equals 2");
         }
-        RelBuilder relBuilder = this.relBuilder.pushAll(handle(input.getSchemas()));
+        List<RelNode> nodeList = handle(input.getSchemas());
+        if (nodeList.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        RelBuilder relBuilder = this.relBuilder.pushAll(nodeList);
         switch (input.getOp()) {
             case UNION_DISTINCT:
                 return relBuilder.union(false, size).build();
@@ -451,7 +467,7 @@ public class HBTQueryConvertor {
             count++;
             relBuilder.push(tableScan);
         }
-        return relBuilder.union(true,count).build();
+        return relBuilder.union(true, count).build();
     }
 
     private RelNode map(MapSchema input) {
@@ -531,6 +547,7 @@ public class HBTQueryConvertor {
                     String substring = value.substring(1);
                     if (joinCount > 1) {
                         if (substring.startsWith("$")) {
+                            ImmutableList<RexNode> fields = relBuilder.fields();
                             return relBuilder.field(2, 1, Integer.parseInt(substring.substring(1)));
                         }
                         return relBuilder.field(2, 0, Integer.parseInt(substring));
@@ -676,7 +693,7 @@ public class HBTQueryConvertor {
 
     public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
         RelDataType rowType = input.getRowType();
-        return makeBySql( rowType,targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
         );
     }
 
@@ -727,7 +744,7 @@ public class HBTQueryConvertor {
         }
     }
 
-    public  RelBuilder values(RelDataType rowType, Object... columnValues) {
+    public RelBuilder values(RelDataType rowType, Object... columnValues) {
         int columnCount = rowType.getFieldCount();
         final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder =
                 ImmutableList.builder();
@@ -741,7 +758,7 @@ public class HBTQueryConvertor {
                 valueList.clear();
             }
         }
-      return relBuilder.values(listBuilder.build(), rowType);
+        return relBuilder.values(listBuilder.build(), rowType);
     }
 
     public RexNode literal(Object value) {
@@ -758,6 +775,6 @@ public class HBTQueryConvertor {
      * @return
      */
     public MycatTransientSQLTableScan makeBySql(RelDataType relDataType, String targetName, String sql) {
-        return new MycatTransientSQLTableScan(relBuilder.getCluster(),relDataType, targetName, sql);
+        return new MycatTransientSQLTableScan(relBuilder.getCluster(), relDataType, targetName, sql);
     }
 }

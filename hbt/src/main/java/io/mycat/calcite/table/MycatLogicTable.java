@@ -29,15 +29,20 @@ import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -71,19 +76,26 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
         switch (table.getType()) {
             case SHARDING:
                 ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
-                return LazyRexDistribution.of(this,conditions,(paras)->{
+                return LazyRexDistribution.of(this, conditions, (paras) -> {
                     List<RexNode> rexNodes = new ArrayList<>();
                     for (RexNode condition : conditions) {
-                        rexNodes.add(condition.accept(new RexShuttle(){
+                        rexNodes.add(condition.accept(new RexShuttle() {
                             @Override
                             public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
                                 RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
                                 Object o = paras.get(dynamicParam.getIndex());
-                                return rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
+                                RelDataType type;
+                                JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                                if (o == null) {
+                                    type = typeFactory.createSqlType(SqlTypeName.NULL);
+                                } else {
+                                    type = typeFactory.createJavaType(o.getClass());
+                                }
+                                return rexBuilder.makeLiteral(o, type, true);
                             }
                         }));
                     }
-                 return  CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
+                    return CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
                 });
             case GLOBAL:
                 return computeDataNode();

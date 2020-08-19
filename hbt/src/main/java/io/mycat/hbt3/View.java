@@ -89,16 +89,18 @@ public class View extends AbstractRelNode implements MycatRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        RelNode relNode = expandToPhyRelNode();
-        if (relNode instanceof Union) {
-            int index = 0;
-            for (RelNode input : relNode.getInputs()) {
-                writer.item("\t\n" + index + "", MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, false));
-                index++;
-            }
-        } else {
-            writer.item("sql", MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false));
-        }
+        writer.item("relNode",relNode);
+        writer.item("distribution",distribution);
+//        RelNode relNode = expandToPhyRelNode();
+//        if (relNode instanceof Union) {
+//            int index = 0;
+//            for (RelNode input : relNode.getInputs()) {
+//                writer.item("\t\n" + index + "", MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, false));
+//                index++;
+//            }
+//        } else {
+//            writer.item("sql", MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false));
+//        }
 //        for (DataNode slice : distribution.getDataNodes()) {
 //            RelNode newRelNode = relNode.accept(new RelShuttleImpl() {
 //                @Override
@@ -166,7 +168,7 @@ public class View extends AbstractRelNode implements MycatRel {
 //    }
 
     public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params) {
-        if (this.distribution.isSingle() || this.distribution.isBroadCast()) {
+        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
             SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update,params);
             return ImmutableMultimap.of(dataNode.getTargetName(), sql);

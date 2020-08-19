@@ -6,7 +6,10 @@ import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
+import com.alibaba.fastsql.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
@@ -24,18 +27,39 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MycatPreparedStatementUtil {
-     public static void collect(SQLObject sqlObject,List<Object> inParams,List<Object> outParams){
-          sqlObject.accept(new MySqlASTVisitorAdapter(){
-             @Override
-             public boolean visit(SQLVariantRefExpr x) {
-                 int index = x.getIndex();
-                 if (index >=0) {
-                     outParams.add(inParams.get(index));
-                 }
-                 return super.visit(x);
-             }
-         });
-     }
+    public static void collect(SQLStatement sqlStatement, StringBuilder sb,List<Object> inputParameters,List<Object> outputParameters){
+        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true){
+
+
+            @Override
+            public boolean visit(SQLSelectItem x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                }finally {
+                    this.parameterized = true;
+                }
+            }
+        };
+        parameterVisitor.setShardingSupport(false);
+        parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask|
+                VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask|
+                VisitorFeature.OutputParameterizedUnMergeShardingTable.mask|
+                VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
+                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+        );
+        if (inputParameters != null) {
+            parameterVisitor.setInputParameters(inputParameters);
+        }
+
+        sqlStatement.accept(parameterVisitor);
+    }
+    public static void collect2(SQLStatement sqlStatement, StringBuilder sb,List<Object> inputParameters,List<Object> outputParameters){
+        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true){
+        };
+        parameterVisitor.setInputParameters(inputParameters);
+        sqlStatement.accept(parameterVisitor);
+    }
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection) {
         ExecuteBatchInsert executeBatchInsert = new ExecuteBatchInsert(sql, value, connection);
         return executeBatchInsert.invoke();

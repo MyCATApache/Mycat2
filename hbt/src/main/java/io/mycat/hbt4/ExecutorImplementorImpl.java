@@ -15,6 +15,7 @@
 package io.mycat.hbt4;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
@@ -31,22 +32,19 @@ import org.apache.calcite.rel.type.RelDataType;
 public class ExecutorImplementorImpl extends BaseExecutorImplementor {
     private final DatasourceFactory factory;
     private final Response response;
-    Type type;
+    TransactionType  type;
 
-    public ExecutorImplementorImpl(MycatContext context,
+    public ExecutorImplementorImpl(TransactionType  type,MycatContext context,
                                    DatasourceFactory factory,
                                    TempResultSetFactory tempResultSetFactory,
                                    Response response) {
         super(context, tempResultSetFactory);
+        this.type = type;
         this.factory = factory;
         this.response = response;
     }
 
-    public enum Type {
-        PROXY,
-        JDBC,
-        PROXY_JDBC
-    }
+
 
 
     @Override
@@ -57,11 +55,12 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
                 MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
                 if (insertExecutor.isProxy()) {
                     switch (type) {
-                        case PROXY:
-                        case PROXY_JDBC:
+                        case PROXY_TRANSACTION_TYPE:
                             Pair<String, String> pair = insertExecutor.getSingleSql();
                             response.proxyUpdate(pair.getKey(), pair.getValue());
                             return;
+                        case JDBC_TRANSACTION_TYPE:
+                            break;
                     }
                 }
                 insertExecutor.open();
@@ -74,8 +73,7 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
                 MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
                 if (updateExecutor.isProxy()) {
                     switch (type) {
-                        case PROXY:
-                        case PROXY_JDBC:
+                        case PROXY_TRANSACTION_TYPE:
                             Pair<String, String> pair = updateExecutor.getSingleSql();
                             response.proxyUpdate(pair.getKey(), pair.getValue());
                             return;
@@ -91,8 +89,7 @@ public class ExecutorImplementorImpl extends BaseExecutorImplementor {
                 ViewExecutor viewExecutor = (ViewExecutor)executor;
                 if (viewExecutor.isProxy()) {
                     switch (type) {
-                        case PROXY:
-                        case PROXY_JDBC:
+                        case PROXY_TRANSACTION_TYPE:
                             Pair<String, String> pair = viewExecutor.getSingleSql();
                             response.proxySelect(pair.getKey(), pair.getValue());
                             return;

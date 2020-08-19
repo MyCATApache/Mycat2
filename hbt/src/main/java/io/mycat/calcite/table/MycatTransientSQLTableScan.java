@@ -8,6 +8,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
@@ -35,6 +36,11 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
 
     public String getTargetName() {
         return targetName;
+    }
+
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("target",targetName).item("sql",sql);
     }
 
     @Override

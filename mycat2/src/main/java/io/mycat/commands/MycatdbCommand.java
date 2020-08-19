@@ -9,6 +9,8 @@ import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.client.MycatRequest;
+import io.mycat.hbt3.DrdsConfig;
+import io.mycat.hbt3.DrdsRunner;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -126,6 +128,10 @@ public enum MycatdbCommand implements MycatCommand {
         SQLStatement statement = null;
         try {
             String text = req.getText();
+            if (isHbt(text)){
+                executeHbt(dataContext,text.substring(12),receiver);
+                return;
+            }
             logger.info(text);
             Iterator<SQLStatement> iterator = parse(text);
             while (iterator.hasNext()) {
@@ -157,6 +163,21 @@ public enum MycatdbCommand implements MycatCommand {
         } catch (Throwable e) {
             receiver.sendError(e);
         }
+    }
+
+    private boolean isHbt(String text) {
+        boolean hbt = false;
+        char c = text.charAt(0);
+        if ((c=='e'||c=='E')&&text.length()>12){
+            hbt = "execute plan".equalsIgnoreCase( text.substring(0, 12));
+        }else {
+            hbt = false;
+        }
+        return hbt;
+    }
+
+    private void executeHbt(MycatDataContext dataContext, String substring, Response receiver) {
+        DrdsRunners.runHbtOnDrds(dataContext,receiver,substring);
     }
 
     @NotNull

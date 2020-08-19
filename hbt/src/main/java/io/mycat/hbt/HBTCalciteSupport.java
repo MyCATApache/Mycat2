@@ -15,6 +15,7 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.HashBiMap;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt.parser.HBTParser;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -58,7 +59,11 @@ public enum HBTCalciteSupport {
         return Objects.requireNonNull(typeMap.get(name.toLowerCase()),""+name);
     }
     public SqlTypeName getSqlTypeByJdbcValue(int value) {
-        return Objects.requireNonNull(jdbcValueMap.get(value));
+        SqlTypeName sqlTypeName = jdbcValueMap.get(value);
+        if (sqlTypeName == null){
+            return SqlTypeName.VARCHAR;
+        }
+        return sqlTypeName;
     }
 
     public String getSqlTypeName(SqlTypeName name) {

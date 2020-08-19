@@ -29,6 +29,7 @@ public class SQLExprChecker extends BaseChecker {
         //测试插入
         ok = executeUpdate("INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES (999)");
         Assert.assertEquals(ok.getUpdateCount(), 1);
+        System.out.println(ok.getLastId());
         checkContains("select * from db1.travelrecord where user_id = 999", ",999,null,null,null,null");//出现自增序列
         checkContains("select * from db1.travelrecord where id = " + ok.getLastId(), ",999,null,null,null,null");
         check("delete from db1.travelrecord where id = " + ok.getLastId());
