@@ -1,9 +1,13 @@
 package io.mycat.hbt3;
 
 import io.mycat.DataNode;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.util.List;
 
+@EqualsAndHashCode
+@ToString
 public class DistributionImpl extends Distribution {
     final List<DataNode> dataNodeList;
     final Type type;
@@ -61,4 +65,12 @@ public class DistributionImpl extends Distribution {
         return this.type == Type.PHY;
     }
 
+    @Override
+    public String toString() {
+        return "{" +
+                "dataNodeList=" + dataNodeList +
+                ", type=" + type +
+                ", partial=" + partial +
+                '}';
+    }
 }

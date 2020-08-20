@@ -1,6 +1,7 @@
 package io.mycat;
 
 import io.mycat.config.GlobalTableConfig;
+import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.ShardingTableConfig;
 
@@ -24,4 +25,5 @@ public abstract class TableConfigGenerator {
 
     abstract Map<String, GlobalTableConfig> generateGlobalTable();
 
+    abstract Map<String, NormalTableConfig> generateNormalTable();
 }

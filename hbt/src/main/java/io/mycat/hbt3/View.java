@@ -89,8 +89,7 @@ public class View extends AbstractRelNode implements MycatRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("relNode",relNode);
-        writer.item("distribution",distribution);
+        writer.item("relNode",getSql()).item("distribution",distribution);
 //        RelNode relNode = expandToPhyRelNode();
 //        if (relNode instanceof Union) {
 //            int index = 0;

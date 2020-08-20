@@ -51,9 +51,20 @@ public class MycatRexCompiler {
                 @Override
                 public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
                     RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                    JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
                     int index1 = dynamicParam.getIndex();
                     Object o = params.get(index1);
-                    return rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
+                    RelDataType type = dynamicParam.getType();
+                    if (o == null){
+                        return rexBuilder.makeNullLiteral(type);
+                    }
+                    Class<?> aClass = o.getClass();
+                    RelDataType javaType = typeFactory.createJavaType(aClass);
+                    if (javaType.equalsSansFieldNames(type)){
+                        return rexBuilder.makeLiteral(o,type,true);
+                    }else {
+                        return rexBuilder.makeCast(type,rexBuilder.makeLiteral(o,javaType,true));
+                    }
                 }
             });
             programBuilder.addProject(node,null );

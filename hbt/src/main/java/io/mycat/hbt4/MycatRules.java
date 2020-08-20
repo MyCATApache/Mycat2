@@ -188,8 +188,8 @@ public class MycatRules {
                 new MycatMergeJoinRule(out, relBuilderFactory),
                 new MycatSortAggRule(out, relBuilderFactory),
 //                new MycatCorrelateRule(out,relBuilderFactory),
-                new MycatTopNRule(out, relBuilderFactory),
-                MycatBatchNestedLoopJoinRule.INSTANCE
+                new MycatTopNRule(out, relBuilderFactory)
+//                , MycatBatchNestedLoopJoinRule.INSTANCE
         );
     }
 

@@ -164,8 +164,10 @@ public enum MetadataManager {
                 SchemaHandler schemaHandler = entry.getValue();
                 Set<String> tableNames = new HashSet<>(schemaHandler.logicTables().keySet());
                 Set<String> set = schemaConfigMap.values().stream()
-                        .flatMap(i -> Stream.concat(i.getGlobalTables().keySet().stream(),
-                                i.getShadingTables().keySet().stream())).collect(Collectors.toSet());
+                        .flatMap(i -> Stream.concat(Stream.concat(
+                                i.getGlobalTables().keySet().stream(),
+                                i.getShadingTables().keySet().stream()),
+                                i.getNormalTables().keySet().stream())).collect(Collectors.toSet());
                 for (String tableName : tableNames) {
                     if (!set.contains(tableName) && !set.contains("`" + tableName + "`")) {
                         schemaHandler.logicTables().remove(tableName);

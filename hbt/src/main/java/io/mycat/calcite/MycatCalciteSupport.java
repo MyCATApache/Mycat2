@@ -136,7 +136,7 @@ public enum MycatCalciteSupport implements Context {
 
     public final SqlValidator.Config getValidatorConfig() {
         return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance())
-                .withTypeCoercionEnabled(true);
+                .withTypeCoercionEnabled(true).withLenientOperatorLookup(true);
 //                .withSqlConformance(calciteConnectionConfig.conformance());
     }
 

@@ -60,5 +60,12 @@ public class BackendTableInfo implements DataNode {
         return schemaInfo.getTargetSchemaTable();
     }
 
-
+    @Override
+    public String toString() {
+        return "{" +
+                "targetName='" + getTargetName() + '\'' +
+                ", schemaName='" + getSchema() + '\'' +
+                ",tableName='" + getTable() + '\'' +
+                '}';
+    }
 }

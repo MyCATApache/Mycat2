@@ -125,6 +125,7 @@ public class FileConfigProvider implements ConfigProvider {
             TableConfigGenerator tableConfigGenerator = (TableConfigGenerator) declaredConstructor.newInstance(this.config,logicSchemaConfig,generator.getListOptions(),generator.getKvOptions());
             shadingTables.putAll(tableConfigGenerator.generateShardingTable());
             globalTables.putAll(tableConfigGenerator.generateGlobalTable());
+            normalTables.putAll(tableConfigGenerator.generateNormalTable());
         }
 
         logger.warn("----------------------------------Combined configuration----------------------------------");

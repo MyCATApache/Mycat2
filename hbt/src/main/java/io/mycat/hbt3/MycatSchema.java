@@ -55,5 +55,4 @@ public class MycatSchema extends AbstractSchema {
     protected Multimap<String, Function> getFunctionMultimap() {
         return MycatCalciteSupport.INSTANCE.functions;
     }
-
 }

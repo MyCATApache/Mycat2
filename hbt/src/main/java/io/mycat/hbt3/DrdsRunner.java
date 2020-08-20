@@ -72,6 +72,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -181,6 +182,7 @@ public class DrdsRunner {
 
     private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
+        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k,v));
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();
@@ -484,10 +486,9 @@ public class DrdsRunner {
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.INSTANCE.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
-
         SqlValidator validator =
 
-                new SqlValidatorImpl(MycatCalciteSupport.INSTANCE.config.getOperatorTable(), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                new SqlValidatorImpl(ChainedSqlOperatorTable.of(catalogReader,MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
