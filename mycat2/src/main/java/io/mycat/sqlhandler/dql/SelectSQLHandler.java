@@ -65,54 +65,12 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
      * @return
      */
     protected ExecuteCode onSelectDual(SQLRequest<SQLSelectStatement> request, Response receiver) {
-        SQLSelectQueryBlock queryBlock = (SQLSelectQueryBlock) (request.getAst().getSelect().getQuery());
-        List<SQLSelectItem> selectItems = queryBlock.getSelectList();
-
-        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        List<Object> payloadList = new ArrayList<>();
-        for (SQLSelectItem selectItem : selectItems) {
-            SQLExpr expr = selectItem.getExpr();
-            SQLDataType dataType = expr.computeDataType();
-            if (expr instanceof SQLIdentifierExpr) {
-                receiver.sendError(new MycatException("no support field query. field={} ", expr));
-                return ExecuteCode.PROXY_ERROR;
-            } else if (expr instanceof SQLVariantRefExpr) {
-                receiver.sendError(new MycatException("no support variable. field={} ", expr));
-                return ExecuteCode.PROXY_ERROR;
+        String sql = request.getAst().toString();
+        try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource())) {
+            try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
+                receiver.sendResultSet(() -> rowBaseIterator, () -> Arrays.asList(sql));
             }
-
-            boolean isNull = dataType == null;
-            int dataTypeInt;
-            Object payload;
-            String column = normalize(selectItem.getAlias());
-            if (isNull) {
-                dataTypeInt = JDBCType.NULL.getVendorTypeNumber();
-                payload = null;
-            } else if ((dataType.isInt() || dataType.isNumberic()) && !(expr instanceof SQLNumericLiteralExpr)) {//数学计算
-                dataTypeInt = dataType.jdbcType();
-                if (column == null) {
-                    column = expr.toString();
-                }
-                try {
-                    payload = TypeCalculation.calculateLiteralValue(expr.toString(), Collections.emptyMap());
-                } catch (java.lang.UnsupportedOperationException e) {
-                    receiver.sendError(new MycatException("no support variable calculate. field={} ", expr));
-                    return ExecuteCode.PROXY_ERROR;
-                }
-            } else {
-                dataTypeInt = dataType.jdbcType();
-                payload = ((SQLValuableExpr) expr).getValue();
-            }
-
-            if (column == null) {
-                column = payload == null ? NULL : payload.toString();
-            }
-            resultSetBuilder.addColumnInfo(column, dataTypeInt);
-            payloadList.add(payload);
-        }
-        resultSetBuilder.addObjectRowPayload(payloadList);
-        receiver.sendResultSet(() -> resultSetBuilder.build(), Collections::emptyList);
-        return ExecuteCode.PERFORMED;
+        }   return ExecuteCode.PERFORMED;
     }
 
     protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
