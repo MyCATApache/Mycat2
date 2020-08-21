@@ -422,7 +422,6 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
             SubQueryRemoveRule.JOIN,
             SubQueryRemoveRule.PROJECT,
             SortJoinTransposeRule.INSTANCE,
-            SortJoinCopyRule.INSTANCE,
 //            ,
             SortUnionTransposeRule.INSTANCE,
             SortUnionTransposeRule.MATCH_NULL_FETCH
