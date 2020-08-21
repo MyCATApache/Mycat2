@@ -420,7 +420,13 @@ public class MycatCalcitePlanner extends PlannerImpl implements RelOptTable.View
 //            SortUnionTransposeRule.MATCH_NULL_FETCH,
             SubQueryRemoveRule.FILTER,
             SubQueryRemoveRule.JOIN,
-            SubQueryRemoveRule.PROJECT);
+            SubQueryRemoveRule.PROJECT,
+            SortJoinTransposeRule.INSTANCE,
+            SortJoinCopyRule.INSTANCE,
+//            ,
+            SortUnionTransposeRule.INSTANCE,
+            SortUnionTransposeRule.MATCH_NULL_FETCH
+    );
 
     public RelNode pullUpUnion(RelNode relNode1) {
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
