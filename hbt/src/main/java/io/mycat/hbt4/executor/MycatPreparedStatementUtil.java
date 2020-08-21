@@ -1,7 +1,8 @@
 package io.mycat.hbt4.executor;
 
 import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLObject;
+import com.alibaba.fastsql.sql.ast.SQLLimit;
+import com.alibaba.fastsql.sql.ast.SQLOrderBy;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
@@ -11,24 +12,39 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.fastsql.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
-import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hbt4.Group;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
 
 import java.sql.*;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MycatPreparedStatementUtil {
-    public static void collect(SQLStatement sqlStatement, StringBuilder sb,List<Object> inputParameters,List<Object> outputParameters){
-        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true){
+    public static void collect(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
+        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
+
+            @Override
+            public boolean visit(SQLOrderBy x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
+            @Override
+            public boolean visit(SQLLimit x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
 
 
             @Override
@@ -36,15 +52,15 @@ public class MycatPreparedStatementUtil {
                 try {
                     this.parameterized = false;
                     return super.visit(x);
-                }finally {
+                } finally {
                     this.parameterized = true;
                 }
             }
         };
         parameterVisitor.setShardingSupport(false);
-        parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask|
-                VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask|
-                VisitorFeature.OutputParameterizedUnMergeShardingTable.mask|
+        parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
+                VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
+                VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
                 VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
                 | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
         );
@@ -54,12 +70,14 @@ public class MycatPreparedStatementUtil {
 
         sqlStatement.accept(parameterVisitor);
     }
-    public static void collect2(SQLStatement sqlStatement, StringBuilder sb,List<Object> inputParameters,List<Object> outputParameters){
-        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true){
+
+    public static void collect2(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
+        MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
         };
         parameterVisitor.setInputParameters(inputParameters);
         sqlStatement.accept(parameterVisitor);
     }
+
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection) {
         ExecuteBatchInsert executeBatchInsert = new ExecuteBatchInsert(sql, value, connection);
         return executeBatchInsert.invoke();
@@ -116,7 +134,7 @@ public class MycatPreparedStatementUtil {
         }
     }
 
-    public static String apply(String parameterizedSql,List<Object> parameters) {
+    public static String apply(String parameterizedSql, List<Object> parameters) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(parameterizedSql);
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             @Override
@@ -127,6 +145,7 @@ public class MycatPreparedStatementUtil {
         });
         return sqlStatement.toString();
     }
+
     @SneakyThrows
     public static RowBaseIterator executeQuery(Connection mycatConnection,
                                                MycatRowMetaData calciteRowMetaData,

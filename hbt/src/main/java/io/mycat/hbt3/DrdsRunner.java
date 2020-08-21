@@ -643,7 +643,7 @@ public class DrdsRunner {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(128);
         builder.addRuleCollection(FILTER);
-        if (complex) {
+        if (false) {
             MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
             ImmutableList<RelOptRule> relOptRules = ImmutableList.of(mycatFilterPhyViewRule,
                     MycatTablePhyViewRule.INSTANCE,
@@ -675,11 +675,7 @@ public class DrdsRunner {
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(bestExp);
-        System.out.println(s);
         RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext));
-        s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(accept);
-        System.out.println(s);
         return accept;
     }
 

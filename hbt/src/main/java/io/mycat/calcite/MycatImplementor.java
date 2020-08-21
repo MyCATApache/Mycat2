@@ -120,7 +120,7 @@ public class MycatImplementor extends RelToSqlConverter {
         RexNode fetch = e.fetch;
         if (fetch!=null&&fetch.getKind()==SqlKind.PLUS){
             RexCall fetch1 = (RexCall) fetch;
-            if (fetch1.getOperands().size()==2&&!params.isEmpty()){
+            if (!params.isEmpty()){
                 List<RexNode> operands = fetch1.getOperands();
                 RexNode offsetRexNode = operands.get(0);
                 RexNode limitRexNode = operands.get(1);
@@ -129,13 +129,23 @@ public class MycatImplementor extends RelToSqlConverter {
                     RexDynamicParam right =  (RexDynamicParam)operands.get(1);
                     Number first = (Number) params.get(left.getIndex());
                     Number second = (Number) params.get(right.getIndex());
-                    RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-                    e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
-                            BigDecimal.valueOf(first.longValue()+second.longValue())));
-                }
+                e = computeSortFetch(e, first, second);
+            }
+            }else {
+                List<RexNode> operands = fetch1.getOperands();
+                RexLiteral offsetRexNode = (RexLiteral)operands.get(0);
+                RexLiteral limitRexNode =(RexLiteral) operands.get(1);
+                e = computeSortFetch(e, ((Number) offsetRexNode.getValue()).longValue() ,  ((Number) limitRexNode.getValue()).longValue());
             }
 
         }
         return super.visit(e);
+    }
+
+    private Sort computeSortFetch(Sort e, Number first, Number second) {
+        RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+        e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
+                BigDecimal.valueOf(first.longValue()+second.longValue())));
+        return e;
     }
 }

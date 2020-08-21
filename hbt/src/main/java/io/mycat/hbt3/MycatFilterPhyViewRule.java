@@ -50,7 +50,7 @@ public class MycatFilterPhyViewRule extends RelOptRule {
                 RelOptTableImpl relOptTable1 = RelOptTableImpl.create(call.builder().getRelOptSchema(),
                         input.getRowType(),
                         mycatPhysicalTable,
-                        ImmutableList.of(dataNode.getSchema(), dataNode.getTable())
+                        ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())
                 );
                 builder.push(LogicalTableScan.create(input.getCluster(), relOptTable1, ImmutableList.of())
                 ).filter(filter.getCondition());

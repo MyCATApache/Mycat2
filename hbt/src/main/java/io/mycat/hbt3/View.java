@@ -191,7 +191,7 @@ public class View extends AbstractRelNode implements MycatRel {
                     RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
                             scan.getRowType(),
                             physicalTable,
-                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())
+                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())
                     );
                     return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
                 }

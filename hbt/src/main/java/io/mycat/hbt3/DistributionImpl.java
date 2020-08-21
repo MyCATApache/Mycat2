@@ -68,7 +68,8 @@ public class DistributionImpl extends Distribution {
     @Override
     public String toString() {
         return "{" +
-                "dataNodeList=" + dataNodeList +
+                "size="+dataNodeList.size()+
+                ",dataNodeList=" + dataNodeList +
                 ", type=" + type +
                 ", partial=" + partial +
                 '}';

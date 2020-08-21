@@ -461,7 +461,7 @@ public class HBTQueryConvertor {
                     RelOptTableImpl.create(relBuilder.getRelOptSchema(),
                             unwrap.getRowType(),
                             mycatPhysicalTable,
-                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
+                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())),
                     ImmutableList.of()
             );
             count++;
