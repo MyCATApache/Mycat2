@@ -26,7 +26,10 @@ import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.util.Explains;
-import org.apache.calcite.config.*;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
@@ -51,14 +54,12 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql.validate.implicit.TypeCoercionFactory;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -331,8 +332,6 @@ public enum MycatCalciteSupport implements Context {
             SqlNode sqlNode = implement.asStatement();
             String sql = sqlNode.toSqlString(dialect, false).getSql();
             sql = sql.trim();
-            sql = sql.replaceAll("\r", " ");
-            sql = sql.replaceAll("\n", " ");
             return sql + (forUpdate ? " for update" : "");
     }
 
