@@ -50,7 +50,7 @@ public interface ExecutorImplementor {
 
     Executor implement(QueryView gatherView);
 
-    Executor implement(MycatMaterializedSemiJoin materializedSemiJoin);
+    Executor implement(MycatNestedLoopSemiJoin materializedSemiJoin);
 
     Executor implement(MycatMergeSort mergeSort);
 

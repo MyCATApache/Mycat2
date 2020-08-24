@@ -20,7 +20,7 @@ import io.mycat.hbt4.MycatConverterRule;
 import io.mycat.hbt4.MycatRules;
 import io.mycat.hbt4.logical.rel.MycatHashJoin;
 import io.mycat.hbt4.logical.rel.MycatNestedLoopJoin;
-import io.mycat.hbt4.logical.rel.MycatMaterializedSemiJoin;
+import io.mycat.hbt4.logical.rel.MycatNestedLoopSemiJoin;
 import io.mycat.hbt4.logical.rel.MycatSemiHashJoin;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
@@ -96,7 +96,7 @@ public class MycatJoinRule extends MycatConverterRule {
 
         }
         if (join.isSemiJoin()) {
-            return MycatMaterializedSemiJoin.create(
+            return MycatNestedLoopSemiJoin.create(
                     join.getHints(),
                     join.getTraitSet().replace(out),
                     convert(left, out),

@@ -30,24 +30,24 @@ import org.apache.calcite.rex.RexNode;
 
 import java.util.List;
 
-public class MycatMaterializedSemiJoin extends Join implements MycatRel {
+public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
 
-    protected MycatMaterializedSemiJoin(RelOptCluster cluster,
-                                        RelTraitSet traitSet,
-                                        List<RelHint> hints,
-                                        RelNode left,
-                                        RelNode right,
-                                        RexNode condition,
-                                        JoinRelType joinType) {
+    protected MycatNestedLoopSemiJoin(RelOptCluster cluster,
+                                      RelTraitSet traitSet,
+                                      List<RelHint> hints,
+                                      RelNode left,
+                                      RelNode right,
+                                      RexNode condition,
+                                      JoinRelType joinType) {
         super(cluster, traitSet, hints, left, right, condition, ImmutableSet.of(), joinType);
     }
 
     @Override
-    public MycatMaterializedSemiJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new MycatMaterializedSemiJoin(getCluster(),traitSet,getHints(),left,right,conditionExpr,joinType);
+    public MycatNestedLoopSemiJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
+        return new MycatNestedLoopSemiJoin(getCluster(),traitSet,getHints(),left,right,conditionExpr,joinType);
     }
 
-    public static MycatMaterializedSemiJoin create(
+    public static MycatNestedLoopSemiJoin create(
             List<RelHint> hints,
             RelTraitSet traitSet,
             RelNode left,
@@ -56,7 +56,7 @@ public class MycatMaterializedSemiJoin extends Join implements MycatRel {
             JoinRelType joinType) {
         RelOptCluster cluster = left.getCluster();
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
-        return new MycatMaterializedSemiJoin(left.getCluster(),
+        return new MycatNestedLoopSemiJoin(left.getCluster(),
                 traitSet.replace(MycatConvention.INSTANCE)
                         .replaceIfs(
                                 RelCollationTraitDef.INSTANCE,

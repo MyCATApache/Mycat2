@@ -303,7 +303,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     }
 
     @Override
-    public Executor implement(MycatMaterializedSemiJoin materializedSemiJoin) {
+    public Executor implement(MycatNestedLoopSemiJoin materializedSemiJoin) {
         return createNestedLoopJoin(materializedSemiJoin);
     }
 
