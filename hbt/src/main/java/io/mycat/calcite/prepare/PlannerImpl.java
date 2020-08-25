@@ -332,7 +332,7 @@ public class PlannerImpl implements Planner, ViewExpander {
                 typeFactory,
                 sqlValidatorConfig
                         .withDefaultNullCollation(connectionConfig.defaultNullCollation())
-                        .withLenientOperatorLookup(connectionConfig.lenientOperatorLookup())
+                        .withLenientOperatorLookup(true)
                         .withSqlConformance(connectionConfig.conformance())
                         .withIdentifierExpansion(true));
     }
