@@ -8,7 +8,9 @@ import org.apache.calcite.linq4j.function.Parameter;
 
 import java.time.LocalDate;
 import java.time.format.TextStyle;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
@@ -48,6 +50,11 @@ public class MycatFunctions {
                 rowBaseIterator.next();
                 return rowBaseIterator.getLong(1);
             }
+        }
+    }
+    public static class ConcatFunction {
+        public static String eval(String... args) {
+           return Arrays.stream(args).collect(Collectors.joining());
         }
     }
 }

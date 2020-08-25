@@ -199,6 +199,8 @@ public enum MycatCalciteSupport implements Context {
         functions.put("date_format",date_format);
         ScalarFunction UNIX_TIMESTAMP = ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class,"eval");
         functions.put("UNIX_TIMESTAMP",UNIX_TIMESTAMP);
+        ScalarFunction concat = ScalarFunctionImpl.create(MycatFunctions.ConcatFunction.class,"eval");
+        functions.put("concat",concat);
     }
 
     private CalciteConnectionConfig connectionConfig() {
