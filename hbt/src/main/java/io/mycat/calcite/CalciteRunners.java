@@ -2,6 +2,8 @@ package io.mycat.calcite;
 
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
@@ -30,9 +32,12 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.tools.RelRunners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -126,18 +131,30 @@ public class CalciteRunners {
         fork(sql, calciteDataContext, map);
         long cbo = TimeProvider.INSTANCE.now();
         recorder.addRecord(SqlRecorderType.GET_CONNECTION, sql, cbo - startGetConnectionTime);
-        ArrayBindable bindable1 = Interpreters.bindable(relNode);
-        long execution_start = TimeProvider.INSTANCE.now();
-        recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
-//        EnumerableInterpretable.toBindable()
-        Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
-        Enumerator<Object[]> enumerator = bind.enumerator();
-
-        return new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(resultSetType != null ? resultSetType : relNode.getRowType()), enumerator,
-                () -> {
-                    recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now() - execution_start);
-                    recorder.addRecord(SqlRecorderType.AT_END, sql, TimeProvider.INSTANCE.now());
-                });
+        MycatRowMetaData mycatRowMetaData = CalciteConvertors.getMycatRowMetaData(resultSetType != null ? resultSetType : relNode.getRowType());
+        try {
+            ArrayBindable bindable1 = Interpreters.bindable(relNode);
+            long execution_start = TimeProvider.INSTANCE.now();
+            recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
+            Enumerable<Object[]> bind = bindable1.bind(calciteDataContext);
+            Enumerator<Object[]> enumerator = bind.enumerator();
+            return new EnumeratorRowIterator(mycatRowMetaData, enumerator,
+                    () -> {
+                        recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now() - execution_start);
+                        recorder.addRecord(SqlRecorderType.AT_END, sql, TimeProvider.INSTANCE.now());
+                    });
+        } catch (Throwable e) {
+            LOGGER.warn("may meet unsupported operation ",e);
+            PreparedStatement preparedStatement = RelRunners.run(relNode);
+            long execution_start = TimeProvider.INSTANCE.now();
+            recorder.addRecord(SqlRecorderType.CBO, sql, execution_start - cbo);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return new JdbcRowBaseIterator(mycatRowMetaData, preparedStatement, resultSet, () -> {
+                preparedStatement.close();
+                recorder.addRecord(SqlRecorderType.EXECUTION_TIME, sql, TimeProvider.INSTANCE.now() - execution_start);
+                recorder.addRecord(SqlRecorderType.AT_END, sql, TimeProvider.INSTANCE.now());
+            }, sql);
+        }
     }
 
     private static void fork(String sql, MycatCalciteDataContext calciteDataContext, Map<String, List<SingeTargetSQLTable>> map) throws IllegalAccessException {
