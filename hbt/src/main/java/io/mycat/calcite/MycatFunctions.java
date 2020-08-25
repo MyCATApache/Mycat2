@@ -40,5 +40,14 @@ public class MycatFunctions {
             }
         }
     }
-
+    public static class UnixTimestampFunction {
+        public static Long eval(@Parameter(name = "date") String dateText) {
+            String datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
+            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(datasource)) {
+                RowBaseIterator rowBaseIterator = connection.executeQuery("select UNIX_TIMESTAMP('" + dateText + "')");
+                rowBaseIterator.next();
+                return rowBaseIterator.getLong(1);
+            }
+        }
+    }
 }
