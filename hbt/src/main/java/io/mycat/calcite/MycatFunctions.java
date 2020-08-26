@@ -53,8 +53,8 @@ public class MycatFunctions {
         }
     }
     public static class ConcatFunction {
-        public static String eval(String... args) {
-           return Arrays.stream(args).collect(Collectors.joining());
+        public static String eval(String arg0,String arg1) {
+           return arg0+arg1;
         }
     }
 }
