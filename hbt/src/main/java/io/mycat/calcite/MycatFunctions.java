@@ -54,4 +54,9 @@ public class MycatFunctions {
             return arg0 + arg1+arg2+arg3;
         }
     }
+    public static class PiFunction {
+        public static double eval() {
+            return Math.PI;
+        }
+    }
 }

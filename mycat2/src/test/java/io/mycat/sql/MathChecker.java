@@ -40,7 +40,7 @@ public class MathChecker extends BaseChecker {
 //        check("select LOG10(-1) from db1.travelrecord where id = 1 limit 1","1");//不支持
 //        check("select LOG2(-1) from db1.travelrecord where id = 1 limit 1","1");//不支持
         simplyCheck("MOD(6,5)", "1");//
-//        check("select PI() from db1.travelrecord where id = 1 limit 1","1");//不支持
+        check("select PI() from db1.travelrecord where id = 1 limit 1","3.141593");
         simplyCheck("POW(-1,2)");//
         simplyCheck("POWER(-1,2)");//
         simplyCheck("RAND(-1)");//
