@@ -35,7 +35,7 @@ public class MycatFunctions {
 
     public static class UnixTimestampFunction {
         public static Long eval(@Parameter(name = "date") String dateText) {
-            return ((Number) UnsolvedMysqlFunctionUtil.eval("data_format", dateText)).longValue();
+            return ((Number) UnsolvedMysqlFunctionUtil.eval("UNIX_TIMESTAMP", dateText)).longValue();
         }
     }
 
