@@ -91,7 +91,11 @@ public enum MycatCalciteSupport implements Context {
     public final CalciteConnectionConfig calciteConnectionConfig;
     public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
     public final Multimap<String, Function> functions = ImmutableMultimap.of(
-            "date_format", ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval")
+            "date_format", ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval"),
+            "UNIX_TIMESTAMP", ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class, "eval"),
+            "concat", ScalarFunctionImpl.create(MycatFunctions.Concat2Function.class, "eval"),
+            "concat", ScalarFunctionImpl.create(MycatFunctions.Concat3Function.class, "eval"),
+            "concat", ScalarFunctionImpl.create(MycatFunctions.Concat4Function.class, "eval")
     );
     /*
 

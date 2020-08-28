@@ -1,14 +1,11 @@
 package io.mycat.calcite;
 
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.linq4j.function.Parameter;
 
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.Locale;
+import java.util.Objects;
 
 import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
@@ -32,13 +29,29 @@ public class MycatFunctions {
             if (!format.contains("%")) {
                 return format;
             }
-            String datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByRandom();
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(datasource)) {
-                RowBaseIterator rowBaseIterator = connection.executeQuery("select data_format('" + dateText + "','" + format + "')");
-                rowBaseIterator.next();
-                return rowBaseIterator.getString(1);
-            }
+            return Objects.toString(UnsolvedMysqlFunctionUtil.eval("data_format", dateText, format));
         }
     }
 
+    public static class UnixTimestampFunction {
+        public static Long eval(@Parameter(name = "date") String dateText) {
+            return ((Number) UnsolvedMysqlFunctionUtil.eval("data_format", dateText)).longValue();
+        }
+    }
+
+    public static class Concat2Function {
+        public static String eval(String arg0, String arg1) {
+            return arg0 + arg1;
+        }
+    }
+    public static class Concat3Function {
+        public static String eval(String arg0, String arg1,String arg2) {
+            return arg0 + arg1+arg2;
+        }
+    }
+    public static class Concat4Function {
+        public static String eval(String arg0, String arg1,String arg2,String arg3) {
+            return arg0 + arg1+arg2+arg3;
+        }
+    }
 }
