@@ -19,6 +19,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 
 import java.sql.ResultSetMetaData;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,7 +95,11 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
 
     @Override
     public int getColumnType(int column) {
-        return getColumn(column).getType().getSqlTypeName().getJdbcOrdinal();
+        int jdbcOrdinal = getColumn(column).getType().getSqlTypeName().getJdbcOrdinal();
+        if (jdbcOrdinal >= 1000){
+            return Types.VARCHAR;
+        }
+        return jdbcOrdinal;
     }
 
     @Override

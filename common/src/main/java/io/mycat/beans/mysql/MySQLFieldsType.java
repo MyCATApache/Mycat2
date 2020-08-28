@@ -103,7 +103,12 @@ public class MySQLFieldsType {
   }
 
   public static int fromJdbcType(int jdbcType) {
-    return JDBC2MYSQLMAP.get((byte) jdbcType);
+    Integer integer = JDBC2MYSQLMAP.get((byte) jdbcType);
+    if (integer==null){
+      return FIELD_TYPE_STRING;
+    }else {
+      return integer;
+    }
   }
 
   private static void initPut(int jdbcType, int mysqlType) {
