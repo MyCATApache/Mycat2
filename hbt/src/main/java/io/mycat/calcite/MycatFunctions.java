@@ -59,4 +59,29 @@ public class MycatFunctions {
             return Math.PI;
         }
     }
+    public static class CONVFunction {
+        public static String eval(String arg0,String arg1,String arg2) {
+           return  ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("CONV", arg0,arg1,arg2)));
+        }
+    }
+    public static class CRC32Function {
+        public static String eval(String arg0) {
+            return  ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("crc32", arg0)));
+        }
+    }
+    public static class LOGFunction {
+        public static String eval(String arg0) {
+            return  ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("LOG", arg0)));
+        }
+    }
+    public static class LOG10Function {
+        public static String eval(String arg0) {
+            return  ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("LOG10", arg0)));
+        }
+    }
+    public static class LOG2Function {
+        public static String eval(String arg0) {
+            return  ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("LOG2", arg0)));
+        }
+    }
 }

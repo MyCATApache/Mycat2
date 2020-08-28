@@ -96,7 +96,13 @@ public enum MycatCalciteSupport implements Context {
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat2Function.class, "eval"))
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat3Function.class, "eval"))
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat4Function.class, "eval"))
-            .put("PI", ScalarFunctionImpl.create(MycatFunctions.PiFunction.class, "eval")).build();
+            .put("PI", ScalarFunctionImpl.create(MycatFunctions.PiFunction.class, "eval"))
+            .put("CONV", ScalarFunctionImpl.create(MycatFunctions.CONVFunction.class, "eval"))
+            .put("crc32", ScalarFunctionImpl.create(MycatFunctions.CRC32Function.class, "eval"))
+            .put("log", ScalarFunctionImpl.create(MycatFunctions.LOGFunction.class, "eval"))
+            .put("log2", ScalarFunctionImpl.create(MycatFunctions.LOG2Function.class, "eval"))
+            .put("log10", ScalarFunctionImpl.create(MycatFunctions.LOG10Function.class, "eval"))
+            .build();
 
     /*
 

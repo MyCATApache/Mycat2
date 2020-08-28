@@ -28,19 +28,19 @@ public class MathChecker extends BaseChecker {
         simplyCheck("ATAN(-1)", "-0.7853981633974483");//
         simplyCheck("CEIL(-1)", "-1");//
         simplyCheck("CEILING(-1)", "-1");//
-//        check("select CONV(16,10,16) from db1.travelrecord where id = 1 limit 1","1");//不支持
+        simplyCheck("select CONV(16,10,16) from db1.travelrecord where id = 1 limit 1","10");
         simplyCheck("COS(-1)", "0.5403023058681398");//
         simplyCheck("COT(-1)", "-0.6420926159343306");//
-//        check("select CRC32(-1) from db1.travelrecord where id = 1 limit 1","1");//不支持
+        simplyCheck("select CRC32(-1) from db1.travelrecord where id = 1 limit 1","808273962");
         simplyCheck("DEGREES(-1)", "-57.29577951308232");//
         simplyCheck("EXP(-1)", "0.36787944117144233");//
         simplyCheck("FLOOR(-1)", "-1");//
         simplyCheck("LN(2)", "0.6931471805599453");//
-//        check("select LOG(10) from db1.travelrecord where id = 1 limit 1","1");//不支持
-//        check("select LOG10(-1) from db1.travelrecord where id = 1 limit 1","1");//不支持
-//        check("select LOG2(-1) from db1.travelrecord where id = 1 limit 1","1");//不支持
+        simplyCheck("select LOG(10) from db1.travelrecord where id = 1 limit 1","1.0");//
+        simplyCheck("select LOG10(10) from db1.travelrecord where id = 1 limit 1","1.0");//
+        simplyCheck("select LOG2(10) from db1.travelrecord where id = 1 limit 1","3.3219280948873626");//
         simplyCheck("MOD(6,5)", "1");//
-        check("select PI() from db1.travelrecord where id = 1 limit 1","3.141593");
+        simplyCheck("select PI() from db1.travelrecord where id = 1 limit 1","3.141593");
         simplyCheck("POW(-1,2)");//
         simplyCheck("POWER(-1,2)");//
         simplyCheck("RAND(-1)");//
