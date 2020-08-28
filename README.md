@@ -1493,6 +1493,44 @@ https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331
 
 
 
+##### 聚合函数支持
+
+Mycat2的聚合函数支持方式是ONLY_FULL_GROUP_BY
+
+##### avg
+
+只支持数字类型参数
+
+##### count
+
+##### count(distinct)
+
+##### max
+
+只支持数字类型参数
+
+##### min
+
+只支持数字类型参数
+
+##### sum
+
+只支持数字类型参数
+
+##### single_value
+
+值只能是一个，该函数在解关联子查询时候出现，
+
+##### any_value
+
+返回结果中任意一个值，常用用于解决ONLY_FULL_GROUP_BY的问题
+
+
+
+
+
+
+
 
 
 

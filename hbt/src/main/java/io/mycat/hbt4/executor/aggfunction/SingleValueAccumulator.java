@@ -23,6 +23,6 @@ public class SingleValueAccumulator implements Accumulator {
     }
 
     public Object end() {
-        return Objects.requireNonNull(this.value,"single_value must have a value.");
+        return this.value;
     }
 }
