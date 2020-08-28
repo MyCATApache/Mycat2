@@ -23,6 +23,8 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt3.Distribution;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
+import io.mycat.hbt4.executor.aggfunction.MycatHashAggExecutor;
+import io.mycat.hbt4.executor.aggfunction.MycatSortAggExecutor;
 import io.mycat.hbt4.logical.rel.*;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
