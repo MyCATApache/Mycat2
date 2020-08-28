@@ -195,7 +195,7 @@ public enum MycatCalciteSupport implements Context {
         map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
         map.put(RexExecutor.class, RexUtil.EXECUTOR);
 
-        ScalarFunction date_format = ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class,"eval");
+        ScalarFunction date_format = ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class,"eval");
         functions.put("date_format",date_format);
         ScalarFunction UNIX_TIMESTAMP = ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class,"eval");
         functions.put("UNIX_TIMESTAMP",UNIX_TIMESTAMP);
