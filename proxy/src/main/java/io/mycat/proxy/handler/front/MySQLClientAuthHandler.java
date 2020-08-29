@@ -228,7 +228,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         hs.setStatusFlags(2);
         hs.setAuthPluginDataLen(21); // 有插件的话，总长度必是21, seed
         hs.setAuthPluginDataPartTwo(new String(seedParts[1]));
-    hs.setAuthPluginName(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME);
+        hs.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
         hs.setAuthPluginName(clientAuthPluginName);
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
