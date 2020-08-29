@@ -725,9 +725,9 @@ public enum MysqlKeywords {
     ZONE,
     PARSE_GCOL_EXPR;
 
-    public final NameMap<Object> map = new NameMap<Object>();
+    public static final NameMap<Object> map = new NameMap<Object>();
 
-    MysqlKeywords() {
+    static {
         MysqlKeywords[] values = MysqlKeywords.values();
         for (MysqlKeywords value : values) {
             map.put(value.name(), null);
@@ -735,7 +735,11 @@ public enum MysqlKeywords {
         }
     }
 
-    public boolean isKeyword(String id) {
+    MysqlKeywords() {
+
+    }
+
+    public static boolean isKeyword(String id) {
         return map.containsKey(id, false);
     }
 }
