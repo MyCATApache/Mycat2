@@ -43,11 +43,35 @@ public class MycatSqlDialect extends MysqlSqlDialect {
     public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
         SqlOperator operator = call.getOperator();
         if (operator instanceof SqlFunction){
+            List<SqlNode> operandList = call.getOperandList();// should not with `` in fun name
             if ("|".equalsIgnoreCase(operator.getName())){
                 SqlUtil.unparseBinarySyntax(operator, call, writer, leftPrec, rightPrec);
                 return;
             }
-            List<SqlNode> operandList = call.getOperandList();// should not with `` in fun name
+            if ("trim_leading".equalsIgnoreCase(operator.getName())){
+                writer.print("trim(leading ");
+                operandList.get(0).unparse(writer,0,0);
+                writer.print(" from ");
+                operandList.get(1).unparse(writer,0,0);
+                writer.print(")");
+                return;
+            }
+            if ("trim_trailing".equalsIgnoreCase(operator.getName())){
+                writer.print("trim(trailing ");
+                operandList.get(0).unparse(writer,0,0);
+                writer.print("from");
+                operandList.get(1).unparse(writer,0,0);
+                writer.print(")");
+                return;
+            }
+            if ("trim_both".equalsIgnoreCase(operator.getName())){
+                writer.print("trim(both ");
+                operandList.get(0).unparse(writer,0,0);
+                writer.print("from");
+                operandList.get(1).unparse(writer,0,0);
+                writer.print(")");
+                return;
+            }
             writer.print(operator.getName());
             SqlWriter.Frame frame = writer.startList("(", ")");
             for (SqlNode sqlNode : operandList) {
