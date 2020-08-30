@@ -1109,8 +1109,29 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         SqlParserPos.ZERO);
                 return false;
             }
+            case BitwiseOr: {
+                sqlNode = new SqlBasicCall(new SqlUnresolvedFunction(new SqlIdentifier("|", SqlParserPos.ZERO),
+                        null,
+                        null,
+                        null,
+                        null,
+                        SqlFunctionCategory.USER_DEFINED_FUNCTION),new SqlNode[]{left,right},SqlParserPos.ZERO);
+                return false;
+            }
             default:
-                throw new FastsqlException("not support " + x.getOperator());
+            SqlUnresolvedFunction sqlUnresolvedFunction = new SqlUnresolvedFunction(new SqlIdentifier(x.getOperator().name(), SqlParserPos.ZERO),
+                    null,
+                    null,
+                    null,
+                    null,
+                    SqlFunctionCategory.USER_DEFINED_FUNCTION){
+                @Override
+                public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+                    super.unparse(writer, call, leftPrec, rightPrec);
+                }
+            };
+            sqlNode = new SqlBasicCall(sqlUnresolvedFunction,new SqlNode[]{left,right},SqlParserPos.ZERO);
+            return false;
 
         }
 
@@ -1775,6 +1796,12 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     @Override
     public boolean visit(SQLDefaultExpr x) {
         sqlNode = SqlStdOperatorTable.DEFAULT.createCall(SqlParserPos.ZERO);
+        return false;
+    }
+
+    @Override
+    public boolean visit(SQLHexExpr x) {
+        sqlNode = SqlLiteral.createBinaryString(x.getHex(),SqlParserPos.ZERO);
         return false;
     }
 

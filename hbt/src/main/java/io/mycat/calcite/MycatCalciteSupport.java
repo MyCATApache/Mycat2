@@ -19,6 +19,7 @@ import com.google.common.collect.Multimap;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mysql.MysqlKeywords;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
@@ -38,7 +39,6 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -93,15 +93,18 @@ public enum MycatCalciteSupport implements Context {
     public final Multimap<String, Function> functions = (Multimap) ImmutableMultimap.builder()
             .put("date_format", ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval"))
             .put("UNIX_TIMESTAMP", ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class, "eval"))
+            .put("concat", ScalarFunctionImpl.create(MycatFunctions.ConcatFunction.class, "eval"))
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat2Function.class, "eval"))
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat3Function.class, "eval"))
             .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat4Function.class, "eval"))
+            .put("CONCAT_WS", ScalarFunctionImpl.create(MycatFunctions.ConcatWSFunction.class, "eval"))
             .put("PI", ScalarFunctionImpl.create(MycatFunctions.PiFunction.class, "eval"))
             .put("CONV", ScalarFunctionImpl.create(MycatFunctions.CONVFunction.class, "eval"))
             .put("crc32", ScalarFunctionImpl.create(MycatFunctions.CRC32Function.class, "eval"))
             .put("log", ScalarFunctionImpl.create(MycatFunctions.LOGFunction.class, "eval"))
             .put("log2", ScalarFunctionImpl.create(MycatFunctions.LOG2Function.class, "eval"))
             .put("log10", ScalarFunctionImpl.create(MycatFunctions.LOG10Function.class, "eval"))
+            .put("|", ScalarFunctionImpl.create(MycatFunctions.BitWiseOrFunction.class, "eval"))
             .build();
 
     /*
@@ -178,6 +181,7 @@ public enum MycatCalciteSupport implements Context {
                 build.put("LOG", SqlStdOperatorTable.LOG10);
                 build.put("PI", SqlStdOperatorTable.PI);
                 build.put("POW", SqlStdOperatorTable.POWER);
+
                 for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
                     map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
                     map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
@@ -354,11 +358,22 @@ public enum MycatCalciteSupport implements Context {
         final SqlWriterConfig config = SqlPrettyWriter.config().withDialect(dialect)
                 .withAlwaysUseParentheses(true)
                 .withSelectListItemsOnSeparateLines(false)
-                .withUpdateSetListNewline(false);
+                .withUpdateSetListNewline(false)
+                .withQuoteAllIdentifiers(true);//mysql fun name should not wrapper quote
         SqlPrettyWriter writer = new SqlPrettyWriter(config) {
             @Override
             public void dynamicParam(int index) {
                 super.dynamicParam(index);
+            }
+
+            @Override
+            public void identifier(String name, boolean quoted) {
+                super.identifier(name, quoted);
+            }
+
+            @Override
+            public Frame startFunCall(String funName) {
+                return super.startFunCall(funName);
             }
         };
         sqlNode.unparse(writer, 0, 0);

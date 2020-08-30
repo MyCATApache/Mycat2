@@ -19,7 +19,6 @@ import io.mycat.DataNode;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.*;
@@ -37,7 +36,7 @@ import java.util.List;
 /**
  * @author Junwen Chen
  **/
-public class MycatImplementor extends RelToSqlConverter {
+public class MycatImplementor extends RelToSqlConverter  {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
     private final List<Object> params;
 

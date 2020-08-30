@@ -42,8 +42,12 @@ public class MycatSqlDialect extends MysqlSqlDialect {
     @Override
     public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
         SqlOperator operator = call.getOperator();
-        if (operator instanceof SqlFunction){// should not with `` in fun name
-            List<SqlNode> operandList = call.getOperandList();
+        if (operator instanceof SqlFunction){
+            if ("|".equalsIgnoreCase(operator.getName())){
+                SqlUtil.unparseBinarySyntax(operator, call, writer, leftPrec, rightPrec);
+                return;
+            }
+            List<SqlNode> operandList = call.getOperandList();// should not with `` in fun name
             writer.print(operator.getName());
             SqlWriter.Frame frame = writer.startList("(", ")");
             for (SqlNode sqlNode : operandList) {

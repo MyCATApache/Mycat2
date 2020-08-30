@@ -1477,7 +1477,10 @@ SET GLOBAL sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_
 
 ## 内置函数列表
 
-原则上mycat不应该对函数运算,想要更多函数支持请提issue
+Mycat2在使用第二代查询引擎后，对于函数的运算分为两个方面
+1.如果函数被下推到View之下，那么函数就会变成sql执行
+
+2.如果函数在View之上，那么函数就会在Mycat里面运算，具体执行取决于Mycat对函数的实现,有一部分函数的实现是请求mysql服务器来执行,这能保证最佳的兼容性,有一部分则是Mycat自己实现.
 
 ##### 数学函数
 
@@ -1523,7 +1526,79 @@ Mycat2的聚合函数支持方式是ONLY_FULL_GROUP_BY
 
 ##### any_value
 
-返回结果中任意一个值，常用用于解决ONLY_FULL_GROUP_BY的问题
+返回结果中任意一个值，常用于解决ONLY_FULL_GROUP_BY的问题
+
+
+
+##### 数学函数支持
+
+abs
+
+acos
+
+asin
+
+atan
+
+atan2
+
+ceil
+
+ceiling
+
+conv
+
+cos
+
+cot
+
+crc32
+
+degrees
+
+exp
+
+floor
+
+ln
+
+log
+
+log10
+
+log2
+
+mod
+
+pi
+
+pow
+
+power
+
+rand
+
+round
+
+sign
+
+sin
+
+sqrt
+
+tan
+
+truncate
+
+
+
+##### 字符串函数支持
+
+
+
+
+
+
 
 
 
