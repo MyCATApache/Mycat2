@@ -37,6 +37,7 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatCatalogReader;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -481,7 +482,7 @@ public class DrdsRunner {
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
-        CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
+        MycatCatalogReader catalogReader = new MycatCatalogReader(CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.INSTANCE.TypeFactory,
