@@ -2,7 +2,7 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-6-30
+author:junwen  2020-8-31
 
 作者qq: 294712221
 
@@ -14,6 +14,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 开发日志: <https://github.com/MyCATApache/Mycat2/blob/master/doc/101-todo-history-list.md>
 
 项目地址:<https://github.com/MyCATApache/Mycat2>
+
+Mycat2优化器文档:https://github.com/MyCATApache/Mycat2/blob/master/doc/104-optimizer.md
 
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
