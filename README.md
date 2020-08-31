@@ -1484,6 +1484,8 @@ Mycat2在使用第二代查询引擎后，对于函数的运算分为两个方�
 
 2.如果函数在View之上，那么函数就会在Mycat里面运算，具体执行取决于Mycat对函数的实现,有一部分函数的实现是请求mysql服务器来执行,这能保证最佳的兼容性,有一部分则是Mycat自己实现.
 
+~~3.Mycat2暂时不支持变长参数,但是变长参数可以重新变成sql执行,在Mycat2只能转换成定长参数的函数来计算.所以并不建议在Mycat2内执行函数运算,而把运算下推到Mysql上运行。~~
+
 ##### 数学函数
 
 https://github.com/MyCATApache/Mycat2/blob/08045e4fda1eb135d2e6a7029ef4bcc5b739563b/mycat2/src/test/java/io/mycat/sql/MathChecker.java
@@ -1498,7 +1500,7 @@ https://github.com/MyCATApache/Mycat2/blob/70311cbed295f0a5f1a805c298993f88a6331
 
 
 
-##### 聚合函数支持
+#### 聚合函数支持
 
 Mycat2的聚合函数支持方式是ONLY_FULL_GROUP_BY
 
@@ -1532,69 +1534,299 @@ Mycat2的聚合函数支持方式是ONLY_FULL_GROUP_BY
 
 
 
-##### 数学函数支持
+#### 数学函数支持
 
-abs
+##### abs
 
-acos
+Mycat内置
 
-asin
+##### acos
 
-atan
+Mycat内置
 
-atan2
+##### asin
 
-ceil
+Mycat内置
 
-ceiling
+##### atan
 
-conv
+Mycat内置
 
-cos
+##### atan2
 
-cot
+Mycat内置
 
-crc32
+##### ceil
 
-degrees
+Mycat内置
 
-exp
+##### ceiling
 
-floor
+外置
 
-ln
+##### conv
 
-log
+外置
 
-log10
+##### cos
 
-log2
+Mycat内置
 
-mod
+##### cot
 
-pi
+Mycat内置
 
-pow
+##### crc32
 
-power
+##### degrees
 
-rand
+Mycat内置
 
-round
+##### exp
 
-sign
+Mycat内置
 
-sin
+##### floor
 
-sqrt
+Mycat内置
 
-tan
+##### ln
 
-truncate
+Mycat内置
+
+##### log
+
+外置
+
+##### log10
+
+外置
+
+##### log2
+
+外置
+
+##### mod
+
+Mycat内置
+
+##### pi
+
+Mycat内置
+
+##### pow
+
+Mycat内置
+
+##### power
+
+Mycat内置
+
+##### rand
+
+Mycat内置
+
+##### round
+
+Mycat内置
+
+##### sign
+
+Mycat内置
+
+##### sin
+
+Mycat内置
+
+##### sqrt
+
+Mycat内置
+
+##### tan
+
+Mycat内置
+
+##### truncate
+
+Mycat内置
 
 
 
-##### 字符串函数支持
+#### 字符串函数支持
+
+##### ascii
+
+Mycat内置
+
+##### bin
+
+Mycat内置
+
+##### bit_length
+
+外置
+
+char 变长参数
+
+##### char_length
+
+Mycat内置
+
+##### character_length
+
+Mycat内置
+
+##### concat 
+
+变长参数
+
+Mycat2内置2到4个参数的实现
+
+##### concat_ws
+
+变长参数
+
+外置
+
+##### elt
+
+变长参数
+
+##### export_set
+
+field变长参数
+
+##### find_in_set
+
+变长参数
+
+##### format
+
+外置
+
+##### from_base64
+
+外置
+
+##### hex
+
+外置
+
+##### insert
+
+外置
+
+##### lcase
+
+内置
+
+##### lower
+
+内置
+
+##### left
+
+外置
+
+##### length
+
+外置
+
+##### locate
+
+外置
+
+##### lpad
+
+外置
+
+##### ltrim
+
+外置
+
+##### make_set
+
+变长参数
+
+##### mid
+
+外置
+
+##### oct
+
+外置
+
+##### octet_length
+
+外置
+
+##### ord
+
+外置
+
+##### position
+
+外置
+
+##### quote
+
+外置
+
+##### repeat
+
+外置
+
+##### replace
+
+外置
+
+##### reverse
+
+外置
+
+##### right
+
+外置
+
+##### rpad
+
+外置
+
+##### rtrim
+
+外置
+
+##### space
+
+外置
+
+##### substr
+
+外置
+
+##### substring
+
+外置
+
+##### substring_index
+
+外置
+
+##### to_base64
+
+外置
+
+##### ucase
+
+内置
+
+##### upper
+
+内置
+
+##### unhex
+
+外置
 
 
 
@@ -1602,13 +1834,379 @@ truncate
 
 
 
+实验性支持
+
+```
+TRIM([{BOTH | LEADING | TRAILING} [remstr] FROM] str)， TRIM([remstr FROM] str)
+```
+
+
+
+###### 不支持
+
+load_file
+
+soundex
+
+weight_string
+
+
+
+##### 日期函数
+
+##### ADDDATE
+
+外置
+
+```
+SELECT DATE_ADD('2008-01-02', INTERVAL 31 DAY);//'2008-02-02'
+SELECT ADDDATE('2008-01-02', 31);//'2008-02-02'
+```
+
+
+
+##### ADDTIME
+
+外置
+
+```
+SELECT ADDTIME('2007-12-31 23:59:59.999999', '1 1:1:1.000002');//'2008-01-02 01:01:01.000001'
+SELECT ADDTIME('01:00:00.999999', '02:00:00.999998');//'03:00:01.999997'
+```
+
+
+
+##### CONVERT_TZ
+
+外置
+
+```
+SELECT CONVERT_TZ('2004-01-01 12:00:00','GMT','MET');//'2004-01-01 13:00:00'
+SELECT CONVERT_TZ('2004-01-01 12:00:00','+00:00','+10:00');//'2004-01-01 22:00:00'
+```
+
+
+
+##### CURDATE
+
+CURRENT_DATE
+
+内置
+
+```
+SELECT CURDATE()//'2008-06-13'
+SELECT CURDATE() + 0//20080613
+```
+
+
+
+##### CURTIME
+
+内置
+
+```
+SELECT CURTIME()//'23:50:26'
+SELECT CURTIME() + 0;//235026.000000
+```
+
+
+
+##### NOW
+
+内置
+
+CURRENT_TIMESTAMP
+
+
+
+##### DATE
+
+外置
+
+```sql
+SELECT DATE('2003-12-31 01:02:03');//'2003-12-31'
+```
+
+
+
+##### DATEDIFF
+
+外置
+
+```sql
+SELECT DATEDIFF('2007-12-31 23:59:59','2007-12-30');//1
+SELECT DATEDIFF('2010-11-30 23:59:59','2010-12-31');//-31
+```
+
+
+
+##### DATE_ADD
+
+```sql
+ SELECT DATE_ADD('2018-05-01',INTERVAL 1 DAY);//'2018-05-02'
+ SELECT DATE_SUB('2018-05-01',INTERVAL 1 YEAR);//'2017-05-01'
+ SELECT DATE_ADD('2020-12-31 23:59:59',INTERVAL 1 SECOND);//'2021-01-01 00:00:00'
+ SELECT DATE_ADD('2018-12-31 23:59:59',INTERVAL 1 DAY);//'2019-01-01 23:59:59'
+ SELECT DATE_ADD('2100-12-31 23:59:59', INTERVAL '1:1' MINUTE_SECOND);//'2101-01-01 00:01:00'
+SELECT DATE_SUB('2025-01-01 00:00:00',INTERVAL '1 1:1:1' DAY_SECOND);//'2024-12-30 22:58:59'
+SELECT DATE_ADD('1900-01-01 00:00:00', INTERVAL '-1 10' DAY_HOUR);//'1899-12-30 14:00:00'
+SELECT DATE_SUB('1998-01-02', INTERVAL 31 DAY);//'1997-12-02'
+SELECT DATE_ADD('1992-12-31 23:59:59.000002', INTERVAL '1.999999' SECOND_MICROSECOND);//'1993-01-01 00:00:01.000001'
+```
+
+
+
+##### DATE_FORMAT
+
+外置
+
+```sql
+SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y');//'Sunday October 2009'
+SELECT DATE_FORMAT('2007-10-04 22:23:00', '%H:%i:%s');//'22:23:00'
+SELECT DATE_FORMAT('1900-10-04 22:23:00', '%D %y %a %d %m %b %j');//'4th 00 Thu 04 10 Oct 277'
+SELECT DATE_FORMAT('1997-10-04 22:23:00', '%H %k %I %r %T %S %w');//'22 22 10 10:23:00 PM 22:23:00 00 6'
+SELECT DATE_FORMAT('1999-01-01', '%X %V');//'1998 52'
+SELECT DATE_FORMAT('2006-06-00', '%d');//'00'
+
+```
+
+
+
+##### DATE_SUB
+
+外置
+
+
+
+##### DAY
+
+##### DAYOFMONTH
+
+外置
+
+```sql
+SELECT DAYOFMONTH('2007-02-03');//3
+```
+
+
+
+##### DAYNAME
+
+外置
+
+```sql
+SELECT DAYNAME('2007-02-03');//'Saturday'
+```
+
+
+
+##### DAYOFWEEK
+
+```sql
+SELECT DAYOFWEEK('2007-02-03');//7
+```
+
+
+
+##### DAYOFYEAR
+
+```sql
+SELECT DAYOFYEAR('2007-02-03');//34
+```
+
+
+
+##### EXTRACT
+
+外置
+
+```sql
+SELECT EXTRACT(YEAR FROM '2019-07-02');//2019
+SELECT EXTRACT(YEAR_MONTH FROM '2019-07-02 01:02:03');//201907
+SELECT EXTRACT(DAY_MINUTE FROM '2019-07-02 01:02:03');//20102
+SELECT EXTRACT(MICROSECOND FROM '2003-01-02 10:30:00.000123');//123
+```
+
+
+
+##### FROM_DAYS
+
+外置
+
+```sql
+SELECT FROM_DAYS(730669);//2000-07-03
+```
+
+
+
+##### FROM_UNIXTIME
+
+外置
+
+```sql
+SELECT FROM_UNIXTIME(1447430881);//'2015-11-13 10:08:01'
+SELECT FROM_UNIXTIME(1447430881) + 0;//20151113100801
+ SELECT FROM_UNIXTIME(1447430881,'%Y %D %M %h:%i:%s %x');//'2015 13th November 10:08:01 2015'
+```
 
 
 
 
 
+##### GET_FORMAT
+
+外置
+
+```sql
+GET_FORMAT(DATE,'USA')	'%m.%d.%Y'
+GET_FORMAT(DATE,'JIS')	'%Y-%m-%d'
+GET_FORMAT(DATE,'ISO')	'%Y-%m-%d'
+GET_FORMAT(DATE,'EUR')	'%d.%m.%Y'
+GET_FORMAT(DATE,'INTERNAL')	'%Y%m%d'
+GET_FORMAT(DATETIME,'USA')	'%Y-%m-%d %H.%i.%s'
+GET_FORMAT(DATETIME,'JIS')	'%Y-%m-%d %H:%i:%s'
+GET_FORMAT(DATETIME,'ISO')	'%Y-%m-%d %H:%i:%s'
+GET_FORMAT(DATETIME,'EUR')	'%Y-%m-%d %H.%i.%s'
+GET_FORMAT(DATETIME,'INTERNAL')	'%Y%m%d%H%i%s'
+GET_FORMAT(TIME,'USA')	'%h:%i:%s %p'
+GET_FORMAT(TIME,'JIS')	'%H:%i:%s'
+GET_FORMAT(TIME,'ISO')	'%H:%i:%s'
+GET_FORMAT(TIME,'EUR')	'%H.%i.%s'
+GET_FORMAT(TIME,'INTERNAL')	'%H%i%s'
+
+SELECT DATE_FORMAT('2003-10-03',GET_FORMAT(DATE,'EUR'));//'03.10.2003'
+SELECT STR_TO_DATE('10.31.2003',GET_FORMAT(DATE,'USA'));//'2003-10-31'
+ 
+
+```
 
 
+
+##### HOUR
+
+```sql
+SELECT HOUR('10:05:03');//10
+SELECT HOUR('272:59:59');//272
+```
+
+
+
+##### LAST_DAY
+
+```sql
+SELECT LAST_DAY('2003-02-05');// '2003-02-28'
+SELECT LAST_DAY('2004-02-05');//'2004-02-29'
+SELECT LAST_DAY('2004-01-01 01:01:01');//'2004-01-31'
+SELECT LAST_DAY('2003-03-32');//NULL
+```
+
+
+
+##### MAKEDATE
+
+```sql
+SELECT MAKEDATE(2011,31), MAKEDATE(2011,32);//'2011-01-31', '2011-02-01'
+SELECT MAKEDATE(2011,365), MAKEDATE(2014,365);//'2011-12-31', '2014-12-31'
+SELECT MAKEDATE(2011,0);//NULL
+```
+
+
+
+##### MAKETIME
+
+```
+SELECT MAKETIME(12,15,30);//'12:15:30'
+```
+
+
+
+##### MICROSECOND
+
+```sql
+SELECT MICROSECOND('12:00:00.123456');//123456
+SELECT MICROSECOND('2019-12-31 23:59:59.000010');//10
+```
+
+
+
+##### MINUTE
+
+```sql
+SELECT MINUTE('2008-02-03 10:05:03');//5
+```
+
+
+
+##### MONTH
+
+```sql
+SELECT MONTH('2008-02-03');//2
+```
+
+
+
+##### MONTHNAME
+
+```sql
+SELECT MONTHNAME('2008-02-03');// 'February'
+```
+
+
+
+##### PERIOD_ADD
+
+```sql
+SELECT PERIOD_ADD(200801,2);//200803
+```
+
+
+
+##### PERIOD_DIFF
+
+```sql
+SELECT PERIOD_DIFF(200802,200703);//11
+```
+
+
+
+##### QUARTER
+
+```sql
+SELECT QUARTER('2008-04-01');//2
+```
+
+
+
+##### SECOND
+
+```sql
+SELECT SECOND('10:05:03');//3
+```
+
+
+
+##### SEC_TO_TIME
+
+```sql
+SELECT SEC_TO_TIME(2378);//'00:39:38'
+SELECT SEC_TO_TIME(2378) + 0;//3938
+```
+
+
+
+##### STR_TO_DATE
+
+```sql
+SELECT STR_TO_DATE('01,5,2013','%d,%m,%Y');//'2013-05-01'
+SELECT STR_TO_DATE('May 1, 2013','%M %d,%Y');//'2013-05-01' SELECT STR_TO_DATE('a09:30:17','a%h:%i:%s');//'09:30:17'
+SELECT STR_TO_DATE('a09:30:17','%h:%i:%s');//NULL
+SELECT STR_TO_DATE('09:30:17a','%h:%i:%s');//'09:30:17'
+SELECT STR_TO_DATE('abc','abc');//'0000-00-00'
+SELECT STR_TO_DATE('9','%m');//'0000-09-00'
+SELECT STR_TO_DATE('9','%s');//'00:00:09'
+SELECT STR_TO_DATE('00/00/0000', '%m/%d/%Y');//'0000-00-00'
+SELECT STR_TO_DATE('04/31/2004', '%m/%d/%Y');//'2004-04-31'
+```
 
 
 
