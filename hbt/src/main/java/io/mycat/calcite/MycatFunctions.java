@@ -4,6 +4,7 @@ import org.apache.calcite.linq4j.function.Parameter;
 
 import java.time.LocalDate;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -38,16 +39,13 @@ public class MycatFunctions {
             return ((Number) UnsolvedMysqlFunctionUtil.eval("UNIX_TIMESTAMP", dateText)).longValue();
         }
     }
+
     public static class ConcatFunction {
-        public static String eval(String[] args) {
-            for (String arg : args) {
-                if (arg == null){
-                    return null;
-                }
-            }
-            return String.join("",args);
+        public static String eval(@Parameter(name = "n", optional = true) String arg,String... args) {
+            return String.join("", args);
         }
     }
+
     public static class Concat2Function {
         public static String eval(String arg0, String arg1) {
             if (arg0 == null) {
@@ -92,16 +90,18 @@ public class MycatFunctions {
             return arg0 + arg1 + arg2 + arg3;
         }
     }
+
     public static class ConcatWSFunction {
-        public static String eval(String spilt,String[] args) {
+        public static String eval(String spilt, String[] args) {
             for (String arg : args) {
-                if (arg == null){
+                if (arg == null) {
                     return null;
                 }
             }
-            return String.join(spilt,args);
+            return String.join(spilt, args);
         }
     }
+
     public static class PiFunction {
         public static double eval() {
             return Math.PI;
@@ -137,15 +137,64 @@ public class MycatFunctions {
             return ((String) Objects.toString(UnsolvedMysqlFunctionUtil.eval("LOG2", arg0)));
         }
     }
+
     public static class BitWiseOrFunction {
-        public static Long eval(Long arg0,Long arg1) {
-            if (arg0 == null){
+        public static Long eval(Long arg0, Long arg1) {
+            if (arg0 == null) {
                 return null;
             }
-            if (arg1 == null){
+            if (arg1 == null) {
                 return null;
             }
-            return arg0|arg1;
+            return arg0 | arg1;
+        }
+    }
+
+    public static class BinFunction {
+        public static String eval(Long arg0) {
+            if (arg0 != null) {
+                return Long.toBinaryString(arg0);
+            }
+            return null;
+        }
+    }
+
+    public static class BitLengthFunction {
+        public static Integer eval(String arg0) {
+            if (arg0 != null) {
+                return ((Number) UnsolvedMysqlFunctionUtil.eval("BIT_LENGTH", arg0)).intValue();
+            }
+            return null;
+        }
+    }
+
+    public static class CharFunction {
+        public static String eval(String... args) {
+            ArrayList<Object> list = new ArrayList<>();
+            for (Object arg : args) {
+                if (arg != null) {
+                    list.add(arg);
+                }
+            }
+            return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
+        }
+    }
+
+    public static class Char2Function {
+        public static String eval(String arg0, String arg1) {
+            return CharFunction.eval(arg0, arg1);
+        }
+    }
+
+    public static class Char3Function {
+        public static String eval(String... args) {
+            ArrayList<Object> list = new ArrayList<>();
+            for (Object arg : args) {
+                if (arg != null) {
+                    list.add(arg);
+                }
+            }
+            return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
         }
     }
 }

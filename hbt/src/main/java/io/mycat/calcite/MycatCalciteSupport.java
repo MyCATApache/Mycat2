@@ -54,6 +54,7 @@ import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlString;
@@ -105,6 +106,9 @@ public enum MycatCalciteSupport implements Context {
             .put("log2", ScalarFunctionImpl.create(MycatFunctions.LOG2Function.class, "eval"))
             .put("log10", ScalarFunctionImpl.create(MycatFunctions.LOG10Function.class, "eval"))
             .put("|", ScalarFunctionImpl.create(MycatFunctions.BitWiseOrFunction.class, "eval"))
+            .put("bin", ScalarFunctionImpl.create(MycatFunctions.BinFunction.class, "eval"))
+            .put("BIT_LENGTH", ScalarFunctionImpl.create(MycatFunctions.BitLengthFunction.class, "eval"))
+            .put("CHAR", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
             .build();
 
     /*
@@ -150,7 +154,7 @@ public enum MycatCalciteSupport implements Context {
 
     public final SqlValidator.Config getValidatorConfig() {
         return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance())
-                .withTypeCoercionEnabled(true).withLenientOperatorLookup(true);
+                .withTypeCoercionEnabled(true).withTypeCoercionRules(SqlTypeCoercionRule.instance()).withLenientOperatorLookup(true);
 //                .withSqlConformance(calciteConnectionConfig.conformance());
     }
 

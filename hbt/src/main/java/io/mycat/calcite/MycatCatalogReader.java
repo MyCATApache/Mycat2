@@ -309,7 +309,7 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
    * <p>The {@code typeFactory} argument is technical debt; see [CALCITE-2082]
    * Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction
    * constructor. */
-  private static SqlOperator toOp(RelDataTypeFactory typeFactory,
+  public static SqlOperator toOp(RelDataTypeFactory typeFactory,
       SqlIdentifier name, final Function function) {
     List<RelDataType> argTypes = new ArrayList<>();
     List<SqlTypeFamily> typeFamilies = new ArrayList<>();
