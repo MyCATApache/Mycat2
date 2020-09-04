@@ -16,7 +16,7 @@ import java.util.Objects;
 public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) {
         List<SQLAssignItem> items = request.getAst().getItems();
         if (items == null) {
             items = Collections.emptyList();
@@ -27,7 +27,6 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
             dataContext.setVariable(name, value);
         }
         response.sendOk();
-        return ExecuteCode.PERFORMED;
     }
 
     public SetSQLHandler() {

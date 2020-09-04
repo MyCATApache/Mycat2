@@ -18,7 +18,7 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 
 import java.nio.charset.Charset;
 

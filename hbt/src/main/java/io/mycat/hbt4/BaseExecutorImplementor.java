@@ -64,20 +64,17 @@ import java.util.function.Predicate;
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
 
-    final MycatContext context;
     final Map<String, RexToLixTranslator.InputGetter> ref = new HashMap<>();
     final Map<String, Cor[]> refValue = new HashMap<>();
     private TempResultSetFactory tempResultSetFactory;
-    protected List<Object> params;
+    protected List<Object> params = Collections.emptyList();
 
     boolean isCorrelate() {
         return !ref.isEmpty();
     }
 
-    public BaseExecutorImplementor(MycatContext context, TempResultSetFactory tempResultSetFactory) {
-        this.context = context;
+    public BaseExecutorImplementor( TempResultSetFactory tempResultSetFactory) {
         this.tempResultSetFactory = tempResultSetFactory;
-        this.params = context.params;
     }
 
     @Override
@@ -127,6 +124,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         log.info("-------------------complie:" +mycatProject+
                 "----------------");
         MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput,params);
+        MycatContext context = new MycatContext();
         return MycatProjectExecutor.create((input) -> {
             context.values = input.values;
             Object[] outputValues = new Object[outputSize];
@@ -147,6 +145,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         ImmutableList<RexNode> conditions = ImmutableList.of(mycatFilter.getCondition());
         log.info("-------------------complie----------------");
         MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput,params);
+        MycatContext context = new MycatContext();
         Predicate<Row> predicate = row -> {
             context.values = row.values;
             return scalar.execute(context) == Boolean.TRUE;
@@ -198,6 +197,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         int fieldCount = mycatValues.getRowType().getFieldCount();
         final MycatScalar scalar = MycatRexCompiler.compile(nodes, null,params);
         final Object[] values = new Object[nodes.size()];
+        MycatContext context = new MycatContext();
         scalar.execute(context, values);
         final ImmutableList.Builder<Row> rows = ImmutableList.builder();
 
@@ -292,7 +292,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         }
         if (node instanceof RexDynamicParam) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            Object o = context.get(dynamicParam.getName());
+            Object o = params.get(dynamicParam.getIndex());
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
             return  rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
         }
@@ -614,5 +614,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     public Executor implement(MycatGather mycatGather) {
         Executor[] executors = implementInputs(mycatGather);
         return MycatGatherExecutor.create(Arrays.asList(executors));
+    }
+
+    @Override
+    public void setParams(List<Object> context) {
+        this.params = context;
     }
 }

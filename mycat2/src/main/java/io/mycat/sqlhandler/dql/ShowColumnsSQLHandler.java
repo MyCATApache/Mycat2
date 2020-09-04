@@ -16,10 +16,9 @@ import io.mycat.util.Response;
 public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) {
         SQLShowColumnsStatement ast = request.getAst();
-        response.tryBroadcast(ast);
-        return ExecuteCode.PERFORMED;
+        response.tryBroadcastShow(ast.toString());
 //        response.proxyShow(ast);
 //        return ExecuteCode.PERFORMED;
 //        String defaultSchema = dataContext.getDefaultSchema();

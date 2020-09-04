@@ -3,13 +3,7 @@ package io.mycat.runtime;
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.util.Dumper;
-import lombok.SneakyThrows;
-
-import java.sql.Connection;
-import java.util.Map;
-import java.util.Set;
 
 public class ProxyTransactionSession extends LocalTransactionSession {
     public ProxyTransactionSession(MycatDataContext dataContext) {

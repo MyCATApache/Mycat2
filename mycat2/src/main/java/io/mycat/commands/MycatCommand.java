@@ -25,7 +25,5 @@ public interface MycatCommand {
 
     boolean run(MycatRequest request, MycatDataContext context, Response response);
 
-    boolean explain(MycatRequest request, MycatDataContext context, Response response);
-
     String getName();
 }

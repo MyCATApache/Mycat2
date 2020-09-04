@@ -3,6 +3,7 @@ package io.mycat.manager.commands;
 import io.mycat.MycatConfig;
 import io.mycat.MycatDataContext;
 import io.mycat.RootHelper;
+import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
 import io.mycat.config.ClusterRootConfig;
@@ -31,7 +32,7 @@ public class ShowReplicaCommand implements ManageCommand {
     @Override
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
         ResultSetBuilder resultSetBuilder = getResultSet();
-        response.sendResultSet(() -> resultSetBuilder.build());
+        response.sendResultSet(RowIterable.create(resultSetBuilder.build()));
     }
 
     @NotNull
@@ -69,7 +70,7 @@ public class ShowReplicaCommand implements ManageCommand {
             resultSetBuilder.addObjectRowPayload(
                     Arrays.asList(NAME, SWITCH_TYPE, MAX_REQUEST_COUNT, TYPE,
                             WRITE_DS, READ_DS,
-                            WL, RL,AVAILABLE
+                            WL, RL, AVAILABLE
                     ));
         }
         return resultSetBuilder;

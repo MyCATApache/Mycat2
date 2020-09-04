@@ -16,16 +16,8 @@ import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
 public class ReplaceSQLHandler extends AbstractSQLHandler<SQLReplaceStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
         SQLExprTableSource tableSource = request.getAst().getTableSource();
         updateHandler(request.getAst(),dataContext,tableSource,response);
-        return ExecuteCode.PERFORMED;
-    }
-    @Override
-    public ExecuteCode onExplain(SQLRequest<SQLReplaceStatement> request, MycatDataContext dataContext, Response response) {
-        response.setExplainMode(true);
-        SQLExprTableSource tableSource = (SQLExprTableSource)request.getAst().getTableSource();
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,response );
-        return ExecuteCode.PERFORMED;
     }
 }

@@ -16,11 +16,9 @@ package io.mycat.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -249,7 +247,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close()  {
         this.iterator.close();
     }
 }

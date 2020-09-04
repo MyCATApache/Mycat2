@@ -16,6 +16,7 @@ import io.mycat.booster.BoosterRuntime;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -25,6 +26,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Response;
 import lombok.Getter;
+import lombok.SneakyThrows;
 
 import java.sql.JDBCType;
 import java.util.*;
@@ -101,12 +103,13 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             payloadList.add(payload);
         }
         resultSetBuilder.addObjectRowPayload(payloadList);
-        receiver.sendResultSet(() -> resultSetBuilder.build(), Collections::emptyList);
+        receiver.sendResultSet(() -> resultSetBuilder.build());
         return ExecuteCode.PERFORMED;
     }
 
-    protected ExecuteCode onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
-                                        SQLRequest<SQLSelectStatement> request, Response receiver) {
+    @SneakyThrows
+    protected void onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
+                                 SQLRequest<SQLSelectStatement> request, Response receiver) {
         SQLSelectStatement statement = request.getAst();
 
 
@@ -117,20 +120,21 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         if (collector.getErrors().size() > 0) {
             /*检测出存在不支持的错误语法*/
             receiver.sendError(collector.getErrors().get(0));
-            return ExecuteCode.PROXY_ERROR;
+            return;
         }
 
         if (collector.isDual()) {
             /*select 1 from dual; select 1; 空表查询*/
-            return onSelectDual(request, receiver);
+            onSelectDual(request, receiver);
+            return;
         }
 
         ///////////////////////////////booster//////////////////////////////
         if (!dataContext.isInTransaction() && dataContext.isAutocommit()) {
             Optional<String> booster = BoosterRuntime.INSTANCE.getBooster(dataContext.getUser().getUserName());
             if (booster.isPresent()) {
-                receiver.proxySelect(booster.get(), statement);
-                return ExecuteCode.PERFORMED;
+                receiver.proxySelect(booster.get(), statement.toString());
+                return;
             }
         }
 
@@ -139,7 +143,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
         if (schemaName == null) {
             receiver.sendError(new MycatException("schema is null"));
-            return ExecuteCode.PERFORMED;
+            return;
         }
         Set<String> tables = collector.getTables();
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
@@ -155,15 +159,15 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                         .map(ShardingQueryRootConfig::getPrototype)
                         .map(ShardingQueryRootConfig.PrototypeServer::getTargetName);
                 if (targetNameOptional.isPresent()) {
-                    receiver.proxySelect(targetNameOptional.get(), statement);
-                    return ExecuteCode.PERFORMED;
+                    receiver.proxySelect(targetNameOptional.get(), statement.toString());
+                    return;
                 } else {
-                    receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement);
-                    return ExecuteCode.PERFORMED;
+                    receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement.toString());
+                    return;
                 }
             } else {
-                receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement);
-                return ExecuteCode.PERFORMED;
+                receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement.toString());
+                return;
             }
         }
 
@@ -172,12 +176,12 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
 
         TableHandler tableHandlerEntry = chooseTableHandler(schemaHandler.logicTables(), tables);
         if (tableHandlerEntry == null) {
-            receiver.proxySelect(schemaHandler.defaultTargetName(), statement);
-            return ExecuteCode.PERFORMED;
+            receiver.proxySelect(schemaHandler.defaultTargetName(), statement.toString());
+            return;
         }
 
-        DrdsRunners.runOnDrds(dataContext, receiver, statement);
-        return ExecuteCode.PERFORMED;
+        DrdsRunners.runOnDrds(dataContext,  statement,ResponseExecutorImplementor.create(dataContext,receiver));
+        return;
     }
 
     private TableHandler chooseTableHandler(Map<String, TableHandler> tableMap, Set<String> tables) {
@@ -191,17 +195,19 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     }
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
         //直接调用已实现好的
         SQLSelectStatement ast = request.getAst();
         TableSourceExtractor tableSourceExtractor = new TableSourceExtractor();
         if (hanldeInformationSchema(response, ast, tableSourceExtractor)) {
-            return ExecuteCode.PERFORMED;
+            return;
         }
         if (tableSourceExtractor.getTableSources().isEmpty()) {
-            return onSelectNoTable(request, response);
+            onSelectNoTable(request, response);
+            return;
         }
-        return onSelectTable(dataContext, tableSourceExtractor.getTableSources().get(0), request, response);
+        onSelectTable(dataContext, tableSourceExtractor.getTableSources().get(0), request, response);
+        return;
     }
 
     private boolean hanldeInformationSchema(Response response, SQLSelectStatement ast, TableSourceExtractor tableSourceExtractor) {
@@ -225,7 +231,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         if (cantainsInformation_schema) {
             try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource())) {
                 try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
-                    response.sendResultSet(() -> rowBaseIterator, () -> Arrays.asList(ast.toString()));
+                    response.sendResultSet(() -> rowBaseIterator);
                     return true;
                 }
             }
@@ -282,13 +288,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             return normalize(str);
         }
     }
-
-    @Override
-    protected ExecuteCode onExplain(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
-        response.setExplainMode(true);
-        return onExecute(request, dataContext, response);
-    }
-
     public static String normalize(String sql) {
         if (sql == null) {
             return null;

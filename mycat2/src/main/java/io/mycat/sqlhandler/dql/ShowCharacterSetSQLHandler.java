@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class ShowCharacterSetSQLHandler extends AbstractSQLHandler<MySqlShowCharacterSetStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlShowCharacterSetStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<MySqlShowCharacterSetStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getAst().toString());
     }
 }

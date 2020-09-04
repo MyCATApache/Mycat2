@@ -17,16 +17,8 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
 
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) {
         SQLExprTableSource tableSource = request.getAst().getTableSources().get(0);
         updateHandler(request.getAst(), dataContext, tableSource, response);
-        return ExecuteCode.PERFORMED;
-    }
-    @Override
-    public ExecuteCode onExplain(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) {
-        SQLExprTableSource tableSource = request.getAst().getTableSources().get(0);
-        response.setExplainMode(true);
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) tableSource,response );
-        return ExecuteCode.PERFORMED;
     }
 }

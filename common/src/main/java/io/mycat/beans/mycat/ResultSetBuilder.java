@@ -3,6 +3,7 @@ package io.mycat.beans.mycat;
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.api.collector.RowBaseIterator;
 
+import java.io.Serializable;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
@@ -56,24 +57,28 @@ public class ResultSetBuilder {
     }
 
     public RowBaseIterator build() {
-        DefMycatRowMetaData mycatRowMetaData = new DefMycatRowMetaData(columnInfos);
+        SimpleDefMycatRowMetaData mycatRowMetaData = new SimpleDefMycatRowMetaData(columnInfos);
         int columnCount = mycatRowMetaData.getColumnCount();
+        return new DefObjectRowIteratorImpl(mycatRowMetaData, objectList.iterator());
+    }
+
+    public RowBaseIterator build(MycatRowMetaData mycatRowMetaData) {
         return new DefObjectRowIteratorImpl(mycatRowMetaData, objectList.iterator());
     }
 
     /**
      * @author Junwen Chen
      **/
-    private static class DefMycatRowMetaData implements MycatRowMetaData {
+    public static class SimpleDefMycatRowMetaData implements MycatRowMetaData , Serializable {
         final List<ColumnInfo> columnInfos;
 
-        public DefMycatRowMetaData(List<ColumnInfo> columnInfos) {
+        public SimpleDefMycatRowMetaData(List<ColumnInfo> columnInfos) {
             this.columnInfos = columnInfos;
         }
 
         @Override
         public int getColumnCount() {
-            return columnInfos.size()-1;
+            return columnInfos.size() - 1;
         }
 
         @Override
@@ -143,13 +148,12 @@ public class ResultSetBuilder {
     }
 
 
-
-    static public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator {
-        final DefMycatRowMetaData mycatRowMetaData;
+    static public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator implements Serializable {
+        final MycatRowMetaData mycatRowMetaData;
         final Iterator<Object[]> iterator;
         boolean close = false;
 
-        public DefObjectRowIteratorImpl(DefMycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
+        public DefObjectRowIteratorImpl(MycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
             this.mycatRowMetaData = mycatRowMetaData;
             this.iterator = iterator;
         }
@@ -178,9 +182,10 @@ public class ResultSetBuilder {
 
     /**
      * 跳过头部的null
+     *
      * @return
      */
     public List<ColumnInfo> getColumnInfos() {
-        return columnInfos.subList(1,columnInfos.size());
+        return columnInfos.subList(1, columnInfos.size());
     }
 }

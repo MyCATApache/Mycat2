@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) {
         response.sendOk();
-        return ExecuteCode.PERFORMED;
     }
 }

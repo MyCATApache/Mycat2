@@ -15,105 +15,29 @@
 package io.mycat.hbt4;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
-import io.mycat.util.Pair;
-import io.mycat.util.Response;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.rel.type.RelDataType;
 
-public class ExecutorImplementorImpl extends BaseExecutorImplementor {
-    private final DatasourceFactory factory;
-    private final Response response;
-    TransactionType  type;
+public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
+    protected final DatasourceFactory factory;
 
-    public ExecutorImplementorImpl(TransactionType  type,MycatContext context,
-                                   DatasourceFactory factory,
-                                   TempResultSetFactory tempResultSetFactory,
-                                   Response response) {
-        super(context, tempResultSetFactory);
-        this.type = type;
+
+    public ExecutorImplementorImpl(DatasourceFactory factory,
+                                   TempResultSetFactory tempResultSetFactory) {
+        super(tempResultSetFactory);
         this.factory = factory;
-        this.response = response;
     }
 
 
-
-
-    @Override
-    public void implementRoot(MycatRel rel) {
-        Executor executor = rel.implement(this);
-        try {
-            if (executor instanceof MycatInsertExecutor) {
-                MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
-                if (insertExecutor.isProxy()) {
-                    switch (type) {
-                        case PROXY_TRANSACTION_TYPE:
-                            Pair<String, String> pair = insertExecutor.getSingleSql();
-                            response.proxyUpdate(pair.getKey(), pair.getValue());
-                            return;
-                        case JDBC_TRANSACTION_TYPE:
-                            break;
-                    }
-                }
-                insertExecutor.open();
-                long affectedRow = insertExecutor.affectedRow;
-                long lastInsertId = insertExecutor.lastInsertId;
-                response.sendOk(lastInsertId, affectedRow);
-                return;
-            }
-            if (executor instanceof MycatUpdateExecutor) {
-                MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
-                if (updateExecutor.isProxy()) {
-                    switch (type) {
-                        case PROXY_TRANSACTION_TYPE:
-                            Pair<String, String> pair = updateExecutor.getSingleSql();
-                            response.proxyUpdate(pair.getKey(), pair.getValue());
-                            return;
-                    }
-                }
-                updateExecutor.open();
-                long affectedRow = updateExecutor.affectedRow;
-                long lastInsertId = updateExecutor.lastInsertId;
-                response.sendOk(lastInsertId, affectedRow);
-                return;
-            }
-            if (executor instanceof ViewExecutor) {
-                ViewExecutor viewExecutor = (ViewExecutor)executor;
-                if (viewExecutor.isProxy()) {
-                    switch (type) {
-                        case PROXY_TRANSACTION_TYPE:
-                            Pair<String, String> pair = viewExecutor.getSingleSql();
-                            response.proxySelect(pair.getKey(), pair.getValue());
-                            return;
-                    }
-                }
-            }
-            factory.open();
-            executor.open();
-            RelDataType rowType = rel.getRowType();
-            EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
-                    Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
-            });
-            response.sendResultSet(()->rowIterator);
-        }catch (Exception e){
-            if (executor!=null){
-                executor.close();
-            }
-            response.sendError(e);
-        }
-        return ;
-    }
 
     @Override
     public Executor implement(View view) {
+        MycatContext context = new MycatContext();
         return ViewExecutor.create(view, context.forUpdate, params, factory);
     }
 

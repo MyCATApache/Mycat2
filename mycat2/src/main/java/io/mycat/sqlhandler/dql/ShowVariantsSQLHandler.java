@@ -91,9 +91,8 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
 //        return ExecuteCode.PERFORMED;
 //    }
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getAst().toString());
     }
     @NotNull
     private String fixKeyName(String key) {

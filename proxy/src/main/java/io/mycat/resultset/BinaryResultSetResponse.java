@@ -2,7 +2,7 @@ package io.mycat.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.util.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

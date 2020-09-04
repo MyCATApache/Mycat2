@@ -17,20 +17,12 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
 
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
         MySqlExplainStatement ast = request.getAst();
         if(ast.isDescribe()){
-            response.proxyShow(ast);
-            return ExecuteCode.PERFORMED;
+            response.tryBroadcastShow(ast.toString());
+            return ;
         }
-        SQLStatement statement = ast.getStatement();
-        MycatRequest mycatRequest = request.getRequest();
-        MycatRequest request1 = MycatRequest.builder()
-                .sessionId(mycatRequest.getSessionId())
-                .text(statement.toString())
-                .context(mycatRequest.getContext())
-                .userSpace(mycatRequest.getUserSpace()).build();
-        MycatdbCommand.INSTANCE.explain(request1,dataContext,response);
-        return ExecuteCode.PERFORMED;
+      throw new UnsupportedOperationException();
     }
 }

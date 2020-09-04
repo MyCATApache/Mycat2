@@ -9,27 +9,27 @@ import io.mycat.hbt3.DrdsConfig;
 import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt3.DrdsSql;
-import io.mycat.hbt4.DatasourceFactory;
-import io.mycat.hbt4.DefaultDatasourceFactory;
-import io.mycat.hbt4.MycatRel;
-import io.mycat.hbt4.PlanCache;
+import io.mycat.hbt4.*;
+import io.mycat.hbt4.executor.TempResultSetFactory;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Response;
+import lombok.SneakyThrows;
 
 import java.util.*;
 
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
         updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
-        return ExecuteCode.PERFORMED;
     }
 
+    @SneakyThrows
     public static void updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
                 .map(i-> SQLUtils.normalize(i)).orElse(null);
@@ -72,13 +72,8 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
             return;
         }
-        DrdsRunners.runOnDrds(dataContext, receiver, sqlStatement);
-    }
-
-    @Override
-    public ExecuteCode onExplain(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
-        response.setExplainMode(true);
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
-        return ExecuteCode.PERFORMED;
+        TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
+        DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
+        DrdsRunners.runOnDrds(dataContext, sqlStatement,new ResponseExecutorImplementor(datasourceFactory,tempResultSetFactory,receiver));
     }
 }

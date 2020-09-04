@@ -20,7 +20,7 @@ public class LoadDataInFileSQLHandler extends AbstractSQLHandler<MySqlLoadDataIn
     }
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlLoadDataInFileStatement> request, MycatDataContext dataContext, Response response) {
-        return ExecuteCode.NOT_PERFORMED;
+    protected void onExecute(SQLRequest<MySqlLoadDataInFileStatement> request, MycatDataContext dataContext, Response response) {
+
     }
 }

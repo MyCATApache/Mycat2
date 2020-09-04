@@ -1,8 +1,6 @@
 package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
-import io.mycat.util.SQLContext;
 
 import java.util.Iterator;
 import java.util.List;
@@ -20,10 +18,6 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
         return getUponDBSharedServer().execute(id, params,(MycatDBContext) this);
     }
 
-    @Override
-    public UpdateRowIteratorResponse executeUpdate(Long id, List<Object> params) {
-        return (UpdateRowIteratorResponse) getUponDBSharedServer().execute(id, params, (MycatDBContext) this);
-    }
 
     @Override
     public Iterator<RowBaseIterator> executeSqls(String sql) {
@@ -31,19 +25,10 @@ public abstract class MycatDBClientMediator implements MycatDBContext {
     }
 
     @Override
-    public UpdateRowIteratorResponse update(String sql) {
-        return getUponDBSharedServer().update(sql, (MycatDBContext) this);
-    }
-
-    @Override
     public RowBaseIterator query(String sql) {
         return getUponDBSharedServer().query(sql, (MycatDBContext) this);
     }
 
-    @Override
-    public UpdateRowIteratorResponse loadData(String sql) {
-        return getUponDBSharedServer().loadData(sql,(MycatDBContext) this);
-    }
 
     @Override
     public RowBaseIterator executeRel(String text) {

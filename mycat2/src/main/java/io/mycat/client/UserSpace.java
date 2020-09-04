@@ -1,27 +1,28 @@
 package io.mycat.client;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowBaseIteratorCacher;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.beans.resultset.MycatResponse;
-import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.booster.CacheConfig;
 import io.mycat.booster.Task;
 import io.mycat.commands.MycatCommand;
-import io.mycat.lib.impl.CacheFile;
-import io.mycat.lib.impl.CacheLib;
+import io.mycat.commands.MycatdbCommand;
+import io.mycat.hbt4.CacheExecutorImplementor;
+import io.mycat.hbt4.DefaultDatasourceFactory;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.matcher.Matcher;
 import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.plug.hint.HintLoader;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SimpleTransactionSessionRunner;
-import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
+import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Response;
 import io.mycat.util.StringUtil;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.calcite.util.Template;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -31,7 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Junwen Chen
@@ -49,87 +52,65 @@ public class UserSpace {
         this.defaultTransactionType = Objects.requireNonNull(defaultTransactionType);
         this.matcher = matcher;
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
-        cacheTaskList.forEach(cacheTask -> {
+        cacheTaskList.forEach(config -> {
             MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
-            MycatDBClientMediator db = MycatDBs.createClient(context);
-            Task task = getTask(cacheTask.getText(), cacheTask.getType(), db, timer, cacheTask.getCacheConfig());
-            cacheMap.put(cacheTask.getName(), task);
+            Task task = getTask(config, context, timer);
+            cacheMap.put(config.getName(), task);
             task.start();
         });
     }
 
-    public MycatDBClientMediator create(MycatDataContext dataContext) {
-        return MycatDBs.createClient(dataContext);
-    }
 
-
-    public void execute(final ByteBuffer buffer, final MycatSession session, Response response) {
+    public void execute(final ByteBuffer buffer, final MycatSession session) {
         final CharBuffer charBuffer = StandardCharsets.UTF_8.decode(buffer);
         final Map<String, Object> extractor = new HashMap<>();
         List<Map<String, Object>> matchList = matcher.match(charBuffer, extractor);
         if (matchList == null) {
             matchList = Collections.emptyList();
         }
-        MycatDataContext dataContext = session.getDataContext();
-        int sessionId = session.sessionId();
-        for (Map<String, Object> item : matchList) {
-            HashMap<String, Object> context = new HashMap<>(item);
-            context.putAll(extractor);
-            if (execute(sessionId, dataContext, charBuffer, context, response)) return;
+        String text = charBuffer.toString();
+        if (!matchList.isEmpty()){
+            MycatDataContext dataContext = session.getDataContext();
+            int sessionId = session.sessionId();
+            ReceiverImpl receiver = new ReceiverImpl(session, 1, false, false);
+            for (Map<String, Object> item : matchList) {
+                HashMap<String, Object> context = new HashMap<>(item);
+                context.putAll(extractor);
+                if (execute(sessionId, dataContext, text, context, session,receiver)) return;
+            }
         }
-        response.sendError(new MycatException("No matching commands"));
+        MycatdbCommand.INSTANCE.executeQuery(text,session,session.getDataContext());
     }
 
-    public boolean execute(int sessionId, MycatDataContext dataContext, CharBuffer charBuffer, Map<String, Object> context, Response response) {
+    public boolean execute(int sessionId,
+                           MycatDataContext dataContext,
+                           String text,
+                           Map<String, Object> context,
+                           MycatSession session,
+                           Response  receiver) {
         try {
             final String name = Objects.requireNonNull((String) context.get("name"), "command is not allowed null");
             final String command = Objects.requireNonNull((String) context.get("command"), "command is not allowed null");
-            final List<String> hints = (List<String>) context.getOrDefault("hints", Collections.emptyList());
-            final boolean explainCommand = "true".equalsIgnoreCase(Objects.toString(context.getOrDefault("doExplain", "")));
-            //////////////////////////////////hints/////////////////////////////////
-            String text = null;
-            if (!hints.isEmpty()) {
-                text = charBuffer.toString();
-                for (String hintName : hints) {
-                    Objects.requireNonNull(HintLoader.INSTANCE.get(hintName)).accept(text, context);
-                }
-            }
+
             //////////////////////////////////hints/////////////////////////////////
             final boolean cache = !StringUtil.isEmpty((String) context.get("cache"));
             ///////////////////////////////////cache//////////////////////////////////
             if (cache) {
-                Optional<MycatResultSetResponse> mycatResultSetResponse = Optional.ofNullable(cacheMap.get(name)).map(i -> i.get());
+                Optional<RowBaseIterator> mycatResultSetResponse = Optional.ofNullable(cacheMap.get(name)).map(i -> i.get());
                 if (mycatResultSetResponse.isPresent()) {
                     logger.info("\n" + context + "\n hit cache");
-                    response.sendResponse(new MycatResponse[]{mycatResultSetResponse.get()}, () -> Arrays.asList("cache :" + context));
+                    receiver.sendResultSet(mycatResultSetResponse.get());
                     return true;
                 }
             }
             ///////////////////////////////////cache//////////////////////////////////
-            //////////////////////////////////tags/////////////////////////////////
-            final Map<String, Object> tags = (Map<String, Object>) context.getOrDefault("tags", Collections.emptyMap());
-            //////////////////////////////////tags/////////////////////////////////
-            //////////////////////////////////explain/////////////////////////////////
-            String explain = (String) context.get("explain");
-            if (StringUtil.isEmpty(explain)) {
-                if (text == null) {
-                    text = charBuffer.toString();
-                }
-            } else {
-                text = Template.formatByName(explain, (Map) tags);
-            }
-            if (text != null) {
-                text = charBuffer.toString();
-            }
-            Objects.requireNonNull(text);
             //////////////////////////////////command/////////////////////////////////
-            MycatCommand commandHanlder = Objects.requireNonNull(MycatCommandLoader.INSTANCE.get(command));
-            MycatRequest sqlRequest = new MycatRequest(sessionId, text, context, this);
-            if (explainCommand) {
-                return commandHanlder.explain(sqlRequest, dataContext, response);
-            } else {
-                return commandHanlder.run(sqlRequest, dataContext, response);
+            MycatCommand commandHanlder = MycatCommandLoader.INSTANCE.get(command);
+            if (commandHanlder != null){
+                MycatRequest sqlRequest = new MycatRequest(sessionId, text, context, this);
+                return commandHanlder.run(sqlRequest, dataContext, receiver);
             }
+            return false;
             //////////////////////////////////command/////////////////////////////////
         } catch (Throwable e) {
             logger.error("", e);
@@ -137,12 +118,16 @@ public class UserSpace {
         return false;
     }
 
+
     //解决获取结果集对象查询和更新的顺序问题,不解决正在写入的结果集回收的问题
 
     @NotNull
-    public static Task getTask(final String text, Type type, MycatDBClientMediator db, ScheduledExecutorService timer, CacheConfig cacheConfig) {
-        return new Task(cacheConfig) {
-            volatile CacheFile cache;
+    public static Task getTask(CacheTask task,
+                               MycatDataContext context,
+                               ScheduledExecutorService timer) {
+        final String text = task.text;
+        Type type = task.type;
+        return new Task(task.cacheConfig) {
 
             @Override
             public void start(CacheConfig cacheConfig) {
@@ -151,7 +136,7 @@ public class UserSpace {
                             try {
                                 cache(cacheConfig);
                             } catch (Exception e) {
-                                logger.error("build cache fail:"+cacheConfig, e);
+                                logger.error("build cache fail:" + cacheConfig, e);
                             }
                         }),
                         cacheConfig.getInitialDelay().toMillis(),
@@ -161,55 +146,42 @@ public class UserSpace {
 
             @Override
             public synchronized void cache(CacheConfig cacheConfig) {
-                RowBaseIterator query = dispatcher(type, text);
-                CacheFile cache2 = cache;
-                try {
-                    String finalText = text;
-                    finalText = finalText.replaceAll("[\\?\\\\/:|<>\\*]", " "); //filter ? \ / : | < > *
-                    finalText = finalText.replaceAll("\\s+", "_");
-                    if (text.length() > 5) {
-                        finalText = finalText.substring(0, 5);
-                    }
-                    cache = CacheLib.cache(() -> new TextResultSetResponse(query), finalText.replaceAll(" ", "_"));
-                } finally {
-                    if (query !=null){
-                        query.close();
-                    }
-                    if (cache2 != null) {
-                        cache2.close();
-                    }
-                }
+                dispatcher(type, text);
             }
 
-            private RowBaseIterator dispatcher(Type command, String text) {
-                RowBaseIterator query;
+            @SneakyThrows
+            private void dispatcher(Type command, String text) {
+                DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context);
+                TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
+                CacheExecutorImplementor cacheExecutorImplementor = new CacheExecutorImplementor(text, defaultDatasourceFactory, tempResultSetFactory);
+
                 try {
                     switch (command) {
                         case SQL: {
-                            query = db.query(text);
+                            DrdsRunners.runOnDrds(context, SQLUtils.parseSingleMysqlStatement(text), cacheExecutorImplementor);
                             break;
                         }
                         case HBT: {
-                            query = db.executeRel(text);
+                            DrdsRunners.runHbtOnDrds(context, text, cacheExecutorImplementor);
                             break;
                         }
                         default:
                             throw new UnsupportedOperationException(command.toString());
                     }
-                } catch (Throwable t){
-                    logger.error("",t);
+                } catch (Throwable t) {
+                    logger.error("", t);
                     throw t;
-                }finally {
-                    db.recycleResource();
                 }
-                return query;
             }
 
             @Override
-            public MycatResultSetResponse get(CacheConfig cacheConfig) {
-                if (cache != null) {
-                    return cache.cacheResponse();
-                } else return null;
+            public RowBaseIterator get(CacheConfig cacheConfig) {
+                RowBaseIterator rowBaseIterator = RowBaseIteratorCacher.get(text);
+                if (rowBaseIterator != null) {
+                    return rowBaseIterator;
+                } else {
+                    return null;
+                }
             }
         };
     }

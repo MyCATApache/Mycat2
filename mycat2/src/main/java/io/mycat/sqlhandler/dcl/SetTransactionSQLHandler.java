@@ -15,18 +15,18 @@ public class SetTransactionSQLHandler extends AbstractSQLHandler<MySqlSetTransac
     private static final Logger LOGGER = LoggerFactory.getLogger(SetTransactionSQLHandler.class);
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) {
         MySqlSetTransactionStatement statement = request.getAst();
         String isolationLevel = statement.getIsolationLevel();
         MySQLIsolation mySQLIsolation = MySQLIsolation.parse(isolationLevel);
         if (mySQLIsolation == null) {
             LOGGER.warn("不支持的设置值:" + statement);
             response.sendOk();
-            return ExecuteCode.PERFORMED;
+            return;
         }
         int jdbcValue = mySQLIsolation.getJdbcValue();
         dataContext.setIsolation(MySQLIsolation.parseJdbcValue(jdbcValue));
         response.sendOk();
-        return ExecuteCode.PERFORMED;
+        return;
     }
 }

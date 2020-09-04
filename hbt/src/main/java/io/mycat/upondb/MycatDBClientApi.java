@@ -1,7 +1,6 @@
 package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.util.SQLContext;
 
 import java.util.Iterator;
@@ -14,17 +13,13 @@ public interface MycatDBClientApi  {
 
     public RowBaseIterator executeQuery(Long id, List<Object> params);
 
-    public UpdateRowIteratorResponse executeUpdate(Long id, List<Object> params);
-
     public void closePrepare(Long id);
 
     public Iterator<RowBaseIterator> executeSqls(String sql);
 
-    public UpdateRowIteratorResponse update(String sql);
 
     public RowBaseIterator query(String sql);
 
-    public UpdateRowIteratorResponse loadData(String sql);
 
     public RowBaseIterator executeRel(String text);
 

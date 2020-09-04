@@ -22,25 +22,19 @@ import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
-import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.client.InterceptorRuntime;
 import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.hbt3.DrdsConfig;
-import io.mycat.hbt3.DrdsRunner;
+import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.preparestatement.PrepareStatementManager;
-import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.sqlhandler.dml.DrdsRunners;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,12 +77,13 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
         try {
+
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
             UserSpace userSpace = InterceptorRuntime.INSTANCE.getUserSpace(session.getUser().getUserName());
-            userSpace.execute(ByteBuffer.wrap(bytes), session, new ReceiverImpl(session));
+            userSpace.execute(ByteBuffer.wrap(bytes), session);
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
@@ -111,7 +106,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
         if (!useServerPrepStmts) {
-            ReceiverImpl receiver = new ReceiverImpl(session);
+            ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
             receiver.sendError(new MycatException("unsupported useServerPrepStmts"));
             return;
         }
@@ -228,13 +223,14 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
+    @SneakyThrows
     public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
-        DrdsConfig config = new DrdsConfig();
-        throw new UnsupportedOperationException();
+        ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
+        DrdsRunners.runOnDrds(dataContext, statement, ResponseExecutorImplementor.create(dataContext, receiver));
     }
 
     @Override
@@ -297,8 +293,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {
-            return ;
+            return;
         }
-         preparedStatement.setBindValues(values);
+        preparedStatement.setBindValues(values);
     }
 }

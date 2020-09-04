@@ -14,124 +14,135 @@
  */
 package io.mycat;
 
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 
-import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
-public class SQLExecuterWriter {
+public class SQLExecuterWriter implements SQLExecuterWriterHandler {
+    final int total;
+    final MycatSession session;
+    final boolean binary;
+    final boolean explain;
+    int count;
 
-    @SneakyThrows
-    public static void executeQuery(MycatSession session, Connection connection, String sql) {
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery(sql);
-        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(null, statement, statement.executeQuery(sql), resultSet, sql);
-        writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
+
+    public SQLExecuterWriter(int total,
+                             boolean binary,
+                             boolean explain,
+                             MycatSession session) {
+        this.total = total;
+        this.count = total;
+        this.binary = binary;
+        this.explain = explain;
+        this.session = session;
+
+        if (this.count == 0) {
+            throw new AssertionError();
+        }
+        if (binary) {
+            if (this.count != 1) {
+                throw new AssertionError();
+            }
+        }
+        if (explain && this.count != 1) {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    @SneakyThrows
-    public static MycatResponse[] executeQuery(Connection connection, String sql) {
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery(sql);
-        return getMycatResponses(statement, resultSet);
-    }
-
-    @NotNull
-    public static MycatResponse[] getMycatResponses(Statement statement, ResultSet resultSet) {
-        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(null, statement,resultSet, null,null);
-        return new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)};
-    }
-    public static void writeToMycatSession(MycatSession session, final MycatResponse... sqlExecuters) {
-        writeToMycatSession(session, Arrays.asList(sqlExecuters));
-    }
-    public static void writeToMycatSession(MycatSession session, final List<MycatResponse> sqlExecuters) {
-        if (sqlExecuters.size() == 0) {
-            session.writeOkEndPacket();
+    public void writeToMycatSession(MycatResponse response) {
+        if (explain) {
+            sendResultSet(true, response.explain());
             return;
         }
-        final MycatResponse endSqlExecuter = sqlExecuters.get(sqlExecuters.size() - 1);
-        try {
-            for (MycatResponse sqlExecuter : sqlExecuters) {
-                try (MycatResponse resultSet = sqlExecuter) {
-                    switch (resultSet.getType()) {
-                        case RRESULTSET: {
-                            MycatResultSetResponse currentResultSet = (MycatResultSetResponse) resultSet;
-                            session.writeColumnCount(currentResultSet.columnCount());
-                            Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                                    .columnDefIterator();
-                            while (columnDefPayloadsIterator.hasNext()) {
-                                session.writeBytes(columnDefPayloadsIterator.next(), false);
-                            }
-                            session.writeColumnEndPacket();
-                            Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-                            while (rowIterator.hasNext()) {
-                                session.writeBytes(rowIterator.next(), false);
-                            }
-                            session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
-                            break;
+        boolean moreResultSet = !(this.count == 1);
+        try (MycatResponse mycatResponse = response) {
+            switch (mycatResponse.getType()) {
+                case RRESULTSET: {
+                    RowIterable rowIterable= (RowIterable) mycatResponse;
+                    sendResultSet(moreResultSet,rowIterable.get());
+                    break;
+                }
+                case UPDATEOK: {
+                    session.writeOk(moreResultSet);
+                    break;
+                }
+                case ERROR: {
+                    session.writeErrorEndPacketBySyncInProcessError();
+                    break;
+                }
+                case PROXY: {
+                    MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
+                    if (this.count == 1) {
+                        if (MycatDatasourceUtil.isProxyDatasource(proxyResponse.getTargetName())) {
+                            MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
+                                    MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
+                                    session.getIsolation());
+                            return;
                         }
-                        case UPDATEOK: {
-                            MycatUpdateResponse currentUpdateResponse = (MycatUpdateResponse) resultSet;
-                            long updateCount = currentUpdateResponse.getUpdateCount();
-                            long lastInsertId1 = currentUpdateResponse.getLastInsertId();
-                            session.setAffectedRows(updateCount);
-                            session.setLastInsertId(lastInsertId1);
-                            session.writeOk(endSqlExecuter != sqlExecuter);
-                            break;
-                        }
-                        case ERROR:
-                            throw new UnsupportedOperationException();
-                        case RRESULTSET_BYTEBUFFER: {
-                            MycatResultSetResponse currentResultSet = (MycatResultSetResponse) resultSet;
-                            session.writeColumnCount(currentResultSet.columnCount());
-                            Iterator<ByteBuffer> columnDefPayloadsIterator = currentResultSet
-                                    .columnDefIterator();
-                            while (columnDefPayloadsIterator.hasNext()) {
-                                session.writeBytes(columnDefPayloadsIterator.next(), false);
-                            }
-                            session.writeColumnEndPacket();
-                            Iterator<ByteBuffer> rowIterator = currentResultSet.rowIterator();
-                            while (rowIterator.hasNext()) {
-                                session.writeBytes(rowIterator.next(), false);
-                            }
-                            session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
-                            break;
-                        }
-                        case BINARY_RRESULTSET:
-                            MycatResultSetResponse currentResultSet = (MycatResultSetResponse) resultSet;
-                            session.writeColumnCount(currentResultSet.columnCount());
-                            Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                                    .columnDefIterator();
-                            while (columnDefPayloadsIterator.hasNext()) {
-                                session.writeBytes(columnDefPayloadsIterator.next(), false);
-                            }
-                            session.writeColumnEndPacket();
-                            Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-                            while (rowIterator.hasNext()) {
-                                session.writeBytes(rowIterator.next(), false);
-                            }
-                            session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
-                            break;
                     }
+                    TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                    MycatConnection connection = transactionSession.getConnection(proxyResponse.getTargetName());
+                    switch (proxyResponse.getExecuteType()) {
+                        case QUERY:
+                        case QUERY_MASTER:
+                            RowBaseIterator rowBaseIterator = connection.executeQuery(null, proxyResponse.getSql());
+                            sendResultSet(moreResultSet, rowBaseIterator);
+                            return;
+                        case INSERT: {
+                            long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
+                            session.setAffectedRows(res[0]);
+                            session.setLastInsertId(res[1]);
+                            session.writeOk(moreResultSet);
+                            break;
+                        }
+                        case UPDATE: {
+                            long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
+                            session.setAffectedRows(res[0]);
+                            session.setLastInsertId(res[1]);
+                            session.writeOk(moreResultSet);
+                            break;
+                        }
+                    }
+                    break;
                 }
             }
-            return;
         } catch (Exception e) {
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
+        } finally {
+            this.count--;
         }
-        return;
+    }
+
+    private void sendResultSet(boolean end, RowBaseIterator resultSet) {
+        MycatResultSetResponse currentResultSet;
+        if (!binary) {
+            currentResultSet = new TextResultSetResponse(resultSet);
+        } else {
+            currentResultSet = new BinaryResultSetResponse(resultSet);
+        }
+        session.writeColumnCount(currentResultSet.columnCount());
+        Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
+                .columnDefIterator();
+        while (columnDefPayloadsIterator.hasNext()) {
+            session.writeBytes(columnDefPayloadsIterator.next(), false);
+        }
+        session.writeColumnEndPacket();
+        Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
+        while (rowIterator.hasNext()) {
+            session.writeBytes(rowIterator.next(), false);
+        }
+        session.writeRowEndPacket(end, false);
+    }
+
+    public boolean isExplain() {
+        return explain;
     }
 }

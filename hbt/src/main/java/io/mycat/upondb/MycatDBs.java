@@ -10,7 +10,6 @@ import io.mycat.beans.mysql.InformationSchemaRuntime;
 import io.mycat.beans.mysql.MySQLVariablesEnum;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.util.SQLContext;
-import io.mycat.util.SQLContextImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

@@ -1,28 +1,16 @@
 package io.mycat.runtime;
 
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
-import io.mycat.beans.mycat.JdbcRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter

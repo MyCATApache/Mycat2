@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class ShowDatabaseSQLHandler extends AbstractSQLHandler<SQLShowDatabasesStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getSqlString());
     }
 }

@@ -11,9 +11,9 @@ import io.mycat.util.Response;
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getAst().toString());
+        return ;
 //
 //        SQLName nameExpr = ast.getName();
 //        if (nameExpr == null) {

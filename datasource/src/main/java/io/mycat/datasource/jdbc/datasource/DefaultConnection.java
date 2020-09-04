@@ -17,7 +17,6 @@ package io.mycat.datasource.jdbc.datasource;
 import io.mycat.MycatConnection;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import lombok.SneakyThrows;
@@ -54,7 +53,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
 
-    public UpdateRowIteratorResponse executeUpdate(String sql, boolean needGeneratedKeys, int serverStatus) {
+    public long[] executeUpdate(String sql, boolean needGeneratedKeys) {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql,
                     needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
@@ -66,7 +65,7 @@ public class DefaultConnection implements MycatConnection {
                     lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
                 }
             }
-            return new UpdateRowIteratorResponse(statement.getUpdateCount(), lastInsertId, serverStatus);
+            return new long[]{statement.getUpdateCount(), lastInsertId};
         } catch (Exception e) {
             throw new MycatException(e);
         }

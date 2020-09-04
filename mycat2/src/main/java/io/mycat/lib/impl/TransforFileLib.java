@@ -2,7 +2,7 @@ package io.mycat.lib.impl;
 
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;

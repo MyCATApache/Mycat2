@@ -22,11 +22,6 @@ public interface ManageCommand extends MycatCommand {
     }
 
     @Override
-  default   boolean explain(MycatRequest request, MycatDataContext context, Response response){
-        return false;
-    }
-
-    @Override
     default String getName() {
         return getClass().getName();
     }

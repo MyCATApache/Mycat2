@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLShowIndexesStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<SQLShowIndexesStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getAst().toString());
     }
 }

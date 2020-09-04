@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) {
         response.sendOk();
-        return ExecuteCode.PERFORMED;
     }
 }

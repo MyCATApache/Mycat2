@@ -14,8 +14,7 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
 
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlShowCollationStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcast(request.getAst());
-        return ExecuteCode.PERFORMED;
+    protected void onExecute(SQLRequest<MySqlShowCollationStatement> request, MycatDataContext dataContext, Response response) {
+        response.tryBroadcastShow(request.getAst().toString());
     }
 }

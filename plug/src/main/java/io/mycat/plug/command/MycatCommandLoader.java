@@ -4,6 +4,7 @@ import io.mycat.Hint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 public enum MycatCommandLoader {
     INSTANCE;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatCommandLoader.class);
-    final ConcurrentMap<String, Object> map = new ConcurrentHashMap<>();
+    final HashMap<String, Object> map = new HashMap<>();
     public <T> T get(String name) {
         return (T)map.get(name);
     }
@@ -26,4 +27,7 @@ public enum MycatCommandLoader {
         map.computeIfAbsent(name, s -> hint);
     }
 
+    public boolean isEmpty(){
+       return map.isEmpty();
+    }
 }

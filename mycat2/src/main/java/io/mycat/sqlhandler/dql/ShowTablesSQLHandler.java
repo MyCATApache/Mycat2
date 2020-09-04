@@ -27,7 +27,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTablesSQLHandler.class);
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
         SQLShowTablesStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
@@ -35,14 +35,14 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         SQLName database = ast.getDatabase();
         if (database == null){
             response.sendError(new MycatException("NO DATABASES SELECTED"));
-            return ExecuteCode.PERFORMED;
+            return ;
         }
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
         String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
-            response.tryBroadcast(ast);
+            response.tryBroadcastShow(ast.toString());
         }
 //        DDLManager.INSTANCE.updateTables();
 //        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());
@@ -63,7 +63,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
 //            return ExecuteCode.PERFORMED;
 //        }
 //        response.proxyShow(ast);
-        return ExecuteCode.PERFORMED;
+        return ;
     }
 
     private boolean WithDefaultTargetInfo(Response response, String sql, RowBaseIterator query, String schema) {
@@ -83,7 +83,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
                     RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
 
                     //safe
-                    response.sendResultSet(() -> ComposeRowBaseIterator.of(rowBaseIterator, query), null);
+                    response.sendResultSet(() -> ComposeRowBaseIterator.of(rowBaseIterator, query));
                     return true;
                 }
             }

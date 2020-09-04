@@ -4,7 +4,7 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;

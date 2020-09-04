@@ -1,7 +1,5 @@
 package io.mycat.sqlhandler;
 
-import io.mycat.client.MycatRequest;
-import io.mycat.util.SQLContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,5 +9,8 @@ import lombok.Getter;
 @Builder
 public class SQLRequest<Statement> {
     private final Statement ast;
-    private final MycatRequest request;
+
+    public String getSqlString() {
+        return ast.toString();
+    }
 }

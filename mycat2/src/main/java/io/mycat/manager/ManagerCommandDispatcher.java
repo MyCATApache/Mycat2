@@ -3,7 +3,6 @@ package io.mycat.manager;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DefaultCommandHandler;
 import io.mycat.ReceiverImpl;
-import io.mycat.booster.CacheConfig;
 import io.mycat.client.MycatRequest;
 import io.mycat.commands.MycatCommand;
 import io.mycat.manager.commands.*;
@@ -50,7 +49,7 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
         /////////////////////////////////////////////////////////////////////////////////
         MycatRequest mycatRequest = new MycatRequest(session.sessionId(), original, new HashMap<>(), null);
 
-        ReceiverImpl receiver = new ReceiverImpl(session);
+        ReceiverImpl receiver = new ReceiverImpl(session, 1,false,false);
 
         for (MycatCommand command : COMMANDS) {
             if (command.run(mycatRequest, session.getDataContext(), receiver)) {

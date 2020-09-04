@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) {
         response.sendOk();
-        return ExecuteCode.PERFORMED;
     }
 }

@@ -4,7 +4,7 @@ import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.session.MySQLClientSession;

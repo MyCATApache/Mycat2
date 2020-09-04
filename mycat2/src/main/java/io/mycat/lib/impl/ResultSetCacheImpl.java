@@ -174,11 +174,6 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
             final int count = (int) buffer.getInt(startOffset);
 
             @Override
-            public MycatResultSetType getType() {
-                return MycatResultSetType.RRESULTSET_BYTEBUFFER;
-            }
-
-            @Override
             public int columnCount() {
                 return count;
             }

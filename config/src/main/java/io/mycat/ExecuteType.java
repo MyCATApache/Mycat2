@@ -8,9 +8,6 @@ public enum ExecuteType {
     QUERY_MASTER(true),
     INSERT(true),
     UPDATE(true),
-//    AUTO(true),
-//        RANDOM_QUERY(false),
-//        BROADCAST_UPDATE(true),
     ;
     private boolean master;
 

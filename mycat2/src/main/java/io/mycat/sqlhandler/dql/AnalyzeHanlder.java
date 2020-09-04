@@ -25,12 +25,12 @@ import java.util.Optional;
  **/
 public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
         MySqlAnalyzeStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = Optional.ofNullable(ast.getTableSources()).orElse(Collections.emptyList());
         if (tableSources.isEmpty()) {
             response.sendError(new MycatException("need tables"));
-            return ExecuteCode.PERFORMED;
+            return ;
         } else {
             ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
             resultSetBuilder.addColumnInfo("Table", JDBCType.VARCHAR);
@@ -50,12 +50,12 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 TableHandler tableHandler = MetadataManager.INSTANCE.getTable(schemaName, tableName);
                 if (tableHandler == null) {
                     response.sendError(new MycatException(tableSource + "不存在"));
-                    return ExecuteCode.PERFORMED;
+                    return ;
                 }
                 StatisticCenter.INSTANCE.computeTableRowCount(tableHandler);
             }
-            response.sendResultSet(()->resultSetBuilder.build(),()->{throw new UnsupportedOperationException();});
-            return ExecuteCode.PERFORMED;
+            response.sendResultSet(resultSetBuilder.build());
+            return ;
         }
 
 

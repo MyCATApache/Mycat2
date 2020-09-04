@@ -5,10 +5,8 @@ import io.mycat.pattern.GPatternBuilder;
 import io.mycat.pattern.GPatternMatcher;
 import io.mycat.util.Pair;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 /**
  * @author Junwen Chen
  **/
@@ -19,7 +17,7 @@ public class GPatternFactory<T> implements Matcher.Factory<T> {
     }
 
     @Override
-    public Matcher<T> create(List<Pair<String, T>> pairs, Pair<String, T> defaultPattern) {
+    public Matcher<T> create(List<Pair<String, T>> pairs, T defaultPattern) {
         GPatternBuilder gPatternBuilder = new GPatternBuilder();
         Map<Integer, T> map = new HashMap<>();
         for (Pair<String, T> pair : pairs) {
@@ -33,12 +31,24 @@ public class GPatternFactory<T> implements Matcher.Factory<T> {
         GPattern groupPattern = gPatternBuilder.createGroupPattern();
 
         return (buffer, context) -> {
+            T t1 = null;
             GPatternMatcher matcher = groupPattern.matcher(buffer.toString());
             if (matcher.acceptAll()) {
                 matcher.namesContext((Map) context);
-                return Collections.singletonList(map.get(matcher.id()));
+                t1 = map.get(matcher.id());
             }
-            return Collections.singletonList(defaultPattern.getValue());
+            if (t1 == null) {
+                if (defaultPattern != null) {
+                    return Collections.singletonList(defaultPattern);
+                } else {
+                    return Collections.emptyList();
+                }
+            }
+            if (defaultPattern != null) {
+                return (List) Arrays.asList(t1,defaultPattern);
+            } else {
+                return (List)Collections.singletonList(t1);
+            }
         };
     }
 }

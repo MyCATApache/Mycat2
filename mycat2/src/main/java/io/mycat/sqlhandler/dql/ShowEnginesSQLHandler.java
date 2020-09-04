@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) {
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
@@ -37,7 +37,6 @@ public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesSt
         resultSetBuilder.addObjectRowPayload(Arrays.asList("Aria","YES","Crash-safe tables with MyISAM heritage"));
         resultSetBuilder.addObjectRowPayload(Arrays.asList("PERFORMANCE_SCHEMA","YES","Performance Schema"));
 
-        response.sendResultSet(()->resultSetBuilder.build(),()->{throw new UnsupportedOperationException();});
-        return ExecuteCode.PERFORMED;
+        response.sendResultSet(()->resultSetBuilder.build());
     }
 }

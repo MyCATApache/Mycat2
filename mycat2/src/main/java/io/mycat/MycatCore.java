@@ -14,7 +14,6 @@
  */
 package io.mycat;
 
-import com.rits.cloning.Cloner;
 import io.mycat.api.MySQLAPI;
 import io.mycat.api.callback.MySQLAPIExceptionCallback;
 import io.mycat.api.collector.CollectorUtil;
@@ -30,7 +29,6 @@ import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.transactionsession.JTATransactionSession;
 import io.mycat.ext.MySQLAPIImpl;
@@ -58,9 +56,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;

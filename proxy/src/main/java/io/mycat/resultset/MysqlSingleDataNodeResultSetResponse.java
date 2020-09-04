@@ -16,9 +16,8 @@ package io.mycat.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 
-import java.io.IOException;
 import java.util.Iterator;
 /**
  * @author Junwen Chen
@@ -81,7 +80,7 @@ public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetRespo
   }
 
   @Override
-  public void close() throws IOException {
+  public void close()  {
     rowBaseIterator.close();
   }
 }

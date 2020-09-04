@@ -16,7 +16,7 @@ import java.util.List;
 
 public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> {
     @Override
-    protected ExecuteCode onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
         List<String> collect = MetadataManager.INSTANCE.showDatabases();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("Database", JDBCType.VARCHAR);
@@ -24,9 +24,6 @@ public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.fastsql
             resultSetBuilder.addObjectRowPayload(s);
         }
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(()->rowBaseIterator, () -> {
-            throw new UnsupportedOperationException();
-        });
-        return ExecuteCode.PERFORMED;
+        response.sendResultSet(()->rowBaseIterator);
     }
 }

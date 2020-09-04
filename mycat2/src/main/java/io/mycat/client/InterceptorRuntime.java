@@ -15,11 +15,10 @@
 
 package io.mycat.client;
 
-import com.google.common.collect.ImmutableMap;
 import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.booster.CacheConfig;
-import io.mycat.commands.*;
+import io.mycat.commands.MycatCommand;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.config.UserConfig;
 import io.mycat.matcher.Matcher;
@@ -51,34 +50,34 @@ public enum InterceptorRuntime {
         return Objects.requireNonNull(spaceMap.get(userName));
     }
 
-    final static Map<String, Object> MYCAT_DB_COMMAND = (Map) ImmutableMap.builder().put("command", MycatdbCommand.INSTANCE.getName()).put("name", "defaultMycatdb").build();
+//    final static Map<String, Object> MYCAT_DB_COMMAND = (Map) ImmutableMap.builder().put("command", MycatdbCommand.INSTANCE.getName()).put("name", "defaultMycatdb").build();
 
     @SneakyThrows
     private synchronized void flash() {
 
-        addCommand(BeginCommand.INSTANCE);
-        addCommand(CommitCommand.INSTANCE);
-        addCommand(DefErrorCommand.INSTANCE);
-        addCommand(DistributedDeleteCommand.INSTANCE);
-        addCommand(DistributedInsertCommand.INSTANCE);
-        addCommand(DistributedQueryCommand.INSTANCE);
-        addCommand(DistributedUpdateCommand.INSTANCE);
-        addCommand(ExecuteCommand.INSTANCE);
-        addCommand(ExecutePlanCommand.INSTANCE);
-        addCommand(ExplainSqlCommand.INSTANCE);
-        addCommand(MycatdbCommand.INSTANCE);
-        addCommand(OffXACommand.INSTANCE);
-        addCommand(OkCommand.INSTANCE);
-        addCommand(OnXACommand.INSTANCE);
-        addCommand(RollbackCommand.INSTANCE);
-        addCommand(SelectAutocommitCommand.INSTANCE);
-        addCommand(SelectLastInsertIdCommand.INSTANCE);
-        addCommand(SelectTransactionReadOnlyCommand.INSTANCE);
-        addCommand(SetAutoCommitOffCommand.INSTANCE);
-        addCommand(SetAutoCommitOnCommand.INSTANCE);
-        addCommand(SetTransactionIsolationCommand.INSTANCE);
-        addCommand(UseStatementCommand.INSTANCE);
-        addCommand(BoostMycatdbCommand.INSTANCE);
+//        addCommand(BeginCommand.INSTANCE);
+//        addCommand(CommitCommand.INSTANCE);
+//        addCommand(DefErrorCommand.INSTANCE);
+//        addCommand(DistributedDeleteCommand.INSTANCE);
+//        addCommand(DistributedInsertCommand.INSTANCE);
+//        addCommand(DistributedQueryCommand.INSTANCE);
+//        addCommand(DistributedUpdateCommand.INSTANCE);
+//        addCommand(ExecuteCommand.INSTANCE);
+//        addCommand(ExecutePlanCommand.INSTANCE);
+//        addCommand(ExplainSqlCommand.INSTANCE);
+//        addCommand(MycatdbCommand.INSTANCE);
+//        addCommand(OffXACommand.INSTANCE);
+//        addCommand(OkCommand.INSTANCE);
+//        addCommand(OnXACommand.INSTANCE);
+//        addCommand(RollbackCommand.INSTANCE);
+//        addCommand(SelectAutocommitCommand.INSTANCE);
+//        addCommand(SelectLastInsertIdCommand.INSTANCE);
+//        addCommand(SelectTransactionReadOnlyCommand.INSTANCE);
+//        addCommand(SetAutoCommitOffCommand.INSTANCE);
+//        addCommand(SetAutoCommitOnCommand.INSTANCE);
+//        addCommand(SetTransactionIsolationCommand.INSTANCE);
+//        addCommand(UseStatementCommand.INSTANCE);
+//        addCommand(BoostMycatdbCommand.INSTANCE);
 
         //config
         for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
@@ -86,7 +85,6 @@ public enum InterceptorRuntime {
             String username = Objects.requireNonNull(user.getUsername());
             String matcherClazz = interceptor.getMatcherClazz();
             Map<String, Object> defaultHanlder = interceptor.getDefaultHanlder();
-            if (defaultHanlder == null) defaultHanlder = MYCAT_DB_COMMAND;
             List<Map<String, Object>> sqls = interceptor.getSqls();
             if (sqls == null) sqls = Collections.emptyList();
             if (matcherClazz == null) matcherClazz = StringEqualsFactory.class.getCanonicalName();
@@ -120,7 +118,7 @@ public enum InterceptorRuntime {
                     continue;
                 }
             }
-            final Matcher apply = factory.create(allItems, Pair.of(null, defaultHanlder));
+            final Matcher apply = factory.create(allItems, defaultHanlder != null ? Pair.of(null, defaultHanlder) : null);
             TransactionType transactionType = TransactionType.parse(interceptor.getTransactionType());
             this.spaceMap.put(username, new UserSpace(username, transactionType, apply, cacheTasks));
         }

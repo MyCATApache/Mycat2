@@ -34,7 +34,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableSQLHandler.class);
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         SQLCreateTableStatement ast = request.getAst();
 
         List<Throwable> throwables = new ArrayList<>();
@@ -43,13 +43,13 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             String tableName = ast.getTableName();
             if (tableName == null) {
                 response.sendError(new MycatException("CreateTableSQL need tableName"));
-                return ExecuteCode.PERFORMED;
+                return;
             }
             tableName = SQLUtils.normalize(tableName);
             TableHandler tableHandler = MetadataManager.INSTANCE.getTable(schemaName, tableName);
             if (tableHandler == null) {
                 response.sendError(new MycatException(schemaName + "." + tableName + " is not existed"));
-                return ExecuteCode.PERFORMED;
+                return;
             }
             Map<String, Set<String>> sqlAndDatasoureMap = new HashMap<>();
             List<DataNode> databaseCollections= new ArrayList<>();
@@ -83,14 +83,14 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
 
             if (throwables.isEmpty()) {
                 response.sendOk();
-                return ExecuteCode.PERFORMED;
+                return ;
             } else {
                 response.sendError(new MycatException(throwables.toString()));
-                return ExecuteCode.PERFORMED;
+                return ;
             }
         } catch (Throwable throwable) {
             response.sendError(throwable);
-            return ExecuteCode.PERFORMED;
+            return ;
         }
     }
 
@@ -101,7 +101,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             for (String dataSource : dataSources) {
                 resList.add(CompletableFuture.runAsync(() -> {
                     try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
-                        connection.executeUpdate(sql, false, 0);
+                        connection.executeUpdate(sql, false);
                     }
                 },     JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
             }
@@ -123,7 +123,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 resList.add(CompletableFuture.runAsync(() -> {
                     try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
                         connection.executeUpdate(MessageFormat.format("create database if not exists  {0} ",
-                                dataSource), false, 0);
+                                dataSource), false);
                     }
                 },       JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
             }

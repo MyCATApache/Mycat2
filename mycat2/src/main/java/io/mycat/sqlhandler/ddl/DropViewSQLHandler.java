@@ -13,8 +13,7 @@ import io.mycat.util.Response;
 public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement> {
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<SQLDropViewStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLDropViewStatement> request, MycatDataContext dataContext, Response response) {
         response.sendOk();
-        return ExecuteCode.PERFORMED;
     }
 }

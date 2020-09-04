@@ -3,7 +3,6 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
@@ -29,7 +28,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 
     @Override
-    protected ExecuteCode onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
 
         MySqlShowTableStatusStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
@@ -38,16 +37,16 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
         SQLName database = ast.getDatabase();
         if (database == null){
             response.sendError(new MycatException("NO DATABASES SELECTED"));
-            return ExecuteCode.PERFORMED;
+            return ;
         }
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
         String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
-            response.tryBroadcast(ast);
+            response.tryBroadcastShow(ast.toString());
         }
-        return ExecuteCode.PERFORMED;
+        return ;
 //        MySqlShowTableStatusStatement ast = request.getAst();
 //        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
 //            ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
