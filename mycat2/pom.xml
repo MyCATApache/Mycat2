@@ -230,8 +230,12 @@
                                             <value>30</value>
                                         </property>
                                         <property>
+                                            <name>wrapper.logfile.rollmode</name>
+                                            <value>DATE</value>
+                                        </property>
+                                        <property>
                                             <name>wrapper.logfile</name>
-                                            <value>logs/wrapper.log</value>
+                                            <value>logs/wrapper.YYYYMMDD.log</value>
                                         </property>
                                     </configuration>
                                 </generatorConfiguration>
