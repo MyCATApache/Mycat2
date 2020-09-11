@@ -14,13 +14,10 @@
  */
 package io.mycat.command;
 
-import io.mycat.MycatDataContext;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.BindValue;
-import io.mycat.BindValueUtil;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 
@@ -35,6 +32,7 @@ public class CommandResolver {
                               CommandDispatcher commandHandler) {
         MycatMonitor.onCommandStart(mycat);
         //////////////////////////////////apply transaction///////////////////////////////////
+        MetaCluster metaCluster = MetaCluster.getCurrent();
         TransactionSession transactionSession = mycat.getDataContext().getTransactionSession();
         transactionSession.doAction();
         //////////////////////////////////////////////////////////////////////////////////////

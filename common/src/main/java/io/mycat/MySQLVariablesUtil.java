@@ -49,14 +49,16 @@ public class MySQLVariablesUtil {
         } else if (target.contains("current_user")) {
             return dataContext.getUser().getUserName();
         }
-        Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
-        MySQLVariablesEnum mySQLVariablesEnum = MySQLVariablesEnum.parseFromColumnName(target);
-        if (mySQLVariablesEnum != null) {
-            String columnName = mySQLVariablesEnum.getColumnName();
-            return map.getOrDefault(columnName, null);
-        } else {
-            return null;
-        }
+       //todo
+//        Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
+//        MySQLVariablesEnum mySQLVariablesEnum = MySQLVariablesEnum.parseFromColumnName(target);
+//        if (mySQLVariablesEnum != null) {
+//            String columnName = mySQLVariablesEnum.getColumnName();
+//            return map.getOrDefault(columnName, null);
+//        } else {
+//            return null;
+//        }
+        return null;
     }
 
     public static int toInt(String s) {

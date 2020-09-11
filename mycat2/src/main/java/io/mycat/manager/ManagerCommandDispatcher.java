@@ -15,27 +15,27 @@ import java.util.HashMap;
 public class ManagerCommandDispatcher extends DefaultCommandHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManagerCommandDispatcher.class);
     public static final ImmutableList<ManageCommand> COMMANDS = ImmutableList.of(
-            new ShowInstanceCommand(),
-            new ShowReplicaCommand(),
-            new ShowDatasourceCommand(),
-            new ShowConnectionCommand(),
-            new ShowHeartbeatCommand(),
-            new ShowBackendNativeCommand(),
-            new ShowReactorCommand(),
-            new ShowThreadPoolCommand(),
-            new ShowScheduleCommand(),
-            new ShowHelpCommand(),
-            new ShowMetaDataSchemaCommand(),
-            new ShowMetaDataTableCommand(),
-            new KillConnectionCommand(),
-            new SwitchInstanceCommand(),
-            new SwitchReplicaCommand(),
-            new ShowStatCommand(),
-            new ReloadConfigCommand(),
-            new SwitchHeatbeatCommand(),
-            new ShowHeatbeatRunningCommand(),
-            new ResetStatCommand(),
-            new ShowServerCommand()
+//            new ShowInstanceCommand(),
+//            new ShowReplicaCommand(),
+//            new ShowDatasourceCommand(),
+//            new ShowConnectionCommand(),
+//            new ShowHeartbeatCommand(),
+//            new ShowBackendNativeCommand(),
+//            new ShowReactorCommand(),
+//            new ShowThreadPoolCommand(),
+//            new ShowScheduleCommand(),
+//            new ShowHelpCommand(),
+//            new ShowMetaDataSchemaCommand(),
+//            new ShowMetaDataTableCommand(),
+//            new KillConnectionCommand(),
+//            new SwitchInstanceCommand(),
+//            new SwitchReplicaCommand(),
+//            new ShowStatCommand(),
+//            new ReloadConfigCommand(),
+//            new SwitchHeatbeatCommand(),
+//            new ShowHeatbeatRunningCommand(),
+//            new ResetStatCommand(),
+//            new ShowServerCommand()
     );
 
     @Override

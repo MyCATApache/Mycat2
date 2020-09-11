@@ -14,6 +14,7 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.config.ShardingFuntion;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -36,7 +37,7 @@ public enum PartitionRuleFunctionManager {
     }
 
     public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,
-                                                      SharingFuntionRootConfig.ShardingFuntion funtion)
+                                                      ShardingFuntion funtion)
             throws Exception {
         Map<String, String> properties = funtion.getProperties();
         properties = (properties == null) ? Collections.emptyMap() : properties;

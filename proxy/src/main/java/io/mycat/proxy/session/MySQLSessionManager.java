@@ -434,6 +434,10 @@ public class MySQLSessionManager implements
         Iterator<MySQLClientSession> iterator = group.iterator();
         while (iterator.hasNext()) {
             MySQLClientSession mySQLClientSession = iterator.next();
+            if (mySQLClientSession.getDatasource().isValid()){
+                closeSession(mySQLClientSession,"not valid");
+                continue;
+            }
             //移除
             if (!mySQLClientSession.checkOpen()) {
                 closeSession(mySQLClientSession, "mysql session  close because of idle");

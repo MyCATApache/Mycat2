@@ -14,13 +14,14 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 
 /**
  * @author Junwen Chen
  **/
 public interface ConnectionManager {
-    void addDatasource(DatasourceRootConfig.DatasourceConfig key);
+    void addDatasource(DatasourceConfig key);
 
     void removeDatasource(String name);
 

@@ -15,10 +15,10 @@
 package io.mycat.replica;
 
 import com.rits.cloning.Cloner;
-import io.mycat.ConfigProvider;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataStorageManager;
 import io.mycat.MycatConfig;
-import io.mycat.RootHelper;
-import io.mycat.config.ClusterRootConfig;
+import io.mycat.config.ClusterConfig;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.util.CollectionUtil;
@@ -185,11 +185,11 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
 
-    public PhysicsInstance getDataSource(boolean runOnMaster,
-                                         LoadBalanceStrategy strategy) {
-        return runOnMaster ? ReplicaSelectorRuntime.INSTANCE.getWriteDatasource(strategy, this)
-                : ReplicaSelectorRuntime.INSTANCE.getDatasource(strategy, this);
-    }
+//    public PhysicsInstance getDataSource(boolean runOnMaster,
+//                                         LoadBalanceStrategy strategy) {
+//        return runOnMaster ? ReplicaSelectorRuntime.INSTANCE.getWriteDatasource(strategy, this)
+//                : ReplicaSelectorRuntime.INSTANCE.getDatasource(strategy, this);
+//    }
 
     private synchronized boolean switchReadDatasource(List<PhysicsInstanceImpl> newReadDataSource) {
         return switchNode((List) this.readDataSource, newReadDataSource,"{} switch replica to {}");
@@ -214,12 +214,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
     private void updateFile(List<PhysicsInstanceImpl> newWriteDataSource) {
-        ConfigProvider configProvider = RootHelper.INSTANCE.getConfigProvider();
-        MycatConfig config = Cloner.standard().deepClone(configProvider.currentConfig());
-        ClusterRootConfig.ClusterConfig clusterConfig = config.getCluster().getClusters().stream().filter(i -> getName().equals(i.getName())).findFirst().get();
-        List<String> collect = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toList());
-        clusterConfig.setMasters(collect);
-        configProvider.reportReplica(clusterConfig.getName(), collect);
+        MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
+        Set<String> dsNames = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toSet());
+        metadataStorageManager.reportReplica(getName(), dsNames);
     }
 
     @Override

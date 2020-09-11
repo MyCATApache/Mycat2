@@ -16,6 +16,7 @@ package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
@@ -65,8 +66,8 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         try (MycatResponse mycatResponse = response) {
             switch (mycatResponse.getType()) {
                 case RRESULTSET: {
-                    RowIterable rowIterable= (RowIterable) mycatResponse;
-                    sendResultSet(moreResultSet,rowIterable.get());
+                    RowIterable rowIterable = (RowIterable) mycatResponse;
+                    sendResultSet(moreResultSet, rowIterable.get());
                     break;
                 }
                 case UPDATEOK: {
@@ -79,15 +80,17 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                 }
                 case PROXY: {
                     MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
-                    if (this.count == 1) {
-                        if (MycatDatasourceUtil.isProxyDatasource(proxyResponse.getTargetName())) {
+                    TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                    if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
+                        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                        if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
                             MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
                                     MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                     session.getIsolation());
                             return;
                         }
                     }
-                    TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+
                     MycatConnection connection = transactionSession.getConnection(proxyResponse.getTargetName());
                     switch (proxyResponse.getExecuteType()) {
                         case QUERY:

@@ -21,9 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @EqualsAndHashCode
@@ -33,13 +31,8 @@ public class MycatConfig {
     DatasourceRootConfig datasource = new DatasourceRootConfig();
     ClusterRootConfig cluster = new ClusterRootConfig();
     PlugRootConfig plug = new PlugRootConfig();
-    ServerConfig server = new ServerConfig();
     ManagerConfig manager = new ManagerConfig();
-    Map<String, Object> properties;
-
-    ///expend
-    Map<String,SqlsGroup> sqlGroups = new HashMap<>();
-    boolean debug;
+    List<String> properties;
 
     public static void main(String[] args) {
         MycatConfig mycatConfig = new MycatConfig();

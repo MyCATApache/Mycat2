@@ -2,8 +2,8 @@ package io.mycat.runtime;
 
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.transactionsession.TransactionSessionTemplate;
 import io.mycat.util.Dumper;
 import org.slf4j.Logger;
@@ -95,7 +95,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
-        return JdbcRuntime.INSTANCE
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        return jdbcConnectionManager
                 .getConnection(name, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
 
     }

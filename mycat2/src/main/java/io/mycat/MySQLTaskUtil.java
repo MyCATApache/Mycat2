@@ -89,7 +89,8 @@ public class MySQLTaskUtil {
                         mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
                     }
                 };
-                MySQLDatasource datasource = MycatCore.INSTANCE.getDatasource(datasourceName);
+                MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                MySQLDatasource datasource = mycatServer.getDatasource(datasourceName);
                 getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
                     @Override
                     public void onSession(MySQLClientSession session, Object sender, Object attr) {
@@ -218,8 +219,9 @@ public class MySQLTaskUtil {
         if (thread instanceof MycatReactorThread) {
             MySQLSessionManager manager = ((MycatReactorThread) thread)
                     .getMySQLSessionManager();
+            MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
             manager.getIdleSessionsOfIdsOrPartial(
-                    MycatCore.INSTANCE.getDatasource(datasource), null, PartialType.SMALL_ID
+                    mycatServer.getDatasource(datasource), null, PartialType.SMALL_ID
                     , asynTaskCallBack);
         } else {
             throw new MycatException("Replica must running in MycatReactorThread");

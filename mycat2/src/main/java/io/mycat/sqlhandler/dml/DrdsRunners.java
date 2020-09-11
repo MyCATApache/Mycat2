@@ -7,14 +7,16 @@ import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt3.DrdsSql;
 import io.mycat.hbt4.*;
+import lombok.SneakyThrows;
 
 import java.util.Collections;
 
 public class DrdsRunners {
 
+    @SneakyThrows
     public static void runOnDrds(MycatDataContext dataContext,
                                  SQLStatement statement,
-                                 ExecutorImplementor executorImplementor) throws Exception{
+                                 ExecutorImplementor executorImplementor) {
             try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
                 DrdsConst drdsConst = new DrdsConfig();
                 DrdsRunner drdsRunners = new DrdsRunner(drdsConst,

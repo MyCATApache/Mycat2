@@ -22,13 +22,15 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.MetaCluster;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
-import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
@@ -94,8 +96,10 @@ public class HBTQueryConvertor {
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-                JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+                ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+                targetName = selectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
+                JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
                 try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
                     try (Statement statement = connection1.createStatement()) {
                         statement.setMaxRows(0);
@@ -242,7 +246,8 @@ public class HBTQueryConvertor {
     private RelDataType tryGetRelDataTypeByParse(String sql) {
         try {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            metadataManager.resolveMetadata(sqlStatement);
             if (sqlStatement instanceof SQLSelectStatement) {
                 SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
                 final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;

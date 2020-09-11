@@ -6,12 +6,10 @@ import io.mycat.bindthread.BindThread;
 import io.mycat.bindthread.BindThreadCallback;
 import io.mycat.bindthread.BindThreadKey;
 import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.thread.GThreadPool;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -21,67 +19,14 @@ import java.util.function.Function;
 public class ServerTransactionSessionRunner implements TransactionSessionRunner {
     final Map<TransactionType, Function<MycatDataContext, TransactionSession>> map;
     final MycatSession session;
-    private final GThreadPool threadPool;
+    private final MycatContextThreadPool threadPool;
 
-    public ServerTransactionSessionRunner(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map, GThreadPool threadPool, MycatSession session) {
+    public ServerTransactionSessionRunner(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map,
+                                          MycatContextThreadPool threadPool,
+                                          MycatSession session) {
         this.map = map;
         this.threadPool = threadPool;
         this.session = session;
-    }
-
-    public void run(BindThreadCallback runner) {
-        final AtomicBoolean cancelFlag = new AtomicBoolean(false);
-        threadPool.run(new SessionOpt() {
-            TransactionSession transactionSession;
-
-            @Override
-            public TransactionType transactionType() {
-                return transactionSession.transactionType();
-            }
-
-            @Override
-            public TransactionSession getTransactionSession() {
-                return this.transactionSession;
-            }
-
-            @Override
-            public void setTransactionSession(TransactionSession session) {
-                this.transactionSession = session;
-            }
-
-            @Override
-            public boolean isRunning() {
-                return cancelFlag.get();
-            }
-
-            @Override
-            public boolean continueBindThreadIfTransactionNeed() {
-                return false;
-            }
-        }, new BindThreadCallback() {
-            @Override
-            public void accept(BindThreadKey key, BindThread context) {
-                runner.accept(key, context);
-            }
-
-            @Override
-            public void finallyAccept(BindThreadKey key, BindThread context) {
-                try {
-                    runner.finallyAccept(key, context);
-                } finally {
-                    cancelFlag.set(true);
-                }
-            }
-
-            @Override
-            public void onException(BindThreadKey key, Exception e) {
-                try {
-                    runner.onException(key, e);
-                } finally {
-                    cancelFlag.set(true);
-                }
-            }
-        });
     }
 
     public void run(MycatDataContext container, BindThreadCallback runner) {
@@ -168,4 +113,6 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
             run(mycatDataContext,runnable);
         }
     }
+
+
 }

@@ -1,12 +1,10 @@
 package io.mycat.manager.commands;
 
-import io.mycat.MycatDataContext;
-import io.mycat.MycatWorkerProcessor;
-import io.mycat.NameableExecutor;
+import io.mycat.*;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
-import io.mycat.runtime.MycatDataContextSupport;
-import io.mycat.thread.GThreadPool;
+import io.mycat.proxy.session.MycatContextThreadPool;
+import io.mycat.thread.SimpleMycatContextBindingThreadPool;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,21 +38,24 @@ public class ShowThreadPoolCommand implements ManageCommand {
                 .addColumnInfo("TASK_QUEUE_SIZE", JDBCType.BIGINT)
                 .addColumnInfo("COMPLETED_TASK", JDBCType.BIGINT)
                 .addColumnInfo("TOTAL_TASK", JDBCType.BIGINT);
-        List<NameableExecutor> nameableExecutors = Arrays.asList(MycatWorkerProcessor.INSTANCE.getMycatWorker(),
-                MycatWorkerProcessor.INSTANCE.getTimeWorker());
 
-        GThreadPool gThreadPool = MycatDataContextSupport.INSTANCE.getgThreadPool();
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+        List<NameableExecutor> nameableExecutors = Arrays.asList(mycatWorkerProcessor.getMycatWorker(),
+                mycatWorkerProcessor.getTimeWorker());
+        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+        MycatContextThreadPool gThreadPool = mycatServer.getMycatContextThreadPool();
 
-        int pendingSize = gThreadPool.getPendingSize();
-        long completedTasks = gThreadPool.getCompletedTasks();
-        builder.addObjectRowPayload(Arrays.asList(
-                gThreadPool.toString(),
-                gThreadPool.getMaxThread(),
-                gThreadPool.getThreadCounter(),
-                pendingSize,
-                completedTasks,
-                pendingSize + completedTasks
-        ));
+        //@todo
+//        int pendingSize = gThreadPool.getPendingSize();
+//        long completedTasks = gThreadPool.getCompletedTasks();
+//        builder.addObjectRowPayload(Arrays.asList(
+//                gThreadPool.toString(),
+//                gThreadPool.getMaxThread(),
+//                gThreadPool.getThreadCounter(),
+//                pendingSize,
+//                completedTasks,
+//                pendingSize + completedTasks
+//        ));
         for (NameableExecutor w : nameableExecutors) {
             builder.addObjectRowPayload(Arrays.asList(
                     w.getName(),

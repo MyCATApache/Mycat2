@@ -4,17 +4,16 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
@@ -37,8 +36,10 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
             response.sendError(new MycatException("NO DATABASES SELECTED"));
             return ;
         }
-        Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
-        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name ->replicaSelectorRuntime.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
@@ -66,30 +67,30 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         return ;
     }
 
-    private boolean WithDefaultTargetInfo(Response response, String sql, RowBaseIterator query, String schema) {
-        if (schema != null) {
-            String defaultTargetName = Optional.ofNullable(MetadataManager.INSTANCE)
-                    .map(i -> i.getSchemaMap())
-                    .map(i -> i.get(schema))
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    //暂时定为没有配置分片表才读取默认targetName的表作为tables
-                    .filter(i -> i.logicTables() == null || i.logicTables().isEmpty())
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    .map(i -> i.defaultTargetName())
-                    .orElse(null);
-            if (defaultTargetName != null) {
-                defaultTargetName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(defaultTargetName, true, null);
-                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(defaultTargetName)) {
-                    RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
-
-                    //safe
-                    response.sendResultSet(() -> ComposeRowBaseIterator.of(rowBaseIterator, query));
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+//    private boolean WithDefaultTargetInfo(Response response, String sql, RowBaseIterator query, String schema) {
+//        if (schema != null) {
+//            String defaultTargetName = Optional.ofNullable(MetadataManager.INSTANCE)
+//                    .map(i -> i.getSchemaMap())
+//                    .map(i -> i.get(schema))
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                    //暂时定为没有配置分片表才读取默认targetName的表作为tables
+//                    .filter(i -> i.logicTables() == null || i.logicTables().isEmpty())
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                    .map(i -> i.defaultTargetName())
+//                    .orElse(null);
+//            if (defaultTargetName != null) {
+//                defaultTargetName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(defaultTargetName, true, null);
+//                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(defaultTargetName)) {
+//                    RowBaseIterator rowBaseIterator = connection.executeQuery(sql);
+//
+//                    //safe
+//                    response.sendResultSet(() -> ComposeRowBaseIterator.of(rowBaseIterator, query));
+//                    return true;
+//                }
+//            }
+//        }
+//        return false;
+//    }
 
 
 }

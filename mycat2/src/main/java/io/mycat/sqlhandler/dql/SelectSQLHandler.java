@@ -10,12 +10,10 @@ import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.optimizer.rules.TableSourceExtractor;
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.booster.BoosterRuntime;
+import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ShardingQueryRootConfig;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
@@ -23,6 +21,7 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.ShardingSQLHandler;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Response;
 import lombok.Getter;
@@ -32,7 +31,7 @@ import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.Predicate;
 
-public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
+public class SelectSQLHandler extends ShardingSQLHandler {
     //    public static String NULL = new String(new char[]{(char)0XFB});
 //    public static int NULL = 0XFB;
     public static String NULL = "NULL";
@@ -40,9 +39,6 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     public SelectSQLHandler() {
     }
 
-    public SelectSQLHandler(Class statementClass) {
-        super(statementClass);
-    }
 
     protected ExecuteCode onSelectNoTable(SQLRequest<SQLSelectStatement> request, Response receiver) {
         return onSelectDual(request, receiver);
@@ -139,7 +135,9 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         }
 
         ///////////////////////////////common///////////////////////////////
-        Map<String, SchemaHandler> schemaMap = MetadataManager.INSTANCE.getSchemaMap();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        Map<String, SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
         if (schemaName == null) {
             receiver.sendError(new MycatException("schema is null"));
@@ -152,21 +150,16 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             if (defaultSchema != null) {
                 schemaHandler = schemaMap.get(defaultSchema);
             } else if (schemaName != null) {
-                Optional<String> targetNameOptional = Optional.of(RootHelper.INSTANCE)
-                        .map(RootHelper::getConfigProvider)
-                        .map(ConfigProvider::currentConfig)
-                        .map(MycatConfig::getMetadata)
-                        .map(ShardingQueryRootConfig::getPrototype)
-                        .map(ShardingQueryRootConfig.PrototypeServer::getTargetName);
+                Optional<String> targetNameOptional = Optional.of(metadataManager.getPrototype());
                 if (targetNameOptional.isPresent()) {
                     receiver.proxySelect(targetNameOptional.get(), statement.toString());
                     return;
                 } else {
-                    receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement.toString());
+                    receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
                     return;
                 }
             } else {
-                receiver.proxySelect(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource(), statement.toString());
+                receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
                 return;
             }
         }
@@ -184,6 +177,14 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         return;
     }
 
+
+    public String getPrototypeOrRandomReplicaDataSource() {
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        Optional<String> prototype = Optional.ofNullable(metadataManager.getPrototype());
+        return prototype.orElseGet(selectorRuntime::getDatasourceNameByRandom);
+    }
+
     private TableHandler chooseTableHandler(Map<String, TableHandler> tableMap, Set<String> tables) {
         for (String table : tables) {
             TableHandler tableHandler = tableMap.get(table);
@@ -198,16 +199,7 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
         //直接调用已实现好的
         SQLSelectStatement ast = request.getAst();
-        TableSourceExtractor tableSourceExtractor = new TableSourceExtractor();
-        if (hanldeInformationSchema(response, ast, tableSourceExtractor)) {
-            return;
-        }
-        if (tableSourceExtractor.getTableSources().isEmpty()) {
-            onSelectNoTable(request, response);
-            return;
-        }
-        onSelectTable(dataContext, tableSourceExtractor.getTableSources().get(0), request, response);
-        return;
+        super.onExecute(request, dataContext, response);
     }
 
     private boolean hanldeInformationSchema(Response response, SQLSelectStatement ast, TableSourceExtractor tableSourceExtractor) {
@@ -228,14 +220,15 @@ public class SelectSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 return false;
             }
         });
-        if (cantainsInformation_schema) {
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource())) {
-                try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
-                    response.sendResultSet(() -> rowBaseIterator);
-                    return true;
-                }
-            }
-        }
+//        if (cantainsInformation_schema) {
+//
+//            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(ReplicaSelectorRuntime.INSTANCE.getPrototypeOrFirstReplicaDataSource())) {
+//                try (RowBaseIterator rowBaseIterator = connection.executeQuery(ast.toString())) {
+//                    response.sendResultSet(() -> rowBaseIterator);
+//                    return true;
+//                }
+//            }
+//        }
         return false;
     }
 

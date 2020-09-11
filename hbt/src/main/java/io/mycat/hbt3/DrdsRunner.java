@@ -30,6 +30,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
@@ -285,7 +286,7 @@ public class DrdsRunner {
         if (sqlStatement instanceof SQLSelectStatement) {
             return compileQuery(dataContext.getDefaultSchema(), optimizationContext, plus, drdsSql);
         }
-        MetadataManager metadataManager = MetadataManager.INSTANCE;
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         metadataManager.resolveMetadata(sqlStatement);
         String defaultSchema = dataContext.getDefaultSchema();
         if (sqlStatement instanceof MySqlInsertStatement) {

@@ -18,19 +18,17 @@ public class PatternRootConfig {
     private List<Map<String,Object>> sqls = new ArrayList<>();
     private List<List<Map<String,Object>>> sqlsGroup = new ArrayList<>();
     private Map<String,Object> defaultHanlder;
-    private String transactionType;
     private String matcherClazz;
     private List<String> boosters = new ArrayList<>();
 
     public PatternRootConfig() {
     }
 
-    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String transactionType, String matcherClazz,List<String> boosters) {
+    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String matcherClazz,List<String> boosters) {
         this.user = user;
         this.sqls = sqls;
         this.sqlsGroup = sqlsGroup;
         this.defaultHanlder = defaultHanlder;
-        this.transactionType = transactionType;
         this.matcherClazz = matcherClazz;
         this.boosters = boosters;
     }

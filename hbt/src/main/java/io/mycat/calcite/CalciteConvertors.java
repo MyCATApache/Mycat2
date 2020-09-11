@@ -15,8 +15,6 @@
 package io.mycat.calcite;
 
 
-import io.mycat.MycatConfig;
-import io.mycat.RootHelper;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -230,24 +228,6 @@ public class CalciteConvertors {
             return typeFactory.createTypeWithNullability(
                     typeFactory.createSqlType(SqlTypeName.ANY), true);
         }
-    }
-
-    public static List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String targetName) {
-        String dataSourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-        MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
-        DatasourceRootConfig.DatasourceConfig datasourceConfig = Optional.ofNullable(mycatConfig.getDatasource()).map(i -> i.getDatasources()).map(i -> i.stream().collect(Collectors.toMap(k -> k.getName(),
-                v -> v))).map(i -> i.get(dataSourceName)).orElse(null);
-        if (datasourceConfig == null) {
-            return null;
-        }
-        try (Connection rawConnection = DriverManager.getConnection(datasourceConfig.getUrl(), datasourceConfig.getUser(), datasourceConfig.getPassword())) {
-            DatabaseMetaData metaData = rawConnection.getMetaData();
-            return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);
-        } catch (Exception e) {
-            LOGGER.warn("不能根据schemaName:{} tableName:{} url:{} user:{} 获取字段信息 {}", schemaName, tableName,
-                    datasourceConfig.getUrl(), datasourceConfig.getUser(), e);
-        }
-        return null;
     }
 
     public static List<SimpleColumnInfo> getColumnInfo(String sql) {

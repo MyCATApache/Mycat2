@@ -15,6 +15,7 @@
 package io.mycat.beans;
 
 import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +46,11 @@ public abstract class MySQLDatasource implements MycatDataSource {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
-    protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
+    protected final DatasourceConfig datasourceConfig;
     protected final AtomicInteger connectionCounter = new AtomicInteger(0);
 //    protected final AtomicInteger usedCounter = new AtomicInteger(0);
 
-    public MySQLDatasource(DatasourceRootConfig.DatasourceConfig datasourceConfig) {
+    public MySQLDatasource(DatasourceConfig datasourceConfig) {
         this.datasourceConfig = datasourceConfig;
     }
 

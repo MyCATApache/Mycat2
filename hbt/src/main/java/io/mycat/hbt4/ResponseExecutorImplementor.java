@@ -4,6 +4,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
@@ -26,7 +27,15 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
     public static ResponseExecutorImplementor create(MycatDataContext context, Response response) {
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
         DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
-        return new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, response);
+        TransactionType transactionType = context.getTransactionSession().transactionType();
+        switch (transactionType) {
+            case PROXY_TRANSACTION_TYPE:
+                return ProxyExecutorImplementor.create(context, response);
+            default:
+            case JDBC_TRANSACTION_TYPE:
+                return new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, response);
+        }
+
     }
 
     public ResponseExecutorImplementor(
