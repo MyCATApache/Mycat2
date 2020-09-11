@@ -137,7 +137,7 @@ public class JdbcConnectionManager implements ConnectionManager {
                 try {
                     return defaultConnection;
                 } finally {
-                    LOGGER.info("获取连接:{} {}", name, defaultConnection);
+                    LOGGER.debug("获取连接:{} {}", name, defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {

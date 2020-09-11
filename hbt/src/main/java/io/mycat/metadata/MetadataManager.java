@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -59,7 +60,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
-import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
 
 /**
  * @author Junwen Chen
@@ -219,14 +219,8 @@ public class MetadataManager {
                     tableConfigEntry.getListOptions());
             addLogicTable(LogicTable.createCustomTable(o));
 
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException|IllegalAccessException| InstantiationException|InvocationTargetException e) {
             LOGGER.error("", e);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
         }
     }
 
@@ -325,9 +319,9 @@ public class MetadataManager {
         /////////////////////////////////////////////////////////////////////////////////////////////////
         if (createTableSQL != null) {
             try {
-                columns = getColumnInfo(createTableSQL);
+                columns = getColumnInfo(prototypeServer,createTableSQL);
             } catch (Throwable e) {
-                LOGGER.error("无法根据建表sql:{},获取字段信息", createTableSQL, e);
+                LOGGER.warn("无法根据建表sql:{},获取字段信息", createTableSQL, e);
             }
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -398,7 +392,7 @@ public class MetadataManager {
                     resultSet.next();
                     ResultSetMetaData metaData = resultSet.getMetaData();
                     JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
-                    return getColumnInfo(jdbcRowMetaData);
+                    return CalciteConvertors.getColumnInfo(jdbcRowMetaData);
                 }
             }
         } catch (Throwable e) {
@@ -721,6 +715,17 @@ public class MetadataManager {
     public MetadataManager clear() {
         this.schemaMap.clear();
         return this;
+    }
+    public  List<SimpleColumnInfo> getColumnInfo(String prototypeServer, String sql) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        MycatRowMetaData mycatRowMetaData = null;
+        if (sqlStatement instanceof MySqlCreateTableStatement){
+            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement)sqlStatement);
+        }
+        if (sqlStatement instanceof SQLCreateViewStatement){
+            mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(jdbcConnectionManager,prototypeServer,(SQLCreateViewStatement)sqlStatement);
+        }
+        return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
 }

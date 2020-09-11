@@ -179,7 +179,17 @@ public class MycatFunctions {
             return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
         }
     }
-
+    public static class LAST_INSERT_IDFunction {
+        public static String eval(String... args) {
+            ArrayList<Object> list = new ArrayList<>();
+            for (Object arg : args) {
+                if (arg != null) {
+                    list.add(arg);
+                }
+            }
+            return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
+        }
+    }
     public static class Char2Function {
         public static String eval(String arg0, String arg1) {
             return CharFunction.eval(arg0, arg1);

@@ -109,6 +109,7 @@ public enum MycatCalciteSupport implements Context {
             .put("bin", ScalarFunctionImpl.create(MycatFunctions.BinFunction.class, "eval"))
             .put("BIT_LENGTH", ScalarFunctionImpl.create(MycatFunctions.BitLengthFunction.class, "eval"))
             .put("CHAR", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
+            .put("LAST_INSERT_ID", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
             .build();
 
     /*

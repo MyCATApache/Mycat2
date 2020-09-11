@@ -1,4 +1,4 @@
-datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
+datasources: [{name: defaultDs, user: root,password: 123456,maxCon: 10000,minCon: 0,
                maxRetryCount: 3, #连接重试次数
                maxConnectTimeout: 10000, #连接超时时间 毫秒
                dbType: mysql, #
@@ -9,7 +9,7 @@ datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 1234
                instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写,
                initSqlsGetConnection: true
               },
-              {name: defaultDs2, ip: 0.0.0.0,port: 3307,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+              {name: defaultDs2,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
                url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSqls: []
                 ,instanceType:,#READ,WRITE,READ_WRITE
                 initSqlsGetConnection: true

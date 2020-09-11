@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 @EqualsAndHashCode
 public class DatasourceConfig {
     private String name;
-    private String ip;
-    private int port;
     private String user;
     private String password;
     private int maxCon = 1000;
