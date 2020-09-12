@@ -14,19 +14,22 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mysql.MysqlKeywords;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.sqlfunction.ConcatFunction;
+import io.mycat.calcite.sqlfunction.DateFormatFunction;
+import io.mycat.calcite.sqlfunction.UnixTimestampFunction;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.util.Explains;
+import io.mycat.util.NameMap;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -91,26 +94,27 @@ public enum MycatCalciteSupport implements Context {
     public final FrameworkConfig config;
     public final CalciteConnectionConfig calciteConnectionConfig;
     public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
-    public final Multimap<String, Function> functions = (Multimap) ImmutableMultimap.builder()
-            .put("date_format", ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval"))
-            .put("UNIX_TIMESTAMP", ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.ConcatFunction.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat2Function.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat3Function.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat4Function.class, "eval"))
-            .put("CONCAT_WS", ScalarFunctionImpl.create(MycatFunctions.ConcatWSFunction.class, "eval"))
-            .put("PI", ScalarFunctionImpl.create(MycatFunctions.PiFunction.class, "eval"))
-            .put("CONV", ScalarFunctionImpl.create(MycatFunctions.CONVFunction.class, "eval"))
-            .put("crc32", ScalarFunctionImpl.create(MycatFunctions.CRC32Function.class, "eval"))
-            .put("log", ScalarFunctionImpl.create(MycatFunctions.LOGFunction.class, "eval"))
-            .put("log2", ScalarFunctionImpl.create(MycatFunctions.LOG2Function.class, "eval"))
-            .put("log10", ScalarFunctionImpl.create(MycatFunctions.LOG10Function.class, "eval"))
-            .put("|", ScalarFunctionImpl.create(MycatFunctions.BitWiseOrFunction.class, "eval"))
-            .put("bin", ScalarFunctionImpl.create(MycatFunctions.BinFunction.class, "eval"))
-            .put("BIT_LENGTH", ScalarFunctionImpl.create(MycatFunctions.BitLengthFunction.class, "eval"))
-            .put("CHAR", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
-            .put("LAST_INSERT_ID", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
-            .build();
+    public static final NameMap<Class> functions = new NameMap<>();
+
+
+    static {
+        functions.put("date_format", DateFormatFunction.class)
+                .put("UNIX_TIMESTAMP", UnixTimestampFunction.class)
+                .put("concat", ConcatFunction.class)
+                .put("CONCAT_WS", MycatFunctions.ConcatWSFunction.class)
+                .put("PI", MycatFunctions.PiFunction.class)
+                .put("CONV", MycatFunctions.CONVFunction.class)
+                .put("crc32", MycatFunctions.CRC32Function.class)
+                .put("log", MycatFunctions.LOGFunction.class)
+                .put("log2", MycatFunctions.LOG2Function.class)
+                .put("log10", MycatFunctions.LOG10Function.class)
+                .put("|", MycatFunctions.BitWiseOrFunction.class)
+                .put("bin", MycatFunctions.BinFunction.class)
+                .put("BIT_LENGTH", MycatFunctions.BitLengthFunction.class)
+                .put("CHAR", MycatFunctions.CharFunction.class)
+                .put("LAST_INSERT_ID", MycatFunctions.LAST_INSERT_IDFunction.class);
+    }
+
 
     /*
 
@@ -277,24 +281,24 @@ public enum MycatCalciteSupport implements Context {
     }
 
 
-    public static class MycatTypeSystem extends DelegatingTypeSystem {
+public static class MycatTypeSystem extends DelegatingTypeSystem {
 
 
-        public MycatTypeSystem() {
-            super(RelDataTypeSystem.DEFAULT);
+    public MycatTypeSystem() {
+        super(RelDataTypeSystem.DEFAULT);
+    }
+
+    @Override
+    public RelDataType deriveAvgAggType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
+        SqlTypeFamily a = argumentType.getSqlTypeName().getFamily();
+        if (SqlTypeFamily.NUMERIC.equals(a)) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
         }
+        return super.deriveAvgAggType(typeFactory, argumentType);
+    }
 
-        @Override
-        public RelDataType deriveAvgAggType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
-            SqlTypeFamily a = argumentType.getSqlTypeName().getFamily();
-            if (SqlTypeFamily.NUMERIC.equals(a)) {
-                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
-            }
-            return super.deriveAvgAggType(typeFactory, argumentType);
-        }
-
-        @Override
-        public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2) {
+    @Override
+    public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2) {
 //            SqlTypeFamily a = type1.getSqlTypeName().getFamily();
 //            SqlTypeFamily b = type2.getSqlTypeName().getFamily();
 //            if (SqlTypeFamily.NUMERIC.equals(a) || SqlTypeFamily.NUMERIC.equals(b)) {
@@ -304,16 +308,16 @@ public enum MycatCalciteSupport implements Context {
 //            if (typeFactory.createUnknownType().equals(relDataType)) {
 //                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
 //            }
-            return super.deriveDecimalDivideType(typeFactory, type1, type2);
-        }
+        return super.deriveDecimalDivideType(typeFactory, type1, type2);
     }
+}
 
-    public enum MycatStandardConvertletTable implements SqlRexConvertletTable {
-        INSTANCE;
+public enum MycatStandardConvertletTable implements SqlRexConvertletTable {
+    INSTANCE;
 
-        @Override
-        public SqlRexConvertlet get(SqlCall call) {
-            SqlRexConvertlet sqlRexConvertlet = StandardConvertletTable.INSTANCE.get(call);
+    @Override
+    public SqlRexConvertlet get(SqlCall call) {
+        SqlRexConvertlet sqlRexConvertlet = StandardConvertletTable.INSTANCE.get(call);
 //            if (call.getKind() == SqlKind.DIVIDE) {
 //                return (cx, call1) -> {
 //                    //,mysql除法返回浮点型
@@ -331,9 +335,10 @@ public enum MycatCalciteSupport implements Context {
 //                };
 //            }
 
-            return sqlRexConvertlet;
-        }
+        return sqlRexConvertlet;
     }
+
+}
 
 //    public MycatCalcitePlanner createPlanner(MycatCalciteDataContext dataContext) {
 //        Objects.requireNonNull(dataContext);

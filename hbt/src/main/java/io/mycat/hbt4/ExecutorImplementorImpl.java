@@ -37,8 +37,7 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(View view) {
-        MycatContext context = new MycatContext();
-        return ViewExecutor.create(view, context.forUpdate, params, factory);
+        return ViewExecutor.create(view, forUpdate, params, factory);
     }
 
     @Override

@@ -211,7 +211,7 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
-        Distribution distribution = mycatTable.computeDataNode(build.getChildExps());
+        Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(build.getCondition()));
         Iterable<DataNode> dataNodes = distribution.getDataNodes(Collections.emptyList());
         return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }

@@ -344,7 +344,7 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
     }
   }
 
-  private static SqlReturnTypeInference infer(final ScalarFunction function) {
+  public static SqlReturnTypeInference infer(final ScalarFunction function) {
     return opBinding -> {
       final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
       final RelDataType type;

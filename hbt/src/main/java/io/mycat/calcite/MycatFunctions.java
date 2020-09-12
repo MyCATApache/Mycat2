@@ -1,5 +1,7 @@
 package io.mycat.calcite;
 
+import io.mycat.hbt4.ExecutorImplementor;
+import io.mycat.hbt4.MycatContext;
 import org.apache.calcite.linq4j.function.Parameter;
 
 import java.time.LocalDate;
@@ -11,40 +13,9 @@ import java.util.Objects;
 import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
 public class MycatFunctions {
-    public static class DateFormatFunction {
-        public static String eval(@Parameter(name = "date") String dateText, @Parameter(name = "format") String format) {
-            LocalDate date = LocalDate.parse(dateText, BASIC_ISO_DATE);
 
-            Locale locale = Locale.getDefault();
-            format = format.replaceAll("%a", date.getDayOfWeek().getDisplayName(TextStyle.SHORT, locale));
-            format = format.replaceAll("%b", date.getMonth().getDisplayName(TextStyle.SHORT, locale));
-            format = format.replaceAll("%c", date.getMonthValue() + "");
-            format = format.replaceAll("%Y", String.format("%04d", date.getYear()));
-            format = format.replaceAll("%y", String.format("%02d", date.getYear()));
-            format = format.replaceAll("%m", String.format("%02d", date.getMonthValue()));
-            format = format.replaceAll("%M", date.getMonth().getDisplayName(TextStyle.FULL, locale));
-            format = format.replaceAll("%d", String.format("%02d", date.getDayOfMonth()));
-            format = format.replaceAll("%e", String.format("%01d", date.getDayOfMonth()));
-            format = format.replaceAll("%c", String.format("%01d", date.getMonthValue()));
 
-            if (!format.contains("%")) {
-                return format;
-            }
-            return Objects.toString(UnsolvedMysqlFunctionUtil.eval("data_format", dateText, format));
-        }
-    }
 
-    public static class UnixTimestampFunction {
-        public static Long eval(@Parameter(name = "date") String dateText) {
-            return ((Number) UnsolvedMysqlFunctionUtil.eval("UNIX_TIMESTAMP", dateText)).longValue();
-        }
-    }
-
-    public static class ConcatFunction {
-        public static String eval(@Parameter(name = "n", optional = true) String arg,String... args) {
-            return String.join("", args);
-        }
-    }
 
     public static class Concat2Function {
         public static String eval(String arg0, String arg1) {
@@ -179,17 +150,13 @@ public class MycatFunctions {
             return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
         }
     }
+
     public static class LAST_INSERT_IDFunction {
-        public static String eval(String... args) {
-            ArrayList<Object> list = new ArrayList<>();
-            for (Object arg : args) {
-                if (arg != null) {
-                    list.add(arg);
-                }
-            }
-            return ((String) UnsolvedMysqlFunctionUtil.eval("char", list.toArray(new String[list.size()])));
+        public static Long eval() {
+            return MycatContext.CONTEXT.get().getLastInsertId();
         }
     }
+
     public static class Char2Function {
         public static String eval(String arg0, String arg1) {
             return CharFunction.eval(arg0, arg1);

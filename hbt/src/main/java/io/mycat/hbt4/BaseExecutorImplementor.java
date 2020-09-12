@@ -68,9 +68,14 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     final Map<String, Cor[]> refValue = new HashMap<>();
     private TempResultSetFactory tempResultSetFactory;
     protected List<Object> params = Collections.emptyList();
+    protected boolean forUpdate;
 
     boolean isCorrelate() {
         return !ref.isEmpty();
+    }
+
+    public void setForUpdate(boolean update){
+        this.forUpdate = update;
     }
 
     public BaseExecutorImplementor( TempResultSetFactory tempResultSetFactory) {
@@ -119,7 +124,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 //            executor = tempResultSetFactory.makeRewind(executor);
 //        }
         RelDataType inputRowType = mycatProject.getInput().getRowType();
-        List<RexNode> childExps = mycatProject.getChildExps();
+        List<RexNode> childExps = mycatProject.getProjects();
         int outputSize = childExps.size();
         log.info("-------------------complie:" +mycatProject+
                 "----------------");

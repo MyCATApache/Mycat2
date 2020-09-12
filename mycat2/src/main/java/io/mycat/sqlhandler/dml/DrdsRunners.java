@@ -17,29 +17,35 @@ public class DrdsRunners {
     public static void runOnDrds(MycatDataContext dataContext,
                                  SQLStatement statement,
                                  ExecutorImplementor executorImplementor) {
-            try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-                DrdsConst drdsConst = new DrdsConfig();
-                DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
-                        datasourceFactory,
-                        PlanCache.INSTANCE,
-                        dataContext);
-                Iterable<DrdsSql> drdsSqls = drdsRunners.preParse(Collections.singletonList(statement), Collections.emptyList());
-                Iterable<DrdsSql> iterable = drdsRunners.convertToMycatRel(drdsSqls);
-                DrdsSql drdsSql = iterable.iterator().next();
-                executorImplementor.setParams( drdsSql.getParams());
-                executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode());
-            }
+        MycatContext.CONTEXT.set(dataContext);
+        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+            DrdsConst drdsConst = new DrdsConfig();
+            DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
+                    datasourceFactory,
+                    PlanCache.INSTANCE,
+                    dataContext);
+            Iterable<DrdsSql> drdsSqls = drdsRunners.preParse(Collections.singletonList(statement), Collections.emptyList());
+            Iterable<DrdsSql> iterable = drdsRunners.convertToMycatRel(drdsSqls);
+            DrdsSql drdsSql = iterable.iterator().next();
+            executorImplementor.setParams(drdsSql.getParams());
+            executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode());
+        } finally {
+
+        }
     }
 
-    public static void runHbtOnDrds(MycatDataContext dataContext, String statement, ExecutorImplementor executorImplementor)throws Exception {
-                try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-                    DrdsConst drdsConst = new DrdsConfig();
-                    DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
-                            datasourceFactory,
-                            PlanCache.INSTANCE,
-                            dataContext);
-                    MycatRel mycatRel = drdsRunners.doHbt(statement);
-                    executorImplementor.implementRoot(mycatRel);
-                }
+    public static void runHbtOnDrds(MycatDataContext dataContext, String statement, ExecutorImplementor executorImplementor) throws Exception {
+        MycatContext.CONTEXT.set(dataContext);
+        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+            DrdsConst drdsConst = new DrdsConfig();
+            DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
+                    datasourceFactory,
+                    PlanCache.INSTANCE,
+                    dataContext);
+            MycatRel mycatRel = drdsRunners.doHbt(statement);
+            executorImplementor.implementRoot(mycatRel);
+        } finally {
+
+        }
     }
 }

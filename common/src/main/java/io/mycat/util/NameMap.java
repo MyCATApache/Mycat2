@@ -18,10 +18,9 @@ package io.mycat.util;
 
 import com.google.common.collect.ImmutableSortedMap;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static io.mycat.util.CaseInsensitiveComparator.COMPARATOR;
 
@@ -63,8 +62,19 @@ public class NameMap<V> {
     return new NameMap<>(ImmutableSortedMap.copyOf(names, COMPARATOR));
   }
 
-  public void put(String name, V v) {
+  public NameMap<V>  put(String name, V v) {
     map.put(name, v);
+    return this;
+  }
+
+  public V get(String name,boolean caseSensitive){
+    NavigableMap<String, V> range = range(name, caseSensitive);
+    Iterator<V> iterator = range.values().iterator();
+    if (iterator.hasNext()){
+      return iterator.next();
+    }else {
+      return null;
+    }
   }
 
   /** Returns a map containing all the entries in the map that match the given
@@ -97,5 +107,9 @@ public class NameMap<V> {
 
   public V remove(String key) {
     return map.remove(key);
+  }
+
+  public void forEach(BiConsumer<String,V> c){
+    map.forEach(c);
   }
 }

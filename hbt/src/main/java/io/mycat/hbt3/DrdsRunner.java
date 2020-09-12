@@ -72,6 +72,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
@@ -184,7 +185,7 @@ public class DrdsRunner {
 
     private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k,v));
+        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k, ScalarFunctionImpl.create(v,"eval")));
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();
@@ -678,7 +679,7 @@ public class DrdsRunner {
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
         RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext));
-        return accept;
+        return accept.accept(new MappingSqlFunctionRewriter());
     }
 
     public static RelOptCluster newCluster() {

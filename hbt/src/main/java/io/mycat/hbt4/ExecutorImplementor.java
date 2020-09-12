@@ -15,6 +15,7 @@
 package io.mycat.hbt4;
 
 
+import io.mycat.MycatDataContext;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
@@ -24,7 +25,6 @@ import io.mycat.hbt4.logical.rel.*;
 import java.util.List;
 
 public interface ExecutorImplementor {
-
 
     void implementRoot(MycatRel rel);
 
