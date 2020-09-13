@@ -157,6 +157,26 @@ public class CalciteUtls {
         return addFilter(table, evaluator, filter);
     }
 
+    /**
+     * SELECT * FROM travelrecord WHERE id >= 1 AND id <= 10;
+     * SELECT * FROM travelrecord WHERE id not in (1,2);
+     * SELECT * FROM travelrecord WHERE id in (1,15);
+     * SELECT * FROM travelrecord WHERE id not BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 15;
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND (id = 3 or true)) OR
+     *   (id = 15 AND false) OR
+     *   (id = 15 AND true);
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND ((id/2) =0 OR id = 3)) OR
+     *   (id < 100 AND days = 1) OR
+     *   (id < 100 AND traveldate = '2020-08-22');
+     * @param table
+     * @param evaluator
+     * @param filter
+     * @return
+     */
     public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
         List<SimpleColumnInfo> rowOrder = table.getColumns();
         if (filter.isA(SqlKind.AND)) {
