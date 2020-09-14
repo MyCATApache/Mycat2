@@ -70,11 +70,11 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
-import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -185,7 +185,7 @@ public class DrdsRunner {
 
     private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        MycatCalciteSupport.INSTANCE.functions.forEach((k,v)->plus.add(k, ScalarFunctionImpl.create(v,"eval")));
+        MycatCalciteSupport.INSTANCE.functions.forEach((k, v) -> plus.add(k, ScalarFunctionImpl.create(v, "eval")));
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();
@@ -452,7 +452,7 @@ public class DrdsRunner {
             }
             logPlan = drdsSql.getRelNode();
         } else {
-            logPlan = getRelRoot(defaultSchemaName, plus, sqlStatement);
+            logPlan = getRelRoot(defaultSchemaName, plus, drdsSql);
         }
 
         if (logPlan instanceof TableModify) {
@@ -480,7 +480,10 @@ public class DrdsRunner {
         return cboLogPlan;
     }
 
-    private RelNode getRelRoot(String defaultSchemaName, SchemaPlus plus, SQLStatement sqlStatement) {
+    private RelNode getRelRoot(String defaultSchemaName,
+                               SchemaPlus plus, DrdsSql drdsSql) {
+        SQLStatement sqlStatement = drdsSql.getSqlStatement();
+        List<Object> params = drdsSql.getParams();
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
@@ -491,15 +494,62 @@ public class DrdsRunner {
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         SqlValidator validator =
 
-                new SqlValidatorImpl(ChainedSqlOperatorTable.of(catalogReader,MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                new SqlValidatorImpl(ChainedSqlOperatorTable.of(catalogReader, MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
 
                         super.inferUnknownTypes(inferredType, scope, node);
                     }
+
+                    @Override
+                    public RelDataType getUnknownType() {
+                        return super.getUnknownType();
+                    }
+
+                    @Override
+                    public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+                        RelDataType res = resolveDynamicParam(expr);
+                        if (res == null) {
+                            return super.deriveType(scope, expr);
+                        }else {
+                            return res;
+                        }
+                    }
+
+                    private RelDataType resolveDynamicParam(SqlNode expr) {
+                        if (expr != null && expr instanceof SqlDynamicParam) {
+                            int index = ((SqlDynamicParam) expr).getIndex();
+                            if (index < params.size()) {
+                                Object o = params.get(index);
+                                if (o == null) {
+                                return super.typeFactory.createUnknownType();
+                                } else {
+                                    return super.typeFactory.createJavaType(o.getClass());
+                                }
+                            }
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public RelDataType getValidatedNodeType(SqlNode node){
+                        RelDataType relDataType = resolveDynamicParam(node);
+                        if (relDataType == null){
+                            return super.getValidatedNodeType(node);
+                        }else {
+                            return relDataType;
+                        }
+                    }
+
+                    @Override
+                    public CalciteException handleUnresolvedFunction(SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames) {
+                        return super.handleUnresolvedFunction(call, unresolvedFunction, argTypes, argNames);
+                    }
                 };
-        SqlNode validated = validator.validate(sqlNode);
+        SqlNode validated;
+        validated = validator.validate(sqlNode);
+
         RelOptCluster cluster = newCluster();
         RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
@@ -679,7 +729,7 @@ public class DrdsRunner {
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
         RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext));
-        return accept.accept(new MappingSqlFunctionRewriter());
+        return accept;
     }
 
     public static RelOptCluster newCluster() {
