@@ -1,13 +1,9 @@
 package io.mycat.calcite.sqlfunction;
 
-import io.mycat.hbt4.MycatRexCompiler;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.JaninoRexCompiler;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.codehaus.janino.ExpressionEvaluator;
-import org.codehaus.janino.ScriptEvaluator;
 
 import java.lang.reflect.Method;
 

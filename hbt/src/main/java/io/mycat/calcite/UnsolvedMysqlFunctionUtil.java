@@ -14,9 +14,8 @@ import java.util.Objects;
 
 public class UnsolvedMysqlFunctionUtil {
     public static Cache<String, Object> objectCache = (Cache) (CacheBuilder.newBuilder().maximumSize(65535).build());
-
     @SneakyThrows
-    public static Object eval(String fun, Object... args) {
+    public static Object eval(String fun, Object... args){
         ArrayList<String> p = new ArrayList<>(args.length);
         for (Object arg : args) {
             if (arg == null) {
@@ -38,5 +37,14 @@ public class UnsolvedMysqlFunctionUtil {
                 return rowBaseIterator.getObject(1);
             }
         });
+    }
+    @SneakyThrows
+    public static Object eval(String fun, Object args) {
+        if (args instanceof Object[]){
+            return eval(fun,(Object[]) args);
+        }else {
+            return eval(fun,new Object[]{args});
+        }
+
     }
 }

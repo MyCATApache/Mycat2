@@ -14,7 +14,10 @@ import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.fun.*;
+import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlCastFunction;
+import org.apache.calcite.sql.fun.SqlQuantifyOperator;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -1394,8 +1397,6 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         String methodName = x.getMethodName();
 
 
-
-
         SqlLiteral functionQualifier = null;
 
 
@@ -1414,63 +1415,63 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             );
         }
 
-            if ("trim".equalsIgnoreCase(x.getMethodName())){
-                if ("both".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_both", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(both,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
-                            writer.print(")");
-                        }
-                    };
-                }else if ("TRAILING".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_trailing", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(trailing,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
-                            writer.print(")");
-                        }
-                    };
-                }else if ("LEADING".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_leading", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(leading,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
-                            writer.print(")");
-                        }
-                    };
-                }
+        if ("trim".equalsIgnoreCase(x.getMethodName())) {
+            if ("both".equalsIgnoreCase(x.getTrimOption())) {
+                functionOperator = new SqlUnresolvedFunction(
+                        new SqlIdentifier("trim_both", SqlParserPos.ZERO),
+                        null,
+                        null,
+                        null,
+                        null,
+                        SqlFunctionCategory.USER_DEFINED_FUNCTION) {
+                    @Override
+                    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+                        writer.print("trim(both,");
+                        List<SqlNode> operandList = call.getOperandList();
+                        operandList.get(0).unparse(writer, 0, 0);
+                        writer.print(" from ");
+                        operandList.get(1).unparse(writer, 0, 0);
+                        writer.print(")");
+                    }
+                };
+            } else if ("TRAILING".equalsIgnoreCase(x.getTrimOption())) {
+                functionOperator = new SqlUnresolvedFunction(
+                        new SqlIdentifier("trim_trailing", SqlParserPos.ZERO),
+                        null,
+                        null,
+                        null,
+                        null,
+                        SqlFunctionCategory.USER_DEFINED_FUNCTION) {
+                    @Override
+                    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+                        writer.print("trim(trailing,");
+                        List<SqlNode> operandList = call.getOperandList();
+                        operandList.get(0).unparse(writer, 0, 0);
+                        writer.print(" from ");
+                        operandList.get(1).unparse(writer, 0, 0);
+                        writer.print(")");
+                    }
+                };
+            } else if ("LEADING".equalsIgnoreCase(x.getTrimOption())) {
+                functionOperator = new SqlUnresolvedFunction(
+                        new SqlIdentifier("trim_leading", SqlParserPos.ZERO),
+                        null,
+                        null,
+                        null,
+                        null,
+                        SqlFunctionCategory.USER_DEFINED_FUNCTION) {
+                    @Override
+                    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+                        writer.print("trim(leading,");
+                        List<SqlNode> operandList = call.getOperandList();
+                        operandList.get(0).unparse(writer, 0, 0);
+                        writer.print(" from ");
+                        operandList.get(1).unparse(writer, 0, 0);
+                        writer.print(")");
+                    }
+                };
             }
+        }
 
 
         if (functionOperator == null) {
@@ -1524,10 +1525,12 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = SqlStdOperatorTable.UNARY_MINUS.createCall(SqlParserPos.ZERO,
                         convertToSqlNode(x.getExpr()));
                 break;
-            case Compl:
             case BINARY:
+                new SQLMethodInvokeExpr("BINARY", x.getExpr()).accept(this);
+            case Compl:
+
             default:
-                super.visit(x);
+                throw new UnsupportedOperationException(operator.name());
         }
         return false;
     }
@@ -1802,9 +1805,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLExtractExpr x) {
-        x.getValue().accept(this);
+        new SQLCastExpr(x.getValue(), SQLDateExpr.DATA_TYPE).accept(this);
         TimeUnit timeUnits[] = getTimeUnit(x.getUnit());
-
         sqlNode = SqlStdOperatorTable.EXTRACT
                 .createCall(SqlParserPos.ZERO
                         , new SqlIntervalQualifier(timeUnits[0], timeUnits[1], SqlParserPos.ZERO)

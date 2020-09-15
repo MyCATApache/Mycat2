@@ -14,15 +14,11 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.sqlfunction.ConcatFunction;
-import io.mycat.calcite.sqlfunction.DateFormatFunction;
-import io.mycat.calcite.sqlfunction.UnixTimestampFunction;
+import io.mycat.calcite.sqlfunction.*;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
@@ -49,8 +45,6 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
@@ -96,23 +90,22 @@ public enum MycatCalciteSupport implements Context {
     public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
     public static final NameMap<Class> functions = new NameMap<>();
 
-
     static {
         functions.put("date_format", DateFormatFunction.class)
                 .put("UNIX_TIMESTAMP", UnixTimestampFunction.class)
                 .put("concat", ConcatFunction.class)
-                .put("CONCAT_WS", MycatFunctions.ConcatWSFunction.class)
-                .put("PI", MycatFunctions.PiFunction.class)
-                .put("CONV", MycatFunctions.CONVFunction.class)
-                .put("crc32", MycatFunctions.CRC32Function.class)
-                .put("log", MycatFunctions.LOGFunction.class)
-                .put("log2", MycatFunctions.LOG2Function.class)
-                .put("log10", MycatFunctions.LOG10Function.class)
-                .put("|", MycatFunctions.BitWiseOrFunction.class)
-                .put("bin", MycatFunctions.BinFunction.class)
-                .put("BIT_LENGTH", MycatFunctions.BitLengthFunction.class)
-                .put("CHAR", MycatFunctions.CharFunction.class)
-                .put("LAST_INSERT_ID", MycatFunctions.LAST_INSERT_IDFunction.class);
+                .put("CONCAT_WS", ConcatWSFunction.class)
+                .put("PI", PiFunction.class)
+                .put("CONV", CONVFunction.class)
+                .put("crc32", CRC32Function.class)
+                .put("log", LOGFunction.class)
+                .put("log2", LOG2Function.class)
+                .put("log10", LOG10Function.class)
+                .put("|", BitWiseOrFunction.class)
+                .put("bin", BinFunction.class)
+                .put("BIT_LENGTH", BitLengthFunction.class)
+                .put("CHAR", CharFunction.class)
+                .put("LAST_INSERT_ID", LastInsertIdFunction.class);
     }
 
 
