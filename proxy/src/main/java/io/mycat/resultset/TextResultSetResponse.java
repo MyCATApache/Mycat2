@@ -217,7 +217,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
             }
             case Types.BOOLEAN: {
                 Boolean object = rowBaseIterator.getBoolean(columnIndex);
-                if (object == null) {
+                if (rowBaseIterator.wasNull()) {
                     return null;
                 }
                 res = convertor.convertBoolean(object);
