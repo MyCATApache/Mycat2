@@ -1606,6 +1606,12 @@ public class MySQLStringFunction {
         }
     }
 
+    public static Integer REGEXP(String expr, String pat) {
+        if (expr == null || pat == null) {
+            return null;
+        }
+        return expr.matches(".*" + pat + ".*") ? 1 : 0;
+    }
     /***
      * MATCH AGAINST
      * Syntax

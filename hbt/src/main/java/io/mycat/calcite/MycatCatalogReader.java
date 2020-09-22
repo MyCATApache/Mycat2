@@ -300,7 +300,7 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
     return table;
   }
 
-  private SqlOperator toOp(SqlIdentifier name, final Function function) {
+  public SqlOperator toOp(SqlIdentifier name, final Function function) {
     return toOp(typeFactory, name, function);
   }
 
@@ -311,17 +311,9 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
    * constructor. */
   public static SqlOperator toOp(RelDataTypeFactory typeFactory,
       SqlIdentifier name, final Function function) {
-    List<RelDataType> argTypes = new ArrayList<>();
-    List<SqlTypeFamily> typeFamilies = new ArrayList<>();
-    for (FunctionParameter o : function.getParameters()) {
-      final RelDataType type = o.getType(typeFactory);
-      argTypes.add(type);
-      typeFamilies.add(
-          Util.first(type.getSqlTypeName().getFamily(), SqlTypeFamily.ANY));
-    }
-    final FamilyOperandTypeChecker typeChecker =
-        OperandTypes.family(typeFamilies, i ->
-            function.getParameters().get(i).isOptional());
+    Infer infer = inferType(typeFactory, function);
+    List<RelDataType> argTypes = infer.getArgTypes();
+    FamilyOperandTypeChecker typeChecker = infer.getTypeChecker();
     final List<RelDataType> paramTypes = toSql(typeFactory, argTypes);
     if (function instanceof ScalarFunction) {
       return new SqlUserDefinedFunction(name, infer((ScalarFunction) function),
@@ -342,6 +334,10 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
     } else {
       throw new AssertionError("unknown function type " + function);
     }
+  }
+
+  public static Infer inferType(RelDataTypeFactory typeFactory, Function function) {
+    return new Infer(typeFactory, function).invoke();
   }
 
   public static SqlReturnTypeInference infer(final ScalarFunction function) {
@@ -412,5 +408,39 @@ public class MycatCatalogReader implements Prepare.CatalogReader {
       return aClass.cast(this);
     }
     return null;
+  }
+
+  public static class Infer {
+    private RelDataTypeFactory typeFactory;
+    private Function function;
+    private List<RelDataType> argTypes;
+    private FamilyOperandTypeChecker typeChecker;
+
+    public Infer(RelDataTypeFactory typeFactory, Function function) {
+      this.typeFactory = typeFactory;
+      this.function = function;
+    }
+
+    public List<RelDataType> getArgTypes() {
+      return argTypes;
+    }
+
+    public FamilyOperandTypeChecker getTypeChecker() {
+      return typeChecker;
+    }
+
+    public Infer invoke() {
+      argTypes = new ArrayList<>();
+      List<SqlTypeFamily> typeFamilies = new ArrayList<>();
+      for (FunctionParameter o : function.getParameters()) {
+        final RelDataType type = o.getType(typeFactory);
+        argTypes.add(type);
+        typeFamilies.add(
+            Util.first(type.getSqlTypeName().getFamily(), SqlTypeFamily.ANY));
+      }
+      typeChecker = OperandTypes.family(typeFamilies, i ->
+              function.getParameters().get(i).isOptional());
+      return this;
+    }
   }
 }

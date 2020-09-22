@@ -14,11 +14,22 @@
  */
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableSet;
+import io.mycat.MycatClassResolver;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.*;
+import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
+import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
+import io.mycat.calcite.sqlfunction.datefunction.AddTimeFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.datefunction.StringToTimestampFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.BinFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.BitLengthFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.CharFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.*;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
@@ -26,6 +37,8 @@ import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.util.Explains;
 import io.mycat.util.NameMap;
+import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -44,21 +57,21 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
-import org.apache.calcite.sql.type.SqlTypeCoercionRule;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.implicit.TypeCoercion;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionFactory;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -67,12 +80,14 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.BuiltInMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -85,9 +100,9 @@ public enum MycatCalciteSupport implements Context {
     INSTANCE;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatCalciteSupport.class);
     public static final Driver DRIVER = new Driver();//触发驱动注册
-    public final FrameworkConfig config;
-    public final CalciteConnectionConfig calciteConnectionConfig;
-    public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
+    public static final FrameworkConfig config;
+    public static final CalciteConnectionConfig calciteConnectionConfig;
+    public static final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
     public static final NameMap<Class> functions = new NameMap<>();
 
     static {
@@ -106,64 +121,82 @@ public enum MycatCalciteSupport implements Context {
                 .put("BIT_LENGTH", BitLengthFunction.class)
                 .put("CHAR", CharFunction.class)
                 .put("LAST_INSERT_ID", LastInsertIdFunction.class);
+
+        fixCalcite();
+
     }
 
-
-    /*
-
-    new SqlParserImplFactory() {
-                @Override
-                @SneakyThrows
-                public SqlAbstractParserImpl getParser(Reader stream) {
-                    String string = CharStreams.toString(stream);
-                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                    SqlParserImplFactory factory = SqlParserImpl.FACTORY;
-                    CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
-                    sqlStatement.accept(calciteMySqlNodeVisitor);
-                    SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-                    return new SqlAbstractParserImpl() {
-                    };
-                }
-            }
-     */
-    public final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+    public  static  final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
-    public MycatTypeSystem TypeSystem = new MycatTypeSystem();
-    public JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem) {
+    public static final MycatTypeSystem TypeSystem = new MycatTypeSystem();
+    public static final JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem) {
         @Override
         public Charset getDefaultCharset() {
             return StandardCharsets.UTF_8;
         }
+
+        @Override
+        public Type getJavaClass(RelDataType type) {
+            return super.getJavaClass(type);
+        }
     };
-    public RexBuilder RexBuilder = new RexBuilder(TypeFactory);
-    public RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
+    public static RexBuilder RexBuilder = new RexBuilder(TypeFactory);
+    public static RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
         @Override
         public RelBuilder create(RelOptCluster cluster, RelOptSchema schema) {
             return new MycatRelBuilder(MycatCalciteSupport.INSTANCE, cluster, schema);
         }
     };
 
-    public final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
+    public static final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
             .withConfig(SqlToRelConverter.Config.DEFAULT)
             .withTrimUnusedFields(true)
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withRelBuilderFactory(relBuilderFactory).build();
 
     public final SqlValidator.Config getValidatorConfig() {
+        SqlTypeMappingRule instance = SqlTypeMappingRules.instance(true);
+        Map<SqlTypeName, ImmutableSet<SqlTypeName>> typeMapping = instance.getTypeMapping();
+
+
+        final Map<SqlTypeName, ImmutableSet<SqlTypeName>> map = new HashMap(typeMapping);
+        map.put(SqlTypeName.BOOLEAN,
+                ImmutableSet.<SqlTypeName>builder()
+                        .addAll(typeMapping.get(SqlTypeName.BOOLEAN))
+                        .addAll(SqlTypeName.NUMERIC_TYPES).build());
+
+        for (SqlTypeName numericType : SqlTypeName.NUMERIC_TYPES) {
+            map.put(numericType,
+                    ImmutableSet.<SqlTypeName>builder()
+                            .addAll(typeMapping.get(numericType))
+                            .addAll(SqlTypeName.BOOLEAN_TYPES).build());
+        }
+
+        SqlTypeCoercionRule instance1 = SqlTypeCoercionRule.instance(map);
         return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance())
-                .withTypeCoercionEnabled(true).withTypeCoercionRules(SqlTypeCoercionRule.instance()).withLenientOperatorLookup(true);
+                .withTypeCoercionEnabled(true)
+                .withTypeCoercionRules(instance1).withLenientOperatorLookup(true)
+                .withTypeCoercionFactory(new TypeCoercionFactory() {
+
+                    @Override
+                    public TypeCoercion create(RelDataTypeFactory typeFactory, SqlValidator validator) {
+                        return new TypeCoercionImpl(typeFactory, validator) {
+                            @Override
+                            public RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
+                                if (in.getSqlTypeName() == SqlTypeName.BOOLEAN && expected == SqlTypeFamily.NUMERIC) {
+                                    return super.factory.createSqlType(SqlTypeName.TINYINT);
+                                }
+
+                                return super.implicitCast(in, expected);
+                            }
+                        };
+                    }
+                });
 //                .withSqlConformance(calciteConnectionConfig.conformance());
     }
 
-
-//    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
-//        return new MycatCalciteDataContext(uponDBContext);
-//    }
-
-    MycatCalciteSupport() {
-//        try {
-
+    static {
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
         configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
@@ -183,6 +216,75 @@ public enum MycatCalciteSupport implements Context {
                 build.put("LOG", SqlStdOperatorTable.LOG10);
                 build.put("PI", SqlStdOperatorTable.PI);
                 build.put("POW", SqlStdOperatorTable.POWER);
+                build.put("concat", ConcatFunction.INSTANCE);
+                build.put("<=>", StrictEqualFunction.INSTANCE);
+                build.put("regexp", RegexpFunction.INSTANCE);
+                build.put("concat_ws", ConcatWsFunction.INSTANCE);
+                build.put("regexp_instr", RegexpInstrFunction.INSTANCE);
+                build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
+                build.put("not regexp", NotRegexpFunction.INSTANCE);
+
+                Arrays.asList(BitLengthFunction.INSTANCE,
+                        BinFunction.INSTANCE,
+                        AsciiFunction.INSTANCE,
+                        RegexpSubstrFunction.INSTANCE,
+                        BinaryFunction.INSTANCE,
+                        CharLengthFunction.INSTANCE,
+                        ChrFunction.INSTANCE,
+                        ConvertFunction.INSTANCE,
+                        EltFunction.INSTANCE,
+                        ExportSetFunction.INSTANCE,
+                        ExtractValueFunction.INSTANCE,
+                        FieldFunction.INSTANCE,
+                        FindInSetFunction.INSTANCE,
+                        FormatFunction.INSTANCE,
+                        FromBase64Function.INSTANCE,
+                        HexFunction.INSTANCE,
+                        InsertFunction.INSTANCE,
+                        InstrFunction.INSTANCE,
+                        LowerFunction.INSTANCE,
+                        LeftFunction.INSTANCE,
+                        LengthFunction.INSTANCE,
+                        loadFileFunction.INSTANCE,
+                        LocateFunction.INSTANCE,
+                        LpadFunction.INSTANCE,
+                        LtrimFunction.INSTANCE,
+                        MakeSetFunction.INSTANCE,
+                        MidFunction.INSTANCE,
+                        RepeatFunction.INSTANCE,
+                        OrdFunction.INSTANCE,
+                        PositionFunction.INSTANCE,
+                        QuoteFunction.INSTANCE,
+                        ReverseFunction.INSTANCE,
+                        RightFunction.INSTANCE,
+                        RpadFunction.INSTANCE,
+                        RtrimFunction.INSTANCE,
+                        SoundexFunction.INSTANCE,
+                        SpaceFunction.INSTANCE,
+                        StrCmpFunction.INSTANCE,
+                        SubStringFunction.INSTANCE,
+                        CharFunction.INSTANCE,
+                        StringIndexFunction.INSTANCE,
+                        ToBase64Function.INSTANCE,
+                        TrimFunction.INSTANCE,
+                        UpperFunction.INSTANCE,
+                        UncompressedLengthFunction.INSTANCE,
+                        UnhexFunction.INSTANCE,
+                        UpdateXMLFunction.INSTANCE,
+                        WeightStringFunction.INSTANCE,
+                        /////////////////////////////////////////
+                        AddDateFunction.INSTANCE,
+                        DateAddFunction.INSTANCE,
+                        AddTimeFunction.INSTANCE,
+                        StringToTimestampFunction.INSTANCE
+                ).forEach(i -> build.put(i.getName(), i));
+                build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
+                build.put("LCASE", LowerFunction.INSTANCE);
+                build.put("UCASE", UpperFunction.INSTANCE);
+                build.put("LENGTHB", LengthFunction.INSTANCE);
+                build.put("OCTET_LENGTH", LengthFunction.INSTANCE);
+                build.put("SUBSTR", SubStringFunction.INSTANCE);
+                ////////////////////////////////////////////////
 
                 for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
                     map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
@@ -193,9 +295,13 @@ public enum MycatCalciteSupport implements Context {
 
             @Override
             public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
-                SqlOperator sqlOperator = map.get(opName.getSimple());
+                SqlOperator sqlOperator = map.get(opName.getSimple().toUpperCase());
                 if (sqlOperator != null) {
                     operatorList.add(sqlOperator);
+                    if (sqlOperator == ConvertFunction.INSTANCE) {//fix bug
+                        // class org.apache.calcite.sql.fun.SqlConvertFunction: CONVERT is broken.
+                        return;
+                    }
                 }
                 instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
             }
@@ -207,21 +313,92 @@ public enum MycatCalciteSupport implements Context {
         });
         configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
 
-        this.config = configBuilder.context(this).build();
-        this.calciteConnectionConfig = connectionConfig();
+       config = configBuilder.context(MycatCalciteSupport.INSTANCE).build();
+  calciteConnectionConfig = connectionConfig();
 
-        map.put(FrameworkConfig.class, config);
-        map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
-        map.put(RelDataTypeSystem.class, TypeSystem);
-        map.put(MycatTypeSystem.class, TypeSystem);
-        map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
-        map.put(RexExecutor.class, RexUtil.EXECUTOR);
+       map.put(FrameworkConfig.class, config);
+    map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
+    map.put(RelDataTypeSystem.class, TypeSystem);
+       map.put(MycatTypeSystem.class, TypeSystem);
+       map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
+      map.put(RexExecutor.class, MycatRexExecutor.INSTANCE);
+      map.put(RelBuilder.Config.class, RelBuilder.Config.DEFAULT);
+
+    }
+
+//    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
+//        return new MycatCalciteDataContext(uponDBContext);
+//    }
+
+    @SneakyThrows
+    MycatCalciteSupport() {
+        try {
+
+            Class<? extends BuiltInMethod> aClass = BuiltInMethod.STRING_TO_TIMESTAMP.getClass();
+            System.out.println();
+//            Class<? extends RexImpTable> aClass = RexImpTable.class;
+//            Field mapField = aClass.getDeclaredField("map");
+//            mapField.setAccessible(true);
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> o = (Map<SqlOperator, RexImpTable.RexCallImplementor>) mapField.get(RexImpTable.INSTANCE);
+//            System.out.println(o);
+//
+//            Method defineMethod = aClass.getDeclaredMethod("defineMethod", SqlOperator.class, Method.class,
+//                    NullPolicy.class);
+//            defineMethod.setAccessible(true);
+//
+//
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> res = new ConcurrentHashMap<SqlOperator, RexImpTable.RexCallImplementor>() {
+//
+//                @SneakyThrows
+//                @Override
+//                public RexImpTable.RexCallImplementor get(Object key) {
+//                    RexImpTable.RexCallImplementor rexCallImplementor = super.get(key);
+//                    if (rexCallImplementor != null) {
+//                        return rexCallImplementor;
+//                    }
+//                    SqlOperator k = (SqlOperator) key;
+//                    String name = k.getName();
+//                    switch (name.toLowerCase()){
+//                        case "regexp":{
+//                            ScalarFunctionImpl implementor = (ScalarFunctionImpl)RegexpFunction.scalarFunction;
+//                            defineMethod.invoke(RexImpTable.INSTANCE, key, implementor.method, NullPolicy.ANY);
+//                          break;
+//                        }
+//                    }
+//                    return get(key);
+//                }
+//            };
+//            res.putAll(o);
+//            mapField.set(RexImpTable.INSTANCE, res);
+//
+//            Field instanceField = aClass.getDeclaredField("INSTANCE");
+//            instanceField.setAccessible(true);
+
+//            Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
+//            declaredConstructor.setAccessible(true);
+
+        } catch (Throwable e) {
+            System.out.println(e);
+        }
+
 //        }catch (Throwable e){
 //          System.err.println(e);
 //        }
     }
 
-    private CalciteConnectionConfig connectionConfig() {
+    private static void fixCalcite() {
+        Object[] objects = BuiltInMethod.class.getEnumConstants();
+
+        Map<SqlOperator, RexImpTable.RexCallImplementor> map = MycatClassResolver.forceStaticGet(RexImpTable.class, RexImpTable.INSTANCE, "map");
+        map.put(SqlStdOperatorTable.CAST, new MycatCastImplementor());
+        //            Class<? extends RexImpTable> aClass = RexImpTable.class;
+//            Field mapField = aClass.getDeclaredField("map");
+//            mapField.setAccessible(true);
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> o = (Map<SqlOperator, RexImpTable.RexCallImplementor>) mapField.get(RexImpTable.INSTANCE);
+//            System.out.println(o);
+    }
+
+    private static CalciteConnectionConfig connectionConfig() {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
@@ -274,24 +451,24 @@ public enum MycatCalciteSupport implements Context {
     }
 
 
-public static class MycatTypeSystem extends DelegatingTypeSystem {
+    public static class MycatTypeSystem extends DelegatingTypeSystem {
 
 
-    public MycatTypeSystem() {
-        super(RelDataTypeSystem.DEFAULT);
-    }
-
-    @Override
-    public RelDataType deriveAvgAggType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
-        SqlTypeFamily a = argumentType.getSqlTypeName().getFamily();
-        if (SqlTypeFamily.NUMERIC.equals(a)) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
+        public MycatTypeSystem() {
+            super(RelDataTypeSystem.DEFAULT);
         }
-        return super.deriveAvgAggType(typeFactory, argumentType);
-    }
 
-    @Override
-    public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2) {
+        @Override
+        public RelDataType deriveAvgAggType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
+            SqlTypeFamily a = argumentType.getSqlTypeName().getFamily();
+            if (SqlTypeFamily.NUMERIC.equals(a)) {
+                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
+            }
+            return super.deriveAvgAggType(typeFactory, argumentType);
+        }
+
+        @Override
+        public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2) {
 //            SqlTypeFamily a = type1.getSqlTypeName().getFamily();
 //            SqlTypeFamily b = type2.getSqlTypeName().getFamily();
 //            if (SqlTypeFamily.NUMERIC.equals(a) || SqlTypeFamily.NUMERIC.equals(b)) {
@@ -301,16 +478,16 @@ public static class MycatTypeSystem extends DelegatingTypeSystem {
 //            if (typeFactory.createUnknownType().equals(relDataType)) {
 //                return typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DOUBLE), true);
 //            }
-        return super.deriveDecimalDivideType(typeFactory, type1, type2);
+            return super.deriveDecimalDivideType(typeFactory, type1, type2);
+        }
     }
-}
 
-public enum MycatStandardConvertletTable implements SqlRexConvertletTable {
-    INSTANCE;
+    public enum MycatStandardConvertletTable implements SqlRexConvertletTable {
+        INSTANCE;
 
-    @Override
-    public SqlRexConvertlet get(SqlCall call) {
-        SqlRexConvertlet sqlRexConvertlet = StandardConvertletTable.INSTANCE.get(call);
+        @Override
+        public SqlRexConvertlet get(SqlCall call) {
+            SqlRexConvertlet sqlRexConvertlet = StandardConvertletTable.INSTANCE.get(call);
 //            if (call.getKind() == SqlKind.DIVIDE) {
 //                return (cx, call1) -> {
 //                    //,mysql除法返回浮点型
@@ -328,10 +505,10 @@ public enum MycatStandardConvertletTable implements SqlRexConvertletTable {
 //                };
 //            }
 
-        return sqlRexConvertlet;
-    }
+            return sqlRexConvertlet;
+        }
 
-}
+    }
 
 //    public MycatCalcitePlanner createPlanner(MycatCalciteDataContext dataContext) {
 //        Objects.requireNonNull(dataContext);

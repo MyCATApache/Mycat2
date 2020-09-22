@@ -8,19 +8,17 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.IDN;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
 @Setter
 public class MycatDataContextImpl implements MycatDataContext {
     final static Logger log = LoggerFactory.getLogger(MycatDataContextImpl.class);
-    private final int id;
+    private final long id;
     private TransactionType transactionType;
     private String defaultSchema;
     private String lastMessage;
@@ -55,7 +53,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
 
-    private static final AtomicInteger IDS = new AtomicInteger();
+    private static final AtomicLong IDS = new AtomicLong();
 
     public MycatDataContextImpl(TransactionSessionRunner runner) {
         this.runner = runner;
@@ -63,6 +61,11 @@ public class MycatDataContextImpl implements MycatDataContext {
         switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
     }
 
+
+    @Override
+    public long getSessionId() {
+        return id;
+    }
 
     @Override
     public TransactionType transactionType() {
@@ -335,6 +338,6 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public int hashCode() {
-        return id;
+        return (int) id;
     }
 }

@@ -14,6 +14,10 @@ import java.util.Objects;
 
 public class UnsolvedMysqlFunctionUtil {
     public static Cache<String, Object> objectCache = (Cache) (CacheBuilder.newBuilder().maximumSize(65535).build());
+
+    public  static interface Fun{
+        public  abstract Object eval( Object... args) ;
+    }
     @SneakyThrows
     public static Object eval(String fun, Object... args){
         ArrayList<String> p = new ArrayList<>(args.length);

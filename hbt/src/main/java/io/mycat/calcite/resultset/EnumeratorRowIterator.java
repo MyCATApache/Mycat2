@@ -2,11 +2,13 @@ package io.mycat.calcite.resultset;
 
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Enumerator;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 
 /**
  * @author chen junwen
@@ -15,10 +17,12 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Enumerator<Object[]> iterator;
     protected final Runnable closeRunnable;
-    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator){
-        this(mycatRowMetaData,iterator,null);
+
+    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator) {
+        this(mycatRowMetaData, iterator, null);
     }
-    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator,Runnable closeRunnale) {
+
+    public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator, Runnable closeRunnale) {
         this.mycatRowMetaData = mycatRowMetaData;
         this.iterator = iterator;
         this.closeRunnable = closeRunnale;
@@ -44,7 +48,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         Object o = getObject(columnIndex);
         if (wasNull) return null;
         if (o instanceof Integer) {
-            return new Date((Integer) o);
+            return Date.valueOf(LocalDate.ofEpochDay((Integer) o));
         }
         if (o instanceof Long) {
             return new Date((Long) o);
@@ -55,7 +59,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     @Override
     public void close() {
         iterator.close();
-        if (closeRunnable !=null){
+        if (closeRunnable != null) {
             closeRunnable.run();
         }
     }
@@ -65,7 +69,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         Object o = getObject(columnIndex);
         if (wasNull) return null;
         if (o instanceof Integer) {
-            return new Timestamp((Integer) o);
+            return Timestamp.valueOf(LocalDate.ofEpochDay((Integer) o).atStartOfDay());
         }
         if (o instanceof Long) {
             return new Timestamp((Long) (o));
@@ -78,7 +82,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         Object o = getObject(columnIndex);
         if (wasNull) return null;
         if (o instanceof Integer) {
-            return new Time((Integer) o);
+            throw new UnsupportedOperationException();
         }
         if (o instanceof Long) {
             return new Time((Long) (o));
@@ -86,4 +90,16 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         return (Time) o;
     }
 
+    @Override
+    public byte[] getBytes(int columnIndex) {
+        Object o = getObject(columnIndex);
+        if (wasNull) return null;
+        if (o instanceof ByteString) {
+            return ((ByteString) o).getBytes();
+        }
+        if (o instanceof byte[]) {
+            return (byte[]) o;
+        }
+        throw new UnsupportedOperationException();
+    }
 }

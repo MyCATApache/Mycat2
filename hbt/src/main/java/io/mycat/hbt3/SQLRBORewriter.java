@@ -86,7 +86,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (userDefinedFunctionInFilter(filter)) {
+        if (!userDefinedFunctionInFilter(filter)) {
             if (RelMdSqlViews.filter(input)) {
                 return filter(input, filter, optimizationContext);
             }
@@ -102,7 +102,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalProject project) {
         RelNode input = project.getInput().accept(this);
-        boolean canProject = userDefinedFunctionInProject(project);
+        boolean canProject = !userDefinedFunctionInProject(project);
         if (canProject) {
             if (RelMdSqlViews.project(input)) {
                 return project(input, project);
@@ -126,7 +126,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
         RexNode condition = filter.getCondition();
         condition.accept(visitor);
-        return !filter.containsOver() && visitor.containsUserDefinedFunction();
+        return filter.containsOver() || visitor.containsUserDefinedFunction();
     }
 
     /**

@@ -71,11 +71,17 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
+import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -185,7 +191,13 @@ public class DrdsRunner {
 
     private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        MycatCalciteSupport.INSTANCE.functions.forEach((k, v) -> plus.add(k, ScalarFunctionImpl.create(v, "eval")));
+        MycatCalciteSupport.INSTANCE.functions.forEach((k, v) -> {
+            ScalarFunction scalarFunction = ScalarFunctionImpl.create(v, "eval");
+            if (scalarFunction !=null){
+                plus.add(k,scalarFunction);
+            }
+
+        });
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();
@@ -516,6 +528,13 @@ public class DrdsRunner {
                             return res;
                         }
                     }
+                    @Override
+                    public void validateLiteral(SqlLiteral literal){
+                        if (literal.getTypeName() == SqlTypeName.DECIMAL) {
+                            return;
+                        }
+                        super.validateLiteral(literal);
+                    }
 
                     private RelDataType resolveDynamicParam(SqlNode expr) {
                         if (expr != null && expr instanceof SqlDynamicParam) {
@@ -545,6 +564,20 @@ public class DrdsRunner {
                     @Override
                     public CalciteException handleUnresolvedFunction(SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames) {
                         return super.handleUnresolvedFunction(call, unresolvedFunction, argTypes, argNames);
+                    }
+
+                    @Override
+                    protected void addToSelectList(List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
+                        super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
+                    }
+
+                    @Override
+                    protected void validateWhereOrOn(SqlValidatorScope scope, SqlNode condition, String clause) {
+                        if (!condition.getKind().belongsTo(SqlKind.COMPARISON)){
+                            condition=  SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO,
+                                    condition, SqlTypeUtil.convertTypeToSpec(typeFactory.createSqlType(SqlTypeName.BOOLEAN)));
+                        }
+                        super.validateWhereOrOn(scope, condition, clause);
                     }
                 };
         SqlNode validated;

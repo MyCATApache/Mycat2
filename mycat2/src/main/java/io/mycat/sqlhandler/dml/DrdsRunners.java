@@ -12,6 +12,9 @@ import lombok.SneakyThrows;
 import java.util.Collections;
 
 public class DrdsRunners {
+    public static void main(String[] args) {
+
+    }
 
     @SneakyThrows
     public static void runOnDrds(MycatDataContext dataContext,

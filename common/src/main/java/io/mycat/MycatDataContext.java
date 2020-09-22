@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
+    long getSessionId();
 
     TransactionType transactionType();
 

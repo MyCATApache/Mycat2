@@ -72,6 +72,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
 
     protected void runQuery(MycatRel rel, Executor executor) {
         RelDataType rowType = rel.getRowType();
+
         EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
                 Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
         });
