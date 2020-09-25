@@ -13,7 +13,7 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Pair;
@@ -51,7 +51,7 @@ public class MycatRexCompiler {
                 @Override
                 public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
                     RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-                    JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                    RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
                     int index1 = dynamicParam.getIndex();
                     Object o = params.get(index1);
                     RelDataType type = dynamicParam.getType();

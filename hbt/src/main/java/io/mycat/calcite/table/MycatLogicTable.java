@@ -29,12 +29,11 @@ import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -85,7 +83,7 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                                 RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
                                 Object o = paras.get(dynamicParam.getIndex());
                                 RelDataType type;
-                                JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                                RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
                                 if (o == null) {
                                     type = typeFactory.createSqlType(SqlTypeName.NULL);
                                 } else {

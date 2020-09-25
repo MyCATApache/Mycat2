@@ -14,41 +14,7 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import io.mycat.TableHandler;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.table.MycatReflectiveSchema;
-import io.mycat.metadata.SchemaHandler;
-import io.mycat.upondb.*;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.materialize.SqlStatisticProvider;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.RelOptCostFactory;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlRexConvertletTable;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Program;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 /**
  * @author Junwen Chen
@@ -56,7 +22,7 @@ import java.util.function.Function;
 
 public class MycatCalciteDataContext {
 
-    public JavaTypeFactory getTypeFactory() {
+    public RelDataTypeFactory getTypeFactory() {
         return MycatCalciteSupport.INSTANCE.TypeFactory;
     }
 

@@ -44,7 +44,6 @@ import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.Driver;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
@@ -87,9 +86,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -130,17 +127,7 @@ public enum MycatCalciteSupport implements Context {
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
     public static final MycatTypeSystem TypeSystem = new MycatTypeSystem();
-    public static final JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem) {
-        @Override
-        public Charset getDefaultCharset() {
-            return StandardCharsets.UTF_8;
-        }
-
-        @Override
-        public Type getJavaClass(RelDataType type) {
-            return super.getJavaClass(type);
-        }
-    };
+    public static final RelDataTypeFactory  TypeFactory = new MycatRelDataTypeFactory (TypeSystem) ;
     public static RexBuilder RexBuilder = new RexBuilder(TypeFactory);
     public static RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
         @Override
@@ -197,6 +184,9 @@ public enum MycatCalciteSupport implements Context {
     }
 
     static {
+        Duration duration = Duration.ofDays(1).plusHours(1).plusMillis(1).plusNanos(1);
+        System.out.println(duration);
+
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
         configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);

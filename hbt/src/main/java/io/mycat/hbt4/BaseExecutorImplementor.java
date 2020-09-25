@@ -31,7 +31,6 @@ import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.JoinType;
@@ -434,7 +433,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         List<RelDataTypeField> fieldList = left.getRowType().getFieldList();
         int rightFieldCount = right.getRowType().getFieldCount();
         Executor leftExecutor = implementInput(left);
-        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
 
 //        this.ref.computeIfAbsent(correlVariable, s -> a0 -> new DataContextInputGetter(left.getRowType(), typeFactory));
 //

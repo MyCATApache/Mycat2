@@ -22,7 +22,6 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
-import io.mycat.MetaCluster;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -41,7 +40,6 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -707,7 +705,7 @@ public class HBTQueryConvertor {
      */
     public static RexNode literal(RelDataType type, Object value, boolean allowCast) {
         final RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         RexNode literal;
         if (value == null) {
             literal = rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));

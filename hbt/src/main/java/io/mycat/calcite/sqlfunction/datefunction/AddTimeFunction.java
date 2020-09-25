@@ -24,11 +24,8 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.*;
 
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 
 
 public class AddTimeFunction extends MycatSqlDefinedFunction {
@@ -52,23 +49,23 @@ public class AddTimeFunction extends MycatSqlDefinedFunction {
         if (time == null || tmp == null) {
             return null;
         }
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC);
-        localDateTime = localDateTime.plus(tmp, ChronoUnit.MILLIS);
-        return Timestamp.valueOf(localDateTime).getTime();
+        return tmp + time;
+//        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC);
+//        localDateTime = localDateTime.plus(tmp, ChronoUnit.MILLIS);
+//        return Timestamp.valueOf(localDateTime).getTime();
     }
 
-    private static int getMillisInSecond(String v) {
-        switch (v.length()) {
-            case 19: // "1999-12-31 12:34:56"
-                return 0;
-            case 21: // "1999-12-31 12:34:56.7"
-                return Integer.valueOf(v.substring(20)) * 100;
-            case 22: // "1999-12-31 12:34:56.78"
-                return Integer.valueOf(v.substring(20)) * 10;
-            case 23: // "1999-12-31 12:34:56.789"
-            default:  // "1999-12-31 12:34:56.789123456"
-                return Integer.valueOf(v.substring(20, 23));
+    public static LocalDateTime addTime(LocalDateTime time, Duration tmp) {
+        if (time == null || tmp == null) {
+            return null;
         }
+        return time.plus(tmp);
+    }
+
+
+    public static void main(String[] args){
+        Duration duration = Duration.ofDays(1).plusHours(1).plusMillis(1).plusNanos(1);
+        System.out.println(duration);
     }
 }
 

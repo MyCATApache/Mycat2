@@ -16,7 +16,7 @@ server:
   handlerName: null
   idleTimer: {initialDelay: 3, period: 15, timeUnit: SECONDS}
   ip: 127.0.0.1
-  port: 3806
+  port: 8066
   reactorNumber: 8
   tempDirectory: D:\git8\Mycat3\mycat2\target\classes\target
   timeWorkerPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 2,

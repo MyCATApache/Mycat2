@@ -4,17 +4,16 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatCatalogReader;
 import io.mycat.calcite.MycatScalarFunction;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperator;
@@ -25,7 +24,6 @@ import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -43,7 +41,7 @@ public class MappingSqlFunctionRewriter extends RelShuttleImpl {
                 SqlIdentifier sqlIdentifier = unresolvedFunction.getSqlIdentifier();
                 String methodName = unresolvedFunction.getName();
                 RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-                JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
                 ConcurrentHashMap<Integer, SqlUserDefinedFunction> map = dyfunctionCache.computeIfAbsent(methodName, s -> new ConcurrentHashMap<>());
                 SqlUserDefinedFunction sqlUserDefinedFunction = map.computeIfAbsent(paramSize, integer -> {
                     Class aClass = MycatCalciteSupport.functions.get(methodName, false);

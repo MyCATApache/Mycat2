@@ -193,7 +193,11 @@ public class MetadataManager {
         }
         for (String tableName : tables) {
             NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
-            addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
+            try {
+                addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
+            }catch (Throwable e){
+                LOGGER.warn("",e);
+            }
         }
     }
 

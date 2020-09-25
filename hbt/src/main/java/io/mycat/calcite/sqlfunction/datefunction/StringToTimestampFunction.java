@@ -1,18 +1,19 @@
 package io.mycat.calcite.sqlfunction.datefunction;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDefinedFunction;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.*;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 
-import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
+import java.util.Date;
 
 public class StringToTimestampFunction extends MycatSqlDefinedFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(StringToTimestampFunction.class,
@@ -22,23 +23,22 @@ public class StringToTimestampFunction extends MycatSqlDefinedFunction {
 
     public StringToTimestampFunction() {
         super(new SqlIdentifier("stringToTimestamp", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.DATE),
+                ReturnTypes.explicit(scalarFunction.getReturnType(MycatCalciteSupport.INSTANCE.TypeFactory)),
                 InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.STRING),
+            null,
                 ImmutableList.of(), scalarFunction);
     }
-
-    public static Long stringToTimestamp(String text) {
-        if (text.contains("-")) {
-            return DateTimeUtils.timestampStringToUnixDate(text);
-        }
-        return stringToTime(text);
+    public static Date stringToTimestamp(Object text){
+        return null;
+    }
+    public static Date stringToTimestamp(Date text) {
+       return null;
     }
 
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral
-    public static Long stringToTime(String text) {
+    public static String stringToTime(String text) {
         if (text == null) {
             return null;
         }
@@ -135,12 +135,13 @@ public class StringToTimestampFunction extends MycatSqlDefinedFunction {
             }
         }
         long l = LocalTime.of(h, m, second, second_part).toNanoOfDay();
-        if (days > 0) {
-            return Duration.ofDays(days).plusNanos(l).toMillis();
-        } else {
-            return Duration.ofNanos(l).toMillis();
-        }
+//        if (days > 0) {
+//            return Duration.ofDays(days).plusNanos(l).toMillis();
+//        } else {
+//            return Duration.ofNanos(l).toMillis();
+//        }
 
+        return null;
 
     }
 //        DateTimeFormatter pattern = DateTimeFormatter.ofPattern("YYYY-MM-DD HH:mm:ss.n");
