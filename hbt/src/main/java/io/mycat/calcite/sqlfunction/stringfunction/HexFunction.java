@@ -2,7 +2,7 @@ package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.alibaba.fastsql.util.HexBin;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -12,17 +12,14 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 
-public class HexFunction extends MycatSqlDefinedFunction {
+public class HexFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(HexFunction.class,
         "hex");
 
     public static final HexFunction INSTANCE = new HexFunction();
 
     public HexFunction() {
-        super(new SqlIdentifier("hex", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR), null,
-                OperandTypes.or(OperandTypes.STRING,OperandTypes.INTEGER), ImmutableList.of(),
-                scalarFunction);
+        super("hex", scalarFunction);
     }
 
     public static String hex(Object param0Value) {

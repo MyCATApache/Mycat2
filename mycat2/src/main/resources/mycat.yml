@@ -8,8 +8,8 @@ interceptors:
    }]
 datasource:
   datasources: [{name: defaultDs, user: root,password: 123456,maxCon: 10000,minCon: 0,
-                 maxRetryCount: 3, #连接重试次数
-                 maxConnectTimeout: 10000, #连接超时时间 毫秒
+                 maxRetryCount: 10, #连接重试次数
+                 maxConnectTimeout: 100000, #连接超时时间 毫秒
                  dbType: mysql, #
                  url: 'jdbc:mysql://localhost:3307?useUnicode=true&serverTimezone=UTC',
                  weight: 1, #负载均衡权重
@@ -18,7 +18,7 @@ datasource:
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写,
                  initSqlsGetConnection: true
                 },
-                {name: defaultDs2,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+                {name: defaultDs2,user: root,password: 123456,maxCon: 100000,minCon: 0,maxRetryCount: 10,maxConnectTimeout: 10000,dbType: mysql,
                  url: 'jdbc:mysql://localhost:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSqls: []
                   ,instanceType:,#READ,WRITE,READ_WRITE
                   initSqlsGetConnection: true

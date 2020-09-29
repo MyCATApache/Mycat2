@@ -9,6 +9,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * @author chen junwen
@@ -73,6 +74,9 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         }
         if (o instanceof Long) {
             return new Timestamp((Long) (o));
+        }
+        if (o instanceof LocalDateTime){
+            return Timestamp.valueOf((LocalDateTime)o);
         }
         return (Timestamp) o;
     }

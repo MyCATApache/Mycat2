@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -10,18 +10,14 @@ import org.apache.calcite.sql.type.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StringIndexFunction extends MycatSqlDefinedFunction {
+public class StringIndexFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(StringIndexFunction.class,
             "subStringIndex");
 
     public static final StringIndexFunction INSTANCE = new StringIndexFunction();
 
     public StringIndexFunction() {
-        super(new SqlIdentifier("SUBSTRING_INDEX", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR), InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.INTEGER),
-                getRelDataType(scalarFunction),
-                scalarFunction);
+        super("SUBSTRING_INDEX", scalarFunction);
     }
 
     public static String subStringIndex(String str, String delim, Integer count) {

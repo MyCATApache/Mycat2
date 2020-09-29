@@ -16,9 +16,10 @@
  */
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
@@ -26,17 +27,14 @@ import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 
 
-public class CharLengthFunction extends MycatSqlDefinedFunction {
+public class CharLengthFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(CharLengthFunction.class,
             "charLength");
     public static CharLengthFunction INSTANCE = new CharLengthFunction();
 
 
     public CharLengthFunction() {
-        super(new SqlIdentifier("char_length", SqlParserPos.ZERO),
-                ReturnTypes.ARG0_NULLABLE,
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.STRING, getRelDataType(scalarFunction), scalarFunction);
+        super("char_length", scalarFunction);
     }
 
     public static Integer charLength(String expr) {

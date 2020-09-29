@@ -25,17 +25,17 @@ public class MycatCastImplementor implements RexImpTable.RexCallImplementor {
 
     @Override
     public RexToLixTranslator.Result implement(RexToLixTranslator translator, RexCall call, List<RexToLixTranslator.Result> arguments) {
-        if (call.getOperator() == SqlStdOperatorTable.CAST) {
-            if (call.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP) {
-                if (call.getOperands().size() == 1) {
-                    SqlTypeName valueType = call.getOperands().get(0).getType().getSqlTypeName();
-                    if (SqlTypeName.STRING_TYPES.contains(valueType)) {
-                        RexImpTable.RexCallImplementor rexCallImplementor = RexImpTable.INSTANCE.get(StringToTimestampFunction.INSTANCE);
-                        return rexCallImplementor.implement(translator, call, arguments);
-                    }
-                }
-            }
-        }
+//        if (call.getOperator() == SqlStdOperatorTable.CAST) {
+//            if (call.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP) {
+//                if (call.getOperands().size() == 1) {
+//                    SqlTypeName valueType = call.getOperands().get(0).getType().getSqlTypeName();
+//                    if (SqlTypeName.STRING_TYPES.contains(valueType)) {
+//                        RexImpTable.RexCallImplementor rexCallImplementor = RexImpTable.INSTANCE.get(StringToTimestampFunction.INSTANCE);
+//                        return rexCallImplementor.implement(translator, call, arguments);
+//                    }
+//                }
+//            }
+//        }
         return rexCallImplementor.implement(translator, call, arguments);
     }
 }

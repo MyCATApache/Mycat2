@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatSqlDialect;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -55,6 +56,10 @@ public interface MycatRel extends RelNode {
                     String fieldName = fieldList.get(ordinal);
                     return new SqlIdentifier(ImmutableList.of(fieldName), SqlImplementor.POS);
                 }
-            };
+
+            @Override public SqlImplementor implementor() {
+                    return null;
+            }
+        };
     }
 }

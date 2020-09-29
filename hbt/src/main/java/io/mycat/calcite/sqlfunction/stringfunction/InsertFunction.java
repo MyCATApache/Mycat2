@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -8,18 +8,14 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.*;
 
 
-public class InsertFunction extends MycatSqlDefinedFunction {
+public class InsertFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(InsertFunction.class,
             "insert");
 
     public static final InsertFunction INSTANCE = new InsertFunction();
 
     public InsertFunction() {
-        super(new SqlIdentifier("insert", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR),  InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER, SqlTypeFamily.STRING),
-                getRelDataType(scalarFunction),
-                scalarFunction);
+        super("insert", scalarFunction);
     }
 
     public static String insert(String str, Integer pos, Integer len, String newstr) {

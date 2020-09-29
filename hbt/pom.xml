@@ -15,6 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>io.mycat</groupId>
+            <artifactId>calcite</artifactId>
+            <version>1.12-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
             <version>1.12-SNAPSHOT</version>
         </dependency>
@@ -50,12 +55,6 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
             <version>3.8.2</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
-        <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-core</artifactId>
-            <version>1.25.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.codehaus.janino/janino -->
         <dependency>

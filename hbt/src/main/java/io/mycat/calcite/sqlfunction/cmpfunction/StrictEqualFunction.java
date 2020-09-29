@@ -1,17 +1,10 @@
 package io.mycat.calcite.sqlfunction.cmpfunction;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatScalarFunction;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.schema.ScalarFunction;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlUtil;
-import org.apache.calcite.sql.SqlWriter;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.InferTypes;
-import org.apache.calcite.sql.type.OperandTypes;
-import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.*;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -24,10 +17,8 @@ public class StrictEqualFunction extends MycatSqlDefinedFunction {
 
 
     public StrictEqualFunction() {
-        super(new SqlIdentifier("<=>", SqlParserPos.ZERO),
-                ReturnTypes.BOOLEAN_NULLABLE,
-                InferTypes.FIRST_KNOWN,
-                OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED, ImmutableList.of(), scalarFunction);
+        super("<=>", scalarFunction, SqlFunctionCategory.SYSTEM);
+
     }
 
     public static Boolean strictEqual(BigDecimal b0, BigDecimal b1) {

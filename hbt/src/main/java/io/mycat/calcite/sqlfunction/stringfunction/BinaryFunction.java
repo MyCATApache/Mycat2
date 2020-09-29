@@ -16,11 +16,12 @@
  */
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -30,17 +31,14 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.util.BitString;
 
 
-public class BinaryFunction extends MycatSqlDefinedFunction {
+public class BinaryFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(BinaryFunction.class,
             "binary");
     public static BinaryFunction INSTANCE = new BinaryFunction();
 
 
     public BinaryFunction() {
-        super(new SqlIdentifier("binary", SqlParserPos.ZERO),
-                ReturnTypes.ARG0_NULLABLE,
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.STRING, getRelDataType(scalarFunction), scalarFunction);
+        super("binary", scalarFunction);
     }
 
     public static ByteString binary(String expr) {

@@ -1,7 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
 import lombok.SneakyThrows;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
@@ -12,17 +11,13 @@ import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-public class FieldFunction extends MycatSqlDefinedFunction {
+public class FieldFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(FieldFunction.class,
             "field");
     public static final FieldFunction INSTANCE = new FieldFunction();
 
     public FieldFunction() {
-        super(new SqlIdentifier("field", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.INTEGER),
-                InferTypes.FIRST_KNOWN,
-                OperandTypes.VARIADIC,
-                ImmutableList.of(), scalarFunction);
+        super("field", scalarFunction);
     }
 
     @SneakyThrows

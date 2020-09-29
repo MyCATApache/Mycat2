@@ -1,7 +1,8 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
+import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -20,14 +21,13 @@ import java.util.Locale;
  * SELECT FORMAT(1234567890.09876543210, 4) AS 'Format'; 支持
  * SELECT FORMAT('1234567890.09876543210', 4) AS 'Format'; 支持
  */
-public class FormatFunction extends MycatSqlDefinedFunction {
-    public static final FormatFunction INSTANCE = new FormatFunction();
+public class FormatFunction extends MycatStringFunction {
 
+    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(FormatFunction.class,
+            "format");
+    public static final FormatFunction INSTANCE = new FormatFunction();
     public FormatFunction() {
-        super(new SqlIdentifier("format", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR), null,
-                OperandTypes.VARIADIC, ImmutableList.of(),
-                ScalarFunctionImpl.create(FormatFunction.class, "format"));
+        super("format", scalarFunction);
     }
 
     public static String format(Object... args) {

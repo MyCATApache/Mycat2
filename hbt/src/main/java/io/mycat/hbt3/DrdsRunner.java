@@ -38,7 +38,6 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatCatalogReader;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -81,6 +80,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -499,14 +499,14 @@ public class DrdsRunner {
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
-        MycatCatalogReader catalogReader = new MycatCatalogReader(CalciteSchema
+        CalciteCatalogReader  catalogReader = new CalciteCatalogReader (CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.INSTANCE.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         SqlValidator validator =
 
-                new SqlValidatorImpl(ChainedSqlOperatorTable.of(catalogReader, MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {

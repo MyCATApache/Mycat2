@@ -16,9 +16,10 @@
  */
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.InferTypes;
@@ -27,17 +28,14 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 
 
-public class BinFunction extends MycatSqlDefinedFunction {
+public class BinFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(BinFunction.class,
             "bin");
     public static BinFunction INSTANCE = new BinFunction();
 
 
     public BinFunction() {
-        super(new SqlIdentifier("bin", SqlParserPos.ZERO),
-                ReturnTypes.VARCHAR_2000_NULLABLE,
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.NUMERIC), getRelDataType(scalarFunction), scalarFunction);
+        super("bin", scalarFunction);
     }
 
     public static String bin(Long expr) {

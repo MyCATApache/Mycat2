@@ -1,7 +1,7 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import lombok.SneakyThrows;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
@@ -17,17 +17,13 @@ import org.dom4j.io.SAXReader;
 
 import java.io.StringReader;
 
-public class ExtractValueFunction extends MycatSqlDefinedFunction {
+public class ExtractValueFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(ExtractValueFunction.class,
             "extractValue");
     public static final ExtractValueFunction INSTANCE = new ExtractValueFunction();
 
     public ExtractValueFunction() {
-        super(new SqlIdentifier("EXTRACTVALUE", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR),
-                InferTypes.FIRST_KNOWN,
-                OperandTypes.VARIADIC,
-                ImmutableList.of(), scalarFunction);
+        super("EXTRACTVALUE", scalarFunction);
     }
 
     @SneakyThrows

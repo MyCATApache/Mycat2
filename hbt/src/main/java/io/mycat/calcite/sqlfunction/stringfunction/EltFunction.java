@@ -17,7 +17,7 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlCall;
@@ -28,17 +28,14 @@ import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.validate.SqlValidator;
 
 
-public class EltFunction extends MycatSqlDefinedFunction {
+public class EltFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(EltFunction.class,
             "elt");
     public static EltFunction INSTANCE = new EltFunction();
 
 
     public EltFunction() {
-        super(new SqlIdentifier("elt", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR),
-                null,
-                OperandTypes.repeat(SqlOperandCountRanges.any()), ImmutableList.of(), scalarFunction);
+        super("elt", scalarFunction);
     }
 
     public static String elt(Integer n, String... strs) {

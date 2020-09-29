@@ -17,7 +17,7 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import io.mycat.calcite.MycatScalarFunction;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -30,17 +30,14 @@ import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 
 
-public class RegexpFunction extends MycatSqlDefinedFunction {
+public class RegexpFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = MycatScalarFunction.create(RegexpFunction.class,
             "regexp", 2);
     public static RegexpFunction INSTANCE = new RegexpFunction();
 
 
     public RegexpFunction() {
-        super(new SqlIdentifier("regexp", SqlParserPos.ZERO),
-                ReturnTypes.BOOLEAN,
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.STRING, SqlTypeFamily.STRING), getRelDataType(scalarFunction), scalarFunction);
+        super("regexp", scalarFunction);
     }
 
     public static Boolean regexp(String expr, String pat) {

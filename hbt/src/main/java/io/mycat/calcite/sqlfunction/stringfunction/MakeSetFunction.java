@@ -1,7 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -14,19 +13,14 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class MakeSetFunction extends MycatSqlDefinedFunction {
+public class MakeSetFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(MakeSetFunction.class,
             "makeSet");
 
     public static final MakeSetFunction INSTANCE = new MakeSetFunction();
 
     public MakeSetFunction() {
-        super(new SqlIdentifier("MAKE_SET", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR),
-              null,
-                OperandTypes.VARIADIC,
-                ImmutableList.of(),
-                scalarFunction);
+        super("MAKE_SET", scalarFunction);
     }
 
     public static String makeSet(Long bits,String... strs) {

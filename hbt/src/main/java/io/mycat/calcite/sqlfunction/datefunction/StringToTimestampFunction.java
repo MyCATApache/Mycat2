@@ -2,7 +2,6 @@ package io.mycat.calcite.sqlfunction.datefunction;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatSqlDefinedFunction;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -15,18 +14,14 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 
-public class StringToTimestampFunction extends MycatSqlDefinedFunction {
+public class StringToTimestampFunction extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(StringToTimestampFunction.class,
             "stringToTimestamp");
     public static StringToTimestampFunction INSTANCE = new StringToTimestampFunction();
 
 
     public StringToTimestampFunction() {
-        super(new SqlIdentifier("stringToTimestamp", SqlParserPos.ZERO),
-                ReturnTypes.explicit(scalarFunction.getReturnType(MycatCalciteSupport.INSTANCE.TypeFactory)),
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-            null,
-                ImmutableList.of(), scalarFunction);
+        super("stringToTimestamp", scalarFunction);
     }
     public static Date stringToTimestamp(Object text){
         return null;

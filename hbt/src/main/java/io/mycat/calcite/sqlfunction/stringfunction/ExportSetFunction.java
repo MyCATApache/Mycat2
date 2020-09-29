@@ -1,7 +1,7 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -15,16 +15,12 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class ExportSetFunction extends MycatSqlDefinedFunction {
+public class ExportSetFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(ExportSetFunction.class,
             "exportSet");
     public static final ExportSetFunction INSTANCE = new ExportSetFunction();
     public ExportSetFunction() {
-        super(new SqlIdentifier("EXPORT_SET", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR),
-                InferTypes.FIRST_KNOWN,
-                OperandTypes.VARIADIC,
-                ImmutableList.of(), scalarFunction);
+        super("EXPORT_SET", scalarFunction);
     }
 
     public static String exportSet(Long bits, String on, String off, String separator, Integer number_of_bits) {

@@ -73,11 +73,5 @@
     <artifactId>jta</artifactId>
     <version>1.1</version>
   </dependency>
-  <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
-  <dependency>
-    <groupId>org.apache.calcite</groupId>
-    <artifactId>calcite-core</artifactId>
-    <version>1.25.0</version>
-  </dependency>
 </dependencies>
 </project>

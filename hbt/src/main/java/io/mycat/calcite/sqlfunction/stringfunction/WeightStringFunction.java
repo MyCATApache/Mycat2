@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import lombok.SneakyThrows;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
@@ -14,18 +14,14 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class WeightStringFunction extends MycatSqlDefinedFunction {
+public class WeightStringFunction extends MycatStringFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(WeightStringFunction.class,
             "weightString");
 
     public static final WeightStringFunction INSTANCE = new WeightStringFunction();
 
     public WeightStringFunction() {
-        super(new SqlIdentifier("WEIGHT_STRING", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.VARCHAR), InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.VARIADIC,
-                getRelDataType(scalarFunction),
-                scalarFunction);
+        super("WEIGHT_STRING", scalarFunction);
     }
 
     @SneakyThrows

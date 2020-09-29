@@ -14,7 +14,6 @@
  */
 package io.mycat.hbt4;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -51,13 +50,14 @@ import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
@@ -441,7 +441,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         this.ref.remove(correlVariable);
 
         Enumerable<Row> leftEnumerable = Linq4j.asEnumerable(Linq4j.asEnumerable(leftExecutor));
-        Cor[] cors = this.refValue.computeIfAbsent(correlVariable, (Function<String, Cor[]>) input -> new Cor[requiredColumns.length]);
+        Cor[] cors = this.refValue.computeIfAbsent(correlVariable, (Function <String, Cor[]>) input -> new Cor[requiredColumns.length]);
         final Function1<Row, Enumerable<Row>> inner = a0 -> {
             int index = 0;
             for (int requiredColumn : requiredColumns) {
@@ -493,7 +493,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     public static Comparator<Row> comparator(List<RelFieldCollation> fieldCollations) {
         if (fieldCollations.size() == 1) return comparator(fieldCollations.get(0));
         return Ordering.compound(
-                Iterables.transform(fieldCollations, new Function<RelFieldCollation, Comparator<? super Row>>() {
+                Iterables.transform(fieldCollations, new com.google.common.base.Function<RelFieldCollation, Comparator<? super Row>>() {
                     @Nullable
                     @Override
                     public Comparator<? super Row> apply(@Nullable RelFieldCollation input) {

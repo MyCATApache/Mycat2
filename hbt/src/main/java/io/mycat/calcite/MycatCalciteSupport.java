@@ -88,6 +88,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -137,9 +138,9 @@ public enum MycatCalciteSupport implements Context {
     };
 
     public static final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
-            .withConfig(SqlToRelConverter.Config.DEFAULT)
             .withTrimUnusedFields(true)
             .withInSubQueryThreshold(Integer.MAX_VALUE)
+            .withRelBuilderConfigTransform(config -> config.withSimplify(false))
             .withRelBuilderFactory(relBuilderFactory).build();
 
     public final SqlValidator.Config getValidatorConfig() {
@@ -198,87 +199,91 @@ public enum MycatCalciteSupport implements Context {
             final HashMap<String, SqlOperator> build = new HashMap<>();
 
             {
-                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
-                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-                build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
-                build.put("LOG", SqlStdOperatorTable.LOG10);
-                build.put("PI", SqlStdOperatorTable.PI);
-                build.put("POW", SqlStdOperatorTable.POWER);
-                build.put("concat", ConcatFunction.INSTANCE);
-                build.put("<=>", StrictEqualFunction.INSTANCE);
-                build.put("regexp", RegexpFunction.INSTANCE);
-                build.put("concat_ws", ConcatWsFunction.INSTANCE);
-                build.put("regexp_instr", RegexpInstrFunction.INSTANCE);
-                build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
-                build.put("not regexp", NotRegexpFunction.INSTANCE);
+                try {
+                    map.put("IFNULL", SqlStdOperatorTable.COALESCE);
+                    build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+                    build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
+                    build.put("LOG", SqlStdOperatorTable.LOG10);
+                    build.put("PI", SqlStdOperatorTable.PI);
+                    build.put("POW", SqlStdOperatorTable.POWER);
+                    build.put("concat", ConcatFunction.INSTANCE);
+                    build.put("<=>", StrictEqualFunction.INSTANCE);
+                    build.put("regexp", RegexpFunction.INSTANCE);
+                    build.put("concat_ws", ConcatWsFunction.INSTANCE);
+                    build.put("regexp_instr", RegexpInstrFunction.INSTANCE);
+                    build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
+                    build.put("not regexp", NotRegexpFunction.INSTANCE);
 
-                Arrays.asList(BitLengthFunction.INSTANCE,
-                        BinFunction.INSTANCE,
-                        AsciiFunction.INSTANCE,
-                        RegexpSubstrFunction.INSTANCE,
-                        BinaryFunction.INSTANCE,
-                        CharLengthFunction.INSTANCE,
-                        ChrFunction.INSTANCE,
-                        ConvertFunction.INSTANCE,
-                        EltFunction.INSTANCE,
-                        ExportSetFunction.INSTANCE,
-                        ExtractValueFunction.INSTANCE,
-                        FieldFunction.INSTANCE,
-                        FindInSetFunction.INSTANCE,
-                        FormatFunction.INSTANCE,
-                        FromBase64Function.INSTANCE,
-                        HexFunction.INSTANCE,
-                        InsertFunction.INSTANCE,
-                        InstrFunction.INSTANCE,
-                        LowerFunction.INSTANCE,
-                        LeftFunction.INSTANCE,
-                        LengthFunction.INSTANCE,
-                        loadFileFunction.INSTANCE,
-                        LocateFunction.INSTANCE,
-                        LpadFunction.INSTANCE,
-                        LtrimFunction.INSTANCE,
-                        MakeSetFunction.INSTANCE,
-                        MidFunction.INSTANCE,
-                        RepeatFunction.INSTANCE,
-                        OrdFunction.INSTANCE,
-                        PositionFunction.INSTANCE,
-                        QuoteFunction.INSTANCE,
-                        ReverseFunction.INSTANCE,
-                        RightFunction.INSTANCE,
-                        RpadFunction.INSTANCE,
-                        RtrimFunction.INSTANCE,
-                        SoundexFunction.INSTANCE,
-                        SpaceFunction.INSTANCE,
-                        StrCmpFunction.INSTANCE,
-                        SubStringFunction.INSTANCE,
-                        CharFunction.INSTANCE,
-                        StringIndexFunction.INSTANCE,
-                        ToBase64Function.INSTANCE,
-                        TrimFunction.INSTANCE,
-                        UpperFunction.INSTANCE,
-                        UncompressedLengthFunction.INSTANCE,
-                        UnhexFunction.INSTANCE,
-                        UpdateXMLFunction.INSTANCE,
-                        WeightStringFunction.INSTANCE,
-                        /////////////////////////////////////////
-                        AddDateFunction.INSTANCE,
-                        DateAddFunction.INSTANCE,
-                        AddTimeFunction.INSTANCE,
-                        StringToTimestampFunction.INSTANCE
-                ).forEach(i -> build.put(i.getName(), i));
-                build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
-                build.put("LCASE", LowerFunction.INSTANCE);
-                build.put("UCASE", UpperFunction.INSTANCE);
-                build.put("LENGTHB", LengthFunction.INSTANCE);
-                build.put("OCTET_LENGTH", LengthFunction.INSTANCE);
-                build.put("SUBSTR", SubStringFunction.INSTANCE);
-                ////////////////////////////////////////////////
+                    Arrays.asList(BitLengthFunction.INSTANCE,
+                            BinFunction.INSTANCE,
+                            AsciiFunction.INSTANCE,
+                            RegexpSubstrFunction.INSTANCE,
+                            BinaryFunction.INSTANCE,
+                            CharLengthFunction.INSTANCE,
+                            ChrFunction.INSTANCE,
+                            ConvertFunction.INSTANCE,
+                            EltFunction.INSTANCE,
+                            ExportSetFunction.INSTANCE,
+                            ExtractValueFunction.INSTANCE,
+                            FieldFunction.INSTANCE,
+                            FindInSetFunction.INSTANCE,
+                            FormatFunction.INSTANCE,
+                            FromBase64Function.INSTANCE,
+                            HexFunction.INSTANCE,
+                            InsertFunction.INSTANCE,
+                            InstrFunction.INSTANCE,
+                            LowerFunction.INSTANCE,
+                            LeftFunction.INSTANCE,
+                            LengthFunction.INSTANCE,
+                            loadFileFunction.INSTANCE,
+                            LocateFunction.INSTANCE,
+                            LpadFunction.INSTANCE,
+                            LtrimFunction.INSTANCE,
+                            MakeSetFunction.INSTANCE,
+                            MidFunction.INSTANCE,
+                            RepeatFunction.INSTANCE,
+                            OrdFunction.INSTANCE,
+                            PositionFunction.INSTANCE,
+                            QuoteFunction.INSTANCE,
+                            ReverseFunction.INSTANCE,
+                            RightFunction.INSTANCE,
+                            RpadFunction.INSTANCE,
+                            RtrimFunction.INSTANCE,
+                            SoundexFunction.INSTANCE,
+                            SpaceFunction.INSTANCE,
+                            StrCmpFunction.INSTANCE,
+                            SubStringFunction.INSTANCE,
+                            CharFunction.INSTANCE,
+                            StringIndexFunction.INSTANCE,
+                            ToBase64Function.INSTANCE,
+                            TrimFunction.INSTANCE,
+                            UpperFunction.INSTANCE,
+                            UncompressedLengthFunction.INSTANCE,
+                            UnhexFunction.INSTANCE,
+                            UpdateXMLFunction.INSTANCE,
+                            WeightStringFunction.INSTANCE,
+                            /////////////////////////////////////////
+                            AddDateFunction.INSTANCE,
+                            DateAddFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
+                            StringToTimestampFunction.INSTANCE
+                    ).forEach(i -> build.put(i.getName(), i));
+                    build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
+                    build.put("LCASE", LowerFunction.INSTANCE);
+                    build.put("UCASE", UpperFunction.INSTANCE);
+                    build.put("LENGTHB", LengthFunction.INSTANCE);
+                    build.put("OCTET_LENGTH", LengthFunction.INSTANCE);
+                    build.put("SUBSTR", SubStringFunction.INSTANCE);
+                    ////////////////////////////////////////////////
 
-                for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
-                    map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
-                    map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
+                        map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
+                        map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                    }
+                }catch (Throwable e){
+                    LOGGER.warn("",e);
                 }
 
             }

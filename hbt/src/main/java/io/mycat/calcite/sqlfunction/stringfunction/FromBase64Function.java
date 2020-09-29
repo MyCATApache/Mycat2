@@ -17,25 +17,19 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import io.mycat.calcite.MycatScalarFunction;
-import io.mycat.calcite.MycatSqlDefinedFunction;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.schema.ScalarFunction;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.*;
 
 
-public class FromBase64Function extends MycatSqlDefinedFunction {
+
+public class FromBase64Function extends MycatStringFunction {
     public static ScalarFunction scalarFunction = MycatScalarFunction.create(FromBase64Function.class,
             "fromBase64", 1);
     public static FromBase64Function INSTANCE = new FromBase64Function();
 
 
     public FromBase64Function() {
-        super(new SqlIdentifier("FROM_BASE64", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.BINARY),
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.STRING), getRelDataType(scalarFunction), scalarFunction);
+        super("FROM_BASE64", scalarFunction);
     }
 
     public static ByteString fromBase64(String expr) {

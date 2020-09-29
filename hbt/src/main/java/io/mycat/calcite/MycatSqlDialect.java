@@ -1,5 +1,6 @@
 package io.mycat.calcite;
 
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
@@ -40,7 +41,7 @@ public class MycatSqlDialect extends MysqlSqlDialect {
     @Override
     public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
         SqlOperator operator = call.getOperator();
-       if (operator instanceof MycatSqlDefinedFunction ){
+       if (operator instanceof MycatSqlDefinedFunction){
            operator.unparse(writer, call, leftPrec, rightPrec);
            return;
        }

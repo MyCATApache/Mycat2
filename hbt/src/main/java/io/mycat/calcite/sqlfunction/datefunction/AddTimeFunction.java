@@ -16,56 +16,88 @@
  */
 package io.mycat.calcite.sqlfunction.datefunction;
 
-import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.*;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.commons.lang.time.DateFormatUtils;
 
+import java.text.DateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.Temporal;
 
 
-public class AddTimeFunction extends MycatSqlDefinedFunction {
+public class AddTimeFunction extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(AddTimeFunction.class,
             "addTime");
     public static AddTimeFunction INSTANCE = new AddTimeFunction();
 
 
     public AddTimeFunction() {
-        super(new SqlIdentifier("ADDTIME", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.TIMESTAMP),
-                ImmutableList.of(), scalarFunction);
+        super("ADDTIME", scalarFunction);
     }
 
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral
-    public static Long addTime(Long time, Long tmp) {
+    public static String addTime(String time, String tmp) {
         if (time == null || tmp == null) {
             return null;
         }
-        return tmp + time;
-//        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC);
-//        localDateTime = localDateTime.plus(tmp, ChronoUnit.MILLIS);
-//        return Timestamp.valueOf(localDateTime).getTime();
+        Duration duration = MycatBuiltInMethodImpl.timeStringToTimeDuration(tmp);
+        Temporal temporal;
+        if (time.contains(":") && !time.contains("-")) {//time
+            Duration duration1 = MycatBuiltInMethodImpl.timeStringToTimeDuration(time);
+            duration1 = duration1.plus(duration);
+            long days = duration1.toDays();
+            long hours = duration1.toHours();
+            long minutes = duration1.toMinutes();
+            long seconds = duration1.getSeconds();
+            int nano = duration1.getNano();
+
+            if (days > 1) {
+                hours = +(days * 24);
+            }
+            //01:00:00.999999
+            return String.format("%02d:%02d:%02d.%d", hours, minutes, seconds, nano);
+        }
+        temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(time);
+
+        Temporal res = addTime(temporal, duration);
+        if (res instanceof LocalDateTime) {
+            LocalDateTime res1 = (LocalDateTime) res;
+            return res1.toLocalDate().toString() + " " + res1.toLocalTime().toString();
+        }
+        if (res instanceof LocalTime) {
+            LocalTime res1 = (LocalTime) res;
+            return res1.toString();
+        }
+        return res.toString();
     }
 
-    public static LocalDateTime addTime(LocalDateTime time, Duration tmp) {
-        if (time == null || tmp == null) {
+    private static Temporal addTime(Temporal temporal, Duration duration) {
+        if (temporal == null || duration == null) {
             return null;
         }
-        return time.plus(tmp);
+        Temporal plus = temporal.plus(duration);
+        return plus;
     }
 
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         Duration duration = Duration.ofDays(1).plusHours(1).plusMillis(1).plusNanos(1);
         System.out.println(duration);
+    }
+
+    @Override
+    public RelDataType deriveType(SqlValidator validator, SqlValidatorScope scope, SqlCall call) {
+        return super.deriveType(validator, scope, call);
     }
 }
 

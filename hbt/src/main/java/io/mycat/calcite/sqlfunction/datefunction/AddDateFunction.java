@@ -17,7 +17,7 @@
 package io.mycat.calcite.sqlfunction.datefunction;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatSqlDefinedFunction;
+
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -28,27 +28,23 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 
-public class AddDateFunction extends MycatSqlDefinedFunction {
+public class AddDateFunction extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(AddDateFunction.class,
             "addDate");
     public static AddDateFunction INSTANCE = new AddDateFunction();
 
 
     public AddDateFunction() {
-        super(new SqlIdentifier("ADDDATE", SqlParserPos.ZERO),
-                ReturnTypes.explicit(SqlTypeName.DATE),
-                InferTypes.explicit(getRelDataType(scalarFunction)),
-                OperandTypes.family(SqlTypeFamily.DATE,SqlTypeFamily.INTEGER),
-                ImmutableList.of(), scalarFunction);
+        super("ADDDATE", scalarFunction);
     }
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral
-    public static Integer addDate(Integer date, Integer days) {
+    public static LocalDate addDate(LocalDate date, Integer days) {
         if (date==null||days == null){
             return null;
         }
-       return  (int)LocalDate.ofEpochDay(date).plus(days, ChronoUnit.DAYS).toEpochDay();
+       return  date.plusDays(days);
     }
 
 }

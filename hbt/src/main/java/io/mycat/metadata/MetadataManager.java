@@ -191,13 +191,16 @@ public class MetadataManager {
         while (tableIterator.next()) {
             tables.add(tableIterator.getString(1));
         }
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         for (String tableName : tables) {
-            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
-            try {
-                addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
-            }catch (Throwable e){
-                LOGGER.warn("",e);
-            }
+//            mycatWorkerProcessor.getMycatWorker().execute(()->{
+                NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
+                try {
+                    addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
+                }catch (Throwable e){
+                    LOGGER.warn("",e);
+                }
+//            });
         }
     }
 
@@ -233,9 +236,6 @@ public class MetadataManager {
                                 NormalTableConfig tableConfigEntry,
                                 String prototypeServer) {
         //////////////////////////////////////////////
-        if (tableName.equalsIgnoreCase("v_accounts_copy")) {
-            System.out.println();
-        }
         NormalBackEndTableInfoConfig dataNode = tableConfigEntry.getDataNode();
         List<DataNode> dataNodes = ImmutableList.of(new BackendTableInfo(dataNode.getTargetName(),
                 Optional.ofNullable(dataNode.getSchemaName()).orElse(schemaName),
@@ -280,7 +280,7 @@ public class MetadataManager {
     }
 
     @SneakyThrows
-    private void addShardingTable(String schemaName,
+    private  void addShardingTable(String schemaName,
                                   String orignalTableName,
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
@@ -296,7 +296,7 @@ public class MetadataManager {
         addLogicTable(shardingTable);
     }
 
-    private void addLogicTable(TableHandler logicTable) {
+    private synchronized void addLogicTable(TableHandler logicTable) {
         String schemaName = logicTable.getSchemaName();
         String tableName = logicTable.getTableName();
         String createTableSQL = logicTable.getCreateTableSQL();
