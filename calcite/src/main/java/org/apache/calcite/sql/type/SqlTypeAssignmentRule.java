@@ -203,13 +203,16 @@ public class SqlTypeAssignmentRule implements SqlTypeMappingRule {
     rule.add(SqlTypeName.TIMESTAMP);
     rules.add(SqlTypeName.ANY, rule);
 
+    //TIME TO INTERVAL_TYPES
     rule.clear();
-    for (SqlTypeName intervalType : SqlTypeName.INTERVAL_TYPES) {
-      rule.add(intervalType);
-    }
-
+    rule.addAll(SqlTypeName.INTERVAL_TYPES);
     rules.add(SqlTypeName.TIME, rule);
     rules.add(SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE, rule);
+
+    //INTERVAL_TYPES TO TIME
+    for (SqlTypeName intervalType : SqlTypeName.INTERVAL_TYPES) {
+      rules.add(intervalType, EnumSet.of(SqlTypeName.TIME));
+    }
 
     INSTANCE = new SqlTypeAssignmentRule(rules.map);
   }
