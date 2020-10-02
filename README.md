@@ -615,7 +615,9 @@ targetName是目标名字,它可以是数据源的名字或者集群的名字
 
 ##### 过滤条件优化
 
-IN OR AND BETWEEN NOT 
+当配置了分片规则后. 参考示例: io.mycat.example.sharding.mycat.yml的function配置
+
+那么后续sql使用了指定的columnName字段, 关键字 IN OR AND BETWEEN =, 将使用索引.
 
 
 #### 事务类型
