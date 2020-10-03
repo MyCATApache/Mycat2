@@ -611,6 +611,13 @@ targetName是目标名字,它可以是数据源的名字或者集群的名字
 
 ​		当mycat2无法下推大部分运算的时候(主要是join,后面会继续优化),则可能拉取大结果集,处理还是很耗时的.所以尽量使用分片谓词靠近数据源风格编写SQL,便于mycat2识别可下推的谓词.
 
+#### sql优化指南
+
+##### 过滤条件优化
+
+当配置了分片规则后. 参考示例: io.mycat.example.sharding.mycat.yml的function配置
+
+那么后续sql使用了指定的columnName字段, 关键字 IN OR AND BETWEEN =, 将使用索引.
 
 
 #### 事务类型
