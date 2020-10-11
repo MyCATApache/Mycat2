@@ -53,6 +53,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -329,6 +330,7 @@ public class RexLiteral extends RexNode {
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
+      return value instanceof Long;
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
@@ -339,10 +341,24 @@ public class RexLiteral extends RexNode {
     case INTERVAL_MINUTE:
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
+      case INTERVAL_MICROSECOND:
+
+      case INTERVAL_WEEK:
+
+      case INTERVAL_QUARTER:
+
+      case INTERVAL_SECOND_MICROSECOND:
+
+      case INTERVAL_MINUTE_MICROSECOND:
+
+      case INTERVAL_HOUR_MICROSECOND:
+
+      case INTERVAL_DAY_MICROSECOND:
+
       // The value of a DAY-TIME interval (whatever the start and end units,
       // even say HOUR TO MINUTE) is in milliseconds (perhaps fractional
       // milliseconds). The value of a YEAR-MONTH interval is in months.
-      return value instanceof BigDecimal;
+      return value instanceof Duration;
     case VARBINARY: // not allowed -- use Binary
       if (strict) {
         throw Util.unexpected(typeName);
@@ -355,7 +371,8 @@ public class RexLiteral extends RexNode {
         throw Util.unexpected(typeName);
       }
       // fall through
-    case CHAR:
+
+      case CHAR:
       // A SqlLiteral's charset and collation are optional; not so a
       // RexLiteral.
       return (value instanceof NlsString)
@@ -365,18 +382,35 @@ public class RexLiteral extends RexNode {
       return value instanceof Sarg;
     case SYMBOL:
       return value instanceof Enum;
-    case ROW:
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
     case MULTISET:
       return value instanceof List;
-    case GEOMETRY:
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
       return value instanceof Geometries.Geom;
     case ANY:
       // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains
       // an integer literal surrounded by a cast function.
       return false;
     default:
-      throw Util.unexpected(typeName);
+
     }
+    throw Util.unexpected(typeName);
   }
 
   /** Returns the strict literal type for a given type. */

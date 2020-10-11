@@ -1255,7 +1255,14 @@ public class RexBuilder {
         typeFactory.createSqlIntervalType(intervalQualifier),
         intervalQualifier.typeName());
   }
-
+  public RexLiteral makeIntervalLiteral(
+          Comparable v,
+          SqlIntervalQualifier intervalQualifier) {
+    return makeLiteral(
+             v,
+            typeFactory.createSqlIntervalType(intervalQualifier),
+            intervalQualifier.typeName());
+  }
   /**
    * Creates a reference to a dynamic parameter.
    *

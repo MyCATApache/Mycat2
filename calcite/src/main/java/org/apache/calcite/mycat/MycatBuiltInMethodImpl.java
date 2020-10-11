@@ -3,20 +3,42 @@ package org.apache.calcite.mycat;
 import org.apache.calcite.util.TimestampString;
 
 import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.temporal.Temporal;
 
 public class MycatBuiltInMethodImpl {
+
+    public static String dateAddString(String s, Duration duration) {
+        if (s == null || duration == null) {
+            return null;
+        }
+        Temporal temporal = timestampStringToUnixTimestamp(s);
+        LocalDateTime of;
+        boolean date = false;
+        if (temporal instanceof LocalDate){
+            date = true;
+            of = LocalDateTime.of((LocalDate) temporal, LocalTime.ofSecondOfDay(0)).plus(duration);
+        }else {
+            of = ((LocalDateTime)temporal).plus(duration);
+        }
+        if (of.toLocalTime().equals(LocalTime.ofSecondOfDay(0))){
+            return of.toLocalDate().toString();
+        }else {
+            return of.toLocalDate()+" "+of.toLocalTime();
+        }
+    }
+
     public static Temporal timestampStringToUnixTimestamp(String s) {
         if (s == null) {
             return null;
         }
         int i = s.lastIndexOf(".");
         if (i == -1) {
-            LocalDateTime parse = LocalDateTime.parse(s);
+            i  = s.lastIndexOf(" ");
+            if (i != -1){
+                return new Timestamp( new TimestampString(s).getMillisSinceEpoch()).toLocalDateTime();
+            }
+            LocalDate parse = LocalDate.parse(s);
             return parse;
         } else {
             long millisSinceEpoch = new TimestampString(s.substring(0, i)).getMillisSinceEpoch();
@@ -27,22 +49,17 @@ public class MycatBuiltInMethodImpl {
         }
     }
 
-        public static LocalDateTime timestampStringToUnixDate(String s) {
-        if (s == null) {
-            return null;
+    public static Temporal timestampStringToUnixDate(String s) {
+        Temporal temporal = timestampStringToUnixTimestamp(s);
+        if (temporal instanceof LocalDate){
+            return temporal;
         }
-        int i = s.lastIndexOf(".");
-        if (i == -1) {
-            LocalDateTime parse = LocalDateTime.parse(s);
-            return parse;
-        } else {
-            long millisSinceEpoch = new TimestampString(s.substring(0, i)).getMillisSinceEpoch();
-            int i1 = Integer.parseInt(s.substring(i + 1));
-            Timestamp timestamp = new Timestamp(millisSinceEpoch);
-            timestamp.setNanos(i1);
-            return  timestamp.toLocalDateTime();
+        if (temporal instanceof LocalDateTime){
+            return ((LocalDateTime) temporal).toLocalDate();
         }
+        throw new UnsupportedOperationException();
     }
+
     public static void main(String[] args) {
         Timestamp timestamp = new Timestamp(0, 0, 0, 0, 0, 0, 0);
         int year = timestamp.getYear();
@@ -153,6 +170,9 @@ public class MycatBuiltInMethodImpl {
     }
 
     public static LocalDate dateStringToUnixDate(String s) {
+        if (s.contains(" ")){
+            s = s.split(" ")[0];
+        }
         int hyphen1 = s.indexOf(45);
         int y;
         int m;

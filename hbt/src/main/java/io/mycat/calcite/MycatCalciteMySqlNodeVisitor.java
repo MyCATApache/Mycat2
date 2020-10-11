@@ -12,12 +12,13 @@ import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
+import io.mycat.calcite.sqlfunction.DateAddFunction;
 import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.NotRegexpFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.RegexpFunction;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlCase;
@@ -1035,9 +1036,21 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 }
                 break;
             case Add:
+                if (rightExpr instanceof SQLIntervalExpr || x.getLeft() instanceof SQLIntervalExpr){
+                   operator = RexImpTable.DateAddFunction.INSTANCE;
+                   break;
+                }
                 operator = SqlStdOperatorTable.PLUS;
                 break;
             case Subtract:
+                if (rightExpr instanceof SQLIntervalExpr){
+                    SQLExpr value = ((SQLIntervalExpr) rightExpr).getValue();
+                    SQLIntegerExpr value1 = (SQLIntegerExpr) value;
+                    right = convertToSqlNode(new SQLIntervalExpr(new SQLIntegerExpr(-value1.getNumber().longValue()),
+                            ((SQLIntervalExpr) rightExpr).getUnit()));
+                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    break;
+                }
                 operator = SqlStdOperatorTable.MINUS;
                 break;
             case Union:
@@ -1514,14 +1527,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         switch (methodName) {
             case "ADDDATE": {
+                SQLExpr sqlExpr = x.getArguments().get(1);
                 if (x.getArguments().size() > 1 &&
-                        x.getArguments().get(1) instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
-                    this.sqlNode = AddDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
-                    return false;
+                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                    argNodes.set(1,convertToSqlNode( new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
                 }
             }
             case "DATE_ADD":{
-                this.sqlNode = DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = RexImpTable.DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "TIMESTAMPDIFF": {
@@ -1850,10 +1863,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     public static TimeUnit[] getTimeUnit(SQLIntervalUnit unit) {
         TimeUnit[] timeUnits = new TimeUnit[2];
         switch (unit) {
-            // case MICROSECOND:
-            // timeUnits[0] = TimeUnit.MICROSECOND;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+            case SECOND_MICROSECOND:
+                timeUnits[0] = TimeUnit.SECOND;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
+            case MICROSECOND:
+             timeUnits[0] = TimeUnit.MICROSECOND;
+             timeUnits[1] = TimeUnit.MICROSECOND;
+             break;
             case SECOND:
                 timeUnits[0] = TimeUnit.SECOND;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1886,18 +1903,18 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[0] = TimeUnit.YEAR;
                 timeUnits[1] = TimeUnit.YEAR;
                 break;
-            // case MINUTE_MICROSECOND:
-            // timeUnits[0] = TimeUnit.MINUTE;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+             case MINUTE_MICROSECOND:
+             timeUnits[0] = TimeUnit.MINUTE;
+             timeUnits[1] = TimeUnit.MICROSECOND;
+             break;
             case MINUTE_SECOND:
                 timeUnits[0] = TimeUnit.MINUTE;
                 timeUnits[1] = TimeUnit.SECOND;
                 break;
-            // case HOUR_MICROSECOND:
-            // timeUnits[0] = TimeUnit.HOUR;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+             case HOUR_MICROSECOND:
+             timeUnits[0] = TimeUnit.HOUR;
+             timeUnits[1] = TimeUnit.MICROSECOND;
+             break;
             case HOUR_SECOND:
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1906,10 +1923,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.MINUTE;
                 break;
-            // case DAY_MICROSECOND:
-            // timeUnits[0] = TimeUnit.DAY;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+             case DAY_MICROSECOND:
+             timeUnits[0] = TimeUnit.DAY;
+             timeUnits[1] = TimeUnit.MICROSECOND;
+             break;
             case DAY_SECOND:
                 timeUnits[0] = TimeUnit.DAY;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1923,6 +1940,44 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[1] = TimeUnit.HOUR;
                 break;
             case YEAR_MONTH:
+                timeUnits[0] = TimeUnit.YEAR;
+                timeUnits[1] = TimeUnit.MONTH;
+                break;
+            case DAY_OF_WEEK:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.WEEK;
+                break;
+            case DOW:
+                timeUnits[0] = TimeUnit.DOW;
+                timeUnits[1] = TimeUnit.DOW;
+                break;
+            case DAY_OF_MONTH:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.MONTH;
+                break;
+            case DAY_OF_YEAR:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.YEAR;
+                break;
+            case YEAR_OF_WEEK:
+                timeUnits[0] = TimeUnit.YEAR;
+                timeUnits[1] = TimeUnit.WEEK;
+                break;
+            case YOW:
+                throw new ParserException("Unsupported time unit");
+            case TIMEZONE_HOUR:
+                timeUnits[0] = TimeUnit.HOUR;
+                timeUnits[1] = TimeUnit.HOUR;
+                break;
+            case TIMEZONE_MINUTE:
+                timeUnits[0] = TimeUnit.MINUTE;
+                timeUnits[1] = TimeUnit.MINUTE;
+                break;
+            case DOY:
+                timeUnits[0] = TimeUnit.DOY;
+                timeUnits[1] = TimeUnit.DOY;
+                break;
+            case YEAR_TO_MONTH:
                 timeUnits[0] = TimeUnit.YEAR;
                 timeUnits[1] = TimeUnit.MONTH;
                 break;

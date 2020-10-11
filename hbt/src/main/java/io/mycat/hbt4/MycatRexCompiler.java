@@ -147,7 +147,7 @@ public class MycatRexCompiler {
                 Expressions.classDecl(Modifier.PUBLIC, "Buzz", null,
                         ImmutableList.of(MycatScalar.class), declarations);
         String s = Expressions.toString(declarations, "\n", false);
-        if (debug) {
+        if (true) {
             Util.debugCode(System.out, s);
         }
         try {

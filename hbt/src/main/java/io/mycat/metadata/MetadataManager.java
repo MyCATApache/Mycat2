@@ -192,16 +192,16 @@ public class MetadataManager {
             tables.add(tableIterator.getString(1));
         }
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+        mycatWorkerProcessor.getMycatWorker().execute(()->{
         for (String tableName : tables) {
-//            mycatWorkerProcessor.getMycatWorker().execute(()->{
+
                 NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
                 try {
                     addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
                 }catch (Throwable e){
                     LOGGER.warn("",e);
                 }
-//            });
-        }
+            }});
     }
 
     private void addCustomTable(String schemaName,

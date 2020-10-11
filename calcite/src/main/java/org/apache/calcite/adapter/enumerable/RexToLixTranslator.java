@@ -71,6 +71,8 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -690,9 +692,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       }
     }
     Type javaClass = typeFactory.getJavaClass(type);
-    final Object value2;
+     Object value2 = null;
     switch (literal.getType().getSqlTypeName()) {
-    case DECIMAL:
+      case DECIMAL:
       final BigDecimal bd = literal.getValueAs(BigDecimal.class);
       if (javaClass == float.class) {
         return Expressions.constant(bd, javaClass);
@@ -702,9 +704,17 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       assert javaClass == BigDecimal.class;
       return Expressions.new_(BigDecimal.class,
           Expressions.constant(bd.toString()));
-    case DATE:
+      case DATE:
+        value2 = literal.getValueAs(LocalDate.class);
+        javaClass = LocalDate.class;
+        break;
     case TIME:
     case TIME_WITH_LOCAL_TIME_ZONE:
+      value2 = literal.getValueAs(Duration.class);
+      javaClass = Duration.class;
+      break;
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER:
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
@@ -713,6 +723,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       break;
     case TIMESTAMP:
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+      value2 = literal.getValueAs(LocalDateTime.class);
+      javaClass = LocalDateTime.class;
+      break;
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
@@ -723,10 +736,17 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case INTERVAL_MINUTE:
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
-      value2 = literal.getValueAs(Long.class);
-      javaClass = long.class;
+      case INTERVAL_MICROSECOND:
+
+      case INTERVAL_SECOND_MICROSECOND:
+      case INTERVAL_MINUTE_MICROSECOND:
+      case INTERVAL_HOUR_MICROSECOND:
+      case INTERVAL_DAY_MICROSECOND:
+      value2 = literal.getValueAs(Duration.class);
+      javaClass = Duration.class;
       break;
-    case CHAR:
+
+      case CHAR:
     case VARCHAR:
       value2 = literal.getValueAs(String.class);
       break;
@@ -742,11 +762,45 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       final String wkt = GeoFunctions.ST_AsWKT(geom);
       return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_TEXT.method,
           Expressions.constant(wkt));
-    case SYMBOL:
+      case NULL:
+        break;
+      case ANY:
+        break;
+      case SYMBOL:
       value2 = literal.getValueAs(Enum.class);
       javaClass = value2.getClass();
       break;
-    default:
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case SARG:
+        break;
+      case BOOLEAN:
+      case TINYINT:
+      case SMALLINT:
+      case INTEGER:
+      case BIGINT:
+      case FLOAT:
+      case REAL:
+      case DOUBLE:
+      default:
       final Primitive primitive = Primitive.ofBoxOr(javaClass);
       final Comparable value = literal.getValueAs(Comparable.class);
       if (primitive != null && value instanceof Number) {
@@ -755,6 +809,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         value2 = value;
       }
     }
+
     return Expressions.constant(value2, javaClass);
   }
 

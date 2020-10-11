@@ -22,11 +22,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlTimeLiteral;
-import org.apache.calcite.sql.SqlTimestampLiteral;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.BitString;
@@ -39,6 +35,8 @@ import org.apache.calcite.util.Util;
 import com.google.common.base.Preconditions;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Period;
 
 /**
  * Standard implementation of {@link SqlNodeToRexConverter}.
@@ -96,14 +94,26 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
 
     final BitString bitString;
     switch (literal.getTypeName()) {
-    case DECIMAL:
+      case TINYINT:
+        break;
+      case SMALLINT:
+        break;
+      case INTEGER:
+        break;
+      case BIGINT:
+        break;
+      case DECIMAL:
       // exact number
       BigDecimal bd = literal.getValueAs(BigDecimal.class);
       return rexBuilder.makeExactLiteral(
           bd,
           literal.createSqlType(typeFactory));
 
-    case DOUBLE:
+      case FLOAT:
+        break;
+      case REAL:
+        break;
+      case DOUBLE:
       // approximate type
       // TODO:  preserve fixed-point precision and large integers
       return rexBuilder.makeApproxLiteral(literal.getValueAs(BigDecimal.class));
@@ -123,7 +133,9 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
       return rexBuilder.makeBinaryLiteral(byteString);
     case SYMBOL:
       return rexBuilder.makeFlag(literal.getValueAs(Enum.class));
-    case TIMESTAMP:
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        break;
+      case TIMESTAMP:
       return rexBuilder.makeTimestampLiteral(
           literal.getValueAs(TimestampString.class),
           ((SqlTimestampLiteral) literal).getPrec());
@@ -134,9 +146,17 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
     case DATE:
       return rexBuilder.makeDateLiteral(literal.getValueAs(DateString.class));
 
-    case INTERVAL_YEAR:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        break;
+      case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER: {
+        SqlIntervalQualifier intervalQualifier = ((SqlIntervalLiteral.IntervalValue) literal.getValue()).getIntervalQualifier();
+        Long valueAs = literal.getValueAs(Long.class);
+        return rexBuilder.makeIntervalLiteral(valueAs, intervalQualifier);
+      }
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
@@ -147,13 +167,55 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
     case INTERVAL_MINUTE:
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
-      SqlIntervalQualifier sqlIntervalQualifier =
-          literal.getValueAs(SqlIntervalQualifier.class);
-      return rexBuilder.makeIntervalLiteral(
-          literal.getValueAs(BigDecimal.class),
-          sqlIntervalQualifier);
-    default:
-      throw Util.unexpected(literal.getTypeName());
+      case INTERVAL_MICROSECOND:
+
+
+      case INTERVAL_SECOND_MICROSECOND:
+
+      case INTERVAL_MINUTE_MICROSECOND:
+
+      case INTERVAL_HOUR_MICROSECOND:
+
+      case INTERVAL_DAY_MICROSECOND: {
+        SqlIntervalQualifier intervalQualifier = ((SqlIntervalLiteral.IntervalValue) literal.getValue()).getIntervalQualifier();
+        Duration valueAs = literal.getValueAs(Duration.class);
+        return rexBuilder.makeIntervalLiteral(valueAs, intervalQualifier);
+      }
+      case VARCHAR:
+        break;
+      case VARBINARY:
+        break;
+      case NULL:
+        break;
+      case ANY:
+        break;
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        break;
+      case SARG:
+        break;
+      default:
+
     }
+    throw Util.unexpected(literal.getTypeName());
   }
 }

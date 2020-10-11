@@ -14,7 +14,9 @@
  */
 package io.mycat.calcite;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import io.mycat.MycatClassResolver;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
@@ -22,10 +24,12 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.*;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
+import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
 import io.mycat.calcite.sqlfunction.datefunction.AddTimeFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
-import io.mycat.calcite.sqlfunction.datefunction.StringToTimestampFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ConvertTzFunction;
+import io.mycat.calcite.sqlfunction.datefunction.CurTimeFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateDiffFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.BinFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.BitLengthFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.CharFunction;
@@ -195,8 +199,8 @@ public enum MycatCalciteSupport implements Context {
         SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
         instance.init();
         configBuilder.operatorTable(new SqlOperatorTable() {
-            final HashMap<String, SqlOperator> map = new HashMap<>();
-            final HashMap<String, SqlOperator> build = new HashMap<>();
+            final Multimap<String, SqlOperator> map =HashMultimap.create();
+            final Multimap<String, SqlOperator> build = HashMultimap.create();
 
             {
                 try {
@@ -266,9 +270,13 @@ public enum MycatCalciteSupport implements Context {
                             WeightStringFunction.INSTANCE,
                             /////////////////////////////////////////
                             AddDateFunction.INSTANCE,
-                            DateAddFunction.INSTANCE,
+//                            DateAddFunction.INSTANCE,
                             AddTimeFunction.INSTANCE,
-                            StringToTimestampFunction.INSTANCE
+                            ConvertTzFunction.INSTANCE,
+                            CurDateFunction.INSTANCE,
+                            DateDiffFunction.INSTANCE,
+                            StringToTimestampFunction.INSTANCE,
+                            RexImpTable.DateAddFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);
@@ -276,9 +284,17 @@ public enum MycatCalciteSupport implements Context {
                     build.put("LENGTHB", LengthFunction.INSTANCE);
                     build.put("OCTET_LENGTH", LengthFunction.INSTANCE);
                     build.put("SUBSTR", SubStringFunction.INSTANCE);
+                    build.put("CURRENT_DATE",CurDateFunction.INSTANCE);
+                    build.put("CURTIME",     CurTimeFunction.INSTANCE);
+                    build.put("CURRENT_TIME",     CurTimeFunction.INSTANCE);
+                    build.put("NOW",NowFunction.INSTANCE);
+                    build.put("CURRENT_TIMESTAMP",NowFunction.INSTANCE);
+                    build.put("LOCALTIME",NowFunction.INSTANCE);
+                    build.put("LOCALTIMESTAMP",NowFunction.INSTANCE);
+                    build.put("DATE",DateFunction.INSTANCE);
                     ////////////////////////////////////////////////
 
-                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
+                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entries()) {
                         map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
                         map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
                     }
@@ -290,9 +306,9 @@ public enum MycatCalciteSupport implements Context {
 
             @Override
             public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
-                SqlOperator sqlOperator = map.get(opName.getSimple().toUpperCase());
+                Collection<SqlOperator> sqlOperator = map.get(opName.getSimple().toUpperCase());
                 if (sqlOperator != null) {
-                    operatorList.add(sqlOperator);
+                    operatorList.addAll(sqlOperator);
                     if (sqlOperator == ConvertFunction.INSTANCE) {//fix bug
                         // class org.apache.calcite.sql.fun.SqlConvertFunction: CONVERT is broken.
                         return;

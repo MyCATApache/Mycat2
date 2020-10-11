@@ -54,6 +54,9 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         if (o instanceof Long) {
             return new Date((Long) o);
         }
+        if (o instanceof LocalDate){
+            return Date.valueOf ((LocalDate) o);
+        }
         return (Date) o;
     }
 
@@ -78,6 +81,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         if (o instanceof LocalDateTime){
             return Timestamp.valueOf((LocalDateTime)o);
         }
+
         return (Timestamp) o;
     }
 

@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.List;
 import java.util.Map;
 
@@ -74,8 +75,8 @@ public class JavaToSqlTypeConversionRules {
                     .put(Character.class, SqlTypeName.CHAR)
                     .put(char.class, SqlTypeName.CHAR)
 
-                    .put(java.util.Date.class, SqlTypeName.TIMESTAMP)
-                    .put(Date.class, SqlTypeName.DATE)
+//                    .put(java.util.Date.class, SqlTypeName.TIMESTAMP)
+//                    .put(Date.class, SqlTypeName.DATE)
                     .put(Timestamp.class, SqlTypeName.TIMESTAMP)
                     .put(Duration.class, SqlTypeName.TIME)
                     .put(BigDecimal.class, SqlTypeName.DECIMAL)

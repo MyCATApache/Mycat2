@@ -55,17 +55,24 @@ public class AddTimeFunction extends MycatDateFunction {
         if (time.contains(":") && !time.contains("-")) {//time
             Duration duration1 = MycatBuiltInMethodImpl.timeStringToTimeDuration(time);
             duration1 = duration1.plus(duration);
-            long days = duration1.toDays();
-            long hours = duration1.toHours();
-            long minutes = duration1.toMinutes();
-            long seconds = duration1.getSeconds();
-            int nano = duration1.getNano();
-
-            if (days > 1) {
-                hours = +(days * 24);
+            long days1 = duration1.toDays();
+            if (days1 == 0){
+                LocalTime plus = LocalTime.ofNanoOfDay(0).plus(duration1);
+                long hours = plus.getHour();
+                long minutes = plus.getMinute();
+                long seconds = plus.getSecond();
+                int nano = plus.getNano();
+                //01:00:00.999999
+                return String.format("%02d:%02d:%02d.%d",hours, minutes, seconds, nano);
+            }else {
+                duration1 =  duration1.minusDays(days1);
+                LocalTime plus = LocalTime.ofNanoOfDay(0).plus(duration1);
+                long hours = plus.getHour();
+                long minutes = plus.getMinute();
+                long seconds = plus.getSecond();
+                int nano = plus.getNano();
+                return String.format("%02d:%02d:%02d:%02d.%d", days1, hours, minutes, seconds, nano);
             }
-            //01:00:00.999999
-            return String.format("%02d:%02d:%02d.%d", hours, minutes, seconds, nano);
         }
         temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(time);
 

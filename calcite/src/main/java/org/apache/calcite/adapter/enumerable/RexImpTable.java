@@ -16,24 +16,15 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import org.apache.calcite.linq4j.tree.*;
+import org.apache.calcite.mycat.MycatBuiltInMethod;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.apache.calcite.linq4j.tree.BinaryExpression;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.BlockStatement;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.ExpressionType;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MemberExpression;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.OptimizeShuttle;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -46,22 +37,12 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.ImplementableAggFunction;
 import org.apache.calcite.schema.ImplementableFunction;
 import org.apache.calcite.schema.impl.AggregateFunctionImpl;
-import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlBinaryOperator;
-import org.apache.calcite.sql.SqlJsonConstructorNullClause;
-import org.apache.calcite.sql.SqlJsonEmptyOrError;
-import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlMatchFunction;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlTypeConstructorFunction;
-import org.apache.calcite.sql.SqlWindowTableFunction;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlJsonArrayAggAggFunction;
 import org.apache.calcite.sql.fun.SqlJsonObjectAggAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.validate.SqlUserDefinedAggFunction;
 import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.calcite.sql.validate.SqlUserDefinedTableFunction;
@@ -71,6 +52,7 @@ import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import sun.reflect.generics.tree.ReturnType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -79,6 +61,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -665,7 +648,7 @@ public class RexImpTable {
     tvfImplementorMap.put(SESSION, SessionImplementor::new);
 
     /////////////////////////////////////////////////////mycat//////////////////////////////////
-    defineMethod(ROW, BuiltInMethod.ARRAY.method, NullPolicy.NONE);
+    map.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
   }
 
   private <T> Supplier<T> constructorSupplier(Class<T> klass) {
@@ -3498,4 +3481,56 @@ public class RexImpTable {
               gapInterval));
     }
   }
+  public static class DateAddFunction extends SqlFunction {
+    public static  final DateAddFunction INSTANCE =new DateAddFunction();
+    public static final SqlReturnTypeInference SCOPE = opBinding -> {
+      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+      return callBinding.getValidator().getNamespace(
+              callBinding.getCall()).getRowType();
+    };
+    public DateAddFunction() {
+      super("DATE_ADD", SqlKind.OTHER_FUNCTION,
+//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
+//                      ,
+//                      ReturnTypes.explicit(SqlTypeName.DATE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
+//              )
+              ReturnTypes.VARCHAR_2000_NULLABLE
+              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
+    }
+    @Override
+    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
+      return super.checkOperandTypes(callBinding, throwOnFailure);
+    }
+   public RexCallImplementor getRexCallImplementor(){
+      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
+
+          @Override
+          protected String getVariableName() {
+            return "DATE_ADD";
+          }
+
+          @Override
+          public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+            Expression one = argValueList.get(0);
+            Expression second = argValueList.get(1);
+
+            if (one.getType() ==String.class&&second.getType() == Duration.class&&
+                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+              Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateAddString", String.class, Duration.class);
+              return Expressions.call(dateAdd,one,second);
+            }     if (one.getType() ==Duration.class&&second.getType() == String.class&&
+                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+              Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateAddString", String.class, Duration.class);
+              return Expressions.call(dateAdd,second,one);
+            }
+            return null;
+          }
+        };
+      }
+    }
+
+
 }

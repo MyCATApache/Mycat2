@@ -16,7 +16,9 @@
  */
 package org.apache.calcite.sql;
 
+import com.google.common.base.Splitter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.rel.metadata.NullSentinel;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -42,7 +44,11 @@ import org.apache.calcite.util.Util;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -297,7 +303,9 @@ public class SqlLiteral extends SqlNode {
         return clazz.cast(((BigDecimal) value).unscaledValue().longValue());
       }
       // fall through
-    case BIGINT:
+      case BOOLEAN:
+        break;
+      case BIGINT:
     case INTEGER:
     case SMALLINT:
     case TINYINT:
@@ -322,56 +330,361 @@ public class SqlLiteral extends SqlNode {
       if (clazz == Calendar.class) {
         return clazz.cast(((DateString) value).toCalendar());
       }
+      if (clazz == LocalDate.class) {
+        DateString value = (DateString) this.value;
+        return clazz.cast(LocalDate.ofEpochDay(value.getDaysSinceEpoch()));
+      }
       break;
     case TIME:
       if (clazz == Calendar.class) {
         return clazz.cast(((TimeString) value).toCalendar());
       }
+      if (clazz == LocalTime.class) {
+        TimeString value = (TimeString) this.value;
+        Duration duration = MycatBuiltInMethodImpl.timeStringToTimeDuration(value.toString());
+        return clazz.cast(LocalTime.ofNanoOfDay(duration.toNanos()));
+      }
       break;
-    case TIMESTAMP:
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        break;
+      case TIMESTAMP:
       if (clazz == Calendar.class) {
         return clazz.cast(((TimestampString) value).toCalendar());
       }
-      break;
-    case INTERVAL_YEAR:
-    case INTERVAL_YEAR_MONTH:
-    case INTERVAL_MONTH:
-      final SqlIntervalLiteral.IntervalValue valMonth =
-          (SqlIntervalLiteral.IntervalValue) value;
-      if (clazz == Long.class) {
-        return clazz.cast(valMonth.getSign()
-            * SqlParserUtil.intervalToMonths(valMonth));
-      } else if (clazz == BigDecimal.class) {
-        return clazz.cast(BigDecimal.valueOf(getValueAs(Long.class)));
-      } else if (clazz == TimeUnitRange.class) {
-        return clazz.cast(valMonth.getIntervalQualifier().timeUnitRange);
-      } else if (clazz == SqlIntervalQualifier.class) {
-        return clazz.cast(valMonth.getIntervalQualifier());
+      if (clazz == LocalDateTime.class) {
+        TimestampString value = (TimestampString) this.value;
+        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(value.toString());
+        return clazz.cast(temporal);
       }
       break;
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        break;
+      case INTERVAL_YEAR:
+      if (clazz == Period.class) {
+        Period period = Period.ofYears(Integer.parseInt(this.value.toString()));
+        return clazz.cast(period);
+      }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+      break;
+      case INTERVAL_YEAR_MONTH:
+        if (clazz == Period.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          List<String> split = Splitter.on('-').splitToList(intervalLiteral);
+          return clazz.cast(
+                  Period.ofYears(Integer.parseInt(split.get(0)))
+                          .minusMonths(Long.parseLong(split.get(1))));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      case INTERVAL_MONTH:
+      if (clazz == Period.class) {
+        Period period = Period.ofMonths(Integer.parseInt(this.value.toString()));
+        return clazz.cast(period);
+      }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
     case INTERVAL_DAY:
-    case INTERVAL_DAY_HOUR:
-    case INTERVAL_DAY_MINUTE:
-    case INTERVAL_DAY_SECOND:
-    case INTERVAL_HOUR:
-    case INTERVAL_HOUR_MINUTE:
-    case INTERVAL_HOUR_SECOND:
-    case INTERVAL_MINUTE:
-    case INTERVAL_MINUTE_SECOND:
-    case INTERVAL_SECOND:
-      final SqlIntervalLiteral.IntervalValue valTime =
-          (SqlIntervalLiteral.IntervalValue) value;
-      if (clazz == Long.class) {
-        return clazz.cast(valTime.getSign()
-            * SqlParserUtil.intervalToMillis(valTime));
-      } else if (clazz == BigDecimal.class) {
-        return clazz.cast(BigDecimal.valueOf(getValueAs(Long.class)));
-      } else if (clazz == TimeUnitRange.class) {
-        return clazz.cast(valTime.getIntervalQualifier().timeUnitRange);
-      } else if (clazz == SqlIntervalQualifier.class) {
-        return clazz.cast(valTime.getIntervalQualifier());
+      if (clazz == Period.class) {
+        Period period = Period.ofDays(Integer.parseInt(this.value.toString()));
+        return clazz.cast(period);
+      }
+      if (clazz == Duration.class) {
+        Duration duration = Duration.ofDays(Integer.parseInt(this.value.toString()));
+        return clazz.cast(duration);
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      if (clazz ==BigDecimal.class) {
+        return clazz.cast( new BigDecimal(this.value.toString()));
       }
       break;
+    case INTERVAL_DAY_HOUR:{
+      if (clazz == Duration.class) {
+        final SqlIntervalLiteral.IntervalValue valTime =
+                (SqlIntervalLiteral.IntervalValue) value;
+        String intervalLiteral = valTime.getIntervalLiteral().trim();
+        boolean neg = intervalLiteral.startsWith("-");
+        if (neg){
+          intervalLiteral = intervalLiteral.substring(1);
+        }
+        if (intervalLiteral.contains(".")){
+          List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+          Duration duration = Duration.ofDays(Long.parseLong(split.get(0)))
+                  .plusHours(Long.parseLong(split.get(1)));
+          if (neg){
+            duration = duration.negated();
+          }
+          return clazz.cast(duration);
+        }
+        if (intervalLiteral.contains(" ")){
+          List<String> split = Splitter.on(' ').splitToList(intervalLiteral);
+          Duration duration = Duration.ofDays(Long.parseLong(split.get(0)))
+                  .plusHours(Long.parseLong(split.get(1)));
+          if (neg){
+            duration = duration.negated();
+          }
+          return clazz.cast(duration);
+        }
+
+
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+    }
+    case INTERVAL_DAY_MINUTE:{
+      if (clazz == Duration.class) {
+        final SqlIntervalLiteral.IntervalValue valTime =
+                (SqlIntervalLiteral.IntervalValue) value;
+        String intervalLiteral = valTime.getIntervalLiteral();
+        List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+        return clazz.cast(
+                Duration.ofDays(Long.parseLong(split.get(0)))
+                        .plusMinutes(Long.parseLong(split.get(1))));
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+    }
+    case INTERVAL_DAY_SECOND:{
+      if (clazz == Duration.class) {
+        final SqlIntervalLiteral.IntervalValue valTime =
+                (SqlIntervalLiteral.IntervalValue) value;
+        String intervalLiteral = valTime.getIntervalLiteral();
+        List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+        return clazz.cast(
+                Duration.ofDays(Long.parseLong(split.get(0)))
+                        .plusSeconds(Long.parseLong(split.get(1))));
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+    }
+
+    case INTERVAL_HOUR_MINUTE:{
+      if (clazz == Duration.class) {
+        final SqlIntervalLiteral.IntervalValue valTime =
+                (SqlIntervalLiteral.IntervalValue) value;
+        String intervalLiteral = valTime.getIntervalLiteral();
+        List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+        return clazz.cast(
+                Duration.ofHours(Long.parseLong(split.get(0)))
+                        .plusMinutes(Long.parseLong(split.get(1))));
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+    }
+    case INTERVAL_HOUR_SECOND:{
+      if (clazz == Duration.class) {
+        final SqlIntervalLiteral.IntervalValue valTime =
+                (SqlIntervalLiteral.IntervalValue) value;
+        String intervalLiteral = valTime.getIntervalLiteral();
+        List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+        return clazz.cast(
+                Duration.ofHours(Long.parseLong(split.get(0)))
+                        .plusSeconds(Long.parseLong(split.get(1))));
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+    }
+
+      case INTERVAL_MINUTE_SECOND:{
+        if (clazz == Duration.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          if (intervalLiteral.contains(".")){
+            List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+            return clazz.cast(
+                    Duration.ofMinutes(Long.parseLong(split.get(0)))
+                            .plusSeconds(Long.parseLong(split.get(1))));
+          }
+          if (intervalLiteral.contains(":")){
+            List<String> split = Splitter.on(':').splitToList(intervalLiteral);
+            return clazz.cast(
+                    Duration.ofMinutes(Long.parseLong(split.get(0)))
+                            .plusSeconds(Long.parseLong(split.get(1))));
+          }
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+    }
+      case INTERVAL_MINUTE:
+        if (clazz == Duration.class){
+          return clazz.cast(Duration.ofMinutes(getValueAs(Long.class)));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      case INTERVAL_HOUR:
+        if (clazz == Duration.class){
+          return clazz.cast(Duration.ofHours(getValueAs(Long.class)));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+    case INTERVAL_SECOND:{
+      final SqlIntervalLiteral.IntervalValue valTime =
+              (SqlIntervalLiteral.IntervalValue) value;
+      if (clazz == Long.class){
+        return clazz.cast(valTime.getSign() * Long.parseLong(valTime.getIntervalLiteral()));
+      }
+      if (clazz == BigDecimal.class){
+        return clazz.cast(getValueAs(Long.class));
+      }
+      if (clazz == Duration.class){
+        return clazz.cast(Duration.ofSeconds(getValueAs(Long.class)));
+      }
+      if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+        return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+      }
+      break;
+      }
+      case INTERVAL_MICROSECOND:
+        if (clazz == Duration.class){
+          return clazz.cast(Duration.ofMillis(getValueAs(Long.class)));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      case INTERVAL_WEEK:
+        if (clazz == Period.class){
+          return clazz.cast(Period.ofWeeks(getValueAs(Long.class).intValue()));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      case INTERVAL_QUARTER:
+        if (clazz == Period.class){
+          return clazz.cast(Period.ofMonths(3*getValueAs(Long.class).intValue()));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      case INTERVAL_SECOND_MICROSECOND: {
+        if (clazz == Duration.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+          return clazz.cast(
+                  Duration.ofSeconds(Long.parseLong(split.get(0)))
+                  .plus(Long.parseLong(split.get(1)), ChronoUnit.MICROS));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      }
+      case INTERVAL_MINUTE_MICROSECOND:
+      {
+        if (clazz == Duration.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+          return clazz.cast(
+                  Duration.ofMinutes(Long.parseLong(split.get(0)))
+                          .plusSeconds(Long.parseLong(split.get(1)))
+                          .plus(Long.parseLong(split.get(2)), ChronoUnit.MICROS));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      }
+      case INTERVAL_HOUR_MICROSECOND:
+      {
+        if (clazz == Duration.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+          return clazz.cast(
+                  Duration.ofHours(Long.parseLong(split.get(0)))
+                          .ofMinutes(Long.parseLong(split.get(1)))
+                          .plusSeconds(Long.parseLong(split.get(2)))
+                          .plus(Long.parseLong(split.get(3)), ChronoUnit.MICROS));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      }
+      case INTERVAL_DAY_MICROSECOND:
+      {
+        if (clazz == Duration.class) {
+          final SqlIntervalLiteral.IntervalValue valTime =
+                  (SqlIntervalLiteral.IntervalValue) value;
+          String intervalLiteral = valTime.getIntervalLiteral();
+          List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+          return clazz.cast(
+                  Duration.ofDays(Long.parseLong(split.get(0)))
+                          .ofHours(Long.parseLong(split.get(2)))
+                          .ofMinutes(Long.parseLong(split.get(3)))
+                          .plusSeconds(Long.parseLong(split.get(4)))
+                          .plus(Long.parseLong(split.get(5)), ChronoUnit.MICROS));
+        }
+        if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
+        }
+        break;
+      }
+      case VARCHAR:
+        break;
+      case VARBINARY:
+        break;
+      case ANY:
+        break;
+      case SYMBOL:
+        break;
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        break;
+      case SARG:
+        break;
     }
     throw new AssertionError("cannot cast " + value + " as " + clazz);
   }

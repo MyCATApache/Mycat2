@@ -22,11 +22,8 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.sql.ExplicitOperatorBinding;
-import org.apache.calcite.sql.SqlCallBinding;
-import org.apache.calcite.sql.SqlCollation;
-import org.apache.calcite.sql.SqlOperatorBinding;
-import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.util.Glossary;
 
 import com.google.common.base.Preconditions;
@@ -764,9 +761,12 @@ public abstract class ReturnTypes {
    * therefore the result type of the call is the type of that namespace.
    */
   public static final SqlReturnTypeInference SCOPE = opBinding -> {
+
     SqlCallBinding callBinding = (SqlCallBinding) opBinding;
-    return callBinding.getValidator().getNamespace(
-        callBinding.getCall()).getRowType();
+    SqlCall call = callBinding.getCall();
+    SqlValidatorNamespace namespace = callBinding.getValidator().getNamespace(
+            call);
+    return namespace.getRowType();
   };
 
   /**

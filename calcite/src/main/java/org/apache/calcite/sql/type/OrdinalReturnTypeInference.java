@@ -17,7 +17,9 @@
 package org.apache.calcite.sql.type;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlOperatorBinding;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 
 /**
  * Returns the type of the operand at a particular 0-based ordinal position.

@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.*;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -40,11 +41,9 @@ public class AddDateFunction extends MycatDateFunction {
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral
-    public static LocalDate addDate(LocalDate date, Integer days) {
-        if (date==null||days == null){
-            return null;
-        }
-       return  date.plusDays(days);
+    public static java.time.LocalDateTime addDate(java.time.LocalDateTime localDateTime, Integer  range) {
+
+       return null;
     }
 
 }
