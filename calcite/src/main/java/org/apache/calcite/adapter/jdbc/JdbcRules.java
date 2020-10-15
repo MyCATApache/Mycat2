@@ -231,7 +231,7 @@ public class JdbcRules {
 
   private static void foreachRule(JdbcConvention out,
       Consumer<RelRule<?>> consumer) {
-    consumer.accept(JdbcToEnumerableConverterRule.create(out));
+//    consumer.accept(JdbcToEnumerableConverterRule.create(out));
     consumer.accept(JdbcJoinRule.create(out));
     consumer.accept(JdbcCalcRule.create(out));
     consumer.accept(JdbcProjectRule.create(out));

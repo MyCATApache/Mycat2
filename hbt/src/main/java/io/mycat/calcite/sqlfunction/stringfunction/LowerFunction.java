@@ -8,10 +8,10 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.*;
 
 public class LowerFunction extends MycatStringFunction {
-    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(InstrFunction.class,
+    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(LowerFunction.class,
             "lower");
 
-    public static final InstrFunction INSTANCE = new InstrFunction();
+    public static final LowerFunction INSTANCE = new LowerFunction();
 
     public LowerFunction() {
         super("lower", scalarFunction);

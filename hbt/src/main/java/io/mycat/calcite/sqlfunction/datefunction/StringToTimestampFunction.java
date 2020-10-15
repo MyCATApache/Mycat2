@@ -23,17 +23,11 @@ public class StringToTimestampFunction extends MycatDateFunction {
     public StringToTimestampFunction() {
         super("stringToTimestamp", scalarFunction);
     }
-    public static Date stringToTimestamp(Object text){
-        return null;
-    }
-    public static Date stringToTimestamp(Date text) {
-       return null;
-    }
 
     //SqlParserUtil
     //DateTimeUtils
     //SqlLiteral
-    public static String stringToTime(String text) {
+    public static String stringToTimestamp(String text) {
         if (text == null) {
             return null;
         }

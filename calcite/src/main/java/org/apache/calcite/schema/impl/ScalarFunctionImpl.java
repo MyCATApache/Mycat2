@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMultimap;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -112,10 +113,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase
    * @return created {@link ScalarFunction} or null
    */
   public static ScalarFunction create(Class<?> clazz, String methodName) {
-    final Method method = findMethod(clazz, methodName);
-    if (method == null) {
-      return null;
-    }
+    final Method method = Objects.requireNonNull(findMethod(clazz, methodName));
     return create(method);
   }
 

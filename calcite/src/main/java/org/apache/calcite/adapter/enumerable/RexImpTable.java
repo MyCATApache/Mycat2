@@ -171,7 +171,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ELEMENT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EQUALS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EVERY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXP;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXTRACT;
+//import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXTRACT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FIRST_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FLOOR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FUSION;
@@ -211,7 +211,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE_EXPRESSION;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAG;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST_DAY;
+//import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST_DAY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LEAD;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LESS_THAN;
@@ -220,7 +220,6 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LIKE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LISTAGG;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOCALTIME;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOCALTIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOG10;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOWER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR;
@@ -405,7 +404,7 @@ public class RexImpTable {
     // datetime
     map.put(DATETIME_PLUS, new DatetimeArithmeticImplementor());
     map.put(MINUS_DATE, new DatetimeArithmeticImplementor());
-    map.put(EXTRACT, new ExtractImplementor());
+//    map.put(EXTRACT, new ExtractImplementor());
     map.put(FLOOR,
         new FloorImplementor(BuiltInMethod.FLOOR.method.getName(),
             BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
@@ -415,7 +414,7 @@ public class RexImpTable {
             BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
             BuiltInMethod.UNIX_DATE_CEIL.method));
 
-    defineMethod(LAST_DAY, "lastDay", NullPolicy.STRICT);
+//    defineMethod(LAST_DAY, "lastDay", NullPolicy.STRICT);
     map.put(DAYNAME,
         new PeriodNameImplementor("dayName",
             BuiltInMethod.DAYNAME_WITH_TIMESTAMP,
@@ -598,8 +597,8 @@ public class RexImpTable {
     map.put(CURRENT_TIME, systemFunctionImplementor);
     map.put(CURRENT_TIMESTAMP, systemFunctionImplementor);
     map.put(CURRENT_DATE, systemFunctionImplementor);
-    map.put(LOCALTIME, systemFunctionImplementor);
-    map.put(LOCALTIMESTAMP, systemFunctionImplementor);
+//    map.put(LOCALTIME, systemFunctionImplementor);
+//    map.put(LOCALTIMESTAMP, systemFunctionImplementor);
 
     aggMap.put(COUNT, constructorSupplier(CountImplementor.class));
     aggMap.put(REGR_COUNT, constructorSupplier(CountImplementor.class));
@@ -649,6 +648,8 @@ public class RexImpTable {
 
     /////////////////////////////////////////////////////mycat//////////////////////////////////
     map.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
+    map.put(DateSubFunction.INSTANCE,DateSubFunction.INSTANCE.getRexCallImplementor());
+    map.put(ExtractFunction.INSTANCE,ExtractFunction.INSTANCE.getRexCallImplementor());
   }
 
   private <T> Supplier<T> constructorSupplier(Class<T> klass) {
@@ -2588,9 +2589,11 @@ public class RexImpTable {
         return Expressions.call(BuiltInMethod.CURRENT_TIME.method, root);
       } else if (op == CURRENT_DATE) {
         return Expressions.call(BuiltInMethod.CURRENT_DATE.method, root);
-      } else if (op == LOCALTIMESTAMP) {
-        return Expressions.call(BuiltInMethod.LOCAL_TIMESTAMP.method, root);
-      } else if (op == LOCALTIME) {
+      }
+//      else if (op == LOCALTIMESTAMP) {
+//        return Expressions.call(BuiltInMethod.LOCAL_TIMESTAMP.method, root);
+//      }
+      else if (op == LOCALTIME) {
         return Expressions.call(BuiltInMethod.LOCAL_TIME.method, root);
       } else {
         throw new AssertionError("unknown function " + op);
@@ -3531,6 +3534,115 @@ public class RexImpTable {
         };
       }
     }
+  public static class DateSubFunction extends SqlFunction {
+    public static  final DateSubFunction INSTANCE =new DateSubFunction();
+    public static final SqlReturnTypeInference SCOPE = opBinding -> {
+      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+      return callBinding.getValidator().getNamespace(
+              callBinding.getCall()).getRowType();
+    };
+    public DateSubFunction() {
+      super("DATE_SUB", SqlKind.OTHER_FUNCTION,
+//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
+//                      ,
+//                      ReturnTypes.explicit(SqlTypeName.DATE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
+//              )
+              ReturnTypes.VARCHAR_2000_NULLABLE
+              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
+    }
+    @Override
+    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
+      return super.checkOperandTypes(callBinding, throwOnFailure);
+    }
+    public RexCallImplementor getRexCallImplementor(){
+      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
 
+        @Override
+        protected String getVariableName() {
+          return "DATE_SUB";
+        }
 
+        @Override
+        public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+          Expression one = argValueList.get(0);
+          Expression second = argValueList.get(1);
+
+          if (one.getType() ==String.class&&second.getType() == Duration.class&&
+                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
+            return Expressions.call(dateAdd,one,second);
+          }     if (one.getType() ==Duration.class&&second.getType() == String.class&&
+                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
+            return Expressions.call(dateAdd,second,one);
+          }
+          return null;
+        }
+      };
+    }
+  }
+  public static class ExtractFunction extends SqlFunction {
+    public static  final ExtractFunction INSTANCE =new ExtractFunction();
+    public static final SqlReturnTypeInference SCOPE = opBinding -> {
+      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+      return callBinding.getValidator().getNamespace(
+              callBinding.getCall()).getRowType();
+    };
+    public ExtractFunction() {
+      super("EXTRACT", SqlKind.OTHER_FUNCTION,
+//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
+//                      ,
+//                      ReturnTypes.explicit(SqlTypeName.DATE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
+//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
+//              )
+              ReturnTypes.INTEGER
+              , InferTypes.ANY_NULLABLE, OperandTypes.VARIADIC, SqlFunctionCategory.NUMERIC);
+    }
+    @Override
+    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
+      return super.checkOperandTypes(callBinding, throwOnFailure);
+    }
+    public RexCallImplementor getRexCallImplementor(){
+      return  new AbstractRexCallImplementor (NullPolicy.STRICT, false) {
+
+        @Override
+        String getVariableName() {
+          return "EXTRACT";
+        }
+
+        @Override
+        Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+          final TimeUnitRange timeUnitRange =
+                  (TimeUnitRange) translator.getLiteralValue(argValueList.get(0));
+          final TimeUnit unit = timeUnitRange.startUnit;
+          Expression operand = argValueList.get(1);
+          final SqlTypeName sqlTypeName =
+                  call.operands.get(1).getType().getSqlTypeName();
+          Method extract = Types.lookupMethod(MycatBuiltInMethodImpl.class, "extract", TimeUnitRange.class, String.class);
+          return Expressions.call(extract,argValueList.get(0),argValueList.get(1));
+
+        }
+      };
+
+    };
+
+    @Override
+    public void unparse(
+            SqlWriter writer,
+            SqlCall call,
+            int leftPrec,
+            int rightPrec) {
+      final SqlWriter.Frame frame = writer.startFunCall(getName());
+      //@todo
+      call.operand(0).unparse(writer, 0, 0);
+      writer.sep("FROM");
+      call.operand(1).unparse(writer, 0, 0);
+      writer.endFunCall(frame);
+    }
+  }
 }

@@ -97,7 +97,7 @@ public class RexSqlStandardConvertletTable
     registerEquivOp(SqlStdOperatorTable.IS_DISTINCT_FROM);
 
     registerEquivOp(SqlStdOperatorTable.MINUS_DATE);
-    registerEquivOp(SqlStdOperatorTable.EXTRACT);
+//    registerEquivOp(SqlStdOperatorTable.EXTRACT);
 
     registerEquivOp(SqlStdOperatorTable.SUBSTRING);
     registerEquivOp(SqlStdOperatorTable.CONVERT);

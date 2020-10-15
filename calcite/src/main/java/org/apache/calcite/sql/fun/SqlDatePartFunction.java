@@ -57,9 +57,10 @@ public class SqlDatePartFunction extends SqlFunction {
   @Override public SqlNode rewriteCall(SqlValidator validator, SqlCall call) {
     final List<SqlNode> operands = call.getOperandList();
     final SqlParserPos pos = call.getParserPosition();
-    return SqlStdOperatorTable.EXTRACT.createCall(pos,
-        new SqlIntervalQualifier(timeUnit, null, SqlParserPos.ZERO),
-        operands.get(0));
+//     SqlStdOperatorTable.EXTRACT.createCall(pos,
+//        new SqlIntervalQualifier(timeUnit, null, SqlParserPos.ZERO),
+//        operands.get(0));
+    return null;
   }
 
   public SqlOperandCountRange getOperandCountRange() {

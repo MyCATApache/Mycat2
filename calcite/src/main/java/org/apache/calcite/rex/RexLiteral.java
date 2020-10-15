@@ -665,7 +665,13 @@ public class RexLiteral extends RexNode {
       assert value instanceof BigDecimal;
       sb.append(Util.toScientificNotation((BigDecimal) value));
       break;
-    case BIGINT:
+      case TINYINT:
+        break;
+      case SMALLINT:
+        break;
+      case INTEGER:
+        break;
+      case BIGINT:
       assert value instanceof BigDecimal;
       long narrowLong = ((BigDecimal) value).longValue();
       sb.append(String.valueOf(narrowLong));
@@ -707,6 +713,13 @@ public class RexLiteral extends RexNode {
       assert value instanceof TimestampString;
       sb.append(value.toString());
       break;
+      case INTERVAL_MICROSECOND:
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER:
+      case INTERVAL_SECOND_MICROSECOND:
+      case INTERVAL_MINUTE_MICROSECOND:
+      case INTERVAL_HOUR_MICROSECOND:
+      case INTERVAL_DAY_MICROSECOND:
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
@@ -734,7 +747,33 @@ public class RexLiteral extends RexNode {
       final String wkt = GeoFunctions.ST_AsWKT((Geometries.Geom) value);
       sb.append(wkt);
       break;
-    default:
+      case FLOAT:
+        break;
+      case REAL:
+        break;
+      case VARCHAR:
+        break;
+      case VARBINARY:
+        break;
+      case ANY:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      default:
       assert valueMatchesType(value, typeName, true);
       throw Util.needToImplement(typeName);
     }

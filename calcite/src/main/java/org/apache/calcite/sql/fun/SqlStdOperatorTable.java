@@ -1873,8 +1873,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
   /**
    * The <code>LOCALTIMESTAMP [(<i>precision</i>)]</code> function.
    */
-  public static final SqlFunction LOCALTIMESTAMP =
-      new SqlAbstractTimeFunction("LOCALTIMESTAMP", SqlTypeName.TIMESTAMP);
+//  public static final SqlFunction LOCALTIMESTAMP =
+//      new SqlAbstractTimeFunction("LOCALTIMESTAMP", SqlTypeName.TIMESTAMP);
 
   /**
    * The <code>CURRENT_TIME [(<i>precision</i>)]</code> function.
@@ -1893,12 +1893,12 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    */
   public static final SqlFunction CURRENT_DATE =
       new SqlCurrentDateFunction();
-
-  /** The <code>TIMESTAMPADD</code> function. */
-  public static final SqlFunction TIMESTAMP_ADD = new SqlTimestampAddFunction();
-
-  /** The <code>TIMESTAMPDIFF</code> function. */
-  public static final SqlFunction TIMESTAMP_DIFF = new SqlTimestampDiffFunction();
+//
+//  /** The <code>TIMESTAMPADD</code> function. */
+//  public static final SqlFunction TIMESTAMP_ADD = new SqlTimestampAddFunction();
+//
+//  /** The <code>TIMESTAMPDIFF</code> function. */
+//  public static final SqlFunction TIMESTAMP_DIFF = new SqlTimestampDiffFunction();
 
   /**
    * Use of the <code>IN_FENNEL</code> operator forces the argument to be
@@ -1944,7 +1944,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>EXTRACT(HOUR FROM INTERVAL '364 23:59:59')</code> returns <code>
    * 23</code>
    */
-  public static final SqlFunction EXTRACT = new SqlExtractFunction();
+//  public static final SqlFunction EXTRACT = new SqlExtractFunction();
 
   /**
    * The SQL <code>YEAR</code> operator. Returns the Year
@@ -1952,8 +1952,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>YEAR(date '2008-9-23')</code> returns <code>
    * 2008</code>
    */
-  public static final SqlDatePartFunction YEAR =
-      new SqlDatePartFunction("YEAR", TimeUnit.YEAR);
+//  public static final SqlDatePartFunction YEAR =
+//      new SqlDatePartFunction("YEAR", TimeUnit.YEAR);
 
   /**
    * The SQL <code>QUARTER</code> operator. Returns the Quarter
@@ -1961,8 +1961,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>QUARTER(date '2008-9-23')</code> returns <code>
    * 3</code>
    */
-  public static final SqlDatePartFunction QUARTER =
-      new SqlDatePartFunction("QUARTER", TimeUnit.QUARTER);
+//  public static final SqlDatePartFunction QUARTER =
+//      new SqlDatePartFunction("QUARTER", TimeUnit.QUARTER);
 
   /**
    * The SQL <code>MONTH</code> operator. Returns the Month
@@ -1970,8 +1970,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>MONTH(date '2008-9-23')</code> returns <code>
    * 9</code>
    */
-  public static final SqlDatePartFunction MONTH =
-      new SqlDatePartFunction("MONTH", TimeUnit.MONTH);
+//  public static final SqlDatePartFunction MONTH =
+//      new SqlDatePartFunction("MONTH", TimeUnit.MONTH);
 
   /**
    * The SQL <code>WEEK</code> operator. Returns the Week
@@ -1979,8 +1979,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>WEEK(date '2008-9-23')</code> returns <code>
    * 39</code>
    */
-  public static final SqlDatePartFunction WEEK =
-      new SqlDatePartFunction("WEEK", TimeUnit.WEEK);
+//  public static final SqlDatePartFunction WEEK =
+//      new SqlDatePartFunction("WEEK", TimeUnit.WEEK);
 
   /**
    * The SQL <code>DAYOFYEAR</code> operator. Returns the DOY
@@ -1988,8 +1988,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>DAYOFYEAR(date '2008-9-23')</code> returns <code>
    * 267</code>
    */
-  public static final SqlDatePartFunction DAYOFYEAR =
-      new SqlDatePartFunction("DAYOFYEAR", TimeUnit.DOY);
+//  public static final SqlDatePartFunction DAYOFYEAR =
+//      new SqlDatePartFunction("DAYOFYEAR", TimeUnit.DOY);
 
   /**
    * The SQL <code>DAYOFMONTH</code> operator. Returns the Day
@@ -1997,8 +1997,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>DAYOFMONTH(date '2008-9-23')</code> returns <code>
    * 23</code>
    */
-  public static final SqlDatePartFunction DAYOFMONTH =
-      new SqlDatePartFunction("DAYOFMONTH", TimeUnit.DAY);
+//  public static final SqlDatePartFunction DAYOFMONTH =
+//      new SqlDatePartFunction("DAYOFMONTH", TimeUnit.DAY);
 
   /**
    * The SQL <code>DAYOFWEEK</code> operator. Returns the DOW
@@ -2006,8 +2006,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>DAYOFWEEK(date '2008-9-23')</code> returns <code>
    * 2</code>
    */
-  public static final SqlDatePartFunction DAYOFWEEK =
-      new SqlDatePartFunction("DAYOFWEEK", TimeUnit.DOW);
+//  public static final SqlDatePartFunction DAYOFWEEK =
+//      new SqlDatePartFunction("DAYOFWEEK", TimeUnit.DOW);
 
   /**
    * The SQL <code>HOUR</code> operator. Returns the Hour
@@ -2015,8 +2015,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>HOUR(timestamp '2008-9-23 01:23:45')</code> returns <code>
    * 1</code>
    */
-  public static final SqlDatePartFunction HOUR =
-      new SqlDatePartFunction("HOUR", TimeUnit.HOUR);
+//  public static final SqlDatePartFunction HOUR =
+//      new SqlDatePartFunction("HOUR", TimeUnit.HOUR);
 
   /**
    * The SQL <code>MINUTE</code> operator. Returns the Minute
@@ -2024,8 +2024,8 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>MINUTE(timestamp '2008-9-23 01:23:45')</code> returns <code>
    * 23</code>
    */
-  public static final SqlDatePartFunction MINUTE =
-      new SqlDatePartFunction("MINUTE", TimeUnit.MINUTE);
+//  public static final SqlDatePartFunction MINUTE =
+//      new SqlDatePartFunction("MINUTE", TimeUnit.MINUTE);
 
   /**
    * The SQL <code>SECOND</code> operator. Returns the Second
@@ -2033,17 +2033,17 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * <code>SECOND(timestamp '2008-9-23 01:23:45')</code> returns <code>
    * 45</code>
    */
-  public static final SqlDatePartFunction SECOND =
-      new SqlDatePartFunction("SECOND", TimeUnit.SECOND);
-
-  public static final SqlFunction LAST_DAY =
-      new SqlFunction(
-          "LAST_DAY",
-          SqlKind.OTHER_FUNCTION,
-          ReturnTypes.DATE_NULLABLE,
-          null,
-          OperandTypes.DATETIME,
-          SqlFunctionCategory.TIMEDATE);
+//  public static final SqlDatePartFunction SECOND =
+//      new SqlDatePartFunction("SECOND", TimeUnit.SECOND);
+//
+//  public static final SqlFunction LAST_DAY =
+//      new SqlFunction(
+//          "LAST_DAY",
+//          SqlKind.OTHER_FUNCTION,
+//          ReturnTypes.DATE_NULLABLE,
+//          null,
+//          OperandTypes.DATETIME,
+//          SqlFunctionCategory.TIMEDATE);
 
   /**
    * The ELEMENT operator, used to convert a multiset with only one item to a

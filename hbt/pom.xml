@@ -14,6 +14,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.sisyphsu</groupId>
+            <artifactId>dateparser</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+        <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>calcite</artifactId>
             <version>1.12-SNAPSHOT</version>

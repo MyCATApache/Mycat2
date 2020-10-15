@@ -1,5 +1,6 @@
 package io.mycat.calcite.resultset;
 
+import io.mycat.MycatException;
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import org.apache.calcite.avatica.util.ByteString;
@@ -8,8 +9,8 @@ import org.apache.calcite.linq4j.Enumerator;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
+
 
 /**
  * @author chen junwen
@@ -35,6 +36,28 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     }
 
     @Override
+    public String getString(int columnIndex) {
+        Object object = getObject(columnIndex);
+        if (object instanceof String){
+            return (String)object;
+        }
+        if (object instanceof Duration){
+            Duration duration = (Duration) object;
+            int SECONDS_PER_HOUR = 60*60;
+            int SECONDS_PER_MINUTE = 60;
+            long hours = duration.getSeconds()/ SECONDS_PER_HOUR;
+            int minutes = (int) ((duration.getSeconds() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+            int secs = (int) (duration.getSeconds() % SECONDS_PER_MINUTE);
+            int nano = duration.getNano();
+            if (nano == 0) {
+                return String.format("%d:%02d:%02d",hours,minutes,secs);
+            }
+            return String.format("%d:%02d:%02d.%09d",hours,minutes,secs,nano);
+        }
+        return super.getString(columnIndex);
+    }
+
+    @Override
     public boolean next() {
         if (this.iterator.moveNext()) {
             this.currentRow = this.iterator.current();
@@ -54,8 +77,8 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         if (o instanceof Long) {
             return new Date((Long) o);
         }
-        if (o instanceof LocalDate){
-            return Date.valueOf ((LocalDate) o);
+        if (o instanceof LocalDate) {
+            return Date.valueOf((LocalDate) o);
         }
         return (Date) o;
     }
@@ -78,8 +101,8 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
         if (o instanceof Long) {
             return new Timestamp((Long) (o));
         }
-        if (o instanceof LocalDateTime){
-            return Timestamp.valueOf((LocalDateTime)o);
+        if (o instanceof LocalDateTime) {
+            return Timestamp.valueOf((LocalDateTime) o);
         }
 
         return (Timestamp) o;
@@ -89,6 +112,20 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     public Time getTime(int columnIndex) {
         Object o = getObject(columnIndex);
         if (wasNull) return null;
+        if (o instanceof Duration) {
+            Duration o1 = (Duration) o;
+            long seconds = o1.getSeconds();
+            int nano = o1.getNano();
+
+            if (seconds>=0){
+                Time time = new Time(Instant.ofEpochSecond(seconds, nano).toEpochMilli());
+                if (time.getHours()>838){
+                    throw new MycatException("Truncated incorrect time value:"+time.getHours());
+                }
+                return time;
+            }
+           throw new UnsupportedOperationException();
+        }
         if (o instanceof Integer) {
             throw new UnsupportedOperationException();
         }

@@ -57,6 +57,7 @@ import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWindowTableFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -70,10 +71,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Period;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -261,16 +259,41 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case ANY:
       convert = operand;
       break;
-    case DATE:
+      case TINYINT:
+      case SMALLINT:
+      case INTEGER:
+      case BIGINT:
+        switch (sourceType.getSqlTypeName()){
+          case DATE:{
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_LONG.method, operand);
+            break;
+          }
+        }
+        break;
+      case DECIMAL:
+
+      case FLOAT:
+      case REAL:
+      case DOUBLE: {
+        switch (sourceType.getSqlTypeName()) {
+          case TIMESTAMP: {
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_DOUBLE.method, operand);
+            break;
+          }
+        }
+        break;
+      }
+      case DATE:
       switch (sourceType.getSqlTypeName()) {
       case CHAR:
       case VARCHAR:
         convert =
             Expressions.call(MycatBuiltInMethod .STRING_TO_DATE.method, operand);
         break;
-      case TIMESTAMP:
-//        convert = Expressions.call(MycatBuiltInMethod .DATE_TO_TIMESTAMP.method, operand),
+      case TIMESTAMP:{
+        convert = timestamp(sourceType, operand, convert);
         break;
+      }
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
         convert = RexImpTable.optimize2(
             operand,
@@ -349,6 +372,13 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       break;
     case TIMESTAMP:
       switch (sourceType.getSqlTypeName()) {
+        case INTEGER:{
+          convert =
+                  Expressions.call(
+                          MycatBuiltInMethod.LONG_TO_TIMESTAMP.method,
+                          operand);
+          break;
+        }
       case CHAR:
       case VARCHAR:
         convert =
@@ -456,7 +486,47 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             operand);
       }
       break;
-    case CHAR:
+      case INTERVAL_YEAR:
+        break;
+      case INTERVAL_YEAR_MONTH:
+        break;
+      case INTERVAL_MONTH:
+        break;
+      case INTERVAL_DAY:
+        break;
+      case INTERVAL_DAY_HOUR:
+        break;
+      case INTERVAL_DAY_MINUTE:
+        break;
+      case INTERVAL_DAY_SECOND:
+        break;
+      case INTERVAL_HOUR:
+        break;
+      case INTERVAL_HOUR_MINUTE:
+        break;
+      case INTERVAL_HOUR_SECOND:
+        break;
+      case INTERVAL_MINUTE:
+        break;
+      case INTERVAL_MINUTE_SECOND:
+        break;
+      case INTERVAL_SECOND:
+        break;
+      case INTERVAL_MICROSECOND:
+        break;
+      case INTERVAL_WEEK:
+        break;
+      case INTERVAL_QUARTER:
+        break;
+      case INTERVAL_SECOND_MICROSECOND:
+        break;
+      case INTERVAL_MINUTE_MICROSECOND:
+        break;
+      case INTERVAL_HOUR_MICROSECOND:
+        break;
+      case INTERVAL_DAY_MICROSECOND:
+        break;
+      case CHAR:
     case VARCHAR:
       final SqlIntervalQualifier interval =
           sourceType.getIntervalQualifier();
@@ -536,6 +606,40 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 operand));
         break;
       }
+      case BINARY:
+        break;
+      case VARBINARY:
+        break;
+      case NULL:
+        break;
+      case SYMBOL:
+        break;
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        break;
+      case SARG:
+        break;
+      default:
+        throw new IllegalStateException("Unexpected value: " + targetType.getSqlTypeName());
     }
     if (convert == null) {
       convert = EnumUtils.convert(operand, typeFactory.getJavaClass(targetType));
@@ -618,6 +722,120 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       }
     }
     return scaleIntervalToNumber(sourceType, targetType, convert);
+  }
+
+  private Expression timestamp(RelDataType sourceType, Expression operand, Expression convert) {
+    switch (sourceType.getSqlTypeName()){
+      case BOOLEAN:
+        break;
+      case TINYINT:
+        break;
+      case SMALLINT:
+        break;
+      case INTEGER:
+          convert = Expressions.call(MycatBuiltInMethod.LONG_TO_TIMESTAMP.method, operand);
+        break;
+      case BIGINT:
+        break;
+      case DECIMAL:
+        break;
+      case FLOAT:
+        break;
+      case REAL:
+        break;
+      case DOUBLE:
+        break;
+      case DATE:
+        break;
+      case TIME:
+        break;
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        break;
+      case TIMESTAMP:
+        break;
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        break;
+      case INTERVAL_YEAR:
+        break;
+      case INTERVAL_YEAR_MONTH:
+        break;
+      case INTERVAL_MONTH:
+        break;
+      case INTERVAL_DAY:
+        break;
+      case INTERVAL_DAY_HOUR:
+        break;
+      case INTERVAL_DAY_MINUTE:
+        break;
+      case INTERVAL_DAY_SECOND:
+        break;
+      case INTERVAL_HOUR:
+        break;
+      case INTERVAL_HOUR_MINUTE:
+        break;
+      case INTERVAL_HOUR_SECOND:
+        break;
+      case INTERVAL_MINUTE:
+        break;
+      case INTERVAL_MINUTE_SECOND:
+        break;
+      case INTERVAL_SECOND:
+        break;
+      case INTERVAL_MICROSECOND:
+        break;
+      case INTERVAL_WEEK:
+        break;
+      case INTERVAL_QUARTER:
+        break;
+      case INTERVAL_SECOND_MICROSECOND:
+        break;
+      case INTERVAL_MINUTE_MICROSECOND:
+        break;
+      case INTERVAL_HOUR_MICROSECOND:
+        break;
+      case INTERVAL_DAY_MICROSECOND:
+        break;
+      case CHAR:
+        break;
+      case VARCHAR:
+        break;
+      case BINARY:
+        break;
+      case VARBINARY:
+        break;
+      case NULL:
+        break;
+      case ANY:
+        break;
+      case SYMBOL:
+        break;
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        break;
+      case SARG:
+        break;
+    }
+    //        convert = Expressions.call(MycatBuiltInMethod .DATE_TO_TIMESTAMP.method, operand),
+    return convert;
   }
 
   /**
@@ -1077,8 +1295,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     Type javaClass = typeFactory.getJavaClass(literal.getType());
     switch (literal.getType().getSqlTypeName()) {
     case DATE:
+      javaClass = LocalDate.class;
+      break;
     case TIME:
     case TIME_WITH_LOCAL_TIME_ZONE:
+      javaClass = LocalTime.class;
+      break;
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
@@ -1086,6 +1308,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       break;
     case TIMESTAMP:
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+      javaClass = LocalDateTime.class;
+      break;
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:

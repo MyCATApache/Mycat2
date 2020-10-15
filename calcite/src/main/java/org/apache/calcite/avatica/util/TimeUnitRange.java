@@ -51,7 +51,9 @@ public enum TimeUnitRange {
   EPOCH(TimeUnit.EPOCH, null),
   DECADE(TimeUnit.DECADE, null),
   CENTURY(TimeUnit.CENTURY, null),
-  MILLENNIUM(TimeUnit.MILLENNIUM, null);
+  MILLENNIUM(TimeUnit.MILLENNIUM, null),
+  SECOND_TO_MICROSECOND(TimeUnit.SECOND, TimeUnit.MICROSECOND)
+  ;
 
   public final TimeUnit startUnit;
   public final TimeUnit endUnit;

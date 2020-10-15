@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.Temporal;
+import java.util.concurrent.TimeUnit;
 
 
 public class AddTimeFunction extends MycatDateFunction {
@@ -47,6 +48,11 @@ public class AddTimeFunction extends MycatDateFunction {
     //DateTimeUtils
     //SqlLiteral
     public static String addTime(String time, String tmp) {
+        boolean sub  = false;
+        return addTime(time, tmp, sub);
+    }
+
+    public static String addTime(String time, String tmp, boolean sub) {
         if (time == null || tmp == null) {
             return null;
         }
@@ -54,29 +60,30 @@ public class AddTimeFunction extends MycatDateFunction {
         Temporal temporal;
         if (time.contains(":") && !time.contains("-")) {//time
             Duration duration1 = MycatBuiltInMethodImpl.timeStringToTimeDuration(time);
-            duration1 = duration1.plus(duration);
+            duration1 =!sub?  duration1.plus(duration):duration1.minus(duration);
             long days1 = duration1.toDays();
             if (days1 == 0){
-                LocalTime plus = LocalTime.ofNanoOfDay(0).plus(duration1);
-                long hours = plus.getHour();
-                long minutes = plus.getMinute();
-                long seconds = plus.getSecond();
-                int nano = plus.getNano();
+                long hours = TimeUnit.SECONDS.toHours(duration1.getSeconds());
+                int SECONDS_PER_HOUR = 60*60;
+                int SECONDS_PER_MINUTE = 60;
+                int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+                int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
+                int nano = duration1.getNano();
                 //01:00:00.999999
-                return String.format("%02d:%02d:%02d.%d",hours, minutes, seconds, nano);
+                return String.format("%02d:%02d:%02d.%09d",hours, minutes, secs, nano);
             }else {
-                duration1 =  duration1.minusDays(days1);
-                LocalTime plus = LocalTime.ofNanoOfDay(0).plus(duration1);
-                long hours = plus.getHour();
-                long minutes = plus.getMinute();
-                long seconds = plus.getSecond();
-                int nano = plus.getNano();
-                return String.format("%02d:%02d:%02d:%02d.%d", days1, hours, minutes, seconds, nano);
+                long hours = TimeUnit.SECONDS.toHours(duration1.getSeconds());
+                int SECONDS_PER_HOUR = 60*60;
+                int SECONDS_PER_MINUTE = 60;
+                int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+                int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
+                int nano = duration1.getNano();
+                return String.format("%02d:%02d:%02d:%02d.%09d", days1, hours, minutes, secs, nano);
             }
         }
         temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(time);
 
-        Temporal res = addTime(temporal, duration);
+        Temporal res = !sub?addTime(temporal, duration):subTime(temporal,duration);
         if (res instanceof LocalDateTime) {
             LocalDateTime res1 = (LocalDateTime) res;
             return res1.toLocalDate().toString() + " " + res1.toLocalTime().toString();
@@ -93,6 +100,13 @@ public class AddTimeFunction extends MycatDateFunction {
             return null;
         }
         Temporal plus = temporal.plus(duration);
+        return plus;
+    }
+    private static Temporal subTime(Temporal temporal, Duration duration) {
+        if (temporal == null || duration == null) {
+            return null;
+        }
+        Temporal plus = temporal.minus(duration);
         return plus;
     }
 

@@ -23,7 +23,6 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlDelegatingConformance;
@@ -248,7 +247,7 @@ public class SqlParser {
         .withLex(Lex.ORACLE)
         .withIdentifierMaxLength(DEFAULT_IDENTIFIER_MAX_LENGTH)
         .withConformance(SqlConformanceEnum.DEFAULT)
-        .withParserFactory(SqlParserImpl.FACTORY);
+        .withParserFactory(null);
 
     @ImmutableBeans.Property()
     @ImmutableBeans.IntDefault(DEFAULT_IDENTIFIER_MAX_LENGTH)

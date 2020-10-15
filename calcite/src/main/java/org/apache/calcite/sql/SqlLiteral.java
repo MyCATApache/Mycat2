@@ -461,11 +461,23 @@ public class SqlLiteral extends SqlNode {
       if (clazz == Duration.class) {
         final SqlIntervalLiteral.IntervalValue valTime =
                 (SqlIntervalLiteral.IntervalValue) value;
-        String intervalLiteral = valTime.getIntervalLiteral();
-        List<String> split = Splitter.on('.').splitToList(intervalLiteral);
+        String intervalLiteral = valTime.getIntervalLiteral().trim();
+        long day;
+        long second;
+        if (intervalLiteral.contains(" ")){
+          String[] s = intervalLiteral.split(" ");
+          day =Long.parseLong( s[0]);
+          Duration duration = MycatBuiltInMethodImpl.timeStringToTimeDuration(s[1]).plusDays(day);
+          return clazz.cast(duration);
+        }else {
+          String[] s = intervalLiteral.split(".");
+          day =Long.parseLong( s[0]);
+          second = Long.parseLong( s[1]);
+        }
+
         return clazz.cast(
-                Duration.ofDays(Long.parseLong(split.get(0)))
-                        .plusSeconds(Long.parseLong(split.get(1))));
+                Duration.ofDays(day)
+                        .plusSeconds(second));
       }
       if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
         return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
@@ -660,6 +672,9 @@ public class SqlLiteral extends SqlNode {
       case ANY:
         break;
       case SYMBOL:
+        if (value.getClass() == clazz){
+          return clazz.cast(value);
+        }
         break;
       case MULTISET:
         break;
@@ -1092,7 +1107,13 @@ public class SqlLiteral extends SqlNode {
               charset,
               collation);
       return type;
-
+      case INTERVAL_MICROSECOND:
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER:
+      case INTERVAL_SECOND_MICROSECOND:
+      case INTERVAL_MINUTE_MICROSECOND:
+      case INTERVAL_HOUR_MICROSECOND:
+      case INTERVAL_DAY_MICROSECOND:
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
@@ -1114,14 +1135,63 @@ public class SqlLiteral extends SqlNode {
     case SYMBOL:
       return typeFactory.createSqlType(SqlTypeName.SYMBOL);
 
-    case INTEGER: // handled in derived class
+      case TINYINT:
+        break;
+      case SMALLINT:
+        break;
+      case BIGINT:
+        break;
+      case DECIMAL:
+        break;
+      case FLOAT:
+        break;
+      case REAL:
+        break;
+      case DOUBLE:
+        break;
+      case DATE:
+        break;
+      case TIME_WITH_LOCAL_TIME_ZONE:
+        break;
+      case TIMESTAMP:
+        break;
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        break;
+      case ANY:
+        break;
+      case MULTISET:
+        break;
+      case ARRAY:
+        break;
+      case MAP:
+        break;
+      case DISTINCT:
+        break;
+      case STRUCTURED:
+        break;
+      case ROW:
+        break;
+      case OTHER:
+        break;
+      case CURSOR:
+        break;
+      case COLUMN_LIST:
+        break;
+      case DYNAMIC_STAR:
+        break;
+      case GEOMETRY:
+        break;
+      case SARG:
+        break;
+      case INTEGER: // handled in derived class
     case TIME: // handled in derived class
     case VARCHAR: // should never happen
     case VARBINARY: // should never happen
 
     default:
-      throw Util.needToImplement(toString() + ", operand=" + value);
+
     }
+    throw Util.needToImplement(toString() + ", operand=" + value);
   }
 
   @Deprecated // to be removed before 2.0

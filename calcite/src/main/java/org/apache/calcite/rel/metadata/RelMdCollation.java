@@ -20,7 +20,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableCorrelate;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.adapter.enumerable.EnumerableNestedLoopJoin;
-import org.apache.calcite.adapter.jdbc.JdbcToEnumerableConverter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepRelVertex;
@@ -204,10 +203,10 @@ public class RelMdCollation
         values(mq, values.getRowType(), values.getTuples()));
   }
 
-  public ImmutableList<RelCollation> collations(JdbcToEnumerableConverter rel,
-      RelMetadataQuery mq) {
-    return mq.collations(rel.getInput());
-  }
+//  public ImmutableList<RelCollation> collations(JdbcToEnumerableConverter rel,
+//      RelMetadataQuery mq) {
+//    return mq.collations(rel.getInput());
+//  }
 
   public ImmutableList<RelCollation> collations(HepRelVertex rel,
       RelMetadataQuery mq) {

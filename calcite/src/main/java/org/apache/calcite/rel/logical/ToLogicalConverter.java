@@ -18,7 +18,6 @@ package org.apache.calcite.rel.logical;
 
 import org.apache.calcite.adapter.enumerable.EnumerableInterpreter;
 import org.apache.calcite.adapter.enumerable.EnumerableLimit;
-import org.apache.calcite.adapter.jdbc.JdbcToEnumerableConverter;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -164,11 +163,13 @@ public class ToLogicalConverter extends RelShuttleImpl {
           tableModify.isFlattened());
     }
 
-    if (relNode instanceof EnumerableInterpreter
-        || relNode instanceof JdbcToEnumerableConverter) {
+//    if (relNode instanceof EnumerableInterpreter
+//        || relNode instanceof JdbcToEnumerableConverter) {
+//      return visit(((SingleRel) relNode).getInput());
+//    }
+    if (relNode instanceof EnumerableInterpreter) {
       return visit(((SingleRel) relNode).getInput());
     }
-
     if (relNode instanceof EnumerableLimit) {
       final EnumerableLimit limit = (EnumerableLimit) relNode;
       RelNode logicalInput = visit(limit.getInput());

@@ -82,8 +82,11 @@ public abstract class ReflectiveFunctionBase implements Function {
    * @return the first method with matching name or null when no method found
    */
   static Method findMethod(Class<?> clazz, String name) {
-    for (Method method : clazz.getMethods()) {
-      if (method.getName().equals(name) && !method.isBridge()) {
+    Method[] methods = clazz.getMethods();
+    for (Method method : methods) {
+      String name1 = method.getName();
+      boolean equals = name1.equals(name);
+      if (equals && !method.isBridge()) {
         return method;
       }
     }

@@ -9,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -18,7 +19,12 @@ public enum  MycatBuiltInMethod {
 //    INTERNAL_TO_TIMESTAMP(MycatBuiltInMethodImpl.class, "internalToTimestamp", long.class),
     STRING_TO_DATE(MycatBuiltInMethodImpl.class, "dateStringToUnixDate", String.class),
     STRING_TO_TIME(MycatBuiltInMethodImpl.class, "timeStringToUnixDate", String.class),
-    STRING_TO_TIMESTAMP(MycatBuiltInMethodImpl.class, "timestampStringToUnixDate", String.class),
+    STRING_TO_TIMESTAMP(MycatBuiltInMethodImpl.class, "timestampStringToUnixTimestamp", String.class),
+//    INTEGER_TO_TIMESTAMP(MycatBuiltInMethodImpl.class, "intToUnixTimestamp", Long.class),
+    LONG_TO_TIMESTAMP(MycatBuiltInMethodImpl.class, "longToUnixTimestamp", Long.class),
+    LONG_TO_DATE(MycatBuiltInMethodImpl.class, "longToUnixDate", Long.class),
+    DATE_TO_LONG(MycatBuiltInMethodImpl.class, "dateToLong", LocalDate.class),
+    TIMESTAMP_TO_DOUBLE(MycatBuiltInMethodImpl.class, "timestampToDouble", LocalDateTime.class),
 //    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE(MycatBuiltInMethodImpl.class, "toTimeWithLocalTimeZone",
 //            String.class),
 //    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE(MycatBuiltInMethodImpl.class, "toTimeWithLocalTimeZone",

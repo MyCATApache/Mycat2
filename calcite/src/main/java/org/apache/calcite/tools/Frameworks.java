@@ -235,7 +235,7 @@ public class Frameworks {
       operatorTable = SqlStdOperatorTable.instance();
       programs = ImmutableList.of();
       context = Contexts.empty();
-      parserConfig = SqlParser.Config.DEFAULT;
+//      parserConfig = SqlParser.Config.DEFAULT;
       sqlValidatorConfig = SqlValidator.Config.DEFAULT;
       sqlToRelConverterConfig = SqlToRelConverter.config();
       typeSystem = RelDataTypeSystem.DEFAULT;

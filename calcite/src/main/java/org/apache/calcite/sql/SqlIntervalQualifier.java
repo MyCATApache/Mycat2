@@ -108,8 +108,8 @@ public class SqlIntervalQualifier extends SqlNode {
     if (endUnit == startUnit) {
       endUnit = null;
     }
-    this.timeUnitRange =
-        TimeUnitRange.of(Objects.requireNonNull(startUnit), endUnit);
+    this.timeUnitRange = Objects.requireNonNull(
+        TimeUnitRange.of(Objects.requireNonNull(startUnit), endUnit));
     this.startPrecision = startPrecision;
     this.fractionalSecondPrecision = fractionalSecondPrecision;
   }
@@ -173,7 +173,9 @@ public class SqlIntervalQualifier extends SqlNode {
     case MICROSECOND:
     case NANOSECOND:
       return SqlTypeName.INTERVAL_SECOND;
-    default:
+      case SECOND_TO_MICROSECOND:
+      return SqlTypeName.INTERVAL_SECOND_MICROSECOND;
+      default:
       throw new AssertionError(timeUnitRange);
     }
   }

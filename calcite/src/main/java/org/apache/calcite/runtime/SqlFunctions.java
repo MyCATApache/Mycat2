@@ -54,8 +54,10 @@ import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -72,6 +74,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.regex.Pattern;
@@ -1979,9 +1982,41 @@ public class SqlFunctions {
         : o instanceof Number ? toLong((Number) o)
         : o instanceof String ? toLong((String) o)
         : o instanceof java.util.Date ? toLong((java.util.Date) o)
+//            : o instanceof LocalDateTime ?  toLong(((LocalDateTime)o))
         : (Long) cannotConvert(o, long.class);
   }
-
+  public static double toDouble(Duration o){
+    long hours = TimeUnit.SECONDS.toHours(o.getSeconds());
+    int SECONDS_PER_HOUR = 60*60;
+    int SECONDS_PER_MINUTE = 60;
+    int minutes = (int) (( o.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+    int secs = (int) ( o.getSeconds() % SECONDS_PER_MINUTE);
+    int nano = o.getNano();
+    //00 00 00
+    return hours*10000+minutes*100+ secs +nano*0.1d;
+  }
+  public static double toDouble(LocalTime o){
+    return Double.parseDouble(o.format(new DateTimeFormatterBuilder()
+            .appendValue(ChronoField.HOUR_OF_DAY,2)
+            .appendValue(ChronoField.MINUTE_OF_HOUR,2)
+            .appendValue(ChronoField.SECOND_OF_MINUTE,2)
+            .appendLiteral('.')
+            .appendValue(ChronoField.MICRO_OF_SECOND)
+            .toFormatter()));
+  }
+  public static double toDouble(LocalDateTime o){
+//    "2007_1130_11_30_19.000000";
+ return Double.parseDouble(o.format(new DateTimeFormatterBuilder()
+            .appendValue(ChronoField.YEAR,4)
+            .appendValue(ChronoField.MONTH_OF_YEAR,2)
+            .appendValue(ChronoField.DAY_OF_MONTH,2)
+            .appendValue(ChronoField.HOUR_OF_DAY,2)
+            .appendValue(ChronoField.MINUTE_OF_HOUR,2)
+            .appendValue(ChronoField.SECOND_OF_MINUTE,2)
+            .appendLiteral('.')
+            .appendValue(ChronoField.MICRO_OF_SECOND)
+            .toFormatter()));
+  }
   public static Long toLongOptional(Object o) {
     return o == null ? null : toLong(o);
   }

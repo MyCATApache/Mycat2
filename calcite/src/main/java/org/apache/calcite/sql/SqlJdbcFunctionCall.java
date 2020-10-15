@@ -721,25 +721,25 @@ public class SqlJdbcFunctionCall extends SqlFunction {
       map.put("SUBSTRING", simple(SqlStdOperatorTable.SUBSTRING));
       map.put("UCASE", simple(SqlStdOperatorTable.UPPER));
 
-      map.put("YEAR", simple(SqlStdOperatorTable.YEAR));
-      map.put("QUARTER", simple(SqlStdOperatorTable.QUARTER));
-      map.put("MONTH", simple(SqlStdOperatorTable.MONTH));
-      map.put("WEEK", simple(SqlStdOperatorTable.WEEK));
-      map.put("DAYOFYEAR", simple(SqlStdOperatorTable.DAYOFYEAR));
-      map.put("DAYOFMONTH", simple(SqlStdOperatorTable.DAYOFMONTH));
-      map.put("DAYOFWEEK", simple(SqlStdOperatorTable.DAYOFWEEK));
-      map.put("DAYNAME", simple(SqlLibraryOperators.DAYNAME));
-      map.put("HOUR", simple(SqlStdOperatorTable.HOUR));
-      map.put("MINUTE", simple(SqlStdOperatorTable.MINUTE));
-      map.put("MONTHNAME", simple(SqlLibraryOperators.MONTHNAME));
-      map.put("SECOND", simple(SqlStdOperatorTable.SECOND));
+//      map.put("YEAR", simple(SqlStdOperatorTable.YEAR));
+//      map.put("QUARTER", simple(SqlStdOperatorTable.QUARTER));
+//      map.put("MONTH", simple(SqlStdOperatorTable.MONTH));
+//      map.put("WEEK", simple(SqlStdOperatorTable.WEEK));
+//      map.put("DAYOFYEAR", simple(SqlStdOperatorTable.DAYOFYEAR));
+//      map.put("DAYOFMONTH", simple(SqlStdOperatorTable.DAYOFMONTH));
+////      map.put("DAYOFWEEK", simple(SqlStdOperatorTable.DAYOFWEEK));
+//      map.put("DAYNAME", simple(SqlLibraryOperators.DAYNAME));
+//      map.put("HOUR", simple(SqlStdOperatorTable.HOUR));
+//      map.put("MINUTE", simple(SqlStdOperatorTable.MINUTE));
+//      map.put("MONTHNAME", simple(SqlLibraryOperators.MONTHNAME));
+//      map.put("SECOND", simple(SqlStdOperatorTable.SECOND));
 
       map.put("CONVERT_TIMEZONE", simple(SqlLibraryOperators.CONVERT_TIMEZONE));
       map.put("CURDATE", simple(SqlStdOperatorTable.CURRENT_DATE));
       map.put("CURTIME", simple(SqlStdOperatorTable.LOCALTIME));
       map.put("NOW", simple(SqlStdOperatorTable.CURRENT_TIMESTAMP));
-      map.put("TIMESTAMPADD", simple(SqlStdOperatorTable.TIMESTAMP_ADD));
-      map.put("TIMESTAMPDIFF", simple(SqlStdOperatorTable.TIMESTAMP_DIFF));
+//      map.put("TIMESTAMPADD", simple(SqlStdOperatorTable.TIMESTAMP_ADD));
+//      map.put("TIMESTAMPDIFF", simple(SqlStdOperatorTable.TIMESTAMP_DIFF));
       map.put("TO_DATE", simple(SqlLibraryOperators.TO_DATE));
       map.put("TO_TIMESTAMP", simple(SqlLibraryOperators.TO_TIMESTAMP));
 

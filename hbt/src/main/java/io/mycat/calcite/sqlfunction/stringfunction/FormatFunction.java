@@ -33,7 +33,7 @@ public class FormatFunction extends MycatStringFunction {
     public static String format(Object... args) {
         Object num = args[0];
         Integer decimal_position = (Integer) args[1];
-        String locale = Locale.ROOT.getDisplayName();
+        String locale = Locale.ROOT.getLanguage();
         if (args.length == 3) {
             locale = (String) args[2];
         }

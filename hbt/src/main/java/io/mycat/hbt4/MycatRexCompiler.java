@@ -31,7 +31,7 @@ import java.util.List;
 
 public class MycatRexCompiler {
     final static RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-    final static SqlConformance conformance = MycatCalciteSupport.INSTANCE.config.getParserConfig().conformance();
+    final static SqlConformance conformance = MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig().conformance();
 
     final static boolean debug = true;
     final static RelDataType EmptyInputRowType = MycatCalciteSupport.INSTANCE.TypeFactory.builder().build();

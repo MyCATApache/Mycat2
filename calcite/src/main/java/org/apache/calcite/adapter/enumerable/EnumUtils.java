@@ -200,16 +200,19 @@ public class EnumUtils {
       }
     } else if (fromType == java.sql.Time.class) {
       if (targetType == int.class) {
-        return Expressions.call(BuiltInMethod.TIME_TO_INT.method, operand);
+//        return Expressions.call(BuiltInMethod.TIME_TO_INT.method, operand);
+        throw new UnsupportedOperationException();
       } else if (targetType == Integer.class) {
-        return Expressions.call(BuiltInMethod.TIME_TO_INT_OPTIONAL.method, operand);
+//        return Expressions.call(BuiltInMethod.TIME_TO_INT_OPTIONAL.method, operand);
+        throw new UnsupportedOperationException();
       }
     } else if (fromType == java.sql.Timestamp.class) {
-      if (targetType == long.class) {
-        return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG.method, operand);
-      } else if (targetType == Long.class) {
-        return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
-      }
+//      if (targetType == long.class) {
+//        return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG.method, operand);
+//      } else if (targetType == Long.class) {
+//        return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
+//      }
+      throw new UnsupportedOperationException();
     }
     return operand;
   }

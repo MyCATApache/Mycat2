@@ -12,14 +12,17 @@ import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.sqlfunction.DateAddFunction;
-import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
+import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.NotRegexpFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.RegexpFunction;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.plan.RelImplementor;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlCastFunction;
@@ -1036,14 +1039,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 }
                 break;
             case Add:
-                if (rightExpr instanceof SQLIntervalExpr || x.getLeft() instanceof SQLIntervalExpr){
-                   operator = RexImpTable.DateAddFunction.INSTANCE;
-                   break;
+                if (rightExpr instanceof SQLIntervalExpr || x.getLeft() instanceof SQLIntervalExpr) {
+                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    break;
                 }
                 operator = SqlStdOperatorTable.PLUS;
                 break;
             case Subtract:
-                if (rightExpr instanceof SQLIntervalExpr){
+                if (rightExpr instanceof SQLIntervalExpr) {
                     SQLExpr value = ((SQLIntervalExpr) rightExpr).getValue();
                     SQLIntegerExpr value1 = (SQLIntegerExpr) value;
                     right = convertToSqlNode(new SQLIntervalExpr(new SQLIntegerExpr(-value1.getNumber().longValue()),
@@ -1530,29 +1533,199 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 SQLExpr sqlExpr = x.getArguments().get(1);
                 if (x.getArguments().size() > 1 &&
                         sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
-                    argNodes.set(1,convertToSqlNode( new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
+                    argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
                 }
             }
-            case "DATE_ADD":{
+            case "DATE_ADD": {
                 this.sqlNode = RexImpTable.DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SUBDATE": {
+                SQLExpr sqlExpr = x.getArguments().get(1);
+                if (x.getArguments().size() > 1 &&
+                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                    argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
+                }
+            }
+            case "DATE_SUB":
+                this.sqlNode = RexImpTable.DateSubFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            case "SUBTIME": {
+                this.sqlNode = SubTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME_FORMAT": {
+                this.sqlNode = TimeFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME_TO_SEC": {
+                this.sqlNode = TimeToSecFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TO_DAYS": {
+                this.sqlNode = ToDaysFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TO_SECONDS": {
+                this.sqlNode = ToSecondsFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_DATE": {
+                this.sqlNode = UtcDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_TIME": {
+                this.sqlNode = UtcTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_TIMESTAMP": {
+                this.sqlNode = UtcTimestampFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEK": {
+                this.sqlNode = WeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEKDAY": {
+                this.sqlNode = WeekDayFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEKOFYEAR": {
+                this.sqlNode = WeekOfYearFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "YEAR": {
+                this.sqlNode = YearFunction .INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "YEARWEEK": {
+                this.sqlNode = YearWeekFunction .INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SYSDATE": {
+                this.sqlNode = SysDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME": {
+                this.sqlNode = TimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMEDIFF": {
+                this.sqlNode = TimeDiff2Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMESTAMP": {
+                if (argNodes.size() == 1) {
+                    this.sqlNode = Timestamp2Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                if (argNodes.size() == 2) {
+                    this.sqlNode = TimestampComposeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                throw new UnsupportedOperationException();
+            }
+            case "DAY":
+            case "DAYOFMONTH": {
+                ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.DAY, SqlParserPos.ZERO), argNodes.get(0));
+                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                return false;
+            }
+            case "DAYOFWEEK": {
+                this.sqlNode = DayOfWeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "FROM_DAYS": {
+                this.sqlNode = FromDaysFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "DAYOFYEAR": {
+                ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.YEAR, SqlParserPos.ZERO), argNodes.get(0));
+                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                return false;
+            }
+            case "HOUR": {
+                this.sqlNode = HourFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LAST_DAY": {
+                this.sqlNode = LastDayFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LOCALTIMESTAMP":
+            case "LOCALTIME":
+            case "CURRENT_TIMESTAMP":
+            case "NOW": {
+                this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MAKEDATE": {
+                this.sqlNode = MakeDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MAKETIME": {
+                this.sqlNode = MakeTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UNIX_TIMESTAMP": {
+                this.sqlNode = UnixTimestampFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MICROSECOND": {
+                this.sqlNode = MicrosecondFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MINUTE": {
+                this.sqlNode = MinuteFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "PERIOD_ADD": {
+                this.sqlNode = PeriodAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "PERIOD_DIFF": {
+                this.sqlNode = PeriodDiffFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "QUARTER": {
+                this.sqlNode = QuarterFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SECOND": {
+                this.sqlNode = SecondFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SEC_TO_TIME": {
+                this.sqlNode = SecToTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "STR_TO_DATE": {
+                this.sqlNode = SecToDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MONTHNAME": {
+                this.sqlNode = MonthNameFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MONTH": {
+                this.sqlNode = MonthFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "TIMESTAMPDIFF": {
                 if (argNodes.size() > 0 && argNodes.get(0) instanceof SqlIdentifier) {
                     SqlIdentifier arg0 = (SqlIdentifier) argNodes.get(0);
-                    TimeUnit timeUnit = TimeUnit.valueOf(arg0.toString().toUpperCase());
-                    argNodes.set(0, SqlLiteral.createSymbol(timeUnit, SqlParserPos.ZERO));
+                    argNodes.set(0, SqlLiteral.createCharString(arg0.toString().toUpperCase(), SqlParserPos.ZERO));
                 }
-                this.sqlNode = SqlStdOperatorTable.TIMESTAMP_DIFF.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = TimestampDiffFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "TIMESTAMPADD": {
-                if (argNodes.size() > 0 && argNodes.get(0) instanceof SqlIdentifier) {
+                SQLExpr sqlExpr = arguments.get(0);
+                if (sqlExpr instanceof SQLIdentifierExpr) {
                     SqlIdentifier arg0 = (SqlIdentifier) argNodes.get(0);
-                    TimeUnit timeUnit = TimeUnit.valueOf(arg0.toString().toUpperCase());
-                    argNodes.set(0, SqlLiteral.createSymbol(timeUnit, SqlParserPos.ZERO));
+                    argNodes.set(0, SqlLiteral.createCharString(arg0.toString().toUpperCase(), SqlParserPos.ZERO));
                 }
-                this.sqlNode = SqlStdOperatorTable.TIMESTAMP_ADD.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = TimestampAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "CONVERT": {
@@ -1570,6 +1743,26 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     return false;
                 }
                 this.sqlNode = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "DATE_FORMAT": {
+                this.sqlNode = DateFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "FROM_UNIXTIME": {
+                if (argNodes.size() == 1) {
+                    this.sqlNode = FromUnixTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                this.sqlNode = FromUnixTimeFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "GET_FORMAT": {
+                this.sqlNode = GetFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        ImmutableList.of(
+                                SqlLiteral.createCharString(argNodes.get(0).toString(), SqlParserPos.ZERO),
+                                argNodes.get(1)
+                        ));
                 return false;
             }
             case "TRIM": {
@@ -1868,53 +2061,53 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[1] = TimeUnit.MICROSECOND;
                 break;
             case MICROSECOND:
-             timeUnits[0] = TimeUnit.MICROSECOND;
-             timeUnits[1] = TimeUnit.MICROSECOND;
-             break;
+                timeUnits[0] = TimeUnit.MICROSECOND;
+                timeUnits[1] = null;
+                break;
             case SECOND:
                 timeUnits[0] = TimeUnit.SECOND;
-                timeUnits[1] = TimeUnit.SECOND;
+                timeUnits[1] = null;
                 break;
             case MINUTE:
                 timeUnits[0] = TimeUnit.MINUTE;
-                timeUnits[1] = TimeUnit.MINUTE;
+                timeUnits[1] = null;
                 break;
             case HOUR:
                 timeUnits[0] = TimeUnit.HOUR;
-                timeUnits[1] = TimeUnit.HOUR;
+                timeUnits[1] = null;
                 break;
             case DAY:
                 timeUnits[0] = TimeUnit.DAY;
-                timeUnits[1] = TimeUnit.DAY;
+                timeUnits[1] = null;
                 break;
             case WEEK:
                 timeUnits[0] = TimeUnit.WEEK;
-                timeUnits[1] = TimeUnit.WEEK;
+                timeUnits[1] = null;
                 break;
             case MONTH:
                 timeUnits[0] = TimeUnit.MONTH;
-                timeUnits[1] = TimeUnit.MONTH;
+                timeUnits[1] = null;
                 break;
             case QUARTER:
                 timeUnits[0] = TimeUnit.QUARTER;
-                timeUnits[1] = TimeUnit.QUARTER;
+                timeUnits[1] = null;
                 break;
             case YEAR:
                 timeUnits[0] = TimeUnit.YEAR;
-                timeUnits[1] = TimeUnit.YEAR;
+                timeUnits[1] = null;
                 break;
-             case MINUTE_MICROSECOND:
-             timeUnits[0] = TimeUnit.MINUTE;
-             timeUnits[1] = TimeUnit.MICROSECOND;
-             break;
+            case MINUTE_MICROSECOND:
+                timeUnits[0] = TimeUnit.MINUTE;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case MINUTE_SECOND:
                 timeUnits[0] = TimeUnit.MINUTE;
                 timeUnits[1] = TimeUnit.SECOND;
                 break;
-             case HOUR_MICROSECOND:
-             timeUnits[0] = TimeUnit.HOUR;
-             timeUnits[1] = TimeUnit.MICROSECOND;
-             break;
+            case HOUR_MICROSECOND:
+                timeUnits[0] = TimeUnit.HOUR;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case HOUR_SECOND:
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1923,10 +2116,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.MINUTE;
                 break;
-             case DAY_MICROSECOND:
-             timeUnits[0] = TimeUnit.DAY;
-             timeUnits[1] = TimeUnit.MICROSECOND;
-             break;
+            case DAY_MICROSECOND:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case DAY_SECOND:
                 timeUnits[0] = TimeUnit.DAY;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1949,7 +2142,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 break;
             case DOW:
                 timeUnits[0] = TimeUnit.DOW;
-                timeUnits[1] = TimeUnit.DOW;
+                timeUnits[1] = null;
                 break;
             case DAY_OF_MONTH:
                 timeUnits[0] = TimeUnit.DAY;
@@ -1975,7 +2168,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 break;
             case DOY:
                 timeUnits[0] = TimeUnit.DOY;
-                timeUnits[1] = TimeUnit.DOY;
+                timeUnits[1] = null;
                 break;
             case YEAR_TO_MONTH:
                 timeUnits[0] = TimeUnit.YEAR;
@@ -2003,12 +2196,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLExtractExpr x) {
-        new SQLCastExpr(x.getValue(), SQLDateExpr.DATA_TYPE).accept(this);
+        SqlNode sqlNode = convertToSqlNode(x.getValue());
         TimeUnit timeUnits[] = getTimeUnit(x.getUnit());
-        sqlNode = SqlStdOperatorTable.EXTRACT
-                .createCall(SqlParserPos.ZERO
-                        , new SqlIntervalQualifier(timeUnits[0], timeUnits[1], SqlParserPos.ZERO)
-                        , sqlNode);
+        TimeUnitRange range = TimeUnitRange.of(timeUnits[0], timeUnits[1]);
+        ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(range, SqlParserPos.ZERO), sqlNode);
+
+        this.sqlNode = RexImpTable.ExtractFunction.INSTANCE
+                .createCall(SqlParserPos.ZERO, sqlNodes);
         return false;
     }
 

@@ -324,7 +324,7 @@ public class DateFormatFunction extends MycatDateFunction {
         return null;
     }
 
-    private static boolean isOption(char c) {
+    public static boolean isOption(char c) {
         switch (c) {
             case 'a':
             case 'b':
