@@ -74,15 +74,16 @@ public class CalciteUtls {
     public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        filters.forEach((filter) -> {
+        for (RexNode filter : filters) {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
             boolean success = addOrRootFilter(table, dataMappingRule, filter);
             if (success) {
                 record.merge(dataMappingRule);
             }
-        });
+        }
         LOGGER.info("optimize filters:{}", filters);
-        return table.function().calculate(record.getColumnMap());
+        List<DataNode> dataNodeList = table.function().calculate(record.getColumnMap());
+        return dataNodeList;
     }
 
     @NotNull
@@ -161,6 +162,26 @@ public class CalciteUtls {
         return addFilter(table, evaluator, filter);
     }
 
+    /**
+     * SELECT * FROM travelrecord WHERE id >= 1 AND id <= 10;
+     * SELECT * FROM travelrecord WHERE id not in (1,2);
+     * SELECT * FROM travelrecord WHERE id in (1,15);
+     * SELECT * FROM travelrecord WHERE id not BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 15;
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND (id = 3 or true)) OR
+     *   (id = 15 AND false) OR
+     *   (id = 15 AND true);
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND ((id/2) =0 OR id = 3)) OR
+     *   (id < 100 AND days = 1) OR
+     *   (id < 100 AND traveldate = '2020-08-22');
+     * @param table
+     * @param evaluator
+     * @param filter
+     * @return
+     */
     public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
         List<SimpleColumnInfo> rowOrder = table.getColumns();
         if (filter.isA(SqlKind.AND)) {
@@ -202,20 +223,55 @@ public class CalciteUtls {
             return false;
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
+
             RexNode left = call.getOperands().get(0);
-
             left = unCastWrapper(left);
-
 
             RexNode right = call.getOperands().get(1);
             right = unCastWrapper(right);
+
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
                 evaluator.assignment( rowOrder.get(index).getColumnName(), value);
                 return true;
             }
+        } else if (filter.isA(SqlKind.GREATER_THAN) || filter.isA(SqlKind.LESS_THAN)
+                || filter.isA(SqlKind.LESS_THAN_OR_EQUAL) || filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)) {
+            //这里处理[大于,小于,大于等于,小于等于]的情况.
+            RexCall call = (RexCall) filter;
 
+            RexNode left = call.getOperands().get(0);
+            left = unCastWrapper(left);
+
+            RexNode right = call.getOperands().get(1);
+            right = unCastWrapper(right);
+
+            if (left instanceof RexInputRef && right instanceof RexLiteral) {
+                int index = ((RexInputRef) left).getIndex();
+                String value = ((RexLiteral) right).getValue2().toString();
+                String columnName = rowOrder.get(index).getColumnName();
+                if(filter.isA(SqlKind.GREATER_THAN)){
+                    evaluator.assignmentRange(columnName , value,null);
+                    return true;
+                }else if(filter.isA(SqlKind.LESS_THAN)){
+                    evaluator.assignmentRange(columnName , null,value);
+                    return true;
+                }else if(filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)){
+                    evaluator.assignmentRange(columnName , value,null);
+                    evaluator.assignment(columnName , value);
+                    return true;
+                }else if(filter.isA(SqlKind.LESS_THAN_OR_EQUAL)){
+                    evaluator.assignmentRange(columnName , null,value);
+                    evaluator.assignment(columnName , value);
+                    return true;
+                }
+            }
+        } else if (filter.isA(SqlKind.OR)) {
+            //这里处理IN的情况，IN会转成多个OR. 例如： id in(1,2,3) 等同于 OR id = 1 or id = 2 or id = 3;
+            return addOrRootFilter(table, evaluator, filter);
+        }else {
+            return false;
         }
         return false;
     }

@@ -1,13 +1,10 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.client.MycatRequest;
-import io.mycat.commands.MycatdbCommand;
 import io.mycat.hbt3.DrdsConfig;
 import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
@@ -17,11 +14,9 @@ import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.MycatRel;
 import io.mycat.hbt4.PlanCache;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Explains;
 import io.mycat.util.Response;
-import io.vertx.core.spi.resolver.ResolverProvider;
 import lombok.SneakyThrows;
 
 import java.sql.JDBCType;
@@ -32,14 +27,13 @@ import java.util.List;
 
 public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement> {
 
-
     @Override
     @SneakyThrows
     protected void onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
         MySqlExplainStatement ast = request.getAst();
         if(ast.isDescribe()){
             response.tryBroadcastShow(ast.toString());
-            return ;
+            return;
         }
         try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
             DrdsConst drdsConst = new DrdsConfig();
