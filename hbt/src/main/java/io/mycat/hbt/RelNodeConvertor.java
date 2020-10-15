@@ -346,7 +346,7 @@ public class RelNodeConvertor {
         LogicalProject project = (LogicalProject) relNode;
         Schema schema = convertRelNode(project.getInput());
         List<String> fieldNames = project.getInput().getRowType().getFieldNames();
-        List<Expr> expr = getExprs(project.getChildExps(), null);
+        List<Expr> expr = getExprs(project.getProjects(), null);
         RelDataType outRowType = project.getRowType();
         List<String> outFieldNames = outRowType.getFieldNames();
         ArrayList<Expr> outExpr = new ArrayList<>();
@@ -355,7 +355,7 @@ public class RelNodeConvertor {
         for (int i = 0; i < outputRel.size(); i++) {
             Expr expr1 = expr.get(i);
             SqlTypeName outType = outputRel.get(i).getType().getSqlTypeName();
-            SqlTypeName inType = project.getChildExps().get(i).getType().getSqlTypeName();
+            SqlTypeName inType = project.getProjects().get(i).getType().getSqlTypeName();
             if (!outType.equals(inType)) {
                 expr1 = new Expr(HBTOp.CAST, Arrays.asList(expr1, new Identifier(ExprExplain.type(outType))));
             }

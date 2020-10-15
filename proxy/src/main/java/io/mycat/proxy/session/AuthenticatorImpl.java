@@ -13,12 +13,11 @@ import java.util.regex.Pattern;
 
 public class AuthenticatorImpl implements Authenticator {
     final Map<String, Matcher> userMatchers = new HashMap<>();
-
+    final Map<String, UserConfig> map;
     public AuthenticatorImpl(Map<String, UserConfig> map) {
         for (Map.Entry<String,UserConfig> stringUserConfigEntry : map.entrySet()) {
          UserConfig value = stringUserConfigEntry.getValue();
             Predicate<String> stringPredicate;
-
             if (value.getIp() != null) {
                 stringPredicate = Pattern.compile(value.getIp()).asPredicate();
             } else {
@@ -27,6 +26,7 @@ public class AuthenticatorImpl implements Authenticator {
             Matcher matcher = new Matcher(value.getPassword(), stringPredicate);
             userMatchers.put(stringUserConfigEntry.getKey(), matcher);
         }
+        this.map = map;
     }
 
     @Override
@@ -39,6 +39,11 @@ public class AuthenticatorImpl implements Authenticator {
             return new AuthInfo(new MycatException("ip:" + ip + " is banned"), null);
         }
         return new AuthInfo(null, matcher.getRightPassword());
+    }
+
+    @Override
+    public UserConfig getUserInfo(String username) {
+        return map.get(username);
     }
 
     @AllArgsConstructor

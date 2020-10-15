@@ -15,20 +15,28 @@
 package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.DatasourceConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author jamie12221 date 2019-05-10 13:21
  **/
 public class JdbcDataSource implements MycatDataSource {
-    private final DatasourceRootConfig.DatasourceConfig datasourceConfig;
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDataSource.class);
+    private final DatasourceConfig datasourceConfig;
     final AtomicInteger counter = new AtomicInteger(0);
     final DataSource dataSource;
+    volatile boolean valid = true;
 
-    public JdbcDataSource(DatasourceRootConfig.DatasourceConfig datasourceConfig, DataSource dataSource) {
+    public JdbcDataSource(DatasourceConfig datasourceConfig, DataSource dataSource) {
         this.datasourceConfig = datasourceConfig;
         this.dataSource = dataSource;
     }
@@ -49,6 +57,11 @@ public class JdbcDataSource implements MycatDataSource {
         return datasourceConfig.getName();
     }
 
+    @Override
+    public boolean isValid() {
+        return false;
+    }
+
     public boolean isMySQLType() {
         return datasourceConfig.computeType().isNative();
     }
@@ -62,7 +75,7 @@ public class JdbcDataSource implements MycatDataSource {
         return datasourceConfig.getDbType();
     }
 
-    public DatasourceRootConfig.DatasourceConfig getConfig() {
+    public DatasourceConfig getConfig() {
         return datasourceConfig;
     }
 
@@ -92,5 +105,32 @@ public class JdbcDataSource implements MycatDataSource {
 
     public int getUsedCount() {
         return counter.get();
+    }
+
+    public void setValid(boolean valid) {
+        this.valid = valid;
+    }
+
+    public  void close() {
+        Optional.ofNullable(this.getDataSource()).ifPresent(i -> {
+            try {
+                Class<? extends DataSource> aClass = i.getClass();
+                Method[] methods = aClass.getMethods();
+                ArrayList<Method> methodList = new ArrayList<>();
+                for (Method method : methods) {
+                    if ("close".equals(method.getName())) {
+                        if (Void.TYPE.equals(method.getReturnType())) {
+                            methodList.add(method);
+                        }
+                    }
+                }
+                methodList.sort(Comparator.comparingInt(Method::getParameterCount));
+                if (!methodList.isEmpty()) {
+                    methodList.get(0).invoke(i);
+                }
+            } catch (Throwable e) {
+                LOGGER.warn("试图关闭数据源失败:{} ,{}", getName(), e);
+            }
+        });
     }
 }

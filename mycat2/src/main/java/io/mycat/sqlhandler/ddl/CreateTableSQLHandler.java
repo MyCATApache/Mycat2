@@ -3,20 +3,18 @@ package io.mycat.sqlhandler.ddl;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
 import io.mycat.*;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.replica.ReplicaDataSourceSelector;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.text.MessageFormat;
 import java.util.*;
@@ -26,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * chenjunwnen
- *
+ * <p>
  * 实现创建表
  */
 
@@ -46,13 +44,14 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
                 return;
             }
             tableName = SQLUtils.normalize(tableName);
-            TableHandler tableHandler = MetadataManager.INSTANCE.getTable(schemaName, tableName);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
             if (tableHandler == null) {
                 response.sendError(new MycatException(schemaName + "." + tableName + " is not existed"));
                 return;
             }
             Map<String, Set<String>> sqlAndDatasoureMap = new HashMap<>();
-            List<DataNode> databaseCollections= new ArrayList<>();
+            List<DataNode> databaseCollections = new ArrayList<>();
             if (tableHandler instanceof ShardingTableHandler) {
                 ShardingTableHandler handler = (ShardingTableHandler) tableHandler;
                 for (DataNode shardingBackend : handler.dataNodes()) {
@@ -68,11 +67,11 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
             } else {
                 throw new UnsupportedOperationException("UnsupportedOperation :" + tableHandler);
             }
-            List<String> dataSources = sqlAndDatasoureMap.values().stream().flatMap(i->i.stream()).distinct().collect(Collectors.toList());
+            List<String> dataSources = sqlAndDatasoureMap.values().stream().flatMap(i -> i.stream()).distinct().collect(Collectors.toList());
 
             //建立物理数据中与逻辑库逻辑表同名物理库
-            SchemaInfo schemaInfo = new SchemaInfo(tableHandler.getSchemaName(),tableHandler.getTableName());
-            dataSources.forEach(i->{
+            SchemaInfo schemaInfo = new SchemaInfo(tableHandler.getSchemaName(), tableHandler.getTableName());
+            dataSources.forEach(i -> {
                 BackendTableInfo backendTableInfo = new BackendTableInfo(i, schemaInfo);
                 makeTask(ast, sqlAndDatasoureMap, backendTableInfo);
             });
@@ -83,27 +82,28 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
 
             if (throwables.isEmpty()) {
                 response.sendOk();
-                return ;
+                return;
             } else {
                 response.sendError(new MycatException(throwables.toString()));
-                return ;
+                return;
             }
         } catch (Throwable throwable) {
             response.sendError(throwable);
-            return ;
+            return;
         }
     }
 
     private void createTable(List<Throwable> throwables, Map<String, Set<String>> sqlAndDatasoureMap) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         List<CompletableFuture> resList = new ArrayList<>();
-
         sqlAndDatasoureMap.forEach((sql, dataSources) -> {
             for (String dataSource : dataSources) {
                 resList.add(CompletableFuture.runAsync(() -> {
-                    try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
+                    try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataSource)) {
                         connection.executeUpdate(sql, false);
                     }
-                },     JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
+                }, mycatWorkerProcessor.getMycatWorker()));
             }
         });
 
@@ -117,15 +117,17 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
     }
 
     private void createDatabase(List<Throwable> throwables, List<DataNode> databaseCollections) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         List<CompletableFuture> resList = new ArrayList<>();
         for (DataNode databaseCollection : databaseCollections) {
             for (String dataSource : getDatasource(databaseCollection.getTargetName())) {
                 resList.add(CompletableFuture.runAsync(() -> {
-                    try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(dataSource)) {
+                    try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataSource)) {
                         connection.executeUpdate(MessageFormat.format("create database if not exists  {0} ",
                                 dataSource), false);
                     }
-                },       JdbcRuntime.INSTANCE.getFetchDataExecutorService()));
+                }, mycatWorkerProcessor.getMycatWorker()));
             }
         }
 
@@ -159,11 +161,12 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStat
 
     private static Set<String> getDatasource(String targetName) {
         Set<String> dataSources = new HashSet<>();
-        if (ReplicaSelectorRuntime.INSTANCE.isReplicaName(targetName)) {
-            ReplicaDataSourceSelector dataSourceSelector = ReplicaSelectorRuntime.INSTANCE.getDataSourceSelector(targetName);
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        if (selectorRuntime.isReplicaName(targetName)) {
+            ReplicaDataSourceSelector dataSourceSelector = selectorRuntime.getDataSourceSelector(targetName);
             dataSources.addAll(dataSourceSelector.getRawDataSourceMap().keySet());
         }
-        if (ReplicaSelectorRuntime.INSTANCE.isDatasource(targetName)) {
+        if (selectorRuntime.isDatasource(targetName)) {
             dataSources.add(targetName);
         }
         return dataSources;

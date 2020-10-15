@@ -1,12 +1,8 @@
 package io.mycat.datasource.jdbc.transactionsession;
 
 import com.google.common.collect.ImmutableMap;
-import io.mycat.DataSourceNearness;
-import io.mycat.MycatConnection;
-import io.mycat.MycatDataContext;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
@@ -214,7 +210,8 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                 needAdd.add(key);
             }
         }
-        synchronized (JdbcRuntime.INSTANCE) {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        synchronized (jdbcConnectionManager) {
             for (String jdbcDataSource : needAdd) {
                 Deque<MycatConnection> mycatConnections = res.computeIfAbsent(jdbcDataSource, s -> new LinkedList<>());
                 DefaultConnection connection = getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);

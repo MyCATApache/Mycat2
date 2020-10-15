@@ -11,16 +11,7 @@ import java.util.List;
 public class GlobalTableConfig {
     String createTableSQL;
     String balance;
-    List<BackEndTableInfoConfig> dataNodes;
+    List<GlobalBackEndTableInfoConfig> dataNodes;
 
-    @AllArgsConstructor
-    @Data
-    @Builder
-    @EqualsAndHashCode
-    public static class BackEndTableInfoConfig {
-        private String targetName;
 
-        public BackEndTableInfoConfig() {
-        }
-    }
 }

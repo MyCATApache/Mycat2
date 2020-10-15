@@ -14,7 +14,10 @@
  */
 package io.mycat.beans;
 
+import com.mysql.cj.conf.ConnectionUrlParser;
+import com.mysql.cj.conf.HostInfo;
 import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author jamie12221 date 2019-05-10 13:21
  **/
 public abstract class MySQLDatasource implements MycatDataSource {
+
+    final String ip;
+    final int port;
 
     @Override
     public boolean equals(Object o) {
@@ -45,12 +51,16 @@ public abstract class MySQLDatasource implements MycatDataSource {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDatasource.class);
-    protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
+    protected final DatasourceConfig datasourceConfig;
     protected final AtomicInteger connectionCounter = new AtomicInteger(0);
 //    protected final AtomicInteger usedCounter = new AtomicInteger(0);
 
-    public MySQLDatasource(DatasourceRootConfig.DatasourceConfig datasourceConfig) {
+    public MySQLDatasource(DatasourceConfig datasourceConfig) {
         this.datasourceConfig = datasourceConfig;
+        ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasourceConfig.getUrl());
+        HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+        this.ip = hostInfo.getHost();
+        this.port = hostInfo.getPort();
     }
 
     public int getSessionLimitCount() {
@@ -67,11 +77,11 @@ public abstract class MySQLDatasource implements MycatDataSource {
     }
 
     public String getIp() {
-        return this.datasourceConfig.getIp();
+        return ip;
     }
 
     public int getPort() {
-        return this.datasourceConfig.getPort();
+        return port;
     }
 
     public String getUsername() {

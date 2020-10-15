@@ -26,36 +26,36 @@ import java.util.stream.Collectors;
 public class MycatPreparedStatementUtil {
     public static void collect(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
-
-            @Override
-            public boolean visit(SQLOrderBy x) {
-                try {
-                    this.parameterized = false;
-                    return super.visit(x);
-                } finally {
-                    this.parameterized = true;
-                }
-            }
-            @Override
-            public boolean visit(SQLLimit x) {
-                try {
-                    this.parameterized = false;
-                    return super.visit(x);
-                } finally {
-                    this.parameterized = true;
-                }
-            }
-
-
-            @Override
-            public boolean visit(SQLSelectItem x) {
-                try {
-                    this.parameterized = false;
-                    return super.visit(x);
-                } finally {
-                    this.parameterized = true;
-                }
-            }
+//
+//            @Override
+//            public boolean visit(SQLOrderBy x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
+//            @Override
+//            public boolean visit(SQLLimit x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
+//
+//
+//            @Override
+//            public boolean visit(SQLSelectItem x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
         };
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |

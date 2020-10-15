@@ -15,7 +15,6 @@
 package io.mycat.bindthread;
 
 import io.mycat.MycatException;
-import io.mycat.MycatWorkerProcessor;
 import io.mycat.ScheduleUtil;
 
 import java.io.Closeable;
@@ -42,7 +41,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
     private final ExecutorService noBindingPool;
-    private final ScheduledFuture<?> schedule;
 
     long lastPollTaskTime = System.currentTimeMillis();
 
@@ -56,18 +54,19 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
                           int maxThread,
                           long keeplive,
                           Function<BindThreadPool, PROCESS> processFactory,
+                          ExecutorService noBindingPool,
                           Consumer<Exception> exceptionHandler) {
         this.waitTaskTimeout = waitTaskTimeout;
         this.timeoutUnit = timeoutUnit;
         this.minThread = minThread;
-        this.maxThread = maxThread ;
+        this.maxThread = maxThread;
         this.idleList = new ArrayBlockingQueue<>(maxThread);
         this.pending = new ArrayBlockingQueue<>(
                 maxPengdingLimit < 0 ? 65535 : maxPengdingLimit);
         this.keeplive = keeplive;
         this.processFactory = processFactory;
         this.exceptionHandler = exceptionHandler;
-        this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+        ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
             try {
                 pollTask();
             } catch (Exception e) {
@@ -75,7 +74,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
             }
         }, 1, 1, TimeUnit.MILLISECONDS);
         //   , 1, 1, TimeUnit.MILLISECONDS
-        this.noBindingPool = MycatWorkerProcessor.INSTANCE.getMycatWorker();
+        this.noBindingPool = noBindingPool;
     }
 
     void pollTask() {
@@ -159,7 +158,14 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         });
     }
 
-    public boolean runOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+    public void runOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+        boolean b = tryRunOnBinding(key, task);
+        if (!b) {
+            throw new IllegalArgumentException("can not run on binding");
+        }
+    }
+
+    private boolean tryRunOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
         PROCESS transactionThread = map.computeIfAbsent(key, new Function<KEY, PROCESS>() {
             @Override
             public PROCESS apply(KEY key) {
@@ -189,7 +195,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         return new PengdingJob() {
             @Override
             public boolean run() {
-                return BindThreadPool.this.runOnBinding(key, task);
+                return BindThreadPool.this.tryRunOnBinding(key, task);
             }
 
             @Override

@@ -21,11 +21,12 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     public void handle(MycatRequest request, MycatDataContext context, Response response) {
         try {
             String value = SQLUtils.normalize(request.getText().split("=")[1].trim());
-            if (Boolean.parseBoolean(value)) {
-                ReplicaSelectorRuntime.INSTANCE.restartHeatbeat();
-            }else {
-                ReplicaSelectorRuntime.INSTANCE.stopHeartBeat();
-            }
+//            if (Boolean.parseBoolean(value)) {
+//                ReplicaSelectorRuntime.INSTANCE.restartHeatbeat();
+//            }else {
+//                ReplicaSelectorRuntime.INSTANCE.stopHeartBeat();
+//            }
+            //@todo
             response.sendOk();
         } catch (Throwable e) {
             response.sendError(e);

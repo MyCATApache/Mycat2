@@ -42,7 +42,7 @@ public class MycatProjectRule extends MycatConverterRule {
 
     private static boolean userDefinedFunctionInProject(Project project) {
         CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
-        for (RexNode node : project.getChildExps()) {
+        for (RexNode node : project.getProjects()) {
             node.accept(visitor);
             if (visitor.containsUserDefinedFunction()) {
                 return true;

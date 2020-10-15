@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.logical.rel.MycatMergeSort;
+import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -28,7 +29,11 @@ import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import java.math.BigDecimal;
@@ -81,11 +86,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (RelMdSqlViews.filter(input)) {
-            return filter(input, filter, optimizationContext);
-        } else {
-            return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
+        if (!userDefinedFunctionInFilter(filter)) {
+            if (RelMdSqlViews.filter(input)) {
+                return filter(input, filter, optimizationContext);
+            }
         }
+        return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
     }
 
     @Override
@@ -96,20 +102,84 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalProject project) {
         RelNode input = project.getInput().accept(this);
-        if (input instanceof LogicalTableScan) {
-            LogicalTableScan logicalTableScan = (LogicalTableScan) input;
-            RelOptTable table = logicalTableScan.getTable();
-            AbstractMycatTable abstractMycatTable = table.unwrap(AbstractMycatTable.class);
-            Distribution distribution = abstractMycatTable.computeDataNode();
-            return View.of(logicalTableScan, distribution);
+        boolean canProject = !userDefinedFunctionInProject(project);
+        if (canProject) {
+            if (RelMdSqlViews.project(input)) {
+                return project(input, project);
+            }
         }
-        if (RelMdSqlViews.project(input)) {
-            return project(input, project);
-        } else {
-            return project.copy(project.getTraitSet(), ImmutableList.of(input));
+        return project.copy(project.getTraitSet(), ImmutableList.of(input));
+    }
+
+    private static boolean userDefinedFunctionInProject(Project project) {
+        CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
+        for (RexNode node : project.getProjects()) {
+            node.accept(visitor);
+            if (visitor.containsUserDefinedFunction()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean userDefinedFunctionInFilter(Filter filter) {
+        CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
+        RexNode condition = filter.getCondition();
+        condition.accept(visitor);
+        return filter.containsOver() || visitor.containsUserDefinedFunction();
+    }
+
+    /**
+     * Visitor that checks whether part of a projection is a user-defined
+     * function (UDF).
+     */
+    private static class CheckingUserDefinedAndConvertFunctionVisitor
+            extends RexVisitorImpl<Void> {
+
+        private boolean containsUsedDefinedFunction = false;
+
+        CheckingUserDefinedAndConvertFunctionVisitor() {
+            super(true);
+        }
+
+        public boolean containsUserDefinedFunction() {
+            return containsUsedDefinedFunction;
+        }
+
+        @Override
+        public Void visitCall(RexCall call) {
+            SqlOperator operator = call.getOperator();
+            String name = operator.getName();
+            if (operator instanceof SqlFunction) {
+                containsUsedDefinedFunction |= Information_Functions.containsKey(name,false);
+            }
+            return super.visitCall(call);
         }
     }
 
+    public static NameMap<Object> Information_Functions =new NameMap<>();
+    static {
+        Information_Functions.put("BENCHMARK",null);
+        Information_Functions.put("BINLOG_GTID_POS",null);
+        Information_Functions.put("CHARSET",null);
+        Information_Functions.put("COERCIBILITY",null);
+        Information_Functions.put("COLLATION",null);
+        Information_Functions.put("CONNECTION_ID",null);
+        Information_Functions.put("CURRENT_ROLE",null);
+        Information_Functions.put("CURRENT_USER",null);
+        Information_Functions.put("DATABASE",null);
+        Information_Functions.put("DEFAULT",null);
+        Information_Functions.put("FOUND_ROWS",null);
+        Information_Functions.put("LAST_INSERT_ID",null);
+        Information_Functions.put("LAST_VALUE",null);
+        Information_Functions.put("PROCEDURE_ANALYSE",null);
+        Information_Functions.put("ROW_COUNT",null);
+        Information_Functions.put("SCHEMA",null);
+        Information_Functions.put("SESSION_USER",null);
+        Information_Functions.put("SYSTEM_USER",null);
+        Information_Functions.put("USER",null);
+        Information_Functions.put("VERSION",null);
+    }
     @Override
     public RelNode visit(LogicalJoin join) {
         List<RelNode> inputs = join.getInputs();

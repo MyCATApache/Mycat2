@@ -35,13 +35,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                 .map(i-> SQLUtils.normalize(i)).orElse(null);
         String tableName = SQLUtils.normalize(tableSource.getTableName());
         SchemaHandler schemaHandler;
-        Optional<Map<String, SchemaHandler>> handlerMapOptional = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap());
-        Optional<String> targetNameOptional = Optional.ofNullable(RootHelper.INSTANCE)
-                .map(i -> i.getConfigProvider())
-                .map(i -> i.currentConfig())
-                .map(i -> i.getMetadata())
-                .map(i -> i.getPrototype())
-                .map(i -> i.getTargetName());
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        Optional<Map<String, SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());
+        Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
         if (!handlerMapOptional.isPresent()) {
             if (targetNameOptional.isPresent()) {
                 receiver.proxyUpdate(targetNameOptional.get(), Objects.toString(sqlStatement));

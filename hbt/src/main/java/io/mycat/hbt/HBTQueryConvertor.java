@@ -22,13 +22,14 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
-import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
@@ -39,7 +40,6 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -94,8 +94,10 @@ public class HBTQueryConvertor {
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-                JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+                ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+                targetName = selectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
+                JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
                 try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
                     try (Statement statement = connection1.createStatement()) {
                         statement.setMaxRows(0);
@@ -207,7 +209,7 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
-        Distribution distribution = mycatTable.computeDataNode(build.getChildExps());
+        Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(build.getCondition()));
         Iterable<DataNode> dataNodes = distribution.getDataNodes(Collections.emptyList());
         return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }
@@ -242,7 +244,8 @@ public class HBTQueryConvertor {
     private RelDataType tryGetRelDataTypeByParse(String sql) {
         try {
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            metadataManager.resolveMetadata(sqlStatement);
             if (sqlStatement instanceof SQLSelectStatement) {
                 SQLSelectQueryBlock firstQueryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock();
                 final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
@@ -702,7 +705,7 @@ public class HBTQueryConvertor {
      */
     public static RexNode literal(RelDataType type, Object value, boolean allowCast) {
         final RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+        RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         RexNode literal;
         if (value == null) {
             literal = rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));

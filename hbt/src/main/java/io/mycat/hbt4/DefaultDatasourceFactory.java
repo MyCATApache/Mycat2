@@ -2,28 +2,13 @@ package io.mycat.hbt4;
 
 import com.alibaba.fastsql.util.JdbcUtils;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
 import io.mycat.*;
-import io.mycat.api.collector.ComposeFutureRowBaseIterator;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
-import org.apache.calcite.sql.util.SqlString;
-import org.checkerframework.checker.signature.qual.SourceNameForNonArrayNonInner;
 
-import java.sql.PreparedStatement;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 public class DefaultDatasourceFactory implements DatasourceFactory {
     final MycatDataContext context;
@@ -87,9 +72,9 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     @SneakyThrows
     public List<Connection> getTmpConnections(List<String> targets) {
         List<Connection> res = new ArrayList<>();
-        JdbcConnectionManager connectionManager = JdbcRuntime.INSTANCE.getConnectionManager();
+        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         Map<String, JdbcDataSource> datasourceInfo = connectionManager.getDatasourceInfo();
-        synchronized (JdbcRuntime.INSTANCE) {
+        synchronized (connectionManager) {
             for (String jdbcDataSource : targets) {
                 JdbcDataSource dataSource = datasourceInfo.get(jdbcDataSource);
                 res.add(  dataSource.getDataSource().getConnection());

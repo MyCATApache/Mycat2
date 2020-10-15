@@ -15,14 +15,9 @@
 package io.mycat.calcite;
 
 
-import io.mycat.MycatConfig;
-import io.mycat.RootHelper;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.config.DatasourceRootConfig;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.SqlType;
@@ -232,28 +227,7 @@ public class CalciteConvertors {
         }
     }
 
-    public static List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String targetName) {
-        String dataSourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, true, null);
-        MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
-        DatasourceRootConfig.DatasourceConfig datasourceConfig = Optional.ofNullable(mycatConfig.getDatasource()).map(i -> i.getDatasources()).map(i -> i.stream().collect(Collectors.toMap(k -> k.getName(),
-                v -> v))).map(i -> i.get(dataSourceName)).orElse(null);
-        if (datasourceConfig == null) {
-            return null;
-        }
-        try (Connection rawConnection = DriverManager.getConnection(datasourceConfig.getUrl(), datasourceConfig.getUser(), datasourceConfig.getPassword())) {
-            DatabaseMetaData metaData = rawConnection.getMetaData();
-            return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);
-        } catch (Exception e) {
-            LOGGER.warn("不能根据schemaName:{} tableName:{} url:{} user:{} 获取字段信息 {}", schemaName, tableName,
-                    datasourceConfig.getUrl(), datasourceConfig.getUser(), e);
-        }
-        return null;
-    }
 
-    public static List<SimpleColumnInfo> getColumnInfo(String sql) {
-        MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
-        return getColumnInfo(mycatRowMetaData);
-    }
 
 
     public static List<SimpleColumnInfo> getColumnInfo(MycatRowMetaData mycatRowMetaData) {
@@ -304,22 +278,22 @@ public class CalciteConvertors {
 //        return schemaColumnMetaMap;
 //    }
 
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String, String>> schemaBackendSQL) {
-        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
-        schemaBackendSQL.forEach((schemaName, value) -> {
-            schemaColumnMetaMap.put(schemaName, new HashMap<>());
-            for (Map.Entry<String, String> stringListEntry : value.entrySet()) {
-                String tableName = stringListEntry.getKey();
-                String sql = stringListEntry.getValue();
-                if (sql == null || sql.isEmpty()) return;
-                List<SimpleColumnInfo> info = null;
-                info = getColumnInfo(sql);
-                if (info == null) continue;
-                schemaColumnMetaMap.get(schemaName).put(tableName, info);
-            }
-        });
-        return schemaColumnMetaMap;
-    }
+//    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String, String>> schemaBackendSQL) {
+//        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
+//        schemaBackendSQL.forEach((schemaName, value) -> {
+//            schemaColumnMetaMap.put(schemaName, new HashMap<>());
+//            for (Map.Entry<String, String> stringListEntry : value.entrySet()) {
+//                String tableName = stringListEntry.getKey();
+//                String sql = stringListEntry.getValue();
+//                if (sql == null || sql.isEmpty()) return;
+//                List<SimpleColumnInfo> info = null;
+//                info = getColumnInfo(sql);
+//                if (info == null) continue;
+//                schemaColumnMetaMap.get(schemaName).put(tableName, info);
+//            }
+//        });
+//        return schemaColumnMetaMap;
+//    }
 
     public static List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses(final RelProtoDataType protoRowType,
                                                                        final JavaTypeFactory typeFactory) {

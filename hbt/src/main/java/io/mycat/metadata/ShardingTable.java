@@ -71,26 +71,26 @@ public class ShardingTable implements ShardingTableHandler {
         return sequence;
     }
 
-//    @Override
-    public Function<MySqlInsertStatement, Iterable<TextUpdateInfo>> insertHandler() {
-        return s -> {
-            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.toString())
-                    .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
-            return collect;
-        };
-    }
-
-//    @Override
-    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
-        return (s)-> ()->MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
-                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-    }
-
-//    @Override
-    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
-        return s ->()-> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
-                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
-    }
+////    @Override
+//    public Function<MySqlInsertStatement, Iterable<TextUpdateInfo>> insertHandler() {
+//        return s -> {
+//            List<TextUpdateInfo> collect = MetadataManager.routeInsertFlat(getSchemaName(), s.toString())
+//                    .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).collect(Collectors.toList());
+//            return collect;
+//        };
+//    }
+//
+////    @Override
+//    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler() {
+//        return (s)-> ()->MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
+//                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
+//    }
+//
+////    @Override
+//    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler() {
+//        return s ->()-> MetadataManager.INSTANCE.rewriteSQL(getSchemaName(), s.toString())
+//                .entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
+//    }
 
     @Override
     public LogicTableType getType() {

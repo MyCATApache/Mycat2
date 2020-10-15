@@ -3,7 +3,6 @@ package io.mycat.manager.commands;
 import com.alibaba.fastsql.sql.SQLUtils;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.util.Response;
 
 public class CloseJdbcDatasourceCommand implements ManageCommand {

@@ -1,7 +1,9 @@
 package io.mycat.manager.commands;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatCore;
 import io.mycat.MycatDataContext;
+import io.mycat.MycatServer;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.buffer.BufferPool;
 import io.mycat.client.MycatRequest;
@@ -35,7 +37,8 @@ public class ShowReactorCommand implements ManageCommand {
                 .addColumnInfo("PREPARE_STOP",JDBCType.BOOLEAN)
                 .addColumnInfo("BUFFER_POOL_SNAPSHOT",JDBCType.VARCHAR)
                 .addColumnInfo("LAST_ACTIVE_TIME",JDBCType.TIMESTAMP);
-        for (MycatReactorThread mycatReactorThread : MycatCore.INSTANCE.getReactorManager().getList()) {
+        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+        for (MycatReactorThread mycatReactorThread : mycatServer.getReactorManager().getList()) {
             String THREAD_NAME = mycatReactorThread.getName();
             long THREAD_ID = mycatReactorThread.getId();
             Integer CUR_SESSION_ID = Optional.ofNullable(mycatReactorThread.getCurSession()).map(i->i.sessionId()).orElse(null);

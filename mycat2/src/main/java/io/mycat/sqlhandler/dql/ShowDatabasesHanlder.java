@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -17,7 +18,8 @@ import java.util.List;
 public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> {
     @Override
     protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
-        List<String> collect = MetadataManager.INSTANCE.showDatabases();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        List<String> collect = metadataManager.showDatabases();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("Database", JDBCType.VARCHAR);
         for (String s : collect) {

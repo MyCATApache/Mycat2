@@ -1,8 +1,8 @@
 package io.mycat.hbt4;
 
-import java.util.List;
+import io.mycat.MycatDataContext;
 
 public class MycatContext {
     public Object[] values;
-    public boolean forUpdate;
+    public static final ThreadLocal<MycatDataContext> CONTEXT = ThreadLocal.withInitial(() -> null);
 }

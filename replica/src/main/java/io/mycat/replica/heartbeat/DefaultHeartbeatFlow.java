@@ -34,14 +34,16 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
   private final Consumer<HeartBeatStrategy> executer;
   private final Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider;
   private volatile HeartBeatStrategy strategy;
+  private final ReplicaSelectorRuntime replicaSelector;
 
-  public DefaultHeartbeatFlow(PhysicsInstance instance, String replica, String datasouceName,
+  public DefaultHeartbeatFlow(ReplicaSelectorRuntime replicaSelector,PhysicsInstance instance, String replica, String datasouceName,
       int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
       ReplicaSwitchType switchType, long slaveThreshold,
       Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider,
       Consumer<HeartBeatStrategy> executer) {
     super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold);
+    this.replicaSelector = replicaSelector;
     this.replicaName = replica;
     this.datasouceName = datasouceName;
     this.switchType = switchType;
@@ -65,13 +67,13 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
       this.dsStatus = currentDatasourceStatus;
       LOGGER.error("{} heartStatus {}", datasouceName, dsStatus);
     }
-    ReplicaSelectorRuntime.INSTANCE
+    replicaSelector
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),
                 !currentDatasourceStatus.isSlaveBehindMaster());
     if (switchType.equals(ReplicaSwitchType.SWITCH)&& dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
-      if (ReplicaSelectorRuntime.INSTANCE.notifySwitchReplicaDataSource(replicaName)) {
+      if (replicaSelector.notifySwitchReplicaDataSource(replicaName)) {
         //updataSwitchTime
         this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
       }

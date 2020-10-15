@@ -2,35 +2,34 @@ package io.mycat;
 
 
 import io.mycat.config.ServerConfig;
+import io.mycat.config.ThreadPoolExecutorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public enum MycatWorkerProcessor {
-    INSTANCE;
-    private static NameableExecutor mycatWorker;
-    private static NameableExecutor timeWorker;
+public class MycatWorkerProcessor {
+    private NameableExecutor mycatWorker;
+    private NameableExecutor timeWorker;
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatWorkerProcessor.class);
+
+    public MycatWorkerProcessor(NameableExecutor mycatWorker, NameableExecutor timeWorker) {
+        this.mycatWorker = mycatWorker;
+        this.timeWorker = timeWorker;
+    }
 
     /**
      * 不支持热更新
      *
      * @param workerConfig
      */
-    public synchronized void init(ServerConfig.ThreadPoolExecutorConfig workerConfig,
-                                  ServerConfig.ThreadPoolExecutorConfig timeConfig
-    ) {
-        if (mycatWorker == null) {
-            LOGGER.info("Mycat WorkerProcessor init by:" + workerConfig);
-            mycatWorker = init("MYCAT_WORKER", workerConfig);
-            LOGGER.info("Mycat TIME WorkerProcessor init by:" + timeConfig);
-            timeWorker = init("MYCAT_TIME_WORKER", timeConfig);
-        }
+    public MycatWorkerProcessor(ThreadPoolExecutorConfig workerConfig,
+                                ThreadPoolExecutorConfig timeConfig) {
+        this(init("MYCAT_WORKER", workerConfig), init("MYCAT_TIME_WORKER", timeConfig));
     }
 
-    private static NameableExecutor init(String name, ServerConfig.ThreadPoolExecutorConfig workerConfig) {
+    private static NameableExecutor init(String name,ThreadPoolExecutorConfig workerConfig) {
         int corePoolSize = workerConfig.getCorePoolSize();
         int maximumPoolSize = workerConfig.getMaxPoolSize();
         long keepAliveTime = workerConfig.getKeepAliveTime();

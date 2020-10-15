@@ -127,7 +127,7 @@ public enum  MycatdbCommand {
                 Class aClass = sqlStatement.getClass();
                 SQLHandler instance = sqlHandlerMap.getInstance(aClass);
                 if (instance == null) {
-                    receiver.tryBroadcastShow(sqlStatement.toString());
+                    receiver.tryBroadcastShow(text);
                 } else {
                     instance.execute(request, dataContext, receiver);
                 }

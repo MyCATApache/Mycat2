@@ -3,12 +3,11 @@ package io.mycat.statistic;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.builder.SQLBuilderFactory;
 import com.alibaba.fastsql.sql.builder.SQLSelectBuilder;
-import io.mycat.BackendTableInfo;
 import io.mycat.DataNode;
-import io.mycat.SchemaInfo;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.metadata.GlobalTable;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.ShardingTable;
@@ -143,8 +142,10 @@ public enum StatisticCenter {
 
     private Double fetchRowCount(String targetName, String sql) {
         try {
-            targetName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targetName, false, null);
-            try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(targetName)) {
+            ReplicaSelectorRuntime runtime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            targetName = runtime.getDatasourceNameByReplicaName(targetName, false, null);
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
                 try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
                     rowBaseIterator.next();
                     return rowBaseIterator.getBigDecimal(1).doubleValue();

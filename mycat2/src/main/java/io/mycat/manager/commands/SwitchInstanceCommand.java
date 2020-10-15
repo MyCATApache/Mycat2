@@ -1,5 +1,6 @@
 package io.mycat.manager.commands;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.replica.PhysicsInstance;
@@ -43,7 +44,9 @@ public class SwitchInstanceCommand implements ManageCommand {
         String readable = (String) from.get("readable");
         String alive = (String) from.get("alive");
 
-        Map<String, PhysicsInstance> physicsInstanceMap = ReplicaSelectorRuntime.INSTANCE.getPhysicsInstanceMap();
+        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+
+        Map<String, PhysicsInstance> physicsInstanceMap = replicaSelectorRuntime.getPhysicsInstanceMap();
         PhysicsInstance physicsInstance = Objects.requireNonNull(physicsInstanceMap.get(name), "name is not existed");
 
         if (readable != null) {

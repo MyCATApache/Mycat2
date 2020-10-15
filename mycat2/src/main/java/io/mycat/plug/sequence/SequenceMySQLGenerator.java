@@ -1,6 +1,7 @@
 package io.mycat.plug.sequence;
 
-import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.SplitUtil;
@@ -26,8 +27,10 @@ public class SequenceMySQLGenerator implements Supplier<String> {
 
     public SequenceMySQLGenerator(String config) {
         this(config, (s, s2) -> {
-            String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(s, true, null);
-            JdbcDataSource jdbcDataSource = JdbcRuntime.INSTANCE.getConnectionManager().getDatasourceInfo().get(datasourceName);
+            ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            String datasourceName = selectorRuntime.getDatasourceNameByReplicaName(s, true, null);
+            JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(datasourceName);
             try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
                 try(Statement statement = connection1.createStatement()){
                    try( ResultSet resultSet = statement.executeQuery(s2)) {

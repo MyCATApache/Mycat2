@@ -15,6 +15,7 @@
 package io.mycat.datasource.jdbc.datasourceprovider;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class DruidDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig config) {
+  public JdbcDataSource createDataSource(DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
     String url = config.getUrl();
