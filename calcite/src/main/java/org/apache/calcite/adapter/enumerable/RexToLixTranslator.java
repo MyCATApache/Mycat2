@@ -31,7 +31,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
-import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
@@ -57,7 +56,6 @@ import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWindowTableFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.BuiltInMethod;
@@ -260,26 +258,745 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       convert = operand;
       break;
       case TINYINT:
-      case SMALLINT:
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN: {
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_TINYINT.method, operand);
+            break;
+          }
+          case TINYINT:
+            convert = operand;
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.SMALLINT_TO_TINYINT.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_TINYINT.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_TINYINT.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_TINYINT.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_TINYINT.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_TINYINT.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_TINYINT.method, operand);
+            break;
+          case DATE:
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_TINYINT.method, operand);
+            break;
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE:
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_TINYINT.method, operand);
+            break;
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_TINYINT.method, operand);
+            break;
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_TINYINT.method, operand);
+            break;
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_TINYINT.method, operand);
+            break;
+          case CHAR:
+          case VARCHAR:
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_TINYINT.method, operand);
+            break;
+          case BINARY:
+          case VARBINARY:
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_TINYINT.method, operand);
+            break;
+          case NULL:
+            convert = Expressions.constant(null);
+            break;
+          case ANY:
+            convert = operand;
+            break;
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+      case SMALLINT:{
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_SMALLINT.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_SMALLINT.method, operand);
+            break;
+          case SMALLINT:
+            convert = operand;
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_SMALLINT.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_SMALLINT.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_SMALLINT.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_SMALLINT.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_SMALLINT.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_SMALLINT.method, operand);
+            break;
+          case DATE:
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_SMALLINT.method, operand);
+            break;
+          case TIME_WITH_LOCAL_TIME_ZONE:
+          case TIME:
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_SMALLINT.method, operand);
+            break;
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_SMALLINT.method, operand);
+            break;
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_SMALLINT.method, operand);
+            break;
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_SMALLINT.method, operand);
+            break;
+          case CHAR:
+          case VARCHAR:
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_SMALLINT.method, operand);
+            break;
+          case BINARY:
+          case VARBINARY:
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_SMALLINT.method, operand);
+            break;
+          case NULL:
+            convert = Expressions.constant(null);
+            break;
+          case ANY:
+            convert = operand;
+            break;
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+
+        }
+      }
       case INTEGER:
       case BIGINT:
         switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_BIGINT.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_BIGINT.method, operand);
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_BIGINT.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_BIGINT.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_BIGINT.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_BIGINT.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_BIGINT.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_BIGINT.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_BIGINT.method, operand);
+            break;
           case DATE:{
-            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_LONG.method, operand);
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_BIGINT.method, operand);
             break;
           }
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_BIGINT.method, operand);
+            break;
+          }
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_BIGINT.method, operand);
+            break;
+          }
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_BIGINT.method, operand);
+            break;
+          }
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_BIGINT.method, operand);
+            break;
+          }
+          case CHAR:
+          case VARCHAR:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_BIGINT.method, operand);
+            break;
+          }
+          case BINARY:
+          case VARBINARY:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_BIGINT.method, operand);
+            break;
+          }
+          case NULL:
+          {
+            convert = Expressions.constant(null);
+            break;
+          }
+          case ANY:
+          {
+            convert = operand;
+            break;
+          }
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
         }
         break;
       case DECIMAL:
-
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_DECIMAL.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_DECIMAL.method, operand);
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_DECIMAL.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_DECIMAL.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_DECIMAL.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_DECIMAL.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_DECIMAL.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_DECIMAL.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_DECIMAL.method, operand);
+            break;
+          case DATE:{
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_BIGINT.method, operand);
+            break;
+          }
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_DECIMAL.method, operand);
+            break;
+          }
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_DECIMAL.method, operand);
+            break;
+          }
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_DECIMAL.method, operand);
+            break;
+          }
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_DECIMAL.method, operand);
+            break;
+          }
+          case CHAR:
+          case VARCHAR:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_DECIMAL.method, operand);
+            break;
+          }
+          case BINARY:
+          case VARBINARY:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_DECIMAL.method, operand);
+            break;
+          }
+          case NULL:
+          {
+            convert = Expressions.constant(null);
+            break;
+          }
+          case ANY:
+          {
+            convert = operand;
+            break;
+          }
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+        break;
       case FLOAT:
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_FLOAT.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_FLOAT.method, operand);
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_FLOAT.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_FLOAT.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_FLOAT.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_FLOAT.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_FLOAT.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_FLOAT.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_FLOAT.method, operand);
+            break;
+          case DATE:{
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_FLOAT.method, operand);
+            break;
+          }
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_FLOAT.method, operand);
+            break;
+          }
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_FLOAT.method, operand);
+            break;
+          }
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_FLOAT.method, operand);
+            break;
+          }
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_FLOAT.method, operand);
+            break;
+          }
+          case CHAR:
+          case VARCHAR:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_FLOAT.method, operand);
+            break;
+          }
+          case BINARY:
+          case VARBINARY:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_FLOAT.method, operand);
+            break;
+          }
+          case NULL:
+          {
+            convert = Expressions.constant(null);
+            break;
+          }
+          case ANY:
+          {
+            convert = operand;
+            break;
+          }
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+        break;
       case REAL:
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_REAL.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_REAL.method, operand);
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_REAL.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_REAL.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_REAL.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_REAL.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_REAL.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_REAL.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_REAL.method, operand);
+            break;
+          case DATE:{
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_REAL.method, operand);
+            break;
+          }
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_REAL.method, operand);
+            break;
+          }
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_REAL.method, operand);
+            break;
+          }
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_REAL.method, operand);
+            break;
+          }
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_REAL.method, operand);
+            break;
+          }
+          case CHAR:
+          case VARCHAR:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_REAL.method, operand);
+            break;
+          }
+          case BINARY:
+          case VARBINARY:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_REAL.method, operand);
+            break;
+          }
+          case NULL:
+          {
+            convert = Expressions.constant(null);
+            break;
+          }
+          case ANY:
+          {
+            convert = operand;
+            break;
+          }
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+        break;
       case DOUBLE: {
-        switch (sourceType.getSqlTypeName()) {
-          case TIMESTAMP: {
+        switch (sourceType.getSqlTypeName()){
+          case BOOLEAN:
+            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_DOUBLE.method, operand);
+            break;
+          case TINYINT:
+            convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_DOUBLE.method, operand);
+            break;
+          case SMALLINT:
+            convert = Expressions.call(MycatBuiltInMethod.SMALLINT_TO_DOUBLE.method, operand);
+            break;
+          case INTEGER:
+            convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_DOUBLE.method, operand);
+            break;
+          case BIGINT:
+            convert = Expressions.call(MycatBuiltInMethod.BIGINT_TO_DOUBLE.method, operand);
+            break;
+          case DECIMAL:
+            convert = Expressions.call(MycatBuiltInMethod.DECIMAL_TO_DOUBLE.method, operand);
+            break;
+          case FLOAT:
+            convert = Expressions.call(MycatBuiltInMethod.FLOAT_TO_DOUBLE.method, operand);
+            break;
+          case REAL:
+            convert = Expressions.call(MycatBuiltInMethod.REAL_TO_DOUBLE.method, operand);
+            break;
+          case DOUBLE:
+            convert = Expressions.call(MycatBuiltInMethod.DOUBLE_TO_DOUBLE.method, operand);
+            break;
+          case DATE:{
+            convert = Expressions.call(MycatBuiltInMethod.DATE_TO_DOUBLE.method, operand);
+            break;
+          }
+          case TIME:
+          case TIME_WITH_LOCAL_TIME_ZONE: {
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_DOUBLE.method, operand);
+            break;
+          }
+          case TIMESTAMP:
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE: {
             convert = Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_DOUBLE.method, operand);
             break;
           }
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.PERIOD_TO_DOUBLE.method, operand);
+            break;
+          }
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.DURATION_TO_DOUBLE.method, operand);
+            break;
+          }
+          case CHAR:
+          case VARCHAR:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.STRING_TO_DOUBLE.method, operand);
+            break;
+          }
+          case BINARY:
+          case VARBINARY:
+          {
+            convert = Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_DOUBLE.method, operand);
+            break;
+          }
+          case NULL:
+          {
+            convert = Expressions.constant(null);
+            break;
+          }
+          case ANY:
+          {
+            convert = operand;
+            break;
+          }
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
         }
         break;
       }
@@ -290,19 +1007,106 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         convert =
             Expressions.call(MycatBuiltInMethod .STRING_TO_DATE.method, operand);
         break;
-      case TIMESTAMP:{
-        convert = timestamp(sourceType, operand, convert);
-        break;
-      }
+        case BOOLEAN:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .BOOLEAN_TO_DATE.method, operand);
+          break;
+        case TINYINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .TINYINT_TO_DATE.method, operand);
+          break;
+        case SMALLINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .SMALLINT_TO_DATE.method, operand);
+          break;
+        case INTEGER:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .INTEGER_TO_DATE.method, operand);
+          break;
+        case BIGINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .BIGINT_TO_DATE.method, operand);
+          break;
+        case DECIMAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .DECIMAL_TO_DATE.method, operand);
+          break;
+        case FLOAT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .FLOAT_TO_DATE.method, operand);
+          break;
+        case REAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .REAL_TO_DATE.method, operand);
+          break;
+        case DOUBLE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .DOUBLE_TO_DATE.method, operand);
+          break;
+        case DATE:
+          convert = operand;
+          break;
+        case TIME_WITH_LOCAL_TIME_ZONE:
+        case TIME:
+          convert =
+                  Expressions.call(MycatBuiltInMethod .TIME_TO_DATE.method, operand);
+          break;
+        case TIMESTAMP:
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+        convert = Expressions.call(MycatBuiltInMethod .TIMESTAMP_TO_DATE.method, operand);
+        break;
+        case INTERVAL_WEEK:
+        case INTERVAL_QUARTER:
+        case INTERVAL_YEAR:
+        case INTERVAL_YEAR_MONTH:
+        case INTERVAL_MONTH:
+          convert = Expressions.call(MycatBuiltInMethod .PERIOD_TO_DATE.method, operand);
+          break;
+        case INTERVAL_DAY:
+        case INTERVAL_DAY_HOUR:
+        case INTERVAL_DAY_MINUTE:
+        case INTERVAL_DAY_SECOND:
+        case INTERVAL_HOUR:
+        case INTERVAL_HOUR_MINUTE:
+        case INTERVAL_HOUR_SECOND:
+        case INTERVAL_MINUTE:
+        case INTERVAL_MINUTE_SECOND:
+        case INTERVAL_SECOND:
+        case INTERVAL_MICROSECOND:
+        case INTERVAL_SECOND_MICROSECOND:
+        case INTERVAL_MINUTE_MICROSECOND:
+        case INTERVAL_HOUR_MICROSECOND:
+        case INTERVAL_DAY_MICROSECOND:
+          convert = Expressions.call(MycatBuiltInMethod .DURATION_TO_DATE.method, operand);
+          break;
+        case BINARY:
+        case VARBINARY:
+          convert = Expressions.call(MycatBuiltInMethod .BYTESTRING_TO_DATE.method, operand);
+          break;
+        case NULL:
+          convert = Expressions.constant(null);
+          break;
+        case ANY:
+          convert = operand;
+          break;
+        case SYMBOL:
+        case MULTISET:
+        case ARRAY:
+        case MAP:
+        case DISTINCT:
+        case STRUCTURED:
+        case ROW:
+        case OTHER:
+        case CURSOR:
+        case COLUMN_LIST:
+        case DYNAMIC_STAR:
+        case GEOMETRY:
+        case SARG:
+        default:
+          throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
       }
       break;
+    case TIME_WITH_LOCAL_TIME_ZONE:
     case TIME:
       switch (sourceType.getSqlTypeName()) {
       case CHAR:
@@ -310,334 +1114,735 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         convert =
             Expressions.call(MycatBuiltInMethod.STRING_TO_TIME.method, operand);
         break;
-      case TIME_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
-        break;
-      case TIMESTAMP:
-        convert = Expressions.convert_(
-            Expressions.call(
-                BuiltInMethod.FLOOR_MOD.method,
-                operand,
-                Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-            int.class);
-        break;
-      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
-      }
-      break;
-    case TIME_WITH_LOCAL_TIME_ZONE:
-      switch (sourceType.getSqlTypeName()) {
-      case CHAR:
-      case VARCHAR:
-        convert =
-            Expressions.call(BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand);
-        break;
-      case TIME:
-        convert = Expressions.call(
-            BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIME_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
-        break;
-      case TIMESTAMP:
-        convert = Expressions.call(
-            BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
-        break;
-      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-                operand));
-      }
-      break;
-    case TIMESTAMP:
-      switch (sourceType.getSqlTypeName()) {
-        case INTEGER:{
+        case BOOLEAN:
           convert =
-                  Expressions.call(
-                          MycatBuiltInMethod.LONG_TO_TIMESTAMP.method,
-                          operand);
+                  Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_TIME.method, operand);
           break;
-        }
-      case CHAR:
-      case VARCHAR:
+        case TINYINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TINYINT_TO_TIME.method, operand);
+          break;
+        case SMALLINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.SMALLINT_TO_TIME.method, operand);
+          break;
+        case INTEGER:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.INTEGER_TO_TIME.method, operand);
+          break;
+        case BIGINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BIGINT_TO_TIME.method, operand);
+          break;
+        case DECIMAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DECIMAL_TO_TIME.method, operand);
+          break;
+        case FLOAT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.FLOAT_TO_TIME.method, operand);
+          break;
+        case REAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.REAL_TO_TIME.method, operand);
+          break;
+        case DOUBLE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DOUBLE_TO_TIME.method, operand);
+          break;
+        case DATE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DATE_TO_TIME.method, operand);
+          break;
+        case TIME:
+          convert = operand;
+          break;
+        case TIME_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIME_TO_TIME.method, operand);
+        break;
+      case TIMESTAMP:
         convert =
-            Expressions.call(MycatBuiltInMethod.STRING_TO_TIMESTAMP.method, operand);
-        break;
-      case DATE:
-        convert = Expressions.multiply(
-            Expressions.convert_(operand, long.class),
-            Expressions.constant(DateTimeUtils.MILLIS_PER_DAY));
-        break;
-      case TIME:
-        convert =
-            Expressions.add(
-                Expressions.multiply(
-                    Expressions.convert_(
-                        Expressions.call(BuiltInMethod.CURRENT_DATE.method, root),
-                        long.class),
-                    Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-                Expressions.convert_(operand, long.class));
-        break;
-      case TIME_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                Expressions.call(
-                    BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                    Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+                Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_TIME.method, operand);
         break;
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
+        convert =
+                Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_TIME.method, operand);
+        break;
+        case INTERVAL_WEEK:
+        case INTERVAL_QUARTER:
+        case INTERVAL_YEAR:
+        case INTERVAL_YEAR_MONTH:
+        case INTERVAL_MONTH:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.PERIOD_TO_TIME.method, operand);
+          break;
+        case INTERVAL_DAY:
+        case INTERVAL_DAY_HOUR:
+        case INTERVAL_DAY_MINUTE:
+        case INTERVAL_DAY_SECOND:
+        case INTERVAL_HOUR:
+        case INTERVAL_HOUR_MINUTE:
+        case INTERVAL_HOUR_SECOND:
+        case INTERVAL_MINUTE:
+        case INTERVAL_MINUTE_SECOND:
+        case INTERVAL_SECOND:
+        case INTERVAL_MICROSECOND:
+        case INTERVAL_SECOND_MICROSECOND:
+        case INTERVAL_MINUTE_MICROSECOND:
+        case INTERVAL_HOUR_MICROSECOND:
+        case INTERVAL_DAY_MICROSECOND:
+          convert = operand;
+          break;
+        case BINARY:
+        case VARBINARY:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_TIME.method, operand);
+          break;
+        case NULL:
+          convert = Expressions.constant(null);
+          break;
+        case ANY:
+          convert = operand;
+          break;
+        case SYMBOL:
+        case MULTISET:
+        case ARRAY:
+        case MAP:
+        case DISTINCT:
+        case STRUCTURED:
+        case ROW:
+        case OTHER:
+        case CURSOR:
+        case COLUMN_LIST:
+        case DYNAMIC_STAR:
+        case GEOMETRY:
+        case SARG:
+        default:
+          throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
       }
       break;
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+    case TIMESTAMP:
       switch (sourceType.getSqlTypeName()) {
-      case CHAR:
-      case VARCHAR:
-        convert =
-            Expressions.call(
-                BuiltInMethod.STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                operand);
-        break;
-      case DATE:
-        convert = Expressions.call(
-            BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    Expressions.multiply(
-                        Expressions.convert_(operand, long.class),
-                        Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)))),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
-        break;
-      case TIME:
-        convert = Expressions.call(
-            BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    Expressions.add(
-                        Expressions.multiply(
-                            Expressions.convert_(
-                                Expressions.call(BuiltInMethod.CURRENT_DATE.method, root),
-                                long.class),
-                            Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-                        Expressions.convert_(operand, long.class)))),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
-        break;
-      case TIME_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                Expressions.call(
-                    BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                    Expressions.call(BuiltInMethod.CURRENT_DATE.method, root)),
-                operand));
-        break;
-      case TIMESTAMP:
-        convert = Expressions.call(
-            BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-            RexImpTable.optimize2(
-                operand,
-                Expressions.call(
-                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                    operand)),
-            Expressions.call(BuiltInMethod.TIME_ZONE.method, root));
+        case CHAR:
+        case VARCHAR:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.STRING_TO_TIMESTAMP.method, operand);
+          break;
+        case BOOLEAN:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_TIMESTAMP.method, operand);
+          break;
+        case TINYINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TINYINT_TO_TIMESTAMP.method, operand);
+          break;
+        case SMALLINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.SMALLINT_TO_TIMESTAMP.method, operand);
+          break;
+        case INTEGER:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.INTEGER_TO_TIMESTAMP.method, operand);
+          break;
+        case BIGINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BIGINT_TO_TIMESTAMP.method, operand);
+          break;
+        case DECIMAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DECIMAL_TO_TIMESTAMP.method, operand);
+          break;
+        case FLOAT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.FLOAT_TO_TIMESTAMP.method, operand);
+          break;
+        case REAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.REAL_TO_TIMESTAMP.method, operand);
+          break;
+        case DOUBLE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DOUBLE_TO_TIMESTAMP.method, operand);
+          break;
+        case DATE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DATE_TO_TIMESTAMP.method, operand);
+          break;
+        case TIME:
+          convert = operand;
+          break;
+        case TIME_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIME_TO_TIMESTAMP.method, operand);
+          break;
+        case TIMESTAMP:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_TIMESTAMP.method, operand);
+          break;
+        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_TIMESTAMP.method, operand);
+          break;
+        case INTERVAL_WEEK:
+        case INTERVAL_QUARTER:
+        case INTERVAL_YEAR:
+        case INTERVAL_YEAR_MONTH:
+        case INTERVAL_MONTH:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.PERIOD_TO_TIMESTAMP.method, operand);
+          break;
+        case INTERVAL_DAY:
+        case INTERVAL_DAY_HOUR:
+        case INTERVAL_DAY_MINUTE:
+        case INTERVAL_DAY_SECOND:
+        case INTERVAL_HOUR:
+        case INTERVAL_HOUR_MINUTE:
+        case INTERVAL_HOUR_SECOND:
+        case INTERVAL_MINUTE:
+        case INTERVAL_MINUTE_SECOND:
+        case INTERVAL_SECOND:
+        case INTERVAL_MICROSECOND:
+        case INTERVAL_SECOND_MICROSECOND:
+        case INTERVAL_MINUTE_MICROSECOND:
+        case INTERVAL_HOUR_MICROSECOND:
+        case INTERVAL_DAY_MICROSECOND:
+          convert = operand;
+          break;
+        case BINARY:
+        case VARBINARY:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_TIMESTAMP.method, operand);
+          break;
+        case NULL:
+          convert = Expressions.constant(null);
+          break;
+        case ANY:
+          convert = operand;
+          break;
+        case SYMBOL:
+        case MULTISET:
+        case ARRAY:
+        case MAP:
+        case DISTINCT:
+        case STRUCTURED:
+        case ROW:
+        case OTHER:
+        case CURSOR:
+        case COLUMN_LIST:
+        case DYNAMIC_STAR:
+        case GEOMETRY:
+        case SARG:
+        default:
+          throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
       }
       break;
     case BOOLEAN:
       switch (sourceType.getSqlTypeName()) {
-      case CHAR:
-      case VARCHAR:
-        convert = Expressions.call(
-            BuiltInMethod.STRING_TO_BOOLEAN.method,
-            operand);
+        case CHAR:
+        case VARCHAR:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.STRING_TO_BOOLEAN.method, operand);
+          break;
+        case BOOLEAN:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_BOOLEAN.method, operand);
+          break;
+        case TINYINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TINYINT_TO_BOOLEAN.method, operand);
+          break;
+        case SMALLINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.SMALLINT_TO_BOOLEAN.method, operand);
+          break;
+        case INTEGER:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.INTEGER_TO_BOOLEAN.method, operand);
+          break;
+        case BIGINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BIGINT_TO_BOOLEAN.method, operand);
+          break;
+        case DECIMAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DECIMAL_TO_BOOLEAN.method, operand);
+          break;
+        case FLOAT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.FLOAT_TO_BOOLEAN.method, operand);
+          break;
+        case REAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.REAL_TO_BOOLEAN.method, operand);
+          break;
+        case DOUBLE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DOUBLE_TO_BOOLEAN.method, operand);
+          break;
+        case DATE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DATE_TO_BOOLEAN.method, operand);
+          break;
+        case TIME:
+          convert = Expressions.call(MycatBuiltInMethod.TIME_TO_BOOLEAN.method, operand);
+          break;
+        case TIME_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIME_TO_BOOLEAN.method, operand);
+          break;
+        case TIMESTAMP:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_BOOLEAN.method, operand);
+          break;
+        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_BOOLEAN.method, operand);
+          break;
+        case INTERVAL_WEEK:
+        case INTERVAL_QUARTER:
+        case INTERVAL_YEAR:
+        case INTERVAL_YEAR_MONTH:
+        case INTERVAL_MONTH:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.PERIOD_TO_BOOLEAN.method, operand);
+          break;
+        case INTERVAL_DAY:
+        case INTERVAL_DAY_HOUR:
+        case INTERVAL_DAY_MINUTE:
+        case INTERVAL_DAY_SECOND:
+        case INTERVAL_HOUR:
+        case INTERVAL_HOUR_MINUTE:
+        case INTERVAL_HOUR_SECOND:
+        case INTERVAL_MINUTE:
+        case INTERVAL_MINUTE_SECOND:
+        case INTERVAL_SECOND:
+        case INTERVAL_MICROSECOND:
+        case INTERVAL_SECOND_MICROSECOND:
+        case INTERVAL_MINUTE_MICROSECOND:
+        case INTERVAL_HOUR_MICROSECOND:
+        case INTERVAL_DAY_MICROSECOND:
+          convert = operand;
+          break;
+        case BINARY:
+        case VARBINARY:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_BOOLEAN.method, operand);
+          break;
+        case NULL:
+          convert = Expressions.constant(null);
+          break;
+        case ANY:
+          convert = operand;
+          break;
+        case SYMBOL:
+        case MULTISET:
+        case ARRAY:
+        case MAP:
+        case DISTINCT:
+        case STRUCTURED:
+        case ROW:
+        case OTHER:
+        case CURSOR:
+        case COLUMN_LIST:
+        case DYNAMIC_STAR:
+        case GEOMETRY:
+        case SARG:
+        default:
+          throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
       }
       break;
       case INTERVAL_YEAR:
-        break;
       case INTERVAL_YEAR_MONTH:
-        break;
       case INTERVAL_MONTH:
-        break;
+      {
+        switch (sourceType.getSqlTypeName()) {
+          case CHAR:
+          case VARCHAR:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.STRING_TO_PERIOD.method, operand);
+            break;
+          case BOOLEAN:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_PERIOD.method, operand);
+            break;
+          case TINYINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TINYINT_TO_PERIOD.method, operand);
+            break;
+          case SMALLINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.SMALLINT_TO_PERIOD.method, operand);
+            break;
+          case INTEGER:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.INTEGER_TO_PERIOD.method, operand);
+            break;
+          case BIGINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BIGINT_TO_PERIOD.method, operand);
+            break;
+          case DECIMAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DECIMAL_TO_PERIOD.method, operand);
+            break;
+          case FLOAT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.FLOAT_TO_PERIOD.method, operand);
+            break;
+          case REAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.REAL_TO_PERIOD.method, operand);
+            break;
+          case DOUBLE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DOUBLE_TO_PERIOD.method, operand);
+            break;
+          case DATE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DATE_TO_PERIOD.method, operand);
+            break;
+          case TIME:
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_PERIOD.method, operand);
+            break;
+          case TIME_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIME_TO_PERIOD.method, operand);
+            break;
+          case TIMESTAMP:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_PERIOD.method, operand);
+            break;
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_PERIOD.method, operand);
+            break;
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.PERIOD_TO_PERIOD.method, operand);
+            break;
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+            convert = operand;
+            break;
+          case BINARY:
+          case VARBINARY:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_PERIOD.method, operand);
+            break;
+          case NULL:
+            convert = Expressions.constant(null);
+            break;
+          case ANY:
+            convert = operand;
+            break;
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+      }
+      break;
       case INTERVAL_DAY:
-        break;
       case INTERVAL_DAY_HOUR:
-        break;
       case INTERVAL_DAY_MINUTE:
-        break;
       case INTERVAL_DAY_SECOND:
-        break;
       case INTERVAL_HOUR:
-        break;
       case INTERVAL_HOUR_MINUTE:
-        break;
       case INTERVAL_HOUR_SECOND:
-        break;
       case INTERVAL_MINUTE:
-        break;
       case INTERVAL_MINUTE_SECOND:
-        break;
       case INTERVAL_SECOND:
-        break;
       case INTERVAL_MICROSECOND:
-        break;
       case INTERVAL_WEEK:
-        break;
       case INTERVAL_QUARTER:
-        break;
       case INTERVAL_SECOND_MICROSECOND:
-        break;
       case INTERVAL_MINUTE_MICROSECOND:
-        break;
       case INTERVAL_HOUR_MICROSECOND:
-        break;
       case INTERVAL_DAY_MICROSECOND:
+      {
+        switch (sourceType.getSqlTypeName()) {
+          case CHAR:
+          case VARCHAR:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.STRING_TO_DURATION.method, operand);
+            break;
+          case BOOLEAN:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_DURATION.method, operand);
+            break;
+          case TINYINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TINYINT_TO_DURATION.method, operand);
+            break;
+          case SMALLINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.SMALLINT_TO_DURATION.method, operand);
+            break;
+          case INTEGER:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.INTEGER_TO_DURATION.method, operand);
+            break;
+          case BIGINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BIGINT_TO_DURATION.method, operand);
+            break;
+          case DECIMAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DECIMAL_TO_DURATION.method, operand);
+            break;
+          case FLOAT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.FLOAT_TO_DURATION.method, operand);
+            break;
+          case REAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.REAL_TO_DURATION.method, operand);
+            break;
+          case DOUBLE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DOUBLE_TO_DURATION.method, operand);
+            break;
+          case DATE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DATE_TO_DURATION.method, operand);
+            break;
+          case TIME:
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_DURATION.method, operand);
+            break;
+          case TIME_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIME_TO_DURATION.method, operand);
+            break;
+          case TIMESTAMP:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_DURATION.method, operand);
+            break;
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_DURATION.method, operand);
+            break;
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.PERIOD_TO_DURATION.method, operand);
+            break;
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+            convert = operand;
+            break;
+          case BINARY:
+          case VARBINARY:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_DURATION.method, operand);
+            break;
+          case NULL:
+            convert = Expressions.constant(null);
+            break;
+          case ANY:
+            convert = operand;
+            break;
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
+      }
         break;
       case CHAR:
     case VARCHAR:
       final SqlIntervalQualifier interval =
           sourceType.getIntervalQualifier();
+    {
       switch (sourceType.getSqlTypeName()) {
-      case DATE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                operand));
-        break;
-      case TIME:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_TIME_TO_STRING.method,
-                operand));
-        break;
-      case TIME_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
-        break;
-      case TIMESTAMP:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                operand));
-        break;
-      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                operand,
-                Expressions.call(BuiltInMethod.TIME_ZONE.method, root)));
-        break;
-      case INTERVAL_YEAR:
-      case INTERVAL_YEAR_MONTH:
-      case INTERVAL_MONTH:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
-                operand,
-                Expressions.constant(interval.timeUnitRange)));
-        break;
-      case INTERVAL_DAY:
-      case INTERVAL_DAY_HOUR:
-      case INTERVAL_DAY_MINUTE:
-      case INTERVAL_DAY_SECOND:
-      case INTERVAL_HOUR:
-      case INTERVAL_HOUR_MINUTE:
-      case INTERVAL_HOUR_SECOND:
-      case INTERVAL_MINUTE:
-      case INTERVAL_MINUTE_SECOND:
-      case INTERVAL_SECOND:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
-                operand,
-                Expressions.constant(interval.timeUnitRange),
-                Expressions.constant(
-                    interval.getFractionalSecondPrecision(
-                        typeFactory.getTypeSystem()))));
-        break;
-      case BOOLEAN:
-        convert = RexImpTable.optimize2(
-            operand,
-            Expressions.call(
-                BuiltInMethod.BOOLEAN_TO_STRING.method,
-                operand));
-        break;
+        case CHAR:
+        case VARCHAR:
+          convert = operand;
+          break;
+        case BOOLEAN:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_STRING.method, operand);
+          break;
+        case TINYINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TINYINT_TO_STRING.method, operand);
+          break;
+        case SMALLINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.SMALLINT_TO_STRING.method, operand);
+          break;
+        case INTEGER:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.INTEGER_TO_STRING.method, operand);
+          break;
+        case BIGINT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BIGINT_TO_STRING.method, operand);
+          break;
+        case DECIMAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DECIMAL_TO_STRING.method, operand);
+          break;
+        case FLOAT:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.FLOAT_TO_STRING.method, operand);
+          break;
+        case REAL:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.REAL_TO_STRING.method, operand);
+          break;
+        case DOUBLE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DOUBLE_TO_STRING.method, operand);
+          break;
+        case DATE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.DATE_TO_STRING.method, operand);
+          break;
+        case TIME:
+          convert = Expressions.call(MycatBuiltInMethod.TIME_TO_STRING.method, operand);
+          break;
+        case TIME_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIME_TO_STRING.method, operand);
+          break;
+        case TIMESTAMP:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_STRING.method, operand);
+          break;
+        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_STRING.method, operand);
+          break;
+        case INTERVAL_WEEK:
+        case INTERVAL_QUARTER:
+        case INTERVAL_YEAR:
+        case INTERVAL_YEAR_MONTH:
+        case INTERVAL_MONTH:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.PERIOD_TO_STRING.method, operand);
+          break;
+        case INTERVAL_DAY:
+        case INTERVAL_DAY_HOUR:
+        case INTERVAL_DAY_MINUTE:
+        case INTERVAL_DAY_SECOND:
+        case INTERVAL_HOUR:
+        case INTERVAL_HOUR_MINUTE:
+        case INTERVAL_HOUR_SECOND:
+        case INTERVAL_MINUTE:
+        case INTERVAL_MINUTE_SECOND:
+        case INTERVAL_SECOND:
+        case INTERVAL_MICROSECOND:
+        case INTERVAL_SECOND_MICROSECOND:
+        case INTERVAL_MINUTE_MICROSECOND:
+        case INTERVAL_HOUR_MICROSECOND:
+        case INTERVAL_DAY_MICROSECOND:
+          convert = operand;
+          break;
+        case BINARY:
+        case VARBINARY:
+          convert =
+                  Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_STRING.method, operand);
+          break;
+        case NULL:
+          convert = Expressions.constant(null);
+          break;
+        case ANY:
+          convert = operand;
+          break;
+        case SYMBOL:
+        case MULTISET:
+        case ARRAY:
+        case MAP:
+        case DISTINCT:
+        case STRUCTURED:
+        case ROW:
+        case OTHER:
+        case CURSOR:
+        case COLUMN_LIST:
+        case DYNAMIC_STAR:
+        case GEOMETRY:
+        case SARG:
+        default:
+          throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
       }
+    }
+    break;
       case BINARY:
-        break;
       case VARBINARY:
         break;
       case NULL:
+        convert = Expressions.constant(null);
         break;
       case SYMBOL:
-        break;
       case MULTISET:
-        break;
       case ARRAY:
-        break;
       case MAP:
-        break;
       case DISTINCT:
-        break;
       case STRUCTURED:
-        break;
       case ROW:
-        break;
       case OTHER:
-        break;
       case CURSOR:
-        break;
       case COLUMN_LIST:
-        break;
       case DYNAMIC_STAR:
-        break;
       case GEOMETRY:
-        break;
       case SARG:
-        break;
       default:
         throw new IllegalStateException("Unexpected value: " + targetType.getSqlTypeName());
     }

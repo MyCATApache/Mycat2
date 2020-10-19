@@ -50,7 +50,7 @@ public class Timestamp2Function extends MycatDateFunction {
         if (date == null) {
             return null;
         }
-        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(date);
+        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(date);
         if (temporal instanceof  LocalDate){
          return    ((LocalDate) temporal).atStartOfDay();
         }
