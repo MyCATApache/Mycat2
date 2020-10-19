@@ -45,6 +45,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -175,20 +176,6 @@ public class JavaTypeFactoryImpl
         return String.class;
       case DATE:
         return LocalDate.class;
-      case TIME:
-      case TIME_WITH_LOCAL_TIME_ZONE:
-        return Duration.class;
-      case INTEGER:
-        return type.isNullable() ? Long.class : long.class;
-      case INTERVAL_YEAR:
-      case INTERVAL_YEAR_MONTH:
-      case INTERVAL_MONTH:
-        return  Duration.class;
-      case TIMESTAMP:
-      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-        return LocalDateTime.class;
-      case BIGINT:
-        return type.isNullable() ? Long.class : long.class;
       case INTERVAL_DAY:
       case INTERVAL_DAY_HOUR:
       case INTERVAL_DAY_MINUTE:
@@ -199,7 +186,26 @@ public class JavaTypeFactoryImpl
       case INTERVAL_MINUTE:
       case INTERVAL_MINUTE_SECOND:
       case INTERVAL_SECOND:
+      case INTERVAL_MICROSECOND:
+      case INTERVAL_SECOND_MICROSECOND:
+      case INTERVAL_MINUTE_MICROSECOND:
+      case INTERVAL_HOUR_MICROSECOND:
+      case INTERVAL_DAY_MICROSECOND:
+      case TIME:
+      case TIME_WITH_LOCAL_TIME_ZONE:
         return Duration.class;
+      case INTERVAL_WEEK:
+      case INTERVAL_QUARTER:
+      case INTERVAL_YEAR:
+      case INTERVAL_YEAR_MONTH:
+      case INTERVAL_MONTH:
+        return Period.class;
+      case TIMESTAMP:
+      case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        return LocalDateTime.class;
+      case INTEGER:
+      case BIGINT:
+        return type.isNullable() ? Long.class : long.class;
       case SMALLINT:
         return type.isNullable() ? Short.class : short.class;
       case TINYINT:
@@ -224,6 +230,19 @@ public class JavaTypeFactoryImpl
         return Object.class;
       case NULL:
         return Void.class;
+      case SARG:
+          break;
+      case MULTISET:
+      case ARRAY:
+      case MAP:
+      case DISTINCT:
+      case STRUCTURED:
+      case ROW:
+      case OTHER:
+      case CURSOR:
+      case COLUMN_LIST:
+      case DYNAMIC_STAR:
+      default:
       }
     }
     switch (type.getSqlTypeName()) {
@@ -240,7 +259,7 @@ public class JavaTypeFactoryImpl
     case MULTISET:
       return List.class;
     }
-    return null;
+    return Objects.requireNonNull(null);
   }
 
   public RelDataType toSql(RelDataType type) {

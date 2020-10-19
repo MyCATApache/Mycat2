@@ -70,7 +70,7 @@ public class DateFormatFunction extends MycatDateFunction {
 
     @Nullable
     public static String dateFormat(String dateText, String format, Locale locale) {
-        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(dateText);
+        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(dateText);
         return dateFormat(format, locale, temporal);
     }
 

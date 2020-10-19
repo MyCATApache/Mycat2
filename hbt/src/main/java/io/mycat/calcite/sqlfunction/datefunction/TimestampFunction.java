@@ -82,7 +82,7 @@ public class TimestampFunction extends MycatDateFunction {
                 return String.format("%02d:%02d:%02d:%02d.%09d", days1, hours, minutes, secs, nano);
             }
         }
-        temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(time);
+        temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(time);
 
         Temporal res = !sub ? addTime(temporal, duration) : subTime(temporal, duration);
         if (res instanceof LocalDateTime) {

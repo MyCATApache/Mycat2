@@ -353,7 +353,7 @@ public class SqlLiteral extends SqlNode {
       }
       if (clazz == LocalDateTime.class) {
         TimestampString value = (TimestampString) this.value;
-        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToUnixTimestamp(value.toString());
+        Temporal temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(value.toString());
         return clazz.cast(temporal);
       }
       break;
