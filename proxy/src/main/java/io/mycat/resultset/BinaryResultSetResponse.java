@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.sql.Types;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -84,22 +88,54 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                             value = null;
                             break;
                         case Types.TIMESTAMP://MysqlDefs.FIELD_TYPE_TIMESTAMP t
-                        case TIMESTAMP_WITH_TIMEZONE:
-                        case TIME_WITH_TIMEZONE:
-                        case Types.TIME://MysqlDefs.FIELD_TYPE_TIME t
+                        case Types.TIMESTAMP_WITH_TIMEZONE:
                             try {
-                                Date dateVar = (Date) object;
-                                value = (ByteUtil.getBytes(dateVar, true));
+                                if (object instanceof Date){
+                                    Date dateVar = (Date) object;
+                                    value = (ByteUtil.getBytes(dateVar, false));
+                                }else if (object instanceof LocalDateTime){
+                                    LocalDateTime localDateTime = (LocalDateTime)object;
+                                    value = (ByteUtil.getBytesFromTimestamp(localDateTime));
+                                }else {
+                                    throw new UnsupportedOperationException("unsupported class:"+object.getClass());
+                                }
                             } catch (org.joda.time.IllegalFieldValueException e1) {
                                 // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
                                 value = (ByteUtil.getBytes(new Date(0L), true));
                             }
                             break;
-
+                        case Types.TIME_WITH_TIMEZONE:
+                        case Types.TIME://MysqlDefs.FIELD_TYPE_TIME t
+                            try {
+                                if (object instanceof Date){
+                                    Date dateVar = (Date) object;
+                                    value = (ByteUtil.getBytes(dateVar, true));
+                                }else if (object instanceof String){
+                                    String dateText = (String) object;
+                                    value = (ByteUtil.getBytesFromTimeString(dateText));
+                                }else if (object instanceof LocalTime){
+                                    LocalTime time = (LocalTime) object;
+                                    value = (ByteUtil.getBytesFromTime(time));
+                                }else if (object instanceof Duration){
+                                    Duration time = (Duration) object;
+                                    value = (ByteUtil.getBytesFromDuration(time));
+                                }else {
+                                    throw new UnsupportedOperationException("unsupported class:"+object.getClass());
+                                }
+                            } catch (org.joda.time.IllegalFieldValueException e1) {
+                                // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
+                                value = (ByteUtil.getBytes(new Date(0L), true));
+                            }
+                            break;
                         case Types.DATE://MysqlDefs.FIELD_TYPE_DATE t
                             try {
-                                Date dateVar = (Date) object;
-                                value = (ByteUtil.getBytes(dateVar, false));
+                                if (object instanceof LocalDate){
+                                    LocalDate date = (LocalDate)object;
+                                    value = (ByteUtil.getBytesFromDate(date));
+                                }else{
+                                    Date dateVar = (Date) object;
+                                    value = (ByteUtil.getBytes(dateVar, false));
+                                }
                             } catch (org.joda.time.IllegalFieldValueException e1) {
                                 // 当时间为 0000-00-00 00:00:00 的时候, 默认返回 1970-01-01 08:00:00.0
                                 value = (ByteUtil.getBytes(new Date(0L), false));
