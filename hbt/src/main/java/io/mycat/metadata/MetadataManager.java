@@ -22,6 +22,7 @@ import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlUserName;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
@@ -191,17 +192,14 @@ public class MetadataManager {
         while (tableIterator.next()) {
             tables.add(tableIterator.getString(1));
         }
-        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-        mycatWorkerProcessor.getMycatWorker().execute(()->{
         for (String tableName : tables) {
-
-                NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
-                try {
-                    addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
-                }catch (Throwable e){
-                    LOGGER.warn("",e);
-                }
-            }});
+            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(this.prototype, schemaName, tableName);
+            try {
+                addNormalTable(schemaName, tableName, new NormalTableConfig(null, normalBackEndTableInfoConfig), this.prototype);
+            }catch (Throwable e){
+                LOGGER.warn("",e);
+            }
+        }
     }
 
     private void addCustomTable(String schemaName,
@@ -231,7 +229,7 @@ public class MetadataManager {
         }
     }
 
-    private void addNormalTable(String schemaName,
+    private boolean addNormalTable(String schemaName,
                                 String tableName,
                                 NormalTableConfig tableConfigEntry,
                                 String prototypeServer) {
@@ -242,8 +240,21 @@ public class MetadataManager {
                 Optional.ofNullable(dataNode.getTableName()).orElse(tableName)));
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
-        List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
-        addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, createTableSQL));
+        if (createTableSQL!=null){
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(createTableSQL);
+            if (sqlStatement instanceof SQLCreateViewStatement){
+                SQLCreateViewStatement sqlStatement1 = (SQLCreateViewStatement) sqlStatement;
+                MySqlUserName definer = (MySqlUserName)sqlStatement1.getDefiner();
+                String userName = SQLUtils.normalize(definer.getUserName()).toLowerCase();
+                if (userName.startsWith("mysql.")){
+                    return false;
+                }
+            }
+            List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, createTableSQL));
+            return true;
+        }
+        return false;
     }
 
     private void addGlobalTable(String schemaName,
@@ -433,9 +444,6 @@ public class MetadataManager {
                                 } catch (Throwable e) {
 
                                 }
-                            }
-                            if (sqlStatement == null) {
-                                System.out.println();
                             }
                             if (sqlStatement instanceof MySqlCreateTableStatement) {
                                 MySqlCreateTableStatement sqlStatement1 = (MySqlCreateTableStatement) sqlStatement;
@@ -727,6 +735,7 @@ public class MetadataManager {
             mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement)sqlStatement);
         }
         if (sqlStatement instanceof SQLCreateViewStatement){
+            SQLCreateViewStatement  createViewStatement = (SQLCreateViewStatement)sqlStatement;
             mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(jdbcConnectionManager,prototypeServer,(SQLCreateViewStatement)sqlStatement);
         }
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
