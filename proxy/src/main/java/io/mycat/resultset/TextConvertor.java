@@ -17,6 +17,9 @@ package io.mycat.resultset;
  * @author Junwen Chen
  **/
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public interface TextConvertor {
 
@@ -49,4 +52,12 @@ public interface TextConvertor {
   byte[] convertClob(java.sql.Clob v);
 
   byte[] convertObject(Object v);
+
+  byte[] convertDuration(Duration duration);
+
+  byte[] convertTime(LocalTime localTime);
+
+  byte[] convertTimeString(String s);
+
+  byte[] convertTimeStamp(LocalDateTime value);
 }

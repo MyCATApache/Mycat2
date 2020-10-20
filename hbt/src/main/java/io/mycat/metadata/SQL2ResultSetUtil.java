@@ -1,9 +1,6 @@
 package io.mycat.metadata;
 
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateViewStatement;
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;

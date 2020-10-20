@@ -16,7 +16,7 @@ import java.util.Map;
  * date 2019-05-22 01:17
  * a simple proxy collector as map
  **/
-public interface RowBaseIterator extends Closeable {
+public interface RowBaseIterator extends Closeable,BaseIterator {
 
     MycatRowMetaData getMetaData();
 

@@ -31,8 +31,6 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.LocalTime.SECONDS_PER_HOUR;
-import static java.time.LocalTime.SECONDS_PER_MINUTE;
 
 public class ByteUtil {
 

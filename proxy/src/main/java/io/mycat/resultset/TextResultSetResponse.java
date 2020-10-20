@@ -22,6 +22,9 @@ import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Iterator;
 
 /**
@@ -72,8 +75,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                res = convertor
-                        .convertBigDecimal(value);
+                res = convertor.convertBigDecimal(value);
                 break;
             }
             case Types.BIT: {
@@ -124,9 +126,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertFloat(value);
                 break;
             }
-            case Types.FLOAT: {
-
-            }
+            case Types.FLOAT:
             case Types.DOUBLE: {
                 double value = rowBaseIterator.getDouble(columnIndex);
                 if (rowBaseIterator.wasNull()) {
@@ -135,12 +135,8 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertDouble(value);
                 break;
             }
-            case Types.BINARY: {
-
-            }
-            case Types.VARBINARY: {
-
-            }
+            case Types.BINARY:
+            case Types.VARBINARY:
             case Types.LONGVARBINARY: {
                 byte[] value = rowBaseIterator.getBytes(columnIndex);
                 if (rowBaseIterator.wasNull()) {
@@ -158,19 +154,41 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.TIME: {
-                Time value = rowBaseIterator.getTime(columnIndex);
+                Object value = rowBaseIterator.getObject(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                res = convertor.convertTime(value);
+                if (value instanceof Time){
+                    res = convertor.convertTime((Time)value);
+                }else if (value instanceof Duration){
+                    Duration duration = (Duration) value;
+                    res = convertor.convertDuration(duration);
+                }else if (value instanceof LocalTime){
+                    LocalTime localTime = (LocalTime) value;
+                    res = convertor.convertTime(localTime);
+                }else if (value instanceof String){
+                    String s = (String)value;
+                    res = convertor.convertTimeString(s);
+                }else {
+                    throw new UnsupportedOperationException("unsupported cast:"+value.getClass());
+                }
                 break;
             }
             case Types.TIMESTAMP: {
-                Timestamp value = rowBaseIterator.getTimestamp(columnIndex);
+                Object value = rowBaseIterator.getObject(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                res = convertor.convertTimeStamp(value);
+                if (value instanceof Timestamp){
+                    res = convertor.convertTimeStamp((Timestamp)value);
+                }else if (value instanceof LocalDateTime){
+                    res = convertor.convertTimeStamp((LocalDateTime)value);
+                }else if (value instanceof String){
+                    String s = (String)value;
+                    res = convertor.convertTimeString(s);
+                }else {
+                    throw new UnsupportedOperationException("unsupported cast:"+value.getClass());
+                }
                 break;
             }
             case Types.CHAR: {
