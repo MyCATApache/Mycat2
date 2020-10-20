@@ -693,6 +693,14 @@ public class MetadataManager {
         return new Rrs(calculate, table);
     }
 
+    public boolean containsSchema(String name) {
+        return schemaMap.containsKey(Objects.requireNonNull(name));
+    }
+
+    public DDLOps startDDL() {
+        return new DDLOps(this);
+    }
+
 
     public static class Rrs {
         Collection<DataNode> backEndTableInfos;

@@ -2,9 +2,11 @@ package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.metadata.DDLOps;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaDataSourceSelector;
@@ -12,6 +14,8 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.SqlHints;
+import io.mycat.util.JsonUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +32,54 @@ import java.util.stream.Collectors;
  * 实现创建表
  */
 
-public class CreateTableSQLHandler extends AbstractSQLHandler<SQLCreateTableStatement> {
+public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         SQLCreateTableStatement ast = request.getAst();
+        Map<String, Object> attributes = ast.getAttributes();
+        String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
+        String tableName = ast.getTableName();
+        if (tableName == null) {
+            response.sendError(new MycatException("CreateTableSQL need tableName"));
+            return;
+        }
+        tableName = SQLUtils.normalize(tableName);
 
+        String hints = (String) attributes.get(SqlHints.AFTER_COMMENT);
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        if (hints == null){
+            try(DDLOps ddlOps = metadataManager.startDDL()){
+                ddlOps.createNormalTable(schemaName,tableName,request.getAst());
+                ddlOps.commit();
+            }
+        }else {
+            Map<String,Object> infos = JsonUtil.from(hints, Map.class);
+            String type = (String) infos.get("type");
+            try(DDLOps ddlOps = metadataManager.startDDL()){
+                switch (type){
+                    case "normal":{
+                        ddlOps.createNormalTable(schemaName,tableName,request.getAst(),(String) infos.get("targetName"));
+                        break;
+                    }
+                    case "global":{
+                        ddlOps.createGlobalTable(schemaName,tableName,request.getAst());
+                        break;
+                    }
+                    case "sharding":{
+                        ddlOps.createShardingTable(schemaName,tableName,request.getAst(),infos);
+                        break;
+                    }
+                }
+                ddlOps.commit();
+            }
+            response.sendOk();
+        }
+        return;
+    }
+
+    private void backup(MycatDataContext dataContext, Response response, SQLCreateTableStatement ast) {
         List<Throwable> throwables = new ArrayList<>();
         try {
             String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
