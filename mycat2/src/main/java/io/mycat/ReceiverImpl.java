@@ -48,7 +48,7 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void tryBroadcastShow(String statement) {
-        JdbcConnectionManager connectionManager =MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<String> infos = new ArrayList<>();
         List<String> keySet = new ArrayList<>(connectionManager.getDatasourceInfo().keySet());
         Collections.shuffle(keySet);

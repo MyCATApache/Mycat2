@@ -95,6 +95,16 @@ public class TableHandlerMocks {
             public Supplier<String> nextSequence() {
                 return null;
             }
+
+            @Override
+            public void createPhysicalTables() {
+
+            }
+
+            @Override
+            public void dropPhysicalTables() {
+
+            }
         };
     }
 }

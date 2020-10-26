@@ -18,6 +18,11 @@ public class MycatRouterConfigOps implements AutoCloseable{
     List<SequenceConfig> sequences = null;
     List<DatasourceConfig> datasources = null;
     String prototype = null;
+    UpdateType updateType=UpdateType.FULL;
+
+    String tableName;
+    String schemaName;
+
 
     public boolean isUpdateSchemas(){
         return schemas!=null;
@@ -52,11 +57,13 @@ public class MycatRouterConfigOps implements AutoCloseable{
         List<LogicSchemaConfig> schemas = this.schemas;
         LogicSchemaConfig schemaConfig;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equals(i.getSchemaName())).findFirst();
-        first.ifPresent(i->{
-            i.setTargetName(targetName);
-        });
-        schemas.add(schemaConfig = new LogicSchemaConfig());
-        schemaConfig.setSchemaName(schemaName);
+        if(first.isPresent()){
+            first.get().setTargetName(targetName);
+        }else {
+            schemas.add(schemaConfig = new LogicSchemaConfig());
+            schemaConfig.setSchemaName(schemaName);
+        }
+        updateType = UpdateType.ROUTER;
     }
 
 
@@ -65,6 +72,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         List<LogicSchemaConfig> schemas =  this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(i -> i.setTargetName(targetName));
+        updateType = UpdateType.ROUTER;
     }
 
 
@@ -73,6 +81,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         List<LogicSchemaConfig> schemas =  this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(o ->{schemas.remove(o);});
+        updateType = UpdateType.ROUTER;
     }
 
 
@@ -82,13 +91,17 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
-    public void putNormalTable(String schemaName, String tableName, String sqlString, String targetName) {
+    public NormalTableConfig putNormalTable(String schemaName, String tableName, String sqlString, String targetName) {
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas =  this.schemas;
+        NormalTableConfig normalTableConfig = new NormalTableConfig();
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
+        if (!first.isPresent()){
+            throw new IllegalArgumentException("unknown:"+schemaName);
+        }
         first.ifPresent(logicSchemaConfig -> {
             Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
-            NormalTableConfig normalTableConfig = new NormalTableConfig();
+
             normalTableConfig.setCreateTableSQL(sqlString.toString());
             normalTableConfig.setDataNode(NormalBackEndTableInfoConfig.builder()
                     .targetName(targetName)
@@ -97,16 +110,23 @@ public class MycatRouterConfigOps implements AutoCloseable{
                     .build());
             normalTables.put(tableName, normalTableConfig);
         });
+        updateType = UpdateType.CREATE_TABLE;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
+        return normalTableConfig;
     }
 
 
-    public void putGlobalTable(String schemaName, String tableName, String sqlString) {
+    public GlobalTableConfig putGlobalTable(String schemaName, String tableName, String sqlString) {
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas =  this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
+        GlobalTableConfig globalTableConfig = new GlobalTableConfig();
+        if (!first.isPresent()){
+            throw new IllegalArgumentException("unknown:"+schemaName);
+        }
         first.ifPresent(logicSchemaConfig -> {
-            Map<String, GlobalTableConfig> normalTables = logicSchemaConfig.getGlobalTables();
-            GlobalTableConfig globalTableConfig = new GlobalTableConfig();
+            Map<String, GlobalTableConfig> globalTableConfigMap = logicSchemaConfig.getGlobalTables();
             List<ClusterConfig> clusters = mycatRouterConfig.getClusters();
             List<String> allReplica = clusters.stream().map(i -> i.getName()).collect(Collectors.toList());
             globalTableConfig.setCreateTableSQL(sqlString.toString());
@@ -116,8 +136,12 @@ public class MycatRouterConfigOps implements AutoCloseable{
                         backEndTableInfoConfig.setTargetName(i);
                         return backEndTableInfoConfig;
                     }).collect(Collectors.toList()));
-            normalTables.put(tableName, globalTableConfig);
+            globalTableConfigMap.put(tableName, globalTableConfig);
         });
+        updateType = UpdateType.CREATE_TABLE;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
+        return globalTableConfig;
     }
 
 
@@ -131,10 +155,13 @@ public class MycatRouterConfigOps implements AutoCloseable{
             logicSchemaConfig.getShadingTables().remove(tableName);
             logicSchemaConfig.getCustomTables().remove(tableName);
         });
+        updateType = UpdateType.DROP_TABLE;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
     }
 
 
-    public void putShardingTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putShardingTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
         Map<String, String> ranges = (Map) infos.get("ranges");
         Map<String, String> dataNodes = (Map) infos.get("dataNodes");
         Map<String, String> properties = (Map) infos.get("properties");
@@ -157,6 +184,10 @@ public class MycatRouterConfigOps implements AutoCloseable{
             Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
             shadingTables.put(tableName, config);
         });
+        updateType = UpdateType.CREATE_TABLE;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
+        return config;
     }
 
 
@@ -168,6 +199,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
                 .ip(ip)
                 .transactionType(transactionType)
                 .build());
+        updateType = UpdateType.USER;
     }
 
 
@@ -175,12 +207,14 @@ public class MycatRouterConfigOps implements AutoCloseable{
         this.users = mycatRouterConfig.getUsers();
         users.stream().filter(i -> username.equals(i.getUsername()))
                 .findFirst().ifPresent(i -> users.remove(i));
+        updateType = UpdateType.USER;
     }
 
 
     public void putSequence(String name, String clazz, String args) {
         this.sequences = mycatRouterConfig.getSequences();
         sequences.add(new SequenceConfig(name, clazz, args));
+        updateType = UpdateType.SEQUENCE;
     }
 
 
@@ -189,6 +223,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         sequences.stream()
                 .filter(i -> name.equals(i.getName())).findFirst()
                 .ifPresent(i -> sequences.remove(i));
+        updateType = UpdateType.SEQUENCE;
     }
 
 
@@ -201,12 +236,14 @@ public class MycatRouterConfigOps implements AutoCloseable{
         } else {
             datasources.add(datasourceConfig);
         }
+        updateType = UpdateType.FULL;
     }
 
     public void removeDatasource(String datasourceName) {
         this.datasources = mycatRouterConfig.getDatasources();
         Optional<DatasourceConfig> first = datasources.stream().filter(i -> datasourceName.equals(i.getName())).findFirst();
         first.ifPresent(datasources::remove);
+        updateType = UpdateType.FULL;
     }
 
     public void putReplica(ClusterConfig clusterConfig) {
@@ -214,6 +251,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         Optional<ClusterConfig> first = this.clusters.stream().filter(i -> clusterConfig.getName().equals(i.getName())).findFirst();
         first.ifPresent(clusters::remove);
         clusters.add(clusterConfig);
+        updateType = UpdateType.FULL;
     }
 
     public void removeReplica(String replicaName) {
@@ -221,6 +259,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         List<ClusterConfig> clusters = this.clusters;
         Optional<ClusterConfig> first = clusters.stream().filter(i -> replicaName.equals(i.getName())).findFirst();
         first.ifPresent(clusters::remove);
+        updateType = UpdateType.FULL;
     }
 
 
@@ -264,5 +303,17 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
     public void close() {
         this.configOps.close();
+    }
+
+    public UpdateType getUpdateType() {
+        return updateType;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public String getSchemaName() {
+        return schemaName;
     }
 }

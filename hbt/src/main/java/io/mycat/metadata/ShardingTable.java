@@ -6,6 +6,8 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.function.PartitionRuleFunctionManager;
@@ -18,6 +20,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.mycat.SimpleColumnInfo.ShardingType.*;
+import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 @Getter
 public class ShardingTable implements ShardingTableHandler {
@@ -69,6 +72,28 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public Supplier<String> nextSequence() {
         return sequence;
+    }
+
+    @Override
+    public void createPhysicalTables() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            connection.executeUpdate(getCreateTableSQL(), false);
+        }
+        for (DataNode node : getBackends()) {
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
+                connection.executeUpdate(rewriteCreateTableSql(getCreateTableSQL(),node.getSchema(), node.getTable()), false);
+            }
+        }
+    }
+
+    @Override
+    public void dropPhysicalTables() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        String dropTemplate = "drop table `%s`.`%s`";
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            connection.executeUpdate(String.format(dropTemplate,getSchemaName(),getTableName()), false);
+        }
     }
 
 ////    @Override

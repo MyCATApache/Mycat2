@@ -2,11 +2,16 @@ package io.mycat.metadata;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +21,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
@@ -116,6 +123,35 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public Supplier<String> nextSequence() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void createPhysicalTables() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            connection.executeUpdate(getCreateTableSQL(), false);
+        }
+        for (DataNode node : getGlobalDataNode()) {
+            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
+                connection.executeUpdate(rewriteCreateTableSql(getCreateTableSQL(),node.getSchema(), node.getTable()), false);
+            }
+        }
+    }
+
+
+
+    @Override
+    public void dropPhysicalTables() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        String dropTemplate = "drop table `%s`.`%s`";
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            connection.executeUpdate(String.format(dropTemplate,getSchemaName(),getTableName()), false);
+        }
+//        for (DataNode node : getGlobalDataNode()) {
+//            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
+//                connection.executeUpdate(String.format(dropTemplate,node.getSchema(),node.getTable()), false);
+//            }
+//        }
     }
 
     @Override

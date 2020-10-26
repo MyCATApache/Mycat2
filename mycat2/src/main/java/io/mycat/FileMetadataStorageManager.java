@@ -1,6 +1,5 @@
 package io.mycat;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.config.*;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -59,10 +58,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         boolean b3 = s1.endsWith(suffix + ".json");
         return b || b2 || b3;
     }
+
     @SneakyThrows
-   String readString(Path path){
-        return new String( Files.readAllBytes(path));
-   }
+    String readString(Path path) {
+        return new String(Files.readAllBytes(path));
+    }
 
     @NotNull
     @SneakyThrows
@@ -81,8 +81,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         if (Files.notExists(users)) Files.createDirectory(users);
         if (Files.notExists(sequences)) Files.createDirectory(sequences);
 
-        if (Files.notExists(mycatPath)){
-            Files.write(mycatPath,getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()).getBytes());
+        if (Files.notExists(mycatPath)) {
+            Files.write(mycatPath, getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()).getBytes());
         }
 
         Stream<Path> schemaPaths = Files.list(baseDirectory.resolve("schemas")).filter(i -> isSuffix(i, "schema"));
@@ -127,7 +127,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         routerConfig.getUsers().addAll(userConfigs);
         routerConfig.getSequences().addAll(sequenceConfigs);
 
-        if (routerConfig.getUsers().isEmpty()){
+        if (routerConfig.getUsers().isEmpty()) {
             UserConfig userConfig = new UserConfig();
             userConfig.setIp("127.0.0.1");
             userConfig.setPassword("123456");
@@ -135,7 +135,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             routerConfig.getUsers().add(userConfig);
         }
 
-        if (routerConfig.getDatasources().isEmpty()){
+        if (routerConfig.getDatasources().isEmpty()) {
             DatasourceConfig datasourceConfig = new DatasourceConfig();
             datasourceConfig.setDbType("jdbc");
             datasourceConfig.setUser("root");
@@ -145,7 +145,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             routerConfig.getDatasources().add(datasourceConfig);
         }
 
-
+        routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setClusters(routerConfig.getClusters().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setDatasources(routerConfig.getDatasources().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setUsers(routerConfig.getUsers().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setSequences(routerConfig.getSequences().stream().distinct().collect(Collectors.toList()));
 
         return routerConfig;
     }
@@ -153,8 +157,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @Override
     @SneakyThrows
     void start() {
-        try(ConfigOps configOps = startOps()){
-            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) configOps.currentConfig(), configOps));
+        try (ConfigOps configOps = startOps()) {
+            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig)loadFromLocalFile(), configOps));
         }
     }
 
@@ -162,7 +166,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @SneakyThrows
     public void reportReplica(String name, Set<String> dsNames) {
         Path statePath = baseDirectory.resolve("state.json");
-        state.replica.put(name,dsNames);
+        state.replica.put(name, dsNames);
         Files.write(statePath,
                 ConfigReaderWriter.getReaderWriterBySuffix("json")
                         .transformation(state).getBytes(), StandardOpenOption.CREATE_NEW);
@@ -179,15 +183,15 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @SneakyThrows
     public ConfigOps startOps() {
         Path lockFile = baseDirectory.resolve("mycat.lock");
-        if (Files.notExists(lockFile))Files.createFile(lockFile);
-        FileChannel lockFileChannel = FileChannel.open(lockFile,  StandardOpenOption.WRITE);
+        if (Files.notExists(lockFile)) Files.createFile(lockFile);
+        FileChannel lockFileChannel = FileChannel.open(lockFile, StandardOpenOption.WRITE);
         FileLock lock = Objects.requireNonNull(lockFileChannel.lock());
         return new ConfigOps() {
 
             @Override
             @SneakyThrows
             public Object currentConfig() {
-                return getRouterConfig(baseDirectory);
+                return MetaClusterCurrent.wrapper(MycatRouterConfig.class);
             }
 
             @Override
@@ -197,18 +201,19 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     String suffix = getSuffix(mycatPath.getFileName().toString());
                     ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                     MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
-                    ConfigPrepare prepare = new ConfigPrepare(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
-                    prepare.invoke();
-                    String text = configReaderWriter.transformation(routerConfig);
+                    ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
+                    prepare.prepareRuntimeObject();
+                    prepare.prepareStoreDDL();
+                    String text = configReaderWriter.transformation(routerConfig.getMycatRouterConfig());
 
                     //还没有初始化
-                    if (state.configTimestamp!=null&&Files.exists(mycatPath)) {
-                        String s = readString(mycatPath);
-                        if (s.equals(text)) {
-                            return;
-                        }
-                        Files.write(mycatPath, text.getBytes(),  StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE);
-                    }
+//                    if (state.configTimestamp != null) {
+//                        String s = readString(mycatPath);
+//                        if (s.equals(text)) {
+//                            return;
+//                        }
+//                        //Files.write(mycatPath, text.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+//                    }
 
                     ///////////////////////////////////////////
 
@@ -221,19 +226,19 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     Path users = baseDirectory.resolve("users");
                     Path sequences = baseDirectory.resolve("sequences");
 
-                    if(routerConfig.isUpdateSchemas()){
+                    if (routerConfig.isUpdateSchemas()) {
                         org.apache.commons.io.FileUtils.cleanDirectory(schemasPath.toFile());
                     }
-                    if(routerConfig.isUpdateClusters()){
+                    if (routerConfig.isUpdateClusters()) {
                         org.apache.commons.io.FileUtils.cleanDirectory(clustersPath.toFile());
                     }
-                    if(routerConfig.isUpdateDatasources()){
+                    if (routerConfig.isUpdateDatasources()) {
                         org.apache.commons.io.FileUtils.cleanDirectory(datasources.toFile());
                     }
-                    if(routerConfig.isUpdateUsers()){
+                    if (routerConfig.isUpdateUsers()) {
                         org.apache.commons.io.FileUtils.cleanDirectory(users.toFile());
                     }
-                    if(routerConfig.isUpdateSequences()){
+                    if (routerConfig.isUpdateSequences()) {
                         org.apache.commons.io.FileUtils.cleanDirectory(sequences.toFile());
                     }
 //
@@ -252,7 +257,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(schemaConfig);
                         Path filePath = schemasPath.resolve(fileName);
-                         writeFile(t, filePath) ;
+                        writeFile(t, filePath);
                     }
 
                     for (DatasourceConfig datasourceConfig : Optional.ofNullable(routerConfig.getDatasources()).orElse(Collections.emptyList())) {
@@ -260,28 +265,28 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(datasourceConfig);
                         Path filePath = datasources.resolve(fileName);
-                         writeFile(t, filePath) ;
+                        writeFile(t, filePath);
                     }
                     for (UserConfig userConfig : Optional.ofNullable(routerConfig.getUsers()).orElse(Collections.emptyList())) {
                         String fileName = userConfig.getUsername() + ".user." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(userConfig);
                         Path filePath = users.resolve(fileName);
-                        writeFile(t, filePath) ;
+                        writeFile(t, filePath);
                     }
                     for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
                         String fileName = sequenceConfig.getName() + ".sequence." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(sequenceConfig);
                         Path filePath = sequences.resolve(fileName);
-                        writeFile(t, filePath) ;
+                        writeFile(t, filePath);
                     }
                     for (ClusterConfig i : Optional.ofNullable(routerConfig.getClusters()).orElse(Collections.emptyList())) {
                         String fileName = i.getName() + ".cluster." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(i);
                         Path filePath = clustersPath.resolve(fileName);
-                        writeFile(t, filePath) ;
+                        writeFile(t, filePath);
                     }
 
                     State state = FileMetadataStorageManager.this.state;
@@ -292,21 +297,21 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     Path statePath = baseDirectory.resolve("state.json");
 
                     Files.deleteIfExists(statePath);
-                    if(Files.notExists(statePath))Files.createFile(statePath);
+                    if (Files.notExists(statePath)) Files.createFile(statePath);
                     Files.write(statePath,
                             ConfigReaderWriter.getReaderWriterBySuffix("json")
-                                    .transformation(state).getBytes(),  StandardOpenOption.WRITE);
+                                    .transformation(state).getBytes(), StandardOpenOption.WRITE);
 
-                } catch (Throwable e){
+                } catch (Throwable e) {
                     e.printStackTrace();
-                }finally {
+                } finally {
                 }
             }
 
             @Override
             public void close() {
                 try {
-                    if(lockFileChannel.isOpen()){
+                    if (lockFileChannel.isOpen()) {
                         lock.release();
                         lockFileChannel.close();
                     }
@@ -317,13 +322,18 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         };
     }
 
+    @NotNull
+    private MycatRouterConfig loadFromLocalFile() {
+        return getRouterConfig(baseDirectory);
+    }
+
     private void writeFile(String t, Path filePath) throws IOException {
         if (Files.exists(filePath)) {
             if (readString(filePath).equals(t)) {
-                return ;
+                return;
             }
         }
-        FileUtils.write(filePath.toFile(),t);
+        FileUtils.write(filePath.toFile(), t);
     }
 
 }

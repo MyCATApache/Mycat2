@@ -137,10 +137,17 @@ public class MetadataManager {
                                 schemaConfigs.add(config);
                                 return config;
                             });
-                    Map<String, NormalTableConfig> normalTableConfigs = logicSchemaConfig.getNormalTables();
+
                     Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
+                    Set<String> existed = new HashSet<>();
+                    existed.addAll( logicSchemaConfig.getNormalTables().keySet());
+                    existed.addAll( logicSchemaConfig.getGlobalTables().keySet());
+                    existed.addAll( logicSchemaConfig.getShadingTables().keySet());
+                    existed.addAll( logicSchemaConfig.getCustomTables().keySet());
                     adds.forEach((n, v) -> {
-                        normalTableConfigs.computeIfAbsent(n, (ignored) -> v);
+                        if (!existed.contains(n)){
+                            logicSchemaConfig.getNormalTables().put(n,v);
+                        }
                     });
                 }
             }

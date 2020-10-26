@@ -5,18 +5,24 @@ import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.ddl.executer.DDLExecuter;
+import io.mycat.metadata.GlobalTable;
 import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.NormalTable;
+import io.mycat.metadata.ShardingTable;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ConfigPrepare {
+public class ConfigPrepareExecuter {
     private final MycatRouterConfigOps ops;
     ////////////////////////////////////////////////////////////////////////////////////
     private ReplicaSelectorRuntime replicaSelector;
@@ -28,11 +34,11 @@ public class ConfigPrepare {
     private SequenceGenerator sequenceGenerator;
 
     private String datasourceProvider;
-    UpdateType updateType = UpdateType.FULL;
+//    UpdateType updateType = UpdateType.FULL;
 
 
     //originalRouterConfig = YamlUtil.load(MycatRouterConfig.class, new FileReader(baseDirectory.resolve("metadata.yml").toFile()));
-    public ConfigPrepare(
+    public ConfigPrepareExecuter(
             MycatRouterConfigOps ops,
             MetadataStorageManager metadataStorageManager,
             String datasourceProvider) {
@@ -46,22 +52,22 @@ public class ConfigPrepare {
         boolean sequences = ops.getSequences() != null;
         boolean datasources = ops.getDatasources() != null;
 
-
-        if (router && !cluster && !users && !sequences && !datasources) {
-            updateType = UpdateType.ROUTER;
-        } else if (!router && !cluster && users && !sequences && !datasources) {
-            updateType = UpdateType.USER;
-        } else if (!router && !cluster && !users && sequences && !datasources) {
-            updateType = UpdateType.SEQUENCE;
-        } else {
-            updateType = UpdateType.FULL;
-        }
+//
+//        if (router && !cluster && !users && !sequences && !datasources) {
+//            updateType = UpdateType.ROUTER;
+//        } else if (!router && !cluster && users && !sequences && !datasources) {
+//            updateType = UpdateType.USER;
+//        } else if (!router && !cluster && !users && sequences && !datasources) {
+//            updateType = UpdateType.SEQUENCE;
+//        } else {
+//            updateType = UpdateType.FULL;
+//        }
 
     }
 
-    public void invoke() {
+    public void prepareRuntimeObject() {
 
-        switch (updateType) {
+        switch (ops.getUpdateType()) {
             case USER: {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
@@ -77,19 +83,42 @@ public class ConfigPrepare {
                 break;
             }
             case ROUTER: {
-                LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-                MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                this.metadataManager = new MetadataManager(ops.getSchemas(), loadBalanceManager,  MetaClusterCurrent.wrapper(SequenceGenerator.class),  MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class), MetaClusterCurrent.wrapper(JdbcConnectionManager.class), ops.getPrototype());
+              this.metadataManager = createMetaData();
+                break;
+            }
+            case CREATE_TABLE: {
+                String schemaName = ops.getSchemaName();
+                String tableName = ops.getTableName();
+                this.metadataManager = createMetaData();
+                TableHandler table = this.metadataManager.getTable(schemaName, tableName);
+                table.createPhysicalTables();
+                break;
+            }
+            case DROP_TABLE: {
+                String schemaName = ops.getSchemaName();
+                String tableName = ops.getTableName();
+                this.metadataManager = createMetaData();
+                TableHandler table = this.metadataManager.getTable(schemaName, tableName);
+                table.dropPhysicalTables();
                 break;
             }
             case FULL: {
                 MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
-
                 initBy(mycatRouterConfig);
                 break;
             }
 
         }
+    }
+
+    @NotNull
+    private MetadataManager createMetaData() {
+        return new MetadataManager(ops.getSchemas(),
+                  MetaClusterCurrent.wrapper(LoadBalanceManager.class),
+                  MetaClusterCurrent.wrapper(SequenceGenerator.class),
+                  MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
+                  MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
+                  ops.getPrototype());
     }
 
     public void initBy(MycatRouterConfig mycatRouterConfig) {
@@ -114,10 +143,16 @@ public class ConfigPrepare {
         this.metadataManager = new MetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
     }
 
+    public void prepareStoreDDL() {
+
+    }
+
     public enum UpdateType {
         USER,
         SEQUENCE,
         ROUTER,
+        CREATE_TABLE,
+        DROP_TABLE,
         FULL
     }
 
@@ -184,6 +219,8 @@ public class ConfigPrepare {
         }
         context.put(MetadataStorageManager.class, this.metadataStorageManager);
 
+        MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
+        context.put(MycatRouterConfig.class,mycatRouterConfig);
 
         MetaClusterCurrent.register(context);
     }

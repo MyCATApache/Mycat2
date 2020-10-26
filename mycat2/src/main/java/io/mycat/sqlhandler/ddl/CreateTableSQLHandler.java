@@ -4,8 +4,10 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
+import io.mycat.config.ShardingTableConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.ddl.executer.DDLExecuter;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.replica.ReplicaDataSourceSelector;
@@ -37,8 +39,8 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
     @Override
     protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
-        SQLCreateTableStatement ast = request.getAst();
-        Map<String, Object> attributes = ast.getAttributes();
+        Optional<Map<String, Object>> hint = request.getAfterJson();
+        SQLCreateTableStatement ast = request.getAst().clone();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
         String tableName = ast.getTableName();
         if (tableName == null) {
@@ -46,16 +48,24 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
             return;
         }
         tableName = SQLUtils.normalize(tableName);
-        String hints = (String) attributes.get(SqlHints.AFTER_COMMENT);
-        String createTableSql = request.getSqlString();
+        if (schemaName == null) {
+            response.sendError("No database selected", 1046);
+            return;
+        }
+        ast.setSchema(schemaName);
+        ast.setIfNotExiists(true);
+        String createTableSql = SQLUtils.toMySqlString(ast);
+
         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-            if (hints == null) {
+
+            if (!hint.isPresent()) {
                 ops.putNormalTable(schemaName, tableName, createTableSql);
             } else {
-                Map<String, Object> infos = JsonUtil.from(hints, Map.class);
+                Map<String, Object> infos = hint.get();
                 switch (infos.get("type").toString()) {
                     case "normal": {
-                        ops.putNormalTable(schemaName, tableName, createTableSql, (String) infos.get("targetName"));
+                        String targetName = (String) infos.get("targetName");
+                        ops.putNormalTable(schemaName, tableName, createTableSql, targetName);
                         break;
                     }
                     case "global": {
@@ -63,7 +73,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                         break;
                     }
                     case "sharding": {
-                        ops.putShardingTable(schemaName, tableName, createTableSql, infos);
+                        ShardingTableConfig shardingTableConfig = ops.putShardingTable(schemaName, tableName, createTableSql, infos);
                         break;
                     }
                 }

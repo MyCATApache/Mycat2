@@ -1,5 +1,11 @@
 package io.mycat.metadata;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.DataNode;
 import io.mycat.LogicTableType;
 import io.mycat.SimpleColumnInfo;
@@ -39,7 +45,21 @@ public class LogicTable {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.rawColumns = rawColumns;
-        this.createTableSQL = Objects.requireNonNull(createTableSQL, this.uniqueName + " createTableSQL is not existed");
+        SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
+        if (createTableAst instanceof SQLCreateTableStatement ){
+            ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
+            ((SQLCreateTableStatement ) createTableAst).setSchema(schemaName);
+        }
+        if (createTableAst instanceof MySqlCreateTableStatement){
+            ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
+            ((MySqlCreateTableStatement) createTableAst).setSchema(schemaName);
+        }
+        if (createTableAst instanceof SQLCreateViewStatement){
+            ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
+            SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
+            tableSource.setSchema(schemaName);
+        }
+        this.createTableSQL = Objects.requireNonNull(SQLUtils.toMySqlString(createTableAst), this.uniqueName + " createTableSQL is not existed");
         /////////////////////////////////////////
         this.autoIncrementColumn = rawColumns.stream().filter(i -> i.isAutoIncrement()).findFirst().orElse(null);
         /////////////////////////////////////////
@@ -100,5 +120,25 @@ public class LogicTable {
 
     public String getUniqueName() {
         return uniqueName;
+    }
+
+    public static String rewriteCreateTableSql(String sql,String schemaName, String tableName) {
+        SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(sql);
+        if (createTableAst instanceof SQLCreateTableStatement){
+            SQLCreateTableStatement tableStatement = (SQLCreateTableStatement) createTableAst;
+            tableStatement.setTableName(tableName);
+            tableStatement.setSchema(schemaName);
+        }
+        if (createTableAst instanceof MySqlCreateTableStatement){
+            MySqlCreateTableStatement tableStatement = (MySqlCreateTableStatement) createTableAst;
+            tableStatement.setTableName(tableName);
+            tableStatement.setSchema(schemaName);
+        }
+        if (createTableAst instanceof SQLCreateViewStatement){
+            SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
+            tableSource.setSimpleName(tableName);
+            tableSource.setSchema(schemaName);
+        }
+        return createTableAst.toString();
     }
 }

@@ -38,4 +38,8 @@ public interface TableHandler {
     default boolean isAutoIncrement() {
         return getAutoIncrementColumn() != null;
     }
+
+    void createPhysicalTables();
+
+    void dropPhysicalTables();
 }

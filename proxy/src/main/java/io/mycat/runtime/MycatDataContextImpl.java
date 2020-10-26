@@ -1,5 +1,6 @@
 package io.mycat.runtime;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -242,7 +243,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void useShcema(String schema) {
-        this.setDefaultSchema(schema);
+        this.setDefaultSchema(SQLUtils.normalize(schema));
     }
 
     @Override
