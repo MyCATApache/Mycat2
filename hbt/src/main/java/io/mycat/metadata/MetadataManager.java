@@ -113,10 +113,10 @@ public class MetadataManager {
                            JdbcConnectionManager jdbcConnectionManager,
                            String prototype
     ) {
-        this.loadBalanceManager = loadBalanceManager;
-        this.sequenceGenerator = sequenceGenerator;
-        this.replicaSelectorRuntime = replicaSelectorRuntime;
-        this.jdbcConnectionManager = jdbcConnectionManager;
+        this.loadBalanceManager = Objects.requireNonNull(loadBalanceManager);
+        this.sequenceGenerator = Objects.requireNonNull(sequenceGenerator);
+        this.replicaSelectorRuntime = Objects.requireNonNull(replicaSelectorRuntime);
+        this.jdbcConnectionManager = Objects.requireNonNull(jdbcConnectionManager);
         this.prototype = prototype;
 
         if (this.prototype != null) {
@@ -146,7 +146,7 @@ public class MetadataManager {
             }
         }
         /////////////////////////////////////////////////////////////////
-        // addInnerTable(schemaConfigs, prototype);
+         addInnerTable(schemaConfigs, prototype);
 
 
         ///////////////////////////////////////////////////////////////

@@ -10,6 +10,7 @@ import sun.util.calendar.ZoneInfo;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.TimeZone;
 
@@ -48,11 +49,12 @@ public class MycatCore {
         LoadBalanceManager loadBalanceManager = mycatServer.getLoadBalanceManager();
         MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
 
-        MetaClusterCurrent.register(serverConfiguration);
-        MetaClusterCurrent.register(serverConfig);
-        MetaClusterCurrent.register(loadBalanceManager);
-        MetaClusterCurrent.register(mycatWorkerProcessor);
-        MetaClusterCurrent.register(mycatServer);
+        HashMap<Class,Object> context = new HashMap<>();
+        context.put(serverConfiguration.getClass(),serverConfiguration);
+        context.put(serverConfig.getClass(),serverConfig);
+        context.put(loadBalanceManager.getClass(),loadBalanceManager);
+        context.put(mycatWorkerProcessor.getClass(),mycatWorkerProcessor);
+        context.put(mycatServer.getClass(),mycatServer);
 
 
         String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
@@ -66,7 +68,9 @@ public class MycatCore {
                 throw new UnsupportedOperationException();
             }
         }
-        MetaClusterCurrent.register(metadataStorageManager);
+
+        context.put(metadataStorageManager.getClass(),metadataStorageManager);
+        MetaClusterCurrent.register(context);
     }
 
     private void start() {

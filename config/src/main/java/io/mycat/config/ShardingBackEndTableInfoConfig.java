@@ -10,9 +10,9 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode
 public  class ShardingBackEndTableInfoConfig {
-    private String targetName;
-    private String schemaName;
-    private String tableName;
+    private String targetNames;
+    private String schemaNames;
+    private String tableNames;
 
     public ShardingBackEndTableInfoConfig() {
     }

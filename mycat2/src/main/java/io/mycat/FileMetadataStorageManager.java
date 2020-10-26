@@ -1,104 +1,329 @@
 package io.mycat;
 
-import io.mycat.client.InterceptorRuntime;
+import com.google.common.collect.ImmutableList;
 import io.mycat.config.*;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.proxy.session.Authenticator;
-import io.mycat.proxy.session.AuthenticatorImpl;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.util.YamlUtil;
+import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FileMetadataStorageManager extends MetadataStorageManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileMetadataStorageManager.class);
     private final String datasourceProvider;
     private final Path baseDirectory;
-    private final Path metafile;
+    private final State state = new State();
+
 
     @SneakyThrows
     public FileMetadataStorageManager(String datasourceProvider, Path baseDirectory) {
         this.datasourceProvider = datasourceProvider;
         this.baseDirectory = baseDirectory;
-        this.metafile = baseDirectory.resolve("metadata.yml");
-
     }
 
-    private void listen(Path file) throws IOException {
-        WatchService watchService = FileSystems.getDefault().newWatchService();
-        file.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
-        ScheduledExecutorService timer = ScheduleUtil.getTimer();
-        timer.scheduleAtFixedRate(() -> {
-            WatchKey key;
-            try {
-                while ((key = watchService.take()) != null) {
-                    key.reset();
-                    init();
-                }
-            } catch (Throwable t) {
-                LOGGER.error("", t);
-            }
-        }, 3, 3, TimeUnit.SECONDS);
+    @NotNull
+    private ConfigReaderWriter getConfigReaderWriter(Path metafile) {
+        String fileName = metafile.toString();
+        String suffix = getSuffix(fileName);
+        return ConfigReaderWriter.getReaderWriterBySuffix(suffix);
     }
 
+    @NotNull
+    private String getSuffix(String fileName) {
+        return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+
+    Path resolveFileName(String name) {
+        Path f = baseDirectory.resolve(name + ".yml");
+        Path s = baseDirectory.resolve(name + ".yaml");
+        Path t = baseDirectory.resolve(name + ".json");
+        return Files.exists(f) ? f : (Files.exists(s) ? s : Files.exists(t) ? t : baseDirectory.resolve(name + ".json"));
+    }
+
+    boolean isSuffix(Path path, String suffix) {
+        String s1 = path.toString();
+        boolean b = s1.endsWith(suffix + ".yml");
+        boolean b2 = s1.endsWith(suffix + ".yaml");
+        boolean b3 = s1.endsWith(suffix + ".json");
+        return b || b2 || b3;
+    }
     @SneakyThrows
-    private void init() {
-        Path interceptorPath = baseDirectory.resolve("interceptor.yml");
-        if (Files.exists(interceptorPath)) {
-            InterceptorRootConfig mycatRouterConfig = YamlUtil.load(InterceptorRootConfig.class, new FileReader(interceptorPath.toFile()));
-            InterceptorRuntime interceptorRuntime = new InterceptorRuntime(mycatRouterConfig.getPatternRootConfigs());
-            MetaClusterCurrent.register(interceptorRuntime);
+   String readString(Path path){
+        return new String( Files.readAllBytes(path));
+   }
+
+    @NotNull
+    @SneakyThrows
+    private MycatRouterConfig getRouterConfig(Path baseDirectory) {
+        Path mycatPath = resolveFileName("mycat");
+        String suffix = getSuffix(mycatPath.toString());
+        Path schemasPath = baseDirectory.resolve("schemas");
+        Path clustersPath = baseDirectory.resolve("clusters");
+        Path datasources = baseDirectory.resolve("datasources");
+        Path users = baseDirectory.resolve("users");
+        Path sequences = baseDirectory.resolve("sequences");
+
+        if (Files.notExists(schemasPath)) Files.createDirectory(schemasPath);
+        if (Files.notExists(clustersPath)) Files.createDirectory(clustersPath);
+        if (Files.notExists(datasources)) Files.createDirectory(datasources);
+        if (Files.notExists(users)) Files.createDirectory(users);
+        if (Files.notExists(sequences)) Files.createDirectory(sequences);
+
+        if (Files.notExists(mycatPath)){
+            Files.write(mycatPath,getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()).getBytes());
+        }
+
+        Stream<Path> schemaPaths = Files.list(baseDirectory.resolve("schemas")).filter(i -> isSuffix(i, "schema"));
+        Stream<Path> clusterPaths = Files.list(baseDirectory.resolve("clusters")).filter(i -> isSuffix(i, "cluster"));
+        Stream<Path> datasourcePaths = Files.list(baseDirectory.resolve("datasources")).filter(i -> isSuffix(i, "datasource"));
+        Stream<Path> userPaths = Files.list(baseDirectory.resolve("users")).filter(i -> isSuffix(i, "user"));
+        Stream<Path> sequencePaths = Files.list(baseDirectory.resolve("sequences")).filter(i -> isSuffix(i, "sequence"));
+
+        MycatRouterConfig routerConfig = getConfigReaderWriter(mycatPath).transformation(readString(mycatPath), MycatRouterConfig.class);
+
+        List<LogicSchemaConfig> logicSchemaConfigs = schemaPaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            String s = readString(i);
+            LogicSchemaConfig schemaConfig = configReaderWriter.transformation(s, LogicSchemaConfig.class);
+            return schemaConfig;
+        }).distinct().collect(Collectors.toList());
+
+
+        List<ClusterConfig> clusterConfigs = clusterPaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            return configReaderWriter.transformation(readString(i), ClusterConfig.class);
+        }).distinct().collect(Collectors.toList());
+
+        List<DatasourceConfig> datasourceConfigs = datasourcePaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            return configReaderWriter.transformation(readString(i), DatasourceConfig.class);
+        }).distinct().collect(Collectors.toList());
+
+        List<UserConfig> userConfigs = userPaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            return configReaderWriter.transformation(readString(i), UserConfig.class);
+        }).distinct().collect(Collectors.toList());
+
+        List<SequenceConfig> sequenceConfigs = sequencePaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            return configReaderWriter.transformation(readString(i), SequenceConfig.class);
+        }).distinct().collect(Collectors.toList());
+
+        routerConfig.getSchemas().addAll(logicSchemaConfigs);
+        routerConfig.getClusters().addAll(clusterConfigs);
+        routerConfig.getDatasources().addAll(datasourceConfigs);
+        routerConfig.getUsers().addAll(userConfigs);
+        routerConfig.getSequences().addAll(sequenceConfigs);
+
+        if (routerConfig.getUsers().isEmpty()){
+            UserConfig userConfig = new UserConfig();
+            userConfig.setIp("127.0.0.1");
+            userConfig.setPassword("123456");
+            userConfig.setUsername("root");
+            routerConfig.getUsers().add(userConfig);
+        }
+
+        if (routerConfig.getDatasources().isEmpty()){
+            DatasourceConfig datasourceConfig = new DatasourceConfig();
+            datasourceConfig.setDbType("jdbc");
+            datasourceConfig.setUser("root");
+            datasourceConfig.setPassword("123456");
+            datasourceConfig.setName("prototype");
+            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC");
+            routerConfig.getDatasources().add(datasourceConfig);
         }
 
 
-        System.out.println(YamlUtil.dump(new MycatRouterConfig()));
 
-        LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-        MycatRouterConfig mycatRouterConfig = YamlUtil.load(MycatRouterConfig.class, new FileReader(baseDirectory.resolve("metadata.yml").toFile()));
-        SequenceGenerator sequenceGenerator = new SequenceGenerator(mycatRouterConfig.getSequences());
-        Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
-        ClusterRootConfig clusterRootConfig = mycatRouterConfig.getCluster();
-        Map<String, ClusterConfig> clusters = clusterRootConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
-        ReplicaSelectorRuntime replicaSelector = new ReplicaSelectorRuntime(clusterRootConfig, datasourceConfigMap, loadBalanceManager, this);
-        JdbcConnectionManager jdbcConnectionManager = new JdbcConnectionManager(datasourceProvider, datasourceConfigMap, clusters, mycatWorkerProcessor, replicaSelector);
-        MetadataManager metadataManager = new MetadataManager(mycatRouterConfig.getShardingQueryRootConfig(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager);
-        MetaClusterCurrent.register(mycatRouterConfig);
-        MetaClusterCurrent.register(Authenticator.class, new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v))));
-        MetaClusterCurrent.register(DatasourceConfigProvider.class, new DatasourceConfigProvider() {
-            @Override
-            public Map<String, DatasourceConfig> get() {
-                return datasourceConfigMap;
-            }
-        });
-        MetaClusterCurrent.register(clusterRootConfig);
-        MetaClusterCurrent.register(replicaSelector);
-        MetaClusterCurrent.register(jdbcConnectionManager);
-        MetaClusterCurrent.register(metadataManager);
+        return routerConfig;
     }
 
     @Override
     @SneakyThrows
     void start() {
-        init();
-        listen(this.baseDirectory);
+        try(ConfigOps configOps = startOps()){
+            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) configOps.currentConfig(), configOps));
+        }
     }
 
     @Override
+    @SneakyThrows
     public void reportReplica(String name, Set<String> dsNames) {
+        Path statePath = baseDirectory.resolve("state.json");
+        state.replica.put(name,dsNames);
+        Files.write(statePath,
+                ConfigReaderWriter.getReaderWriterBySuffix("json")
+                        .transformation(state).getBytes(), StandardOpenOption.CREATE_NEW);
 
     }
+
+    @EqualsAndHashCode
+    public static class State {
+        final Map<String, Set<String>> replica = new HashMap<>();
+        String configTimestamp = null;
+    }
+
+    @Override
+    @SneakyThrows
+    public ConfigOps startOps() {
+        Path lockFile = baseDirectory.resolve("mycat.lock");
+        if (Files.notExists(lockFile))Files.createFile(lockFile);
+        FileChannel lockFileChannel = FileChannel.open(lockFile,  StandardOpenOption.WRITE);
+        FileLock lock = Objects.requireNonNull(lockFileChannel.lock());
+        return new ConfigOps() {
+
+            @Override
+            @SneakyThrows
+            public Object currentConfig() {
+                return getRouterConfig(baseDirectory);
+            }
+
+            @Override
+            public void commit(Object ops) {
+                try {
+                    Path mycatPath = resolveFileName("mycat");
+                    String suffix = getSuffix(mycatPath.getFileName().toString());
+                    ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                    MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
+                    ConfigPrepare prepare = new ConfigPrepare(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
+                    prepare.invoke();
+                    String text = configReaderWriter.transformation(routerConfig);
+
+                    //还没有初始化
+                    if (state.configTimestamp!=null&&Files.exists(mycatPath)) {
+                        String s = readString(mycatPath);
+                        if (s.equals(text)) {
+                            return;
+                        }
+                        Files.write(mycatPath, text.getBytes(),  StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE);
+                    }
+
+                    ///////////////////////////////////////////
+
+
+                    ///////////////////////////////////////////
+
+                    Path schemasPath = baseDirectory.resolve("schemas");
+                    Path clustersPath = baseDirectory.resolve("clusters");
+                    Path datasources = baseDirectory.resolve("datasources");
+                    Path users = baseDirectory.resolve("users");
+                    Path sequences = baseDirectory.resolve("sequences");
+
+                    if(routerConfig.isUpdateSchemas()){
+                        org.apache.commons.io.FileUtils.cleanDirectory(schemasPath.toFile());
+                    }
+                    if(routerConfig.isUpdateClusters()){
+                        org.apache.commons.io.FileUtils.cleanDirectory(clustersPath.toFile());
+                    }
+                    if(routerConfig.isUpdateDatasources()){
+                        org.apache.commons.io.FileUtils.cleanDirectory(datasources.toFile());
+                    }
+                    if(routerConfig.isUpdateUsers()){
+                        org.apache.commons.io.FileUtils.cleanDirectory(users.toFile());
+                    }
+                    if(routerConfig.isUpdateSequences()){
+                        org.apache.commons.io.FileUtils.cleanDirectory(sequences.toFile());
+                    }
+//
+
+
+//                    if (Files.notExists(schemasPath)) Files.createDirectory(schemasPath);
+//                    if (Files.notExists(clustersPath)) Files.createDirectory(clustersPath);
+//                    if (Files.notExists(datasources)) Files.createDirectory(datasources);
+//                    if (Files.notExists(users)) Files.createDirectory(users);
+//                    if (Files.notExists(sequences)) Files.createDirectory(sequences);
+//
+
+                    ////////////////////////////////////////////
+                    for (LogicSchemaConfig schemaConfig : Optional.ofNullable(routerConfig.getSchemas()).orElse(Collections.emptyList())) {
+                        String fileName = schemaConfig.getSchemaName() + ".schema." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(schemaConfig);
+                        Path filePath = schemasPath.resolve(fileName);
+                         writeFile(t, filePath) ;
+                    }
+
+                    for (DatasourceConfig datasourceConfig : Optional.ofNullable(routerConfig.getDatasources()).orElse(Collections.emptyList())) {
+                        String fileName = datasourceConfig.getName() + ".datasource." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(datasourceConfig);
+                        Path filePath = datasources.resolve(fileName);
+                         writeFile(t, filePath) ;
+                    }
+                    for (UserConfig userConfig : Optional.ofNullable(routerConfig.getUsers()).orElse(Collections.emptyList())) {
+                        String fileName = userConfig.getUsername() + ".user." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(userConfig);
+                        Path filePath = users.resolve(fileName);
+                        writeFile(t, filePath) ;
+                    }
+                    for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
+                        String fileName = sequenceConfig.getName() + ".sequence." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(sequenceConfig);
+                        Path filePath = sequences.resolve(fileName);
+                        writeFile(t, filePath) ;
+                    }
+                    for (ClusterConfig i : Optional.ofNullable(routerConfig.getClusters()).orElse(Collections.emptyList())) {
+                        String fileName = i.getName() + ".cluster." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(i);
+                        Path filePath = clustersPath.resolve(fileName);
+                        writeFile(t, filePath) ;
+                    }
+
+                    State state = FileMetadataStorageManager.this.state;
+                    state.configTimestamp = LocalDateTime.now().toString();
+
+
+                    prepare.commit();
+                    Path statePath = baseDirectory.resolve("state.json");
+
+                    Files.deleteIfExists(statePath);
+                    if(Files.notExists(statePath))Files.createFile(statePath);
+                    Files.write(statePath,
+                            ConfigReaderWriter.getReaderWriterBySuffix("json")
+                                    .transformation(state).getBytes(),  StandardOpenOption.WRITE);
+
+                } catch (Throwable e){
+                    e.printStackTrace();
+                }finally {
+                }
+            }
+
+            @Override
+            public void close() {
+                try {
+                    if(lockFileChannel.isOpen()){
+                        lock.release();
+                        lockFileChannel.close();
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("", e);
+                }
+            }
+        };
+    }
+
+    private void writeFile(String t, Path filePath) throws IOException {
+        if (Files.exists(filePath)) {
+            if (readString(filePath).equals(t)) {
+                return ;
+            }
+        }
+        FileUtils.write(filePath.toFile(),t);
+    }
+
 }

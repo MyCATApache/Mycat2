@@ -2,25 +2,24 @@ package io.mycat;
 
 import io.mycat.config.ClusterRootConfig;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MetaClusterCurrent {
-  public static  final   ConcurrentMap<Class,Object> context = new ConcurrentHashMap<>();
+  public static  final AtomicReference<Map<Class,Object>> context = new AtomicReference<>(new HashMap<>());
     public static  <T> T wrapper(Class<T> tClass){
-        return (T)Objects.requireNonNull(context.get(tClass));
+        return (T)Objects.requireNonNull(context.get().get(tClass));
     }
 
-    public static void register(Class interfaceo,Object clusterRootConfig) {
-        context.put(interfaceo,clusterRootConfig);
-    }
-    public static void register(Object clusterRootConfig) {
-        context.put(clusterRootConfig.getClass(),clusterRootConfig);
+    public static void register(Map<Class,Object> newContext) {
+        context.set(newContext);
     }
 
     public static boolean exist(Class interceptorRuntimeClass) {
-        return context.containsKey(interceptorRuntimeClass);
+        return context.get().containsKey(interceptorRuntimeClass);
     }
 }

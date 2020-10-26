@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @EqualsAndHashCode
 public class ShardingTableConfig {
-    List<ShardingBackEndTableInfoConfig> dataNodes;
+    ShardingBackEndTableInfoConfig dataNode;
     ShardingFuntion function;
     String createTableSQL;
 

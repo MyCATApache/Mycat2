@@ -17,5 +17,5 @@ public class MycatServerConfig {
     String mode = "local";
     String datasourceProvider = DruidDatasourceProvider.class.getName();
     Map<String, Object> properties;
-    List<SequenceConfig> sequences;
+
 }

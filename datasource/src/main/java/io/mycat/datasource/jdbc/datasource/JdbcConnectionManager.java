@@ -91,7 +91,7 @@ public class JdbcConnectionManager implements ConnectionManager {
 
         //移除不必要的配置
         //新配置中的数据源名字
-        Set<String> datasourceNames =datasources.keySet();
+        Set<String> datasourceNames = datasources.keySet();
         Map<String, JdbcDataSource> datasourceInfo = this.getDatasourceInfo();
         new HashSet<>(datasourceInfo.keySet()).stream().filter(name -> !datasourceNames.contains(name)).forEach(name -> removeDatasource(name));
     }

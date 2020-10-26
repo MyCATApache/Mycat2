@@ -12,6 +12,4 @@ public class GlobalTableConfig {
     String createTableSQL;
     String balance;
     List<GlobalBackEndTableInfoConfig> dataNodes;
-
-
 }

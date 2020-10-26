@@ -37,8 +37,7 @@ import java.util.List;
 @EqualsAndHashCode
 public class ClusterRootConfig {
     private List<ClusterConfig> clusters = new ArrayList<>();
-    private boolean close = true;
-    private TimerConfig timer = new TimerConfig();
+
 
     public ClusterRootConfig() {
     }

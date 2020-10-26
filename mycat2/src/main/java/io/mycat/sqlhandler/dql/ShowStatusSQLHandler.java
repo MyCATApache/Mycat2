@@ -14,6 +14,6 @@ public class ShowStatusSQLHandler extends AbstractSQLHandler<MySqlShowStatusStat
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowStatusStatement> request, MycatDataContext dataContext, Response response) {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.sendOk();
     }
 }
