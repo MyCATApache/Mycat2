@@ -1,10 +1,10 @@
 package io.mycat.router.hashfunction;
 
 public class PureJavaCrc32HashFunction implements HashFunction {
-    private final io.mycat.router.function.PureJavaCrc32 crc32;
+    private final io.mycat.router.mycat1xfunction.PureJavaCrc32 crc32;
 
     public PureJavaCrc32HashFunction() {
-        this.crc32 = new io.mycat.router.function.PureJavaCrc32();
+        this.crc32 = new io.mycat.router.mycat1xfunction.PureJavaCrc32();
     }
 
     @Override

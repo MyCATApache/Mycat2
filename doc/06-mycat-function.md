@@ -31,7 +31,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 前提
 
-mycat提供的分片算法一般放置在router模块(io.mycat.router.function),也可以在plug模块里面提供
+mycat提供的分片算法一般放置在router模块(io.mycat.router.mycat1xfunction),也可以在plug模块里面提供
 
 mycat 2.0暂时还没提供有状态分片算法的具体例子,但是可以参考1.6的有状态分片算法章子了解
 
@@ -39,7 +39,7 @@ mycat 2.0暂时还没提供有状态分片算法的具体例子,但是可以参�
 
 ```yaml
 funtions:
-  - clazz: io.mycat.router.function.PartitionByLong
+  - clazz: io.mycat.router.mycat1xfunction.PartitionByLong
     name: partitionByLong
     properties:
       partitionCount: '4'

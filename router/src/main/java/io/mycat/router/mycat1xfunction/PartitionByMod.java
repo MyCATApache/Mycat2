@@ -12,38 +12,36 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
-import io.mycat.router.util.PartitionUtil;
+import io.mycat.router.ShardingTableHandler;
 
+import java.math.BigInteger;
 import java.util.Map;
+import java.util.Objects;
 
-/**
- * @author jamie12221 date 2019-05-02 23:36
- **/
-public class PartitionByLong extends Mycat1xSingleValueRuleFunction {
+public class PartitionByMod extends Mycat1xSingleValueRuleFunction {
 
-  private PartitionUtil partitionUtil;
+  private BigInteger count;
+
   @Override
   public String name() {
-    return "PartitionByLong";
+    return "PartitionByMod";
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
-    int[] count = (toIntArray(properties.get("partitionCount")));
-    int[] length = toIntArray(properties.get("partitionLength"));
-    partitionUtil = new PartitionUtil(count, length);
+  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
+    String count = prot.get("count");
+    Objects.requireNonNull(count);
+    this.count = new BigInteger(count);
   }
 
   @Override
   public int calculateIndex(String columnValue) {
     try {
-      long key = Long.parseLong(columnValue);
-      key = (key >>> 32) ^ key;
-      return partitionUtil.partition(key);
+      BigInteger bigNum = new BigInteger(columnValue).abs();
+      return (bigNum.mod(count)).intValue();
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(
           "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",

@@ -50,7 +50,7 @@ replicas:
 
 ```yaml
 functions:
-  - clazz: io.mycat.router.function.PartitionByLong
+  - clazz: io.mycat.router.mycat1xfunction.PartitionByLong
     name: partitionByLong
     properties:
       partitionCount: 2,1

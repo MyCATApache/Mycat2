@@ -1,4 +1,4 @@
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;

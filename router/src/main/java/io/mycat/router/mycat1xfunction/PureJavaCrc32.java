@@ -1,4 +1,4 @@
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one

@@ -1,16 +1,10 @@
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
-import io.mycat.*;
 import io.mycat.router.ShardingTableHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class PartitionByCRC32PreSlotTest {
 

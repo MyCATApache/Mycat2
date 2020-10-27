@@ -12,54 +12,61 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
-public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
+public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
 
+  private static final int PARTITION_LENGTH = 1024;
+  private static final Pattern PATTERN = Pattern.compile("[0-9]*");
+  private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值
   private List<NodeIndexRange> longRanges;
-  private int defaultNode = -1;
-  private int partitionCount;
+  private int nPartition;
+  private int defaultNode = 0;// 包含非数值字符，默认存储节点
+
+  private static boolean isNumeric(String str) {
+    return PATTERN.matcher(str).matches();
+  }
 
   @Override
   public String name() {
-    return "AutoPartitionByLong";
+    return "PartitionByPattern";
   }
 
   @Override
-  public void init(ShardingTableHandler tableHandler, Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
+    this.patternValue = Integer.parseInt(prot.get("patternValue"));
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
     this.longRanges = NodeIndexRange.getLongRanges(ranges);
-    this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
+    this.nPartition = NodeIndexRange.getPartitionCount(this.longRanges);
   }
-
 
   @Override
   public int calculateIndex(String columnValue) {
-    try {
-      long value = Long.parseLong(columnValue);
-      for (NodeIndexRange longRang : this.longRanges) {
-        if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-          return longRang.nodeIndex;
-        }
-      }
+    if (!isNumeric(columnValue)) {
       return defaultNode;
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException(
-          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
-          e);
     }
+    long value = Long.parseLong(columnValue);
+    for (NodeIndexRange longRang : this.longRanges) {
+      long hash = value % patternValue;
+      if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
+        return longRang.nodeIndex;
+      }
+    }
+    return -1;
   }
 
   @Override
   public int[] calculateIndexRange(String beginValue, String endValue) {
-    return calculateSequenceRange(this, beginValue, endValue);
+    return null;
   }
+
 
 }

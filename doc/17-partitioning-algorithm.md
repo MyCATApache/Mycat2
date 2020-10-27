@@ -35,7 +35,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 不计算分片值,指定dataNode的下标
 
 ```yaml
-   function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个dataNode
+   function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个dataNode
 ```
 
 
@@ -48,7 +48,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 份或区县来做保存，而全国省份区县固定的，这类业务使用本条规则，配置如下： 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByFileMap
+- clazz: io.mycat.router.mycat1xfunction.PartitionByFileMap
   name: PartitionByFileMap
   properties:
     type: Integer
@@ -80,7 +80,7 @@ Integer,Byte,Char,String,Long,Double,Float,Short,Boolean,BigInteger,BigDecimal
 大了插入的事务控制难度，而此算法根据二进制则可能会分到连续的分片，减少插入事务事务控制难度。 
 
 ```yaml
-  - clazz: io.mycat.router.function.PartitionByLong
+  - clazz: io.mycat.router.mycat1xfunction.PartitionByLong
     name: partitionByLong
     properties:
       partitionCount: 2,1
@@ -132,7 +132,7 @@ partitionCount和partitionLength两个数组长度必须一致
 ## 范围约定
 
 ```yaml
-- clazz: io.mycat.router.function.AutoPartitionByLong
+- clazz: io.mycat.router.mycat1xfunction.AutoPartitionByLong
   name: AutoPartitionByLong
   properties:
     defaultNode: -1
@@ -164,7 +164,7 @@ defaultNode 超过范围后的默认节点。
 ## 取模 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByMod
+- clazz: io.mycat.router.mycat1xfunction.PartitionByMod
   name: PartitionByMod
   properties:
     count: '4'
@@ -178,7 +178,7 @@ count是dataNode的数量
 ## 按日期（天）分片 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByDate
+- clazz: io.mycat.router.mycat1xfunction.PartitionByDate
   name: PartitionByDate
   properties:
     dateFormat: yyyy-MM-dd
@@ -199,7 +199,7 @@ partionDay ：分区天数，即默认从开始日期算起，分隔 10 天一�
 ## 取模范围约束 
 
 ```yaml
-  - clazz: io.mycat.router.function.PartitionByPattern
+  - clazz: io.mycat.router.mycat1xfunction.PartitionByPattern
     name: PartitionByPattern
     properties:
       patternValue: 256
@@ -218,7 +218,7 @@ defaoultNode默认节点，如果分片值转换数字失败,则不会按照求�
 ## 截取数字做 hash 求模范围约束 
 
 ```yaml
-  - clazz: io.mycat.router.function.PartitionByPrefixPattern
+  - clazz: io.mycat.router.mycat1xfunction.PartitionByPrefixPattern
     name: PartitionByPrefixPattern
     properties:
       patternValue: 256
@@ -247,7 +247,7 @@ sum%patternValue ,获取的值，在范围内的分片数，
 ## 应用指定
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionDirectBySubString
+- clazz: io.mycat.router.mycat1xfunction.PartitionDirectBySubString
   name: PartitionDirectBySubString
   properties:
     startIndex: 0
@@ -266,7 +266,7 @@ sum%patternValue ,获取的值，在范围内的分片数，
 ## 截取数字 hash 解析(sharding-string-hash) 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByString
+- clazz: io.mycat.router.mycat1xfunction.PartitionByString
   name: PartitionByString
   properties:
     partitionLength: 128,128,256
@@ -312,7 +312,7 @@ partitionCount : 2,2,2
 一致性 hash 预算有效解决了分布式数据的扩容问题
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByMurmurHash
+- clazz: io.mycat.router.mycat1xfunction.PartitionByMurmurHash
   name: PartitionByMurmurHash
   properties:
     seed: 0
@@ -340,7 +340,7 @@ ranges:
 每个月月尾，需要手工清理数据。 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByLatestMonth
+- clazz: io.mycat.router.mycat1xfunction.PartitionByLatestMonth
   name: PartitionByLatestMonth
   properties:
     dateFormat: yyyymmddHH
@@ -357,7 +357,7 @@ splitOneDay ： 一天切分的分片数
 最好事先规划好分片的数量，数据扩容时按分片组扩容，则原有分片组的数据不需要迁移。由于分片组内数据比较均匀，所以分片组内可以避免热点数据问题。 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByRangeMod
+- clazz: io.mycat.router.mycat1xfunction.PartitionByRangeMod
   name: PartitionByRangeMod
   properties:
     defaultNode: -1
@@ -377,7 +377,7 @@ splitOneDay ： 一天切分的分片数
 要求日期格式尽量精确些，不然达不到局部均匀的目的 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByRangeDateHash
+- clazz: io.mycat.router.mycat1xfunction.PartitionByRangeDateHash
   name: PartitionByRangeDateHash
   properties:
     dateFormat: yyyy-MM-dd HH:mm:ss
@@ -393,7 +393,7 @@ groupPartionSize 代表分片组的大小
 根据日期查询日志数据 冷热数据分布 ，最近 n 个月的到实时交易库查询，超过 n 个月的按照 m 天分片。 
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByHotDate
+- clazz: io.mycat.router.mycat1xfunction.PartitionByHotDate
   name: PartitionByHotDate
   properties:
     dateFormat: yyyy-MM-dd
@@ -404,7 +404,7 @@ groupPartionSize 代表分片组的大小
 ## 自然月分片
 
 ```yaml
-- clazz: io.mycat.router.function.PartitionByMonth
+- clazz: io.mycat.router.mycat1xfunction.PartitionByMonth
   name: PartitionByMonth
   properties:
     formatter: yyyy-MM-dd

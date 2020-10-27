@@ -854,7 +854,7 @@ travelrecord: #逻辑表名
   columns:
     - columnName: id #分片字段信息,显式提供,
       shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
-      function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
       #提供表的字段信息,升级计划:通过已有数据库拉取该信息
   createTableSQL: |-
     CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -900,15 +900,15 @@ address:
   columns:
     - columnName: id
       shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败,如果配置了dataNode,则会使用dataNode校验
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
       map: [defaultDs]
     - columnName: addressname
       shardingType: MAP_SCHMEA
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}}
       map: [db1]
     - columnName: addressname
       shardingType: MAP_TABLE
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}}
       map: [address]
   createTableSQL: CREATE TABLE `address1` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
   dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: address}]
@@ -1239,7 +1239,7 @@ server:
 ## 分片算法配置
 
 ```yaml
-function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+function: { clazz: io.mycat.router.mycat1xfunction.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
 ```
 
 具体参考以下链接

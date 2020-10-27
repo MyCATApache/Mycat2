@@ -12,54 +12,54 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.router.function;
+package io.mycat.router.mycat1xfunction;
 
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
 
-import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 
-public class PartitionByRangeMod extends Mycat1xSingleValueRuleFunction {
+public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
 
-  private GroupSizeRange[] longRanges;
+  private List<NodeIndexRange> longRanges;
   private int defaultNode = -1;
   private int partitionCount;
 
   @Override
   public String name() {
-    return "PartitionByRangeMod";
+    return "AutoPartitionByLong";
   }
 
   @Override
+  public void init(ShardingTableHandler tableHandler, Map<String, String> prot, Map<String, String> ranges) {
+    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
+    this.longRanges = NodeIndexRange.getLongRanges(ranges);
+    this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
+  }
+
+
+  @Override
   public int calculateIndex(String columnValue) {
-    long value = Long.parseLong(columnValue);
-    int nodeIndex = 0;
-    for (GroupSizeRange longRang : this.longRanges) {
-      if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-        BigInteger bigNum = new BigInteger(columnValue).abs();
-        int innerIndex = (bigNum.mod(BigInteger.valueOf(longRang.groupSize))).intValue();
-        return nodeIndex + innerIndex;
-      } else {
-        nodeIndex += longRang.groupSize;
+    try {
+      long value = Long.parseLong(columnValue);
+      for (NodeIndexRange longRang : this.longRanges) {
+        if (value <= longRang.valueEnd && value >= longRang.valueStart) {
+          return longRang.nodeIndex;
+        }
       }
-    }
-    // 数据超过范围，暂时使用配置的默认节点
-    if (defaultNode >= 0) {
       return defaultNode;
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
+          e);
     }
-    return -1;
   }
 
   @Override
   public int[] calculateIndexRange(String beginValue, String endValue) {
-    return null;
+    return calculateSequenceRange(this, beginValue, endValue);
   }
 
-  @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
-    this.longRanges = GroupSizeRange.getGroupSizeRange(ranges);
-    this.partitionCount = GroupSizeRange.getPartitionCount(this.longRanges);
-  }
 }
