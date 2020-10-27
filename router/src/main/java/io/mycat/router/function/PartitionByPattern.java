@@ -16,13 +16,13 @@ package io.mycat.router.function;
 
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class PartitionByPattern extends SingleValueRuleFunction {
+public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
 
   private static final int PARTITION_LENGTH = 1024;
   private static final Pattern PATTERN = Pattern.compile("[0-9]*");

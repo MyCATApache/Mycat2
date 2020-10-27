@@ -15,11 +15,11 @@
 package io.mycat.router.function;
 
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.Map;
 
-public class PartitionDirectBySubString extends SingleValueRuleFunction {
+public class PartitionDirectBySubString extends Mycat1xSingleValueRuleFunction {
 
   // 字符子串起始索引（zero-based)
   private int startIndex;

@@ -14,13 +14,13 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByHashMod extends SingleValueRuleFunction {
+public class PartitionByHashMod extends Mycat1xSingleValueRuleFunction {
 
   private int count;
   private boolean watch;

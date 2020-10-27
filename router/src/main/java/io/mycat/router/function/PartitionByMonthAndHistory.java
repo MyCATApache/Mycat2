@@ -15,7 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
 import java.time.LocalDate;
@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class PartitionByMonthAndHistory extends SingleValueRuleFunction {
+public class PartitionByMonthAndHistory extends Mycat1xSingleValueRuleFunction {
 
   private DateTimeFormatter formatter;
   private LocalDate beginDate;

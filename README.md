@@ -2602,7 +2602,7 @@ io.mycat.router.CustomRuleFunction
 
 单值分片算法
 
-io.mycat.router.SingleValueRuleFunction
+io.mycat.router.Mycat1xSingleValueRuleFunction
 
 
 

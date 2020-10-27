@@ -14,9 +14,8 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.TableHandler;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 
 import java.util.Map;
@@ -24,7 +23,7 @@ import java.util.Map;
 /**
  * @author jamie12221 date 2019-05-02 23:36
  **/
-public class PartitionByLong extends SingleValueRuleFunction {
+public class PartitionByLong extends Mycat1xSingleValueRuleFunction {
 
   private PartitionUtil partitionUtil;
   @Override

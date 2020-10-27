@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * @author cjw
  * 路由算法接口
  */
-public abstract class SingleValueRuleFunction extends CustomRuleFunction {
+public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction {
 
     public abstract String name();
 
@@ -99,7 +99,7 @@ public abstract class SingleValueRuleFunction extends CustomRuleFunction {
     /**
      * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
      */
-    public static int[] calculateSequenceRange(SingleValueRuleFunction algorithm, String beginValue,
+    public static int[] calculateSequenceRange(Mycat1xSingleValueRuleFunction algorithm, String beginValue,
                                                String endValue) {
         int begin = 0, end = 0;
         begin = algorithm.calculateIndex(beginValue);

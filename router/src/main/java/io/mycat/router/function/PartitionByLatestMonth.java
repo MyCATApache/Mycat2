@@ -15,14 +15,14 @@
 package io.mycat.router.function;
 
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 
-public class PartitionByLatestMonth extends SingleValueRuleFunction {
+public class PartitionByLatestMonth extends Mycat1xSingleValueRuleFunction {
 
   private int splitOneDay;
   private int hourSpan;

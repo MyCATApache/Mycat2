@@ -15,14 +15,14 @@
 package io.mycat.router.function;
 
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.Map;
 
 /**
  * @author jamie12221 date 2020-01-04
  **/
-public class PartitionConstant extends SingleValueRuleFunction {
+public class PartitionConstant extends Mycat1xSingleValueRuleFunction {
 
     private int defaultNode;
     private int[] nodes;

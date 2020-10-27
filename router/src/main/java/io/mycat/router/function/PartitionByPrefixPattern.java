@@ -14,14 +14,14 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 
-public class PartitionByPrefixPattern extends SingleValueRuleFunction {
+public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
 
   private static final int PARTITION_LENGTH = 1024;
   private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值(默认为1024)

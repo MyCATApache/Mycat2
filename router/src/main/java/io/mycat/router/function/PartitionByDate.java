@@ -15,7 +15,7 @@
 package io.mycat.router.function;
 
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
 
 import java.time.format.DateTimeFormatter;
@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-public class PartitionByDate extends SingleValueRuleFunction {
+public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
 
   private static final long ONE_DAY = 86400000;
   private long beginDate;

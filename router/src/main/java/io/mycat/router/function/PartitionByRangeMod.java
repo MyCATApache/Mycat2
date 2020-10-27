@@ -14,13 +14,13 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
 
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByRangeMod extends SingleValueRuleFunction {
+public class PartitionByRangeMod extends Mycat1xSingleValueRuleFunction {
 
   private GroupSizeRange[] longRanges;
   private int defaultNode = -1;

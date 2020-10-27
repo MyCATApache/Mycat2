@@ -14,15 +14,14 @@
  */
 package io.mycat.router.function;
 
-import io.mycat.TableHandler;
+import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.SingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
 
-public class AutoPartitionByLong extends SingleValueRuleFunction {
+public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
 
   private List<NodeIndexRange> longRanges;
   private int defaultNode = -1;
