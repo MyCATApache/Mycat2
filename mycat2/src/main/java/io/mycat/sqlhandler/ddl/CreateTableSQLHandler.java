@@ -42,12 +42,11 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
         Optional<Map<String, Object>> hint = request.getAfterJson();
         SQLCreateTableStatement ast = request.getAst().clone();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-        String tableName = ast.getTableName();
+        String tableName = ast.getTableName() == null?null: SQLUtils.normalize(ast.getTableName());
         if (tableName == null) {
             response.sendError(new MycatException("CreateTableSQL need tableName"));
             return;
         }
-        tableName = SQLUtils.normalize(tableName);
         if (schemaName == null) {
             response.sendError("No database selected", 1046);
             return;
