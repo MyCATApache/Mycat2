@@ -2,10 +2,7 @@ package io.mycat;
 
 import io.mycat.config.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -165,10 +162,11 @@ public class MycatRouterConfigOps implements AutoCloseable{
         Map<String, String> ranges = (Map) infos.get("ranges");
         Map<String, String> dataNodes = (Map) infos.get("dataNodes");
         Map<String, String> properties = (Map) infos.get("properties");
+        String aClass = (String)Objects.requireNonNull(infos.get("class"));
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().properties(properties).ranges(ranges).build())
+                .function(ShardingFuntion.builder().clazz(aClass).properties(properties).ranges(ranges).build())
                 .dataNode(ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
