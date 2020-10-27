@@ -158,20 +158,23 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
-    public ShardingTableConfig putShardingTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putRuleTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+        removeTable(schemaName, tableName);
         Map<String, String> ranges = (Map) infos.get("ranges");
         Map<String, String> dataNodes = (Map) infos.get("dataNodes");
         Map<String, String> properties = (Map) infos.get("properties");
-        String aClass = (String)Objects.requireNonNull(infos.get("class"));
+        String aClass = (String)(infos.get("class"));
+        String name = (String)(infos.get("name"));
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().clazz(aClass).properties(properties).ranges(ranges).build())
-                .dataNode(ShardingBackEndTableInfoConfig
+                .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map)properties).ranges((Map)ranges).build())
+                .dataNode(Optional.ofNullable(dataNodes).map(i->ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
                         .tableNames(dataNodes.get("tableNames"))
                         .targetNames(dataNodes.get("targetNames")).build())
+                        .orElse(null))
                 .build();
 
         //todo check  ShardingTableConfig right
@@ -189,6 +192,26 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
+    public ShardingTableConfig putAutoTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+        ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
+        ShardingTableConfig config = builder
+                .createTableSQL(tableStatement.toString())
+                .function(ShardingFuntion.builder().properties((Map)infos).build())
+                .build();
+
+        //todo check  ShardingTableConfig right
+        this.schemas = mycatRouterConfig.getSchemas();
+        List<LogicSchemaConfig> schemas =  this.schemas;
+        Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
+        first.ifPresent(logicSchemaConfig -> {
+            Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
+            shadingTables.put(tableName, config);
+        });
+        updateType = UpdateType.CREATE_TABLE;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
+        return config;
+    }
     public void putUser(String username, String password, String ip, String transactionType) {
         this.users = mycatRouterConfig.getUsers();
         users.add(UserConfig.builder()

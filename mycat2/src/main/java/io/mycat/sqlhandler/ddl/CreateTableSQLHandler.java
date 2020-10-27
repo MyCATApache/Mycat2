@@ -5,28 +5,14 @@ import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.*;
 import io.mycat.config.ShardingTableConfig;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.ddl.executer.DDLExecuter;
-import io.mycat.metadata.GlobalTableHandler;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.replica.ReplicaDataSourceSelector;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.sqlhandler.SqlHints;
-import io.mycat.util.JsonUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * chenjunwnen
@@ -71,8 +57,12 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                         ops.putGlobalTable(schemaName, tableName, createTableSql);
                         break;
                     }
-                    case "sharding": {
-                        ShardingTableConfig shardingTableConfig = ops.putShardingTable(schemaName, tableName, createTableSql, infos);
+                    case "manual": {
+                        ShardingTableConfig shardingTableConfig = ops.putRuleTable(schemaName, tableName, createTableSql, infos);
+                        break;
+                    }
+                    case "auto": {
+                        ShardingTableConfig shardingTableConfig = ops.putAutoTable(schemaName, tableName, createTableSql, infos);
                         break;
                     }
                 }

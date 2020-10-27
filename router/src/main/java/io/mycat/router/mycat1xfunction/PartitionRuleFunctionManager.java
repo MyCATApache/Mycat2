@@ -17,6 +17,7 @@ package io.mycat.router.mycat1xfunction;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.function.AutoFunctionFactory;
 
 import java.util.Collections;
 import java.util.Map;
@@ -38,11 +39,15 @@ public enum PartitionRuleFunctionManager {
     public static CustomRuleFunction getRuleAlgorithm(ShardingTableHandler tableHandler,
                                                       ShardingFuntion funtion)
             throws Exception {
-        Map<String, String> properties = funtion.getProperties();
-        properties = (properties == null) ? Collections.emptyMap() : properties;
-        funtion.setProperties(properties);
-        CustomRuleFunction rootFunction = createFunction(funtion.getName(), funtion.getClazz());
-        rootFunction.callInit(tableHandler, funtion.getProperties(), funtion.getRanges());
-        return rootFunction;
+        boolean auto = funtion.getName() == null && funtion.getClazz() == null;
+        if (!auto) {
+            Map<String, String> properties = (Map)funtion.getProperties();
+            properties = (properties == null) ? Collections.emptyMap() : properties;
+            funtion.setProperties((Map)properties);
+            CustomRuleFunction rootFunction = createFunction(funtion.getName(), funtion.getClazz());
+            rootFunction.callInit(tableHandler, (Map)funtion.getProperties(), (Map)funtion.getRanges());
+            return rootFunction;
+        }
+        return AutoFunctionFactory.getFunction(tableHandler,funtion);
     }
 }

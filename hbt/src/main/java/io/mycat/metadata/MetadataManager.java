@@ -86,7 +86,6 @@ public class MetadataManager {
     public void addSchema(String schemaName, String dataNode) {
         SchemaHandlerImpl schemaHandler = new SchemaHandlerImpl(schemaName, dataNode);
         schemaMap.put(schemaName, schemaHandler);
-        schemaMap.put("`" + schemaName + "`", schemaHandler);
     }
 
     public void addTable(String schemaName, String tableName, ShardingTableConfig tableConfig, ShardingBackEndTableInfoConfig backends, String prototypeServer) {
@@ -168,28 +167,14 @@ public class MetadataManager {
             addSchema(schemaName, targetName);
             if (targetName != null) {
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-                    value.getNormalTables().putAll(getDefaultNormalTable(connection, schemaName));
+                    Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
+                    Map<String, NormalTableConfig> normalTables = value.getNormalTables();
+                    for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
+                        normalTables.computeIfAbsent(add.getKey(),(n)->add.getValue());
+                    }
                 }
             }
-            for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
-                String tableName = e.getKey();
-                ShardingTableConfig tableConfigEntry = e.getValue();
-                addShardingTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype,
-                        getBackendTableInfos(tableConfigEntry.getDataNode()));
-            }
 
-            for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
-                String tableName = e.getKey();
-                GlobalTableConfig tableConfigEntry = e.getValue();
-                List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
-                addGlobalTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype,
-                        backendTableInfos
-                );
-            }
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
                 String tableName = e.getKey();
                 NormalTableConfig tableConfigEntry = e.getValue();
@@ -201,8 +186,26 @@ public class MetadataManager {
                 } catch (Throwable throwable) {
 
                 }
-
             }
+            for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
+                String tableName = e.getKey();
+                GlobalTableConfig tableConfigEntry = e.getValue();
+                List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
+                addGlobalTable(schemaName, tableName,
+                        tableConfigEntry,
+                        prototype,
+                        backendTableInfos
+                );
+            }
+            for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
+                String tableName = e.getKey();
+                ShardingTableConfig tableConfigEntry = e.getValue();
+                addShardingTable(schemaName, tableName,
+                        tableConfigEntry,
+                        prototype,
+                        getBackendTableInfos(tableConfigEntry.getDataNode()));
+            }
+
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
                 String tableName = e.getKey();
                 CustomTableConfig tableConfigEntry = e.getValue();
@@ -268,7 +271,10 @@ public class MetadataManager {
         for (String tableName : tables) {
             NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(prototype, schemaName, tableName);
             try {
-                res.put(tableName, (new NormalTableConfig(null, normalBackEndTableInfoConfig)));
+                res.put(tableName, (new NormalTableConfig(
+                        getCreateTableSQLByJDBC(schemaName,tableName,
+                                Collections.singletonList(new BackendTableInfo(prototype,schemaName,tableName))),
+                        normalBackEndTableInfoConfig)));
             } catch (Throwable e) {
                 LOGGER.warn("", e);
             }

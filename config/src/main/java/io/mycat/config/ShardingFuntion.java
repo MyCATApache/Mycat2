@@ -13,8 +13,8 @@ import java.util.Map;
 public class ShardingFuntion {
     String name;
     String clazz;
-    Map<String, String> properties = new HashMap<>();
-    Map<String, String> ranges = new HashMap<>();
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, Object> ranges = new HashMap<>();
 
     public ShardingFuntion() {
     }

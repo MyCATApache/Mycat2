@@ -17,14 +17,14 @@ public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
     private final Supplier<String> sequence;
-    private final List<DataNode> backends;
+    private  List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
                          List<DataNode> backends,
                          CustomRuleFunction shardingFuntion,
                          Supplier<String> sequence) {
         this.logicTable = logicTable;
-        this.backends = backends == null ? Collections.emptyList() : backends;
+        this.backends = (backends == null||backends.isEmpty()) ? Collections.emptyList(): backends;
         this.shardingFuntion = shardingFuntion;
         this.sequence = sequence;
     }
@@ -129,5 +129,8 @@ public class ShardingTable implements ShardingTableHandler {
 
     public void setShardingFuntion(CustomRuleFunction shardingFuntion) {
         this.shardingFuntion = shardingFuntion;
+        if(this.backends == null||this.backends.isEmpty()){
+            this.backends = shardingFuntion.calculate(Collections.emptyMap());
+        }
     }
 }
