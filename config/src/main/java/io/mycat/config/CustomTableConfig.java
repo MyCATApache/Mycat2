@@ -9,6 +9,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode
+@Builder
 public class CustomTableConfig {
     String createTableSQL;
     String clazz;

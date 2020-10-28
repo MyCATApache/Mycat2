@@ -50,6 +50,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -259,6 +260,20 @@ public class MetadataManager {
                         "  `body_utf8` \tlongblob,\n" +
                         "  `aggregate` \tenum('NONE', 'GROUP')\n" +
                         ") ", targetName));
+
+        LogicSchemaConfig mycat = schemaConfigs.stream().filter(i ->
+                "mycat".equalsIgnoreCase(i.getSchemaName()))
+                .findFirst().orElseGet(() -> {
+                    LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
+                    schemaConfig.setSchemaName("mycat");
+                    return schemaConfig;
+                });
+        Map<String, CustomTableConfig> customTables = mycat.getCustomTables();
+//        customTables.computeIfAbsent("datasource",(n)->{
+//            CustomTableConfig tableConfig = CustomTableConfig.builder().build();
+//            tableConfig.setClazz("");
+//            tableConfig.setClazz();
+//        });
     }
 
     private Map<String, NormalTableConfig> getDefaultNormalTable(DefaultConnection connection, String schemaName) {

@@ -1,9 +1,13 @@
 package io.mycat;
 
+import com.google.common.collect.Lists;
 import io.mycat.config.*;
+import io.mycat.replica.ReplicaSwitchType;
+import io.mycat.replica.ReplicaType;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
+import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +147,14 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             datasourceConfig.setName("prototype");
             datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC");
             routerConfig.getDatasources().add(datasourceConfig);
+        }
+        if (routerConfig.getClusters().isEmpty()) {
+            ClusterConfig clusterConfig = new ClusterConfig();
+            clusterConfig.setName("c0");
+            clusterConfig.setMasters(Lists.newArrayList("prototype"));
+            clusterConfig.setMaxCon(200);
+            clusterConfig.setReplicaType(ReplicaType.SINGLE_NODE.name());
+            clusterConfig.setSwitchType(ReplicaSwitchType.NOT_SWITCH.name());
         }
 
         routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));

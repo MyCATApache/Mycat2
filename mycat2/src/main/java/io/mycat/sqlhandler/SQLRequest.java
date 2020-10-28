@@ -1,14 +1,13 @@
 package io.mycat.sqlhandler;
 
+import com.alibaba.fastsql.sql.ast.SQLCommentHint;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Getter
 @AllArgsConstructor
@@ -25,9 +24,18 @@ public class SQLRequest<Statement extends SQLStatement> {
     public List<String> getAfterHints(){
         return ast.getAfterCommentsDirect();
     }
-    public Optional<Map<String,Object>> getAfterJson(){
+    public Optional<Map<String,Object>> getAnyJson(){
+        ArrayList<String> res = new ArrayList<>();
+        List<SQLCommentHint> headHintsDirect = ast.getHeadHintsDirect();
+        List<String> beforeCommentsDirect = ast.getBeforeCommentsDirect();
+        List<String> afterCommentsDirect = ast.getAfterCommentsDirect();
+        return Optional.empty();
+    }
+    public <T> T afterCommentAsJson(Class<T> c){
         List<String> afterCommentsDirect = ast.getAfterCommentsDirect();
       return   Optional.ofNullable(afterCommentsDirect).filter(i->!i.isEmpty()).map(i->i.get(0).trim())
-                .map(i-> JsonUtil.from(i.substring(2,i.length()-2),Map.class));
+                .map(i-> {
+                    return c.cast(JsonUtil.from(SqlHints.unWrapperHint(i),c));
+                }).orElse(null);
     }
 }

@@ -21,7 +21,7 @@ public class ClusterConfig {
     private List<String> masters;
     private List<String> replicas;
     private HeartbeatConfig heartbeat;
-    private Integer maxCon;
+    private Integer maxCon = 200;
     private TimerConfig timer = null;
 
     public ClusterConfig() {

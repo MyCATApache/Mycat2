@@ -22,13 +22,14 @@ import java.util.*;
 
 public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableStatement> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableSQLHandler.class);
+    public static final CreateTableSQLHandler INSTANCE = new CreateTableSQLHandler();
 
     @Override
     protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
-        Optional<Map<String, Object>> hint = request.getAfterJson();
+        Map hint = request.afterCommentAsJson(Map.class);
         SQLCreateTableStatement ast = request.getAst().clone();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-        String tableName = ast.getTableName() == null?null: SQLUtils.normalize(ast.getTableName());
+        String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
         if (tableName == null) {
             response.sendError(new MycatException("CreateTableSQL need tableName"));
             return;
@@ -41,12 +42,28 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
         ast.setIfNotExiists(true);
         String createTableSql = SQLUtils.toMySqlString(ast);
 
-        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+        createTable(hint, schemaName, tableName, createTableSql);
+        response.sendOk();
+    }
 
-            if (!hint.isPresent()) {
+    public void createTable(Map hint,
+                            String schemaName,
+                            String tableName,
+                            String createTableSql) {
+        if (createTableSql == null && hint != null) {
+            createTableSql = Objects.toString(hint.get("createTableSql"));
+        }
+        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+            if (schemaName == null || tableName == null) {
+                MySqlCreateTableStatement ast = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
+                schemaName = SQLUtils.normalize(ast.getSchema());
+                tableName = SQLUtils.normalize(ast.getTableName());
+            }
+            if (hint == null) {
                 ops.putNormalTable(schemaName, tableName, createTableSql);
             } else {
-                Map<String, Object> infos = hint.get();
+                Map<String, Object> infos = hint;
+
                 switch (infos.get("type").toString()) {
                     case "normal": {
                         String targetName = (String) infos.get("targetName");
@@ -58,18 +75,17 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                         break;
                     }
                     case "manual": {
-                        ShardingTableConfig shardingTableConfig = ops.putRuleTable(schemaName, tableName, createTableSql, infos);
+                        ops.putRuleTable(schemaName, tableName, createTableSql, infos);
                         break;
                     }
                     case "auto": {
-                        ShardingTableConfig shardingTableConfig = ops.putAutoTable(schemaName, tableName, createTableSql, infos);
+                        ops.putAutoTable(schemaName, tableName, createTableSql, infos);
                         break;
                     }
                 }
 
             }
             ops.commit();
-            response.sendOk();
         }
     }
 //

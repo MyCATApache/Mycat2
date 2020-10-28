@@ -62,7 +62,14 @@ public class MycatRouterConfigOps implements AutoCloseable{
         }
         updateType = UpdateType.ROUTER;
     }
-
+    public void putSchema(LogicSchemaConfig schemaConfig) {
+        this.schemas = mycatRouterConfig.getSchemas();
+        List<LogicSchemaConfig> schemas = this.schemas;
+        Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equals(i.getSchemaName())).findFirst();
+        first.ifPresent(schemas::remove);
+        schemas.add(schemaConfig);
+        updateType = UpdateType.ROUTER;
+    }
 
     public void addTargetOnExistedSchema(String schemaName, String targetName) {
         this.schemas = mycatRouterConfig.getSchemas();
@@ -213,18 +220,23 @@ public class MycatRouterConfigOps implements AutoCloseable{
         return config;
     }
     public void putUser(String username, String password, String ip, String transactionType) {
-        this.users = mycatRouterConfig.getUsers();
-        users.add(UserConfig.builder()
+        UserConfig userConfig = UserConfig.builder()
                 .username(username)
                 .password(password)
                 .ip(ip)
                 .transactionType(transactionType)
-                .build());
+                .build();
+        putUser(userConfig);
+    }
+
+    public void putUser(UserConfig userConfig) {
+        this.users = mycatRouterConfig.getUsers();
+        users.add(userConfig);
         updateType = UpdateType.USER;
     }
 
 
-    public void remove(String username) {
+    public void deleteUser(String username) {
         this.users = mycatRouterConfig.getUsers();
         users.stream().filter(i -> username.equals(i.getUsername()))
                 .findFirst().ifPresent(i -> users.remove(i));
@@ -233,8 +245,13 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
 
     public void putSequence(String name, String clazz, String args) {
+        SequenceConfig sequenceConfig = new SequenceConfig(name, clazz, args);
+        putSequence(sequenceConfig);
+    }
+
+    public void putSequence(SequenceConfig sequenceConfig) {
         this.sequences = mycatRouterConfig.getSequences();
-        sequences.add(new SequenceConfig(name, clazz, args));
+        sequences.add(sequenceConfig);
         updateType = UpdateType.SEQUENCE;
     }
 
@@ -252,11 +269,8 @@ public class MycatRouterConfigOps implements AutoCloseable{
     public void putDatasource(DatasourceConfig datasourceConfig) {
         this.datasources = mycatRouterConfig.getDatasources();
         Optional<DatasourceConfig> first = datasources.stream().filter(i -> datasourceConfig.getName().equals(i.getName())).findFirst();
-        if (first.isPresent()) {
-            datasources.remove(first.get());
-        } else {
-            datasources.add(datasourceConfig);
-        }
+        first.ifPresent(config -> datasources.remove(config));
+        datasources.add(datasourceConfig);
         updateType = UpdateType.FULL;
     }
 
