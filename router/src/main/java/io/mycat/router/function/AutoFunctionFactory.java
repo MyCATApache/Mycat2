@@ -105,10 +105,11 @@ public class AutoFunctionFactory {
         Integer groupNum =  (dbNum * tableNum);
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
+       String sep = "/";
         String mappingFormat = (String) properties.getOrDefault("mappingFormat",
-                "c${targetIndex}." +
-                        tableHandler.getSchemaName()+"_${dbIndex}." +tableHandler.getTableName()+"_"+
-                          "${tableIndex}");
+                String.join(sep,"c${targetIndex}",
+                        tableHandler.getSchemaName()+"_${dbIndex}",
+                        tableHandler.getTableName()+"_${tableIndex}"));
         List<DataNode> datanodes = new ArrayList<>();
         List<int[]> seq = new ArrayList<>();
         for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
@@ -129,7 +130,7 @@ public class AutoFunctionFactory {
             context.put("tableIndex", String.valueOf(ints[1]));
             StringWriter stringWriter = new StringWriter();
             template.make(context).writeTo(stringWriter);
-            String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(),'.') ;
+            String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(),sep) ;
 
             BackendTableInfo backendTableInfo = new BackendTableInfo(strings[0], strings[1], strings[2]);
             cache.put(new Key(ints[0], ints[1]), backendTableInfo);
