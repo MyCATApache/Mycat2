@@ -18,6 +18,7 @@ import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionDirectBySubString extends Mycat1xSingleValueRuleFunction {
 
@@ -36,11 +37,11 @@ public class PartitionDirectBySubString extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    this.startIndex = Integer.parseInt(prot.get("startIndex"));
-    this.size = Integer.parseInt(prot.get("size"));
-    this.partitionCount = Integer.parseInt(prot.get("partitionCount"));
-    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
+  public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+    this.startIndex = Integer.parseInt(Objects.toString(prot.get("startIndex")));
+    this.size = Integer.parseInt(Objects.toString(prot.get("size")));
+    this.partitionCount = Integer.parseInt(Objects.toString(prot.get("partitionCount")));
+    this.defaultNode = Integer.parseInt(Objects.toString(prot.get("defaultNode")));
   }
 
   @Override

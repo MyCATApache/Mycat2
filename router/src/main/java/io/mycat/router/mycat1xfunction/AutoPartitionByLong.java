@@ -33,8 +33,8 @@ public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler tableHandler, Map<String, String> prot, Map<String, String> ranges) {
-    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
+  public void init(ShardingTableHandler tableHandler, Map<String, Object> prot, Map<String, Object> ranges) {
+    this.defaultNode = Integer.parseInt(prot.get("defaultNode").toString());
     this.longRanges = NodeIndexRange.getLongRanges(ranges);
     this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
   }

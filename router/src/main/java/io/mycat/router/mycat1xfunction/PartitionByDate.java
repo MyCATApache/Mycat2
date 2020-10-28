@@ -24,6 +24,7 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
 
@@ -40,15 +41,15 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler,Map<String, Object> prot, Map<String, Object> ranges) {
     this.table = tableHandler;
     this.properties = prot;
     this.ranges = ranges;
 
-    String startBeginDate = prot.get("beginDate");
-    String startEndDate = prot.get("endDate");
-    String startPartionDay = prot.get("partionDay");
-    String dateFormat = prot.get("dateFormat");
+    String startBeginDate = Objects.toString(prot.get("beginDate"));
+    String startEndDate = Objects.toString(prot.get("endDate"));
+    String startPartionDay = Objects.toString(prot.get("partionDay"));
+    String dateFormat = Objects.toString(prot.get("dateFormat"));
     formatter = DateTimeFormatter.ofPattern(dateFormat);
     beginDate = getTime(startBeginDate);
     endDate = 0L;

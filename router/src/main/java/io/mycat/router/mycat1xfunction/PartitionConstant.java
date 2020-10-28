@@ -18,6 +18,7 @@ import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author jamie12221 date 2020-01-04
@@ -33,8 +34,8 @@ public class PartitionConstant extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
-        this.defaultNode = Integer.parseInt(properties.get("defaultNode"));
+    public void init(ShardingTableHandler table, Map<String, Object> properties, Map<String, Object> ranges) {
+        this.defaultNode = Integer.parseInt(Objects.toString(properties.get("defaultNode")));
         this.nodes = new int[]{defaultNode};
     }
 

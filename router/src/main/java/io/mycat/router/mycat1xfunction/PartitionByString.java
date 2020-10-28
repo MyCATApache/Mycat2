@@ -21,6 +21,7 @@ import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByString extends Mycat1xSingleValueRuleFunction {
 
@@ -61,10 +62,10 @@ public class PartitionByString extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    String partitionLengthText = prot.get("partitionLength");
-    String partitionCountText = prot.get("partitionCount");
-    String hashSliceText = prot.get("hashSlice");
+  public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+    String partitionLengthText = Objects.toString(prot.get("partitionLength"));
+    String partitionCountText = Objects.toString(prot.get("partitionCount"));
+    String hashSliceText = Objects.toString(prot.get("hashSlice"));
     Pair<Integer, Integer> pair = sequenceSlicing(hashSliceText);
     this.hashSliceStart = pair.getKey();
     this.hashSliceEnd = pair.getValue();

@@ -19,6 +19,7 @@ import io.mycat.util.NumberParseUtil;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class GroupSizeRange {
@@ -38,13 +39,13 @@ public class GroupSizeRange {
 
   }
 
-  public static GroupSizeRange[] getGroupSizeRange(Map<String, String> ranges) {
+  public static GroupSizeRange[] getGroupSizeRange(Map<String, Object> ranges) {
     ArrayList<GroupSizeRange> longRangeList = new ArrayList<>();
-    for (Entry<String, String> entry : ranges.entrySet()) {
+    for (Entry<String, Object> entry : ranges.entrySet()) {
       String[] pair = entry.getKey().split("-");
       long longStart = NumberParseUtil.parseLong(pair[0].trim());
       long longEnd = NumberParseUtil.parseLong(pair[1].trim());
-      int nodeId = Integer.parseInt(entry.getValue().trim());
+      int nodeId = Integer.parseInt(Objects.toString(entry.getValue()).trim());
       longRangeList.add(new GroupSizeRange(nodeId, longStart, longEnd));
     }
     return longRangeList.toArray(new GroupSizeRange[longRangeList.size()]);

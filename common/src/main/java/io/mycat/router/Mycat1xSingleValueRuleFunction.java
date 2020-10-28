@@ -35,9 +35,9 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     private String columnName;
 
     @Override
-    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
         super.callInit(tableHandler, properties, ranges);
-        this.columnName = properties.get("columnName");
+        this.columnName = properties.get("columnName").toString();
     }
 
     @Override

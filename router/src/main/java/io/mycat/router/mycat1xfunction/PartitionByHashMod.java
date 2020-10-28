@@ -19,6 +19,7 @@ import io.mycat.router.ShardingTableHandler;
 
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByHashMod extends Mycat1xSingleValueRuleFunction {
 
@@ -46,9 +47,9 @@ public class PartitionByHashMod extends Mycat1xSingleValueRuleFunction {
 
 
   @Override
-  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> ranges) {
+  public void init(ShardingTableHandler tableHandler,Map<String, Object> prot, Map<String, Object> ranges) {
     this.watch = false;
-    this.count = Integer.parseInt(prot.get("count"));
+    this.count = Integer.parseInt( Objects.toString(prot.get("count")));
 
     if ((count & (count - 1)) == 0) {
       watch = true;

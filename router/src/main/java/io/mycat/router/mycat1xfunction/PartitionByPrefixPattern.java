@@ -20,6 +20,7 @@ import io.mycat.router.ShardingTableHandler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
 
@@ -35,9 +36,9 @@ public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    this.patternValue = Integer.parseInt(prot.get("patternValue"));
-    this.prefixLength = Integer.parseInt(prot.get("prefixLength"));
+  public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+    this.patternValue = Integer.parseInt(Objects.toString(prot.get("patternValue")));
+    this.prefixLength = Integer.parseInt(Objects.toString(prot.get("prefixLength")));
     this.longRongs = NodeIndexRange.getLongRanges(ranges);
     this.nPartition = NodeIndexRange.getPartitionCount(this.longRongs);
   }

@@ -22,10 +22,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PartitionByMonthAndHistory extends Mycat1xSingleValueRuleFunction {
 
@@ -84,10 +81,10 @@ public class PartitionByMonthAndHistory extends Mycat1xSingleValueRuleFunction {
 
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    String beginDateText = prot.get("beginDate");
-    String endDateText = prot.get("endDate");
-    String dateFormat = prot.get("dateFormat");
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    String beginDateText = Objects.toString(prot.get("beginDate"));
+    String endDateText = Objects.toString(prot.get("endDate"));
+    String dateFormat = Objects.toString(prot.get("dateFormat"));
 
     this.formatter = DateTimeFormatter.ofPattern(dateFormat);
     this.beginDate = LocalDate.from(formatter.parse(beginDateText));

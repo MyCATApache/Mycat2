@@ -20,6 +20,7 @@ import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
@@ -41,9 +42,9 @@ public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    this.patternValue = Integer.parseInt(prot.get("patternValue"));
-    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
+  public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+    this.patternValue = Integer.parseInt(Objects.toString(prot.get("patternValue")));
+    this.defaultNode = Integer.parseInt(Objects.toString(prot.get("defaultNode")));
     this.longRanges = NodeIndexRange.getLongRanges(ranges);
     this.nPartition = NodeIndexRange.getPartitionCount(this.longRanges);
   }

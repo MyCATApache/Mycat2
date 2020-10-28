@@ -42,7 +42,7 @@ public class AutoFunctionFactory {
             }
 
             @Override
-            protected void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+            protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
 
             }
 

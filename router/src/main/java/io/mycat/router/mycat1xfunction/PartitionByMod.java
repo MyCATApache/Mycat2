@@ -31,8 +31,8 @@ public class PartitionByMod extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    String count = prot.get("count");
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    String count = Objects.toString(prot.get("count"));
     Objects.requireNonNull(count);
     this.count = new BigInteger(count);
   }

@@ -100,20 +100,20 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
     }
 
     @Override
-    protected void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+    protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
 
         LOGGER.debug("properties:{}", properties);
         LOGGER.debug("ranges:{}", ranges);
 
-        this.tablePrefix = Objects.requireNonNull(properties.get("tablePrefix"), "tablePrefix required ");
-        this.beginIndex = Integer.parseInt(Objects.requireNonNull(properties.get("beginIndex"), "beginIndex required "));
-        this.endIndex = Integer.parseInt(Objects.requireNonNull(properties.get("endIndex"), "endIndex required "));
-        this.columnName= properties.get("columnName");
-        String targetName = Objects.requireNonNull(properties.get("targetName"));
-        String schema = Objects.requireNonNull(properties.get("schemaName"));
-        String table = Objects.requireNonNull(properties.get("tableName"));
+        this.tablePrefix = Objects.toString(Objects.requireNonNull(properties.get("tablePrefix"), "tablePrefix required "));
+        this.beginIndex = Integer.parseInt(Objects.toString(Objects.requireNonNull(properties.get("beginIndex"), "beginIndex required ")));
+        this.endIndex = Integer.parseInt(Objects.toString(Objects.requireNonNull(properties.get("endIndex"), "endIndex required ")));
+        this.columnName=  Objects.toString(properties.get("columnName"));
+        String targetName =  Objects.toString(Objects.requireNonNull(properties.get("targetName")));
+        String schema = Objects.toString(Objects.requireNonNull(properties.get("schemaName")));
+        String table =  Objects.toString(Objects.requireNonNull(properties.get("tableName")));
 
-        this.segmentQuery = Boolean.parseBoolean(properties.getOrDefault("segmentQuery", Boolean.FALSE.toString()));
+        this.segmentQuery = Boolean.parseBoolean( Objects.toString(properties.getOrDefault("segmentQuery", Boolean.FALSE.toString())));
 
         this.defaultDataNode = new DataNode() {
             @Override

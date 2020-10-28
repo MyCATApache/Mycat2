@@ -14,7 +14,7 @@ public class PartitionByDateTest {
     public  void baseTest() {
         PartitionByDate partition = new PartitionByDate();
 
-        Map<String, String> prot = new HashMap<>();
+        Map<String, Object> prot = new HashMap<>();
         prot.put("beginDate", "2014-01-01");
         prot.put("endDate", null);
         prot.put("partionDay", "10");

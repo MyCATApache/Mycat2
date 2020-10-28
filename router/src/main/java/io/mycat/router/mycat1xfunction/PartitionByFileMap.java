@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
@@ -55,9 +56,9 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler tableHandler,Map<String, String> prot, Map<String, String> range) {
-    String type = prot.get("type");
-    defaultNode = Integer.parseInt(prot.get("defaultNode"));
+  public void init(ShardingTableHandler tableHandler,Map<String, Object> prot, Map<String, Object> range) {
+    String type =  Objects.toString(prot.get("type"));
+    defaultNode = Integer.parseInt( Objects.toString(prot.get("defaultNode")));
     switch (type) {
       case "Integer":
         transformation = Integer::parseInt;
@@ -94,9 +95,9 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
       default:
         throw new MycatException("unsupport type!!");
     }
-    for (Entry<String, String> entry : range.entrySet()) {
+    for (Entry<String, Object> entry : range.entrySet()) {
       Object key = transformation.apply(entry.getKey());
-      int value = Integer.parseInt(entry.getValue());
+      int value = Integer.parseInt(Objects.toString(entry.getValue()));
       app2Partition.put(key, value);
     }
     if (defaultNode > 0) {

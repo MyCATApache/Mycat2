@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * todo check
@@ -105,9 +106,9 @@ public class PartitionByHotDate extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
-    this.lastTime = Integer.parseInt(prot.get("lastTime"));
-    this.partionTime = Integer.parseInt(prot.get("partionTime"));
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    this.formatter = DateTimeFormatter.ofPattern( Objects.toString(prot.get("dateFormat")));
+    this.lastTime = Integer.parseInt( Objects.toString(prot.get("lastTime")));
+    this.partionTime = Integer.parseInt( Objects.toString(prot.get("partionTime")));
   }
 }

@@ -18,6 +18,7 @@ import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByJumpConsistentHash extends Mycat1xSingleValueRuleFunction {
 
@@ -73,7 +74,7 @@ public class PartitionByJumpConsistentHash extends Mycat1xSingleValueRuleFunctio
 
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    this.totalBuckets = Integer.parseInt(prot.get("totalBuckets"));
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    this.totalBuckets = Integer.parseInt( Objects.toString(prot.get("totalBuckets")));
   }
 }

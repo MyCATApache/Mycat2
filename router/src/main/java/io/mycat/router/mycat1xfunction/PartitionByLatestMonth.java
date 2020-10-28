@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByLatestMonth extends Mycat1xSingleValueRuleFunction {
 
@@ -47,9 +48,9 @@ public class PartitionByLatestMonth extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
-    this.splitOneDay = Integer.parseInt(prot.get("splitOneDay"));
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
+    this.splitOneDay = Integer.parseInt(Objects.toString(prot.get("splitOneDay")));
     hourSpan = 24 / splitOneDay;
     if (hourSpan * 24 < 24) {
       throw new java.lang.IllegalArgumentException(

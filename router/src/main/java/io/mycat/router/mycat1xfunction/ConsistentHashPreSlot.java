@@ -53,17 +53,17 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
         SortedMap<String, List<MigrateTask>> stringListSortedMap = MigrateUtils.balanceExpand(copy, oldDataNodes, newDataNodes, DEFAULT_SLOTS_NUM);
         MigrateUtils.merge(copy, stringListSortedMap);
         ConsistentHashPreSlot consistentHash = new ConsistentHashPreSlot(name, DEFAULT_SLOTS_NUM, hashFunction);
-        consistentHash.init(table,Collections.emptyMap(), NodeIndexRange.from(copy));
+        consistentHash.init(table,Collections.emptyMap(), (Map)NodeIndexRange.from(copy));
         return new ConsistentHashBalanceExpandResult(stringListSortedMap, consistentHash);
     }
 
 
     @Override
-    protected void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
+    protected void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
         this.table = table;
         this.properties = prot;
         this.ranges = ranges;
-        String countText = prot.get("count");
+        String countText = prot.get("count").toString();
         if (countText != null) {
             int count = Integer.parseInt(countText);
             int slotSize = DEFAULT_SLOTS_NUM / count;

@@ -19,6 +19,7 @@ import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.util.PartitionUtil;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-02 23:36
@@ -32,9 +33,9 @@ public class PartitionByLong extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> properties, Map<String, String> ranges) {
-    int[] count = (toIntArray(properties.get("partitionCount")));
-    int[] length = toIntArray(properties.get("partitionLength"));
+  public void init(ShardingTableHandler table, Map<String, Object> properties, Map<String, Object> ranges) {
+    int[] count = toIntArray(Objects.toString(properties.get("partitionCount")));
+    int[] length = toIntArray(Objects.toString(properties.get("partitionLength")));
     partitionUtil = new PartitionUtil(count, length);
   }
 

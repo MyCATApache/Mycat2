@@ -19,11 +19,8 @@ import com.google.common.hash.Hashing;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class PartitionByMurmurHash extends Mycat1xSingleValueRuleFunction {
 
@@ -63,19 +60,19 @@ public class PartitionByMurmurHash extends Mycat1xSingleValueRuleFunction {
 
 
   @Override
-  public void init(ShardingTableHandler table, Map<String, String> prot, Map<String, String> ranges) {
-    int seed = Integer.parseInt(prot.get("seed"));
-    this.count = Integer.parseInt(prot.get("count"));
-    int virtualBucketTimes = Integer.parseInt(prot.get("virtualBucketTimes"));
+  public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+    int seed = Integer.parseInt(Objects.toString(prot.get("seed")));
+    this.count = Integer.parseInt(Objects.toString(prot.get("count")));
+    int virtualBucketTimes = Integer.parseInt(Objects.toString(prot.get("virtualBucketTimes")));
     initBucketMap(ranges, seed, count, virtualBucketTimes);
   }
 
-  private void initBucketMap(Map<String, String> ranges, int seed, int count,
+  private void initBucketMap(Map<String, Object> ranges, int seed, int count,
       int virtualBucketTimes) {
     Map<Integer, Integer> weightMap = new HashMap<>();
-    for (Entry<String, String> entry : ranges.entrySet()) {
+    for (Entry<String, Object> entry : ranges.entrySet()) {
       String key = entry.getKey();
-      String value = entry.getValue();
+      String value =Objects.toString(entry.getValue());
       int weight = Integer.parseInt(value);
       weightMap.put(Integer.parseInt(key), weight > 0 ? weight : 1);
     }

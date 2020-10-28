@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DefaultCustomRuleFunctionTest {
@@ -14,7 +15,7 @@ public class DefaultCustomRuleFunctionTest {
     @Test
     public void test(){
         MergeSubTablesFunction mergeSubTablesFunction = new MergeSubTablesFunction();
-        HashMap<String,String> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<>();
         map.put("tablePrefix","prefix_");
         map.put("beginIndex","1");
         map.put("endIndex","2");
@@ -40,7 +41,7 @@ public class DefaultCustomRuleFunctionTest {
     @Test
     public void test2(){
         MergeSubTablesFunction mergeSubTablesFunction = new MergeSubTablesFunction();
-        HashMap<String,String> map = new HashMap<>();
+        HashMap<String,Object> map = new HashMap<>();
         map.put("tablePrefix","prefix_");
         map.put("beginIndex","1");
         map.put("endIndex","2");

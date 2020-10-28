@@ -21,6 +21,7 @@ import io.mycat.router.ShardingTableHandler;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.Map;
+import java.util.Objects;
 
 public class PartitionByRangeDateHash extends Mycat1xSingleValueRuleFunction {
 
@@ -66,11 +67,11 @@ public class PartitionByRangeDateHash extends Mycat1xSingleValueRuleFunction {
 
 
   @Override
-  public void init(ShardingTableHandler table,Map<String, String> prot, Map<String, String> ranges) {
-    this.formatter = DateTimeFormatter.ofPattern(prot.get("dateFormat"));
-    this.beginDate = this.formatter.parse(prot.get("beginDate")).get(ChronoField.DAY_OF_YEAR);
-    this.groupPartionSize = Integer.parseInt(prot.get("groupPartionSize"));
-    this.partionDay = Integer.parseInt(prot.get("partionDay"));
+  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
+    this.beginDate = this.formatter.parse(Objects.toString(prot.get("beginDate"))).get(ChronoField.DAY_OF_YEAR);
+    this.groupPartionSize = Integer.parseInt(Objects.toString(prot.get("groupPartionSize")));
+    this.partionDay = Integer.parseInt(Objects.toString(prot.get("partionDay")));
     if (this.groupPartionSize <= 0) {
       throw new RuntimeException("groupPartionSize must >0,but cur is " + this.groupPartionSize);
     }
