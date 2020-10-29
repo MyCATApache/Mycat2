@@ -86,7 +86,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         if (Files.notExists(sequences)) Files.createDirectory(sequences);
 
         if (Files.notExists(mycatPath)) {
-            Files.write(mycatPath, getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()).getBytes());
+            writeFile(getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()),mycatPath);
         }
 
         Stream<Path> schemaPaths = Files.list(baseDirectory.resolve("schemas")).filter(i -> isSuffix(i, "schema"));
@@ -170,7 +170,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @SneakyThrows
     void start() {
         try (ConfigOps configOps = startOps()) {
-            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig)loadFromLocalFile(), configOps));
+            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
         }
     }
 
@@ -179,9 +179,9 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     public void reportReplica(String name, Set<String> dsNames) {
         Path statePath = baseDirectory.resolve("state.json");
         state.replica.put(name, dsNames);
-        Files.write(statePath,
+        writeFile(
                 ConfigReaderWriter.getReaderWriterBySuffix("json")
-                        .transformation(state).getBytes(), StandardOpenOption.CREATE_NEW);
+                        .transformation(state),statePath);
 
     }
 
@@ -239,19 +239,19 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     Path sequences = baseDirectory.resolve("sequences");
 
                     if (routerConfig.isUpdateSchemas()) {
-                        org.apache.commons.io.FileUtils.cleanDirectory(schemasPath.toFile());
+                        cleanDirectory(schemasPath);
                     }
                     if (routerConfig.isUpdateClusters()) {
-                        org.apache.commons.io.FileUtils.cleanDirectory(clustersPath.toFile());
+                        cleanDirectory(clustersPath);
                     }
                     if (routerConfig.isUpdateDatasources()) {
-                        org.apache.commons.io.FileUtils.cleanDirectory(datasources.toFile());
+                        cleanDirectory(datasources);
                     }
                     if (routerConfig.isUpdateUsers()) {
-                        org.apache.commons.io.FileUtils.cleanDirectory(users.toFile());
+                        cleanDirectory(users);
                     }
                     if (routerConfig.isUpdateSequences()) {
-                        org.apache.commons.io.FileUtils.cleanDirectory(sequences.toFile());
+                        cleanDirectory(sequences);
                     }
 //
 
@@ -310,9 +310,9 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
                     Files.deleteIfExists(statePath);
                     if (Files.notExists(statePath)) Files.createFile(statePath);
-                    Files.write(statePath,
+                    writeFile(
                             ConfigReaderWriter.getReaderWriterBySuffix("json")
-                                    .transformation(state).getBytes(), StandardOpenOption.WRITE);
+                                    .transformation(state), statePath);
 
                 } catch (Throwable e) {
                     e.printStackTrace();
@@ -337,6 +337,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @NotNull
     private MycatRouterConfig loadFromLocalFile() {
         return getRouterConfig(baseDirectory);
+    }
+
+    @SneakyThrows
+    public void cleanDirectory(Path path) {
+        org.apache.commons.io.FileUtils.cleanDirectory(path.toFile());
     }
 
     private void writeFile(String t, Path filePath) throws IOException {
