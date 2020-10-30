@@ -21,6 +21,7 @@ import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.MycatBatchNestedLoopJoin;
 import io.mycat.hbt4.logical.rel.*;
+import io.mycat.metadata.QueryBuilder;
 
 import java.util.List;
 
@@ -87,6 +88,8 @@ public interface ExecutorImplementor {
     Executor implement(MycatUpdateRel mycatUpdateRel);
 
     void setParams(List<Object> params);
+
+    Executor implement(QueryBuilder  mycatCustomTable);
 
 //    Executor implement(BottomView bottomView);
 }

@@ -40,6 +40,8 @@ public interface AbstractMycatTable {
     public default boolean isSharding() {
         return getShardingInfo().getType() == ShardingInfo.Type.sharding;
     }
-
+    public default boolean isCustom() {
+        return getShardingInfo().getType() == ShardingInfo.Type.custom;
+    }
     boolean isPartial(List<RexNode> conditions);
 }

@@ -22,6 +22,7 @@ import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
+import io.mycat.metadata.QueryBuilder;
 
 public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
     protected final DatasourceFactory factory;
@@ -63,5 +64,9 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
                 factory,
                 params
         );
+    }
+    @Override
+    public Executor implement(QueryBuilder  builder){
+       return builder.run();
     }
 }

@@ -27,7 +27,9 @@ public interface ShardingInfo {
     public enum Type {
         broadCast,
         normal,
-        sharding
+        sharding,
+        custom
+
     }
 
     public static ShardingInfo create(TableHandler tableHandler) {
@@ -58,6 +60,17 @@ public interface ShardingInfo {
                       return Type.normal;
                   }
               };
+            case CUSTOM:
+                return  new ShardingInfo() {
+                    @Override
+                    public String getDigest() {
+                        return null;
+                    }
+                    @Override
+                    public Type getType() {
+                        return Type.custom;
+                    }
+                };
         }
         return new ShardingInfo() {
             @Override

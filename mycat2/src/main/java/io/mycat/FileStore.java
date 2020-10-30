@@ -12,6 +12,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class FileStore implements CoordinatorMetadataStorageManager.Store {
@@ -73,7 +74,13 @@ public class FileStore implements CoordinatorMetadataStorageManager.Store {
                 return s;
             }
             return s.substring(0, i);
-        }, i -> new String(Files.readAllBytes(i))));
+        }, new Function<Path, String>() {
+            @Override
+            @SneakyThrows
+            public String apply(Path i) {
+                return new String(Files.readAllBytes(i));
+            }
+        }));
     }
 
     @Override

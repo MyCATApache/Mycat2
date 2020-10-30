@@ -37,7 +37,6 @@ import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.hbt3.CustomTable;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
@@ -50,10 +49,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.rmi.runtime.Log;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,20 +135,20 @@ public class MetadataManager {
 
                     Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
                     Set<String> existed = new HashSet<>();
-                    existed.addAll( logicSchemaConfig.getNormalTables().keySet());
-                    existed.addAll( logicSchemaConfig.getGlobalTables().keySet());
-                    existed.addAll( logicSchemaConfig.getShadingTables().keySet());
-                    existed.addAll( logicSchemaConfig.getCustomTables().keySet());
+                    existed.addAll(logicSchemaConfig.getNormalTables().keySet());
+                    existed.addAll(logicSchemaConfig.getGlobalTables().keySet());
+                    existed.addAll(logicSchemaConfig.getShadingTables().keySet());
+                    existed.addAll(logicSchemaConfig.getCustomTables().keySet());
                     adds.forEach((n, v) -> {
-                        if (!existed.contains(n)){
-                            logicSchemaConfig.getNormalTables().put(n,v);
+                        if (!existed.contains(n)) {
+                            logicSchemaConfig.getNormalTables().put(n, v);
                         }
                     });
                 }
             }
         }
         /////////////////////////////////////////////////////////////////
-         addInnerTable(schemaConfigs, prototype);
+        addInnerTable(schemaConfigs, prototype);
 
 
         ///////////////////////////////////////////////////////////////
@@ -171,7 +167,7 @@ public class MetadataManager {
                     Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
                     Map<String, NormalTableConfig> normalTables = value.getNormalTables();
                     for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
-                        normalTables.computeIfAbsent(add.getKey(),(n)->add.getValue());
+                        normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
                     }
                 }
             }
@@ -185,7 +181,7 @@ public class MetadataManager {
                             prototype
                     );
                 } catch (Throwable throwable) {
-
+                    LOGGER.warn("", throwable);
                 }
             }
             for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
@@ -287,8 +283,8 @@ public class MetadataManager {
             NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(prototype, schemaName, tableName);
             try {
                 res.put(tableName, (new NormalTableConfig(
-                        getCreateTableSQLByJDBC(schemaName,tableName,
-                                Collections.singletonList(new BackendTableInfo(prototype,schemaName,tableName))),
+                        getCreateTableSQLByJDBC(schemaName, tableName,
+                                Collections.singletonList(new BackendTableInfo(prototype, schemaName, tableName))),
                         normalBackEndTableInfoConfig)));
             } catch (Throwable e) {
                 LOGGER.warn("", e);
@@ -303,25 +299,11 @@ public class MetadataManager {
                                 String prototypeServer) {
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         String clazz = tableConfigEntry.getClazz();
-        try {
-            Class<?> aClass = Class.forName(clazz);
-            Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(
-                    String.class,
-                    String.class,
-                    String.class,
-                    Map.class,
-                    List.class);
-            CustomTable o = (CustomTable) declaredConstructor.newInstance(
-                    schemaName,
-                    tableName,
-                    createTableSQL,
-                    tableConfigEntry.getKvOptions(),
-                    tableConfigEntry.getListOptions());
-            addLogicTable(LogicTable.createCustomTable(o));
-
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            LOGGER.error("", e);
-        }
+        LogicTable logicTable = new LogicTable(LogicTableType.CUSTOM,
+                schemaName, tableName, getColumnInfo(createTableSQL), createTableSQL);
+        CustomTableHandlerWrapper customTableHandler = new CustomTableHandlerWrapper(logicTable, clazz, tableConfigEntry.getKvOptions(),
+                tableConfigEntry.getListOptions());
+        addLogicTable(customTableHandler);
     }
 
     private boolean addNormalTable(String schemaName,
@@ -415,12 +397,11 @@ public class MetadataManager {
         Map<String, TableHandler> tableMap;
         tableMap = schemaMap.get(schemaName).logicTables();
         tableMap.put(tableName, logicTable);
-        tableMap.put("`" + tableName + "`", logicTable);
+        try {
+            accrptDDL(schemaName, createTableSQL);
+        }catch (Throwable ignored){
 
-        tableMap = schemaMap.get(schemaName).logicTables();
-        tableMap.put(tableName, logicTable);
-        tableMap.put("`" + tableName + "`", logicTable);
-        accrptDDL(schemaName, createTableSQL);
+        }
     }
 
 
@@ -435,7 +416,7 @@ public class MetadataManager {
         /////////////////////////////////////////////////////////////////////////////////////////////////
         if (createTableSQL != null) {
             try {
-                columns = getColumnInfo(prototypeServer,createTableSQL);
+                columns = getColumnInfo(prototypeServer, createTableSQL);
             } catch (Throwable e) {
                 LOGGER.warn("无法根据建表sql:{},获取字段信息", createTableSQL, e);
             }
@@ -832,6 +813,10 @@ public class MetadataManager {
     public MetadataManager clear() {
         this.schemaMap.clear();
         return this;
+    }
+
+    public List<SimpleColumnInfo> getColumnInfo(String sql) {
+        return getColumnInfo(null, sql);
     }
 
     public List<SimpleColumnInfo> getColumnInfo(String prototypeServer, String sql) {

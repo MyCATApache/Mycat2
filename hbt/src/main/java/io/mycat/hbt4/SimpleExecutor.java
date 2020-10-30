@@ -6,10 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 
 public class SimpleExecutor implements Executor {
-    final List<Row> rows;
+    final Iterable<Row> rows;
     private Iterator<Row> iterator;
 
-    public SimpleExecutor(List<Row> rows) {
+    public SimpleExecutor(Iterable<Row> rows) {
         this.rows = rows;
     }
 

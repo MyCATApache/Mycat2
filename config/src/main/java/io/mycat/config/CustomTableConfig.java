@@ -13,6 +13,6 @@ import java.util.Map;
 public class CustomTableConfig {
     String createTableSQL;
     String clazz;
-    Map<String,String> kvOptions;
-    List<String> listOptions;
+    Map<String,Object> kvOptions;
+    List<Object> listOptions;
 }

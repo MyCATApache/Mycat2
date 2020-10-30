@@ -1,12 +1,7 @@
 package io.mycat;
 
 
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface TableHandler {
