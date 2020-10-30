@@ -207,8 +207,7 @@ public class MetadataManager {
                 String tableName = e.getKey();
                 CustomTableConfig tableConfigEntry = e.getValue();
                 addCustomTable(schemaName, tableName,
-                        tableConfigEntry,
-                        prototype
+                        tableConfigEntry
                 );
             }
         }
@@ -295,8 +294,7 @@ public class MetadataManager {
 
     private void addCustomTable(String schemaName,
                                 String tableName,
-                                CustomTableConfig tableConfigEntry,
-                                String prototypeServer) {
+                                CustomTableConfig tableConfigEntry) {
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         String clazz = tableConfigEntry.getClazz();
         LogicTable logicTable = new LogicTable(LogicTableType.CUSTOM,

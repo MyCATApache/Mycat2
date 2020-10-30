@@ -22,7 +22,7 @@ public class CustomTableHandlerWrapper implements TableHandler {
                                      List<Object> listOptions) {
         this.logicTable = logicTable;
         Class<?> aClass = Class.forName(klazz);
-        Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(LogicTable.class);
+        Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(LogicTable.class,Map.class,List.class);
         this.inner = (CustomTableHandler) declaredConstructor.newInstance(logicTable, kvOptions, listOptions);
     }
 
