@@ -1,6 +1,9 @@
 package io.mycat;
 
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -37,4 +40,17 @@ public interface TableHandler {
     void createPhysicalTables();
 
     void dropPhysicalTables();
+
+    default String normalizeCreateTableSQLToMySQL(String createTableSQL) {
+        MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
+        mySqlCreateTableStatement.setBroadCast(false);
+        mySqlCreateTableStatement.setDbPartitionBy(null);
+        mySqlCreateTableStatement.setDbPartitions(null);
+        mySqlCreateTableStatement.setTableGroup("");
+        mySqlCreateTableStatement.setTablePartitionBy(null);
+        mySqlCreateTableStatement.setTablePartitions(null);
+        return mySqlCreateTableStatement.toString();
+    }
+
+
 }

@@ -68,11 +68,11 @@ public class ShardingTable implements ShardingTableHandler {
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(getCreateTableSQL(), false);
+            connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : getBackends()) {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-                connection.executeUpdate(rewriteCreateTableSql(getCreateTableSQL(),node.getSchema(), node.getTable()), false);
+                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()),node.getSchema(), node.getTable()), false);
             }
         }
     }

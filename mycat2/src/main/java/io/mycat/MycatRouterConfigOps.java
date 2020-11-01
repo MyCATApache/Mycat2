@@ -1,12 +1,18 @@
 package io.mycat;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.config.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
-public class MycatRouterConfigOps implements AutoCloseable{
+public class MycatRouterConfigOps implements AutoCloseable {
     private final MycatRouterConfig mycatRouterConfig;
     private final ConfigOps configOps;
     List<LogicSchemaConfig> schemas = null;
@@ -15,36 +21,42 @@ public class MycatRouterConfigOps implements AutoCloseable{
     List<SequenceConfig> sequences = null;
     List<DatasourceConfig> datasources = null;
     String prototype = null;
-    UpdateType updateType=UpdateType.FULL;
+    UpdateType updateType = UpdateType.FULL;
 
     String tableName;
     String schemaName;
 
 
-    public boolean isUpdateSchemas(){
-        return schemas!=null;
+    public boolean isUpdateSchemas() {
+        return schemas != null;
     }
-    public boolean isUpdateClusters(){
-        return clusters!=null;
+
+    public boolean isUpdateClusters() {
+        return clusters != null;
     }
-    public boolean isUpdateUsers(){
-        return users!=null;
+
+    public boolean isUpdateUsers() {
+        return users != null;
     }
-    public boolean isUpdateSequences(){
-        return sequences!=null;
+
+    public boolean isUpdateSequences() {
+        return sequences != null;
     }
-    public boolean isUpdateDatasources(){
-        return datasources!=null;
+
+    public boolean isUpdateDatasources() {
+        return datasources != null;
     }
-    public boolean isUpdatePrototype(){
-        return prototype!=null;
+
+    public boolean isUpdatePrototype() {
+        return prototype != null;
     }
+
     public MycatRouterConfigOps(
             MycatRouterConfig mycatRouterConfig,
             ConfigOps configOps
-            ) {
+    ) {
         this.mycatRouterConfig = mycatRouterConfig;
-        this.prototype =mycatRouterConfig.getPrototype();
+        this.prototype = mycatRouterConfig.getPrototype();
         this.configOps = configOps;
     }
 
@@ -54,14 +66,15 @@ public class MycatRouterConfigOps implements AutoCloseable{
         List<LogicSchemaConfig> schemas = this.schemas;
         LogicSchemaConfig schemaConfig;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equals(i.getSchemaName())).findFirst();
-        if(first.isPresent()){
+        if (first.isPresent()) {
             first.get().setTargetName(targetName);
-        }else {
+        } else {
             schemas.add(schemaConfig = new LogicSchemaConfig());
             schemaConfig.setSchemaName(schemaName);
         }
         updateType = UpdateType.ROUTER;
     }
+
     public void putSchema(LogicSchemaConfig schemaConfig) {
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
@@ -73,7 +86,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
     public void addTargetOnExistedSchema(String schemaName, String targetName) {
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(i -> i.setTargetName(targetName));
         updateType = UpdateType.ROUTER;
@@ -82,26 +95,28 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
     public void dropSchema(String schemaName) {
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
-        first.ifPresent(o ->{schemas.remove(o);});
+        first.ifPresent(o -> {
+            schemas.remove(o);
+        });
         updateType = UpdateType.ROUTER;
     }
 
 
-    public void putNormalTable(String schemaName, String tableName, String sqlString) {
+    public void putNormalTable(String schemaName, String tableName, MySqlCreateTableStatement sqlString) {
         String defaultTarget = "prototype";
         putNormalTable(schemaName, tableName, sqlString, defaultTarget);
     }
 
 
-    public NormalTableConfig putNormalTable(String schemaName, String tableName, String sqlString, String targetName) {
+    public NormalTableConfig putNormalTable(String schemaName, String tableName, MySqlCreateTableStatement sqlString, String targetName) {
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         NormalTableConfig normalTableConfig = new NormalTableConfig();
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
-        if (!first.isPresent()){
-            throw new IllegalArgumentException("unknown:"+schemaName);
+        if (!first.isPresent()) {
+            throw new IllegalArgumentException("unknown:" + schemaName);
         }
         first.ifPresent(logicSchemaConfig -> {
             Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
@@ -121,13 +136,13 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
-    public GlobalTableConfig putGlobalTable(String schemaName, String tableName, String sqlString) {
+    public GlobalTableConfig putGlobalTable(String schemaName, String tableName, MySqlCreateTableStatement sqlString) {
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         GlobalTableConfig globalTableConfig = new GlobalTableConfig();
-        if (!first.isPresent()){
-            throw new IllegalArgumentException("unknown:"+schemaName);
+        if (!first.isPresent()) {
+            throw new IllegalArgumentException("unknown:" + schemaName);
         }
         first.ifPresent(logicSchemaConfig -> {
             Map<String, GlobalTableConfig> globalTableConfigMap = logicSchemaConfig.getGlobalTables();
@@ -151,7 +166,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
     public void removeTable(String schemaName, String tableName) {
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(logicSchemaConfig -> {
             logicSchemaConfig.getNormalTables().remove(tableName);
@@ -165,18 +180,18 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
-    public ShardingTableConfig putRuleTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putRangeTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
         removeTable(schemaName, tableName);
         Map<String, String> ranges = (Map) infos.get("ranges");
         Map<String, String> dataNodes = (Map) infos.get("dataNodes");
         Map<String, String> properties = (Map) infos.get("properties");
-        String aClass = (String)(infos.get("class"));
-        String name = (String)(infos.get("name"));
+        String aClass = (String) (infos.get("class"));
+        String name = (String) (infos.get("name"));
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map)properties).ranges((Map)ranges).build())
-                .dataNode(Optional.ofNullable(dataNodes).map(i->ShardingBackEndTableInfoConfig
+                .function(ShardingFuntion.builder().name(name).clazz(aClass).properties((Map) properties).ranges((Map) ranges).build())
+                .dataNode(Optional.ofNullable(dataNodes).map(i -> ShardingBackEndTableInfoConfig
                         .builder()
                         .schemaNames(dataNodes.get("schemaNames"))
                         .tableNames(dataNodes.get("tableNames"))
@@ -186,7 +201,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
         //todo check  ShardingTableConfig right
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(logicSchemaConfig -> {
             Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
@@ -199,16 +214,16 @@ public class MycatRouterConfigOps implements AutoCloseable{
     }
 
 
-    public ShardingTableConfig putAutoTable(String schemaName, String tableName, String tableStatement, Map<String, Object> infos) {
+    public ShardingTableConfig putHashTable(String schemaName, String tableName, MySqlCreateTableStatement tableStatement, Map<String, Object> infos) {
         ShardingTableConfig.ShardingTableConfigBuilder builder = ShardingTableConfig.builder();
         ShardingTableConfig config = builder
                 .createTableSQL(tableStatement.toString())
-                .function(ShardingFuntion.builder().properties((Map)infos).build())
+                .function(ShardingFuntion.builder().properties((Map) infos).build())
                 .build();
 
         //todo check  ShardingTableConfig right
         this.schemas = mycatRouterConfig.getSchemas();
-        List<LogicSchemaConfig> schemas =  this.schemas;
+        List<LogicSchemaConfig> schemas = this.schemas;
         Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> i.getSchemaName().equals(schemaName)).findFirst();
         first.ifPresent(logicSchemaConfig -> {
             Map<String, ShardingTableConfig> shadingTables = logicSchemaConfig.getShadingTables();
@@ -219,6 +234,7 @@ public class MycatRouterConfigOps implements AutoCloseable{
         this.schemaName = schemaName;
         return config;
     }
+
     public void putUser(String username, String password, String ip, String transactionType) {
         UserConfig userConfig = UserConfig.builder()
                 .username(username)
@@ -263,7 +279,6 @@ public class MycatRouterConfigOps implements AutoCloseable{
                 .ifPresent(i -> sequences.remove(i));
         updateType = UpdateType.SEQUENCE;
     }
-
 
 
     public void putDatasource(DatasourceConfig datasourceConfig) {
@@ -350,5 +365,24 @@ public class MycatRouterConfigOps implements AutoCloseable{
 
     public String getSchemaName() {
         return schemaName;
+    }
+
+    public void putHashTable(String schemaName, String tableName, MySqlCreateTableStatement createTableSql) {
+        SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
+        HashMap<String, Object> properties = new HashMap<>();
+        if (dbPartitionBy != null) {
+            int dbPartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getDbPartitions().toString()));
+            properties.put("dbNum",dbPartitions);
+            properties.put("dbMethod",dbPartitionBy);
+        }
+
+        SQLExpr tablePartitionBy = createTableSql.getTablePartitionBy();
+        if (tablePartitionBy != null) {
+            int tablePartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getTablePartitions().toString()));
+            properties.put("tableNum",tablePartitions);
+            properties.put("tableMethod",tablePartitionBy);
+        }
+
+        putHashTable(schemaName, tableName, createTableSql,properties);
     }
 }
