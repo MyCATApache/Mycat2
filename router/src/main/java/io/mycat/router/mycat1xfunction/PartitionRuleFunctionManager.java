@@ -48,6 +48,6 @@ public enum PartitionRuleFunctionManager {
             rootFunction.callInit(tableHandler, (Map)funtion.getProperties(), (Map)funtion.getRanges());
             return rootFunction;
         }
-        return AutoFunctionFactory.getFunction(tableHandler,funtion);
+        return AutoFunctionFactory.getTableFunction(tableHandler,funtion);
     }
 }
