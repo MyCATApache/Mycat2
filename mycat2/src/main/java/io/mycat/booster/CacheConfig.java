@@ -3,7 +3,7 @@ package io.mycat.booster;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.util.Duration;
+import io.mycat.util.SimpleDuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
@@ -19,16 +19,16 @@ import java.util.function.Consumer;
 @EqualsAndHashCode
 public class CacheConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheConfig.class);
-    private Duration refreshInterval;
-    private Duration initialDelay;
+    private SimpleDuration refreshInterval;
+    private SimpleDuration initialDelay;
     private static final Splitter KEYS_SPLITTER = Splitter.on(',').trimResults();
     private static final Splitter KEY_VALUE_SPLITTER = Splitter.on('=').trimResults();
     private static final ImmutableMap<String, BiFunction<String, String, Consumer<CacheConfig>>> VALUE_PARSERS =
             ImmutableMap.<String, BiFunction<String, String, Consumer<CacheConfig>>>builder()
                     .put("refreshInterval", (o, o2) -> cacheConfig -> {
-                        cacheConfig.setRefreshInterval(Duration.parse(o, o2));
+                        cacheConfig.setRefreshInterval(SimpleDuration.parse(o, o2));
                     })
-                    .put("initialDelay", (s, s2) -> cacheConfig -> cacheConfig.setInitialDelay(Duration.parse(s, s2)))
+                    .put("initialDelay", (s, s2) -> cacheConfig -> cacheConfig.setInitialDelay(SimpleDuration.parse(s, s2)))
                     .build();
     public static CacheConfig create(String cache){
         CacheConfig cacheConfig = new CacheConfig();

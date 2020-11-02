@@ -24,11 +24,11 @@ import static java.lang.String.format;
 
 @Getter
 @AllArgsConstructor
-public class Duration {
+public class SimpleDuration {
     private long duration;
     private TimeUnit timeUnit;
 
-    public static Duration parse(String key, String value) {
+    public static SimpleDuration parse(String key, String value) {
         checkArgument(value != null && !value.isEmpty(), "value of key %s omitted", key);
         long duration;
         TimeUnit timeUnit;
@@ -53,7 +53,7 @@ public class Duration {
                                     "key %s invalid format.  was %s, must end with one of [dDhHmMsS]", key, value));
             }
 
-            return new Duration(Long.parseLong(value.substring(0, value.length() - 1)), timeUnit);
+            return new SimpleDuration(Long.parseLong(value.substring(0, value.length() - 1)), timeUnit);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
                     format("key %s value set to %s, must be integer", key, value));
