@@ -118,7 +118,7 @@ public class ConfigPrepareExecuter {
                   MetaClusterCurrent.wrapper(SequenceGenerator.class),
                   MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
                   MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
-                  ops.getPrototype());
+                 "prototype");
     }
 
     public void initBy(MycatRouterConfig mycatRouterConfig) {
