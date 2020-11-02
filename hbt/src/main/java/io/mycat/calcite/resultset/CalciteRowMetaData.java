@@ -96,7 +96,7 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
     @Override
     public int getColumnType(int column) {
         int jdbcOrdinal = getColumn(column).getType().getSqlTypeName().getJdbcOrdinal();
-        if (jdbcOrdinal >= 1000||jdbcOrdinal == Types.TIME){
+        if (jdbcOrdinal >= 1000){
             return Types.VARCHAR;
         }
         return jdbcOrdinal;

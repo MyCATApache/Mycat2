@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -111,17 +114,17 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         throw new UnsupportedOperationException();
     }
 

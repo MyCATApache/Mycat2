@@ -18,6 +18,7 @@ package io.mycat.resultset;
  **/
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -60,4 +61,6 @@ public interface TextConvertor {
   byte[] convertTimeString(String s);
 
   byte[] convertTimeStamp(LocalDateTime value);
+
+  byte[] convertDate(LocalDate value);
 }

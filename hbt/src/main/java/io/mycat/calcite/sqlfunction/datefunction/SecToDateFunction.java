@@ -1,19 +1,12 @@
 package io.mycat.calcite.sqlfunction.datefunction;
 
 import com.github.sisyphsu.dateparser.DateParserUtils;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.time.DateUtils;
 
-import java.time.*;
-import java.time.format.*;
-import java.time.temporal.*;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 public class SecToDateFunction extends MycatDateFunction {

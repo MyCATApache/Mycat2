@@ -449,7 +449,11 @@
             <version>1.0.5</version>
             <scope>compile</scope>
         </dependency>
-
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>common</artifactId>
+<!--            <version>1.12-SNAPSHOT</version>-->
+        </dependency>
     </dependencies>
     <repositories>
         <repository>

@@ -23,13 +23,14 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Date;
 import java.util.Iterator;
 
 /**
  * @author Junwen Chen
- *
  * @todo convertor对于某些分支未完善
  **/
 public class TextResultSetResponse extends AbstractMycatResultSetResponse {
@@ -146,7 +147,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.DATE: {
-                java.util.Date  value = rowBaseIterator.getDate(columnIndex);
+                LocalDate value = rowBaseIterator.getDate(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
@@ -154,41 +155,19 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.TIME: {
-                Object value = rowBaseIterator.getObject(columnIndex);
+                Duration value = rowBaseIterator.getTime(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                if (value instanceof Time){
-                    res = convertor.convertTime((Time)value);
-                }else if (value instanceof Duration){
-                    Duration duration = (Duration) value;
-                    res = convertor.convertDuration(duration);
-                }else if (value instanceof LocalTime){
-                    LocalTime localTime = (LocalTime) value;
-                    res = convertor.convertTime(localTime);
-                }else if (value instanceof String){
-                    String s = (String)value;
-                    res = convertor.convertTimeString(s);
-                }else {
-                    throw new UnsupportedOperationException("unsupported cast:"+value.getClass());
-                }
+                res = convertor.convertDuration(value);
                 break;
             }
             case Types.TIMESTAMP: {
-                Object value = rowBaseIterator.getObject(columnIndex);
+                LocalDateTime  value = rowBaseIterator.getTimestamp(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                if (value instanceof Timestamp){
-                    res = convertor.convertTimeStamp((Timestamp)value);
-                }else if (value instanceof LocalDateTime){
-                    res = convertor.convertTimeStamp((LocalDateTime)value);
-                }else if (value instanceof String){
-                    String s = (String)value;
-                    res = convertor.convertTimeString(s);
-                }else {
-                    throw new UnsupportedOperationException("unsupported cast:"+value.getClass());
-                }
+                res = convertor.convertTimeStamp(value);
                 break;
             }
             case Types.CHAR: {
@@ -261,11 +240,11 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
             default:
                 throw new RuntimeException("unsupport!");
         }
-   return res;
+        return res;
     }
 
     @Override
-    public void close()  {
+    public void close() {
         this.iterator.close();
     }
 }

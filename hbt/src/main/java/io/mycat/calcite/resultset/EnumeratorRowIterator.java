@@ -68,19 +68,10 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         Object o = getObject(columnIndex);
         if (wasNull) return null;
-        if (o instanceof Integer) {
-            return Date.valueOf(LocalDate.ofEpochDay((Integer) o));
-        }
-        if (o instanceof Long) {
-            return new Date((Long) o);
-        }
-        if (o instanceof LocalDate) {
-            return Date.valueOf((LocalDate) o);
-        }
-        return (Date) o;
+        return (LocalDate) o;
     }
 
     @Override
@@ -92,47 +83,17 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
-        Object o = getObject(columnIndex);
+    public LocalDateTime getTimestamp(int columnIndex) {
+        LocalDateTime o = getTimestamp(columnIndex);
         if (wasNull) return null;
-        if (o instanceof Integer) {
-            return Timestamp.valueOf(LocalDate.ofEpochDay((Integer) o).atStartOfDay());
-        }
-        if (o instanceof Long) {
-            return new Timestamp((Long) (o));
-        }
-        if (o instanceof LocalDateTime) {
-            return Timestamp.valueOf((LocalDateTime) o);
-        }
-
-        return (Timestamp) o;
+        return (LocalDateTime) o;
     }
 
     @Override
-    public Time getTime(int columnIndex) {
-        Object o = getObject(columnIndex);
+    public Duration getTime(int columnIndex) {
+        Duration o = getTime(columnIndex);
         if (wasNull) return null;
-        if (o instanceof Duration) {
-            Duration o1 = (Duration) o;
-            long seconds = o1.getSeconds();
-            int nano = o1.getNano();
-
-            if (seconds>=0){
-                Time time = new Time(Instant.ofEpochSecond(seconds, nano).toEpochMilli());
-                if (time.getHours()>838){
-                    throw new MycatException("Truncated incorrect time value:"+time.getHours());
-                }
-                return time;
-            }
-           throw new UnsupportedOperationException();
-        }
-        if (o instanceof Integer) {
-            throw new UnsupportedOperationException();
-        }
-        if (o instanceof Long) {
-            return new Time((Long) (o));
-        }
-        return (Time) o;
+        return (Duration) o;
     }
 
     @Override

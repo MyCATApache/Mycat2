@@ -17,6 +17,7 @@ package io.mycat.resultset;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -174,5 +175,10 @@ public enum TextConvertorImpl implements TextConvertor {
                 second,
                 nano
                 ).getBytes();
+    }
+
+    @Override
+    public byte[] convertDate(LocalDate value) {
+        return value.toString().getBytes();
     }
 }

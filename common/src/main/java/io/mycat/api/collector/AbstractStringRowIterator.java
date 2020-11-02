@@ -1,5 +1,6 @@
 package io.mycat.api.collector;
 
+import io.mycat.MycatTimeUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,10 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Iterator;
 
 /**
@@ -114,24 +115,24 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return java.sql.Date.valueOf(o);
+        return LocalDate.parse(o);
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return java.sql.Time.valueOf(o);
+        return MycatTimeUtil.timeStringToTimeDuration(o);
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return java.sql.Timestamp.valueOf(o);
+        return (LocalDateTime)MycatTimeUtil.timestampStringToTimestamp(o);
     }
 
     @Override
