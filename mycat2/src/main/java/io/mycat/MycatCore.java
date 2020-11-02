@@ -49,12 +49,12 @@ public class MycatCore {
         LoadBalanceManager loadBalanceManager = mycatServer.getLoadBalanceManager();
         MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
 
-        HashMap<Class,Object> context = new HashMap<>();
-        context.put(serverConfiguration.getClass(),serverConfiguration);
-        context.put(serverConfig.getClass(),serverConfig);
-        context.put(loadBalanceManager.getClass(),loadBalanceManager);
-        context.put(mycatWorkerProcessor.getClass(),mycatWorkerProcessor);
-        context.put(mycatServer.getClass(),mycatServer);
+        HashMap<Class, Object> context = new HashMap<>();
+        context.put(serverConfiguration.getClass(), serverConfiguration);
+        context.put(serverConfig.getClass(), serverConfig);
+        context.put(loadBalanceManager.getClass(), loadBalanceManager);
+        context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
+        context.put(mycatServer.getClass(), mycatServer);
 
 
         String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
@@ -64,12 +64,21 @@ public class MycatCore {
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
+                String zkAddress = System.getProperty("zkAddress");
+                if (zkAddress != null) {
+                    ZKStore zkStore = new ZKStore("mycat", zkAddress);
+                    metadataStorageManager =
+                            new CoordinatorMetadataStorageManager(zkStore,
+                                    ConfigReaderWriter.getReaderWriterBySuffix("json"),
+                                    datasourceProvider);
+                    break;
+                }
             default: {
                 throw new UnsupportedOperationException();
             }
         }
 
-        context.put(metadataStorageManager.getClass(),metadataStorageManager);
+        context.put(metadataStorageManager.getClass(), metadataStorageManager);
         MetaClusterCurrent.register(context);
     }
 

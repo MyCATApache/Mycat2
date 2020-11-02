@@ -28,6 +28,11 @@ public class FileStore implements CoordinatorMetadataStorageManager.Store {
     }
 
     @Override
+    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedCallback changedCallback) {
+
+    }
+
+    @Override
     @SneakyThrows
     public synchronized void begin() {
         if (lock != null) {

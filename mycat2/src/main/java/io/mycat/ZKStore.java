@@ -13,19 +13,17 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ZKStore implements CoordinatorMetadataStorageManager.Store {
-    private final BiConsumer<String, Object> update;
-    private final BiConsumer<String, Object> delete;
+    private final Map<String, CoordinatorMetadataStorageManager.ChangedCallback> changedCallbackMap
+            = new ConcurrentHashMap<>();
     private final CuratorFramework client;
     private final String CONFIG_PREFIX;
     private volatile List<CuratorOp> transactionOps = null;
 
     // 初始化zk连接
     public ZKStore(String configPrefix,
-                   BiConsumer<String, Object> update,
-                   BiConsumer<String, Object> delete,
                    String address) {
 
         if (!configPrefix.startsWith("/")) {
@@ -35,11 +33,14 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
             configPrefix = configPrefix.substring(0, configPrefix.length() - 1);
         }
         this.CONFIG_PREFIX = configPrefix;
-        this.update = update;
-        this.delete = delete;
         this.client = CuratorFrameworkFactory.newClient(address, new RetryNTimes(3, 1000));
         this.client.start();
         this.init();
+    }
+
+    @Override
+    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedCallback changedCallback) {
+        changedCallbackMap.put(changedCallback.getInterestedPath(),changedCallback);
     }
 
     @Override
@@ -177,12 +178,23 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
             String path = event.getData().getPath();
             path = path.substring(this.CONFIG_PREFIX.length());
+            if (path.contains("/")) {
+                path = path.substring(1);
+            }
             if (PathChildrenCacheEvent.Type.CHILD_ADDED.equals(event.getType())
                     ||
                     PathChildrenCacheEvent.Type.CHILD_UPDATED.equals(event.getType())) {
-                update.accept(path, new String(event.getData().getData()));
+                CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
+                if (changedCallback != null) {
+                    changedCallback.onChanged(path, new String(event.getData().getData()), false);
+                }
             } else if (PathChildrenCacheEvent.Type.CHILD_REMOVED.equals(event.getType())) {
-                delete.accept(path, new String(event.getData().getData()));
+                /////////////////////////////////////////////////////////////
+                CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
+                if (changedCallback != null) {
+                    changedCallback.onChanged(path, new String(event.getData().getData()), true);
+                }
+                /////////////////////////////////////////////////////////////
             }
         });
         watcher.start();

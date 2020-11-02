@@ -20,7 +20,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     List<UserConfig> users = null;
     List<SequenceConfig> sequences = null;
     List<DatasourceConfig> datasources = null;
-    String prototype = null;
+//    String prototype = null;
     UpdateType updateType = UpdateType.FULL;
 
     String tableName;
@@ -47,16 +47,16 @@ public class MycatRouterConfigOps implements AutoCloseable {
         return datasources != null;
     }
 
-    public boolean isUpdatePrototype() {
-        return prototype != null;
-    }
+//    public boolean isUpdatePrototype() {
+//        return prototype != null;
+//    }
 
     public MycatRouterConfigOps(
             MycatRouterConfig mycatRouterConfig,
             ConfigOps configOps
     ) {
         this.mycatRouterConfig = mycatRouterConfig;
-        this.prototype = mycatRouterConfig.getPrototype();
+//        this.prototype = mycatRouterConfig.getPrototype();
         this.configOps = configOps;
     }
 
@@ -336,10 +336,10 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public List<LogicSchemaConfig> getSchemas() {
         return schemas;
     }
-
-    public String getPrototype() {
-        return prototype;
-    }
+//
+//    public String getPrototype() {
+//        return prototype;
+//    }
 
 
     public MycatRouterConfig currentConfig() {
@@ -385,4 +385,5 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
         putHashTable(schemaName, tableName, createTableSql,properties);
     }
+
 }
