@@ -191,13 +191,6 @@ public class DrdsRunner {
 
     private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
-        MycatCalciteSupport.INSTANCE.functions.forEach((k, v) -> {
-            ScalarFunction scalarFunction = ScalarFunctionImpl.create(v, "eval");
-            if (scalarFunction !=null){
-                plus.add(k,scalarFunction);
-            }
-
-        });
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
             String schemaName = entry.getKey();

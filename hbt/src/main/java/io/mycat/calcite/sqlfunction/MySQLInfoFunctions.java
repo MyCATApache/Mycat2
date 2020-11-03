@@ -1,7 +1,7 @@
 package io.mycat.calcite.sqlfunction;
 
 import io.mycat.MycatUser;
-import io.mycat.hbt4.MycatContext;
+import org.apache.calcite.MycatContext;
 
 public class MySQLInfoFunctions {
 

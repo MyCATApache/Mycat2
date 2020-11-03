@@ -27,6 +27,7 @@ import io.mycat.hbt4.executor.aggfunction.MycatSortAggExecutor;
 import io.mycat.hbt4.logical.rel.*;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;

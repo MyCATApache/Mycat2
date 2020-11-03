@@ -1,8 +1,5 @@
 package io.mycat.calcite.sqlfunction;
 
-import io.mycat.hbt4.MycatContext;
-
-import java.time.LocalDate;
 import java.util.Date;
 
 /**

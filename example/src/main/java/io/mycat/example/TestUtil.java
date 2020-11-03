@@ -9,11 +9,11 @@ import java.sql.*;
 import java.util.Properties;
 
 public class TestUtil {
-    public static Connection getMySQLConnection() {
+    public static Connection getMySQLConnection()throws SQLException {
        return getMySQLConnection(8066);
     }
-    @SneakyThrows
-    public static Connection getMySQLConnection(int port) {
+
+    public static Connection getMySQLConnection(int port) throws SQLException {
         String username = "root";
         String password = "123456";
 
@@ -23,7 +23,7 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:" +
+        String url = "jdbc:mysql://127.0.0.1:" +
                 port +
                 "/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 

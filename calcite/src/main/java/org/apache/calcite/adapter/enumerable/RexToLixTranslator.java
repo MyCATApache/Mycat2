@@ -2181,10 +2181,11 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
               literal.getValueAs(byte[].class),
               byte[].class));
     case GEOMETRY:
-      final Geometries.Geom geom = literal.getValueAs(Geometries.Geom.class);
-      final String wkt = GeoFunctions.ST_AsWKT(geom);
-      return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_TEXT.method,
-          Expressions.constant(wkt));
+//      final Geometries.Geom geom = literal.getValueAs(Geometries.Geom.class);
+//      final String wkt = GeoFunctions.ST_AsWKT(geom);
+//      return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_TEXT.method,
+//          Expressions.constant(wkt));
+      throw new UnsupportedOperationException("ST_GEOM_FROM_TEXT");
       case NULL:
         break;
       case ANY:
@@ -2552,8 +2553,10 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     if (operator == SEARCH) {
       return RexUtil.expandSearch(builder, program, call).accept(this);
     }
+
     final RexImpTable.RexCallImplementor implementor =
         RexImpTable.INSTANCE.get(operator);
+
     if (implementor == null) {
       throw new RuntimeException("cannot translate call " + call);
     }

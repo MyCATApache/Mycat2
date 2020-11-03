@@ -18,6 +18,7 @@ package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableMap;
 import io.mycat.hbt4.executor.MycatScalar;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;

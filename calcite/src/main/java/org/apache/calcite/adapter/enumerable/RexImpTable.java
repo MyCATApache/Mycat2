@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
@@ -526,61 +527,61 @@ public class RexImpTable {
     defineMethod(EXISTS_NODE, BuiltInMethod.EXISTS_NODE.method, NullPolicy.ARG0);
 
     // Json Operators
-    defineMethod(JSON_VALUE_EXPRESSION,
-        BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT);
-    defineMethod(JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.ARG0);
-    map.put(JSON_VALUE,
-        new JsonValueImplementor(BuiltInMethod.JSON_VALUE.method));
-    defineMethod(JSON_QUERY, BuiltInMethod.JSON_QUERY.method, NullPolicy.ARG0);
-    defineMethod(JSON_TYPE, BuiltInMethod.JSON_TYPE.method, NullPolicy.ARG0);
-    defineMethod(JSON_DEPTH, BuiltInMethod.JSON_DEPTH.method, NullPolicy.ARG0);
-    defineMethod(JSON_KEYS, BuiltInMethod.JSON_KEYS.method, NullPolicy.ARG0);
-    defineMethod(JSON_PRETTY, BuiltInMethod.JSON_PRETTY.method, NullPolicy.ARG0);
-    defineMethod(JSON_LENGTH, BuiltInMethod.JSON_LENGTH.method, NullPolicy.ARG0);
-    defineMethod(JSON_REMOVE, BuiltInMethod.JSON_REMOVE.method, NullPolicy.ARG0);
-    defineMethod(JSON_STORAGE_SIZE, BuiltInMethod.JSON_STORAGE_SIZE.method, NullPolicy.ARG0);
-    defineMethod(JSON_OBJECT, BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE);
-    defineMethod(JSON_ARRAY, BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE);
-    aggMap.put(JSON_OBJECTAGG.with(SqlJsonConstructorNullClause.ABSENT_ON_NULL),
-        JsonObjectAggImplementor
-            .supplierFor(BuiltInMethod.JSON_OBJECTAGG_ADD.method));
-    aggMap.put(JSON_OBJECTAGG.with(SqlJsonConstructorNullClause.NULL_ON_NULL),
-        JsonObjectAggImplementor
-            .supplierFor(BuiltInMethod.JSON_OBJECTAGG_ADD.method));
-    aggMap.put(JSON_ARRAYAGG.with(SqlJsonConstructorNullClause.ABSENT_ON_NULL),
-        JsonArrayAggImplementor
-            .supplierFor(BuiltInMethod.JSON_ARRAYAGG_ADD.method));
-    aggMap.put(JSON_ARRAYAGG.with(SqlJsonConstructorNullClause.NULL_ON_NULL),
-        JsonArrayAggImplementor
-            .supplierFor(BuiltInMethod.JSON_ARRAYAGG_ADD.method));
-    map.put(IS_JSON_VALUE,
-        new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
-            NullPolicy.NONE, false));
-    map.put(IS_JSON_OBJECT,
-        new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
-            NullPolicy.NONE, false));
-    map.put(IS_JSON_ARRAY,
-        new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
-            NullPolicy.NONE, false));
-    map.put(IS_JSON_SCALAR,
-        new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
-            NullPolicy.NONE, false));
-    map.put(IS_NOT_JSON_VALUE,
-        NotImplementor.of(
-            new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
-                NullPolicy.NONE, false)));
-    map.put(IS_NOT_JSON_OBJECT,
-        NotImplementor.of(
-            new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
-                NullPolicy.NONE, false)));
-    map.put(IS_NOT_JSON_ARRAY,
-        NotImplementor.of(
-            new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
-                NullPolicy.NONE, false)));
-    map.put(IS_NOT_JSON_SCALAR,
-        NotImplementor.of(
-            new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
-                NullPolicy.NONE, false)));
+//    defineMethod(JSON_VALUE_EXPRESSION,
+//        BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT);
+//    defineMethod(JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.ARG0);
+//    map.put(JSON_VALUE,
+//        new JsonValueImplementor(BuiltInMethod.JSON_VALUE.method));
+//    defineMethod(JSON_QUERY, BuiltInMethod.JSON_QUERY.method, NullPolicy.ARG0);
+//    defineMethod(JSON_TYPE, BuiltInMethod.JSON_TYPE.method, NullPolicy.ARG0);
+//    defineMethod(JSON_DEPTH, BuiltInMethod.JSON_DEPTH.method, NullPolicy.ARG0);
+//    defineMethod(JSON_KEYS, BuiltInMethod.JSON_KEYS.method, NullPolicy.ARG0);
+//    defineMethod(JSON_PRETTY, BuiltInMethod.JSON_PRETTY.method, NullPolicy.ARG0);
+//    defineMethod(JSON_LENGTH, BuiltInMethod.JSON_LENGTH.method, NullPolicy.ARG0);
+//    defineMethod(JSON_REMOVE, BuiltInMethod.JSON_REMOVE.method, NullPolicy.ARG0);
+//    defineMethod(JSON_STORAGE_SIZE, BuiltInMethod.JSON_STORAGE_SIZE.method, NullPolicy.ARG0);
+//    defineMethod(JSON_OBJECT, BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE);
+//    defineMethod(JSON_ARRAY, BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE);
+//    aggMap.put(JSON_OBJECTAGG.with(SqlJsonConstructorNullClause.ABSENT_ON_NULL),
+//        JsonObjectAggImplementor
+//            .supplierFor(BuiltInMethod.JSON_OBJECTAGG_ADD.method));
+//    aggMap.put(JSON_OBJECTAGG.with(SqlJsonConstructorNullClause.NULL_ON_NULL),
+//        JsonObjectAggImplementor
+//            .supplierFor(BuiltInMethod.JSON_OBJECTAGG_ADD.method));
+//    aggMap.put(JSON_ARRAYAGG.with(SqlJsonConstructorNullClause.ABSENT_ON_NULL),
+//        JsonArrayAggImplementor
+//            .supplierFor(BuiltInMethod.JSON_ARRAYAGG_ADD.method));
+//    aggMap.put(JSON_ARRAYAGG.with(SqlJsonConstructorNullClause.NULL_ON_NULL),
+//        JsonArrayAggImplementor
+//            .supplierFor(BuiltInMethod.JSON_ARRAYAGG_ADD.method));
+//    map.put(IS_JSON_VALUE,
+//        new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
+//            NullPolicy.NONE, false));
+//    map.put(IS_JSON_OBJECT,
+//        new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
+//            NullPolicy.NONE, false));
+//    map.put(IS_JSON_ARRAY,
+//        new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
+//            NullPolicy.NONE, false));
+//    map.put(IS_JSON_SCALAR,
+//        new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
+//            NullPolicy.NONE, false));
+//    map.put(IS_NOT_JSON_VALUE,
+//        NotImplementor.of(
+//            new MethodImplementor(BuiltInMethod.IS_JSON_VALUE.method,
+//                NullPolicy.NONE, false)));
+//    map.put(IS_NOT_JSON_OBJECT,
+//        NotImplementor.of(
+//            new MethodImplementor(BuiltInMethod.IS_JSON_OBJECT.method,
+//                NullPolicy.NONE, false)));
+//    map.put(IS_NOT_JSON_ARRAY,
+//        NotImplementor.of(
+//            new MethodImplementor(BuiltInMethod.IS_JSON_ARRAY.method,
+//                NullPolicy.NONE, false)));
+//    map.put(IS_NOT_JSON_SCALAR,
+//        NotImplementor.of(
+//            new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
+//                NullPolicy.NONE, false)));
 
     // System functions
     final SystemFunctionImplementor systemFunctionImplementor =
@@ -757,6 +758,9 @@ public class RexImpTable {
       return wrapAsRexCallImplementor(implementor);
     } else if (operator instanceof SqlTypeConstructorFunction) {
       return map.get(SqlStdOperatorTable.ROW);
+    }
+    if (operator.getName().equalsIgnoreCase("MYCATSESSIONVALUE")){
+      return RexImpTable.MycatSessionValueImplementor.INSTANCE;
     }
     return map.get(operator);
   }
@@ -1727,8 +1731,9 @@ public class RexImpTable {
 
     @Override public Expression implementResult(AggContext info,
         AggResultContext result) {
-      return Expressions.call(BuiltInMethod.JSONIZE.method,
-          result.accumulator().get(0));
+//      return Expressions.call(BuiltInMethod.JSONIZE.method,
+//          result.accumulator().get(0));
+      throw new UnsupportedOperationException("JSONIZE");
     }
   }
 
@@ -1772,8 +1777,9 @@ public class RexImpTable {
 
     @Override public Expression implementResult(AggContext info,
         AggResultContext result) {
-      return Expressions.call(BuiltInMethod.JSONIZE.method,
-          result.accumulator().get(0));
+//      return Expressions.call(BuiltInMethod.JSONIZE.method,
+//          result.accumulator().get(0));
+      throw new UnsupportedOperationException("JSONIZE");
     }
   }
 
@@ -2408,6 +2414,23 @@ public class RexImpTable {
       }
     }
   }
+ public static class MycatSessionValueImplementor extends AbstractRexCallImplementor{
+   public static final MycatSessionValueImplementor INSTANCE = new MycatSessionValueImplementor();
+   MycatSessionValueImplementor() {
+     super(NullPolicy.STRICT, false);
+   }
+
+   @Override
+   String getVariableName() {
+     return "mycatSessionValue";
+   }
+
+   @Override
+   Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+     return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getVariable"
+     ,argValueList.get(0));
+   }
+ }
 
   /** Implementor for the SQL {@code CAST} operator. */
   private static class CastImplementor extends AbstractRexCallImplementor {

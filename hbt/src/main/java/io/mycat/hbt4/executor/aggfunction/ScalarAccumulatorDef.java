@@ -1,6 +1,6 @@
 package io.mycat.hbt4.executor.aggfunction;
 
-import io.mycat.hbt4.MycatContext;
+import org.apache.calcite.MycatContext;
 import io.mycat.hbt4.executor.MycatScalar;
 import lombok.SneakyThrows;
 import org.objenesis.instantiator.util.UnsafeUtils;

@@ -6,6 +6,7 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.*;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.*;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.parser.ParserException;
@@ -14,6 +15,7 @@ import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.sqlfunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.MycatSessionValueFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
@@ -456,7 +458,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLExprTableSource x) {
-        SqlIdentifier table;
+        SqlNode table;
         SQLExpr expr = x.getExpr();
         if (expr instanceof SQLIdentifierExpr) {
             table = buildIdentifier((SQLIdentifierExpr) expr);
@@ -902,11 +904,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         return false;
     }
 
-    SqlIdentifier buildIdentifier(SQLIdentifierExpr x) {
+    SqlNode buildIdentifier(SQLIdentifierExpr x) {
         return new SqlIdentifier(SQLUtils.normalize(x.getName()), SqlParserPos.ZERO);
     }
 
-    SqlIdentifier buildIdentifier(SQLPropertyExpr x) {
+    SqlNode buildIdentifier(SQLPropertyExpr x) {
         String name = SQLUtils.normalize(x.getName());
         if ("*".equals(name)) {
             name = "";
@@ -921,6 +923,15 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             names = new ArrayList<String>();
             buildIdentifier((SQLPropertyExpr) owner, names);
             names.add(name);
+        } else if (owner instanceof SQLVariantRefExpr) {
+            SQLVariantRefExpr owner1 = (SQLVariantRefExpr) owner;
+           boolean global= owner1.isGlobal()||owner1.getName().startsWith("@@");
+           if (global&&!name.startsWith("@@")){
+               name = "@@"+name;
+           }
+            return MycatSessionValueFunction.INSTANCE.createCall( SqlParserPos.ZERO,
+                    SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+
         } else {
             throw new FastsqlException("not support : " + owner);
         }
@@ -1525,7 +1536,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         SqlOperator functionOperator = func(nameHashCode64);
         String methodName = x.getMethodName().toUpperCase();
         for (SQLExpr exp : arguments) {
-            argNodes.add(convertToSqlNode(exp));
+            argNodes.add(Objects.requireNonNull(convertToSqlNode(exp)));
         }
 
         switch (methodName) {
@@ -1595,11 +1606,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 return false;
             }
             case "YEAR": {
-                this.sqlNode = YearFunction .INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = YearFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "YEARWEEK": {
-                this.sqlNode = YearWeekFunction .INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = YearWeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "SYSDATE": {
@@ -1765,6 +1776,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         ));
                 return false;
             }
+            case "MYCATSESSIONVALUE": {
+                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
             case "TRIM": {
                 if ("both".equalsIgnoreCase(x.getTrimOption())) {
                     functionOperator = new SqlUnresolvedFunction(
@@ -1855,7 +1870,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            System.out.println("end");
+            this.sqlNode =  MycatSessionValueFunction.INSTANCE.createCall( SqlParserPos.ZERO,
+                    SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
         }
         return false;
     }

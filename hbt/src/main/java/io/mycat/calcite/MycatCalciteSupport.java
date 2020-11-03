@@ -462,9 +462,9 @@ public enum MycatCalciteSupport implements Context {
     }
 
     private static void fixCalcite() {
-
-        Map<SqlOperator, RexImpTable.RexCallImplementor> map = MycatClassResolver.forceStaticGet(RexImpTable.class, RexImpTable.INSTANCE, "map");
-        map.put(SqlStdOperatorTable.CAST, new MycatCastImplementor());
+//
+//        Map<SqlOperator, RexImpTable.RexCallImplementor> map = MycatClassResolver.forceStaticGet(RexImpTable.class, RexImpTable.INSTANCE, "map");
+//        map.put(SqlStdOperatorTable.CAST, new MycatCastImplementor());
         //            Class<? extends RexImpTable> aClass = RexImpTable.class;
 //            Field mapField = aClass.getDeclaredField("map");
 //            mapField.setAccessible(true);

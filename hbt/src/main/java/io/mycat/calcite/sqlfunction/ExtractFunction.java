@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction;
 
-import io.mycat.hbt4.MycatContext;
+import org.apache.calcite.MycatContext;
 
 import java.sql.Time;
 

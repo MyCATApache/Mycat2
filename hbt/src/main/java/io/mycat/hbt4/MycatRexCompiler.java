@@ -3,6 +3,7 @@ package io.mycat.hbt4;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.executor.MycatScalar;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
@@ -48,6 +49,14 @@ public class MycatRexCompiler {
 
         for (RexNode node : nodes) {
             node=   node.accept(new RexShuttle(){
+                @Override
+                public RexNode visitCall(RexCall call) {
+                  if("MYCATSESSIONVALUE".equalsIgnoreCase(call.getOperator().getName())){
+
+                  }
+                    return super.visitCall(call);
+                }
+
                 @Override
                 public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
                     RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;

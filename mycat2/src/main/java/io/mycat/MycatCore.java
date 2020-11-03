@@ -6,6 +6,7 @@ import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import lombok.SneakyThrows;
+import org.apache.calcite.util.BuiltInMethod;
 import sun.util.calendar.ZoneInfo;
 
 import java.nio.file.Path;

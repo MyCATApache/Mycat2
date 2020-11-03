@@ -8,6 +8,7 @@ import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt3.DrdsSql;
 import io.mycat.hbt4.*;
 import lombok.SneakyThrows;
+import org.apache.calcite.MycatContext;
 
 import java.util.Collections;
 
