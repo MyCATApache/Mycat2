@@ -29,6 +29,7 @@ import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
@@ -44,6 +45,7 @@ import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
+import io.mycat.util.NameMap;
 import io.mycat.util.SplitUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -62,7 +64,7 @@ import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 /**
  * @author Junwen Chen
  **/
-public class MetadataManager {
+public class MetadataManager implements MysqlVariableService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final ConcurrentHashMap<String, SchemaHandler> schemaMap = new ConcurrentHashMap<>();
     final LoadBalanceManager loadBalanceManager;
@@ -74,6 +76,8 @@ public class MetadataManager {
     final String prototype;
 
     public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+    private final NameMap<Object> globalVariables;
+    private final NameMap<Object> sessionVariables;
 
 
     public void removeSchema(String schemaName) {
@@ -112,38 +116,58 @@ public class MetadataManager {
         this.sequenceGenerator = Objects.requireNonNull(sequenceGenerator);
         this.replicaSelectorRuntime = Objects.requireNonNull(replicaSelectorRuntime);
         this.jdbcConnectionManager = Objects.requireNonNull(jdbcConnectionManager);
-        this.prototype = prototype;
+        this.prototype = Objects.requireNonNull(prototype);
 
-        if (this.prototype != null) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-                RowBaseIterator dbIterator = connection.executeQuery("show databases");
-                Set<String> databases = new HashSet<>();
-                while (dbIterator.next()) {
-                    databases.add(dbIterator.getString(1));
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+            RowBaseIterator dbIterator = connection.executeQuery("show databases");
+            Set<String> databases = new HashSet<>();
+            while (dbIterator.next()) {
+                databases.add(dbIterator.getString(1));
+            }
+            for (String schemaName : databases) {
+                LogicSchemaConfig logicSchemaConfig = schemaConfigs.stream()
+                        .filter(i -> schemaName.equals(i.getSchemaName()))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            LogicSchemaConfig config = new LogicSchemaConfig();
+                            config.setSchemaName(schemaName);
+                            config.setTargetName(prototype);
+                            schemaConfigs.add(config);
+                            return config;
+                        });
+
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
+                Set<String> existed = new HashSet<>();
+                existed.addAll(logicSchemaConfig.getNormalTables().keySet());
+                existed.addAll(logicSchemaConfig.getGlobalTables().keySet());
+                existed.addAll(logicSchemaConfig.getShadingTables().keySet());
+                existed.addAll(logicSchemaConfig.getCustomTables().keySet());
+                adds.forEach((n, v) -> {
+                    if (!existed.contains(n)) {
+                        logicSchemaConfig.getNormalTables().put(n, v);
+                    }
+                });
+            }
+        }
+        this.globalVariables = new NameMap<Object>();
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+            try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
+                while (rowBaseIterator.next()) {
+                    globalVariables.put(
+                            rowBaseIterator.getString(1),
+                            rowBaseIterator.getObject(2)
+                    );
                 }
-                for (String schemaName : databases) {
-                    LogicSchemaConfig logicSchemaConfig = schemaConfigs.stream()
-                            .filter(i -> schemaName.equals(i.getSchemaName()))
-                            .findFirst()
-                            .orElseGet(() -> {
-                                LogicSchemaConfig config = new LogicSchemaConfig();
-                                config.setSchemaName(schemaName);
-                                config.setTargetName(prototype);
-                                schemaConfigs.add(config);
-                                return config;
-                            });
-
-                    Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
-                    Set<String> existed = new HashSet<>();
-                    existed.addAll(logicSchemaConfig.getNormalTables().keySet());
-                    existed.addAll(logicSchemaConfig.getGlobalTables().keySet());
-                    existed.addAll(logicSchemaConfig.getShadingTables().keySet());
-                    existed.addAll(logicSchemaConfig.getCustomTables().keySet());
-                    adds.forEach((n, v) -> {
-                        if (!existed.contains(n)) {
-                            logicSchemaConfig.getNormalTables().put(n, v);
-                        }
-                    });
+            }
+        }
+        this.sessionVariables = new NameMap<>();
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+            try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW SESSION VARIABLES;")) {
+                while (rowBaseIterator.next()) {
+                    sessionVariables.put(
+                            rowBaseIterator.getString(1),
+                            rowBaseIterator.getObject(2)
+                    );
                 }
             }
         }
@@ -397,7 +421,7 @@ public class MetadataManager {
         tableMap.put(tableName, logicTable);
         try {
             accrptDDL(schemaName, createTableSQL);
-        }catch (Throwable ignored){
+        } catch (Throwable ignored) {
 
         }
     }
@@ -775,6 +799,16 @@ public class MetadataManager {
 
     public boolean containsSchema(String name) {
         return schemaMap.containsKey(Objects.requireNonNull(name));
+    }
+
+    @Override
+    public Object getGlobalVariable(String name) {
+        return globalVariables.get(name.startsWith("@@")?name.substring(2):name,false);
+    }
+
+    @Override
+    public Object getSessionVariable(String name) {
+        return sessionVariables.get(name,false);
     }
 
 

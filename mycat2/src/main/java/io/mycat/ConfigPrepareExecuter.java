@@ -218,7 +218,7 @@ public class ConfigPrepareExecuter {
             context.put(sequenceGenerator.getClass(), sequenceGenerator);
         }
         context.put(MetadataStorageManager.class, this.metadataStorageManager);
-
+        context.put(MysqlVariableService .class, this.metadataManager);
         MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
         context.put(MycatRouterConfig.class,mycatRouterConfig);
 

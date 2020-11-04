@@ -90,6 +90,27 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
+    public Object getVariable(String target) {
+        if (target.contains("autocommit")) {
+            return this.isAutocommit() ? "1" : "1" ;
+        } else if (target.equalsIgnoreCase("xa")) {
+            return this.getTransactionSession().name();
+        } else if (target.contains("net_write_timeout")) {
+            return this.getVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT);
+        } else if ("sql_select_limit".equalsIgnoreCase(target)) {
+            return this.getVariable(MycatDataContextEnum.SELECT_LIMIT);
+        } else if ("character_set_results".equalsIgnoreCase(target)) {
+            return this.getVariable(MycatDataContextEnum.CHARSET_SET_RESULT);
+        } else if (target.contains("read_only")) {
+            return this.getVariable(MycatDataContextEnum.IS_READ_ONLY);
+        } else if (target.contains("current_user")) {
+            return this.getUser().getUserName();
+        }
+        MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+        return variableService.getVariable(target);
+    }
+
+    @Override
     public void setVariable(MycatDataContextEnum name, Object value) {
         switch (name) {
             case DEFAULT_SCHEMA:

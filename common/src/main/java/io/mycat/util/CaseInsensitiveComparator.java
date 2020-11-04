@@ -16,6 +16,8 @@
  */
 package io.mycat.util;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Comparator;
 
 /**
@@ -31,46 +33,57 @@ import java.util.Comparator;
  * and {@link #ceilingKey(String)}.
  */
 class CaseInsensitiveComparator implements Comparator {
-  static final CaseInsensitiveComparator COMPARATOR = new CaseInsensitiveComparator();
+    static final CaseInsensitiveComparator COMPARATOR = new CaseInsensitiveComparator();
 
-  /**
-   * Enables to create floor and ceiling keys for given string.
-   */
-  private static final class Key {
-    public final String value;
-    public final int compareResult;
+    /**
+     * Enables to create floor and ceiling keys for given string.
+     */
+    private static final class Key implements java.lang.Comparable {
+        public final String value;
+        public final int compareResult;
 
-    private Key(String value, int compareResult) {
-      this.value = value;
-      this.compareResult = compareResult;
+        private Key(String value, int compareResult) {
+            this.value = value;
+            this.compareResult = compareResult;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        @Override
+        public int compareTo(@NotNull Object o) {
+            return innerCompare(this, o);
+        }
     }
 
-    @Override public String toString() {
-      return value;
+    Object floorKey(String key) {
+        return new Key(key, -1);
     }
-  }
 
-  Object floorKey(String key) {
-    return new Key(key, -1);
-  }
+    Object ceilingKey(String key) {
+        return new Key(key, 1);
+    }
 
-  Object ceilingKey(String key) {
-    return new Key(key, 1);
-  }
+    @Override
+    public int compare(Object o1, Object o2) {
+        return innerCompare(o1, o2);
+    }
 
-  @Override public int compare(Object o1, Object o2) {
-    String s1 = o1.toString();
-    String s2 = o2.toString();
-    int c = s1.compareToIgnoreCase(s2);
-    if (c != 0) {
-      return c;
+    public static int innerCompare(Object o1, Object o2) {
+        String s1 = o1.toString();
+        String s2 = o2.toString();
+        int c = s1.compareToIgnoreCase(s2);
+        if (c != 0) {
+            return c;
+        }
+        if (o1 instanceof Key) {
+            return ((Key) o1).compareResult;
+        }
+        if (o2 instanceof Key) {
+            return -((Key) o2).compareResult;
+        }
+        return s1.compareTo(s2);
     }
-    if (o1 instanceof Key) {
-      return ((Key) o1).compareResult;
-    }
-    if (o2 instanceof Key) {
-      return -((Key) o2).compareResult;
-    }
-    return s1.compareTo(s2);
-  }
 }
