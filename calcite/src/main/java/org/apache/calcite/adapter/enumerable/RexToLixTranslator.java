@@ -31,6 +31,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
+import org.apache.calcite.mycat.MycatSessionValueFunction;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
@@ -2554,11 +2555,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
       return RexUtil.expandSearch(builder, program, call).accept(this);
     }
 
-    final RexImpTable.RexCallImplementor implementor =
+     RexImpTable.RexCallImplementor implementor =
         RexImpTable.INSTANCE.get(operator);
 
     if (implementor == null) {
-      throw new RuntimeException("cannot translate call " + call);
+      if (MycatSessionValueFunction.INSTANCE.getName().equalsIgnoreCase(operator.getName())){
+        implementor = RexImpTable.MycatSessionValueImplementor.INSTANCE;
+      }else {
+        throw new RuntimeException("cannot translate call " + call);
+      }
     }
     final List<RexNode> operandList = call.getOperands();
     final List<Type> storageTypes = EnumUtils.internalTypes(operandList);

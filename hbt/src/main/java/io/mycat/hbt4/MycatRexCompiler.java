@@ -51,9 +51,6 @@ public class MycatRexCompiler {
             node=   node.accept(new RexShuttle(){
                 @Override
                 public RexNode visitCall(RexCall call) {
-                  if("MYCATSESSIONVALUE".equalsIgnoreCase(call.getOperator().getName())){
-
-                  }
                     return super.visitCall(call);
                 }
 

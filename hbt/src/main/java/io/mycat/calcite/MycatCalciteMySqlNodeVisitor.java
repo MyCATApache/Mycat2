@@ -6,7 +6,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.*;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.parser.ParserException;
@@ -14,8 +13,7 @@ import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.sqlfunction.DateAddFunction;
-import io.mycat.calcite.sqlfunction.MycatSessionValueFunction;
+import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
@@ -24,7 +22,6 @@ import io.mycat.calcite.sqlfunction.stringfunction.RegexpFunction;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.apache.calcite.plan.RelImplementor;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlCastFunction;
@@ -925,11 +922,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             names.add(name);
         } else if (owner instanceof SQLVariantRefExpr) {
             SQLVariantRefExpr owner1 = (SQLVariantRefExpr) owner;
-           boolean global= owner1.isGlobal()||owner1.getName().startsWith("@@");
-           if (global&&!name.startsWith("@@")){
-               name = "@@"+name;
-           }
-            return MycatSessionValueFunction.INSTANCE.createCall( SqlParserPos.ZERO,
+            boolean global = owner1.isGlobal() || owner1.getName().startsWith("@@");
+            if (global && !name.startsWith("@@")) {
+                name = "@@" + name;
+            }
+            return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
 
         } else {
@@ -1540,6 +1537,33 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
+            case "SCHEMA":
+            case "DATABASE": {
+                this.sqlNode = MycatDatabaseFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "LAST_INSERT_ID": {
+                this.sqlNode = MycatLastInsertIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "VERSION": {
+                this.sqlNode = MycatVersionFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "CONNECTION_ID": {
+                this.sqlNode = MycatConnectionIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "CURRENT_USER":{
+                this.sqlNode = MycatCurrentUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "SESSION_USER":
+            case "SYSTEM_USER":
+            case "USER":{
+                this.sqlNode = MycatUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
             case "ADDDATE": {
                 SQLExpr sqlExpr = x.getArguments().get(1);
                 if (x.getArguments().size() > 1 &&
@@ -1870,7 +1894,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            this.sqlNode =  MycatSessionValueFunction.INSTANCE.createCall( SqlParserPos.ZERO,
+            this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                     SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
         }
         return false;

@@ -18,9 +18,7 @@ package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.mycat.MycatBuiltInMethod;
-import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
-import org.apache.calcite.mycat.MycatSqlDefinedFunction;
+import org.apache.calcite.mycat.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -742,6 +740,24 @@ public class RexImpTable {
   }
 
   public RexCallImplementor get(final SqlOperator operator) {
+    if (operator == MycatSessionValueFunction.INSTANCE){
+      return RexImpTable.MycatSessionValueImplementor.INSTANCE;
+    }
+    if (operator == MycatDatabaseFunction.INSTANCE){
+      return RexImpTable.MycatDatabaseImplementor.INSTANCE;
+    }
+    if (operator == MycatLastInsertIdFunction.INSTANCE){
+      return MycatLastInsertIdImplementor.INSTANCE;
+    }
+    if (operator == MycatConnectionIdFunction .INSTANCE){
+      return MycatConnectionIdImplementor.INSTANCE;
+    }
+    if (operator == MycatCurrentUserFunction .INSTANCE){
+      return MycatCurrrentUserImplementor.INSTANCE;
+    }
+    if (operator == MycatUserFunction .INSTANCE){
+      return MycatUserImplementor.INSTANCE;
+    }
     if (operator instanceof MycatSqlDefinedFunction ){
       CallImplementor implementor = ((MycatSqlDefinedFunction) operator);
       return wrapAsRexCallImplementor(implementor);
@@ -758,9 +774,6 @@ public class RexImpTable {
       return wrapAsRexCallImplementor(implementor);
     } else if (operator instanceof SqlTypeConstructorFunction) {
       return map.get(SqlStdOperatorTable.ROW);
-    }
-    if (operator.getName().equalsIgnoreCase("MYCATSESSIONVALUE")){
-      return RexImpTable.MycatSessionValueImplementor.INSTANCE;
     }
     return map.get(operator);
   }
@@ -2431,7 +2444,93 @@ public class RexImpTable {
      ,argValueList.get(0));
    }
  }
+  public static class MycatDatabaseImplementor extends AbstractRexCallImplementor{
+    public static final MycatDatabaseImplementor INSTANCE = new MycatDatabaseImplementor();
+    MycatDatabaseImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
 
+    @Override
+    String getVariableName() {
+      return "mycatDatabase";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getDatabase"
+      );
+    }
+  }
+
+  public static class MycatLastInsertIdImplementor extends AbstractRexCallImplementor{
+    public static final MycatLastInsertIdImplementor INSTANCE = new MycatLastInsertIdImplementor();
+    MycatLastInsertIdImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatLastInsertId";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getLastInsertId"
+      );
+    }
+  }
+
+  public static class MycatCurrrentUserImplementor extends AbstractRexCallImplementor{
+    public static final MycatCurrrentUserImplementor INSTANCE = new MycatCurrrentUserImplementor();
+    MycatCurrrentUserImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatCurrentUser";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getCurrentUser"
+      );
+    }
+  }
+  public static class MycatUserImplementor extends AbstractRexCallImplementor{
+    public static final MycatCurrrentUserImplementor INSTANCE = new MycatCurrrentUserImplementor();
+    MycatUserImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatCurrentUser";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getUser"
+      );
+    }
+  }
+  public static class MycatConnectionIdImplementor extends AbstractRexCallImplementor{
+    public static final MycatConnectionIdImplementor INSTANCE = new MycatConnectionIdImplementor();
+    MycatConnectionIdImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatConnectionId";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getConnectionId"
+      );
+    }
+  }
   /** Implementor for the SQL {@code CAST} operator. */
   private static class CastImplementor extends AbstractRexCallImplementor {
     CastImplementor() {

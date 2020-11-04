@@ -1,24 +1,17 @@
 package io.mycat;
 
 import io.mycat.config.ClusterConfig;
-import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.ddl.executer.DDLExecuter;
-import io.mycat.metadata.GlobalTable;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.NormalTable;
-import io.mycat.metadata.ShardingTable;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 

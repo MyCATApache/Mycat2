@@ -1,4 +1,4 @@
-package io.mycat.proxy.session;
+package io.mycat;
 
 import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
