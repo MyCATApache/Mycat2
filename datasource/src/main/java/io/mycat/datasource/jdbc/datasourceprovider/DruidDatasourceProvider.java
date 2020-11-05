@@ -21,6 +21,7 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 /**
  * @author Junwen Chen
@@ -31,7 +32,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
   public JdbcDataSource createDataSource(DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
-    String url = config.getUrl();
+    String url = Objects.requireNonNull(config.getUrl());
     String dbType = config.getDbType();
     int maxRetryCount = config.getMaxRetryCount();
     List<String> initSQLs = config.getInitSqls();

@@ -76,7 +76,7 @@ public class ConfigPrepareExecuter {
                 break;
             }
             case ROUTER: {
-              this.metadataManager = createMetaData();
+                this.metadataManager = createMetaData();
                 break;
             }
             case CREATE_TABLE: {
@@ -88,11 +88,16 @@ public class ConfigPrepareExecuter {
                 break;
             }
             case DROP_TABLE: {
+                MetadataManager oldMetadataManager= MetaClusterCurrent.wrapper(MetadataManager.class);
+
                 String schemaName = ops.getSchemaName();
                 String tableName = ops.getTableName();
                 this.metadataManager = createMetaData();
-                TableHandler table = this.metadataManager.getTable(schemaName, tableName);
-                table.dropPhysicalTables();
+
+                TableHandler table = oldMetadataManager.getTable(schemaName, tableName);
+                if (table != null) {
+                    table.dropPhysicalTables();
+                }
                 break;
             }
             case FULL: {
@@ -107,17 +112,17 @@ public class ConfigPrepareExecuter {
     @NotNull
     private MetadataManager createMetaData() {
         return new MetadataManager(ops.getSchemas(),
-                  MetaClusterCurrent.wrapper(LoadBalanceManager.class),
-                  MetaClusterCurrent.wrapper(SequenceGenerator.class),
-                  MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
-                  MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
-                 "prototype");
+                MetaClusterCurrent.wrapper(LoadBalanceManager.class),
+                MetaClusterCurrent.wrapper(SequenceGenerator.class),
+                MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
+                MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
+                "prototype");
     }
 
     public void initBy(MycatRouterConfig mycatRouterConfig) {
         if (MetaClusterCurrent.exist(ReplicaSelectorRuntime.class)) {
             ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-                replicaSelectorRuntime.close();
+            replicaSelectorRuntime.close();
         }
         LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
@@ -211,9 +216,9 @@ public class ConfigPrepareExecuter {
             context.put(sequenceGenerator.getClass(), sequenceGenerator);
         }
         context.put(MetadataStorageManager.class, this.metadataStorageManager);
-        context.put(MysqlVariableService .class, this.metadataManager);
+        context.put(MysqlVariableService.class, this.metadataManager);
         MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
-        context.put(MycatRouterConfig.class,mycatRouterConfig);
+        context.put(MycatRouterConfig.class, mycatRouterConfig);
 
         MetaClusterCurrent.register(context);
     }

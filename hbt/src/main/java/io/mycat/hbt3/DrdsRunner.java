@@ -297,8 +297,8 @@ public class DrdsRunner {
         String defaultSchema = dataContext.getDefaultSchema();
         if (sqlStatement instanceof MySqlInsertStatement) {
             MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatement;
-            SchemaObject schemaObject = (insertStatement).getTableSource().getSchemaObject();
-            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
+
+            String schema = SQLUtils.normalize(Optional.ofNullable(insertStatement.getTableSource()).map(i -> i.getSchema()).orElse(defaultSchema));
             String tableName = SQLUtils.normalize(insertStatement.getTableName().getSimpleName());
             TableHandler logicTable = metadataManager.getTable(schema, tableName);
             switch (logicTable.getType()) {
@@ -313,8 +313,7 @@ public class DrdsRunner {
             }
         } else if (sqlStatement instanceof MySqlUpdateStatement) {
             SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlUpdateStatement) sqlStatement).getTableSource();
-            SchemaObject schemaObject = tableSource.getSchemaObject();
-            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
+            String schema = SQLUtils.normalize(Optional.ofNullable(tableSource).map(i -> i.getSchema()).orElse(defaultSchema));
             String tableName = SQLUtils.normalize(((MySqlUpdateStatement) sqlStatement).getTableName().getSimpleName());
             TableHandler logicTable = metadataManager.getTable(schema, tableName);
             switch (logicTable.getType()) {
@@ -331,8 +330,7 @@ public class DrdsRunner {
             }
         } else if (sqlStatement instanceof MySqlDeleteStatement) {
             SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlDeleteStatement) sqlStatement).getTableSource();
-            SchemaObject schemaObject = tableSource.getSchemaObject();
-            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i -> i.getSchema()).map(i -> i.getName()).orElse(defaultSchema));
+            String schema = SQLUtils.normalize(Optional.ofNullable(tableSource).map(i -> i.getSchema()).orElse(defaultSchema));
             String tableName = SQLUtils.normalize(((MySqlDeleteStatement) sqlStatement).getTableName().getSimpleName());
             TableHandler logicTable = metadataManager.getTable(schema, tableName);
             switch (logicTable.getType()) {
@@ -492,7 +490,7 @@ public class DrdsRunner {
         MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
         sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
         SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
-        CalciteCatalogReader  catalogReader = new CalciteCatalogReader (CalciteSchema
+        CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.INSTANCE.TypeFactory,
@@ -517,12 +515,13 @@ public class DrdsRunner {
                         RelDataType res = resolveDynamicParam(expr);
                         if (res == null) {
                             return super.deriveType(scope, expr);
-                        }else {
+                        } else {
                             return res;
                         }
                     }
+
                     @Override
-                    public void validateLiteral(SqlLiteral literal){
+                    public void validateLiteral(SqlLiteral literal) {
                         if (literal.getTypeName() == SqlTypeName.DECIMAL) {
                             return;
                         }
@@ -535,7 +534,7 @@ public class DrdsRunner {
                             if (index < params.size()) {
                                 Object o = params.get(index);
                                 if (o == null) {
-                                return super.typeFactory.createUnknownType();
+                                    return super.typeFactory.createUnknownType();
                                 } else {
                                     return super.typeFactory.createJavaType(o.getClass());
                                 }
@@ -545,11 +544,11 @@ public class DrdsRunner {
                     }
 
                     @Override
-                    public RelDataType getValidatedNodeType(SqlNode node){
+                    public RelDataType getValidatedNodeType(SqlNode node) {
                         RelDataType relDataType = resolveDynamicParam(node);
-                        if (relDataType == null){
+                        if (relDataType == null) {
                             return super.getValidatedNodeType(node);
-                        }else {
+                        } else {
                             return relDataType;
                         }
                     }
@@ -566,8 +565,8 @@ public class DrdsRunner {
 
                     @Override
                     protected void validateWhereOrOn(SqlValidatorScope scope, SqlNode condition, String clause) {
-                        if (!condition.getKind().belongsTo(SqlKind.COMPARISON)){
-                            condition=  SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO,
+                        if (!condition.getKind().belongsTo(SqlKind.COMPARISON)) {
+                            condition = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO,
                                     condition, SqlTypeUtil.convertTypeToSpec(typeFactory.createSqlType(SqlTypeName.BOOLEAN)));
                         }
                         super.validateWhereOrOn(scope, condition, clause);

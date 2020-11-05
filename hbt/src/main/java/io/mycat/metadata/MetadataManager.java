@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -75,7 +76,7 @@ public class MetadataManager implements MysqlVariableService {
     @Getter
     final String prototype;
 
-    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+//    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
 
@@ -118,37 +119,21 @@ public class MetadataManager implements MysqlVariableService {
         this.jdbcConnectionManager = Objects.requireNonNull(jdbcConnectionManager);
         this.prototype = Objects.requireNonNull(prototype);
 
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-            RowBaseIterator dbIterator = connection.executeQuery("show databases");
-            Set<String> databases = new HashSet<>();
-            while (dbIterator.next()) {
-                databases.add(dbIterator.getString(1));
-            }
-            for (String schemaName : databases) {
-                LogicSchemaConfig logicSchemaConfig = schemaConfigs.stream()
-                        .filter(i -> schemaName.equals(i.getSchemaName()))
-                        .findFirst()
-                        .orElseGet(() -> {
-                            LogicSchemaConfig config = new LogicSchemaConfig();
-                            config.setSchemaName(schemaName);
-                            config.setTargetName(prototype);
-                            schemaConfigs.add(config);
-                            return config;
-                        });
+        Set<String> databases = new HashSet<>();
 
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
-                Set<String> existed = new HashSet<>();
-                existed.addAll(logicSchemaConfig.getNormalTables().keySet());
-                existed.addAll(logicSchemaConfig.getGlobalTables().keySet());
-                existed.addAll(logicSchemaConfig.getShadingTables().keySet());
-                existed.addAll(logicSchemaConfig.getCustomTables().keySet());
-                adds.forEach((n, v) -> {
-                    if (!existed.contains(n)) {
-                        logicSchemaConfig.getNormalTables().put(n, v);
-                    }
-                });
-            }
-        }
+//        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+//            try(RowBaseIterator dbIterator = connection.executeQuery("show databases")){
+//                while (dbIterator.next()) {
+//                    databases.add(dbIterator.getString(1));
+//                }
+//            }
+//        }
+
+        databases.add("information_schema");
+        databases.add("mysql");
+        databases.add("performance_schema");
+
+
         this.globalVariables = new NameMap<Object>();
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
             try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
@@ -180,6 +165,16 @@ public class MetadataManager implements MysqlVariableService {
         Map<String, LogicSchemaConfig> schemaConfigMap = schemaConfigs
                 .stream()
                 .collect(Collectors.toMap(k -> k.getSchemaName(), v -> v));
+
+        for (String database : databases) {
+            schemaConfigMap.computeIfAbsent(database, s -> {
+                LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
+                schemaConfig.setSchemaName(database);
+                schemaConfig.setTargetName(prototype);
+                return schemaConfig;
+            });
+        }
+
         for (Map.Entry<String, LogicSchemaConfig> entry : schemaConfigMap.entrySet()) {
             String orignalSchemaName = entry.getKey();
             LogicSchemaConfig value = entry.getValue();
@@ -391,8 +386,8 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     private synchronized void accrptDDL(String schemaName, String sql) {
-        TABLE_REPOSITORY.setDefaultSchema(schemaName);
-        TABLE_REPOSITORY.acceptDDL(sql);
+//        TABLE_REPOSITORY.setDefaultSchema(schemaName);
+//        TABLE_REPOSITORY.acceptDDL(sql);
     }
 
     @SneakyThrows
@@ -767,7 +762,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public void resolveMetadata(SQLStatement sqlStatement) {
-        TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
+//        TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
     }
 
     //////////////////////////////////////////calculate///////////////////////////////

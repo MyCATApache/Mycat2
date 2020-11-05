@@ -18,7 +18,10 @@ public class AssembleExample {
 
     @Test
     public void testWrapper() throws Exception {
-        Connection mySQLConnection = TestUtil.getMySQLConnection();
+        Connection mySQLConnection = TestUtil.getMySQLConnection(8066);
+
+        List<Map<String, Object>> maps = executeQuery(mySQLConnection,
+                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
         // show databases
         executeQuery(mySQLConnection, "show databases");
@@ -46,6 +49,86 @@ public class AssembleExample {
 
         // SESSION_USER()
         executeQuery(mySQLConnection, "select SESSION_USER()");
+
+        executeQuery(mySQLConnection, "select SESSION_USER()");
+
+
+        execute(mySQLConnection, "DROP DATABASE db1");
+        Assert.assertFalse(executeQuery(mySQLConnection, "show databases").toString().contains("db1"));
+
+        execute(mySQLConnection, "CREATE DATABASE db1");
+        Assert.assertTrue(executeQuery(mySQLConnection, "show databases").toString().contains("db1"));
+
+        execute(mySQLConnection, "drop table db1.travelrecord");
+
+        Assert.assertFalse(
+                executeQuery(mySQLConnection,
+                        "SHOW FULL TABLES FROM `db1` WHERE table_type = 'BASE TABLE';").toString().contains("travelrecord")
+        );
+
+        execute(mySQLConnection, "USE `db1`;");
+        execute(mySQLConnection, "CREATE TABLE `travelrecord` (\n" +
+                "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                "  `traveldate` date DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int DEFAULT NULL,\n" +
+                "  `blob` longblob,\n" +
+                "  PRIMARY KEY (`id`),\n" +
+                "  KEY `id` (`id`)\n" +
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+        Assert.assertTrue(
+                executeQuery(mySQLConnection,
+                        "SHOW FULL TABLES FROM `db1` WHERE table_type = 'BASE TABLE';").toString().contains("travelrecord")
+        );
+
+        Assert.assertTrue(
+                executeQuery(mySQLConnection, "select * from travelrecord limit 1").isEmpty()
+        );
+
+        execute(mySQLConnection,
+                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
+        );
+
+        Assert.assertTrue(
+                executeQuery(mySQLConnection, "select LAST_INSERT_ID()").toString().contains("12")
+        );
+        execute(mySQLConnection, "\n" +
+                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(2,NULL,NULL,NULL,NULL,NULL),(6666,NULL,NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);\n");
+
+        Assert.assertTrue(
+                executeQuery(mySQLConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
+        );
+
+        Assert.assertFalse(
+                executeQuery(mySQLConnection, "select * from travelrecord limit 1").isEmpty()
+        );
+
+        execute(mySQLConnection, "drop table db1.travelrecord");
+
+        execute(mySQLConnection, "CREATE TABLE `travelrecord` (\n" +
+                "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                "  `traveldate` date DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int DEFAULT NULL,\n" +
+                "  `blob` longblob,\n" +
+                "  PRIMARY KEY (`id`),\n" +
+                "  KEY `id` (`id`)\n" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf COLLATE=utf8");
+
+
+        Assert.assertTrue(
+                executeQuery(mySQLConnection, "select * from travelrecord limit 1").isEmpty()
+        );
+
+
+        execute(mySQLConnection, "drop table db1.travelrecord");
+
+
+        ////////////////////////////////////////////end/////////////////////////////////////////
+
         System.out.println();
     }
 
