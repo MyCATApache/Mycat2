@@ -17,7 +17,7 @@ public class ResetStatCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         SqlRecorderRuntime.INSTANCE.reset();
         response.sendOk();
     }

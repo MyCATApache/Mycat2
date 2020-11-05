@@ -33,7 +33,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
      * @return
      */
 //    @Override
-//    protected ExecuteCode onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
+//    protected ExecuteCode onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 //        try {
 //            MySqlShowVariantsStatement ast = request.getAst();
 //
@@ -95,7 +95,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
 //        return ExecuteCode.PERFORMED;
 //    }
     @Override
-    protected void onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowVariantsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 //        ResultSetBuilder builder = ResultSetBuilder.create();
 //        builder.addColumnInfo("Variable_name", JDBCType.VARCHAR);
 //        builder.addColumnInfo("Value", JDBCType.VARCHAR);

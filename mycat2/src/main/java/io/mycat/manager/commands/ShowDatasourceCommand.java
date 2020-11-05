@@ -30,7 +30,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        MycatConfig mycatConfig = RootHelper.INSTANCE.getConfigProvider().currentConfig();
 //        Map<String, DatasourceConfig> datasourceConfigMap = mycatConfig.getDatasource().getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
 //        Optional<JdbcConnectionManager> connectionManager = Optional.ofNullable(JdbcRuntime.INSTANCE.getConnectionManager());

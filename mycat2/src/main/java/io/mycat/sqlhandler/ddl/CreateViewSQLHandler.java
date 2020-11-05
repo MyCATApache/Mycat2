@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLCreateViewStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLCreateViewStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.sendOk();
     }
 }

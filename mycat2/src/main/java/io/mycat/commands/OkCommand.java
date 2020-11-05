@@ -9,13 +9,13 @@
 //public enum OkCommand implements MycatCommand{
 //    INSTANCE;
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //         response.sendOk();
 //         return true;
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        response.sendExplain(OkCommand.class,"ok");
 //        return true;
 //    }

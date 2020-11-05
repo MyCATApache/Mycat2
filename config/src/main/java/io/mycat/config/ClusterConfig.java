@@ -12,16 +12,16 @@ import java.util.List;
 @Data
 @EqualsAndHashCode
 public class ClusterConfig {
-    private String replicaType;
-    private String switchType;
-    private String readBalanceType;
+    private String replicaType = "MASTER_SLAVE";
+    private String switchType = "SWITCH";
+    private String readBalanceType = "BALANCE_ALL";
     private String name;
     private String readBalanceName;
     private String writeBalanceName;
     private List<String> masters;
     private List<String> replicas;
     private HeartbeatConfig heartbeat;
-    private Integer maxCon = 200;
+    private Integer maxCon = 2000;
     private TimerConfig timer = null;
 
     public ClusterConfig() {

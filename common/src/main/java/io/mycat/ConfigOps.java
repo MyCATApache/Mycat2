@@ -4,7 +4,7 @@ public interface ConfigOps extends AutoCloseable{
 
     Object  currentConfig();
 
-    void commit(Object ops);
+    void commit(Object ops)throws Exception ;
 
     void close();
 }

@@ -18,7 +18,7 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         try {
             String value = SQLUtils.normalize(request.getText().split("=")[1].trim());
 //            if (Boolean.parseBoolean(value)) {
@@ -34,7 +34,7 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     }
 
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         if(request.getText().startsWith("switch @@backend.heartbeat =")){
             handle(request, context, response);
             return true;

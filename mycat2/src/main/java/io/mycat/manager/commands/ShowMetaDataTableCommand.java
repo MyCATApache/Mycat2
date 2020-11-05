@@ -25,7 +25,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        ResultSetBuilder builder = ResultSetBuilder.create();
 //        builder.addColumnInfo("SCHEMA_NAME", JDBCType.VARCHAR)
 //                .addColumnInfo("TABLE_NAME",JDBCType.VARCHAR)

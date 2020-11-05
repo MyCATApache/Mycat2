@@ -9,7 +9,7 @@ import io.mycat.util.Response;
 
 public class UseSQLHandler extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLUseStatement> {
     @Override
-    protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLUseStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLUseStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLUseStatement statement = request.getAst();
         String simpleName = statement.getDatabase().getSimpleName();
         dataContext.useShcema(simpleName);

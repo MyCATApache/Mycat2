@@ -40,12 +40,12 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //
 //    }
 //
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        try {
 //            if (request.getText().startsWith("loaddata")) {
 //                MySqlLoadDataInFileStatement stmt = (MySqlLoadDataInFileStatement) SQLUtils.parseSingleMysqlStatement(request.getText());

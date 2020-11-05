@@ -27,9 +27,9 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     public static final CreateTableSQLHandler INSTANCE = new CreateTableSQLHandler();
 
     @Override
-    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         Map hint = request.afterCommentAsJson(Map.class);
-        MySqlCreateTableStatement ast = request.getAst().clone();
+        MySqlCreateTableStatement ast = request.getAst();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
         String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
         if (tableName == null) {
@@ -40,8 +40,6 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
             response.sendError("No database selected", 1046);
             return;
         }
-        ast.setSchema(schemaName);
-        ast.setIfNotExiists(true);
         createTable(hint, schemaName, tableName, ast);
         response.sendOk();
     }
@@ -49,7 +47,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     public void createTable(Map hint,
                             String schemaName,
                             String tableName,
-                            MySqlCreateTableStatement createTableSql) {
+                            MySqlCreateTableStatement createTableSql) throws Exception {
         if (createTableSql == null && hint != null) {
             Object sql = hint.get("createTableSql");
             if (sql instanceof MySqlCreateTableStatement) {

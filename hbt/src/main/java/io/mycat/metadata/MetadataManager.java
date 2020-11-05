@@ -76,7 +76,7 @@ public class MetadataManager implements MysqlVariableService {
     @Getter
     final String prototype;
 
-//    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+    //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
 
@@ -798,12 +798,22 @@ public class MetadataManager implements MysqlVariableService {
 
     @Override
     public Object getGlobalVariable(String name) {
-        return globalVariables.get(name.startsWith("@@")?name.substring(2):name,false);
+        return globalVariables.get(name.startsWith("@@") ? name.substring(2) : name, false);
     }
 
     @Override
     public Object getSessionVariable(String name) {
-        return sessionVariables.get(name,false);
+        return sessionVariables.get(name, false);
+    }
+
+    @Override
+    public int getStoreNodeNum() {
+        return (int)replicaSelectorRuntime.getReplicaMap()
+                .keySet()
+                .stream()
+                .distinct()
+                .map(i -> i.startsWith("c"))
+                .count();
     }
 
 

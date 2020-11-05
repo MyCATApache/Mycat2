@@ -36,7 +36,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        ReactorThreadManager reactorManager = MycatCore.INSTANCE.getReactorManager();
 //        Objects.requireNonNull(reactorManager);
 //        List<MycatSession> sessions = reactorManager.getList().stream().flatMap(i -> i.getFrontManager().getAllSessions().stream()).collect(Collectors.toList());

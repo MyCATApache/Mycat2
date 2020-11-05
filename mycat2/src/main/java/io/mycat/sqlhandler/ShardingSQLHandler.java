@@ -9,7 +9,7 @@ import io.mycat.util.Response;
 
 public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
-    protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         DrdsRunners.runOnDrds(dataContext,  request.getAst(), ResponseExecutorImplementor.create(dataContext,response));
     }
 }

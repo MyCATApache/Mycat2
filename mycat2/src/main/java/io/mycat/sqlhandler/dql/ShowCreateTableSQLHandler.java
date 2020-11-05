@@ -11,7 +11,7 @@ import io.mycat.util.Response;
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.tryBroadcastShow(request.getAst().toString());
         return ;
 //

@@ -7,6 +7,7 @@ import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
@@ -24,7 +25,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
     // 初始化zk连接
     public ZKStore(String configPrefix,
-                   String address) {
+                   String address)throws Exception  {
 
         if (!configPrefix.startsWith("/")) {
             configPrefix = "/" + configPrefix;
@@ -172,29 +173,32 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
     }
 
     @SneakyThrows
-    public void init() {
+    public void init() throws Exception  {
         PathChildrenCache watcher = new PathChildrenCache(client, this.CONFIG_PREFIX, true);
-        watcher.getListenable().addListener((curatorFramework, event) -> {
+        watcher.getListenable().addListener(new PathChildrenCacheListener() {
+            @Override
+            public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent event) throws Exception {
 
-            String path = event.getData().getPath();
-            path = path.substring(this.CONFIG_PREFIX.length());
-            if (path.contains("/")) {
-                path = path.substring(1);
-            }
-            if (PathChildrenCacheEvent.Type.CHILD_ADDED.equals(event.getType())
-                    ||
-                    PathChildrenCacheEvent.Type.CHILD_UPDATED.equals(event.getType())) {
-                CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
-                if (changedCallback != null) {
-                    changedCallback.onChanged(path, new String(event.getData().getData()), false);
+                String path = event.getData().getPath();
+                path = path.substring(ZKStore.this.CONFIG_PREFIX.length());
+                if (path.contains("/")) {
+                    path = path.substring(1);
                 }
-            } else if (PathChildrenCacheEvent.Type.CHILD_REMOVED.equals(event.getType())) {
-                /////////////////////////////////////////////////////////////
-                CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
-                if (changedCallback != null) {
-                    changedCallback.onChanged(path, new String(event.getData().getData()), true);
+                if (PathChildrenCacheEvent.Type.CHILD_ADDED.equals(event.getType())
+                        ||
+                        PathChildrenCacheEvent.Type.CHILD_UPDATED.equals(event.getType())) {
+                    CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
+                    if (changedCallback != null) {
+                        changedCallback.onChanged(path, new String(event.getData().getData()), false);
+                    }
+                } else if (PathChildrenCacheEvent.Type.CHILD_REMOVED.equals(event.getType())) {
+                    /////////////////////////////////////////////////////////////
+                    CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
+                    if (changedCallback != null) {
+                        changedCallback.onChanged(path, new String(event.getData().getData()), true);
+                    }
+                    /////////////////////////////////////////////////////////////
                 }
-                /////////////////////////////////////////////////////////////
             }
         });
         watcher.start();

@@ -29,7 +29,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 //        resultSetBuilder.addColumnInfo("SESSION_ID", JDBCType.BIGINT)
 //                .addColumnInfo("THREAD_NAME",JDBCType.VARCHAR)

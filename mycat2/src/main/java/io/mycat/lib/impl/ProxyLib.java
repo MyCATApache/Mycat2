@@ -47,7 +47,7 @@
 //        return getResponse(byteBufferResponseRecorder);
 //    }
 //
-//    private static Response getResponse(MycatResultSetResponse response) {
+//    private static Response getResponse(MycatResultSetResponse response) throws Exception {
 //        return (session) -> SQLExecuterWriter.writeToMycatSession(session, response);
 //    }
 //

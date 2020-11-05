@@ -27,7 +27,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
     private static final Logger LOGGER = LoggerFactory.getLogger(DropTableSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         SQLDropTableStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = ast.getTableSources();
         if (tableSources.size() != 1) {

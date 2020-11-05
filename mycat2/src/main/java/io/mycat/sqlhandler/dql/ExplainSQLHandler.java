@@ -29,7 +29,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
 
     @Override
     @SneakyThrows
-    protected void onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlExplainStatement ast = request.getAst();
         if(ast.isDescribe()){
             response.tryBroadcastShow(ast.toString());

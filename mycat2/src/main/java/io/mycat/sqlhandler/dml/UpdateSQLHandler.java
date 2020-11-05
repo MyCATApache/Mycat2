@@ -25,7 +25,7 @@ import java.util.*;
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
     }
 

@@ -23,7 +23,7 @@ import io.mycat.util.Response;
  */
 public interface MycatCommand {
 
-    boolean run(MycatRequest request, MycatDataContext context, Response response);
+    boolean run(MycatRequest request, MycatDataContext context, Response response)throws Exception;
 
     String getName();
 }

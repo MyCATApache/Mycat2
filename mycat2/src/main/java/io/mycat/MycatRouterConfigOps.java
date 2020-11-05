@@ -4,11 +4,9 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.config.*;
+import io.mycat.metadata.MetadataManager;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -347,7 +345,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public void commit() {
+    public void commit() throws Exception  {
         this.configOps.commit(this);
     }
 
@@ -370,17 +368,19 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putHashTable(String schemaName, String tableName, MySqlCreateTableStatement createTableSql) {
         SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
         HashMap<String, Object> properties = new HashMap<>();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        properties.put("storeNum",metadataManager.getStoreNodeNum());
         if (dbPartitionBy != null) {
             int dbPartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getDbPartitions().toString()));
-            properties.put("dbNum",dbPartitions);
-            properties.put("dbMethod",dbPartitionBy);
+            properties.put("dbNum", Objects.toString(dbPartitions));
+            properties.put("dbMethod",Objects.toString(dbPartitionBy));
         }
 
         SQLExpr tablePartitionBy = createTableSql.getTablePartitionBy();
         if (tablePartitionBy != null) {
             int tablePartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getTablePartitions().toString()));
-            properties.put("tableNum",tablePartitions);
-            properties.put("tableMethod",tablePartitionBy);
+            properties.put("tableNum",Objects.toString(tablePartitions));
+            properties.put("tableMethod",Objects.toString(tablePartitionBy));
         }
 
         putHashTable(schemaName, tableName, createTableSql,properties);

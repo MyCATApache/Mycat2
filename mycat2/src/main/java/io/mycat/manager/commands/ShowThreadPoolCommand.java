@@ -24,7 +24,7 @@ public class ShowThreadPoolCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         ResultSetBuilder builder = getResultSet();
         response.sendResultSet(() -> builder.build());
     }

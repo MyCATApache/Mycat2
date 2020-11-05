@@ -29,7 +29,7 @@ public class ShowReactorCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         resultSetBuilder.addColumnInfo("THREAD_NAME", JDBCType.VARCHAR)
                 .addColumnInfo("THREAD_ID",JDBCType.BIGINT)

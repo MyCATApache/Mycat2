@@ -27,7 +27,7 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
 
 
     @Override
-    protected void onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         SQLCreateDatabaseStatement ast = request.getAst();
         boolean ifNotExists = ast.isIfNotExists();
         String tableName = SQLUtils.normalize(ast.getName().getSimpleName());

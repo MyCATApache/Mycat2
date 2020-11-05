@@ -10,6 +10,7 @@ import lombok.Getter;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static io.mycat.metadata.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 @Getter
@@ -68,10 +69,12 @@ public class ShardingTable implements ShardingTableHandler {
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            createDatabaseIfNotExist(connection,getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : getBackends()) {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
+                createDatabaseIfNotExist(connection,node);
                 connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()),node.getSchema(), node.getTable()), false);
             }
         }

@@ -40,31 +40,35 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
+        try {
+            ////////////////////////////////////////////////////////////////////////////////
+            String original = new String(bytes);
+            original = original.trim();
+            original = original.endsWith(";") ? original.substring(0, original.length() - 1) : original;
 
-        ////////////////////////////////////////////////////////////////////////////////
-        String original = new String(bytes);
-        original = original.trim();
-        original = original.endsWith(";") ? original.substring(0, original.length() - 1) : original;
+            /////////////////////////////////////////////////////////////////////////////////
+            MycatRequest mycatRequest = new MycatRequest(session.sessionId(), original, new HashMap<>(), null);
 
-        /////////////////////////////////////////////////////////////////////////////////
-        MycatRequest mycatRequest = new MycatRequest(session.sessionId(), original, new HashMap<>(), null);
+            ReceiverImpl receiver = new ReceiverImpl(session, 1, false, false);
 
-        ReceiverImpl receiver = new ReceiverImpl(session, 1,false,false);
-
-        for (MycatCommand command : COMMANDS) {
-            if (command.run(mycatRequest, session.getDataContext(), receiver)) {
-                return;
+            for (MycatCommand command : COMMANDS) {
+                if (command.run(mycatRequest, session.getDataContext(), receiver)) {
+                    return;
+                }
             }
+            LOGGER.info("No matching manager commands:{}", original);
+            LOGGER.info("The available management commands are as follows");
+            LOGGER.info("statement\tdescription\tclazzName");
+            for (ManageCommand command : COMMANDS) {
+                String statement = command.statement();
+                String description = command.description();
+                String clazzName = command.getName();
+                LOGGER.info("{}\t{}\t{}", statement, description, clazzName);
+            }
+            super.handleQuery(bytes, session);
+        }catch (Throwable e){
+            session.setLastMessage(e);
+            session.writeErrorEndPacketBySyncInProcessError();
         }
-        LOGGER.info("No matching manager commands:{}",original);
-        LOGGER.info("The available management commands are as follows");
-        LOGGER.info("statement\tdescription\tclazzName");
-        for (ManageCommand command : COMMANDS) {
-            String statement = command.statement();
-            String description = command.description();
-            String clazzName = command.getName();
-            LOGGER.info("{}\t{}\t{}",statement,description,clazzName);
-        }
-        super.handleQuery(bytes, session);
     }
 }

@@ -26,7 +26,7 @@ import java.util.Optional;
  **/
 public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlAnalyzeStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = Optional.ofNullable(ast.getTableSources()).orElse(Collections.emptyList());
         if (tableSources.isEmpty()) {

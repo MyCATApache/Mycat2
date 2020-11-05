@@ -20,7 +20,7 @@ public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseSt
     private static final Logger LOGGER = LoggerFactory.getLogger(DropDatabaseSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
         String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {

@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class CommitSQLHandler extends AbstractSQLHandler<SQLCommitStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLCommitStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLCommitStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.commit();
     }
 }
