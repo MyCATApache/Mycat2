@@ -6,6 +6,7 @@ import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
+import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -147,9 +149,7 @@ public class MycatInsertExecutor implements Executor {
             StringBuilder sb = new StringBuilder();
             MycatPreparedStatementUtil.collect2(template,sb,params, outParams);
             String sql =sb.toString();
-            GroupKey key = new GroupKey();
-            key.setTarget(dataNode.getTargetName());
-            key.setParameterizedSql(sql);
+            GroupKey key = new GroupKey(sql,dataNode.getTargetName());
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
         }
@@ -230,11 +230,14 @@ public class MycatInsertExecutor implements Executor {
                         o = arg.get(index);
                     }
                 }
-            } else {
+            }else if (sqlExpr instanceof SQLNullExpr){
+                o = null;
+            }else {
                 o = SQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
             }
             String columnName = columnNames[shardingKey];
-            variables.put(columnName, ImmutableList.of(new RangeVariable(columnName, RangeVariableType.EQUAL, o)));
+            List<RangeVariable> rangeVariables = variables.computeIfAbsent(columnName, s -> new ArrayList<>(1));
+            rangeVariables.add(new RangeVariable(columnName, RangeVariableType.EQUAL, o));
         }
         return variables;
     }

@@ -205,9 +205,22 @@ public class AssembleExample {
                 +" dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
 
         Assert.assertTrue(existTable(mycatConnection, "db1","travelrecord"));
-
+        execute(mycatConnection,"delete from db1.travelrecord");
+        execute(mycatConnection,
+                "insert  into db1.`travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
+        );
+        Assert.assertTrue(
+                executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("12")
+        );
+        execute(mycatConnection, "\n" +
+                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(2,NULL,NULL,NULL,NULL,NULL),(6666,NULL,NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);\n");
+        Assert.assertTrue(
+                executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
+        );
+        Assert.assertEquals(executeQuery(mycatConnection,"select * from db1.travelrecord").size(),5);
         execute(mycatConnection, "drop table db1.travelrecord");
         Assert.assertFalse(existTable(mycatConnection, "db1","travelrecord"));
+        //////////////////////////////////////transcation/////////////////////////////////////////////
         System.out.println();
     }
 

@@ -1,5 +1,6 @@
 package io.mycat.hbt4.executor;
 
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLLimit;
 import com.alibaba.fastsql.sql.ast.SQLOrderBy;
@@ -8,6 +9,7 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.clause.MySqlDeclareStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.fastsql.sql.visitor.VisitorFeature;
@@ -73,7 +75,9 @@ public class MycatPreparedStatementUtil {
 
     public static void collect2(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
+
         };
+        parameterVisitor.setShardingSupport(false);
         parameterVisitor.setInputParameters(inputParameters);
         sqlStatement.accept(parameterVisitor);
     }
@@ -118,7 +122,7 @@ public class MycatPreparedStatementUtil {
                     affected += anInt;
                 }
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                if (generatedKeys.next()) {
+                while (generatedKeys.next()) {
                     lastInsertId = Math.max(lastInsertId, generatedKeys.getLong(1));
                 }
             }

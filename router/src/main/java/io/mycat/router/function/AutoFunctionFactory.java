@@ -272,7 +272,7 @@ public class AutoFunctionFactory {
                     randSeed = 31;
                 }
 
-                tableFunction = value -> strHash(num,startIndex,endIndex,valType,randSeed,value);
+                tableFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed, value);
             }
         }
         if (dbMethod != null && tableMethod != null) {
@@ -281,12 +281,12 @@ public class AutoFunctionFactory {
                     String tableShardingKey = getShardingKey(tableMethod);
                     String dbShardingKey = getShardingKey(dbMethod);
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
+                        int total = dbNum * tableNum;
                         tableFunction = o -> {
-                            int total = dbNum * tableNum;
                             return singleRemainderHash(total, o);
                         };
                         dbFunction = (o) -> {
-                            int total = dbNum * tableNum;
+                            if (o == null) return 0;
                             if (o instanceof Number) {
                                 return ((Number) o).intValue() % total / tableNum;
                             }
@@ -428,6 +428,7 @@ public class AutoFunctionFactory {
     }
 
     public static int mm(int num, Object o) {
+        if (o == null) return 0;
         Integer mm = null;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
@@ -447,6 +448,7 @@ public class AutoFunctionFactory {
     }
 
     public static int dd(int num, Object o) {
+        if (o == null) return 0;
         Integer day = null;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
@@ -466,6 +468,7 @@ public class AutoFunctionFactory {
     }
 
     public static int mmdd(int num, Object o) {
+        if (o == null) return 0;
         Integer day = null;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
@@ -485,17 +488,19 @@ public class AutoFunctionFactory {
     }
 
     public static int strHash(int num, int startIndex, int endIndex, int valType, int randSeed, Object value) {
+        if (value == null) value = "null";
         String s = mySubstring(startIndex, endIndex, value.toString());
         if (valType == 0) {
             return hashCode(s, randSeed) % num;
         }
-        if (valType == 1){
+        if (valType == 1) {
             return Integer.parseInt(s) % num;
         }
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     public static int yyyyWeek(int num, Object o) {
+        if (o == null) return 0;
         Integer YYYY = null;
         Integer WEEK = null;
         if (o instanceof String) {
@@ -518,6 +523,7 @@ public class AutoFunctionFactory {
     }
 
     public static int week(int num, Object o) {
+        if (o == null) return 0;
         Integer day = null;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
@@ -537,6 +543,7 @@ public class AutoFunctionFactory {
     }
 
     public static int yyyydd(int num, Object o) {
+        if (o == null) return 0;
         Integer YYYY = null;
         Integer DD = null;
         if (o instanceof String) {
@@ -559,6 +566,7 @@ public class AutoFunctionFactory {
     }
 
     public static int yyyymm(int num, Object o) {
+        if (o == null) return 0;
         Integer YYYY = null;
         Integer MM = null;
         if (o instanceof String) {
@@ -581,6 +589,7 @@ public class AutoFunctionFactory {
     }
 
     public static int singleRangeHash(int num, int n, Object o) {
+        if (o == null) o = "null";
         if (o instanceof Number) {
             return ((Number) o).intValue() % num;
         }
@@ -591,6 +600,7 @@ public class AutoFunctionFactory {
     }
 
     public static int singleRightShift(int num, int shift, Object o) {
+        if (o == null) o = "null";
         if (o instanceof Number) {
             return ((Number) o).intValue() >> shift % num;
         }
@@ -601,6 +611,7 @@ public class AutoFunctionFactory {
     }
 
     public static int singleModHash(int num, Object o) {
+        if (o == null) o = "null";
         if (o instanceof Number) {
             return Math.floorMod(((Number) o).intValue(), num);
         }
@@ -611,11 +622,15 @@ public class AutoFunctionFactory {
     }
 
     public static int singleRemainderHash(int num, Object o) {
+        if (o == null) o = "null";
         if (o instanceof Number) {
             return ((Number) o).intValue() % num;
         }
         if (o instanceof String) {
             return hashCode((String) o) % num;
+        }
+        if (o == null) {
+            return singleRemainderHash(num, "null");
         }
         throw new UnsupportedOperationException();
     }
@@ -638,6 +653,7 @@ public class AutoFunctionFactory {
     }
 
     public static int hashCode(String value) {
+        if (value == null) value = "null";
         return hashCode(value, 31);
     }
 
@@ -651,6 +667,7 @@ public class AutoFunctionFactory {
 
     public static String mySubstring(int startIndex,
                                      int endIndex, String value) {
+        if (value == null) value = "null";
         if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex) {
             return value.substring(Math.min(value.length(), startIndex), Math.min(value.length(), endIndex));
         }
