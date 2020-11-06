@@ -226,14 +226,60 @@ public class AssembleExample {
         Assert.assertFalse(existTable(mycatConnection, "db1","travelrecord"));
         //////////////////////////////////////transcation/////////////////////////////////////////////
 
-        System.out.println();
+        execute(mycatConnection,"CREATE TABLE db1.`travelrecord` (\n" +
+                "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                "  `traveldate` date DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int DEFAULT NULL,\n" +
+                "  `blob` longblob,\n" +
+                "  PRIMARY KEY (`id`),\n" +
+                "  KEY `id` (`id`)\n" +
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                +" dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
+
+        deleteData(mycatConnection,"db1", "travelrecord");
+        mycatConnection.setAutoCommit(false);
+        Assert.assertTrue(
+                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("0")
+        );
+        execute(mycatConnection,
+                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
+        mycatConnection.rollback();
+
+        mycatConnection.setAutoCommit(true);
+        Assert.assertTrue(
+                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("1")
+        );
+        Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////
+        mycatConnection.setAutoCommit(false);
+        Assert.assertTrue(
+                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("0")
+        );
+        execute(mycatConnection,
+                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
+        mycatConnection.commit();
+
+        mycatConnection.setAutoCommit(true);
+        Assert.assertTrue(
+                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("1")
+        );
+        Assert.assertEquals(2, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
     }
 
     private boolean existTable(Connection connection,String db, String table) throws SQLException {
         return !executeQuery(connection, String.format("SHOW TABLES from %s LIKE '%s';",db, table)).isEmpty();
 
     }
-
+    private boolean hasData(Connection connection,String db, String table) throws SQLException {
+        return !executeQuery(connection, String.format("select * from %s.%s limit 1",db, table)).isEmpty();
+    }
+    private void deleteData(Connection connection,String db, String table) throws SQLException {
+         execute(connection, String.format("delete  from %s.%s",db, table));
+    }
     enum Cmd {
         showSchemas("showSchemas"),
         showTables("showTables"),
