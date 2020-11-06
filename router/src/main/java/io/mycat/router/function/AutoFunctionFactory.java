@@ -288,7 +288,12 @@ public class AutoFunctionFactory {
                         dbFunction = (o) -> {
                             if (o == null) return 0;
                             if (o instanceof Number) {
-                                return ((Number) o).intValue() % total / tableNum;
+                                long l = ((Number) o).longValue();
+                                long i = l% total / tableNum;
+                                if (i < 0) {
+                                    throw new IllegalArgumentException();
+                                }
+                                return (int)i;
                             }
                             if (o instanceof String) {
                                 return hashCode((String) o) % total / tableNum;
@@ -310,11 +315,12 @@ public class AutoFunctionFactory {
                         tableFunction = (o) -> {
                             int total = dbNum * tableNum;
                             if (o instanceof Number) {
-                                int intValue = ((Number) o).intValue();
-                                return
-                                        (intValue) % dbNum * tableNum
-                                                +
-                                                (intValue / dbNum) % tableNum;
+                                long intValue = ((Number) o).longValue();
+
+                                long l = (intValue) % dbNum * tableNum
+                                        +
+                                        (intValue / dbNum) % tableNum;
+                                return (int)l;
                             }
                             if (o instanceof String) {
                                 return hashCode((String) o) % total / tableNum;
@@ -351,6 +357,10 @@ public class AutoFunctionFactory {
                                     Object value = rangeVariable.getValue();
                                     dIndex = finalDbFunction.applyAsInt(value);
                                     getDbIndex = true;
+                                    if (dIndex < 0) {
+                                        finalDbFunction.applyAsInt(value);
+                                        throw new IllegalArgumentException();
+                                    }
                                     break;
                                 case RANGE:
                                 default:
@@ -377,7 +387,11 @@ public class AutoFunctionFactory {
                     }
                 }
                 if (getDbIndex && getTIndex) {
-                    return Collections.singletonList(cache.get(new Key(dIndex, tIndex)));
+                    DataNode dataNode = cache.get(new Key(dIndex, tIndex));
+                    if (dataNode == null) {
+                        return (List) datanodes;
+                    }
+                    return Collections.singletonList(dataNode);
                 }
                 if (getDbIndex) {
                     List<DataNode> list = new ArrayList<>();
@@ -412,7 +426,7 @@ public class AutoFunctionFactory {
 
             @Override
             public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-                return function.apply(values);
+                return Objects.requireNonNull(function.apply(values));
             }
 
             @Override
@@ -591,7 +605,7 @@ public class AutoFunctionFactory {
     public static int singleRangeHash(int num, int n, Object o) {
         if (o == null) o = "null";
         if (o instanceof Number) {
-            return ((Number) o).intValue() % num;
+            return (int) (((Number) o).longValue() % num);
         }
         if (o instanceof String) {
             return hashCode(((String) o).substring(n)) % num;
@@ -602,7 +616,7 @@ public class AutoFunctionFactory {
     public static int singleRightShift(int num, int shift, Object o) {
         if (o == null) o = "null";
         if (o instanceof Number) {
-            return ((Number) o).intValue() >> shift % num;
+            return (int)( ((Number) o).longValue() >> shift % num);
         }
         if (o instanceof String) {
             return hashCode((String) o) >> shift % num;
@@ -613,7 +627,7 @@ public class AutoFunctionFactory {
     public static int singleModHash(int num, Object o) {
         if (o == null) o = "null";
         if (o instanceof Number) {
-            return Math.floorMod(((Number) o).intValue(), num);
+            return (int)Math.floorMod(((Number) o).longValue(), num);
         }
         if (o instanceof String) {
             return Math.floorMod(hashCode((String) o), num);
@@ -624,13 +638,12 @@ public class AutoFunctionFactory {
     public static int singleRemainderHash(int num, Object o) {
         if (o == null) o = "null";
         if (o instanceof Number) {
-            return ((Number) o).intValue() % num;
+            long l = ((Number) o).longValue();
+            long l1 = l % num;
+            return (int)l1;
         }
         if (o instanceof String) {
             return hashCode((String) o) % num;
-        }
-        if (o == null) {
-            return singleRemainderHash(num, "null");
         }
         throw new UnsupportedOperationException();
     }

@@ -171,7 +171,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             store.set("sequences", sequences = defaultRouterConfig.getSequences()
                     .stream()
                     .collect(Collectors
-                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                            .toMap(k -> k.getUniqueName(), v -> readerWriter.transformation(v))));
 //
 //            store.set("prototype", prototype = defaultRouterConfig.getPrototype());
 
@@ -287,7 +287,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                     .getSequences()
                                     .stream()
                                     .collect(Collectors
-                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
+                                            .toMap(k -> k.getUniqueName(), v -> readerWriter.transformation(v))));
                 }
 //                if (routerConfig.isUpdatePrototype()) {
 //                    store.set("prototype",

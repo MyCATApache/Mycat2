@@ -419,7 +419,6 @@ public class DrdsRunner {
                 }
                 metaColumns.add(autoIncrementColumn);
                 mySqlInsertStatement.addColumn(new SQLIdentifierExpr(autoIncrementColumn.getColumnName()));
-                SQLVariantRefExpr sqlVariantRefExpr = new SQLVariantRefExpr("?");
                 class CountIndex extends MySqlASTVisitorAdapter {
                     int currentIndex = -1;
 
@@ -431,10 +430,6 @@ public class DrdsRunner {
                 }
                 CountIndex countIndex = new CountIndex();
                 mySqlInsertStatement.accept(countIndex);
-                sqlVariantRefExpr.setIndex(countIndex.currentIndex + 1);
-                for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
-                    valuesClause.addValue(sqlVariantRefExpr);
-                }
             }
         }
         final int finalAutoIncrementIndex = autoIncrementIndexTmp;

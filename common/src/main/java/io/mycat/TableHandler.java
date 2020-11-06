@@ -31,7 +31,7 @@ public interface TableHandler {
 
     String getUniqueName();
 
-    Supplier<String> nextSequence();
+    Supplier<Number> nextSequence();
 
     default boolean isAutoIncrement() {
         return getAutoIncrementColumn() != null;

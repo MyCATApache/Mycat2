@@ -218,9 +218,14 @@ public class AssembleExample {
                 executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
         );
         Assert.assertEquals(executeQuery(mycatConnection,"select * from db1.travelrecord").size(),5);
+        execute(mycatConnection,"delete from db1.travelrecord");
+        execute(mycatConnection, "\n" +
+                "insert  into `travelrecord`(`user_id`,`traveldate`,`fee`,`days`,`blob`) values ('999',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('999',NULL,NULL,NULL,NULL);\n");
+        List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select id from db1.travelrecord");
         execute(mycatConnection, "drop table db1.travelrecord");
         Assert.assertFalse(existTable(mycatConnection, "db1","travelrecord"));
         //////////////////////////////////////transcation/////////////////////////////////////////////
+        execute(mycatConnection,"set xa = 1");
         System.out.println();
     }
 

@@ -79,7 +79,7 @@ public class NormalTable implements NormalTableHandler {
     }
 
     @Override
-    public Supplier<String> nextSequence() {
+    public Supplier<Number> nextSequence() {
         return this.table.nextSequence();
     }
 

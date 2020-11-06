@@ -3,6 +3,7 @@ package io.mycat.metadata;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
@@ -17,17 +18,14 @@ import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
-    private final Supplier<String> sequence;
     private  List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
                          List<DataNode> backends,
-                         CustomRuleFunction shardingFuntion,
-                         Supplier<String> sequence) {
+                         CustomRuleFunction shardingFuntion) {
         this.logicTable = logicTable;
         this.backends = (backends == null||backends.isEmpty()) ? Collections.emptyList(): backends;
         this.shardingFuntion = shardingFuntion;
-        this.sequence = sequence;
     }
 
     @Override
@@ -61,8 +59,9 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
-    public Supplier<String> nextSequence() {
-        return sequence;
+    public Supplier<Number> nextSequence() {
+        SequenceGenerator sequenceGenerator = MetaClusterCurrent.wrapper(SequenceGenerator.class);
+        return sequenceGenerator.getSequence(getUniqueName());
     }
 
     @Override

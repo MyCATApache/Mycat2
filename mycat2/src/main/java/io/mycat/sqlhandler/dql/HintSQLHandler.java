@@ -718,7 +718,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
         }
         if ("removeSequence".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                ops.removeSequence(JsonUtil.from(body, SequenceConfig.class).getName());
+                ops.removeSequence(JsonUtil.from(body, SequenceConfig.class).getUniqueName());
                 ops.commit();
             }
         }

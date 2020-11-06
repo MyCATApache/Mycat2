@@ -401,8 +401,8 @@ public class MetadataManager implements MysqlVariableService {
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
-        Supplier<String> sequence = sequenceGenerator.getSequence(s);
-        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, sequence, createTableSQL);
+        Supplier<Number> sequence = sequenceGenerator.getSequence(s);
+        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.INSTANCE.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
     }
@@ -689,7 +689,7 @@ public class MetadataManager implements MysqlVariableService {
                 }
             }
         }
-        Supplier<String> stringSupplier = logicTable.nextSequence();
+        Supplier<Number> stringSupplier = logicTable.nextSequence();
         if (logicTable.isAutoIncrement() && stringSupplier != null) {
             if (!simpleColumnInfos.contains(logicTable.getAutoIncrementColumn())) {
                 simpleColumnInfos.add(logicTable.getAutoIncrementColumn());

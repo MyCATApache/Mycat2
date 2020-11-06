@@ -93,10 +93,9 @@ public class LogicTable {
                                                     List<DataNode> backendTableInfos,
                                                     List<SimpleColumnInfo> columns,
                                                     CustomRuleFunction function,
-                                                    Supplier<String> sequence,
                                                     String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
-        return new ShardingTable(logicTable, backendTableInfos, function, sequence);
+        return new ShardingTable(logicTable, backendTableInfos, function);
     }
 
     public SimpleColumnInfo getColumnByName(String name) {

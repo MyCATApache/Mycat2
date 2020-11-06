@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 public interface CustomTableHandler {
 
-    Supplier<String> nextSequence();
+    Supplier<Number> nextSequence();
 
     void createPhysicalTables();
 

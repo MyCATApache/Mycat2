@@ -22,7 +22,7 @@ public class SimpleCustomTableHandler implements CustomTableHandler {
     }
 
     @Override
-    public Supplier<String> nextSequence() {
+    public Supplier<Number> nextSequence() {
         return null;
     }
 

@@ -109,7 +109,7 @@ public class GlobalTable implements GlobalTableHandler {
     }
 
     @Override
-    public Supplier<String> nextSequence() {
+    public Supplier<Number> nextSequence() {
         throw new UnsupportedOperationException();
     }
 

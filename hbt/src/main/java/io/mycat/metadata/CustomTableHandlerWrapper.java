@@ -68,7 +68,7 @@ public class CustomTableHandlerWrapper implements TableHandler {
 
     @Override
     @SneakyThrows
-    public Supplier<String> nextSequence() {
+    public Supplier<Number> nextSequence() {
         return this.inner.nextSequence();
     }
 

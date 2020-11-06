@@ -87,7 +87,7 @@ public class TableHandlerMocks {
             }
 
             @Override
-            public Supplier<String> nextSequence() {
+            public Supplier<Number> nextSequence() {
                 return null;
             }
 

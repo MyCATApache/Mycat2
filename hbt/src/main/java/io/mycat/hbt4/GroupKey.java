@@ -7,11 +7,19 @@ import lombok.Getter;
 
 @Getter
 @EqualsAndHashCode
-@AllArgsConstructor
 public class GroupKey {
     String parameterizedSql;
     String target;
-    public static GroupKey of(String parameterizedSql,String target){
+
+    private GroupKey(String parameterizedSql, String target) {
+        this.parameterizedSql = parameterizedSql;
+        this.target = target;
+    }
+
+    private GroupKey() {
+    }
+
+    public static GroupKey of(String parameterizedSql, String target){
         GroupKey groupKey = new GroupKey(parameterizedSql,target);
         return groupKey;
     }

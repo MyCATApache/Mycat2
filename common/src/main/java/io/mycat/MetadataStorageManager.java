@@ -9,6 +9,4 @@ public abstract class MetadataStorageManager {
     public abstract void reportReplica(String name, Set<String> dsNames);
 
     public abstract ConfigOps startOps();
-
-
 }

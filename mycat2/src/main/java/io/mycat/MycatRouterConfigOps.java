@@ -258,7 +258,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public void putSequence(String name, String clazz, String args) {
+    public void putSequence(String name, String clazz, Map<String,Object> args) {
         SequenceConfig sequenceConfig = new SequenceConfig(name, clazz, args);
         putSequence(sequenceConfig);
     }
@@ -273,7 +273,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void removeSequence(String name) {
         this.sequences = mycatRouterConfig.getSequences();
         sequences.stream()
-                .filter(i -> name.equals(i.getName())).findFirst()
+                .filter(i -> name.equals(i.getUniqueName())).findFirst()
                 .ifPresent(i -> sequences.remove(i));
         updateType = UpdateType.SEQUENCE;
     }

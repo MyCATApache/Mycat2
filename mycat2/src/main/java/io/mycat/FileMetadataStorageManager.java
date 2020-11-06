@@ -2,6 +2,7 @@ package io.mycat;
 
 import com.google.common.collect.Lists;
 import io.mycat.config.*;
+import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import lombok.EqualsAndHashCode;
@@ -284,7 +285,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         writeFile(t, filePath);
                     }
                     for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
-                        String fileName = sequenceConfig.getName() + ".sequence." + suffix;
+                        String fileName = sequenceConfig.getUniqueName() + ".sequence." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(sequenceConfig);
                         Path filePath = sequences.resolve(fileName);
@@ -326,6 +327,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             }
         };
     }
+
 
     @NotNull
     private MycatRouterConfig loadFromLocalFile() {
