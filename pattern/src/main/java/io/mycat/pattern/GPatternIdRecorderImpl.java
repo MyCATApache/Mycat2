@@ -1,7 +1,5 @@
 package io.mycat.pattern;
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +14,7 @@ import java.util.stream.IntStream;
  **/
 public final class GPatternIdRecorderImpl implements GPatternIdRecorder {
     final static int WORD_LENGTH = 64;
-    final IntObjectHashMap<GPatternToken> longTokenHashMap = IntObjectHashMap.newMap();
+    final HashMap<Integer,GPatternToken> longTokenHashMap = new HashMap<>();
     final Map<String, GPatternToken> tokenMap = new HashMap<>();
     public final static int BASIC = 0x811c9dc5;
     public final static int PRIME = 0x01000193;

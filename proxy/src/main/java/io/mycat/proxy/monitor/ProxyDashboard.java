@@ -59,7 +59,7 @@
 //        String charsetName = mycat.getCharsetName();
 //        LOGGER.info("charsetName:{} charsetObject :{} characterSetResults:{} ", charsetName,
 //            charsetObject, characterSetResults);
-//        MySQLAutoCommit autoCommit = mycat.getAutoCommit();
+//        MySQLAutoCommit autoCommit = mycat.isAutocommit();
 //        MySQLIsolation isolation = mycat.getIsolation();
 //        LOGGER.info("autoCommit :{} isolation :{}", autoCommit, isolation);
 //        int lastErrorCode = mycat.getLastErrorCode();

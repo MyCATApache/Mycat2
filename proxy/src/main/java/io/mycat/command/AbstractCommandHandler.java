@@ -131,7 +131,7 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
 //          } else {
 //            mycatReactorThread.addNIOJob(new NIOJob() {
 //              @Override
-//              public void run(ReactorEnvThread reactor) throws Exception {
+//              public void runOnBinding(ReactorEnvThread reactor) throws Exception {
 //                allSession.close(true, "processKill");
 //              }
 //

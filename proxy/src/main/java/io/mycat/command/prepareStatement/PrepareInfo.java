@@ -4,7 +4,7 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;

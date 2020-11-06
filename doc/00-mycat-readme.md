@@ -2,14 +2,15 @@
 
 # mycat 2.0-readme
 
-author:junwen  2020-1-10
+author:junwen  2020-3-15
 
 联系: qq:  294712221
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
 
-项目地址:<https://github.com/MyCATApache/Mycat2>
+开发日志: <https://github.com/MyCATApache/Mycat2/blob/master/doc/101-todo-history-list.md>
+项目地址: <https://github.com/MyCATApache/Mycat2>
 
 ## 特点
 
@@ -206,7 +207,7 @@ needTransaction:true|false
 
 
 
-metaData:true|false
+getMetaData:true|false
 
 true的时候不需要配置targets,自动根据sql路由
 
@@ -382,7 +383,7 @@ groupItem:
 ##### 插入SQL
 
 ```yaml
-{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
+{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,getMetaData: true,needTransaction: true }},
 ```
 
 
@@ -390,7 +391,7 @@ groupItem:
 ##### 更新SQL
 
 ```yaml
-{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
+{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true ,needTransaction: true }},
 ```
 
 
@@ -398,7 +399,7 @@ groupItem:
 ##### 删除SQL
 
 ```yaml
-{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
+{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true,needTransaction: true  }}
 ```
 
 

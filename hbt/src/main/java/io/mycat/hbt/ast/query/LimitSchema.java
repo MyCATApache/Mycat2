@@ -14,42 +14,35 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
-import io.mycat.hbt.ast.base.Literal;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
-
-import java.util.Collections;
-import java.util.List;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class LimitSchema extends Schema {
     private final Schema schema;
-    private final Literal offset;
-    private final Literal limit;
+    private final Number offset;
+    private final Number limit;
 
-    public LimitSchema(Schema schema, Literal offset, Literal limit) {
-        super(Op.LIMIT);
+    public LimitSchema(Schema schema, Number offset, Number limit) {
+        super(HBTOp.LIMIT);
         this.schema = schema;
         this.offset = offset;
         this.limit = limit;
     }
 
-    public Literal getOffset() {
-        return offset == null ? new Literal(0) : offset;
+    public Number getOffset() {
+        return offset == null ?0 : offset;
     }
 
-    public Literal getLimit() {
+    public Number getLimit() {
         return limit;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
     }
 
     public Schema getSchema() {

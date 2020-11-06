@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>parent</artifactId>
+    <groupId>io.mycat</groupId>
+    <version>1.12-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>datasource</artifactId>
+
+<dependencies>
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>config</artifactId>
+    <version>1.12-SNAPSHOT</version>
+  </dependency>
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>common</artifactId>
+    <version>1.12-SNAPSHOT</version>
+  </dependency>
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>plug</artifactId>
+    <version>1.12-SNAPSHOT</version>
+  </dependency>
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>replica</artifactId>
+    <version>1.12-SNAPSHOT</version>
+  </dependency>
+  <dependency>
+    <groupId>com.zaxxer</groupId>
+    <artifactId>HikariCP</artifactId>
+    <version>3.3.1</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+  <!--<dependency>-->
+    <!--<groupId>org.mariadb.jdbc</groupId>-->
+    <!--<artifactId>mariadb-java-client</artifactId>-->
+    <!--<version>2.5.2</version>-->
+  <!--</dependency>-->
+  <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+  <dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.2.1</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+  <dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.16</version>
+  </dependency>
+
+  <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-jdbc -->
+  <dependency>
+    <groupId>com.atomikos</groupId>
+    <artifactId>transactions-jdbc</artifactId>
+    <version>5.0.6</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-api -->
+  <dependency>
+    <groupId>com.atomikos</groupId>
+    <artifactId>transactions-api</artifactId>
+    <version>5.0.1</version>
+  </dependency>
+  <dependency>
+    <groupId>javax.transaction</groupId>
+    <artifactId>jta</artifactId>
+    <version>1.1</version>
+  </dependency>
+</dependencies>
+</project>

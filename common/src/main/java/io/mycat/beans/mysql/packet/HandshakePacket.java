@@ -51,7 +51,7 @@ public class HandshakePacket {
         capabilities = new MySQLServerCapabilityFlags((int) buffer.readFixInt(2) & 0x0000ffff);
         if (!buffer.readFinished()) {
             hasPartTwo = true;
-            characterSet = Byte.toUnsignedInt(buffer.readByte());
+            characterSet = buffer.readByte();
             statusFlags = (int) buffer.readFixInt(2);
             long l = buffer.readFixInt(2) << 16;
             capabilities.value |= l;

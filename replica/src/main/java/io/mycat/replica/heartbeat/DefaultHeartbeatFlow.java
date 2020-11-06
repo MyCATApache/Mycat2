@@ -17,6 +17,8 @@ package io.mycat.replica.heartbeat;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,21 +27,23 @@ import java.util.function.Function;
  * @author : zhangwy date Date : 2019年05月15日 21:34
  */
 public class DefaultHeartbeatFlow extends HeartbeatFlow {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
   private final String replicaName;
   private final String datasouceName;
   private final ReplicaSwitchType switchType;
   private final Consumer<HeartBeatStrategy> executer;
   private final Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider;
   private volatile HeartBeatStrategy strategy;
+  private final ReplicaSelectorRuntime replicaSelector;
 
-  public DefaultHeartbeatFlow(PhysicsInstance instance, String replica, String datasouceName,
+  public DefaultHeartbeatFlow(ReplicaSelectorRuntime replicaSelector,PhysicsInstance instance, String replica, String datasouceName,
       int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
       ReplicaSwitchType switchType, long slaveThreshold,
       Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider,
       Consumer<HeartBeatStrategy> executer) {
     super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold);
+    this.replicaSelector = replicaSelector;
     this.replicaName = replica;
     this.datasouceName = datasouceName;
     this.switchType = switchType;
@@ -49,6 +53,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
 
   @Override
   public void heartbeat() {
+    updateLastSendQryTime();
     HeartBeatStrategy strategy = strategyProvider.apply(this);
     this.strategy = strategy;
     executer.accept(strategy);
@@ -62,14 +67,13 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
       this.dsStatus = currentDatasourceStatus;
       LOGGER.error("{} heartStatus {}", datasouceName, dsStatus);
     }
-    ReplicaSelectorRuntime.INSTANCE
+    replicaSelector
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),
-            instance.asSelectRead());
-    if (switchType.equals(ReplicaSwitchType.SWITCH)
-        && instance.isMaster() && dsStatus.isError()
+                !currentDatasourceStatus.isSlaveBehindMaster());
+    if (switchType.equals(ReplicaSwitchType.SWITCH)&& dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
-      if (ReplicaSelectorRuntime.INSTANCE.notifySwitchReplicaDataSource(replicaName)) {
+      if (replicaSelector.notifySwitchReplicaDataSource(replicaName)) {
         //updataSwitchTime
         this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
       }

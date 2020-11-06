@@ -17,7 +17,7 @@ package io.mycat.beans.resultset;
 import java.io.IOException;
 import java.util.Iterator;
 
-public interface MycatResultSet extends MycatResultSetResponse<byte[]>{
+public interface MycatResultSet extends MycatResultSetResponse<byte[]>  {
 
   void addColumnDef(int index, String database, String table,
       String originalTable,
@@ -39,5 +39,5 @@ public interface MycatResultSet extends MycatResultSetResponse<byte[]>{
 
   Iterator<byte[]> rowIterator();
 
-  void close() throws IOException;
+  void close() ;
 }

@@ -14,14 +14,17 @@
  */
 package io.mycat;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
-@AllArgsConstructor
 @ToString
 @Getter
 public class QueryBackendTask {
     String sql;
     String targetName;
+
+    public QueryBackendTask( String targetName,String sql) {
+        this.sql = sql;
+        this.targetName = targetName;
+    }
 }

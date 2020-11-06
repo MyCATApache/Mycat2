@@ -14,52 +14,91 @@
  */
 package io.mycat;
 
-import io.mycat.client.ClientRuntime;
-import io.mycat.client.Context;
-import io.mycat.client.MycatClient;
+
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLDataType;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.beans.mycat.TransactionType;
+import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
+import io.mycat.client.InterceptorRuntime;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.commands.MycatdbCommand;
+import io.mycat.config.UserConfig;
+import io.mycat.hbt4.ResponseExecutorImplementor;
+import io.mycat.metadata.MetadataManager;
+import io.mycat.preparestatement.PrepareStatementManager;
+import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.MycatUser;
+import io.mycat.sqlhandler.dml.DrdsRunners;
+import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.sql.JDBCType;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author chen junwen
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
-    private MycatClient client;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+
+    //  private MycatClient client;
+    //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
+    //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+    //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
-        client.useSchema(db);
-        mycat.setSchema(db);
-        LOGGER.info("handleInitDb:"+db);
+        mycat.useSchema(db);
+        LOGGER.info("handleInitDb:" + db);
         super.handleInitDb(db, mycat);
     }
 
     @Override
     public void initRuntime(MycatSession session) {
-        MycatUser user = session.getUser();
-        this.client = ClientRuntime.INSTANCE.login(user.getUserName(), user.getPassword());
-        this.client.useSchema(session.getSchema());
-
-        this.client.useTransactionType(ClientRuntime.INSTANCE.getTransactionType());
+        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+        UserConfig userInfo = authenticator.getUserInfo(session.getUser().getUserName());
+        if (userInfo != null) {
+            session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
+        }
     }
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
         try {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("-----------------reveice--------------------");
+                LOGGER.debug(new String(bytes));
+            }
+            Boolean hasRun = Optional.ofNullable(
+                    MetaClusterCurrent.exist(InterceptorRuntime.class)?
+                            MetaClusterCurrent.wrapper(InterceptorRuntime.class):null)
+                    .map(i -> i.getUserSpace(session.getUser().getUserName()))
+                    .map(i -> i.execute(ByteBuffer.wrap(bytes), session))
+                    .orElse(false);
+            if (!hasRun) {
+                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session, session.getDataContext());
+                return;
+            }
+        } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
-            String sql = new String(bytes);
-            LOGGER.debug(sql);
-            Context analysis = client.analysis(sql);
-            ContextRunner.run(client, analysis, session);
-        }catch (Exception e){
+            LOGGER.debug(new String(bytes));
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
         }
     }
+
 
     @Override
     public void handleContentOfFilename(byte[] sql, MycatSession session) {
@@ -72,23 +111,137 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handlePrepareStatement(byte[] sql, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
+        MycatDataContext dataContext = session.getDataContext();
+        boolean deprecateEOF = session.isDeprecateEOF();
+        String sql = new String(sqlBytes);
+        /////////////////////////////////////////////////////
+
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        metadataManager.resolveMetadata(sqlStatement);
+        ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
+        if (sqlStatement instanceof SQLSelectStatement) {
+            List<SQLSelectItem> selectList = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().getSelectList();
+            for (SQLSelectItem sqlSelectItem : selectList) {
+                SQLDataType sqlDataType = sqlSelectItem.computeDataType();
+                JDBCType res = JDBCType.VARCHAR;
+                if (sqlDataType != null) {
+                    res = JDBCType.valueOf(sqlDataType.jdbcType());
+                }
+                if (res == null) {
+                    res = JDBCType.VARCHAR;
+                }
+                fieldsBuilder.addColumnInfo(sqlSelectItem.toString(), res);
+            }
+        }
+        MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
+        ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
+
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+            @Override
+            public void endVisit(SQLVariantRefExpr x) {
+                if ("?".equalsIgnoreCase(x.getName())) {
+                    SQLDataType sqlDataType = x.computeDataType();
+                    JDBCType res = JDBCType.VARCHAR;
+                    if (sqlDataType != null) {
+                        res = JDBCType.valueOf(sqlDataType.jdbcType());
+                    }
+                    paramsBuilder.addColumnInfo("", res);
+                }
+                super.endVisit(x);
+            }
+        });
+
+        MycatRowMetaData params = paramsBuilder.build().getMetaData();
+        long stmtId = PrepareStatementManager.INSTANCE.register(sql, params.getColumnCount());
+        Map<Long, PreparedStatement> statementMap = dataContext.getPrepareInfo();
+        statementMap.put(stmtId, new PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
+
+        DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
+
+        if (info.getPrepareOkColumnsCount() == 0 && info.getPrepareOkParametersCount() == 0) {
+            session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), true);
+            return;
+        }
+        session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
+        if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
+            for (int i = 1; i <= info.getPrepareOkParametersCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
+                        info.getPrepareOkParametersCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
+                        info.getPrepareOkParametersCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
+            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        } else {
+            for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
+            }
+            session.writeColumnEndPacket();
+            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        }
     }
 
     @Override
     public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        if (preparedStatement != null) {
+            preparedStatement.appendLongData(paramId, data);
+        }
+        session.onHandlerFinishedClear();
     }
 
     @Override
-    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams, byte[] rest, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    @SneakyThrows
+    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
+        ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
+        DrdsRunners.runOnDrds(dataContext, statement, ResponseExecutorImplementor.create(dataContext, receiver));
     }
 
     @Override
     public void handlePrepareStatementClose(long statementId, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        longPreparedStatementMap.remove(statementId);
+        session.onHandlerFinishedClear();
     }
 
     @Override
@@ -98,11 +251,53 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handlePrepareStatementReset(long statementId, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        if (preparedStatement != null) {
+            preparedStatement.resetLongData();
+        }
+        session.writeOkEndPacket();
     }
 
     @Override
     public int getNumParamsByStatementId(long statementId, MycatSession session) {
-        return 0;
+        return PrepareStatementManager.INSTANCE.getNum(statementId);
+    }
+
+    @Override
+    public byte[] getLongData(long statementId, int paramId, MycatSession mycat) {
+        PreparedStatement preparedStatement = mycat.getDataContext().getPrepareInfo().get(statementId);
+        if (preparedStatement == null) {
+            return null;
+        }
+        ByteArrayOutputStream byteArrayOutputStream = preparedStatement.getLongData(paramId);
+        if (byteArrayOutputStream == null) {
+            return null;
+        }
+
+        byte[] bytes = byteArrayOutputStream.toByteArray();
+        byteArrayOutputStream.reset();
+        return bytes;
+    }
+
+    @Override
+    public BindValue[] getLastBindValue(long statementId, MycatSession mycat) {
+        Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
+        PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return null;
+        }
+        return preparedStatement.getBindValues();
+    }
+
+    @Override
+    public void saveBindValue(long statementId, BindValue[] values, MycatSession mycat) {
+        Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
+        PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return;
+        }
+        preparedStatement.setBindValues(values);
     }
 }

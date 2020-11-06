@@ -14,8 +14,9 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Objects;
 
@@ -23,11 +24,12 @@ import java.util.Objects;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode
 public class Identifier extends Expr {
     final String value;
 
     public Identifier(String value) {
-        super(Op.IDENTIFIER);
+        super(HBTOp.IDENTIFIER);
         this.value = value;
     }
 

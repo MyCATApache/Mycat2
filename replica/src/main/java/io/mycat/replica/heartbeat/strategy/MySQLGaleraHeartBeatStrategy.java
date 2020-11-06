@@ -15,10 +15,11 @@
 package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.GlobalConst;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.replica.heartbeat.DatasourceEnum;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,8 +31,7 @@ import java.util.Map;
  */
 public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
-      MySQLGaleraHeartBeatStrategy.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MySQLGaleraHeartBeatStrategy.class);
 
   public String getSql() {
     return GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL;
@@ -53,8 +53,8 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       if ("ON".equals(wsrep_connected)
           && "ON".equals(wsrep_ready)
           && "Primary".equals(wsrep_cluster_status)) {
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
-        datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
+        datasourceStatus.setDbSynStatus(DatasourceEnum.DB_SYN_NORMAL);
+        datasourceStatus.setStatus(DatasourceEnum.OK_STATUS);
         return;
       } else {
         LOGGER.info("found MySQL  cluster status err !!! "
@@ -62,12 +62,12 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
             + " wsrep_connected: " + wsrep_connected
             + " wsrep_ready: " + wsrep_ready
         );
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_ERROR);
-        datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
+        datasourceStatus.setDbSynStatus(DatasourceEnum.DB_SYN_ERROR);
+        datasourceStatus.setStatus(DatasourceEnum.ERROR_STATUS);
         return;
       }
     }
-    heartbeatFlow.setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);
+    heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
   }
 
   public MySQLGaleraHeartBeatStrategy() {

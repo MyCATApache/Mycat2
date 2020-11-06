@@ -14,8 +14,9 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -24,11 +25,12 @@ import java.math.BigInteger;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode
 public class Literal extends Expr {
     final Object value;
 
     public Literal(Object value) {
-        super(Op.LITERAL);
+        super(HBTOp.LITERAL);
         if (value instanceof Double) {
             this.value = BigDecimal.valueOf((Double) value);
         } else if (value instanceof Float) {

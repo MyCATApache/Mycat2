@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.monitor;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
@@ -23,6 +21,8 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -32,8 +32,8 @@ import java.nio.channels.ClosedChannelException;
  **/
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
-  protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatMonitor.class);
-  protected final static MycatLogger SQL_LOGGER = MycatLoggerFactory.getLogger("sqlLogger");
+  static final Logger LOGGER = LoggerFactory.getLogger(MycatMonitorLogCallback.class);
+  private static final Logger SQL_LOGGER = LoggerFactory.getLogger("sqlLogger");
   final static boolean onBind = false;
   final static boolean onSessionPool = false;
   final static boolean onBuffer = false;
@@ -370,7 +370,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 //      LOGGER.debug(
 //          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
 //          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
-//          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
+//          c.getIsolation(), c.getCharset(), c.isAutocommit(),
 //          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }
   }

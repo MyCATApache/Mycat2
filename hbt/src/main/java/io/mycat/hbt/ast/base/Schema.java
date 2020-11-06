@@ -14,24 +14,17 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
-import io.mycat.hbt.ast.query.FieldType;
+import io.mycat.hbt.ast.HBTOp;
 import lombok.Data;
-
-import java.util.List;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
-@Data
-public abstract class Schema extends Node {
-    public Schema(Op op) {
+
+@EqualsAndHashCode
+public abstract class Schema extends Node  {
+    public Schema(HBTOp op) {
         super(op);
-    }
-
-    public abstract List<FieldType> fields();
-
-    public String getAlias() {
-        return null;
     }
 }

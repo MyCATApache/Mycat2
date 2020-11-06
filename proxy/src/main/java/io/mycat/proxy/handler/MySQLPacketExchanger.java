@@ -19,20 +19,20 @@ import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.TaskCallBack;
-import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.util.DumpUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
+
+import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_OK;
 
 /**
  *@author jamie12221
@@ -40,8 +40,7 @@ import java.util.Objects;
 public enum MySQLPacketExchanger {
     INSTANCE;
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(MySQLPacketExchanger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLPacketExchanger.class);
     public final static PacketExchangerCallback DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK = (mycat, e, attr) -> {
         mycat.setLastMessage(e.getMessage());
         mycat.writeErrorEndPacketBySyncInProcessError();
@@ -76,12 +75,14 @@ public enum MySQLPacketExchanger {
     private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
         mycatSession.resetPacket();
         mysql.resetPacket();
-        LOGGER.debug("unbind mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
+
         if (!mysql.isMonopolized()) {
+            LOGGER.debug("unbind mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
             mycatSession.setMySQLSession(null);
             mysql.setMycatSession(null);
             MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);
             mysql.switchNioHandler(null);
+//            mysql.getDatasource().decrementUsedCounter();
             mysql.getSessionManager().addIdleSession(mysql);
         }
         mycatSession.onHandlerFinishedClear();
@@ -107,6 +108,12 @@ public enum MySQLPacketExchanger {
         while (mysql.readPartProxyPayload()) {
             endPos = packetResolver.getEndPos();
             mySQLPacket.packetReadStartIndex(endPos);
+        }
+        if (packetResolver.getMySQLPayloadType()==FIRST_OK){
+            int okLastInsertId = packetResolver.getOkLastInsertId();
+            int okAffectedRows = packetResolver.getOkAffectedRows();
+            mycatSession.setLastInsertId(okLastInsertId);
+            mycatSession.setAffectedRows(okAffectedRows);
         }
         proxyBuffer.channelWriteStartIndex(startIndex);
         proxyBuffer.channelWriteEndIndex(endPos);
@@ -164,8 +171,7 @@ public enum MySQLPacketExchanger {
     public static class MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
 
         public static final MySQLProxyNIOHandler INSTANCE = new MySQLProxyNIOHandler();
-        protected final static MycatLogger LOGGER = MycatLoggerFactory
-                .getLogger(MySQLProxyNIOHandler.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
         static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
 
@@ -410,7 +416,7 @@ public enum MySQLPacketExchanger {
     /**
      * 代理模式前端写入处理器
      */
-    private enum WriteHandler implements MycatSessionWriteHandler {
+    public static enum WriteHandler implements MycatSessionWriteHandler {
         INSTANCE;
 
         @Override
@@ -457,6 +463,16 @@ public enum MySQLPacketExchanger {
         @Override
         public void onException(MycatSession session, Exception e) {
             onExceptionClearCloseInResponse(session, e);
+        }
+
+        @Override
+        public void onClear(MycatSession session) {
+            session.currentProxyBuffer().reset();
+        }
+
+        @Override
+        public WriteType getType() {
+            return WriteType.PROXY;
         }
     }
 

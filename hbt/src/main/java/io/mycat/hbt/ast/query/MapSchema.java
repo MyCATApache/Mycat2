@@ -14,34 +14,29 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class MapSchema extends Schema {
     private final Schema schema;
     private final List<Expr> expr;
 
     public MapSchema(Schema schema, List<Expr> expr) {
-        super(Op.MAP);
+        super(HBTOp.MAP);
         this.schema = schema;
         this.expr = expr;
     }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
-    }
-
     public List<Expr> getExpr() {
         return expr;
     }

@@ -99,10 +99,16 @@ public class MySQLFieldsType {
     initPut(Types.NULL, FIELD_TYPE_NULL);
     initPut(Types.BLOB, FIELD_TYPE_BLOB);
     initPut(Types.OTHER, FIELD_TYPE_STRING);
+    initPut(Types.BOOLEAN, FIELD_TYPE_TINY);
   }
 
   public static int fromJdbcType(int jdbcType) {
-    return JDBC2MYSQLMAP.get((byte) jdbcType);
+    Integer integer = JDBC2MYSQLMAP.get((byte) jdbcType);
+    if (integer==null){
+      return FIELD_TYPE_STRING;
+    }else {
+      return integer;
+    }
   }
 
   private static void initPut(int jdbcType, int mysqlType) {

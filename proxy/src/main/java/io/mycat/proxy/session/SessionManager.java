@@ -57,6 +57,8 @@ public interface SessionManager<T extends Session> {
 
     void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool, Selector selector,
         SocketChannel socketChannel) throws IOException;
+
+      void check();
   }
 
   enum CheckResult {

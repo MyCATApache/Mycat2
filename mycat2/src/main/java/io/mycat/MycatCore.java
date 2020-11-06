@@ -1,226 +1,94 @@
-/**
- * Copyright (C) <2019>  <chen junwen>
- * <p>
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * <p>
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
- * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- * <p>
- * You should have received a copy of the GNU General Public License along with this program.  If
- * not, see <http://www.gnu.org/licenses/>.
- */
 package io.mycat;
 
-import io.mycat.api.MySQLAPI;
-import io.mycat.api.callback.MySQLAPIExceptionCallback;
-import io.mycat.api.collector.CollectorUtil;
-import io.mycat.api.collector.OneResultSetCollector;
-import io.mycat.beans.MySQLDatasource;
-import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.buffer.BufferPool;
-import io.mycat.buffer.HeapBufferPool;
-import io.mycat.calcite.metadata.MetadataManager;
-import io.mycat.client.ClientRuntime;
-import io.mycat.command.CommandDispatcher;
-import io.mycat.config.ClusterRootConfig;
-import io.mycat.config.DatasourceRootConfig;
-import io.mycat.config.ServerConfig;
-import io.mycat.config.TimerConfig;
-import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.ext.MySQLAPIImpl;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.plug.PlugRuntime;
-import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
-import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.reactor.*;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.MycatSessionManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import lombok.NonNull;
+import io.mycat.config.MycatServerConfig;
+import io.mycat.config.ServerConfiguration;
+import io.mycat.config.ServerConfigurationImpl;
+import io.mycat.plug.loadBalance.LoadBalanceManager;
+import io.mycat.proxy.session.ProxyAuthenticator;
 import lombok.SneakyThrows;
+import org.apache.calcite.util.BuiltInMethod;
+import sun.util.calendar.ZoneInfo;
 
-import java.lang.reflect.Constructor;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.TimeZone;
 
 /**
  * @author cjw
  **/
-public enum MycatCore {
-    INSTANCE;
-    private ConfigProvider config;
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCore.class);
-    private ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
+public class MycatCore {
+
+    public static final String PROPERTY_MODE_LOCAL = "local";
+    public static final String PROPERTY_MODE_CLUSTER = "cluster";
+    public static final String PROPERTY_METADATADIR = "metadata";
+    private final MycatServer mycatServer;
+    private final MetadataStorageManager metadataStorageManager;
+    private final Path baseDirectory;
+
+    public MycatCore() {
+        this(null);
+    }
 
     @SneakyThrows
-    public void init(ConfigProvider config) {
-        this.config = config;
+    public MycatCore(String path) {
+        TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
+        if (path == null) {
+            String configResourceKeyName = "MYCAT_HOME";
+            path = System.getProperty(configResourceKeyName);
+        }
+        if (path == null) {
+            path = Paths.get(Thread.currentThread().getClass().getResource("/").toURI()).toAbsolutePath().toString();
+        }
+        this.baseDirectory = Paths.get(path).toAbsolutePath();
+        System.out.println("path:" + this.baseDirectory);
+        ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
+        MycatServerConfig serverConfig = serverConfiguration.serverConfig();
+        String datasourceProvider = serverConfig.getDatasourceProvider();
+        this.mycatServer = new MycatServer(serverConfig, new ProxyAuthenticator(), new ProxyDatasourceConfigProvider());
+        LoadBalanceManager loadBalanceManager = mycatServer.getLoadBalanceManager();
+        MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
 
-        MycatConfig mycatConfig = config.currentConfig();
+        HashMap<Class, Object> context = new HashMap<>();
+        context.put(serverConfiguration.getClass(), serverConfiguration);
+        context.put(serverConfig.getClass(), serverConfig);
+        context.put(loadBalanceManager.getClass(), loadBalanceManager);
+        context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
+        context.put(mycatServer.getClass(), mycatServer);
 
-        PlugRuntime.INSTCANE.load(mycatConfig);
 
-        ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
-        JdbcRuntime.INSTANCE.load(mycatConfig);
-        ClientRuntime.INSTANCE.load(mycatConfig);
-
-
-        MetadataManager.INSTANCE.load(mycatConfig);
-        ServerConfig serverConfig = mycatConfig.getServer();
-
-        String bufferPoolText = Optional.ofNullable(mycatConfig.getServer()).map(i -> i.getBufferPool()).map(i -> i.getPoolName()).orElse(HeapBufferPool.class.getName());
-        String handlerConstructorText = Optional.ofNullable(mycatConfig.getServer()).map(i -> i.getHandlerName()).orElse(DefaultCommandHandler.class.getName());
-
-        Constructor<?> bufferPoolConstructor = getConstructor(bufferPoolText);
-        Constructor<?> handlerConstructor = getConstructor(handlerConstructorText);
-
-        int reactorNumber = serverConfig.getReactorNumber();
-        List<MycatReactorThread> list = new ArrayList<>(reactorNumber);
-        for (int i = 0; i < reactorNumber; i++) {
-            BufferPool bufferPool = (BufferPool) bufferPoolConstructor.newInstance();
-            bufferPool.init(mycatConfig.getServer().getBufferPool().getArgs());
-            Function<MycatSession, CommandDispatcher> function = session -> {
-                try {
-                    CommandDispatcher commandDispatcher = (CommandDispatcher) handlerConstructor.newInstance();
-                    commandDispatcher.initRuntime(session);
-                    return commandDispatcher;
-                }catch (Exception e){
-                    throw new RuntimeException(e);
+        String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
+        switch (mode) {
+            case PROPERTY_MODE_LOCAL: {
+                metadataStorageManager = new FileMetadataStorageManager(datasourceProvider, this.baseDirectory);
+                break;
+            }
+            case PROPERTY_MODE_CLUSTER:
+                String zkAddress = System.getProperty("zkAddress");
+                if (zkAddress != null) {
+                    ZKStore zkStore = new ZKStore("mycat", zkAddress);
+                    metadataStorageManager =
+                            new CoordinatorMetadataStorageManager(zkStore,
+                                    ConfigReaderWriter.getReaderWriterBySuffix("json"),
+                                    datasourceProvider);
+                    break;
                 }
-            };
-            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function));
-            thread.start();
-            list.add(thread);
-        }
-
-        final ReactorThreadManager reactorManager = new ReactorThreadManager(list);
-        idleConnectCheck(mycatConfig, reactorManager);
-        heartbeat(mycatConfig, reactorManager);
-
-        TimerConfig timer = mycatConfig.getCluster().getTimer();
-        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
-        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay())+ TimeUnit.SECONDS.toMillis(1);
-        Thread.sleep(wait);
-        acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
-        LOGGER.info("mycat starts successful");
-    }
-
-    private void idleConnectCheck(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
-        TimerConfig timer = mycatConfig.getDatasource().getTimer();
-        ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
-            for (MycatReactorThread thread : reactorManager.getList()) {
-                thread.addNIOJob(new NIOJob() {
-                    @Override
-                    public void run(ReactorEnvThread reactor) throws Exception {
-                        thread.getMySQLSessionManager().idleConnectCheck();
-                    }
-
-                    @Override
-                    public void stop(ReactorEnvThread reactor, Exception reason) {
-
-                    }
-
-                    @Override
-                    public String message() {
-                        return "idleConnectCheck";
-                    }
-                });
-            }
-        },timer.getInitialDelay(),timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
-    }
-
-    private void heartbeat(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
-        for (ClusterRootConfig.ClusterConfig cluster : mycatConfig.getCluster().getClusters()) {
-           if("mysql".equalsIgnoreCase(cluster.getHeartbeat().getReuqestType())){
-               String replicaName = cluster.getName();
-               for (String datasource : cluster.getMasters())
-                   ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, heartBeatStrategy -> reactorManager.getRandomReactor().addNIOJob(new NIOJob() {
-                       @Override
-                       public void run(ReactorEnvThread reactor) throws Exception {
-                           MySQLTaskUtil.getMySQLSessionForTryConnect(datasource, new SessionCallBack<MySQLClientSession>() {
-                               @Override
-                               public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                                   MySQLAPIImpl mySQLAPI = new MySQLAPIImpl(session);
-                                   OneResultSetCollector objects = new OneResultSetCollector();
-                                   mySQLAPI.query(heartBeatStrategy.getSql(), objects, new MySQLAPIExceptionCallback() {
-                                       @Override
-                                       public void onException(Exception exception, @NonNull MySQLAPI mySQLAPI) {
-                                           heartBeatStrategy.onException(exception);
-                                       }
-
-                                       @Override
-                                       public void onFinished(boolean monopolize, @NonNull MySQLAPI mySQLAPI) {
-                                           try {
-                                               List<Map<String, Object>> maps = CollectorUtil.toList(objects);
-                                               LOGGER.debug("proxy heartbeat {}", Objects.toString(maps));
-                                               heartBeatStrategy.process(maps);
-                                           }finally {
-                                               mySQLAPI.close();
-                                           }
-                                       }
-
-                                       @Override
-                                       public void onErrorPacket(@NonNull ErrorPacket errorPacket, boolean monopolize, @NonNull MySQLAPI mySQLAPI) {
-                                           mySQLAPI.close();
-                                           heartBeatStrategy.onError(errorPacket.getErrorMessageString());
-                                       }
-                                   });
-                               }
-
-                               @Override
-                               public void onException(Exception exception, Object sender, Object attr) {
-                                   heartBeatStrategy.onException(exception);
-                               }
-                           });
-                       }
-
-                       @Override
-                       public void stop(ReactorEnvThread reactor, Exception reason) {
-
-                       }
-
-                       @Override
-                       public String message() {
-                           return "heartbeat";
-                       }
-                   }));
-           }
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(MycatCore.class);
-        MycatCore.INSTANCE.init(bootConfig);
-    }
-
-    public MySQLDatasource getDatasource(String name) {
-        MySQLDatasource datasource2 = datasourceMap.get(name);
-        if (datasource2 != null) {
-            return datasource2;
-        }
-        List<DatasourceRootConfig.DatasourceConfig> datasources = config.currentConfig().getDatasource().getDatasources();
-        for (DatasourceRootConfig.DatasourceConfig datasourceConfig : datasources) {
-            if (name.equals(datasourceConfig.getName())) {
-                return datasourceMap.computeIfAbsent(name, s -> new MySQLDatasource(datasourceConfig) {
-                });
+            default: {
+                throw new UnsupportedOperationException();
             }
         }
-        throw new IllegalArgumentException();
+
+        context.put(metadataStorageManager.getClass(), metadataStorageManager);
+        MetaClusterCurrent.register(context);
     }
 
-    public void removeDatasource(String name) {
-        datasourceMap.remove(name);
+    private void start() {
+        metadataStorageManager.start();
+        mycatServer.start();
     }
 
-    private static Constructor<?> getConstructor(String clazz) throws ClassNotFoundException, NoSuchMethodException {
-        Class<?> bufferPoolClass = Class.forName(clazz);
-        return bufferPoolClass.getDeclaredConstructor();
+    public static void main(String[] args) {
+        new MycatCore().start();
     }
 }

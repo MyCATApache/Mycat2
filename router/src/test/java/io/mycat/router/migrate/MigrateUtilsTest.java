@@ -2,12 +2,15 @@ package io.mycat.router.migrate;
 
 import com.google.common.collect.Lists;
 import io.mycat.router.NodeIndexRange;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.SortedMap;
+
+import static io.mycat.router.migrate.MigrateUtils.merge;
 
 /**
  * 迁移任务
@@ -355,18 +358,4 @@ public class MigrateUtilsTest {
                 "}]}",tasks2.toString());
     }
 
-
-    private void merge(List<List<NodeIndexRange>> copy, SortedMap<String, List<MigrateTask>> tasks) {
-        List<List<MigrateTask>> collect = tasks.entrySet().stream().sorted(Comparator.comparing(x -> Integer.parseInt(x.getKey().substring(2)))).map(i -> i.getValue()).collect(Collectors.toList());
-        collect.forEach(i -> copy.add(i.stream().flatMap(j -> j.getSlots().stream()).collect(Collectors.toList())));
-    }
-
-    @NotNull
-    private List<List<NodeIndexRange>> copy(List<List<NodeIndexRange>> integerListMap) {
-        List<List<NodeIndexRange>> copy = new ArrayList<>();
-        for (List<NodeIndexRange> nodeIndexRanges : integerListMap) {
-            copy.add(new ArrayList<>(nodeIndexRanges));
-        }
-        return copy;
-    }
 }

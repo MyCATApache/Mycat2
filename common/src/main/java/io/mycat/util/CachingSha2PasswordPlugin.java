@@ -31,8 +31,8 @@ package io.mycat.util;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.ServerVersion;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -49,8 +49,8 @@ import java.security.spec.X509EncodedKeySpec;
 
 public class CachingSha2PasswordPlugin  {
 
-    private static MycatLogger LOGGER = MycatLoggerFactory
-        .getLogger(MysqlNativePasswordPluginUtil.class);
+
+    static final Logger LOGGER = LoggerFactory.getLogger(CachingSha2PasswordPlugin.class);
     public static final String PROTOCOL_PLUGIN_NAME = "caching_sha2_password"; // caching_sha2_password
 
     public static byte[] scrambleCachingSha2(String password, byte[] seed) {

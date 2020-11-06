@@ -18,7 +18,7 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.MySQLPacketUtil;
 
 import java.nio.charset.Charset;
 
@@ -45,15 +45,6 @@ public interface MySQLServerSession<T> {
    * ok packet
    */
   long affectedRows();
-
-  int setServerStatus(int s);
-
-  long incrementWarningCount();
-
-  /**
-   * ok packet
-   */
-  long incrementAffectedRows();
 
   /**
    * ok eof
@@ -175,7 +166,7 @@ public interface MySQLServerSession<T> {
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
    */
   default void writeColumnEndPacket() {
-    if (isDeprecateEOF()) {
+    if (false) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
       writeBytes(bytes,false);
@@ -194,7 +185,7 @@ public interface MySQLServerSession<T> {
     if (hasCursor) {
       serverStatus |= MySQLServerStatusFlags.CURSOR_EXISTS;
     }
-    if (isDeprecateEOF()) {
+    if (false) {
       bytes = MySQLPacketUtil
           .generateOk(0xfe, getWarningCount(), serverStatus, affectedRows(),
               getLastInsertId(),

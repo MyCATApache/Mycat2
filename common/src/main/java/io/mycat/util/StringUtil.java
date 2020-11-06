@@ -23,8 +23,8 @@
  */
 package io.mycat.util;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -38,7 +38,7 @@ import java.util.Random;
 public class StringUtil {
 	public static final String TABLE_COLUMN_SEPARATOR = ".";
 
-	private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(StringUtil.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
 	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 	private static final Random RANDOM = new Random();
 	private static final char[] CHARS = { '1', '2', '3', '4', '5', '6', '7',
@@ -54,9 +54,9 @@ public class StringUtil {
 	 * h = 31*h + s.charAt(i); =&gt; h = (h &lt;&lt; 5) - h + s.charAt(i);
 	 *
 	 * @param start
-	 *            hash for s.substring(start, end)
+	 *            hashFunction for s.substring(start, end)
 	 * @param end
-	 *            hash for s.substring(start, end)
+	 *            hashFunction for s.substring(start, end)
 	 */
 	public static long hash(String s, int start, int end) {
 		if (start < 0) {

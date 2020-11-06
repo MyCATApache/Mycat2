@@ -17,8 +17,8 @@
 package io.mycat.util;
 
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -29,8 +29,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class MysqlNativePasswordPluginUtil {
 
-    private static MycatLogger LOGGER = MycatLoggerFactory
-        .getLogger(MysqlNativePasswordPluginUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlNativePasswordPluginUtil.class);
     public static final String PROTOCOL_PLUGIN_NAME = "mysql_native_password";
 
     public static byte[] scramble411(String password, byte[] seed) {

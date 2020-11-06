@@ -14,45 +14,40 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class FilterSchema extends Schema {
     private final Schema schema;
-    private final List<Expr> exprs;
+    private final Expr exprs;
 
-    public FilterSchema(Schema schema, Expr... exprs) {
-        super(Op.FILTER);
+    public FilterSchema(Schema schema, Expr exprs) {
+        super(HBTOp.FILTER);
         this.schema = schema;
-        this.exprs = Arrays.asList(exprs);
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
+        this.exprs = exprs;
     }
 
     public Schema getSchema() {
         return schema;
     }
 
-    public List<Expr> getExpr() {
-        return exprs;
-    }
 
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }
+
+    public Expr getExpr() {
+        return exprs;
+    }
+
 }
