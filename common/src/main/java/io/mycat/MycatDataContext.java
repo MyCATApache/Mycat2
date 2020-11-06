@@ -21,7 +21,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void switchTransaction(TransactionType transactionSessionType);
 
-    <T> T getVariable(String target);
+    <T> T getVariable(boolean global,String target);
 
     <T> T getVariable(MycatDataContextEnum name);
 

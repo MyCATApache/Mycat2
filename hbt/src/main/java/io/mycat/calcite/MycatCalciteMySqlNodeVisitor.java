@@ -922,13 +922,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             names.add(name);
         } else if (owner instanceof SQLVariantRefExpr) {
             SQLVariantRefExpr owner1 = (SQLVariantRefExpr) owner;
-            boolean global = owner1.isGlobal() || owner1.getName().startsWith("@@");
-            if (global && !name.startsWith("@@")) {
-                name = "@@" + name;
-            }
-            return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                    SqlLiteral.createCharString(name, SqlParserPos.ZERO));
-
+           if(owner1.isGlobal()){
+               return MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+           }else {
+               return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+           }
         } else {
             throw new FastsqlException("not support : " + owner);
         }
@@ -1894,8 +1894,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                    SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
+            if(x.isGlobal()){
+                this.sqlNode = MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
+            }else {
+                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
+            }
         }
         return false;
     }

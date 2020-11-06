@@ -90,7 +90,11 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
-    public Object getVariable(String target) {
+    public Object getVariable(boolean global,String target) {
+        if (global){
+            MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+            return variableService.getGlobalVariable(target);
+        }
         if (target.contains("autocommit")) {
             return this.isAutocommit() ? "1" : "1" ;
         } else if (target.equalsIgnoreCase("xa")) {

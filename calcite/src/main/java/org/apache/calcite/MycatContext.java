@@ -8,8 +8,11 @@ import io.mycat.MycatUser;
 public class MycatContext {
     public Object[] values;
     public static final ThreadLocal<MycatDataContext> CONTEXT = ThreadLocal.withInitial(() -> null);
-    public Object getVariable(String name){
-        return CONTEXT.get().getVariable(name);
+    public Object getSessionVariable(String name){
+        return CONTEXT.get().getVariable(false,name);
+    }
+    public Object getGlobalVariable(String name){
+        return CONTEXT.get().getVariable(true,name);
     }
     public String getDatabase(){
         return CONTEXT.get().getDefaultSchema();

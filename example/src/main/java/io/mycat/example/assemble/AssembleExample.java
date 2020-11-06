@@ -225,7 +225,7 @@ public class AssembleExample {
         execute(mycatConnection, "drop table db1.travelrecord");
         Assert.assertFalse(existTable(mycatConnection, "db1","travelrecord"));
         //////////////////////////////////////transcation/////////////////////////////////////////////
-        execute(mycatConnection,"set xa = 1");
+
         System.out.println();
     }
 

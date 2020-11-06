@@ -743,6 +743,9 @@ public class RexImpTable {
     if (operator == MycatSessionValueFunction.INSTANCE){
       return RexImpTable.MycatSessionValueImplementor.INSTANCE;
     }
+    if (operator == MycatGlobalValueFunction.INSTANCE){
+      return RexImpTable.MycatGlobalValueImplementor.INSTANCE;
+    }
     if (operator == MycatDatabaseFunction.INSTANCE){
       return RexImpTable.MycatDatabaseImplementor.INSTANCE;
     }
@@ -2440,10 +2443,27 @@ public class RexImpTable {
 
    @Override
    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-     return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getVariable"
+     return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getSessionVariable"
      ,argValueList.get(0));
    }
  }
+  public static class MycatGlobalValueImplementor extends AbstractRexCallImplementor{
+    public static final MycatGlobalValueImplementor INSTANCE = new MycatGlobalValueImplementor();
+    MycatGlobalValueImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatGlobalValue";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getGlobalValue"
+              ,argValueList.get(0));
+    }
+  }
   public static class MycatDatabaseImplementor extends AbstractRexCallImplementor{
     public static final MycatDatabaseImplementor INSTANCE = new MycatDatabaseImplementor();
     MycatDatabaseImplementor() {
