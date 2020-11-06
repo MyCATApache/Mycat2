@@ -15,19 +15,17 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.SchemaInfo;
-import io.mycat.metadata.LogicTable;
-import io.mycat.queryCondition.DataMappingEvaluator;
-import io.mycat.queryCondition.SimpleColumnInfo;
+import io.mycat.*;
+import io.mycat.querycondition.DataMappingEvaluator;
+import io.mycat.router.ShardingTableHandler;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,68 +44,79 @@ import java.util.stream.Collectors;
 public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
-    public static List<QueryBackendTask> getQueryBackendTasks(LogicTable table, List<RexNode> filters, int[] projects) {
-        List<BackendTableInfo> calculate = getBackendTableInfos(table, filters);
+    public static List<QueryBackendTask> getQueryBackendTasks(ShardingTableHandler table, List<RexNode> filters, int[] projects) {
+        List<DataNode> calculate = getBackendTableInfos(table, filters);
 
 
         //
-        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+        List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         List<QueryBackendTask> list = new ArrayList<>();
-        for (BackendTableInfo backendTableInfo : calculate) {
+        for (DataNode backendTableInfo : calculate) {
             String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
-            QueryBackendTask queryBackendTask = new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName());
+            QueryBackendTask queryBackendTask = new QueryBackendTask(backendTableInfo.getTargetName(), backendTaskSQL);
             list.add(queryBackendTask);
         }
         return list;
 
     }
 
-    public static List<BackendTableInfo> getBackendTableInfos(LogicTable table, List<RexNode> filters) {
+    public static void collect(Union e, List<RelNode> unions) {
+        for (RelNode input : e.getInputs()) {
+            if (input instanceof Union){
+                collect((Union)input,unions);
+            }else {
+                unions.add(input);
+            }
+        }
+    }
+
+    public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        ArrayList<RexNode> where = new ArrayList<>();
-        filters.forEach((filter) -> {
+        for (RexNode filter : filters) {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
             boolean success = addOrRootFilter(table, dataMappingRule, filter);
             if (success) {
                 record.merge(dataMappingRule);
             }
-            where.add(filter);
-        });
-
+        }
         LOGGER.info("optimize filters:{}", filters);
-        return record.calculate(table);
+        List<DataNode> dataNodeList = table.function().calculate(record.getColumnMap());
+        return dataNodeList;
     }
 
     @NotNull
-    private static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, BackendTableInfo backendTableInfo) {
-        SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
-        String targetSchema = schemaInfo.getTargetSchema();
-        String targetTable = schemaInfo.getTargetTable();
-        String targetSchemaTable = schemaInfo.getTargetSchemaTable();
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, DataNode backendTableInfo) {
+        String targetSchema = backendTableInfo.getSchema();
+        String targetTable = backendTableInfo.getTable();
+        String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL(LogicTable table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
-        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+    public static String getBackendTaskSQL(ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+        List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
     }
 
-    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList,
+                                           List<SimpleColumnInfo> projectColumnList,
+                                           String targetSchema,
+                                           String targetTable,
+                                           String targetSchemaTable) {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
-        sqlBuilder.append(MessageFormat.format("select {0} fromTable {1}", selectItems, targetSchemaTable));
+        sqlBuilder.append(MessageFormat.format("select {0} from {1} ", selectItems, targetSchemaTable));
         sqlBuilder.append(getFilterSQLText(rawColumnList, targetSchema, targetTable, filters));
         return sqlBuilder.toString();
     }
 
-    public static List<SimpleColumnInfo> getColumnList(LogicTable table, final int[] projects) {
+    public static List<SimpleColumnInfo> getColumnList(TableHandler table, final int[] projects) {
         if (projects == null) {
             return Collections.emptyList();
         } else {
-            List<SimpleColumnInfo> rawColumns = table.getRawColumns();
+            List<SimpleColumnInfo> rawColumns = table.getColumns();
             return Arrays.stream(projects).mapToObj(rawColumns::get).collect(Collectors.toList());
         }
     }
@@ -117,34 +126,64 @@ public class CalciteUtls {
             return "";
         }
         RexNode rexNode = RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, filters);
-        SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, rawColumns.size()) {
+        SqlImplementor.Context context = new SqlImplementor.Context(MycatSqlDialect.DEFAULT, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {
                 String fieldName = rawColumns.get(ordinal).getColumnName();
                 return new SqlIdentifier(ImmutableList.of(schemaName, tableName, fieldName),
                         SqlImplementor.POS);
             }
+
+            @Override
+            public SqlImplementor implementor() {
+                return null;
+            }
         };
-        return context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
+        try {
+            return " where " + context.toSql(null, rexNode).toSqlString(MycatSqlDialect.DEFAULT).getSql();
+        } catch (Exception e) {
+            LOGGER.warn("不能生成对应的sql", e);
+        }
+        return "";
     }
 
-    public static boolean addOrRootFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
+    public static boolean addOrRootFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
             int count = 0;
             for (RexNode operand : operands) {
-                if (addFilter(table, evaluator, operand, true)) {
+                if (addFilter(table, evaluator, operand)) {
                     ++count;
                 }
             }
             return count == size;
         }
-        return addFilter(table, evaluator, filter, false);
+        return addFilter(table, evaluator, filter);
     }
 
-    public static boolean addFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
-        List<SimpleColumnInfo> rowOrder = table.getRawColumns();
+    /**
+     * SELECT * FROM travelrecord WHERE id >= 1 AND id <= 10;
+     * SELECT * FROM travelrecord WHERE id not in (1,2);
+     * SELECT * FROM travelrecord WHERE id in (1,15);
+     * SELECT * FROM travelrecord WHERE id not BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 2;
+     * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 15;
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND (id = 3 or true)) OR
+     *   (id = 15 AND false) OR
+     *   (id = 15 AND true);
+     * SELECT * FROM travelrecord WHERE
+     *   (id < 10 AND ((id/2) =0 OR id = 3)) OR
+     *   (id < 100 AND days = 1) OR
+     *   (id < 100 AND traveldate = '2020-08-22');
+     * @param table
+     * @param evaluator
+     * @param filter
+     * @return
+     */
+    public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
+        List<SimpleColumnInfo> rowOrder = table.getColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
@@ -153,18 +192,18 @@ public class CalciteUtls {
                 RexNode left = operands.get(i);
                 RexNode right = operands.get(j);
                 if (left instanceof RexCall && right instanceof RexCall) {
-                    if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
-                        RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
-                        RexNode secondExpr = ((RexCall) right).getOperands().get(0);
+                    if ((left.isA(SqlKind.GREATER_THAN_OR_EQUAL) || left.isA(SqlKind.GREATER_THAN)) && (right.isA(SqlKind.LESS_THAN_OR_EQUAL) || right.isA(SqlKind.LESS_THAN))) {
+                        RexNode fisrtExpr = unCastWrapper(((RexCall) left).getOperands().get(0));
+                        RexNode secondExpr = unCastWrapper(((RexCall) right).getOperands().get(0));
                         if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
                             int index = ((RexInputRef) fisrtExpr).getIndex();
                             if (index == ((RexInputRef) secondExpr).getIndex()) {
-                                RexNode start = ((RexCall) left).getOperands().get(1);
-                                RexNode end = ((RexCall) right).getOperands().get(1);
+                                RexNode start = unCastWrapper(((RexCall) left).getOperands().get(1));
+                                RexNode end = unCastWrapper(((RexCall) right).getOperands().get(1));
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
                                     String startValue = ((RexLiteral) start).getValue2().toString();
                                     String endValue = ((RexLiteral) end).getValue2().toString();
-                                    evaluator.assignmentRange(or, rowOrder.get(index).getColumnName(), startValue, endValue);
+                                    evaluator.assignmentRange(rowOrder.get(index).getColumnName(), startValue, endValue);
                                     trueList[i] = trueList[i] || true;
                                     trueList[j] = trueList[j] || true;
                                 }
@@ -174,7 +213,7 @@ public class CalciteUtls {
                 }
                 for (int k = 0; k < size; k++) {
                     if (!trueList[k]) {
-                        if (!addFilter(table, evaluator, operands.get(k), or)) {
+                        if (!addFilter(table, evaluator, operands.get(k))) {
                             return false;
                         }
                     }
@@ -184,20 +223,64 @@ public class CalciteUtls {
             return false;
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
+
             RexNode left = call.getOperands().get(0);
-            if (left.isA(SqlKind.CAST)) {
-                left = ((RexCall) left).operands.get(0);
-            }
+            left = unCastWrapper(left);
+
             RexNode right = call.getOperands().get(1);
+            right = unCastWrapper(right);
+
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
-                evaluator.assignment(or, rowOrder.get(index).getColumnName(), value);
+                evaluator.assignment( rowOrder.get(index).getColumnName(), value);
                 return true;
             }
+        } else if (filter.isA(SqlKind.GREATER_THAN) || filter.isA(SqlKind.LESS_THAN)
+                || filter.isA(SqlKind.LESS_THAN_OR_EQUAL) || filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)) {
+            //这里处理[大于,小于,大于等于,小于等于]的情况.
+            RexCall call = (RexCall) filter;
 
+            RexNode left = call.getOperands().get(0);
+            left = unCastWrapper(left);
+
+            RexNode right = call.getOperands().get(1);
+            right = unCastWrapper(right);
+
+            if (left instanceof RexInputRef && right instanceof RexLiteral) {
+                int index = ((RexInputRef) left).getIndex();
+                String value = ((RexLiteral) right).getValue2().toString();
+                String columnName = rowOrder.get(index).getColumnName();
+                if(filter.isA(SqlKind.GREATER_THAN)){
+                    evaluator.assignmentRange(columnName , value,null);
+                    return true;
+                }else if(filter.isA(SqlKind.LESS_THAN)){
+                    evaluator.assignmentRange(columnName , null,value);
+                    return true;
+                }else if(filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)){
+                    evaluator.assignmentRange(columnName , value,null);
+                    evaluator.assignment(columnName , value);
+                    return true;
+                }else if(filter.isA(SqlKind.LESS_THAN_OR_EQUAL)){
+                    evaluator.assignmentRange(columnName , null,value);
+                    evaluator.assignment(columnName , value);
+                    return true;
+                }
+            }
+        } else if (filter.isA(SqlKind.OR)) {
+            //这里处理IN的情况，IN会转成多个OR. 例如： id in(1,2,3) 等同于 OR id = 1 or id = 2 or id = 3;
+            return addOrRootFilter(table, evaluator, filter);
+        }else {
+            return false;
         }
         return false;
+    }
+
+    public static RexNode unCastWrapper(RexNode left) {
+        if (left.isA(SqlKind.CAST)) {
+            left = ((RexCall) left).operands.get(0);
+        }
+        return left;
     }
 
 

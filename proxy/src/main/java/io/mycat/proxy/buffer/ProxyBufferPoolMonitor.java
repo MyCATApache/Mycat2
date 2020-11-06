@@ -18,6 +18,7 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.Session;
+import io.mycat.util.Dumper;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -51,13 +52,21 @@ public final class ProxyBufferPoolMonitor implements BufferPool {
     }
 
     public Session getSession() {
-        SessionThread thread = (SessionThread) Thread.currentThread();
-        return thread.getCurSession();
+        Thread thread1 = Thread.currentThread();
+        if (thread1 instanceof SessionThread){
+            return ((SessionThread) thread1).getCurSession();
+        }
+        return null;
     }
 
     @Override
     public ByteBuffer allocate(byte[] bytes) {
         return bufferPool.allocate(bytes);
+    }
+
+    @Override
+    public int trace() {
+        return bufferPool.trace();
     }
 
     @Override
@@ -82,5 +91,10 @@ public final class ProxyBufferPoolMonitor implements BufferPool {
     @Override
     public int chunkSize() {
         return bufferPool.chunkSize();
+    }
+
+    @Override
+    public Dumper snapshot() {
+        return bufferPool.snapshot().addText("monitor",true);
     }
 }

@@ -39,5 +39,5 @@ public interface MycatResultSet extends MycatResultSetResponse<byte[]>  {
 
   Iterator<byte[]> rowIterator();
 
-  void close() throws IOException;
+  void close() ;
 }

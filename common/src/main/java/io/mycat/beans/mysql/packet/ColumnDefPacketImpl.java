@@ -18,6 +18,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.util.StringUtil;
 
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnName = resultSetMetaData.getColumnLabel(columnIndex).getBytes();
             this.columnOrgName = resultSetMetaData.getColumnName(columnIndex).getBytes();
             this.columnNextLength = 0xC;
-            this.columnLength = resultSetMetaData.getColumnDisplaySize(columnIndex);
+            this.columnLength = 256;
             this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
             this.columnCharsetSet = 0x21;
@@ -71,11 +72,15 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     }
     public ColumnDefPacketImpl(final MycatRowMetaData resultSetMetaData, int columnIndex) {
         try {
-            this.columnSchema = getBytes(resultSetMetaData.getSchemaName(columnIndex));
+            String schemaName = resultSetMetaData.getSchemaName(columnIndex);
+            if (StringUtil.isEmpty(schemaName )){
+                schemaName = "UNKNOWN";//mysql workbench 该字段不能为长度0
+            }
+            this.columnSchema = getBytes(schemaName);
             this.columnName = getBytes(resultSetMetaData.getColumnLabel(columnIndex));
             this.columnOrgName = getBytes(resultSetMetaData.getColumnName(columnIndex));
             this.columnNextLength = 0xC;
-            this.columnLength = resultSetMetaData.getColumnDisplaySize(columnIndex);
+            this.columnLength = 256;
             this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
             this.columnCharsetSet = 0x21;
@@ -97,7 +102,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         columnDefPacket.setColumnOrgName(def.getName().getBytes());
         columnDefPacket.setColumnNextLength(0xC);
         columnDefPacket.setColumnCharsetSet(def.getCollationId());
-        columnDefPacket.setColumnLength(def.getColumnMaxLength());
+        columnDefPacket.setColumnLength(256);
         columnDefPacket.setColumnType(def.getFieldType());
         columnDefPacket.setColumnFlags(def.getFieldDetailFlag());
         columnDefPacket.setColumnDecimals(def.getDecimals());

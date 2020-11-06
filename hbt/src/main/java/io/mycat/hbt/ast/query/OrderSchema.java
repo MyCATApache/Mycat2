@@ -14,11 +14,12 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.OrderItem;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -26,12 +27,13 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class OrderSchema extends Schema {
     private final Schema schema;
     private final List<OrderItem> orders;
 
     public OrderSchema(Schema schema, List<OrderItem> fields) {
-        super(Op.ORDER);
+        super(HBTOp.ORDER);
         this.schema = schema;
         this.orders = fields;
     }

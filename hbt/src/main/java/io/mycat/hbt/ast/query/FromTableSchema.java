@@ -14,10 +14,11 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -25,11 +26,12 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class FromTableSchema extends Schema {
     private List<String> names;
 
     public FromTableSchema(List<String> names) {
-        super(Op.FROM_TABLE);
+        super(HBTOp.FROM_TABLE);
         this.names = names;
     }
 

@@ -14,20 +14,22 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class DistinctSchema extends Schema {
     private final Schema schema;
 
     public DistinctSchema(Schema schema) {
-        super(Op.DISTINCT);
+        super(HBTOp.DISTINCT);
         this.schema = schema;
     }
 

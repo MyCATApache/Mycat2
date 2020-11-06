@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-
 /**
  * @author jamie12221
  * date 2020-01-09 23:18
@@ -35,8 +33,6 @@ public interface MycatRowMetaData {
     boolean isAutoIncrement(int column);
 
     boolean isCaseSensitive(int column);
-
-    int isNullable(int column);
 
     boolean isSigned(int column);
 
@@ -58,9 +54,10 @@ public interface MycatRowMetaData {
 
     ResultSetMetaData metaData();
 
+    public boolean isNullable(int column);
 
-    default public boolean isNull(int column) {
-        return !(columnNoNulls == isNullable(column));
+    public default boolean isPrimaryKey(int column) {
+        return false;
     }
 
     default String toSimpleText() {
@@ -73,25 +70,39 @@ public interface MycatRowMetaData {
             String schemaName = getSchemaName(i);
             String tableName = getTableName(i);
             String columnName = getColumnName(i);
+            boolean nullable = isNullable(i);
             int columnType = getColumnType(i);
 
-            info.put("schemaName", schemaName);
-            info.put("tableName", tableName);
+//            info.put("schemaName", schemaName);
+//            info.put("tableName", tableName);
             info.put("columnName", columnName);
             info.put("columnType", columnType);
-
+            info.put("nullable", columnType);
             list.add(info);
 
             String columnLabel = getColumnLabel(i);
 
             boolean autoIncrement = isAutoIncrement(i);
             boolean caseSensitive = isCaseSensitive(i);
-            int nullable = isNullable(i);
+
             boolean signed = isSigned(i);
             int columnDisplaySize = getColumnDisplaySize(i);
             int precision = getPrecision(i);
             int scale = getScale(i);
         }
         return list.toString();
+    }
+
+    default boolean isIndex(int column) {
+        return isPrimaryKey(column);
+    }
+
+   default List<String> getColumnList(){
+       int columnCount = getColumnCount();
+       ArrayList<String> fields = new ArrayList<>();
+       for (int i = 1; i <=columnCount ; i++) {
+           fields.add(getColumnName(i));
+       }
+       return fields;
     }
 }

@@ -3,13 +3,14 @@ package io.mycat.proxy.session;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.buffer.BufferPool;
+import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
-import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +26,17 @@ import java.util.Queue;
  * mysql server session 该接口实现服务器模式
  **/
 public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T>, Session<T> {
-    final static Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
-    MycatLogger MY_SQL_PROXY_SERVER_SESSION_LOGGER = MycatLoggerFactory
-            .getLogger(MySQLProxyServerSession.class);
-
+     static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
     CrossSwapThreadBufferPool writeBufferPool();
 
     /**
      * 前端写入队列
      */
     Queue<ByteBuffer> writeQueue();
+
+    ByteBuffer lastWritePacket();
+
+    void setLastWritePacket(ByteBuffer buffer);
 
     /**
      * mysql 报文头 辅助buffer
@@ -55,23 +57,49 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     MycatReactorThread getIOThread();
 
     default void writeBytes(ByteBuffer buffer, boolean end) {
+        //@ ServerTransactionSessionRunner
         try {
             switchMySQLServerWriteHandler();
-            boolean ioThread = Thread.currentThread() == getIOThread();
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             Queue<ByteBuffer> byteBuffers = writeQueue();
-            if (end) {
-                while (!byteBuffers.offer(END_PACKET)) {//never loop
+            if (!end) {
+                while (!byteBuffers.offer(buffer)) {//never loop
                 }
             }
-            while (!byteBuffers.offer(buffer)) {//never loop
-            }
-            if (ioThread) {
-                writeToChannel();
+            if (!end) {
+                if (writeMySQLPacket(this, byteBuffers)) {
+                    return;
+                }
             } else {
-                if (!end) {
-                    if (writeMySQLPacket(this, byteBuffers)) return;
+                MycatSession session = (MycatSession) this;
+                setLastWritePacket(buffer);
+                if (session.isIOThreadMode()) {
+                    writeToChannel();
+                } else {
+                    LOGGER.debug("onLastPacket sessionId:{}", sessionId());
+                    session.addDelayedNioJob(new NIOJob() {
+                        @Override
+                        public void run(ReactorEnvThread reactor) throws Exception {
+                            if (session.lastWritePacket() != null) {
+                                writeToChannel();
+                            } else {
+                                LOGGER.debug("no response data , may be it is longdata sessionId:{}", sessionId());
+                            }
+                        }
+
+                        @Override
+                        public void stop(ReactorEnvThread reactor, Exception reason) {
+                            session.setLastMessage(reason);
+                            session.writeErrorEndPacketBySyncInProcessError();
+                        }
+
+                        @Override
+                        public String message() {
+                            return "writeLastPacket";
+                        }
+                    });
                 }
+                //在线程处理结束的时候,向IO Thread添加添加任务 onLastPacket ServerTransactionSessionRunner
             }
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
@@ -88,10 +116,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     void backFromWorkerThread();
 
-
-    default void writeToChannel() throws IOException {
-        writeToChannel(this);
-    }
 
     default void writeErrorEndPacketBySyncInProcessError() {
         writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);
@@ -134,21 +158,35 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     MySQLPacketSplitter packetSplitter();
 
+
+    public void switchProxyWriteHandler();
+
     /**
      * 前端写入处理器
      */
-    enum WriteHandler implements MycatSessionWriteHandler {
+   public static enum WriteHandler implements MycatSessionWriteHandler {
         INSTANCE;
 
         @Override
         public void writeToChannel(MycatSession session) throws IOException {
             try {
-                MySQLProxyServerSession.writeToChannel(session);
+                if (session.getIOThread() != Thread.currentThread()) {
+                    throw new AssertionError();
+                }
+                Queue<ByteBuffer> byteBuffers = session.writeQueue();
+                if (writeMySQLPacket(session, byteBuffers)) {
+                    session.change2WriteOpts();
+                    return;
+                }
+                if (session.lastWritePacket() != null) {
+                    writeLastPacket(session);
+                }
             } catch (Exception e) {
                 onException(session, e);
                 throw e;
             }
         }
+
 
         @Override
         public void onException(MycatSession session, Exception e) {
@@ -156,64 +194,60 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             session.resetPacket();
         }
 
+        @Override
+        public void onClear(MycatSession session) {
+            BufferPool bufPool = session.getIOThread().getBufPool();
+            for (ByteBuffer byteBuffer : session.writeQueue()) {
+                bufPool.recycle(byteBuffer);
+            }
+            session.writeQueue().clear();
+            if (session.lastWritePacket()!=null){
+                bufPool.recycle(session.lastWritePacket());
+            }
+
+        }
+
+        @Override
+        public WriteType getType() {
+            return WriteType.SERVER;
+        }
+
+    }
+
+    static void writeLastPacket(MycatSession mycat) throws IOException {
+        mycat.switchMySQLServerWriteHandler();
+        Queue<ByteBuffer> byteBuffers = mycat.writeQueue();
+        byteBuffers.add(mycat.lastWritePacket());
+        mycat.setLastWritePacket(null);
+        while (writeMySQLPacket(mycat, byteBuffers)) {
+
+        }
+        LOGGER.info("------------has response--------------:" + mycat.sessionId());
+        byteBuffers.clear();
+        mycat.writeFinished(mycat);
+        mycat.change2ReadOpts();
     }
 
     ByteBuffer END_PACKET = ByteBuffer.allocate(0);
 
 
     /**
-     * 该函数实现Payload到packet的转化 所以队列里面都是Payload
-     * <p>
-     * 把队列的buffer写入通道,一个buffer是一个payload,写入时候转化成packet 写入的 clearReadWriteOpts byteBuffers
-     * isResponseFinished
-     * <p>
-     * 与另外一个线程的 io.mycat.proxy.session.MySQLProxyServerSession#writeBytes(byte[])
-     * <p>
-     * change2WriteOpts byteBuffers isResponseFinished设置
-     * <p>
-     * 应该互斥
+     * @param session
+     * @param byteBuffers
+     * @return 有剩余的数据, 没有写入完整
+     * @throws IOException
      */
-    static void writeToChannel(MySQLProxyServerSession session) throws IOException {
-        if (session.getIOThread() != Thread.currentThread()) {
-            throw new AssertionError();
-        }
-        Queue<ByteBuffer> byteBuffers = session.writeQueue();
-        if (writeMySQLPacket(session, byteBuffers)) {
-            session.change2WriteOpts();
-            return;
-        }
-        boolean lastPacket = byteBuffers.peek() == END_PACKET;//同时这个包后面还有一个真正结束的报文
-        if (!lastPacket) {
-            session.change2WriteOpts();
-        } else {
-            if (byteBuffers.size() != 2) {
-                throw new AssertionError();
-            }
-            byteBuffers.remove();
-            while (writeMySQLPacket(session, byteBuffers)) {
-
-            }
-            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------has response--------------:" + session.sessionId());
-            byteBuffers.clear();
-            session.writeFinished(session);
-            return;
-        }
-    }
-
     static boolean writeMySQLPacket(MySQLProxyServerSession session, Queue<ByteBuffer> byteBuffers) throws IOException {
         ByteBuffer[] packetContainer = session.packetContainer();
         MySQLPacketSplitter packetSplitter = session.packetSplitter();
         long writed;
+        session.updateLastActiveTime();
         do {
             writed = 0;
             if (byteBuffers.isEmpty()) {
                 break;
             }
             ByteBuffer first = byteBuffers.peek();
-
-            if (END_PACKET == first) {
-                break;
-            }
 
             if (first.position() == 0) {//一个全新的payload
                 MycatMonitor.onFrontWrite(

@@ -1,7 +1,10 @@
 package io.mycat.hbt;
 
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.*;
+import io.mycat.hbt.ast.modify.MergeModify;
+import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.hbt.parser.CallExpr;
 import io.mycat.hbt.parser.ParenthesesExpr;
@@ -17,21 +20,23 @@ import java.util.stream.Collectors;
 public class SchemaConvertor {
     private int index = 0;
     private final List<Object> params;
-   static final  Map<String, Op> map = new HashMap<>();
+    static final Map<String, HBTOp> map = new HashMap<>();
 
-    static  {
-        for (Op value : Op.values()) {
+    static {
+        for (HBTOp value : HBTOp.values()) {
             map.put(value.getFun().toLowerCase(), value);
         }
     }
+
     public SchemaConvertor() {
         this(Collections.emptyList());
     }
+
     public SchemaConvertor(List<Object> params) {
         this.params = params;
     }
 
-    public  Expr transforExpr(ParseNode parseNode) {
+    public Expr transforExpr(ParseNode parseNode) {
         if (parseNode instanceof CallExpr) {
             CallExpr parseNode1 = (CallExpr) parseNode;
             String name = parseNode1.getName();
@@ -56,70 +61,65 @@ public class SchemaConvertor {
             return new Literal(((BooleanLiteral) parseNode).getValue());
         } else if (parseNode instanceof NullLiteral) {
             return new Literal(null);
-        }else if (parseNode instanceof ParamLiteral){
-            if (params.isEmpty()){
-               return new Param();
+        } else if (parseNode instanceof ParamLiteral) {
+            if (params.isEmpty()) {
+                return new Param();
             }
             return new Literal(params.get(index++));
         }
         throw new UnsupportedOperationException();
     }
 
-    public  FieldType fieldType(ParseNode parseNode) {
+    public FieldType fieldType(ParseNode parseNode) {
         CallExpr parseNode1 = (CallExpr) parseNode;
         String name = parseNode1.getName();
         List<ParseNode> exprs = parseNode1.getArgs().getExprs();
         String id = exprs.get(0).toString();
         String type = exprs.get(1).toString();
-        final boolean nullable = Optional.ofNullable(getArg(exprs,2)).map(i->Boolean.parseBoolean(i)).orElse(true);
-        final Integer precision = Optional.ofNullable(getArg(exprs,3)).map(i->Integer.parseInt(i)).orElse(null);
-        final Integer scale  = Optional.ofNullable(getArg(exprs,4)).map(i->Integer.parseInt(i)).orElse(null);
+        final boolean nullable = Optional.ofNullable(getArg(exprs, 2)).map(i -> Boolean.parseBoolean(i)).orElse(true);
+        final Integer precision = Optional.ofNullable(getArg(exprs, 3)).map(i -> Integer.parseInt(i)).orElse(null);
+        final Integer scale = Optional.ofNullable(getArg(exprs, 4)).map(i -> Integer.parseInt(i)).orElse(null);
         return new FieldType(id, type, nullable, precision, scale);
     }
 
-    public   String getArg(List<ParseNode> exprs, int index) {
+    public String getArg(List<ParseNode> exprs, int index) {
         if (exprs.size() > index) {
-            return  exprs.get(index).toString();
+            return exprs.get(index).toString();
         } else {
             return null;
         }
     }
 
 
-    public  FieldType fieldType(String id, String type) {
-        return new FieldType(id, type, true, null, null);
-    }
 
-    public  List<FieldType> fields(ParseNode fields) {
+    public List<FieldType> fields(ParseNode fields) {
         CallExpr callExpr = (CallExpr) fields;
         List<ParseNode> exprs = callExpr.getArgs().getExprs();
         return exprs.stream().map(i -> fieldType(i)).collect(Collectors.toList());
     }
 
-    public  List<Object> values(ParseNode fields) {
+    public List<Object> values(ParseNode fields) {
         CallExpr callExpr = (CallExpr) fields;
         List<ParseNode> exprs = callExpr.getArgs().getExprs();
         return exprs.stream().map(i -> ((Literal) transforExpr(i)).getValue()).collect(Collectors.toList());
     }
 
 
-
-    public  Schema transforSchema(ParseNode parseNode) {
+    public Schema transforSchema(ParseNode parseNode) {
         if (parseNode instanceof CallExpr) {
             CallExpr node = (CallExpr) parseNode;
             String name = node.getName().toLowerCase();
             List<ParseNode> exprList = node.getArgs().getExprs();
-            Op op = map.get(name);
+            HBTOp op = map.get(name);
             if (op == null) {
                 System.err.println(name);
+                Objects.requireNonNull(name);
             }
             switch (op) {
                 case UNION_DISTINCT:
                 case UNION_ALL:
                 case EXCEPT_DISTINCT:
                 case EXCEPT_ALL:
-                case MINUS_ALL:
-                case MINUS_DISTINCT:
                 case INTERSECT_DISTINCT:
                 case INTERSECT_ALL: {
                     List<Schema> collect = exprList.stream().map(expr -> transforSchema(expr)).collect(Collectors.toList());
@@ -186,7 +186,7 @@ public class SchemaConvertor {
                     CallExpr keys = (CallExpr) exprList.get(1);
                     Schema schema = transforSchema(source);
                     List<AggregateCall> aggregating = Collections.emptyList();
-                    List<GroupItem> groupkeys = keys(keys);
+                    List<GroupKey> groupkeys = keys(keys);
                     switch (size) {
                         case 2: {
                             break;
@@ -234,6 +234,20 @@ public class SchemaConvertor {
                     Schema rightschema = transforSchema(exprList.get(2));
                     return correlate(op, refName, leftschema, rightschema);
                 }
+                case EXPLAIN: {
+                    Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
+                    return new CommandSchema(HBTOp.EXPLAIN, schema);
+                }
+                case EXPLAIN_SQL: {
+                    Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
+                    return new CommandSchema(HBTOp.EXPLAIN_SQL, schema);
+                }
+                case MODIFY_FROM_SQL:{
+                  return   new ModifyFromSql(exprList.get(0).toString(),exprList.get(1).toString());
+                }
+                case MERGE_MODIFY:{
+                    return new MergeModify(exprList.stream().map(i -> (ModifyFromSql) transforSchema(i)).collect(Collectors.toList()));
+                }
                 default: {
                     throw new UnsupportedOperationException();
                 }
@@ -252,17 +266,17 @@ public class SchemaConvertor {
     }
 
     @NotNull
-    public  Schema filter(Schema schema, Expr expr) {
+    public Schema filter(Schema schema, Expr expr) {
         return new FilterSchema(schema, expr);
     }
 
     @NotNull
-    public  Schema correlate(Op op, String refName, Schema leftschema, Schema rightschema) {
+    public Schema correlate(HBTOp op, String refName, Schema leftschema, Schema rightschema) {
         return new CorrelateSchema(op, refName, leftschema, rightschema);
     }
 
     @NotNull
-    public  Schema join(Op op, Expr expr, Schema left, Schema right) {
+    public Schema join(HBTOp op, Expr expr, Schema left, Schema right) {
         return new JoinSchema(op, expr, left, right);
     }
 
@@ -272,61 +286,61 @@ public class SchemaConvertor {
 //    }
 
     @NotNull
-    public  Schema distinct(Schema schema) {
+    public Schema distinct(Schema schema) {
         return new DistinctSchema(schema);
     }
 
     @NotNull
-    public  Schema table(List<FieldType> fields, List<Object> values) {
-        return new ValuesSchema(fields, values);
+    public Schema table(List<FieldType> fields, List<Object> values) {
+        return new AnonyTableSchema(fields, values);
     }
 
 
     @NotNull
-    public  Schema groupBy(Schema schema, List<GroupItem> groupkeys, List<AggregateCall> aggregating) {
-        return new GroupSchema(schema, groupkeys, aggregating);
+    public Schema groupBy(Schema schema, List<GroupKey> groupkeys, List<AggregateCall> aggregating) {
+        return new GroupBySchema(schema, groupkeys, aggregating);
     }
 
     @NotNull
-    public  Schema orderBy(Schema schema, List<OrderItem> orderItemList) {
+    public Schema orderBy(Schema schema, List<OrderItem> orderItemList) {
         return new OrderSchema(schema, orderItemList);
     }
 
     @NotNull
-    public  Schema limit(Schema schema, Number offset, Number limit) {
+    public Schema limit(Schema schema, Number offset, Number limit) {
         return new LimitSchema(schema, offset, limit);
     }
 
 
     @NotNull
-    public  Schema map(Schema schema, List<Expr> collect) {
+    public Schema map(Schema schema, List<Expr> collect) {
         return new MapSchema(schema, collect);
     }
 
-    public  Schema fromTable(String schema, String table) {
+    public Schema fromTable(String schema, String table) {
         return fromTable(Arrays.asList(schema, table));
     }
 
-    public  Schema fromTable(List<String> collect) {
+    public Schema fromTable(List<String> collect) {
         return new FromTableSchema(collect);
     }
 
     @NotNull
-    public  Schema set(Op op, List<Schema> collect) {
+    public Schema set(HBTOp op, List<Schema> collect) {
         return new SetOpSchema(op, collect);
     }
 
 
     @NotNull
-    public  List<OrderItem> order(List<ParseNode> exprList) {
+    public List<OrderItem> order(List<ParseNode> exprList) {
         return exprList.stream().map(i -> getOrderItem(i)).collect(Collectors.toList());
     }
 
-    public  List<AggregateCall> aggregating(CallExpr exprs) {
+    public List<AggregateCall> aggregating(CallExpr exprs) {
         return exprs.getArgs().getExprs().stream().map(i -> aggregateCall(i)).collect(Collectors.toList());
     }
 
-    public  AggregateCall aggregateCall(ParseNode parseNode) {
+    public AggregateCall aggregateCall(ParseNode parseNode) {
         CallExpr callExpr = (CallExpr) parseNode;
 
         List<ParseNode> exprs = Collections.emptyList();
@@ -381,23 +395,23 @@ public class SchemaConvertor {
         return new AggregateCall(callExpr.getName(), alias, collect, distinct, approximate, ignoreNulls, filterExpr, orderBy.stream().map(i -> getOrderItem(i)).collect(Collectors.toList()));
     }
 
-    public  List<GroupItem> keys(CallExpr keys) {
+    public List<GroupKey> keys(CallExpr keys) {
         List<ParseNode> exprs = keys.getArgs().getExprs();
         return exprs.stream().map(i -> getGroupItem(i)).collect(Collectors.toList());
     }
 
-    public  GroupItem getGroupItem(ParseNode parseNode) {
+    public GroupKey getGroupItem(ParseNode parseNode) {
         CallExpr groupKey = (CallExpr) parseNode;
         List<Expr> collect = groupKey.getArgs().getExprs().stream().map(i -> transforExpr(i)).collect(Collectors.toList());
         return groupkey(collect);
     }
 
 
-    public  GroupItem groupkey(List<Expr> exprs) {
-        return new GroupItem(exprs);
+    public GroupKey groupkey(List<Expr> exprs) {
+        return new GroupKey(exprs);
     }
 
-    public  OrderItem getOrderItem(ParseNode parseNode) {
+    public OrderItem getOrderItem(ParseNode parseNode) {
         CallExpr parseNode1 = (CallExpr) parseNode;
         List<ParseNode> exprs = parseNode1.getArgs().getExprs();
         String identifier = exprs.get(0).toString();
@@ -406,11 +420,11 @@ public class SchemaConvertor {
     }
 
 
-    public  OrderItem order(String identifier, Direction direction) {
+    public OrderItem order(String identifier, Direction direction) {
         return new OrderItem(identifier, direction);
     }
 
-    public  Number getNumber(ParseNode parseNode) {
+    public Number getNumber(ParseNode parseNode) {
         if (parseNode instanceof IntegerLiteral) {
             return ((IntegerLiteral) parseNode).getNumber();
         }

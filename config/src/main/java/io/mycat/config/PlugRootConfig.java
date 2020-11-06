@@ -1,6 +1,8 @@
 package io.mycat.config;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,18 +12,41 @@ import java.util.List;
  * date 2019-05-20 12:12
  **/
 @Data
+@EqualsAndHashCode
 public class PlugRootConfig {
-    private LoadBalance loadBalance = new LoadBalance();
+
+    private Sequence sequence = new Sequence();
+
+
+
 
     @Data
-    public static class LoadBalance {
-        String defaultLoadBalance = "balanceRandom";
-        List<LoadBalanceConfig> loadBalances = new ArrayList<>();
+    @EqualsAndHashCode
+    public static class Hint {
+        List<HintConfig> hints = new ArrayList<>();
     }
 
     @Data
-    public static class LoadBalanceConfig {
+    @EqualsAndHashCode
+    public static class HintConfig {
         String name;
         String clazz;
+        String args;
+
+        public HintConfig() {
+        }
+
+        public HintConfig(String name, String clazz, String args) {
+            this.name = name;
+            this.clazz = clazz;
+            this.args = args;
+        }
     }
+
+    @Data
+    @EqualsAndHashCode
+    public static class MycatCommand {
+        List<MycatCommandConfig> commands = new ArrayList<>();
+    }
+
 }

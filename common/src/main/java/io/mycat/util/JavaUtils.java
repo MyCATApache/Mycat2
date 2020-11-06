@@ -19,8 +19,8 @@ package io.mycat.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -41,7 +41,7 @@ public class JavaUtils {
    * base and nearly all files already use Utils.scala
    */
   public static final long DEFAULT_DRIVER_MEM_MB = 1024;
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JavaUtils.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(JavaUtils.class);
   private static final ImmutableMap<String, TimeUnit> timeSuffixes =
       ImmutableMap.<String, TimeUnit>builder()
           .put("us", TimeUnit.MICROSECONDS)

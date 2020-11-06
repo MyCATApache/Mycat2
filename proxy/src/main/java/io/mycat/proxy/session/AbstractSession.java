@@ -24,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 实际包含运行状态的session实现 本对象封装 1.selector 2.读写通道 4.session创建时间 sessionId就是connectionId
@@ -42,6 +43,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     protected NIOHandler nioHandler;
     protected boolean hasClosed = false;
     private final MycatReactorThread ioThread;
+    private final long timeout = TimeUnit.SECONDS.toMillis(5);
 
     public AbstractSession(int sessionId,
                            NIOHandler nioHandler, SessionManager<T> sessionManager) {
@@ -74,6 +76,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
     public long getLastActiveTime() {
         return lastActiveTime;
+    }
+
+    public boolean isIOTimeout() {
+        return getIOThread().getLastActiveTime() - getLastActiveTime() > timeout;
     }
 
     public void change2ReadOpts() {
@@ -123,6 +129,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
     /**
      * todo: check that  code is right
+     *
      * @return
      */
     public boolean checkOpen() {
@@ -137,8 +144,8 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
             } catch (IOException e) {
                 close = true;
             }
-            if (close){
-                this.close(false,"check open");
+            if (close) {
+                this.close(false, "check open");
                 return false;
             }
             return true;

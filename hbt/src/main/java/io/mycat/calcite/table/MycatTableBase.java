@@ -15,7 +15,8 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.CalciteConvertors;
-import io.mycat.metadata.LogicTable;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.TableHandler;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -30,15 +31,17 @@ import org.apache.calcite.sql.SqlNode;
 /**
  * @author Junwen Chen
  **/
-public abstract class MycatTableBase extends AbstractTable implements ProjectableFilterableTable {
+public abstract class MycatTableBase extends AbstractTable  {
 
-    public abstract LogicTable logicTable();
+    public abstract <T> TableHandler logicTable();
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return CalciteConvertors.getRelDataType(logicTable().getRawColumns(), typeFactory);
+        return CalciteConvertors.getRelDataType(logicTable().getColumns(), typeFactory);
     }
-
+    public RelDataType getRowType() {
+        return CalciteConvertors.getRelDataType(logicTable().getColumns(), MycatCalciteSupport.INSTANCE.TypeFactory);
+    }
     @Override
     public Statistic getStatistic() {
         return Statistics.UNKNOWN;

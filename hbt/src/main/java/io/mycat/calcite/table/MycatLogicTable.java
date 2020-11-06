@@ -14,64 +14,151 @@
  */
 package io.mycat.calcite.table;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
-import io.mycat.metadata.LogicTable;
+import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
+import io.mycat.SimpleColumnInfo;
+import io.mycat.TableHandler;
+import io.mycat.calcite.CalciteUtls;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.hbt3.AbstractMycatTable;
+import io.mycat.hbt3.Distribution;
+import io.mycat.hbt3.LazyRexDistribution;
+import io.mycat.hbt4.ShardingInfo;
+import io.mycat.metadata.GlobalTableHandler;
+import io.mycat.metadata.NormalTableHandler;
+import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.TranslatableTable;
+import lombok.NonNull;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.*;
+import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Junwen Chen
  **/
 @Getter
-public class MycatLogicTable extends MycatTableBase implements TranslatableTable {
-    final LogicTable table;
-    final List<MycatPhysicalTable> dataNodes;
-    final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();
+public class MycatLogicTable extends MycatTableBase implements AbstractMycatTable {
+    final TableHandler table;
+    final Statistic statistic;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
+    private final ShardingInfo shardingInfo;
 
-    public MycatLogicTable(LogicTable table) {
-        this.table = table;
-        this.dataNodes = new ArrayList<>(table.getBackends().size());
-        for (BackendTableInfo backend : table.getBackends()) {
-            MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, backend);
-            dataNodes.add(mycatPhysicalTable);
-            dataNodeMap.put(backend.getUniqueName(), mycatPhysicalTable);
-        }
+    public MycatLogicTable(TableHandler t) {
+        this.table = t;
+        this.statistic = Statistics.createStatistic(table.getSchemaName(), table.getTableName(), table.getColumns());
+        this.shardingInfo = ShardingInfo.create(t);
     }
-
-    public MycatPhysicalTable getMycatPhysicalTable(String uniqueName) {
-        return dataNodeMap.get(uniqueName);
-    }
-
 
     @Override
-    public LogicTable logicTable() {
+    public TableHandler logicTable() {
         return table;
     }
 
     @Override
-    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        List<QueryBackendTask> backendTasks = getQueryBackendTasks(this.table, filters, projects);
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, backendTasks);
+    public Statistic getStatistic() {
+        return statistic;
+    }
+
+
+    @Override
+    public Distribution computeDataNode(List<RexNode> conditions) {
+        switch (table.getType()) {
+            case SHARDING:
+                ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+                return LazyRexDistribution.of(this, conditions, (paras) -> {
+                    List<RexNode> rexNodes = new ArrayList<>();
+                    for (RexNode condition : conditions) {
+                        rexNodes.add(condition.accept(new RexShuttle() {
+                            @Override
+                            public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+                                RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                                Object o = paras.get(dynamicParam.getIndex());
+                                RelDataType type;
+                                RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                                if (o == null) {
+                                    type = typeFactory.createSqlType(SqlTypeName.NULL);
+                                } else {
+                                    type = typeFactory.createJavaType(o.getClass());
+                                }
+                                return rexBuilder.makeLiteral(o, type, true);
+                            }
+                        }));
+                    }
+                    return CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
+                });
+            case GLOBAL:
+                return computeDataNode();
+            case NORMAL:
+                return computeDataNode();
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public boolean isSingle(List<RexNode> conditions) {
+        ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+        int size = shardingTableHandler.dataNodes().size();
+        if (size == 1) {
+            return true;
+        }
+        List<SimpleColumnInfo> columns = shardingTableHandler.getColumns();
+        if (conditions.size() == 1) {
+            RexNode rexNode = conditions.get(0);
+            if (rexNode.getKind() == SqlKind.EQUALS) {
+                RexCall node = (RexCall) rexNode;
+                List<RexNode> operands = node.getOperands();
+                RexNode rexNode1 = CalciteUtls.unCastWrapper(operands.get(0));
+                RexNode rexNode2 = CalciteUtls.unCastWrapper(operands.get(1));
+                if (rexNode1 instanceof RexInputRef && (rexNode2 instanceof RexLiteral || rexNode2 instanceof RexDynamicParam)) {
+                    int index = ((RexInputRef) rexNode1).getIndex();
+                    @NonNull String columnName = columns.get(index).getColumnName();
+                    return shardingTableHandler.function().isShardingKey(columnName);
+                }
+            }
+        }
+        return false;
+    }
+
+    public Distribution computeDataNode() {
+        switch (table.getType()) {
+            case SHARDING:
+                ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+                return Distribution.of(shardingTableHandler.dataNodes(), false, Distribution.Type.Sharding);
+            case GLOBAL:
+                GlobalTableHandler globalTableHandler = (GlobalTableHandler) this.table;
+                List<DataNode> globalDataNode = globalTableHandler.getGlobalDataNode();
+                int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
+                return Distribution.of(ImmutableList.of(globalDataNode.get(i)), false, Distribution.Type.BroadCast);
+            case NORMAL:
+                DataNode dataNode = ((NormalTableHandler) table).getDataNode();
+                return Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY);
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(),relOptTable);
+    public ShardingInfo getShardingInfo() {
+        return shardingInfo;
     }
+
+    @Override
+    public boolean isPartial(List<RexNode> conditions) {
+        ShardingTableHandler shardingTableHandler = (ShardingTableHandler) this.table;
+        int size = shardingTableHandler.dataNodes().size();
+        if (size > 1) {
+            return isSingle(conditions);
+        }
+        return false;
+    }
+
 }

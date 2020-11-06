@@ -1,0 +1,98 @@
+metadata: #读写分离无需配置
+  schemas: [{
+              schemaName: 'db1' ,   targetName: 'repli',
+              shadingTables: {
+                travelrecord: {
+                  function: {
+                    clazz: io.mycat.router.function.PartitionByLong ,
+                    name: partitionByLong,
+                    properties: {partitionCount: '4', partitionLength: '256', columnName: id }, ranges: {}
+                  },
+                  dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
+                              {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
+                              {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
+                              {targetName: defaultDs2 ,schemaName: db2, tableName: travelrecord}] #9999999999
+                },
+              },
+              globalTables: {
+                company:{
+                  dataNodes: [{targetName: defaultDs2 },{targetName: defaultDs2}]
+                }
+              }
+            }]
+interceptors:
+  [{
+     user: {ip: '.', password: '123456', username: root},
+     sqls:[
+     ],
+     transactionType:  'xa'
+   }]
+datasource:
+  datasources: [{name: defaultDs, ip: 0.0.0.0,port: 33,user: root,password: 123456,maxCon: 10000,minCon: 0,
+                 maxRetryCount: 3, #连接重试次数
+                 maxConnectTimeout: 10000, #连接超时时间 毫秒
+                 dbType: mysql, #
+                 url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
+                 weight: 1, #负载均衡权重
+                 initSqls: []
+                  , #建立连接后执行的sql,在此可以写上use xxx初始化默认database
+                 instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写,
+                 initSqlsGetConnection: true,
+                 type: 'JDBC'
+                },
+                {name: defaultDs2, ip: 0.0.0.0,port: 33,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+                 url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSqls: []
+                  , instanceType:,#READ,WRITE,READ_WRITE
+                initSqlsGetConnection: true,
+                 type: 'JDBC'
+                }
+  ]
+  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider
+  timer: {initialDelay: 10, period: 5, timeUnit: SECONDS}
+cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
+  close: true  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
+  clusters: [
+  {name: repli ,
+   replicaType: MASTER_SLAVE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
+   switchType: SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
+   readBalanceType: BALANCE_ALL  , #对于查询请求的负载均衡类型
+   readBalanceName:  , #对于查询请求的负载均衡类型
+   writeBalanceName:  ,  #对于修改请求的负载均衡类型
+   masters:[defaultDs , defaultDs2], #主节点列表,普通主从,当主失去连接后,依次选择列表中存活的作为主节点
+   replicas:[ defaultDs2],#从节点列表
+   maxCon:, #集群最占用大连接限制
+   heartbeat:{maxRetry: 3, #心跳重试次数
+              minSwitchTimeInterval: 120000 , #最小主从切换间隔
+              heartbeatTimeout: 100000 , #心跳超时值,毫秒
+              slaveThreshold: 0 , # mysql binlog延迟值
+              requestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
+   }}
+  ]
+  timer: {initialDelay: 0, period: 1, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口
+server:
+  ip: 0.0.0.0
+  port: 8066
+  reactorNumber: 1
+#负载均衡类型 BALANCE_ALL:所有数据源参与负载均衡 BALANCE_ALL_READ:所以非master数据源参与负载均衡 BALANCE_NONE:只有master(一个)参与负载
+plug:
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    loadBalances: [
+    {name: BalanceRunOnMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnMaster},
+    {name: BalanceLeastActive, clazz: io.mycat.plug.loadBalance.BalanceLeastActive},
+    {name: BalanceRoundRobin, clazz: io.mycat.plug.loadBalance.BalanceRoundRobin},
+    {name: BalanceRunOnReplica, clazz: io.mycat.plug.loadBalance.BalanceRunOnReplica},
+    {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
+    ]
+  sequence:
+    sequences: [
+    {name: 'db1_travelrecord', clazz: io.mycat.plug.sequence.SequenceMySQLGenerator ,args: "sql : SELECT db1.mycat_seq_nextval('GLOBAL') , targetName:defaultDs"},
+    {name: 'db1_address', clazz: io.mycat.plug.sequence.SequenceSnowflakeGenerator ,args: 'workerId:1'},
+    ]
+
+properties:
+  key: value
+
+#lib start
+#lib end
+

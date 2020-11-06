@@ -20,8 +20,10 @@ package io.mycat.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,42 +34,16 @@ import java.util.List;
  */
 @Data
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ClusterRootConfig {
     private List<ClusterConfig> clusters = new ArrayList<>();
-    private boolean close;
-    private TimerConfig timer = new TimerConfig();
+
 
     public ClusterRootConfig() {
     }
 
 
-    @AllArgsConstructor
-    @Data
-    public static class ClusterConfig {
-        private String replicaType;
-        private String switchType;
-        private String readBalanceType;
-        private String name;
-        private String readBalanceName;
-        private String writeBalanceName;
-        private List<String> masters;
-        private List<String> replicas;
-        private HeartbeatConfig heartbeat;
-        private Integer maxCon;
-
-        public ClusterConfig() {
-        }
-
-    }
 
 
-    @Data
-    public static class HeartbeatConfig {
-        private int maxRetry;
-        private long minSwitchTimeInterval;
-        private long heartbeatTimeout;
-        private long slaveThreshold;
-        private String reuqestType;
-    }
 
 }

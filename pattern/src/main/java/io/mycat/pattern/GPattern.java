@@ -60,18 +60,29 @@ public class GPattern {
         matcher.reset();
         while (utf8Lexer.nextToken()) {
             GPatternSeq token = idRecorder.toCurToken();
-            if (DEBUG_ENABLED) LOGGER.debug("will:{}" , token.getSymbol());
+            if (DEBUG_ENABLED) {
+                LOGGER.debug("will:{}", token.getSymbol());
+                System.out.println("will:"+ token.getSymbol());
+            }
             if (matcher.accept(token)) {
-                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" , token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    LOGGER.debug("accept:{}", token.getSymbol());
+                    System.out.println("accept:"+ token.getSymbol());
+                }
             } else {
-                if (DEBUG_ENABLED) LOGGER.debug("reject:{}" ,token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    LOGGER.debug("reject:{}", token.getSymbol());
+                    System.out.println("accept:"+ token.getSymbol());
+                }
             }
         }
         return matcher;
     }
+
     public void collect(String pattern) {
         collect(StandardCharsets.UTF_8.encode(pattern));
     }
+
     public void collect(ByteBuffer buffer) {
         utf8Lexer.init(buffer, 0, buffer.limit());
         collector.onCollectStart();
@@ -88,11 +99,17 @@ public class GPattern {
         collector.onCollectStart();
         while (utf8Lexer.nextToken()) {
             GPatternSeq token = idRecorder.toCurToken();
-            if (DEBUG_ENABLED) LOGGER.debug("will:{}" , token.getSymbol());
+            if (DEBUG_ENABLED) {
+                System.out.format("will:{%s}", token.getSymbol());
+            }
             if (matcher.accept(token)) {
-                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" , token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    System.out.format("accept:{%s}", token.getSymbol());
+                }
             } else {
-                if (DEBUG_ENABLED) LOGGER.debug("reject:{}", token.getSymbol());
+                if (DEBUG_ENABLED) {
+                    System.out.format("reject:{%s}", token.getSymbol());
+                }
             }
             collector.collect(token);
         }

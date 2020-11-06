@@ -24,7 +24,7 @@ import io.mycat.hbt.ast.query.*;
 public interface NodeVisitor {
     void visit(MapSchema mapSchema);
 
-    void visit(GroupSchema groupSchema);
+    void visit(GroupBySchema groupSchema);
 
     void visit(LimitSchema limitSchema);
 
@@ -42,7 +42,7 @@ public interface NodeVisitor {
 
     void visit(Expr expr);
 
-    void visit(ValuesSchema valuesSchema);
+    void visit(AnonyTableSchema valuesSchema);
 
     void visit(JoinSchema corJoinSchema);
 
@@ -67,4 +67,6 @@ public interface NodeVisitor {
     void visit(MergeModify mergeModify);
 
     void visit(Param param);
+
+    void visit(CommandSchema commandSchema);
 }

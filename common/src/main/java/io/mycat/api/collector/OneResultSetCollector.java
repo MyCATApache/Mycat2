@@ -17,9 +17,8 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -31,7 +30,7 @@ import java.util.*;
  **/
 public class OneResultSetCollector implements ResultSetCollector, Iterable<Object[]>{
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(StringUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OneResultSetCollector.class);
   ArrayList[] result;
   Map<String, Integer> columns;
   int columnCount = 0;

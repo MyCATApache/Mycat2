@@ -8,6 +8,11 @@ public class ParamLiteral  implements Literal {
     }
 
     @Override
+    public String toString() {
+        return "?";
+    }
+
+    @Override
     public void accept(ParseNodeVisitor visitor) {
         visitor.visit(this);
         visitor.endVisit(this);

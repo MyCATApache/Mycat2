@@ -1,66 +1,60 @@
 package io.mycat.config;
 
-import lombok.Data;
+import io.mycat.util.YamlUtil;
+import lombok.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
+@Builder
+@EqualsAndHashCode
 public class PatternRootConfig {
-    private List<SchemaConfig> schemas = new ArrayList<>();
-    private List<TextItemConfig> sqls = new ArrayList<>();
-//    private List<HandlerToSQLs> handlers = new ArrayList<>();
-    private Handler defaultHanlder;
-    private String transactionType;
-    private String defaultSchema;
+    private UserConfig user;
+    private List<Map<String,Object>> sqls = new ArrayList<>();
+    private List<List<Map<String,Object>>> sqlsGroup = new ArrayList<>();
+    private Map<String,Object> defaultHanlder;
+    private String matcherClazz;
+    private List<String> boosters = new ArrayList<>();
 
+    public PatternRootConfig() {
+    }
 
-    @Data
-    public static class HandlerToSQLs {
-        String name;
-        List<String> tables = new ArrayList<>();
-        List<String> sqls = new ArrayList<>();
-        List<String> hints = new ArrayList<>();
-        Map<String, String> tags;
-        String type;
-        String explain;
+    public PatternRootConfig(UserConfig user, List<Map<String, Object>> sqls, List<List<Map<String, Object>>> sqlsGroup, Map<String, Object> defaultHanlder, String matcherClazz,List<String> boosters) {
+        this.user = user;
+        this.sqls = sqls;
+        this.sqlsGroup = sqlsGroup;
+        this.defaultHanlder = defaultHanlder;
+        this.matcherClazz = matcherClazz;
+        this.boosters = boosters;
+    }
+
+    public List<Map<String,Object>> getSqls() {//注意去重
+        if (sqlsGroup == null){
+            sqlsGroup = Collections.emptyList();
+        }
+        if (sqls == null){
+            sqls = Collections.emptyList();
+        }
+        return Stream.concat(sqlsGroup.stream().flatMap(i -> i.stream()), sqls.stream()).distinct().collect(Collectors.toList());
     }
 
 
-    @Data
-
-    public static class TextItemConfig {
-        String name;
-        String sql;
-        //handler
-        List<String> hints = new ArrayList<>();
-        Map<String, String> tags = new HashMap<>();
-        String command;
-        String explain;
-//        String transactionType;
-    }
-
-
-    @Data
-    public static class Handler {
-         List<String> hints = new ArrayList<>();
-         Map<String, String> tags;
-         String command;
-         String explain;
-//         String transactionType;
-    }
-
-
-    @Data
-    public static class SchemaConfig {
-        String name;
-        List<String> tables = new ArrayList<>();
-        List<TextItemConfig> sqls = new ArrayList<>();
-        private Handler defaultHanlder;
-    }
 
     public static void main(String[] args) {
+        PatternRootConfig config = PatternRootConfig.builder().user(
+                UserConfig.builder()
+                        .ip(".")
+                        .password("123456")
+                        .username("root")
+                        .build()
+        )
+                .build();
+        String dump = YamlUtil.dump(config);
+        System.out.println(dump);
     }
 }

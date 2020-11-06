@@ -42,6 +42,8 @@ public final class PartitionUtil {
 
     private int partitionNum;
 
+    private final int[] all;
+
     /**
      * <pre>
      * @param count 表示定义的分区数
@@ -77,6 +79,7 @@ public final class PartitionUtil {
                 segment[j] = (i - 1);
             }
         }
+        all = calculateAllRange(partitionNum);
     }
 
     /**
@@ -95,5 +98,15 @@ public final class PartitionUtil {
     public int partition(String key, int start, int end) {
         return partition(StringUtil.hash(key, start, end));
     }
+    public static int[] calculateAllRange(int count) {
+        int[] ints = new int[count];
+        for (int i = 0; i < count; i++) {
+            ints[i] = i;
+        }
+        return ints;
+    }
 
+    public int[] getAll() {
+        return all;
+    }
 }

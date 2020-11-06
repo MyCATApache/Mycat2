@@ -17,6 +17,8 @@ package io.mycat.buffer;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import io.mycat.Dumpable;
+
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ import java.util.Map;
  * @version 1.0
  * time 12:19 2016/5/23
  */
-public interface BufferPool {
+public interface BufferPool  extends Dumpable {
 
     public void init(Map<String,String> args);
 
@@ -36,6 +38,8 @@ public interface BufferPool {
     ByteBuffer allocate(int size);
 
     ByteBuffer allocate(byte[] bytes);
+
+    int trace();
 
 
     public default ByteBuffer expandBuffer(ByteBuffer old, int len) {

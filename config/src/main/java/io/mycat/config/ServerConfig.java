@@ -15,33 +15,76 @@
 
 package io.mycat.config;
 
-import lombok.Data;
+import lombok.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Data
+@EqualsAndHashCode
 public class ServerConfig {
-    private String ip = "0.0.0.0";
+    private String ip = "127.0.0.1";
     private int port = 8066;
-    private int reactorNumber = 1;
+    private int reactorNumber = Runtime.getRuntime().availableProcessors();
     private String handlerName;
-    private Worker worker = new Worker();
-    private BufferPoolConfig bufferPool= new BufferPoolConfig();
+    private ThreadPoolExecutorConfig contextPool =  ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(0)
+            .maxPoolSize(512)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
+    private ThreadPoolExecutorConfig workerPool =  ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(Runtime.getRuntime().availableProcessors())
+            .maxPoolSize(1024)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
+    private ThreadPoolExecutorConfig timeWorkerPool = ThreadPoolExecutorConfig
+            .builder()
+            .corePoolSize(0)
+            .maxPoolSize(2)
+            .keepAliveTime(1)
+            .timeUnit(TimeUnit.MINUTES.name())
+            .maxPendingLimit(65535)
+            .taskTimeout(1)
+            .build();
+    private BufferPoolConfig bufferPool = new BufferPoolConfig();
+    private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
+    private String tempDirectory;
 
-    @Data
-    public static class Worker {
-        private int minThread = 2;
-        private int maxThread = 2;
-        private int waitTaskTimeout = 5;
-        private String timeUnit = TimeUnit.SECONDS.toString();
-        private int maxPengdingLimit = 65535;
-        private boolean close = false;
+    {
+        if (tempDirectory == null) {
+            try {
+                Path target = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).resolve("target");
+                if (!Files.exists(target)) {
+                    Files.createDirectories(target);
+                }
+                tempDirectory = target.toString();
+            } catch (Throwable e) {
+                try {
+                    tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            System.out.println("tempDirectory:" + tempDirectory);
+        }
     }
-    @Data
-    public static class BufferPoolConfig {
-        String poolName;
-        Map<String,String> args = new HashMap<>();
-    }
+
+
+
+
+
 }

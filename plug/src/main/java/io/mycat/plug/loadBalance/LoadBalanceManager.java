@@ -15,16 +15,15 @@
 
 package io.mycat.plug.loadBalance;
 
-import io.mycat.MycatException;
-import io.mycat.config.PlugRootConfig;
+import io.mycat.config.LoadBalance;
+import io.mycat.config.LoadBalanceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author jamie12221 date 2019-05-20 12:21
@@ -33,9 +32,9 @@ public class LoadBalanceManager {
 
     private final Map<String, LoadBalanceStrategy> map = new HashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalanceManager.class);
-    private LoadBalanceStrategy defaultLoadBalanceStrategy = BalanceRandom.INSTANCE;
+    private final LoadBalanceStrategy defaultLoadBalanceStrategy ;
 
-    public static LoadBalanceStrategy getLoadBalanceStrategy(String clazz)
+    public LoadBalanceStrategy getLoadBalanceStrategy(String clazz)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         LoadBalanceStrategy o = null;
         Class<?> aClass = Class.forName(clazz);
@@ -45,29 +44,52 @@ public class LoadBalanceManager {
         return o;
     }
 
-    public void load(PlugRootConfig.LoadBalance rootConfig) {
+    public LoadBalanceManager(LoadBalance rootConfig) {
+        if (rootConfig == null){
+            defaultLoadBalanceStrategy = BalanceRandom.INSTANCE;
+            return;
+        }
         ////////////////////////////////////check/////////////////////////////////////////////////
         Objects.requireNonNull(rootConfig);
-        Objects
-                .requireNonNull(rootConfig.getDefaultLoadBalance(), "defaultLoadBalance can not be empty");
+        Objects.requireNonNull(rootConfig.getDefaultLoadBalance(), "defaultLoadBalance can not be empty");
         Objects.requireNonNull(rootConfig.getLoadBalances(), "loadBalances list is empty");
         ////////////////////////////////////check/////////////////////////////////////////////////
 
-        for (PlugRootConfig.LoadBalanceConfig loadBalance : rootConfig.getLoadBalances()) {
+        List<LoadBalanceConfig> loadBalances = new ArrayList<>();
+
+        List<LoadBalanceConfig> buildin = Arrays.asList(
+                BalanceLeastActive.class,
+                BalanceRandom.class,
+                BalanceRoundRobin.class,
+                BalanceRunOnMaster.class,
+                BalanceRunOnRandomMaster.class,
+                BalanceRunOnReplica.class
+        ).stream().map(i -> getLoadBalanceConfig(i)).collect(Collectors.toList());
+
+
+        loadBalances.addAll(buildin);
+        loadBalances.addAll(rootConfig.getLoadBalances() == null ? Collections.emptyList() : rootConfig.getLoadBalances());
+
+
+        for (LoadBalanceConfig loadBalance : loadBalances) {
             String name = loadBalance.getName();
             String clazz = loadBalance.getClazz();
             addLoadBalanceStrategy(name, clazz);
         }
-        setDefaultLoadBalanceStrategy(rootConfig.getDefaultLoadBalance());
-    }
-
-    public void setDefaultLoadBalanceStrategy(String name) {
-        defaultLoadBalanceStrategy = getLoadBalanceByBalanceName(name);
-        if (defaultLoadBalanceStrategy == null) {
-            throw new MycatException("can not load default loadBalance:{}",
-                    name);
+        LoadBalanceStrategy balanceName = getLoadBalanceByBalanceName(rootConfig.getDefaultLoadBalance());
+        if (balanceName == null) {
+            LOGGER.error("can not load loadBalance:{}", rootConfig.getDefaultLoadBalance());
+            defaultLoadBalanceStrategy = BalanceRandom.INSTANCE;
+        } else {
+            defaultLoadBalanceStrategy = balanceName;
         }
     }
+
+    private LoadBalanceConfig getLoadBalanceConfig(Class instance) {
+        String canonicalName = instance.getCanonicalName();
+        return new LoadBalanceConfig(instance.getSimpleName(), canonicalName);
+    }
+
 
     public void addLoadBalanceStrategy(String name, String clazz) {
         Objects.requireNonNull(clazz, "poolName can not be empty");
@@ -86,5 +108,9 @@ public class LoadBalanceManager {
         } else {
             return strategy;
         }
+    }
+
+    public LoadBalanceStrategy getDefaultLoadBalanceStrategy() {
+        return Objects.requireNonNull(defaultLoadBalanceStrategy);
     }
 }

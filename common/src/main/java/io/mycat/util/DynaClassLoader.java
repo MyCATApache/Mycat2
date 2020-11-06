@@ -1,7 +1,7 @@
 package io.mycat.util;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Iterator;
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DynaClassLoader {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger("DynaClassLoader");
+  private static final Logger LOGGER = LoggerFactory.getLogger(DynaClassLoader.class);
   /**
    * key- class full name
    */

@@ -14,22 +14,24 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class LimitSchema extends Schema {
     private final Schema schema;
     private final Number offset;
     private final Number limit;
 
     public LimitSchema(Schema schema, Number offset, Number limit) {
-        super(Op.LIMIT);
+        super(HBTOp.LIMIT);
         this.schema = schema;
         this.offset = offset;
         this.limit = limit;

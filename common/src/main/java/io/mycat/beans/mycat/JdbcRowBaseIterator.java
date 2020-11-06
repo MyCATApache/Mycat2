@@ -14,33 +14,40 @@
  */
 package io.mycat.beans.mycat;
 
+import io.mycat.MycatTimeUtil;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.*;
-import java.util.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+import static java.sql.Types.*;
 
 /**
  * @author Junwen Chen
  **/
 public class JdbcRowBaseIterator implements RowBaseIterator {
 
-    private final static MycatLogger LOGGER = MycatLoggerFactory
-            .getLogger(JdbcRowBaseIterator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcRowBaseIterator.class);
+    private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
+    private final String sql;
     private final AutoCloseable closeCallback;
+    private boolean hasNext = true;
 
-    public JdbcRowBaseIterator(Statement statement, ResultSet resultSet) {
-        this(statement, resultSet, null);
-    }
-
-    private JdbcRowBaseIterator(Statement statement, ResultSet resultSet, AutoCloseable closeCallback) {
+    @SneakyThrows
+    public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback,String sql) {
+        this.sql = sql;
+        this.metaData = metaData == null?new JdbcRowMetaData(resultSet.getMetaData()):metaData;;
         this.statement = statement;
         this.resultSet = Objects.requireNonNull(resultSet);
         this.closeCallback = closeCallback;
@@ -52,9 +59,9 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         try {
-            return new JdbcRowMetaData(resultSet.getMetaData());
+            return  this.metaData;
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -63,7 +70,11 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public boolean next() {
         try {
-            return resultSet.next();
+            if (hasNext) {
+              return   hasNext = resultSet.next();
+            }else {
+                return false;
+            }
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -77,7 +88,9 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
             LOGGER.error("", e);
         }
         try {
-            statement.close();
+            if (statement != null) {
+                statement.close();
+            }
         } catch (Exception e) {
             LOGGER.error("", e);
         }
@@ -181,27 +194,39 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         try {
-            return resultSet.getDate(columnIndex);
+            Date date = resultSet.getDate(columnIndex);
+            if (date!=null){
+                return date.toLocalDate();
+            }
+            return null;
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         try {
-            return resultSet.getTime(columnIndex);
+            String string = resultSet.getString(columnIndex);
+            if (string == null){
+                return null;
+            }
+            return MycatTimeUtil.timeStringToTimeDuration(string);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         try {
-            return resultSet.getTimestamp(columnIndex);
+            Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+            if (timestamp==null){
+                return null;
+            }
+            return timestamp.toLocalDateTime();
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -226,13 +251,139 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
+    @SneakyThrows
     public Object getObject(int columnIndex) {
-        try {
-            return resultSet.getObject(columnIndex);
-        } catch (Exception e) {
-            throw new MycatException(e);
+        ResultSetMetaData origin = resultSet.getMetaData();
+        MycatRowMetaData metaData = getMetaData();//该方法可能被重写
+        int columnType = metaData.getColumnType(columnIndex);
+        switch (columnType) {
+            case BIT: {
+                boolean aBoolean = resultSet.getBoolean(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aBoolean;
+            }
+            case TINYINT: {
+                byte aByte = resultSet.getByte(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aByte;
+            }
+            case SMALLINT: {
+                short aShort = resultSet.getShort(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aShort;
+            }
+            case INTEGER: {
+                int anInt = resultSet.getInt(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : anInt;
+            }
+            case BIGINT: {
+                long aLong = resultSet.getLong(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aLong;
+            }
+            case FLOAT: {
+                float aFloat = resultSet.getFloat(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aFloat;
+            }
+            case REAL: {
+                float aFloat = resultSet.getFloat(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aFloat;
+            }
+            case DOUBLE: {
+                double aDouble = resultSet.getDouble(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : aDouble;
+            }
+            case NUMERIC: {
+                BigDecimal bigDecimal = resultSet.getBigDecimal(columnIndex);//review
+                boolean b = resultSet.wasNull();
+                return b ? null : bigDecimal;
+            }
+            case DECIMAL: {
+                BigDecimal bigDecimal = resultSet.getBigDecimal(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b ? null : bigDecimal;
+            }
+            case CHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case VARCHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case LONGVARCHAR: {
+                String string = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:string;
+            }
+            case DATE: {
+                Date date = resultSet.getDate(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:date.toLocalDate();
+            }
+            case TIME_WITH_TIMEZONE:
+            case TIME: {
+                String time = resultSet.getString(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:MycatTimeUtil.timeStringToTimeDuration(time);
+            }
+            case TIMESTAMP_WITH_TIMEZONE:
+            case TIMESTAMP: {
+                Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:timestamp.toLocalDateTime();
+            }
+            case BINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:bytes;
+            }
+            case VARBINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return b?null:bytes;
+            }
+            case LONGVARBINARY: {
+                byte[] bytes = resultSet.getBytes(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:bytes;
+            }
+            case NULL: {
+                return null;
+            }
+            case BOOLEAN: {
+                boolean aBoolean = resultSet.getBoolean(columnIndex);
+                boolean b = resultSet.wasNull();
+                return  b?null:aBoolean;
+            }
+            case ROWID:
+            case NCHAR:
+            case NVARCHAR:
+            case LONGNVARCHAR:
+            case NCLOB:
+            case SQLXML:
+            case REF_CURSOR:
+            case OTHER:
+            case JAVA_OBJECT:
+            case DISTINCT:
+            case STRUCT:
+            case ARRAY:
+            case BLOB:
+            case CLOB:
+            case REF:
+            case DATALINK:
+            default:
+                LOGGER.warn("may be unsupported type :" + JDBCType.valueOf(columnType));
+                return resultSet.getObject(columnIndex);
         }
     }
+
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) {
@@ -243,22 +394,5 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
         }
     }
 
-    public List<Map<String, Object>> getResultSetMap() {
-        return getResultSetMap(this);
-    }
-
-    private List<Map<String, Object>> getResultSetMap(JdbcRowBaseIterator iterator) {
-        MycatRowMetaData metaData = iterator.metaData();
-        int columnCount = metaData.getColumnCount();
-        List<Map<String, Object>> resultList = new ArrayList<>();
-        while (iterator.next()) {
-            HashMap<String, Object> row = new HashMap<>(columnCount);
-            for (int i = 1; i <= columnCount; i++) {
-                row.put(metaData.getColumnName(i), iterator.getObject(i));
-            }
-            resultList.add(row);
-        }
-        return resultList;
-    }
 
 }

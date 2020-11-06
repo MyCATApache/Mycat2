@@ -1,53 +1,81 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.resultset.MycatResponse;
+import io.mycat.beans.resultset.MycatResultSetType;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author jamie12221
- *  date 2019-05-22 01:17
- *  a simple proxy collector as map
+ * date 2019-05-22 01:17
+ * a simple proxy collector as map
  **/
-public interface RowBaseIterator extends Closeable {
+public interface RowBaseIterator extends Closeable,BaseIterator {
 
-  MycatRowMetaData metaData();
+    MycatRowMetaData getMetaData();
 
-  boolean next();
+    boolean next();
 
-  void close();
+    void close();
 
-  boolean wasNull();
+    boolean wasNull();
 
-  String getString(int columnIndex);
+    String getString(int columnIndex);
 
-  boolean getBoolean(int columnIndex);
+    boolean getBoolean(int columnIndex);
 
-  byte getByte(int columnIndex);
+    byte getByte(int columnIndex);
 
-  short getShort(int columnIndex);
+    short getShort(int columnIndex);
 
-  int getInt(int columnIndex);
+    int getInt(int columnIndex);
 
-  long getLong(int columnIndex);
+    long getLong(int columnIndex);
 
-  float getFloat(int columnIndex);
+    float getFloat(int columnIndex);
 
-  double getDouble(int columnIndex);
+    double getDouble(int columnIndex);
 
-  byte[] getBytes(int columnIndex);
+    byte[] getBytes(int columnIndex);
 
-  java.sql.Date getDate(int columnIndex);
+    LocalDate getDate(int columnIndex);
 
-  java.sql.Time getTime(int columnIndex);
+    Duration getTime(int columnIndex);
 
-  java.sql.Timestamp getTimestamp(int columnIndex);
+    LocalDateTime getTimestamp(int columnIndex);
 
-  java.io.InputStream getAsciiStream(int columnIndex);
+    java.io.InputStream getAsciiStream(int columnIndex);
 
-  java.io.InputStream getBinaryStream(int columnIndex);
+    java.io.InputStream getBinaryStream(int columnIndex);
 
-  Object getObject(int columnIndex);
+    Object getObject(int columnIndex);
 
-  BigDecimal getBigDecimal(int columnIndex);
+    BigDecimal getBigDecimal(int columnIndex);
+
+    public default List<Map<String, Object>> getResultSetMap() {
+        return getResultSetMap(this);
+    }
+
+    public default List<Map<String, Object>> getResultSetMap(RowBaseIterator iterator) {
+        MycatRowMetaData metaData = iterator.getMetaData();
+        int columnCount = metaData.getColumnCount();
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        while (iterator.next()) {
+            HashMap<String, Object> row = new HashMap<>(columnCount);
+            for (int i = 1; i <= columnCount; i++) {
+                row.put(metaData.getColumnName(i), iterator.getObject(i));
+            }
+            resultList.add(row);
+        }
+        return resultList;
+    }
 }

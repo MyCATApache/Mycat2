@@ -7,7 +7,7 @@ author:junwen 2019-7-22
 ## jdbcDriver.yml配置
 
 ```yaml
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider
 maxPengdingLimit: -1
 waitTaskTimeout: 5
 timeUnit: SECONDS
@@ -53,11 +53,11 @@ datasourceProviderClass更改即可变更事务实现
 
 Atomikos XA事务,其中这个事务实现可能会针对一些场景使用优化尽量使用本地事务
 
-io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider
 
 本地事务
 
-io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider
 
 
 

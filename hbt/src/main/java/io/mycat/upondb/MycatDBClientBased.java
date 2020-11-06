@@ -1,11 +1,7 @@
 package io.mycat.upondb;
 
-import io.mycat.Identical;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
-import io.mycat.metadata.LogicTable;
+import io.mycat.MycatConnection;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -13,25 +9,11 @@ public interface MycatDBClientBased {
 
     MycatDBSharedServer getUponDBSharedServer();
 
-    Map<String, Map<String, LogicTable>> config();
+    MycatDBClientBasedConfig config();
 
     Map<String, Object> variables();
 
-    <T> T getCache(Identical key, String targetName, String sql, List<Object> params);
-
-    void cache(Identical key, String targetName, String sql, List<Object> params, Object o);
-
-    <T> T removeCache(Identical key, String targetName, String sql, List<Object> params);
-
-    RowBaseIterator prepareQuery(String targetName, String sql, List<Object> params);
-
-    UpdateRowIterator prepareUpdate(String targetName, String sql, List<Object> params);
-
-    UpdateRowIterator update(String targetName, String sql);
-
-    RowBaseIterator query(String targetName, String sql);
-
-    UpdateRowIterator update(String targetName, List<String> sqls);
+    MycatConnection getConnection(String targetName);
 
     void begin();
 
@@ -49,5 +31,9 @@ public interface MycatDBClientBased {
 
     void close();
 
-    AtomicBoolean cancleFlag();
+    AtomicBoolean cancelFlag();
+
+   String resolveFinalTargetName(String targetName);
+
+    void addCloseResource(AutoCloseable connection);
 }

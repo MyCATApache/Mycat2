@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.reactor;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,8 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  **/
 public abstract class ReactorEnvThread extends Thread implements SessionThread {
 
-  protected final static MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(ReactorEnvThread.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReactorEnvThread.class);
   protected final ConcurrentLinkedQueue<NIOJob> pendingJobs = new ConcurrentLinkedQueue<>();
 
 
@@ -48,8 +47,9 @@ public abstract class ReactorEnvThread extends Thread implements SessionThread {
    */
   public void addNIOJob(NIOJob job) {
     pendingJobs.offer(job);
+    wakeup();
   }
-
+ public abstract void wakeup();
 
   protected void processNIOJob() {
     NIOJob nioJob = null;

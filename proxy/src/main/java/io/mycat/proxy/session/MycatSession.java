@@ -14,28 +14,28 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatException;
-import io.mycat.beans.MySQLServerStatus;
-import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.*;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.bindThread.BindThreadKey;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.command.CommandResolver;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.handler.MySQLPacketExchanger;
+import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
+import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.SessionThread;
+import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,31 +43,28 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 //tcp.port in {8066} or tcp.port in  {3066}
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
-        MySQLProxyServerSession<MycatSession>, BindThreadKey {
+        MySQLProxyServerSession<MycatSession> {
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatSession.class);
     private CommandDispatcher commandHandler;
-    private BiConsumer<MycatSession, Consumer<MycatSession>> blocker;
-    int resultSetCount;
 
     /**
      * mysql服务器状态
      */
-    private final MySQLServerStatus serverStatus = new MySQLServerStatus();
+    private final MycatDataContext dataContext;
     /***
      * 以下资源要做session关闭时候释放
      */
     private final ProxyBuffer proxyBuffer;//clearQueue
     private final ByteBuffer header = ByteBuffer.allocate(4);//gc
-    private String schema;
-    private MycatUser user;
-    private String transactionType = "xa";
     private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
     //  private final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);//clearQueue
     private final CrossSwapThreadBufferPool crossSwapThreadBufferPool;
@@ -83,36 +80,32 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
     private final FrontMySQLPacketResolver frontResolver;
     private byte packetId = 0;
+    private final ArrayDeque<NIOJob> delayedNioJobs = new ArrayDeque<>();
 
     private boolean gracefulShutdowning = false;
 
     public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
-                        SessionManager<MycatSession> sessionManager) {
+                        SessionManager<MycatSession> sessionManager,
+                        Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
+                                MycatContextThreadPool mycatContextThreadPool) {
         super(sessionId, nioHandler, sessionManager);
         this.proxyBuffer = new ProxyBufferImpl(bufferPool);
         this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(
                 bufferPool);
+
         this.processState = ProcessState.READY;
         this.frontResolver = new FrontMySQLPacketResolver(bufferPool, this);
         this.packetId = 0;
-    }
-
-    public void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-        blocker.accept(mycat, consumer);
+        this.dataContext = new MycatDataContextImpl(new ServerTransactionSessionRunner(transcationFactoryMap,mycatContextThreadPool,this));
     }
 
     public void setCommandHandler(CommandDispatcher commandHandler) {
         this.commandHandler = commandHandler;
     }
-    public void setblocker(CommandDispatcher commandHandler) {
-        this.commandHandler = commandHandler;
-    }
 
-    public void handle(MySQLPacket payload) {
-        assert commandHandler != null;
-        CommandResolver.handle(this, payload, commandHandler);
+    public CommandDispatcher getCommandHandler() {
+        return commandHandler;
     }
-
 
     public void switchWriteHandler(MycatSessionWriteHandler writeHandler) {
         this.writeHandler = writeHandler;
@@ -129,29 +122,23 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 //                return;
 //            }
         }
-        try {
-            this.change2ReadOpts();
-        } catch (Exception e) {
-            LOGGER.warn("", e);
+        switch (this.writeHandler.getType()) {
+            case SERVER:
+                this.change2ReadOpts();
+                break;
+            case PROXY:
+                this.change2ReadOpts();
+                break;
         }
     }
 
-    public MySQLAutoCommit getAutoCommit() {
-        return this.serverStatus.getAutoCommit();
-    }
-
-    public void setAutoCommit(MySQLAutoCommit off) {
-        LOGGER.info("set mycat session id:{} autocommit:{}", sessionId(), off);
-        this.serverStatus.setAutoCommit(off);
-    }
-
     public MySQLIsolation getIsolation() {
-        return this.serverStatus.getIsolation();
+        return this.dataContext.getIsolation();
     }
 
     public void setIsolation(MySQLIsolation isolation) {
         LOGGER.info("set mycat session id:{} isolation:{}", sessionId(), isolation);
-        this.serverStatus.setIsolation(isolation);
+        this.dataContext.setIsolation(isolation);
     }
 
 
@@ -163,23 +150,17 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         setCharset(CharsetUtil.getIndex(charsetName), charsetName);
     }
 
-
-    public void setCharsetSetResult(String charsetSetResult) {
-        this.serverStatus.setCharsetSetResult(charsetSetResult);
-    }
-
-
     public boolean isBindMySQLSession() {
         return backend != null;
     }
 
 
     private void setCharset(int index, String charsetName) {
-        this.serverStatus.setCharset(index, charsetName, Charset.defaultCharset());
+        this.dataContext.setCharset(index, charsetName, Charset.defaultCharset());
     }
 
     public void setSchema(String schema) {
-        this.schema = schema;
+        this.dataContext.useShcema(schema);
     }
 
     public MySQLClientSession getMySQLSession() {
@@ -188,7 +169,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public void close(boolean normal, String hint) {
+    public  synchronized  void close(boolean normal, String hint) {
+        try {
+            dataContext.close();
+        } catch (Exception e) {
+            LOGGER.error("", e);
+        }
         if (!normal) {
             assert hint != null;
             setLastMessage(hint);
@@ -212,7 +198,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         } catch (Exception e) {
             LOGGER.error("", e);
         }
-        onHandlerFinishedClear();
+        resetPacket();
         if (this.getMySQLSession() != null) {
             this.getMySQLSession().close(normal, hint);
         }
@@ -230,29 +216,41 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     public int getServerCapabilities() {
-        return this.serverStatus.getServerCapabilities();
+        return this.dataContext.getServerCapabilities();
     }
 
     public void setServerCapabilities(int serverCapabilities) {
-        this.serverStatus.setServerCapabilities(serverCapabilities);
+        this.dataContext.setServerCapabilities(serverCapabilities);
     }
 
     public void setMySQLSession(MySQLClientSession mySQLSession) {
         this.backend = mySQLSession;
     }
 
-    public int getAffectedRows() {
-        return this.serverStatus.getAffectedRows();
+    public long getAffectedRows() {
+        return this.dataContext.getAffectedRows();
     }
 
-    public void setAffectedRows(int affectedRows) {
-        this.serverStatus.setAffectedRows(affectedRows);
+    public void setAffectedRows(long affectedRows) {
+        this.dataContext.setAffectedRows(affectedRows);
     }
 
 
     @Override
     public Queue<ByteBuffer> writeQueue() {
         return writeQueue;
+    }
+
+    ByteBuffer lastWritePacket;
+
+    @Override
+    public ByteBuffer lastWritePacket() {
+        return lastWritePacket;
+    }
+
+    @Override
+    public void setLastWritePacket(ByteBuffer buffer) {
+        this.lastWritePacket = buffer;
     }
 
     @Override
@@ -288,75 +286,57 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     @Override
+    public void switchProxyWriteHandler() {
+        clearReadWriteOpts();
+        this.writeHandler = MySQLPacketExchanger.WriteHandler.INSTANCE;
+    }
+
+    @Override
     public String getLastMessage() {
-        String lastMessage = this.serverStatus.getLastMessage();
+        String lastMessage = this.dataContext.getLastMessage();
         return " " + lastMessage + "";
     }
 
     public String setLastMessage(String lastMessage) {
-        this.serverStatus.setLastMessage(lastMessage);
+        this.dataContext.setLastMessage(lastMessage);
         return lastMessage;
     }
 
     @Override
     public long affectedRows() {
-        return this.serverStatus.getAffectedRows();
+        return this.dataContext.getAffectedRows();
     }
 
-    @Override
-    public long incrementAffectedRows() {
-        return serverStatus.incrementAffectedRows();
-    }
 
     @Override
     public int getServerStatusValue() {
-        return this.serverStatus.getServerStatus();
-    }
-
-    @Override
-    public int setServerStatus(int s) {
-        return this.serverStatus.setServerStatus(s);
+        return this.dataContext.serverStatus();
     }
 
     public void setInTranscation(boolean on) {
-        this.serverStatus.setInTranscation(on);
+        this.dataContext.setInTransaction(on);
     }
-
-    public MySQLServerStatus getServerStatus() {
-        return this.serverStatus;
-    }
-
-
-    @Override
-    public long incrementWarningCount() {
-        return this.serverStatus.incrementWarningCount();
-    }
-
 
     public void setLastInsertId(long s) {
-        this.serverStatus.setLastInsertId(s);
+        this.dataContext.setLastInsertId(s);
     }
 
     @Override
     public int getLastErrorCode() {
-        return this.serverStatus.getWarningCount();
+        return this.dataContext.getLastErrorCode();
     }
 
     @Override
     public boolean isDeprecateEOF() {
-        return MySQLServerCapabilityFlags.isDeprecateEOF(this.serverStatus.getServerCapabilities());
+        return MySQLServerCapabilityFlags.isDeprecateEOF(this.dataContext.getServerCapabilities());
     }
 
     public int getWarningCount() {
-        return this.serverStatus.getWarningCount();
-    }
-
-    public void setWarningCount(int warningCount) {
-        this.serverStatus.setWarningCount(warningCount);
+        return this.dataContext.getWarningCount();
     }
 
     public long getLastInsertId() {
-        return this.serverStatus.getLastInsertId();
+        return this.dataContext.getLastInsertId();
     }
 
     public void resetSession() {
@@ -365,26 +345,23 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public Charset charset() {
-        return this.serverStatus.getCharset();
+        return this.dataContext.getCharset();
     }
 
-    public String getCharsetName() {
-        return this.serverStatus.getCharsetName();
-    }
 
     @Override
     public int charsetIndex() {
-        return this.serverStatus.getCharsetIndex();
+        return this.dataContext.getCharsetIndex();
     }
 
     @Override
     public int getCapabilities() {
-        return this.serverStatus.getServerCapabilities();
+        return this.dataContext.getServerCapabilities();
     }
 
     @Override
     public void setLastErrorCode(int errorCode) {
-        this.serverStatus.setLastErrorCode(errorCode);
+        this.dataContext.setVariable(MycatDataContextEnum.LAST_ERROR_CODE, errorCode);
     }
 
     @Override
@@ -399,6 +376,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public void switchMySQLServerWriteHandler() {
+        this.clearReadWriteOpts();
         this.writeHandler = WriteHandler.INSTANCE;
     }
 
@@ -433,17 +411,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     public void resetPacket() {
-        frontResolver.reset();
-        BufferPool bufPool = this.getIOThread().getBufPool();
-        for (ByteBuffer byteBuffer : writeQueue) {
-            bufPool.recycle(byteBuffer);
-        }
-        writeQueue.clear();
-    }
-
-
-    public long getSelectLimit() {
-        return serverStatus.getSelectLimit();
+        resetCurrentProxyPayload();
+        writeHandler.onClear(this);
     }
 
     @Override
@@ -461,33 +430,18 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     @Override
-    public boolean checkOkInBind() {
-        return checkOpen();
-    }
-
-    @Override
-    public String getUniqueName() {
-        return String.valueOf(sessionId);
-    }
-
-    @Override
-    public String bindArg() {
-        return transactionType;
-    }
-
-    @Override
     public int hashCode() {
         return this.sessionId;
     }
 
     @Override
     public boolean shouldHandleContentOfFilename() {
-        return this.serverStatus.getLocalInFileRequestState();
+        return this.dataContext.getVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE);
     }
 
     @Override
     public void setHandleContentOfFilename(boolean need) {
-        this.serverStatus.setLocalInFileRequestState(need);
+        this.dataContext.setVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE, need);
     }
 
 
@@ -496,71 +450,28 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.nioHandler = nioHandler;
     }
 
-
     public String getSchema() {
-        return schema;
+        return this.dataContext.getDefaultSchema();
     }
-
 
     public void useSchema(String schema) {
-        this.schema = schema;
-    }
-
-
-    public boolean hasResultset() {
-        return resultSetCount > 0;
-    }
-
-
-    public boolean hasCursor() {
-        return false;
-    }
-
-
-    public void countDownResultSet() {
-        resultSetCount--;
-    }
-
-
-    public void setResultSetCount(int count) {
-        resultSetCount = count;
-    }
-
-
-    public byte[] encode(String text) {
-        return text.getBytes(charset());
+        this.dataContext.useShcema(schema);
     }
 
     public MycatUser getUser() {
-        return user;
+        return dataContext.getUser();
     }
 
     public void setUser(MycatUser user) {
-        this.user = user;
+        this.dataContext.setUser(user);
     }
 
     public void setCharset(int index) {
         this.setCharset(CharsetUtil.getCharset(index));
     }
 
-    public String getCharacterSetResults() {
-        return this.serverStatus.getCharsetSetResult();
-    }
-
     public MycatSessionWriteHandler getWriteHandler() {
         return writeHandler;
-    }
-
-    public void setSelectLimit(long sqlSelectLimit) {
-        this.serverStatus.setSelectLimit(sqlSelectLimit);
-    }
-
-    public void setNetWriteTimeout(long netWriteTimeout) {
-        this.serverStatus.setNetWriteTimeout(netWriteTimeout);
-    }
-
-    public long getNetWriteTimeout() {
-        return this.serverStatus.getNetWriteTimeout();
     }
 
     /**
@@ -583,14 +494,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
 
-    public boolean isAccessModeReadOnly() {
-        return this.serverStatus.isAccessModeReadOnly();
-    }
-
-    public void setAccessModeReadOnly(boolean accessModeReadOnly) {
-        this.serverStatus.setAccessModeReadOnly(accessModeReadOnly);
-    }
-
     public FrontMySQLPacketResolver getMySQLPacketResolver() {
         return frontResolver;
     }
@@ -601,14 +504,54 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     public void setAutoCommit(boolean autocommit) {
-        this.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
+        this.dataContext.setAutoCommit(autocommit);
     }
 
     public boolean isInTransaction() {
-        return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+        return dataContext.isInTransaction();
     }
 
     public boolean isAutocommit() {
-        return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.AUTO_COMMIT);
+        return dataContext.isAutocommit();
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> iface) {
+        if (iface == MycatDataContext.class) {
+            return (T) dataContext;
+        }
+        return null;
+    }
+
+    public MycatDataContext getDataContext() {
+        return dataContext;
+    }
+
+    @Override
+    public boolean isWrapperFor(Class<?> iface) {
+        return unwrap(iface) != null;
+    }
+
+    public boolean isIOThreadMode() {
+        return Thread.currentThread() == this.getIOThread();
+    }
+
+    public void addDelayedNioJob(NIOJob runnable) {
+        Objects.requireNonNull(runnable);
+        delayedNioJobs.addLast(runnable);
+    }
+
+    public void runDelayedNioJob() {
+        MycatReactorThread ioThread = getIOThread();
+        while (!delayedNioJobs.isEmpty()) {
+            ioThread.addNIOJob(delayedNioJobs.pollFirst());
+        }
+    }
+
+    @Override
+    public boolean checkOpen() {
+        boolean b = super.checkOpen() && dataContext.isRunning();
+        boolean b1 = processState == ProcessState.READY || ((processState == ProcessState.DONE || processState == ProcessState.DOING) && !isIOTimeout());
+        return b && b1;
     }
 }

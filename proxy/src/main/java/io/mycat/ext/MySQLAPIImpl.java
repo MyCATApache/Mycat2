@@ -66,7 +66,7 @@ public class MySQLAPIImpl implements MySQLAPI {
   }
 
   @Override
-  public void close() {
+  public synchronized void close() {
     if (!mySQLClientSession.hasClosed()) {
       mySQLClientSession.getSessionManager().addIdleSession(mySQLClientSession);
     }

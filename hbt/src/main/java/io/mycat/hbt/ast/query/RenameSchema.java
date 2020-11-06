@@ -14,10 +14,11 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -25,12 +26,13 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class RenameSchema extends Schema {
     private final Schema schema;
     private List<String> alias;
 
     public RenameSchema(Schema schema, List<String> alias) {
-        super(Op.RENAME);
+        super(HBTOp.RENAME);
         this.schema = schema;
         this.alias = alias;
     }

@@ -1,30 +1,25 @@
 package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
-import io.mycat.beans.DatabaseClientStateApi;
+import io.mycat.util.SQLContext;
 
 import java.util.Iterator;
 import java.util.List;
 
-public interface MycatDBClientApi extends DatabaseClientStateApi {
+public interface MycatDBClientApi  {
     public List<String> explain(String sql);
 
     public PrepareObject prepare(String sql);
 
     public RowBaseIterator executeQuery(Long id, List<Object> params);
 
-    public UpdateRowIterator executeUpdate(Long id, List<Object> params);
-
     public void closePrepare(Long id);
 
     public Iterator<RowBaseIterator> executeSqls(String sql);
 
-    public UpdateRowIterator update(String sql);
 
     public RowBaseIterator query(String sql);
 
-    public UpdateRowIterator loadData(String sql);
 
     public RowBaseIterator executeRel(String text);
 
@@ -44,21 +39,27 @@ public interface MycatDBClientApi extends DatabaseClientStateApi {
 
     int getTransactionIsolation();
 
-    boolean isAutocommit();
+    boolean isAutoCommit();
+
+    boolean isInTransaction();
 
     long getMaxRow();
 
     void setMaxRow(long value);
 
-    void setAutocommit(boolean autocommit);
+    void setAutoCommit(boolean autocommit);
 
-    void set(String target, Object value);
+    void setVariable(String target, Object value);
 
-    Object get(String target);
+    Object getVariable(String target);
 
     public void close();
 
     void recycleResource();
 
     int getServerStatus();
+
+    SQLContext sqlContext();
+
+    long lastInsertId();
 }

@@ -1,12 +1,17 @@
 package io.mycat.upondb;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@AllArgsConstructor
+
 @Getter
 public class ProxyInfo {
-    String target;
+    private final String targetName;
     String sql;
-    boolean update;
+    boolean updateOpt;
+
+    public ProxyInfo(String targetName, String sql,boolean updateOpt) {
+        this.targetName = targetName;
+        this.sql = sql;
+        this.updateOpt = updateOpt;
+    }
 }

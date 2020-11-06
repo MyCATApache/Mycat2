@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2020>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,6 +20,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 
@@ -69,30 +72,32 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
 
     @Override
     public int getInt(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Integer) o;
+        return o.intValue();
     }
 
     @Override
     public long getLong(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+
+        Number o = (Number) getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Long) o;
+        return ((Number) o).longValue();
+
     }
 
     @Override
     public float getFloat(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Float) o;
+        return ((Number) o).floatValue();
     }
 
     @Override
     public double getDouble(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Double) o;
+        return ((Number) o).doubleValue();
     }
 
     @Override
@@ -103,24 +108,24 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return (Date) o;
+        return (LocalDate ) o;
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return (Time) o;
+        return (Duration) o;
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return (Timestamp) o;
+        return (LocalDateTime) o;
     }
 
     @Override

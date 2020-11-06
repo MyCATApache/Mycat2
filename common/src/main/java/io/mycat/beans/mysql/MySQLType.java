@@ -20,6 +20,7 @@ package io.mycat.beans.mysql;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
+import java.util.Comparator;
 
 
 public enum MySQLType implements SQLType {
@@ -39,28 +40,28 @@ public enum MySQLType implements SQLType {
      * NUMERIC[(M[,D])] [UNSIGNED] [ZEROFILL],
      * FIXED[(M[,D])] [UNSIGNED] [ZEROFILL]
      */
-    DECIMAL("DECIMAL", Types.DECIMAL, BigDecimal.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 65L, "[(M[,D])] [UNSIGNED] [ZEROFILL]"),
+    DECIMAL("DECIMAL", Types.DECIMAL, BigDecimal.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 65L, "[(M[,D])] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(BigDecimal)x)),
     /**
      * DECIMAL[(M[,D])] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#DECIMAL
      */
     DECIMAL_UNSIGNED("DECIMAL UNSIGNED", Types.DECIMAL, BigDecimal.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL,
-            65L, "[(M[,D])] [UNSIGNED] [ZEROFILL]"),
+            65L, "[(M[,D])] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(BigDecimal)x)),
     /**
      * TINYINT[(M)] [UNSIGNED] [ZEROFILL]
      * A very small integer. The signed range is -128 to 127. The unsigned range is 0 to 255.
      * 
      * Protocol: FIELD_TYPE_TINY = 1
      */
-    TINYINT("TINYINT", Types.TINYINT, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 3L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+    TINYINT("TINYINT", Types.TINYINT, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 3L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * TINYINT[(M)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#TINYINT
      */
     TINYINT_UNSIGNED("TINYINT UNSIGNED", Types.TINYINT, Integer.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 3L,
-            "[(M)] [UNSIGNED] [ZEROFILL]"),
+            "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * BOOL, BOOLEAN
      * These types are synonyms for TINYINT(1). A value of zero is considered false. Nonzero values are considered true
@@ -70,21 +71,21 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_TINY = 1
      */
-    BOOLEAN("BOOLEAN", Types.BOOLEAN, Boolean.class, 0, MySQLType.IS_NOT_DECIMAL, 3L, ""),
+    BOOLEAN("BOOLEAN", Types.BOOLEAN, Boolean.class, 0, MySQLType.IS_NOT_DECIMAL, 3L, "",Comparator.comparing((x)->(Boolean)x)),
     /**
      * SMALLINT[(M)] [UNSIGNED] [ZEROFILL]
      * A small integer. The signed range is -32768 to 32767. The unsigned range is 0 to 65535.
      * 
      * Protocol: FIELD_TYPE_SHORT = 2
      */
-    SMALLINT("SMALLINT", Types.SMALLINT, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 5L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+    SMALLINT("SMALLINT", Types.SMALLINT, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 5L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * SMALLINT[(M)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#SMALLINT
      */
     SMALLINT_UNSIGNED("SMALLINT UNSIGNED", Types.SMALLINT, Integer.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL,
-            5L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+            5L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * INT[(M)] [UNSIGNED] [ZEROFILL]
      * A normal-size integer. The signed range is -2147483648 to 2147483647. The unsigned range is 0 to 4294967295.
@@ -93,14 +94,14 @@ public enum MySQLType implements SQLType {
      * 
      * INTEGER[(M)] [UNSIGNED] [ZEROFILL] is a synonym for INT.
      */
-    INT("INT", Types.INTEGER, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 10L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+    INT("INT", Types.INTEGER, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 10L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * INT[(M)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#INT
      */
     INT_UNSIGNED("INT UNSIGNED", Types.INTEGER, Long.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 10L,
-            "[(M)] [UNSIGNED] [ZEROFILL]"),
+            "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Long)x)),
     /**
      * FLOAT[(M,D)] [UNSIGNED] [ZEROFILL]
      * A small (single-precision) floating-point number. Permissible values are -3.402823466E+38 to -1.175494351E-38, 0,
@@ -120,14 +121,14 @@ public enum MySQLType implements SQLType {
      * If p is from 25 to 53, the data type becomes DOUBLE with no M or D values. The range of the resulting column is the same as
      * for the single-precision FLOAT or double-precision DOUBLE data types.
      */
-    FLOAT("FLOAT", Types.REAL, Float.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 12L, "[(M,D)] [UNSIGNED] [ZEROFILL]"),
+    FLOAT("FLOAT", Types.REAL, Float.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 12L, "[(M,D)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Float)x)),
     /**
      * FLOAT[(M,D)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#FLOAT
      */
     FLOAT_UNSIGNED("FLOAT UNSIGNED", Types.REAL, Float.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 12L,
-            "[(M,D)] [UNSIGNED] [ZEROFILL]"),
+            "[(M,D)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Float)x)),
     /**
      * DOUBLE[(M,D)] [UNSIGNED] [ZEROFILL]
      * A normal-size (double-precision) floating-point number. Permissible values are -1.7976931348623157E+308 to
@@ -144,18 +145,18 @@ public enum MySQLType implements SQLType {
      * DOUBLE PRECISION[(M,D)] [UNSIGNED] [ZEROFILL],
      * REAL[(M,D)] [UNSIGNED] [ZEROFILL]. Exception: If the REAL_AS_FLOAT SQL mode is enabled, REAL is a synonym for FLOAT rather than DOUBLE.
      */
-    DOUBLE("DOUBLE", Types.DOUBLE, Double.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 22L, "[(M,D)] [UNSIGNED] [ZEROFILL]"),
+    DOUBLE("DOUBLE", Types.DOUBLE, Double.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 22L, "[(M,D)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Double)x)),
     /**
      * DOUBLE[(M,D)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#DOUBLE
      */
     DOUBLE_UNSIGNED("DOUBLE UNSIGNED", Types.DOUBLE, Double.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 22L,
-            "[(M,D)] [UNSIGNED] [ZEROFILL]"),
+            "[(M,D)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Double)x)),
     /**
      * FIELD_TYPE_NULL = 6
      */
-    NULL("NULL", Types.NULL, Object.class, 0, MySQLType.IS_NOT_DECIMAL, 0L, ""),
+    NULL("NULL", Types.NULL, Object.class, 0, MySQLType.IS_NOT_DECIMAL, 0L, "",Comparator.comparing((x)->(Comparable)x)),
     /**
      * TIMESTAMP[(fsp)]
      * A timestamp. The range is '1970-01-01 00:00:01.000000' UTC to '2038-01-19 03:14:07.999999' UTC.
@@ -170,7 +171,7 @@ public enum MySQLType implements SQLType {
      */
     // TODO If MySQL server run with the MAXDB SQL mode enabled, TIMESTAMP is identical with DATETIME. If this mode is enabled at the time that a table is created, TIMESTAMP columns are created as DATETIME columns.
     // As a result, such columns use DATETIME display format, have the same range of values, and there is no automatic initialization or updating to the current date and time
-    TIMESTAMP("TIMESTAMP", Types.TIMESTAMP, Timestamp.class, 0, MySQLType.IS_NOT_DECIMAL, 26L, "[(fsp)]"),
+    TIMESTAMP("TIMESTAMP", Types.TIMESTAMP, Timestamp.class, 0, MySQLType.IS_NOT_DECIMAL, 26L, "[(fsp)]",Comparator.comparing((x)->(Timestamp)x)),
     /**
      * BIGINT[(M)] [UNSIGNED] [ZEROFILL]
      * A large integer. The signed range is -9223372036854775808 to 9223372036854775807. The unsigned range is 0 to 18446744073709551615.
@@ -179,28 +180,28 @@ public enum MySQLType implements SQLType {
      * 
      * SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE.
      */
-    BIGINT("BIGINT", Types.BIGINT, Long.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 19L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+    BIGINT("BIGINT", Types.BIGINT, Long.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 19L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Long)x)),
     /**
      * BIGINT[(M)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#BIGINT
      */
     BIGINT_UNSIGNED("BIGINT UNSIGNED", Types.BIGINT, BigInteger.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 20L,
-            "[(M)] [UNSIGNED] [ZEROFILL]"),
+            "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(BigInteger)x)),
     /**
      * MEDIUMINT[(M)] [UNSIGNED] [ZEROFILL]
      * A medium-sized integer. The signed range is -8388608 to 8388607. The unsigned range is 0 to 16777215.
      * 
      * Protocol: FIELD_TYPE_INT24 = 9
      */
-    MEDIUMINT("MEDIUMINT", Types.INTEGER, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 7L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+    MEDIUMINT("MEDIUMINT", Types.INTEGER, Integer.class, MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL, 7L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * MEDIUMINT[(M)] UNSIGNED [ZEROFILL]
      * 
      * @see MySQLType#MEDIUMINT
      */
     MEDIUMINT_UNSIGNED("MEDIUMINT UNSIGNED", Types.INTEGER, Integer.class, MySQLType.FIELD_FLAG_UNSIGNED | MySQLType.FIELD_FLAG_ZEROFILL, MySQLType.IS_DECIMAL,
-            8L, "[(M)] [UNSIGNED] [ZEROFILL]"),
+            8L, "[(M)] [UNSIGNED] [ZEROFILL]",Comparator.comparing((x)->(Integer)x)),
     /**
      * DATE
      * A date. The supported range is '1000-01-01' to '9999-12-31'. MySQL displays DATE values in 'YYYY-MM-DD' format,
@@ -208,7 +209,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_DATE = 10
      */
-    DATE("DATE", Types.DATE, Date.class, 0, MySQLType.IS_NOT_DECIMAL, 10L, ""),
+    DATE("DATE", Types.DATE, Date.class, 0, MySQLType.IS_NOT_DECIMAL, 10L, "",Comparator.comparing((x)->(Date)x)),
     /**
      * TIME[(fsp)]
      * A time. The range is '-838:59:59.000000' to '838:59:59.000000'. MySQL displays TIME values in
@@ -218,7 +219,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_TIME = 11
      */
-    TIME("TIME", Types.TIME, Time.class, 0, MySQLType.IS_NOT_DECIMAL, 16L, "[(fsp)]"),
+    TIME("TIME", Types.TIME, Time.class, 0, MySQLType.IS_NOT_DECIMAL, 16L, "[(fsp)]",Comparator.comparing((x)->(Time)x)),
     /**
      * DATETIME[(fsp)]
      * A date and time combination. The supported range is '1000-01-01 00:00:00.000000' to '9999-12-31 23:59:59.999999'.
@@ -229,14 +230,14 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_DATETIME = 12
      */
-    DATETIME("DATETIME", Types.TIMESTAMP, Timestamp.class, 0, MySQLType.IS_NOT_DECIMAL, 26L, "[(fsp)]"),
+    DATETIME("DATETIME", Types.TIMESTAMP, Timestamp.class, 0, MySQLType.IS_NOT_DECIMAL, 26L, "[(fsp)]",Comparator.comparing((x)->(Timestamp)x)),
     /**
      * YEAR[(4)]
      * A year in four-digit format. MySQL displays YEAR values in YYYY format, but permits assignment of
      * values to YEAR columns using either strings or numbers. Values display as 1901 to 2155, and 0000.
      * Protocol: FIELD_TYPE_YEAR = 13
      */
-    YEAR("YEAR", Types.DATE, Date.class, 0, MySQLType.IS_NOT_DECIMAL, 4L, "[(4)]"),
+    YEAR("YEAR", Types.DATE, Date.class, 0, MySQLType.IS_NOT_DECIMAL, 4L, "[(4)]",Comparator.comparing((x)->(Date)x)),
     /**
      * [NATIONAL] VARCHAR(M) [CHARACTER SET charset_name] [COLLATE collation_name]
      * A variable-length string. M represents the maximum column length in characters. The range of M is 0 to 65,535.
@@ -258,7 +259,7 @@ public enum MySQLType implements SQLType {
      * Protocol: FIELD_TYPE_VARCHAR = 15
      * Protocol: FIELD_TYPE_VAR_STRING = 253
      */
-    VARCHAR("VARCHAR", Types.VARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "(M) [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    VARCHAR("VARCHAR", Types.VARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "(M) [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * VARBINARY(M)
      * The VARBINARY type is similar to the VARCHAR type, but stores binary byte strings rather than nonbinary
@@ -267,20 +268,20 @@ public enum MySQLType implements SQLType {
      * Protocol: FIELD_TYPE_VARCHAR = 15
      * Protocol: FIELD_TYPE_VAR_STRING = 253
      */
-    VARBINARY("VARBINARY", Types.VARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "(M)"),
+    VARBINARY("VARBINARY", Types.VARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "(M)", Comparator.naturalOrder()),
     /**
      * BIT[(M)]
      * A bit-field type. M indicates the number of bits per value, from 1 to 64. The default is 1 if M is omitted.
      * Protocol: FIELD_TYPE_BIT = 16
      */
-    BIT("BIT", Types.BIT, Boolean.class, 0, MySQLType.IS_DECIMAL, 1L, "[(M)]"), // TODO maybe precision=8 ?
+    BIT("BIT", Types.BIT, Boolean.class, 0, MySQLType.IS_DECIMAL, 1L, "[(M)]", Comparator.comparing((x)->(Boolean)x)), // TODO maybe precision=8 ?
     /**
      * The size of JSON documents stored in JSON columns is limited to the value of the max_allowed_packet system variable (max value 1073741824).
      * (While the server manipulates a JSON value internally in memory, it can be larger; the limit applies when the server stores it.)
      * 
      * Protocol: FIELD_TYPE_BIT = 245
      */
-    JSON("JSON", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 1073741824L, ""),
+    JSON("JSON", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 1073741824L, "",Comparator.comparing((x)->(String)x)),
     /**
      * ENUM('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]
      * An enumeration. A string object that can have only one value, chosen from the list of values 'value1',
@@ -291,7 +292,7 @@ public enum MySQLType implements SQLType {
      * Protocol: FIELD_TYPE_ENUM = 247
      */
     ENUM("ENUM", Types.CHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 65535L,
-            "('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]"),
+            "('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * SET('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]
      * A set. A string object that can have zero or more values, each of which must be chosen from the list
@@ -301,7 +302,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_SET = 248
      */
-    SET("SET", Types.CHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 64L, "('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    SET("SET", Types.CHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 64L, "('value1','value2',...) [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * TINYBLOB
      * A BLOB column with a maximum length of 255 (28 - 1) bytes. Each TINYBLOB value is stored using a
@@ -309,7 +310,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol:FIELD_TYPE_TINY_BLOB = 249
      */
-    TINYBLOB("TINYBLOB", Types.VARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 255L, ""),
+    TINYBLOB("TINYBLOB", Types.VARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 255L, "",Comparator.naturalOrder()),
     /**
      * TINYTEXT [CHARACTER SET charset_name] [COLLATE collation_name]
      * A TEXT column with a maximum length of 255 (28 - 1) characters. The effective maximum length
@@ -318,7 +319,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol:FIELD_TYPE_TINY_BLOB = 249
      */
-    TINYTEXT("TINYTEXT", Types.VARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 255L, " [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    TINYTEXT("TINYTEXT", Types.VARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 255L, " [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * MEDIUMBLOB
      * A BLOB column with a maximum length of 16,777,215 (224 - 1) bytes. Each MEDIUMBLOB value is stored
@@ -326,7 +327,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_MEDIUM_BLOB = 250
      */
-    MEDIUMBLOB("MEDIUMBLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 16777215L, ""),
+    MEDIUMBLOB("MEDIUMBLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 16777215L, "",Comparator.naturalOrder()),
     /**
      * MEDIUMTEXT [CHARACTER SET charset_name] [COLLATE collation_name]
      * A TEXT column with a maximum length of 16,777,215 (224 - 1) characters. The effective maximum length
@@ -335,7 +336,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_MEDIUM_BLOB = 250
      */
-    MEDIUMTEXT("MEDIUMTEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 16777215L, " [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    MEDIUMTEXT("MEDIUMTEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 16777215L, " [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * LONGBLOB
      * A BLOB column with a maximum length of 4,294,967,295 or 4GB (232 - 1) bytes. The effective maximum length
@@ -344,7 +345,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_LONG_BLOB = 251
      */
-    LONGBLOB("LONGBLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 4294967295L, ""),
+    LONGBLOB("LONGBLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 4294967295L, "",Comparator.naturalOrder()),
     /**
      * LONGTEXT [CHARACTER SET charset_name] [COLLATE collation_name]
      * A TEXT column with a maximum length of 4,294,967,295 or 4GB (232 - 1) characters. The effective
@@ -355,7 +356,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_LONG_BLOB = 251
      */
-    LONGTEXT("LONGTEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 4294967295L, " [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    LONGTEXT("LONGTEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 4294967295L, " [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * BLOB[(M)]
      * A BLOB column with a maximum length of 65,535 (216 - 1) bytes. Each BLOB value is stored using
@@ -365,7 +366,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_BLOB = 252
      */
-    BLOB("BLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "[(M)]"),
+    BLOB("BLOB", Types.LONGVARBINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "[(M)]",Comparator.naturalOrder()),
     /**
      * TEXT[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]
      * A TEXT column with a maximum length of 65,535 (216 - 1) characters. The effective maximum length
@@ -376,7 +377,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_BLOB = 252
      */
-    TEXT("TEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    TEXT("TEXT", Types.LONGVARCHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * [NATIONAL] CHAR[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]
      * A FIXED-length string that is always right-padded with spaces to the specified length when stored.
@@ -394,7 +395,7 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: FIELD_TYPE_STRING = 254
      */
-    CHAR("CHAR", Types.CHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 255L, "[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]"),
+    CHAR("CHAR", Types.CHAR, String.class, 0, MySQLType.IS_NOT_DECIMAL, 255L, "[(M)] [CHARACTER SET charset_name] [COLLATE collation_name]",Comparator.comparing((x)->(String)x)),
     /**
      * BINARY(M)
      * The BINARY type is similar to the CHAR type, but stores binary byte strings rather than nonbinary character strings.
@@ -404,20 +405,20 @@ public enum MySQLType implements SQLType {
      * 
      * Protocol: no concrete type on the wire TODO: really?
      */
-    BINARY("BINARY", Types.BINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 255L, "(M)"),
+    BINARY("BINARY", Types.BINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 255L, "(M)",Comparator.naturalOrder()),
     /**
      * Top class for Spatial Data Types
      * 
      * Protocol: FIELD_TYPE_GEOMETRY = 255
      */
-    GEOMETRY("GEOMETRY", Types.BINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, ""), // TODO check precision, it isn't well documented, only mentioned that WKB format is represented by BLOB
+    GEOMETRY("GEOMETRY", Types.BINARY, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "",Comparator.naturalOrder()), // TODO check precision, it isn't well documented, only mentioned that WKB format is represented by BLOB
     /**
      * Fall-back type for those MySQL data types which c/J can't recognize.
      * Handled the same as BLOB.
      * 
      * Has no protocol ID.
      */
-    UNKNOWN("UNKNOWN", Types.OTHER, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "");
+    UNKNOWN("UNKNOWN", Types.OTHER, null, 0, MySQLType.IS_NOT_DECIMAL, 65535L, "",Comparator.naturalOrder());
 
 
 
@@ -616,6 +617,7 @@ public enum MySQLType implements SQLType {
     private final boolean isDecimal;
     private final Long precision;
     private final String createParams;
+    private final Comparator comparator;
 
     /**
      * 
@@ -644,7 +646,7 @@ public enum MySQLType implements SQLType {
      * @param createParams
      *            params
      */
-    private MySQLType(String mysqlTypeName, int jdbcType, Class<?> javaClass, int allowedFlags, boolean isDec, Long precision, String createParams) {
+    private MySQLType(String mysqlTypeName, int jdbcType, Class<?> javaClass, int allowedFlags, boolean isDec, Long precision, String createParams,Comparator comparator) {
         this.name = mysqlTypeName;
         this.jdbcType = jdbcType;
         this.javaClass = javaClass;
@@ -652,6 +654,7 @@ public enum MySQLType implements SQLType {
         this.isDecimal = isDec;
         this.precision = precision;
         this.createParams = createParams;
+        this.comparator = comparator;
     }
 
     public String getName() {
@@ -758,4 +761,11 @@ public enum MySQLType implements SQLType {
     public static final int FIELD_TYPE_STRING = 254;
     public static final int FIELD_TYPE_GEOMETRY = 255;
 
+    public Class<?> getJavaClass() {
+        return javaClass;
+    }
+
+    public Comparator getComparator() {
+        return comparator;
+    }
 }

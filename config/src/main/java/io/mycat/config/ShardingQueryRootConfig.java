@@ -1,69 +1,30 @@
 package io.mycat.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import io.mycat.util.YamlUtil;
+import lombok.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
+@EqualsAndHashCode
 public class ShardingQueryRootConfig {
-    Map<String, LogicSchemaConfig> schemas = new HashMap<>();
-    PrototypeServer prototype;
+    List<LogicSchemaConfig> schemas = new ArrayList<>();
+    String prototype;
 
-    @AllArgsConstructor
-    @Data
-    @Builder
-    public static class LogicTableConfig {
-        List<BackEndTableInfoConfig> dataNodes;
-        List<Column> columns = new ArrayList<>();
-        String createTableSQL;
-
-        public LogicTableConfig() {
-        }
+    public List<LogicSchemaConfig> getSchemas() {
+        return schemas;
     }
 
-    @AllArgsConstructor
-    @Data
-    @Builder
-    public static class BackEndTableInfoConfig {
-        private String targetName;
-        private String schemaName;
-        private String tableName;
-
-        public BackEndTableInfoConfig() {
-        }
-    }
-
-
-    @Data
-    public static final class LogicSchemaConfig {
-        Map<String,LogicTableConfig> tables = new HashMap<>();
-    }
-
-    @AllArgsConstructor
-    @Data
-    @Builder
-    public static final class Column {
-        String columnName;
-        SharingFuntionRootConfig.ShardingFuntion function;
-         String shardingType;
-         List<String> map;
-
-        public Column() {
-        }
-
-        public List<String> getMap() {
-            return map == null? Collections.emptyList():map;
-        }
-    }
-
-    @Data
-    @Builder
-    public static class PrototypeServer{
-        String url;
-        String user;
-        String password;
+    public static void main(String[] args) {
+        ShardingQueryRootConfig rootConfig = new ShardingQueryRootConfig();
+        LogicSchemaConfig logicSchemaConfig = new LogicSchemaConfig();
+        logicSchemaConfig.setTargetName("db1");
+        logicSchemaConfig.setTargetName("defaultDs");
+        rootConfig.getSchemas().add(logicSchemaConfig);
+        System.out.println(YamlUtil.dump(rootConfig));
     }
 
 }

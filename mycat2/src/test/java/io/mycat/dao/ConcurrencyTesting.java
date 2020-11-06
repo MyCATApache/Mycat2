@@ -10,18 +10,15 @@ public class ConcurrencyTesting {
     public static void main(String[] args) {
         AtomicLong counter = new AtomicLong(0);
 
-       for (int i = 0;i<10;i++){
+       for (int i = 0;i<1000;i++){
             new Thread(() -> {
                 try {
                     while (true) {
                         try (Connection mySQLConnection = getMySQLConnection()) {
-                            mySQLConnection.setAutoCommit(false);
                             try (Statement statement = mySQLConnection.createStatement()) {
-                                statement.executeUpdate(String.format(
-                                        "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('%s'); ",
-                                        Long.valueOf(counter.getAndIncrement()).toString()));
+                                statement.execute("select 1");
+                                statement.execute("SELECT 1  FROM db1.travelrecord");
                             }
-                            mySQLConnection.commit();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -31,6 +28,31 @@ public class ConcurrencyTesting {
                 }
             }).start();
         }
+
+       /*
+
+        for (int i = 0; i < 1 ;i++){
+            new Thread(() -> {
+                try {
+                    try (Connection mySQLConnection = getMySQLConnection()) {
+                        while (true) {
+                            try (Statement statement = mySQLConnection.createStatement()) {
+                                long start = System.currentTimeMillis();
+                                statement.execute("SELECT 1  FROM db1.travelrecord");
+                                long end = System.currentTimeMillis();
+                                System.out.println(end-start);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+
+        */
 
 
     }

@@ -50,7 +50,7 @@ public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
             schemaName = this.schemaName;
         }
         Objects.requireNonNull(tableName);
-        SchemaInfo mappingTable = getMappingTable(schemaName.toLowerCase(), tableName.toLowerCase());
+        SchemaInfo mappingTable = getMappingTable(schemaName, tableName);
         if (mappingTable!=null){
             x.setExpr(new SQLPropertyExpr(mappingTable.getTargetSchema(), mappingTable.getTargetTable()));
         }
@@ -59,7 +59,7 @@ public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
 
 
     public SchemaInfo getMappingTable(String schemaName, String tableName) {
-        String key = schemaName.toLowerCase() + "." + tableName.toLowerCase();
+        String key = schemaName + "." + tableName;
         return dbSet.get(key);
     }
 

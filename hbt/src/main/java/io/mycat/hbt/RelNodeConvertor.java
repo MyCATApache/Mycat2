@@ -15,11 +15,17 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.table.MycatSQLTableScan;
-import io.mycat.calcite.table.MycatTransientSQLTable;
+import com.google.common.collect.ImmutableMultimap;
+import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.hbt3.View;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -32,8 +38,11 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.NlsString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,9 +61,10 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CAST;
  * @author jamie12221 294712221@qq.com
  **/
 public class RelNodeConvertor {
+    final static Logger log = LoggerFactory.getLogger(RelNodeConvertor.class);
 
-    public static Expr convertRexNode(RexNode condition, List<String> fieldNames) {
-        ExprExplain exprExplain = new ExprExplain(fieldNames);
+    public static Expr convertRexNode(RexNode condition) {
+        ExprExplain exprExplain = new ExprExplain();
         return exprExplain.getExpr(condition);
     }
 
@@ -96,16 +106,38 @@ public class RelNodeConvertor {
                 return logicalCorrelate(relNode);
             }
         }
-        if (relNode instanceof TableScan) {
+        if (relNode instanceof MycatTransientSQLTableScan) {
             List<FieldType> fields = getFields(relNode);
-            TableScan relNode1 = (TableScan) relNode;
-            MycatTransientSQLTable table1 = relNode1.getTable().unwrap(MycatTransientSQLTable.class);
-            if (table1 != null) {
-                return new FromSqlSchema(fields, table1.getTargetName(), table1.getExplainSQL());
+            MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) relNode;
+            return new FromSqlSchema(fields, tableScan.getTargetName(), tableScan.getSql());
+        }
+        if (relNode instanceof View) {
+            List<FieldType> fields = getFields(relNode);
+            View tableScan = (View) relNode;
+            ImmutableMultimap<String, SqlString> stringStringImmutableMultimap = tableScan.expandToSql(false,Collections.emptyList());
+            List<Schema> fromSqlSchemas = stringStringImmutableMultimap.entries().stream().map(i -> new FromSqlSchema(fields, i.getKey(), i.getValue().getSql())).collect(Collectors.toList());
+            if (fromSqlSchemas.size() > 1) {
+                return new SetOpSchema(HBTOp.UNION_ALL, fromSqlSchemas);
+            } else {
+                return fromSqlSchemas.get(0);
             }
-            MycatSQLTableScan unwrap = relNode1.getTable().unwrap(MycatSQLTableScan.class);
-            if (unwrap != null) {
-                return new FromSqlSchema(fields, unwrap.getTargetName(), unwrap.getSql());
+        }
+        if (relNode instanceof LogicalTableScan) {
+            List<FieldType> fields = getFields(relNode);
+            LogicalTableScan tableScan = (LogicalTableScan) relNode;
+            MycatPhysicalTable physicalTable = tableScan.getTable().unwrap(MycatPhysicalTable.class);
+            if (physicalTable != null) {
+                DataNode dataNode = physicalTable.getDataNode();
+                String targetName = dataNode.getTargetName();
+                String sql = "select * from " + dataNode.getTargetSchemaTable();
+                return new FromSqlSchema(fields, targetName, sql);
+            }
+            MycatLogicTable mycatLogicTable = tableScan.getTable().unwrap(MycatLogicTable.class);
+            if (mycatLogicTable != null) {
+                TableHandler tableHandler = mycatLogicTable.logicTable();
+                String schemaName = tableHandler.getSchemaName();
+                String tableName = tableHandler.getTableName();
+                return new FromTableSchema(ImmutableList.of(schemaName, tableName));
             }
         }
         throw new UnsupportedOperationException();
@@ -126,31 +158,14 @@ public class RelNodeConvertor {
     private static Schema logicalJoin(RelNode relNode) {
         LogicalJoin join = (LogicalJoin) relNode;
         JoinRelType joinType = join.getJoinType();
+        RelNode rightRelNode = join.getRight();
+        RelNode leftRelNode = join.getLeft();
         RexNode condition = join.getCondition();
         List<String> fieldList = join.getRowType().getFieldNames();
-        ExprExplain exprExplain = new ExprExplain(fieldList);
+        ExprExplain exprExplain = new ExprExplain(join);
         List<RelNode> inputs = join.getInputs();
-        Schema left = convertRelNode(inputs.get(0));
-        Schema right = convertRelNode(inputs.get(1));
-
-        ArrayList<String> list = new ArrayList<>();
-        Map<String, Integer> counter = new HashMap<>();
-        for (String s : fieldList) {
-            if (!counter.containsKey(s)) {
-                list.add(s);
-                counter.compute(s, (s1, integer) -> {
-                    if (integer == null) return 0;
-                    return integer + 1;
-                });
-            } else {
-                Integer compute = counter.compute(s, (s1, integer) -> {
-                    if (integer == null) return 0;
-                    return integer + 1;
-                });
-                list.add(s + compute);
-            }
-        }
-      //  right = getJoinRightExpr(inputs.get(0).getRowType().getFieldNames(), inputs.get(1).getRowType().getFieldNames(), list, right);
+        Schema left = convertRelNode(leftRelNode);
+        Schema right = convertRelNode(rightRelNode);
         return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition), left, right);
     }
 
@@ -183,20 +198,20 @@ public class RelNodeConvertor {
         return right;
     }
 
-    private static Op joinType(JoinRelType joinType, boolean cor) {
+    private static HBTOp joinType(JoinRelType joinType, boolean cor) {
         switch (joinType) {
             case INNER:
-                return cor ? Op.CORRELATE_INNER_JOIN : Op.INNER_JOIN;
+                return cor ? HBTOp.CORRELATE_INNER_JOIN : HBTOp.INNER_JOIN;
             case LEFT:
-                return cor ? Op.CORRELATE_LEFT_JOIN : Op.LEFT_JOIN;
+                return cor ? HBTOp.CORRELATE_LEFT_JOIN : HBTOp.LEFT_JOIN;
             case RIGHT:
-                return Op.RIGHT_JOIN;
+                return HBTOp.RIGHT_JOIN;
             case FULL:
-                return Op.FULL_JOIN;
+                return HBTOp.FULL_JOIN;
             case SEMI:
-                return Op.SEMI_JOIN;
+                return HBTOp.SEMI_JOIN;
             case ANTI:
-                return Op.ANTI_JOIN;
+                return HBTOp.ANTI_JOIN;
         }
         throw new UnsupportedOperationException();
     }
@@ -205,12 +220,12 @@ public class RelNodeConvertor {
         LogicalFilter relNode1 = (LogicalFilter) relNode;
         RexNode condition = relNode1.getCondition();
         List<String> fieldNames = relNode1.getInput().getRowType().getFieldNames();
-        Expr expr = convertRexNode(condition, fieldNames);
+        Expr expr = convertRexNode(condition);
         return new FilterSchema(convertRelNode(relNode1.getInput()), expr);
     }
 
-    private static List<Expr> getExprs(List<RexNode> map, List<String> fieldNames) {
-        ExprExplain exprExplain = new ExprExplain(fieldNames);
+    private static List<Expr> getExprs(List<RexNode> map, Join join) {
+        ExprExplain exprExplain = new ExprExplain(join);
         return map.stream().map(i -> exprExplain.getExpr(i)).collect(Collectors.toList());
     }
 
@@ -265,11 +280,11 @@ public class RelNodeConvertor {
         schemas.addAll(schema.subList(1, schema.size()));
         switch (kind) {
             case UNION:
-                return new SetOpSchema(logicalUnion.all ? Op.UNION_ALL : Op.UNION_DISTINCT, schemas);
+                return new SetOpSchema(logicalUnion.all ? HBTOp.UNION_ALL : HBTOp.UNION_DISTINCT, schemas);
             case EXCEPT:
-                return new SetOpSchema(logicalUnion.all ? Op.EXCEPT_ALL : Op.EXCEPT_DISTINCT, schemas);
+                return new SetOpSchema(logicalUnion.all ? HBTOp.EXCEPT_ALL : HBTOp.EXCEPT_DISTINCT, schemas);
             case INTERSECT: {
-                return new SetOpSchema(logicalUnion.all ? Op.INTERSECT_ALL : Op.INTERSECT_DISTINCT, schemas);
+                return new SetOpSchema(logicalUnion.all ? HBTOp.INTERSECT_ALL : HBTOp.INTERSECT_DISTINCT, schemas);
             }
             default:
                 throw new UnsupportedOperationException();
@@ -292,7 +307,7 @@ public class RelNodeConvertor {
         LogicalAggregate relNode1 = (LogicalAggregate) relNode;
         Schema schema = convertRelNode(relNode1.getInput());
         Aggregate.Group groupType = relNode1.getGroupType();
-        return new GroupSchema(schema, getGroupItems(relNode1), getAggCallList(relNode1.getInput(), relNode1.getAggCallList()));
+        return new GroupBySchema(schema, getGroupItems(relNode1), getAggCallList(relNode1.getInput(), relNode1.getAggCallList()));
     }
 
     private static List<AggregateCall> getAggCallList(RelNode org, List<org.apache.calcite.rel.core.AggregateCall> aggCallList) {
@@ -303,18 +318,18 @@ public class RelNodeConvertor {
         List<String> fieldNames = inputRel.getRowType().getFieldNames();
         RelDataType type = call.getType();
         String alias = call.getName();
-        String aggeName = HBTCalciteSupport.INSTANCE.getAggFunctionName(call.getAggregation());
+        String ageName = HBTCalciteSupport.INSTANCE.getAggFunctionName(call.getAggregation());
         List<Expr> argList = call.getArgList().stream().map(i -> new Identifier(fieldNames.get(i))).collect(Collectors.toList());
         boolean distinct = call.isDistinct();
         boolean approximate = call.isApproximate();
         boolean ignoreNulls = call.ignoreNulls();
         Expr filter = call.hasFilter() ? new Identifier(inputRel.getRowType().getFieldNames().get(call.filterArg)) : null;
         List<OrderItem> orderby = getOrderby(inputRel, call.getCollation());
-        return new AggregateCall(aggeName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
+        return new AggregateCall(ageName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
     }
 
-    private static List<GroupItem> getGroupItems(LogicalAggregate aggregate) {
-        List<GroupItem> list = new ArrayList<>();
+    private static List<GroupKey> getGroupItems(LogicalAggregate aggregate) {
+        List<GroupKey> list = new ArrayList<>();
         List<String> fieldNames = aggregate.getInput().getRowType().getFieldNames();
         final ImmutableList<ImmutableBitSet> groupSets = aggregate.getGroupSets();
         for (ImmutableBitSet set : groupSets) {
@@ -322,7 +337,7 @@ public class RelNodeConvertor {
             for (Integer integer : set) {
                 arrayList.add(new Identifier(fieldNames.get(integer)));
             }
-            list.add(new GroupItem(arrayList));
+            list.add(new GroupKey(arrayList));
         }
         return list;
     }
@@ -331,7 +346,7 @@ public class RelNodeConvertor {
         LogicalProject project = (LogicalProject) relNode;
         Schema schema = convertRelNode(project.getInput());
         List<String> fieldNames = project.getInput().getRowType().getFieldNames();
-        List<Expr> expr = getExprs(project.getChildExps(), fieldNames);
+        List<Expr> expr = getExprs(project.getProjects(), null);
         RelDataType outRowType = project.getRowType();
         List<String> outFieldNames = outRowType.getFieldNames();
         ArrayList<Expr> outExpr = new ArrayList<>();
@@ -340,14 +355,14 @@ public class RelNodeConvertor {
         for (int i = 0; i < outputRel.size(); i++) {
             Expr expr1 = expr.get(i);
             SqlTypeName outType = outputRel.get(i).getType().getSqlTypeName();
-            SqlTypeName inType = project.getChildExps().get(i).getType().getSqlTypeName();
+            SqlTypeName inType = project.getProjects().get(i).getType().getSqlTypeName();
             if (!outType.equals(inType)) {
-                expr1 = new Expr(Op.CAST, Arrays.asList(expr1, new Identifier(ExprExplain.type(outType))));
+                expr1 = new Expr(HBTOp.CAST, Arrays.asList(expr1, new Identifier(ExprExplain.type(outType))));
             }
             String outName = outputRel.get(i).getName();
             Identifier identifier = new Identifier(outName);
             if (!expr1.equals(identifier)) {
-                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1, identifier));
+                expr1 = new Expr(HBTOp.AS_COLUMN_NAME, Arrays.asList(expr1, identifier));
             }
             outExpr.add(expr1);
         }
@@ -356,7 +371,7 @@ public class RelNodeConvertor {
 
     private static Schema logicValues(RelNode relNode) {
         LogicalValues logicalValues = (LogicalValues) relNode;
-        return new ValuesSchema(getFields(relNode), getValues(logicalValues));
+        return new AnonyTableSchema(getFields(relNode), getValues(logicalValues));
     }
 
     private static List<Object> getValues(LogicalValues relNode1) {
@@ -390,10 +405,14 @@ public class RelNodeConvertor {
     }
 
     static final class ExprExplain {
-        final List<String> fieldNames;
+        final Join join;
 
-        public ExprExplain(List<String> fieldNames) {
-            this.fieldNames = fieldNames;
+        public ExprExplain() {
+            this(null);
+        }
+
+        public ExprExplain(Join join) {
+            this.join = join;
         }
 
         public static String op(SqlOperator kind) {
@@ -407,11 +426,27 @@ public class RelNodeConvertor {
         public Expr getExpr(RexNode rexNode) {
             if (rexNode instanceof RexLiteral) {
                 RexLiteral rexNode1 = (RexLiteral) rexNode;
-                return new Literal(unWrapper(rexNode1));
+                Object o = unWrapper(rexNode1);
+                return new Literal(o);
             }
             if (rexNode instanceof RexInputRef) {
                 RexInputRef expr = (RexInputRef) rexNode;
-                return new Identifier(fieldNames.get(expr.getIndex()));
+                if (join == null) {
+                    return new Identifier("$" + (expr.getIndex()));
+                } else {
+                    int leftCount = this.join.getLeft().getRowType().getFieldCount();
+                    int fieldCount = this.join.getRowType().getFieldCount();
+                    String pre;
+                    int index;
+                    if (expr.getIndex() < leftCount) {
+                        pre = "$";
+                        index = expr.getIndex();
+                    } else {
+                        pre = "$$";
+                        index = expr.getIndex() - leftCount;
+                    }
+                    return new Identifier(pre + index);
+                }
             }
             if (rexNode instanceof RexCall) {
                 RexCall expr = (RexCall) rexNode;
@@ -420,7 +455,7 @@ public class RelNodeConvertor {
                     ArrayList<Expr> args = new ArrayList<>(exprList.size() + 1);
                     args.addAll(exprList);
                     args.add(new Identifier(type(expr.getType().getSqlTypeName())));
-                    return new Expr(Op.CAST, args);
+                    return new Expr(HBTOp.CAST, args);
                 } else {
                     return new Fun(op(expr.op), exprList);
                 }
@@ -429,7 +464,7 @@ public class RelNodeConvertor {
                 RexFieldAccess rexNode1 = (RexFieldAccess) rexNode;
                 if (rexNode1.getReferenceExpr() instanceof RexCorrelVariable) {
                     RexCorrelVariable referenceExpr = (RexCorrelVariable) rexNode1.getReferenceExpr();
-                    return new Expr(Op.REF, new Identifier(referenceExpr.id.getName()), new Identifier(rexNode1.getField().getName()));
+                    return new Expr(HBTOp.REF, new Identifier(referenceExpr.id.getName()), new Identifier(rexNode1.getField().getName()));
                 }
             }
             return null;

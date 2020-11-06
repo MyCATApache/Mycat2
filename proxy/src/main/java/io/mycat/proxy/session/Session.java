@@ -14,22 +14,24 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.Wrapper;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.channels.SocketChannel;
-import java.text.MessageFormat;
 
 /**
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
  **/
-public interface Session<T extends Session> {
-   static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Session.class);
+public interface Session<T extends Session> extends Wrapper {
+   static final Logger LOGGER = LoggerFactory.getLogger(Session.class);
   /**
    * 通道
    */
@@ -46,7 +48,10 @@ public interface Session<T extends Session> {
   NIOHandler getCurNIOHandler();
 
   static String getThrowableString(Throwable e) {
-    return MessageFormat.format("{0}",e);
+    StringWriter errors = new StringWriter();
+    e.printStackTrace(new PrintWriter(errors));
+    //去掉重复提示的消息 return MessageFormat.format("{0} \n {1}",e,errors.toString());
+    return errors.toString();
   }
 
   /**

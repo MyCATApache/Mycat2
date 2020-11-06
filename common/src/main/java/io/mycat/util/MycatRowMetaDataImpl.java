@@ -6,8 +6,6 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import java.sql.ResultSetMetaData;
 import java.util.List;
 
-import static java.sql.ResultSetMetaData.columnNullableUnknown;
-
 public class MycatRowMetaDataImpl implements MycatRowMetaData {
     final List<SQLColumnDefinition> columnInfo;
     final String tableName;
@@ -39,8 +37,8 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     }
 
     @Override
-    public int isNullable(int column) {
-        return columnNullableUnknown;
+    public boolean isNullable(int column) {
+        return true;
     }
 
     @Override
@@ -91,5 +89,15 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     @Override
     public ResultSetMetaData metaData() {
         return null;
+    }
+
+    @Override
+    public boolean isPrimaryKey(int column) {
+        return columnInfo.get(column).isPrimaryKey();
+    }
+
+    @Override
+    public boolean isIndex(int column) {
+        return isPrimaryKey(column);
     }
 }

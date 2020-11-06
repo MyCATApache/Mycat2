@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -18,8 +18,6 @@ import io.mycat.GlobalConst;
 import io.mycat.MycatException;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.*;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
@@ -34,6 +32,8 @@ import io.mycat.proxy.session.SessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -47,8 +47,7 @@ import java.util.Objects;
  **/
 public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 
-    protected final static MycatLogger LOGGER = MycatLoggerFactory
-        .getLogger(BackendConCreateHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackendConCreateHandler.class);
     final CommandCallBack callback;
     final String STR_CACHING_AUTH_STAGE = "FULL_AUTH";
     final MySQLDatasource datasource;
@@ -61,20 +60,22 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     //todo
     public BackendConCreateHandler(MySQLDatasource datasource, MySQLSessionManager sessionManager,
-            MycatReactorThread curThread, CommandCallBack callback) {
+                                   MycatReactorThread curThread, CommandCallBack callback) {
         Objects.requireNonNull(datasource);
         Objects.requireNonNull(sessionManager);
         Objects.requireNonNull(callback);
         this.datasource = datasource;
         this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(),datasource, this, sessionManager);
+        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(), datasource, this, sessionManager);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
-            channel.connect(new InetSocketAddress(datasource.getIp(), datasource.getPort()));
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(datasource.getIp(), datasource.getPort());
+            channel.connect(inetSocketAddress);
+            LOGGER.info("inetSocketAddress:{} ",inetSocketAddress);
         } catch (Exception e) {
             onException(mysql, e);
             callback.onFinishedException(null, e, null);
@@ -84,11 +85,11 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     @Override
     public void onConnect(SelectionKey curKey, MySQLClientSession mysql, boolean success,
-            Exception e) {
+                          Exception e) {
         if (success) {
             mysql.change2ReadOpts();
         } else {
-            MycatMonitor.onBackendConCreateConnectException(mysql,e);
+            MycatMonitor.onBackendConCreateConnectException(mysql, e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -106,7 +107,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
         } catch (Exception e) {
             LOGGER.error("create mysql connection error {} {}", datasource, e.getMessage());
-            MycatMonitor.onBackendConCreateReadException(mysql,e);
+            MycatMonitor.onBackendConCreateReadException(mysql, e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -115,7 +116,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     public void handle(MySQLClientSession mysql) throws Exception {
         ProxyBuffer proxyBuffer = mysql.currentProxyBuffer().newBufferIfNeed();
         int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
-        if(!mysql.readProxyPayloadFully()){
+        if (!mysql.readProxyPayloadFully()) {
             return;
         }
         MySQLPayloadType payloadType = mysql.getPayloadType();
@@ -151,6 +152,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         //用公钥进行密码加密
         if (STR_CACHING_AUTH_STAGE.equals(stage) && authPluginName
                 .equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)) {
+            LOGGER.info("authPluginName:{} ",authPluginName);
             String publicKeyString = mySQLPacket.readEOFString();
             byte[] payload = CachingSha2PasswordPlugin
                     .encrypt(mysqlVersion, publicKeyString, datasource.getPassword(), seed,
@@ -206,6 +208,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             ErrorPacketImpl errorPacket = new ErrorPacketImpl();
             errorPacket.readPayload(payload);
             String errorMessage = new String(errorPacket.getErrorMessage());
+            LOGGER.error(" {} {}",this.datasource.getName(),errorMessage);
             mysql.setLastMessage(errorMessage);
             onClear(mysql);
             mysql.close(false, errorMessage);
@@ -217,15 +220,18 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         hs.readPayload(mysql.currentProxyPayload());
         mysql.resetCurrentProxyPayload();
         this.mysqlVersion = hs.getServerVersion();
-        this.charsetIndex = hs.getCharacterSet();
+        this.charsetIndex = hs.getCharacterSet() == -1 ? CharsetUtil.getIndex("UTF-8") : hs.getCharacterSet();
         AuthPacket packet = new AuthPacket();
         packet.setCapabilities(serverCapabilities);
-        packet.setMaxPacketSize(32*1024*1024);
+        packet.setMaxPacketSize(32 * 1024 * 1024);
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
+
+        LOGGER.info("backend mysql authPluginName:{} ",hs.getAuthPluginName());
         //加密密码
-        this.authPluginName = hs.getAuthPluginName();
+        this.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;//hs.getAuthPluginName();
+        LOGGER.info("mycat set authPluginName:{} ",authPluginName);
         packet.setPassword(generatePassword(authPluginName, seed));
 //        print(packet.getPassword());
         packet.setAuthPluginName(hs.getAuthPluginName());
@@ -256,6 +262,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
      */
     public byte[] generatePassword(
             String authPluginName, String seed) {
+        LOGGER.info("authPluginName:{} ",authPluginName);
         if (MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME.equals(authPluginName)) {
             return MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),
                     seed);
@@ -285,7 +292,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     @Override
     public void onException(MySQLClientSession session, Exception e) {
-        MycatMonitor.onBackendConCreateException(session,e);
+        MycatMonitor.onBackendConCreateException(session, e);
         LOGGER.error("{}", e);
         onClear(session);
         session.close(false, e);

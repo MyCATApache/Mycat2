@@ -14,10 +14,12 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,11 +27,12 @@ import java.util.List;
 /**
  * @author jamie12221
  **/
-@Data
+@Getter
+@EqualsAndHashCode(callSuper = true)
 public class SetOpSchema extends Schema {
     final List<Schema> schemas;
 
-    public SetOpSchema(Op op, List<Schema> schemas) {
+    public SetOpSchema(HBTOp op, List<Schema> schemas) {
         super(op);
         this.schemas = new ArrayList<>(schemas);
     }

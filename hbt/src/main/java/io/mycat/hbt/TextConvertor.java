@@ -1,5 +1,9 @@
 package io.mycat.hbt;
 
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hbt.ast.base.Schema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.RelRunners;
@@ -7,40 +11,51 @@ import org.apache.calcite.tools.RelRunners;
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
 
 public class TextConvertor {
 
-    public static String dump(Schema schema){
+    public static String dumpExplain(Schema schema) {
         ExplainVisitor explainVisitor = new ExplainVisitor(true);
         schema.accept(explainVisitor);
         return explainVisitor.getString();
     }
 
-    public static void dump(RelNode rel, Writer writer) {
+    public static void dumpResultSet(RelNode rel, Writer writer) {
         try (PreparedStatement preparedStatement = RelRunners.run(rel)) {
             final ResultSet resultSet = preparedStatement.executeQuery();
-            dump(writer, resultSet);
+            dumpResultSet(writer, resultSet);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static String  dump(ResultSet resultSet) throws SQLException {
+    public static String dumpResultSet(ResultSet resultSet) {
         CharArrayWriter writer = new CharArrayWriter(8192);
-        dump(resultSet, true, new PrintWriter(writer));
-        return writer.toString();
-    }
-    public static void dump(Writer writer, ResultSet resultSet) throws SQLException {
-        dump(resultSet, true, new PrintWriter(writer));
+        dumpResultSet(resultSet, true, new PrintWriter(writer));
+        return writer.toString().trim();
     }
 
-    public static void dump(ResultSet resultSet, boolean newline, PrintWriter writer)
-            throws SQLException {
-        final int columnCount = resultSet.getMetaData().getColumnCount();
+    public static void dumpResultSet(Writer writer, ResultSet resultSet) {
+        dumpResultSet(resultSet, true, new PrintWriter(writer));
+    }
+
+    public static String dumpResultSet(RowBaseIterator resultSet) {
+        CharArrayWriter writer = new CharArrayWriter();
+        dumpResultSet(resultSet, true, new PrintWriter(writer));
+        return writer.toString();
+    }
+
+
+    public static void dumpResultSet(ResultSet resultSet, boolean newline, PrintWriter writer) {
+        dumpResultSet(new JdbcRowBaseIterator(null, null, resultSet, null, null), newline, writer);
+    }
+
+    public static void dumpResultSet(RowBaseIterator resultSet, boolean newline, PrintWriter writer) {
+        MycatRowMetaData metaData = resultSet.getMetaData();
+        metaData.toSimpleText();
+        final int columnCount = metaData.getColumnCount();
         int r = 0;
         while (resultSet.next()) {
             if (!newline && r++ > 0) {
@@ -68,8 +83,7 @@ public class TextConvertor {
         }
     }
 
-    private static void dumpColumn(ResultSet resultSet, int i, PrintWriter writer)
-            throws SQLException {
+    private static void dumpColumn(RowBaseIterator resultSet, int i, PrintWriter writer) {
         final int t = resultSet.getMetaData().getColumnType(i);
         if (t == Types.REAL) {
             writer.print(resultSet.getString(i));
@@ -80,9 +94,22 @@ public class TextConvertor {
         }
     }
 
-    public static String dump(RelNode rel) {
+    public static String dumpResultSet(RelNode rel) {
         CharArrayWriter writer = new CharArrayWriter(8192);
-        dump(rel, writer);
+        dumpResultSet(rel, writer);
         return new String(writer.toCharArray()).replaceAll("\r", "");
+    }
+
+    public static String dumpMetadata(JdbcRowMetaData metaData) {
+        int columnCount = metaData.getColumnCount();
+        ArrayList<String> names = new ArrayList<>();
+        for (int i = 1; i <= columnCount; i++) {
+            names.add(metaData.getColumnName(i));
+        }
+        return String.join(",",names).trim();
+    }
+
+    public static String dumpMetadata(ResultSetMetaData metaData) {
+        return dumpMetadata(new JdbcRowMetaData(metaData));
     }
 }

@@ -1,5 +1,9 @@
 package io.mycat.util;
 
+import io.mycat.ResultSetProvider;
+import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.beans.resultset.MycatResultSet;
+import io.mycat.beans.resultset.MycatResultSetResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -13,12 +17,13 @@ import java.util.List;
 public class Explains {
     final String sql;
     final String prepareCompute;
+    final String resultSetRowType;
     final String hbt;
     final String rel;
 
     @AllArgsConstructor
     @ToString
-    public static class PrepareCompute{
+    public static class PrepareCompute {
         String targetName;
         String sql;
         List<Object> params;
@@ -26,23 +31,25 @@ public class Explains {
         @Override
         public String toString() {
             return
-                    "targetName='" + targetName +"\'\n" +
-                    ", sql='" + sql + "\'\n" +
-                    ", params=" + params +"\n";
+                    "targetName='" + targetName + "\'\n" +
+                            ", sql='" + sql + "\'\n" +
+                            ", params=" + params + "\n";
         }
     }
 
-    public Explains(String sql,String prepareCompute, String hbt, String rel) {
+    public Explains(String sql, String prepareCompute, String resultSetRowType, String hbt, String rel) {
         this.sql = sql;
         this.prepareCompute = prepareCompute;
+        this.resultSetRowType = resultSetRowType;
         this.hbt = hbt;
         this.rel = rel;
     }
-   public static List<String> explain(String sql,String prepareCompute, String hbt, String rel){
-       return new Explains(sql,prepareCompute, hbt, rel).explain();
+
+    public static List<String> explain(String sql, String prepareCompute, String resultSetRowType, String hbt, String rel) {
+        return new Explains(sql, prepareCompute, resultSetRowType, hbt, rel).explain();
     }
 
-    List<String> explain(){
+    List<String> explain() {
         ArrayList<String> list = new ArrayList<>();
         if (!StringUtil.isEmpty(sql)) {
             list.add("sql:");
@@ -52,6 +59,11 @@ public class Explains {
             list.add("");
             list.add("prepareCompute:");
             list.addAll(Arrays.asList(prepareCompute.split("\n")));
+        }
+        if (!StringUtil.isEmpty(resultSetRowType)) {
+            list.add("");
+            list.add("resultSetRowType:");
+            list.addAll(Arrays.asList(resultSetRowType.split("\n")));
         }
         if (!StringUtil.isEmpty(hbt)) {
             list.add("");

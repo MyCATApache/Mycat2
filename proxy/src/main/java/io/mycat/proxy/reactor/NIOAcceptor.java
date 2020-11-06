@@ -16,6 +16,8 @@ package io.mycat.proxy.reactor;
 
 import io.mycat.MycatException;
 import io.mycat.proxy.session.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -32,6 +34,7 @@ import java.nio.channels.SocketChannel;
  * @author chen junwen
  */
 public final class NIOAcceptor extends ProxyReactorThread<Session> {
+    static final Logger LOGGER = LoggerFactory.getLogger(NIOAcceptor.class);
     final ReactorThreadManager mycatReactorThreads;
 
     ServerSocketChannel serverChannel;

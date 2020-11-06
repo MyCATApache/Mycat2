@@ -14,22 +14,24 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class FilterSchema extends Schema {
     private final Schema schema;
     private final Expr exprs;
 
     public FilterSchema(Schema schema, Expr exprs) {
-        super(Op.FILTER);
+        super(HBTOp.FILTER);
         this.schema = schema;
         this.exprs = exprs;
     }

@@ -14,18 +14,19 @@
  */
 package io.mycat.calcite.table;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.QueryBackendTask;
-import io.mycat.calcite.CalciteUtls;
-import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
-import io.mycat.metadata.LogicTable;
+import com.google.common.collect.ImmutableList;
+import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.hbt3.AbstractMycatTable;
+import io.mycat.hbt3.Distribution;
+import io.mycat.hbt4.ShardingInfo;
 import lombok.Getter;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.ProjectableFilterableTable;
-import org.apache.calcite.schema.TransientTable;
+import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.schema.TranslatableTable;
 
 import java.util.List;
 
@@ -33,28 +34,54 @@ import java.util.List;
  * @author Junwen Chen
  **/
 @Getter
-public class MycatPhysicalTable extends MycatTableBase implements TransientTable, ProjectableFilterableTable {
+public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatTable, TranslatableTable {
     final MycatLogicTable logicTable;
-    final BackendTableInfo backendTableInfo;//真实表名
+    final DataNode dataNode;//真实表名
+    final Statistic statistic;//MycatLogicTable的构造函数没有statistic
 
-    public MycatPhysicalTable(MycatLogicTable logicTable, BackendTableInfo backendTableInfo) {
+    public MycatPhysicalTable(MycatLogicTable logicTable, DataNode dataNode) {
         this.logicTable = logicTable;
-        this.backendTableInfo = backendTableInfo;
+        this.dataNode = dataNode;
+        this.statistic = Statistics.createStatistic(logicTable.getStatistic(), dataNode);
     }
 
     @Override
-    public LogicTable logicTable() {
+    public TableHandler logicTable() {
         return logicTable.logicTable();
     }
 
     @Override
-    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        String backendTaskSQL = CalciteUtls.getBackendTaskSQL(logicTable(), backendTableInfo, projects, filters);
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName()));
+    public Statistic getStatistic() {
+        return this.statistic;
     }
 
-    public String getTargetName() {
-        return backendTableInfo.getTargetName();
+    @Override
+    public Distribution computeDataNode(List<RexNode> conditions) {
+        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
     }
 
+    @Override
+    public boolean isSingle(List<RexNode> conditions) {
+        return true;
+    }
+
+    @Override
+    public Distribution computeDataNode() {
+        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
+    }
+
+    @Override
+    public ShardingInfo getShardingInfo() {
+        return null;
+    }
+
+    @Override
+    public boolean isPartial(List<RexNode> conditions) {
+        return false;
+    }
+
+    @Override
+    public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+        return LogicalTableScan.create(context.getCluster(),relOptTable,ImmutableList.of());
+    }
 }

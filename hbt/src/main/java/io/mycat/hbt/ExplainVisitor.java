@@ -14,6 +14,7 @@
  */
 package io.mycat.hbt;
 
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
@@ -94,9 +95,9 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     @Override
-    public void visit(GroupSchema groupSchema) {
+    public void visit(GroupBySchema groupSchema) {
         List<AggregateCall> exprs = groupSchema.getExprs();
-        List<GroupItem> keys = groupSchema.getKeys();
+        List<GroupKey> keys = groupSchema.getKeys();
         Schema schema = groupSchema.getSchema();
         writeSchema(schema, "groupBy");
         append("keys(");
@@ -112,11 +113,11 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
 
-    private void groupKey(List<GroupItem> keys) {
+    private void groupKey(List<GroupKey> keys) {
         int size = keys.size();
         int lastIndex = keys.size() - 1;
         for (int i = 0; i < size; i++) {
-            GroupItem key = keys.get(i);
+            GroupKey key = keys.get(i);
             append("groupKey(");
             joinNode(key.getExprs());
             append(")");
@@ -147,16 +148,20 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(SetOpSchema setOpSchema) {
-        Op op = setOpSchema.getOp();
+        HBTOp op = setOpSchema.getOp();
         append(op.getFun());
         enter();
         append("(");
-        for (Schema schema : setOpSchema.getSchemas()) {
+        List<Schema> schemas = setOpSchema.getSchemas();
+        int size = schemas.size();
+        for (int i = 0; i < size - 1; i++) {
+            Schema schema = schemas.get(i);
             append("\n ");
             schema.accept(this);
             append(",");
         }
-
+        append("\n ");
+        schemas.get(size - 1).accept(this);
         append("\n");
         append(")");
         leave();
@@ -164,14 +169,19 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(FieldType fieldSchema) {
-        String id = fieldSchema.getId();
-        String type = fieldSchema.getType();
+        String id = fieldSchema.getColumnName();
+        String type = fieldSchema.getColumnType();
         boolean nullable = fieldSchema.isNullable();
         Integer precision = fieldSchema.getPrecision();
         Integer scale = fieldSchema.getScale();
         if (precision != null && precision > 0) {
-            append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
-                    toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+            if (scale != null) {
+                append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                        toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+            }else {
+                append(MessageFormat.format("fieldType({0},{1},{2},{3})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                        toId(Integer.toString(precision))));
+            }
         } else {
             append(MessageFormat.format("fieldType({0},{1},{2})", toId(id), toId(type), toId(Boolean.toString(nullable))));
         }
@@ -238,13 +248,13 @@ public class ExplainVisitor implements NodeVisitor {
         if (expr instanceof Fun) {
             Fun fun = (Fun) expr;
             functionName = (fun.getFunctionName());
-        } else if (expr.op == Op.AS_COLUMNNAME) {
+        } else if (expr.op == HBTOp.AS_COLUMN_NAME) {
             functionName = ("as");
-        } else if (expr.op == Op.CAST) {
+        } else if (expr.op == HBTOp.CAST) {
             functionName = ("cast");
-        } else if (expr.op == Op.DOT) {
+        } else if (expr.op == HBTOp.DOT) {
             functionName = ("dot");
-        } else if (expr.op == Op.REF) {
+        } else if (expr.op == HBTOp.REF) {
             functionName = ("ref");
         } else {
             throw new UnsupportedOperationException();
@@ -267,7 +277,7 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     @Override
-    public void visit(ValuesSchema valuesSchema) {
+    public void visit(AnonyTableSchema valuesSchema) {
         append("table(");
         append("fields(");
         joinNode(valuesSchema.getFieldNames());
@@ -336,18 +346,17 @@ public class ExplainVisitor implements NodeVisitor {
         final List<OrderItem> orderKeys = aggregateCall.getOrderKeys(); // may be empty, never null
         String res = function + "(" + operands.stream().map(i -> getExprString(i)).collect(Collectors.joining(",")) + ")";
         append(res);
-        append(")");
         res = "";
         if (alias != null) {
             res += ".alias(" + alias + ")";
         }
-        if (distinct == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(distinct)) {
             res += ".distinct(" + ")";
         }
-        if (approximate == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(approximate)) {
             res += ".approximate(" + ")";
         }
-        if (ignoreNulls == Boolean.TRUE) {
+        if (Boolean.TRUE.equals(ignoreNulls)) {
             res += ".ignoreNulls(" + ")";
         }
         if (filter != null) {
@@ -375,7 +384,9 @@ public class ExplainVisitor implements NodeVisitor {
         append("(");
         append(targetName);
         append(",");
+        append("'");
         append(sql);
+        append("'");
         append(")");
     }
 
@@ -420,13 +431,13 @@ public class ExplainVisitor implements NodeVisitor {
         append(targetName);
         append(",");
         StringBuilder comment = new StringBuilder();
-        comment.append("targetName:").append(targetName).append("\n");
-        if (!fromSqlSchema.getFieldTypes().isEmpty()) {
+//        comment.append("targetName:").append(targetName).append("\n");
+
             comment.append("fields(");
             comment.append(getExprString(fromSqlSchema.getFieldTypes()));
-            comment.append(")\n\n");
-            comments.add(comment.toString());
-        }
+            comment.append(")\n");
+        append(comment.toString());
+            append(",");
         append("\n");
         append("'");
         append(sql);
@@ -480,8 +491,17 @@ public class ExplainVisitor implements NodeVisitor {
         append("?");
     }
 
+    @Override
+    public void visit(CommandSchema commandSchema) {
+        String fun = commandSchema.getOp().getFun();
+        append(fun);
+        append("(");
+        commandSchema.getSchema().accept(this);
+        append(")");
+    }
+
 
     public String getString() {
-        return  sb.toString();
+        return sb.toString();
     }
 }

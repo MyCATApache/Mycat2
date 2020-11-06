@@ -15,6 +15,7 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.HashBiMap;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt.parser.HBTParser;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -33,6 +34,7 @@ public enum HBTCalciteSupport {
     private final HashBiMap<String, SqlAggFunction> sqlAggFunctionMap;
     private final HashBiMap<String, SqlOperator> sqlOperatorMap;
     private final HashBiMap<String, SqlTypeName> typeMap;
+    private final HashBiMap<Integer, SqlTypeName> jdbcValueMap;
     private final HashBiMap<String, Class> type2ClassMap;
     private final HashBiMap<SqlTypeName, Class> sqlType2ClassMap;
      final Map<String, HBTParser.Precedence> operators;
@@ -54,7 +56,14 @@ public enum HBTCalciteSupport {
     }
 
     public SqlTypeName getSqlTypeName(String name) {
-        return Objects.requireNonNull(typeMap.get(name),name);
+        return Objects.requireNonNull(typeMap.get(name.toLowerCase()),""+name);
+    }
+    public SqlTypeName getSqlTypeByJdbcValue(int value) {
+        SqlTypeName sqlTypeName = jdbcValueMap.get(value);
+        if (sqlTypeName == null){
+            return SqlTypeName.VARCHAR;
+        }
+        return sqlTypeName;
     }
 
     public String getSqlTypeName(SqlTypeName name) {
@@ -84,14 +93,13 @@ public enum HBTCalciteSupport {
         sqlType2ClassMap = HashBiMap.create();
         sqlAggFunctionMap = HashBiMap.create();
         sqlOperatorMap = HashBiMap.create();
+        jdbcValueMap = HashBiMap.create();
 
         sqlAggFunctionMap.put("avg", SqlStdOperatorTable.AVG);
         sqlAggFunctionMap.put("count", SqlStdOperatorTable.COUNT);
-        sqlAggFunctionMap.put("first", SqlStdOperatorTable.FIRST_VALUE);
-        sqlAggFunctionMap.put("last", SqlStdOperatorTable.LAST_VALUE);
         sqlAggFunctionMap.put("max", SqlStdOperatorTable.MAX);
         sqlAggFunctionMap.put("min", SqlStdOperatorTable.MIN);
-
+        sqlAggFunctionMap.put("sum", SqlStdOperatorTable.SUM);
 
         sqlOperatorMap.put("eq", SqlStdOperatorTable.EQUALS);
         sqlOperatorMap.put("ne", SqlStdOperatorTable.NOT_EQUALS);
@@ -117,10 +125,11 @@ public enum HBTCalciteSupport {
         sqlOperatorMap.put("nullif", SqlStdOperatorTable.NULLIF);
         sqlOperatorMap.put("isnotnull", SqlStdOperatorTable.IS_NOT_NULL);
         sqlOperatorMap.put("cast", SqlStdOperatorTable.CAST);
-
+        sqlOperatorMap.put("substring", SqlStdOperatorTable.SUBSTRING);
 
         for (SqlTypeName value : SqlTypeName.values()) {
-            put(value.getName().toLowerCase(), value);
+            putTypeName(value.getName().toLowerCase(), value);
+            putJdbcValue(value.getJdbcOrdinal(), value);
         }
 
 //        put("long", SqlTypeName.DECIMAL);
@@ -141,26 +150,26 @@ public enum HBTCalciteSupport {
 
 
         ///////////////////////////////object/////////////////////////.
-        addOperator(".", "dot", 16, true);
-        addOperator("dot", 16, true);
+        addOperator(".", "dot", 19, true);
+        addOperator("dot", 19, true);
 
-        addOperator("+", "add", 14, true);
-        addOperator("add", 14, true);
-        addOperator("-", "minus", 14, true);
-        addOperator("minus", 14, true);
+        addOperator("+", "add", 13, true);
+        addOperator("add", 13, true);
+        addOperator("-", "minus", 13, true);
+        addOperator("minus", 13, true);
 
-        addOperator("=", "eq", 12, true);
-        addOperator("eq", 12, true);
+        addOperator("=", "eq", 10, true);
+        addOperator("eq", 10, true);
 
-        addOperator(">", "gt", 12, true);
-        addOperator("gt", 12, true);
-        addOperator(">=", "gte", 12, true);
-        addOperator("gte", 12, true);
+        addOperator(">", "gt", 11, true);
+        addOperator("gt", 11, true);
+        addOperator(">=", "gte", 11, true);
+        addOperator("gte", 11, true);
 
-        addOperator("<", "lt", 12, true);
-        addOperator("lt", 12, true);
-        addOperator("<=", "lte", 12, true);
-        addOperator("lte", 12, true);
+        addOperator("<", "lt", 11, true);
+        addOperator("lt", 11, true);
+        addOperator("<=", "lte", 11, true);
+        addOperator("lte", 11, true);
 
         ///////////////////////set/////////////////////////////////
         addOperator("unionAll", 1, true);
@@ -169,9 +178,6 @@ public enum HBTCalciteSupport {
         addOperator("exceptAll", 1, true);
         addOperator("minusAll", 1, true);
         addOperator("minusDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
         addOperator("rename", 1, true);
         addOperator("groupBy", 1, true);
         addOperator("alias", 1, true);
@@ -187,20 +193,26 @@ public enum HBTCalciteSupport {
 
 //
 //
-        addOperator("<>", "ne", 3, true);
-        addOperator("ne", 13, true);
+        addOperator("!=", "ne", 10, true);
+        addOperator("<>", "ne", 10, true);
+        addOperator("ne", 10, true);
 
-        addOperator("or", 2, true);
-        addOperator("and", 3, true);
+        addOperator("or", 5, true);
+        addOperator("and", 6, true);
         addOperator("as", 3, true);
 
     }
 
-    private void put(String name, SqlTypeName sqlTypeName) {
+    private void putJdbcValue(int jdbcOrdinal, SqlTypeName value) {
+        jdbcValueMap.put(jdbcOrdinal,value);
+    }
+
+    private void putTypeName(String name, SqlTypeName sqlTypeName) {
         typeMap.put(name, sqlTypeName);
     }
 
 
     public Map<String, HBTParser.Precedence> getOperators() {
         return operators;
-    }}
+    }
+}

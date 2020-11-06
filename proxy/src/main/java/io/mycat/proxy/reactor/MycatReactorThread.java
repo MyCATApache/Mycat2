@@ -16,9 +16,12 @@ package io.mycat.proxy.reactor;
 
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.MySQLProxyServerSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -29,6 +32,7 @@ import java.util.Objects;
  * @author chen junwen
  */
 public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
+  static final Logger LOGGER = LoggerFactory.getLogger(MycatReactorThread.class);
 
   private final MySQLSessionManager mySQLSessionManager;
 

@@ -5,17 +5,24 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>0.6-SNAPSHOT</version>
+    <version>1.12-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>common</artifactId>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/commons-transaction/commons-transaction -->
+    <dependency>
+      <groupId>commons-transaction</groupId>
+      <artifactId>commons-transaction</artifactId>
+      <version>1.2</version>
+    </dependency>
+
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>config</artifactId>
-      <version>0.6-SNAPSHOT</version>
+      <version>1.12-SNAPSHOT</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
     <dependency>
@@ -23,6 +30,13 @@
       <artifactId>joda-time</artifactId>
       <version>2.10.1</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/net.sf.ehcache/ehcache -->
+    <dependency>
+      <groupId>net.sf.ehcache</groupId>
+      <artifactId>ehcache</artifactId>
+      <version>2.10.6</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -35,7 +49,24 @@
       <artifactId>fastsql</artifactId>
       <version>2.0.0_preview_973</version>
     </dependency>
-
+    <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+    <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>2.5.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.16</version>
+    </dependency>
+      <dependency>
+          <groupId>com.alibaba</groupId>
+          <artifactId>druid</artifactId>
+          <version>1.2.1</version>
+          <scope>compile</scope>
+      </dependency>
   </dependencies>
 
 </project>

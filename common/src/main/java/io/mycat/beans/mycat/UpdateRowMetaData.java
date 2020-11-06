@@ -3,12 +3,11 @@ package io.mycat.beans.mycat;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-
 public enum  UpdateRowMetaData implements MycatRowMetaData {
     INSTANCE;
     public static final String UPDATE_COUNT = "UPDATE_COUNT";
     public static final String LAST_INSERT_ID = "LAST_INSERT_ID";
+
 
     @Override
     public int getColumnCount() {
@@ -26,8 +25,8 @@ public enum  UpdateRowMetaData implements MycatRowMetaData {
     }
 
     @Override
-    public int isNullable(int column) {
-        return columnNoNulls;
+    public boolean isNullable(int column) {
+        return false;
     }
 
     @Override

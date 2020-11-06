@@ -26,8 +26,8 @@ public enum EmptyMycatRowMetaData implements MycatRowMetaData {
     }
 
     @Override
-    public int isNullable(int column) {
-        return 0;
+    public boolean isNullable(int column) {
+        return false;
     }
 
     @Override
