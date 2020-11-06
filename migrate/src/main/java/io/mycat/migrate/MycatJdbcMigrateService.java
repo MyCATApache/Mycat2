@@ -31,12 +31,12 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
     public static void main(String[] args) {
         TransferRequest request = TransferRequest.builder()
                 .readDataNode(DataNode.builder()
-                        .url("jdbc:mysql://192.168.101.222:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
-                        .username("root").password("toor").tableName("mianshibutongguo")
+                        .url("jdbc:mysql://192.168.101.222:3306/db1?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
+                        .username("root").password("root").tableName("my_table")
                         .build())
                 .writeDataNode(DataNode.builder()
-                        .url("jdbc:mysql://192.168.101.189:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
-                        .username("root").password("root").tableName("mianshibutongguo")
+                        .url("jdbc:mysql://192.168.101.189:3306/db1?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
+                        .username("root").password("root").tableName("my_table_copy")
                         .build())
                 //过滤条件
                 .readSqlWhere("where id > 1000")
