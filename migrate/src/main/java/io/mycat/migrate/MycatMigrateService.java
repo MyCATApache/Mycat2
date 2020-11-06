@@ -1,6 +1,7 @@
 package io.mycat.migrate;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -32,9 +33,11 @@ public interface MycatMigrateService {
     String MESSAGE_TABLE_READ_ERROR = "Mycat migrate error#5003. select stream handle failure. catalogName={0},tableName={1},connection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
     int EVENT_TABLE_WRITE_ERROR = 5004;
     String MESSAGE_TABLE_WRITE_ERROR = "Mycat migrate error#5004. write data handle failure. catalogName={0},tableName={1},connection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
+    int EVENT_TABLE_CREATE_ERROR = 5005;
+    String MESSAGE_TABLE_CREATE_ERROR = "Mycat migrate error#5004. create data handle failure. catalogName={0},tableName={1},connection={2},createTableSql={3},error={4}\n";
 
     /**
-     * Offline data transfer. Copy the data node to another node
+     * data transfer. Copy the data node to another node
      * Jdbc is implement = select * from table
      *
      * You can set up a callback request in the event the way to handle logical data replication
@@ -42,25 +45,31 @@ public interface MycatMigrateService {
      *                you can modify its,
      *                the result will be written to change. {@link RowData}
      */
-    void offlineTransfer(TransferRequest request);
+    void transfer(TransferRequest request);
 
-    /**
-     * onlineTransfer
-     * TODO: 2020-03-03 14:12
-     * @param request TransferRequest
-     */
-    void onlineTransfer(TransferRequest request);
 
+    @Builder
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
     class TransferRequest {
         private DataNode readDataNode;
         private DataNode writeDataNode;
-        private int bufferSize = 2000;
-        private boolean skipWriteErrorAllFlag = false;
-        private String[] skipWriteErrorClassNames = {"java.sql.SQLIntegrityConstraintViolationException"};
+        /**
+         * where id > 10000
+         */
+        private String readSqlWhere;
         private Consumer<TransferEvent> transferEventCallback;
+        @Builder.Default
+        private boolean enableTransaction = false;
+        @Builder.Default
+        private int maxTransactionSize = 30000;
+        @Builder.Default
+        private boolean autoCreateTableIfNotExist = true;
+        @Builder.Default
+        private boolean skipAllWriteErrorFlag = false;
+        @Builder.Default
+        private String[] skipWriteErrorClassNames = {"java.sql.SQLIntegrityConstraintViolationException"};
     }
 
     @AllArgsConstructor
@@ -81,6 +90,7 @@ public interface MycatMigrateService {
         private List<RowData> rowDataList;
     }
 
+    @Builder
     @AllArgsConstructor
     @NoArgsConstructor
     @Data
@@ -141,7 +151,8 @@ public interface MycatMigrateService {
         }
         @Override
         public String toString() {
-            StringJoiner columnJoiner = new StringJoiner(",","insert into "+catalogName+'.'+tableName+" (",")");
+            String target = catalogName == null || catalogName.isEmpty()? tableName: catalogName+'.'+tableName;
+            StringJoiner columnJoiner = new StringJoiner(",","insert into "+target+" (",")");
             StringJoiner valuesJoiner = new StringJoiner(",", " values (",")");
             for (ColumnData columnData : columnDatas) {
                 columnJoiner.add(columnData.getColumnName());
