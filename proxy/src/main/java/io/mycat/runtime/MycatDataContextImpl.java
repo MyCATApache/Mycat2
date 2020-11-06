@@ -96,7 +96,7 @@ public class MycatDataContextImpl implements MycatDataContext {
             return variableService.getGlobalVariable(target);
         }
         if (target.contains("autocommit")) {
-            return this.isAutocommit() ? "1" : "1" ;
+            return this.isAutocommit() ? "1" : "0" ;
         } else if (target.equalsIgnoreCase("xa")) {
             return this.getTransactionSession().name();
         } else if (target.contains("net_write_timeout")) {
