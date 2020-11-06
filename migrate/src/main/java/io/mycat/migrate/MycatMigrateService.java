@@ -55,9 +55,6 @@ public interface MycatMigrateService {
     class TransferRequest {
         private DataNode readDataNode;
         private DataNode writeDataNode;
-        /**
-         * where id > 10000
-         */
         private String readSqlWhere;
         private Consumer<TransferEvent> transferEventCallback;
         @Builder.Default

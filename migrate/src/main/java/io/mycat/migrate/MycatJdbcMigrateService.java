@@ -25,6 +25,67 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
     private int bufferSize = 2000;
 
     /**
+     * 接口使用示范 {@link #transfer}
+     * @param args args
+     */
+    public static void main(String[] args) {
+        TransferRequest request = TransferRequest.builder()
+                .readDataNode(DataNode.builder()
+                        .url("jdbc:mysql://192.168.101.222:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
+                        .username("root").password("toor").tableName("mianshibutongguo")
+                        .build())
+                .writeDataNode(DataNode.builder()
+                        .url("jdbc:mysql://192.168.101.189:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
+                        .username("root").password("root").tableName("mianshibutongguo")
+                        .build())
+                //过滤条件
+                .readSqlWhere("where id > 1000")
+                //自动建表
+                .autoCreateTableIfNotExist(true)
+                //这里可以加sql重写的逻辑
+                .transferEventCallback(MycatJdbcMigrateService::eventHandleExample1)
+                .build();
+
+        MycatMigrateService service = new MycatJdbcMigrateService();
+        service.transfer(request);
+        System.out.println();
+    }
+
+    private static void eventHandleExample1(TransferEvent event){
+        switch (event.getEvent()){
+            //写入前的事件。可扩展自定义逻辑, 比如改库，改表，改数据
+            case EVENT_TRANSFER_WRITE_BEFORE_INFO:{
+                for (SQLException sqlException : event.getExceptionList()) {
+                    System.out.println(sqlException.toString());
+                }
+                break;
+            }
+            //执行成功后
+            case EVENT_SUCCESSFUL_INFO:
+                //空表警告
+            case EVENT_TABLE_EMPTY_WARN:
+                //空列警告
+            case EVENT_COLUMN_EMPTY_WARN:
+                //数据库链接打不开
+            case EVENT_CONNECTION_OPEN_ERROR:
+                //元数据无法读取
+            case EVENT_METADATA_READ_ERROR:
+                //主键无法读取
+            case EVENT_PRIMARYKEY_READ_ERROR:
+                //读取数据出错
+            case EVENT_TABLE_READ_ERROR:
+                //写入数据出错
+            case EVENT_TABLE_WRITE_ERROR:
+                //建表出错
+            case EVENT_TABLE_CREATE_ERROR:
+            default:{
+                System.out.println(event.getMessage());
+                break;
+            }
+        }
+    }
+
+    /**
      * Single-threaded operation, call those who choose their own multi-threaded operating outside the method.
      * @param request row data will remain its reference data,
      *                you can modify its,
@@ -129,6 +190,7 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
                             writeConnection.commit();
                         }
                         rowDataList.clear();
+                        exceptionList.clear();
                     }catch (SQLException e){
                         exceptionList.add(e);
                         try {
@@ -344,68 +406,6 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
             }
         }
         return pkList;
-    }
-
-
-    /**
-     * 接口使用示范 {@link #transfer}
-     * @param args args
-     */
-    public static void main(String[] args) {
-        TransferRequest request = TransferRequest.builder()
-                .readDataNode(DataNode.builder()
-                        .url("jdbc:mysql://192.168.101.222:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
-                        .username("root").password("toor").tableName("mianshibutongguo")
-                        .build())
-                .writeDataNode(DataNode.builder()
-                        .url("jdbc:mysql://192.168.101.189:3306/ig_zues?rewriteBatchedStatements=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8")
-                        .username("root").password("root").tableName("mianshibutongguo")
-                        .build())
-                //过滤条件
-                .readSqlWhere("where id > 1000")
-                //自动建表
-                .autoCreateTableIfNotExist(true)
-                //这里可以加sql重写的逻辑
-                .transferEventCallback(MycatJdbcMigrateService::eventHandleExample1)
-                .build();
-
-        MycatMigrateService service = new MycatJdbcMigrateService();
-        service.transfer(request);
-        System.out.println();
-    }
-
-    private static void eventHandleExample1(TransferEvent event){
-        switch (event.getEvent()){
-            //写入前的事件。可扩展自定义逻辑, 比如改库，改表，改数据
-            case EVENT_TRANSFER_WRITE_BEFORE_INFO:{
-                for (SQLException sqlException : event.getExceptionList()) {
-                    System.out.println(sqlException.toString());
-                }
-                break;
-            }
-            //执行成功后
-            case EVENT_SUCCESSFUL_INFO:
-            //空表警告
-            case EVENT_TABLE_EMPTY_WARN:
-            //空列警告
-            case EVENT_COLUMN_EMPTY_WARN:
-            //数据库链接打不开
-            case EVENT_CONNECTION_OPEN_ERROR:
-            //元数据无法读取
-            case EVENT_METADATA_READ_ERROR:
-            //主键无法读取
-            case EVENT_PRIMARYKEY_READ_ERROR:
-            //读取数据出错
-            case EVENT_TABLE_READ_ERROR:
-            //写入数据出错
-            case EVENT_TABLE_WRITE_ERROR:
-            //建表出错
-            case EVENT_TABLE_CREATE_ERROR:
-            default:{
-                System.out.println(event.getMessage());
-                break;
-            }
-        }
     }
 
     private static Throwable getCase(Throwable exception){
