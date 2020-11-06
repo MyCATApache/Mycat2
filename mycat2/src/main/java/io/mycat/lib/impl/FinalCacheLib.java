@@ -1,11 +1,11 @@
 package io.mycat.lib.impl;
 
 import io.mycat.MycatException;
+import io.mycat.SQLExecuterWriter;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
-import io.mycat.pattern.DynamicSQLMatcher;
-import io.mycat.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.router.util.InserParser;
 
 import java.io.IOException;
 import java.util.HashMap;

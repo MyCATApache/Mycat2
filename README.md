@@ -17,6 +17,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 正在进行的任务
 
+可用分支https://github.com/MyCATApache/Mycat2/tree/0.6-2020-2-13
+
 正在实现loaddata与预处理
 
 
@@ -43,9 +45,14 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 测试版本的mycat2无需账户密码即可登录
 
-
+## 开发环境
+参考src\main\resources\sql中的sql和src\main\resources\mycat.yml建立数据库环境
+ide安装lombok插件
+启动 io.mycat.MycatCore类
 
 ## Mycat2流程
+
+
 
 客户端发送SQL到mycat2,mycat2拦截对应的SQL执行不同的命令,对于不需要拦截处理的SQL,透传到有逻辑表的mysql,这样,mycat2对外就伪装成mysql数据库
 
@@ -55,6 +62,10 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## MetaData配置
 
+### 概念
+
+
+
 #### 存储节点
 
 
@@ -62,30 +73,42 @@ dataNode是数据节点,库名,表名组成的三元组
 
 targetName是目标名字,它可以是数据源的名字或者集群的名字
 
-分片必然分库
-分库必然分表
 
 
-| 目标 targetName| 库schemaName   | 表tableName   | 类型   |
-| ---- | ---- | ---- | ------ |
-| 唯一 | 唯一 | 唯一 | 非分片 |
-| 唯一 | 多目标 | 相同名字 |   非分片分库分表     |
-|  唯一    |  唯一    |  不同名字    |   非分片单库分表     |
-| 跨实例 | 多目标 | 不同名字 | 分片分库分表 |
+#### 分片范围
 
+​		如果SQL条件是有完全独立(隔离性)的分片逻辑,就结合条件与数据的访问路径(schema.database.table)进行拆分.
 
+​		实例控制进程资源,实例上的一个连接是事务操作的基本单位,如果单实例整体无法满足数据的增长,就拆分实例.一般来说,如果在实例分片上使用枚举分片,随着数据的增长,实例的数据也是继续增长.如果要保证实例存储的数据量不再增长就要继续拆分实例.因此,建议实例分片使用方便扩容的算法,比如一致性哈希.另一方面,拆分实例会引入分布式事务问题,涉及多实例的更新操作,会比单实例慢.涉及多个实例的SQL产生额外的耗时不可避免.
 
+​		一个物理表对应一个存储结构(锁与索引),如果存储结构无法满足数据存储,就拆分存储结构.如果查询中的分片条件生效,则将会减少操作计算的存储空间.一个存储结构可能对应一个IO句柄,如果分片条件不生效,导致所有分片都扫描,浪费IO句柄.建议分表通过预先发现单表的索引算法上瓶颈与单实例硬件瓶颈的方法.准确划分一个分片数量.即单库分表再也无法提高查询性能的分片数量,此时运算数据的耗时与拆分存储结构得省时抵消.
 
+​		表属性与SQL优化有关.数据分片查询引擎在单实例上执行的SQL要根据实际的表属性的约束进行优化.如果表配置了分区表,影响的因素还会更多.分区表作为一种数据库提供的分片技术,它的利弊与分片分库分表很类似.
 
-
+​		不同的分片字段可能有着不同的分片范围,这些范围之间可能是有交集的,多个SQL条件计算出范围,得出具有最小范围的等价字段,使用该范围进行查询.例如如果分片字段直接就能计算出物理表的访问范围,则使用该路径访问.如果不能.则结合跨库与辅助的分片范围缩小查询物理表的范围.
 
 
 
-## MetaData配置
+分片必然分库,分库必然分表
 
 
+| 目标 targetName | 库schemaName                 | 表tableName                | 类型             |
+| --------------- | ---------------------------- | -------------------------- | ---------------- |
+| 唯一            | 唯一                         | 唯一                       | 非分片           |
+| 唯一            | 多目标                       | 相同名字                   | 非分片分库分表   |
+| 唯一            | 唯一                         | 不同名字                   | 非分片单库分表   |
+| 跨实例          | 多目标                       | 不同名字                   | 分片分库分表     |
+| 适合扩容的规则  | 多个字段多种规则缩小查询范围 | 单实例最大数据量适配的规则 | 分片分库分表索引 |
 
-### 概念
+### 
+
+####   Mycat2的分片分库分表运算
+
+​		在分片分库分表中运算分为两个部分,一部分是后端每个数据库的运算,这部分运算以SQL作为中间语言发送到后端服务器,一部分以HBT形式在mycat里执行,占用内存主要是驻留的结果集的总大小.如果结果集合拼的结果行是固定行,固定列,结果集每个值长度也是固定的,那意味着运算都是reduce的,可以边运算边丢弃已处理的值,无需保存完整的后端处理结果.
+
+​		当mycat2无法下推大部分运算的时候(主要是join,后面会继续优化),则可能拉取大结果集,处理还是很耗时的.所以尽量使用分片谓词靠近数据源风格编写SQL,便于mycat2识别可下推的谓词.
+
+
 
 #### 分片类型
 
@@ -138,8 +161,6 @@ user_name->表名
 总之能通过条件中存在的字段名得出存储节点三元组即可
 
 多列值映射到一个值暂时不支持,后续支持
-
-
 
 ##### 配置
 
@@ -195,34 +216,136 @@ NATURE_DATABASE_TABLE是单独配置,不与其他配置混合
 
 
 
+## HBT(Human Brain Tech)
+
+HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
+
+在设计上是Mycat2的运行时的中间语言,关于查询的HBT可以实现与SQL,其他查询优化器,查询编译器的关系表达式相互甚至与SQL DSL框架中的DSL转换.HBT也支持直接从文本和编写代码的方式构建.
+
+
+
+## 使用HBT解决什么问题?
+
+1.允许用户直接编写关系表达式实现功能,不同的SQL方言可以对应同一套关系表达式
+
+2.运行用户运行自定义函数
+
+3.免去优化过程,用户编写的关系表达式可以就是最终的执行计划
+
+4.允许使用函数宏展开关系表达式,比如给逻辑表函数宏指定分片范围自动扩展成对应的物理表
+
+5.允许SQL与关系表达式一并编写,例如叶子是SQL,根是Mycat的运算节点
+
+6.可移植到其他平台运行
+
+7.使用DSL作为中间语言下发到其他Mycat节点上运行
+
+8.方便验证测试
+
+
+
+### 关系表达式
+
+
+
+#### From
+
+| name | 类型 | 参数数量 | 参数          |
+| ---- | ---- | -------- | ------------- |
+| from | rel  | 2        | 逻辑库,逻辑表 |
+
+获得逻辑表的数据源
+
+
+
+text
+
+```sql
+from(db1,travelrecord)
+```
+
+
+
+java
+
+```java
+from("db1", "travelrecord")
+```
+
+
+
+#### Table
+
+| 名称  | 类型 | 参数数量     | 参数                          |
+| ----- | ---- | ------------ | ----------------------------- |
+| table | rel  | at least one | 字段信息列表,值列表(一维列表) |
+
+匿名表,一种字面量构成的数据源
+
+
+
+text
+
+```sql
+table(fields(fieldType(`1`,`int`),fieldType(`2`,`varchar`)),values())
+table(fields(fieldType(id,int)),values(1,2,3))
+```
+
+
+
+java
+
+```java
+table(Arrays.asList(fieldType("1", "int"), fieldType("2", "varchar")), Arrays.asList())
+table(Arrays.asList(fieldType("id", "int")), Arrays.asList(1,2,3))
+```
+
+
+
+
+
+#### Map
+
+| 名称 | 类型 | 参数数量     | 参数          |
+| ---- | ---- | ------------ | ------------- |
+| map  | rel  | at least one | 逻辑库,逻辑表 |
+
+map,投影和计算的关系表达式
+
+
+
+text
+
+```sql
+table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)).map(id2 as id4)//sugar
+map(table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)),id2 as id4)
+
+table(fields(fieldType(id,int),fieldType(id2,int)).map(id + id2)//sugar
+map(table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)),id + id2)
+```
+
+
+
+java
+
+```java
+map(table(Arrays.asList(fieldType("id", "int"), fieldType("id2", "int")), Arrays.asList()),Arrays.asList(as(new Identifier("id2"), new Identifier("id4"))))
+
+map(table(Arrays.asList(fieldType("id", "int"), fieldType("id2", "int")), Arrays.asList()),Arrays.asList(add(new Identifier("id2"), new Identifier("id4"))))
+```
+
+
+
+
+
+
+
 ## MetaData支持的SQL
 
 ##### 查询SQL
 
 ```yaml
 query:
-      values
-  |   WITH withItem [ , withItem ]* query
-  |   {
-          select
-      |   selectWithoutFrom
-      |   query UNION [ ALL | DISTINCT ] query
-      |   query EXCEPT [ ALL | DISTINCT ] query
-      |   query MINUS [ ALL | DISTINCT ] query
-      |   query INTERSECT [ ALL | DISTINCT ] query
-      }
-      [ ORDER BY orderItem [, orderItem ]* ]
-      [ LIMIT [ start, ] { count | ALL } ]
-      [ OFFSET start { ROW | ROWS } ]
-      [ FETCH { FIRST | NEXT } [ count ] { ROW | ROWS } ONLY ]
-
-withItem:
-      name
-      [ '(' column [, column ]* ')' ]
-      AS '(' query ')'
-
-orderItem:
-      expression [ ASC | DESC ] [ NULLS FIRST | NULLS LAST ]
 
 select:
       SELECT [ STREAM ] [ ALL | DISTINCT ]

@@ -1,5 +1,7 @@
 package io.mycat.lib.impl;
 
+import io.mycat.router.util.InserParser;
+import io.mycat.router.util.RowIteratorToInsertSQL;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -26,11 +26,17 @@ import lombok.Data;
 public class FieldType extends Node {
     final String id;
     final String type;
+    final boolean nullable;
+    final Integer precision;
+    final Integer scale;
 
-    public FieldType(String id, String type) {
+    public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
         super(Op.FIELD_SCHEMA);
         this.id = id;
         this.type = type;
+        this.nullable = columnNullable;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     @Override

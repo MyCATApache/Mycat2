@@ -16,6 +16,7 @@ package io.mycat.hbt.ast.base;
 
 import io.mycat.hbt.Op;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode
 public class Expr extends Node {
     List<Expr> nodes;
 

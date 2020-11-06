@@ -27,17 +27,22 @@ public enum Op {
     MINUS_DISTINCT("minusDistinct"),
     INTERSECT_DISTINCT("intersectDistinct"),
     INTERSECT_ALL("intersectAll"),
-
+//    ORDER_ITEM("orderItem"),
     //relational operators
-    FROM("from"),
+    FROM_TABLE("fromTable"),
+    MERGE_MODIFY("mergeModify"),
+    MODIFY_FROM_SQL("modifyFromSql"),
+    FROM_SQL("fromSql"),
+    FROM_REL_TO_SQL("fromRelToSql"),
+    FILTER_FROM_TABLE("filterFromTable"),
     MAP("map"),
     FILTER("filter"),
     LIMIT("limit"),
-    ORDER("order"),
-    GROUP("group"),
-    VALUES("values"),
+    ORDER("orderBy"),
+    GROUP("groupBy"),
+    TABLE("table"),
     DISTINCT("distinct"),
-    PROJECT("project"),
+    RENAME("rename"),
     INNER_JOIN("innerJoin"),
     LEFT_JOIN("leftJoin"),
     CORRELATE_INNER_JOIN("correlateInnerJoin"),
@@ -46,11 +51,10 @@ public enum Op {
     FULL_JOIN("fillJoin"),
     SEMI_JOIN("semiJoin"),
     ANTI_JOIN("antiJoin"),
-    CORRELATE("correlate"),
+//    CORRELATE("correlate"),
 
     // types
     SCHEMA("schema"),
-    SCALAR_TYPE("scalarType"),
     FIELD_SCHEMA("fieldSchema"),
 
     //atoms
@@ -70,17 +74,18 @@ public enum Op {
     LT("lt"),
     GTE("gte"),
     LTE("lte"),
-    PLUS("plus"),
+    ADD("add"),
     MINUS("minus"),
     AND("and"),
     OR("or"),
     NOT("not"),
-    AS_COLUMNNAME("asColumnName"),
+    AS_COLUMNNAME("as"),
     CAST("cast"),
     FUN("fun"),
     REF("ref"),
     AggregateCall("aggregateCall"),
     REGULAR("regular"),
+    PARAM("param"),
     ;
 
     String fun;

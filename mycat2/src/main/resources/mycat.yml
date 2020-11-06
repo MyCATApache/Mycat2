@@ -2,14 +2,14 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
   schemas:
     db1: #逻辑库名
       tables:
-        travelrecord: #逻辑表名
+        travelrecord_1: #逻辑表名
           columns:
             - columnName: id #分片字段信息,显式提供,
               shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
               function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
               #提供表的字段信息,升级计划:通过已有数据库拉取该信息
           createTableSQL: |-
-            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            CREATE TABLE `travelrecord_1` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
           dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
                       {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
                       {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
@@ -40,27 +40,17 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
-              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
+              tables:[ 'db1.travelrecord_1','db1.address'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
               sqls: [
-              {sql: 'select {any}',command: distributedQuery },
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
-              {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
-              {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
-              {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
-              ],
-            },
-            {
-              tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
-              sqls: [
-              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
-              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
-              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+              {sql: 'select {any}',command: mycatdb },
+              {sql: 'insert {any}',command: mycatdb },
+              {sql: 'delete {any}',command: mycatdb },
+              {sql: 'update {any}',command: mycatdb }
               ],
             },
   ]
   sqls: [
-  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain}, #explain一定要写库名
+  {name: explainSql,sql: 'EXPLAIN {statement}' ,command: explainSql}, #explain一定要写库名
   {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: plan},
   {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
@@ -84,7 +74,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   {name: mariadb-setAutoCommitOff,sql: 'set autocommit=0',command: setAutoCommitOff },
 
 
-  #mysql-connector-java-8.0.11  tx_isolation=>transaction_isolation,transaction_read_only =>ession.tx_read_only
+  #mysql-connector-java-8.0.11  tx_isolation=>transaction_isolation,transaction_read_only =>session.tx_read_only
   #/* mysql-connector-java-8.0.11 (Revision: 6d4eaa273bc181b4cf1c8ad0821a2227f116fedf) */SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout
   # mysql-connector-java-8.0.11  set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
   #mysql-connector-java-8.0.11 SELECT @@session.transaction_read_only =>SELECT @@session.tx_read_only
@@ -131,6 +121,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
    writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
    masters:[defaultDs], #主节点列表
    replicas:[defaultDs2],#从节点列表
+   maxCon:, #集群
    heartbeat:{maxRetry: 3, #心跳重试次数
               minSwitchTimeInterval: 12000 , #最小主从切换间隔
               heartbeatTimeout: 12000 , #心跳超时值,毫秒

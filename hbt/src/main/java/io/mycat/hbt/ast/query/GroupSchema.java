@@ -15,13 +15,12 @@
 package io.mycat.hbt.ast.query;
 
 import io.mycat.hbt.Op;
-import io.mycat.hbt.ast.AggregateCall;
+import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.GroupItem;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,11 +37,6 @@ public class GroupSchema extends Schema {
         this.schema = schema;
         this.keys = keys;
         this.exprs = exprs;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
     }
 
     public Schema getSchema() {

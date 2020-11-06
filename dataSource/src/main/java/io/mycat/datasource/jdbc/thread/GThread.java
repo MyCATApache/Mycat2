@@ -39,9 +39,9 @@ public class GThread extends BindThread implements SessionThread {
   @Override
   protected boolean continueBind() {
     TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-    boolean inTransaction = transactionSession.isInTransaction()&&session!=null;
-    LOGGER.debug("-->{} inTransaction:{}", transactionSession, inTransaction);
-    return inTransaction;
+    boolean needBindThread = transactionSession.needBindThread()&&session!=null;
+    LOGGER.debug("-->{} needBindThread:{}", transactionSession, needBindThread);
+    return needBindThread;
   }
 
   @Override

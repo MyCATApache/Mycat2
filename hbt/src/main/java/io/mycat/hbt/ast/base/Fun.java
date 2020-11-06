@@ -26,12 +26,10 @@ import java.util.stream.Collectors;
 @Data
 public class Fun extends Expr {
     final String functionName;
-    final String alias;
 
-    public Fun(String functionName, String alias, List<Expr> nodes) {
+    public Fun(String functionName,List<Expr> nodes) {
         super(Op.FUN, nodes);
         this.functionName = functionName;
-        this.alias = alias;
     }
 
     @Override

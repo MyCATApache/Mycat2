@@ -15,19 +15,18 @@
 
 package io.mycat.client;
 
+import io.mycat.beans.DatabaseClientStateApi;
 import io.mycat.beans.mycat.TransactionType;
-
-import java.util.List;
 
 /**
  * @author Junwen Chen
  **/
-public interface MycatClient {
+public interface MycatClient extends DatabaseClientStateApi {
     public Context analysis(String sql) ;
-    public List<String> explain(String sql);
     public void useSchema(String schemaName);
     public TransactionType getTransactionType();
     public void useTransactionType(TransactionType transactionType);
     public String getDefaultSchema();
 
+    public <T> T getMycatDb();
 }
