@@ -26,7 +26,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTablesSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLShowTablesStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));

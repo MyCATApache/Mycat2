@@ -52,7 +52,7 @@
 //        throw new MycatException("no file");
 //    }
 //
-//    private static Response getResponse(MycatResultSetResponse response) {
+//    private static Response getResponse(MycatResultSetResponse response) throws Exception {
 //        return new Response() {
 //            @Override
 //            public void apply(MycatSession session) {

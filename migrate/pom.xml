@@ -15,6 +15,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
+
             <version>1.12-SNAPSHOT</version>
         </dependency>
     </dependencies>
@@ -108,4 +109,5 @@
 
         </plugins>
     </build>
+
 </project>

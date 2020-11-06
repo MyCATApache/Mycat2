@@ -17,11 +17,11 @@ package io.mycat.calcite;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import io.mycat.MycatClassResolver;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
@@ -334,7 +334,14 @@ public enum MycatCalciteSupport implements Context {
                             WeekDayFunction.INSTANCE,
                             WeekOfYearFunction.INSTANCE,
                             YearFunction.INSTANCE,
-                            YearWeekFunction.INSTANCE
+                            YearWeekFunction.INSTANCE,
+                            MycatDatabaseFunction.INSTANCE,
+                            MycatSessionValueFunction.INSTANCE,
+                            MycatVersionFunction.INSTANCE,
+                            MycatLastInsertIdFunction.INSTANCE,
+                            MycatConnectionIdFunction.INSTANCE,
+                            MycatCurrentUserFunction.INSTANCE,
+                            MycatUserFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);

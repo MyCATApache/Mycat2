@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class ShowProcedureStatusSQLHandler extends AbstractSQLHandler<MySqlShowProcedureStatusStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowProcedureStatusStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowProcedureStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.tryBroadcastShow(request.getSqlString());
     }
 }

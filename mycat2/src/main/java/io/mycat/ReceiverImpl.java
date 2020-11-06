@@ -6,6 +6,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Response;
@@ -43,15 +44,16 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void proxyUpdate(String defaultTargetName, String sql) {
-        execute(ExplainDetail.create(UPDATE, defaultTargetName, sql, null));
+        execute(ExplainDetail.create(UPDATE,Objects.requireNonNull(defaultTargetName), sql, null));
     }
 
     @Override
     public void tryBroadcastShow(String statement) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<String> infos = new ArrayList<>();
-        List<String> keySet = new ArrayList<>(connectionManager.getDatasourceInfo().keySet());
-        Collections.shuffle(keySet);
+        List<String> keySet = new ArrayList<>();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        keySet.add(metadataManager.getPrototype());
         for (String datasourceName : keySet) {
             try (DefaultConnection connection = connectionManager.getConnection(datasourceName)) {
                 RowBaseIterator rowBaseIterator = connection.executeQuery(statement);
@@ -156,7 +158,7 @@ public class ReceiverImpl implements Response {
     public void execute(ExplainDetail detail) {
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
         ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        String datasource = selectorRuntime.getDatasourceNameByReplicaName(detail.getTarget(), master, detail.getBalance());
+        String datasource = selectorRuntime.getDatasourceNameByReplicaName(Objects.requireNonNull(detail.getTarget()), master, detail.getBalance());
         sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(detail.getExecuteType(), datasource, detail.getSql()));
     }
 

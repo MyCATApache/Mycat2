@@ -11,7 +11,7 @@
 //public enum ExecutePlanCommand implements MycatCommand{
 //    INSTANCE;
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        String text = request.getText();
 //        MycatDBClientMediator client = MycatDBs.createClient(context);
 //        response.sendResultSet(()->client.executeRel(text), () -> client.explainRel(text));
@@ -19,7 +19,7 @@
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        String text = request.getText();
 //        MycatDBClientMediator client = MycatDBs.createClient(context);
 //        response.sendExplain(ExecutePlanCommand.class,client.explainRel(text));

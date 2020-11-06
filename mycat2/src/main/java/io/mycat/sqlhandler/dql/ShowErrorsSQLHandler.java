@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class ShowErrorsSQLHandler extends AbstractSQLHandler<MySqlShowErrorsStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.tryBroadcastShow(request.getSqlString());
     }
 }

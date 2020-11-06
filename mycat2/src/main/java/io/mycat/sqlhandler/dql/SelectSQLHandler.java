@@ -196,7 +196,7 @@ public class SelectSQLHandler extends ShardingSQLHandler {
     }
 
     @Override
-    protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         //直接调用已实现好的
         SQLSelectStatement ast = request.getAst();
         super.onExecute(request, dataContext, response);

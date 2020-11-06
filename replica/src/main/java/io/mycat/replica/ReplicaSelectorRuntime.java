@@ -44,12 +44,12 @@ import java.util.stream.Collectors;
 /**
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
-public class ReplicaSelectorRuntime implements Closeable{
+public class ReplicaSelectorRuntime implements Closeable {
     private final ConcurrentMap<String, ReplicaDataSourceSelector> replicaMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, PhysicsInstance> physicsInstanceMap = new ConcurrentHashMap<>();
     ////////////////////////////////////////heartbeat///////////////////////////////////////////////////////////////////
     private final ConcurrentMap<String, HeartbeatFlow> heartbeatDetectorMap = new ConcurrentHashMap<>();
-    private final Map<String,DatasourceConfig> datasources;
+    private final Map<String, DatasourceConfig> datasources;
     private final LoadBalanceManager loadBalanceManager;
     private final List<ClusterConfig> replicaConfigList;
     private MetadataStorageManager metadataStorageManager;
@@ -57,15 +57,14 @@ public class ReplicaSelectorRuntime implements Closeable{
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaSelectorRuntime.class);
 
 
-
-    public ReplicaSelectorRuntime(List<ClusterConfig> clusters ,
+    public ReplicaSelectorRuntime(List<ClusterConfig> clusters,
                                   Map<String, DatasourceConfig> datasources,
                                   LoadBalanceManager loadBalanceManager, MetadataStorageManager storageManager) {
         this.datasources = datasources;
         this.loadBalanceManager = loadBalanceManager;
         this.metadataStorageManager = storageManager;
 
-      this.replicaConfigList = clusters;
+        this.replicaConfigList = clusters;
 
         Map<String, DatasourceConfig> datasourceConfigMap = datasources;
         ////////////////////////////////////check/////////////////////////////////////////////////
@@ -80,7 +79,7 @@ public class ReplicaSelectorRuntime implements Closeable{
         //移除不必要的配置
 
         //新配置中的集群名字
-        Set<String> clusterNames =clusters.stream().map(i -> i.getName()).collect(Collectors.toSet());
+        Set<String> clusterNames = clusters.stream().map(i -> i.getName()).collect(Collectors.toSet());
         new HashSet<>(replicaMap.keySet()).stream().filter(name -> !clusterNames.contains(name)).forEach(name -> replicaMap.remove(name));
 
         //新配置中的数据源名字
@@ -199,7 +198,7 @@ public class ReplicaSelectorRuntime implements Closeable{
         LoadBalanceStrategy writeLB = loadBalanceManager.getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
         int maxRequestCount = replicaConfig.getMaxCon() == null ? Integer.MAX_VALUE : replicaConfig.getMaxCon();
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
-                replicaType, maxRequestCount, switchType, readLB, writeLB,replicaConfig.getTimer());
+                replicaType, maxRequestCount, switchType, readLB, writeLB, replicaConfig.getTimer());
 
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
@@ -236,7 +235,7 @@ public class ReplicaSelectorRuntime implements Closeable{
                                                       TimerConfig timer) {
         return replicaMap.computeIfAbsent(replicaName,
                 s -> new ReplicaDataSourceSelector(replicaName, balanceType, type, maxRequestCount, switchType, readLB,
-                        writeLB,timer,this));
+                        writeLB, timer, this));
     }
 
     //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
@@ -250,7 +249,7 @@ public class ReplicaSelectorRuntime implements Closeable{
 
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
         BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function = master ? this::getWriteDatasource : this::getDatasource;
-        ReplicaDataSourceSelector replicaDataSourceSelector = replicaMap.get(replicaName);
+        ReplicaDataSourceSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
         if (replicaDataSourceSelector == null) {
             return replicaName;
         }
@@ -323,15 +322,17 @@ public class ReplicaSelectorRuntime implements Closeable{
         if (!heartbeatDetectorMap.containsKey(name)) {
             this.replicaConfigList.stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
                 HeartbeatConfig heartbeat = c.getHeartbeat();
-                ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
-                PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);
-                DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(this,physicsInstance, replicaName, datasourceName,
-                        heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
-                        ReplicaSwitchType.valueOf(c.getSwitchType()),
-                        heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getReplicaType()),
-                        executer);
+                if (heartbeat != null) {
+                    ReplicaDataSourceSelector selector = replicaMap.get(replicaName);
+                    PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);
+                    DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(this, physicsInstance, replicaName, datasourceName,
+                            heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
+                            ReplicaSwitchType.valueOf(c.getSwitchType()),
+                            heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getReplicaType()),
+                            executer);
 
-                heartbeatDetectorMap.put(name, heartbeatFlow);
+                    heartbeatDetectorMap.put(name, heartbeatFlow);
+                }
             });
         }
     }

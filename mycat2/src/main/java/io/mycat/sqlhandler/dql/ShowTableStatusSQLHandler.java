@@ -29,7 +29,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 
         MySqlShowTableStatusStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {

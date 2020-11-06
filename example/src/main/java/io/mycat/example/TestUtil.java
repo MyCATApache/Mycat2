@@ -25,7 +25,7 @@ public class TestUtil {
 
         String url = "jdbc:mysql://127.0.0.1:" +
                 port +
-                "/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+                "/?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);

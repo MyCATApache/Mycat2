@@ -12,7 +12,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MetaClusterCurrent {
   public static  final AtomicReference<Map<Class,Object>> context = new AtomicReference<>(new HashMap<>());
     public static  <T> T wrapper(Class<T> tClass){
-        return (T)Objects.requireNonNull(context.get().get(tClass));
+        Map<Class, Object> classObjectMap = context.get();
+        Object o = classObjectMap.get(tClass);
+        return (T)Objects.requireNonNull(o);
     }
 
     public static void register(Map<Class,Object> newContext) {

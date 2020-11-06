@@ -117,21 +117,24 @@ public class GlobalTable implements GlobalTableHandler {
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
+            DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : getGlobalDataNode()) {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()),node.getSchema(), node.getTable()), false);
+                DDLHelper.createDatabaseIfNotExist(connection, node);
+                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), node.getSchema(), node.getTable()), false);
             }
         }
     }
+
 
     @Override
     public void dropPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         String dropTemplate = "drop table `%s`.`%s`";
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(String.format(dropTemplate,getSchemaName(),getTableName()), false);
+            connection.executeUpdate(String.format(dropTemplate, getSchemaName(), getTableName()), false);
         }
 //        for (DataNode node : getGlobalDataNode()) {
 //            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {

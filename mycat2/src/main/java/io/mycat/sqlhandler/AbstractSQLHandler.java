@@ -23,7 +23,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     @Override
-    public void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
+    public void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)  throws Exception {
         try {
             onExecuteBefore(request, dataContext, response);
             onExecute(request, dataContext, response);
@@ -35,9 +35,9 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     protected void onExecuteBefore(SQLRequest<Statement> request, MycatDataContext dataContext, Response respons) {
     }
 
-    protected abstract void onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response);
+    protected abstract void onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)  throws Exception;
 
-    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
 
 
     }

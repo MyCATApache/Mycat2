@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class ShowStatusSQLHandler extends AbstractSQLHandler<MySqlShowStatusStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowStatusStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.sendOk();
     }
 }

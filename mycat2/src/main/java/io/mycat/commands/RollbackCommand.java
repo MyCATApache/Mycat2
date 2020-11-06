@@ -13,13 +13,13 @@
 //   private static final Logger LOGGER = LoggerFactory.getLogger(RollbackCommand.class);
 //
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        response.rollback();
 //        return true;
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        response.sendExplain(RollbackCommand.class,"rollback");
 //        return true;
 //    }

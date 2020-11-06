@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
+
     long getSessionId();
 
     TransactionType transactionType();
@@ -20,9 +21,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void switchTransaction(TransactionType transactionSessionType);
 
-    default <T> T getVariable(String target) {
-        return (T) MySQLVariablesUtil.getVariable(this, target);
-    }
+    <T> T getVariable(String target);
 
     <T> T getVariable(MycatDataContextEnum name);
 

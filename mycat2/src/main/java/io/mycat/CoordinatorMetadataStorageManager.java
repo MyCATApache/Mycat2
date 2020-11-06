@@ -25,7 +25,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void onChanged(String path, String text, boolean delete) {
+            public void onChanged(String path, String text, boolean delete) throws Exception  {
                 String schemaName = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
@@ -44,7 +44,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void onChanged(String path, String text, boolean delete) {
+            public void onChanged(String path, String text, boolean delete) throws Exception  {
                 String datasourceName = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
@@ -63,7 +63,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void onChanged(String path, String text, boolean delete) {
+            public void onChanged(String path, String text, boolean delete) throws Exception  {
                 String clusterName = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
@@ -82,7 +82,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void onChanged(String path, String text, boolean delete) {
+            public void onChanged(String path, String text, boolean delete) throws Exception  {
                 String sequenceName = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
@@ -101,7 +101,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void onChanged(String path, String text, boolean delete) {
+            public void onChanged(String path, String text, boolean delete) throws Exception {
                 String username = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
@@ -121,7 +121,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     final String datasourceProvider;
 
     @Override
-    void start() {
+    void start() throws Exception {
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps(loadFromLocalConfigCenter(), configOps));
         }
@@ -331,7 +331,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     interface ChangedCallback {
         String getInterestedPath();
 
-        void onChanged(String path, String text, boolean delete);
+        void onChanged(String path, String text, boolean delete) throws Exception;
 
         default String endPath(String path) {
             return path.substring(path.indexOf('/') + 1);

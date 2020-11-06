@@ -16,7 +16,7 @@ import java.util.Objects;
 public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         List<SQLAssignItem> items = request.getAst().getItems();
         if (items == null) {
             items = Collections.emptyList();

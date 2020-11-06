@@ -28,7 +28,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        String text = request.getText();
 //        for (String s : text.replace("kill @@connection ", "").split(",")) {
 //            int id = Integer.parseInt(s);
@@ -81,7 +81,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        if (request.getText().toLowerCase().startsWith("kill @@connection ")){
 //            handle(request, context, response);
 //            return true;

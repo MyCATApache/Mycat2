@@ -207,8 +207,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void commit(Object ops) {
-                try {
+            public void commit(Object ops)throws Exception  {
                     Path mycatPath = resolveFileName("mycat");
                     String suffix = getSuffix(mycatPath.getFileName().toString());
                     ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
@@ -216,8 +215,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
                     prepare.prepareRuntimeObject();
                     prepare.prepareStoreDDL();
-                    String text = configReaderWriter.transformation(routerConfig.getMycatRouterConfig());
-
                     //还没有初始化
 //                    if (state.configTimestamp != null) {
 //                        String s = readString(mycatPath);
@@ -314,10 +311,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                             ConfigReaderWriter.getReaderWriterBySuffix("json")
                                     .transformation(state), statePath);
 
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                } finally {
-                }
             }
 
             @Override

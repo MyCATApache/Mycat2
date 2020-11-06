@@ -1,6 +1,6 @@
 package io.mycat.proxy.session;
 
-import io.mycat.MetaCluster;
+import io.mycat.Authenticator;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.config.UserConfig;
 

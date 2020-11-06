@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 

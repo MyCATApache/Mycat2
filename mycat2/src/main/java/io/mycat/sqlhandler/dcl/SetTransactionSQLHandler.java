@@ -15,7 +15,7 @@ public class SetTransactionSQLHandler extends AbstractSQLHandler<MySqlSetTransac
     private static final Logger LOGGER = LoggerFactory.getLogger(SetTransactionSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlSetTransactionStatement statement = request.getAst();
         String isolationLevel = statement.getIsolationLevel();
         MySQLIsolation mySQLIsolation = MySQLIsolation.parse(isolationLevel);

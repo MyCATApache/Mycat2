@@ -26,7 +26,7 @@ public class SwitchReplicaCommand  implements ManageCommand {
     }
 
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         if (request.getText().toLowerCase().startsWith("switch @@backend.replica")){
             handle(request, context, response);
             return true;
@@ -35,7 +35,7 @@ public class SwitchReplicaCommand  implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         String json = request.getText().split("=")[1];
         Map from = JsonUtil.from(json, Map.class);
         String name = Objects.requireNonNull((String) from.get("name"),"name required");

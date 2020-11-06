@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 
 public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         Optional<Map<String, Object>> afterJson = request.getAnyJson();
         MySqlHintStatement ast = request.getAst();
         List<SQLCommentHint> hints = ast.getHints();
@@ -397,7 +397,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         return;
                     }
                 }
-                if ("showInstance".equalsIgnoreCase(cmd)) {
+                if ("showInstances".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                     resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
 
@@ -466,7 +466,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> resultSetBuilder.build());
                     return;
                 }
-                if ("showThreadPool".equalsIgnoreCase(cmd)) {
+                if ("showThreadPools".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
                     builder.addColumnInfo("NAME", JDBCType.VARCHAR)
                             .addColumnInfo("POOL_SIZE", JDBCType.BIGINT)
@@ -492,7 +492,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> builder.build());
                     return;
                 }
-                if ("showNativeBackend".equalsIgnoreCase(cmd)) {
+                if ("showNativeBackends".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                     resultSetBuilder.addColumnInfo("SESSION_ID", JDBCType.BIGINT)
                             .addColumnInfo("THREAD_NAME", JDBCType.VARCHAR)
@@ -632,6 +632,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         ));
                     }
                     response.sendResultSet(() -> builder.build());
+                    return;
                 }
                 if ("showSchedules".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
@@ -655,7 +656,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
         response.sendOk();
     }
 
-    public static void mycatDmlHandler(String cmd, String body) {
+    public static void mycatDmlHandler(String cmd, String body) throws Exception {
         if ("createTable".equalsIgnoreCase(cmd)) {
             CreateTableSQLHandler.INSTANCE.createTable(
                     JsonUtil.from(body, Map.class),

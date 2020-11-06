@@ -13,7 +13,7 @@
 //    INSTANCE;
 //    final static Logger LOGGER = LoggerFactory.getLogger(OffXACommand.class);
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        if (context.isInTransaction()) throw new IllegalArgumentException();
 //        context.switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
 //        LOGGER.debug("session id:{} action:{}", request.getSessionId(), "set xa = 0 exe success");
@@ -22,7 +22,7 @@
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        response.sendExplain(OffXACommand.class,TransactionType.PROXY_TRANSACTION_TYPE.getName());
 //        return true;
 //    }

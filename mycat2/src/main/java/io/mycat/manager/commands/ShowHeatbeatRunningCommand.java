@@ -21,7 +21,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        try {
 //            boolean heartbeat = ReplicaSelectorRuntime.INSTANCE.isHeartbeat();
 //            ResultSetBuilder builder = ResultSetBuilder.create();

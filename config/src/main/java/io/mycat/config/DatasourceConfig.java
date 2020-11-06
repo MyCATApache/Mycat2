@@ -1,11 +1,16 @@
 package io.mycat.config;
 
+import com.mysql.cj.conf.ConnectionUrlParser;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.text.MessageFormat;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Data
 @EqualsAndHashCode
@@ -17,15 +22,15 @@ public class DatasourceConfig {
     private int minCon = 1;
     private int maxRetryCount = 5;
     private long maxConnectTimeout = 3 * 1000;
-    private String dbType;
+    private String dbType = "mysql";
     private String url;
     private int weight = 0;
     private List<String> initSqls;
-    private boolean initSqlsGetConnection;
-    private String instanceType;
+    private boolean initSqlsGetConnection = true;
+    private String instanceType = "READ_WRITE";
     private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
     private String jdbcDriverClass;//保留属性
-    private String type = DatasourceType.NATIVE_JDBC.name();
+    private String type = DatasourceType.JDBC.name();
 
     public List<String> getInitSqls() {
         if (initSqls == null) initSqls = Collections.emptyList();
@@ -66,4 +71,28 @@ public class DatasourceConfig {
         }
     }
 
+    public void setUrl(String url) {
+       if("mysql".equalsIgnoreCase(getDbType())){
+           ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(url);
+           Map<String, String> properties = new HashMap<>(connectionUrlParser.getProperties());
+           if (!properties.containsKey("useUnicode")){
+               properties.put("useUnicode","true");
+           }
+           if (!properties.containsKey("characterEncoding")){
+               properties.put("characterEncoding","UTF-8");
+           }
+           if (!properties.containsKey("serverTimezone")){
+               properties.put("serverTimezone","UTC");
+           }
+           int i = url.indexOf('?');
+           if (i == -1){
+               url+="?";
+           }else {
+               url= url.substring(0,i+1);
+           }
+           url+=properties.entrySet().stream().map(j->j.getKey()+"="+j.getValue())
+                   .collect(Collectors.joining("&"));
+       }
+        this.url = url;
+    }
 }

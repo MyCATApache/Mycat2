@@ -11,7 +11,7 @@ import io.mycat.util.Response;
 public class AlterDatabaseSQLHandler extends AbstractSQLHandler<SQLAlterDatabaseStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLAlterDatabaseStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLAlterDatabaseStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.sendOk();
     }
 }

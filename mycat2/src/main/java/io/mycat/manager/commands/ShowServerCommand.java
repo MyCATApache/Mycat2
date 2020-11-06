@@ -20,7 +20,7 @@ public class ShowServerCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         Runtime runtime = Runtime.getRuntime();
         int AVAILABLE_PROCESSORS = runtime.availableProcessors();
         long FREE_MEMORY = runtime.freeMemory();

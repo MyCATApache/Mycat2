@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProcessListStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.tryBroadcastShow(request.getAst().toString());
         return ;
     }

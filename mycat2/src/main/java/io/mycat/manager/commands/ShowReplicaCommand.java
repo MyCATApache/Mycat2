@@ -31,7 +31,7 @@
 //    }
 //
 //    @Override
-//    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+//    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        ResultSetBuilder resultSetBuilder = getResultSet();
 //        response.sendResultSet(RowIterable.create(resultSetBuilder.build()));
 //    }

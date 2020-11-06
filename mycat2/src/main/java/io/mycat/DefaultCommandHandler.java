@@ -33,7 +33,6 @@ import io.mycat.config.UserConfig;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.preparestatement.PrepareStatementManager;
-import io.mycat.proxy.session.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import lombok.SneakyThrows;

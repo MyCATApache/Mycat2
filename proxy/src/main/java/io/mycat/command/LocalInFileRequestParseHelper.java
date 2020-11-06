@@ -24,7 +24,7 @@ import io.mycat.proxy.session.MycatSession;
  **/
 public interface LocalInFileRequestParseHelper {
 
-  void handleQuery(byte[] sql, MycatSession seesion);
+  void handleQuery(byte[] sql, MycatSession seesion) throws Exception;
 
   void handleContentOfFilename(byte[] sql, MycatSession session);
 

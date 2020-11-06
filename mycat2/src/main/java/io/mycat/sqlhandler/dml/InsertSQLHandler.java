@@ -16,7 +16,7 @@ import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
 public class InsertSQLHandler extends AbstractSQLHandler<MySqlInsertStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlInsertStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlInsertStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLExprTableSource tableSource = request.getAst().getTableSource();
         updateHandler(request.getAst(),dataContext,tableSource,response);
     }

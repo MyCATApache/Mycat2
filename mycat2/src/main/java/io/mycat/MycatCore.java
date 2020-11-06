@@ -83,12 +83,12 @@ public class MycatCore {
         MetaClusterCurrent.register(context);
     }
 
-    private void start() {
+    private void start() throws Exception {
         metadataStorageManager.start();
         mycatServer.start();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args)throws Exception  {
         new MycatCore().start();
     }
 }
