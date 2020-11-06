@@ -96,6 +96,7 @@ public interface MycatMigrateService {
         private String username;
         private String password;
         private String tableName;
+        @Builder.Default
         private String driverClassName = "com.mysql.cj.jdbc.Driver";
     }
 
