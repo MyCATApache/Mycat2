@@ -26,7 +26,7 @@ public class ReceiverImpl implements Response {
     protected final SQLExecuterWriter sqlExecuterWriter;
 
     public ReceiverImpl(MycatSession session,int stmtSize, boolean binary,boolean explain) {
-        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session);
+        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session,this);
         this.session = session;
     }
 
@@ -84,74 +84,17 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void rollback() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE:
-                transactionSession.rollback();
-                if (session.isBindMySQLSession()) {
-                    proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
-                    LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
-                    return;
-                } else {
-                    sendOk();
-                    LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
-                    return;
-                }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.rollback();
-                LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
-                sendOk();
-                return;
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatRollbackResponse.INSTANCE);
     }
 
     @Override
     public void begin() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE: {
-                transactionSession.begin();
-                LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
-                sendOk();
-                return;
-            }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.begin();
-                LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
-                sendOk();
-                return;
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatBeginResponse.INSTANCE);
     }
 
     @Override
     public void commit() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE:
-                transactionSession.commit();
-                if (!session.isBindMySQLSession()) {
-                    LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
-                    sendOk();
-                    return;
-                } else {
-                    proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
-                    LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
-                    return;
-                }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.commit();
-                LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
-                sendOk();
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatCommitResponse.INSTANCE);
     }
 
     @Override
