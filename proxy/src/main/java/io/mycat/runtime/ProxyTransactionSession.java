@@ -27,17 +27,17 @@ public class ProxyTransactionSession extends LocalTransactionSession {
 
     @Override
     protected void callBackBegin() {
-
+        super.callBackBegin();
     }
 
     @Override
     protected void callBackCommit() {
-
+        super.callBackCommit();
     }
 
     @Override
     protected void callBackRollback() {
-
+        super.callBackRollback();
     }
     @Override
     public Dumper snapshot() {

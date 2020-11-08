@@ -12,9 +12,21 @@ import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.mycat.*;
+import io.mycat.calcite.sqlfunction.datefunction.*;
+import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.NotRegexpFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.RegexpFunction;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.fun.*;
+import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlCastFunction;
+import org.apache.calcite.sql.fun.SqlQuantifyOperator;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -22,6 +34,7 @@ import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -442,7 +455,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLExprTableSource x) {
-        SqlIdentifier table;
+        SqlNode table;
         SQLExpr expr = x.getExpr();
         if (expr instanceof SQLIdentifierExpr) {
             table = buildIdentifier((SQLIdentifierExpr) expr);
@@ -888,11 +901,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         return false;
     }
 
-    SqlIdentifier buildIdentifier(SQLIdentifierExpr x) {
+    SqlNode buildIdentifier(SQLIdentifierExpr x) {
         return new SqlIdentifier(SQLUtils.normalize(x.getName()), SqlParserPos.ZERO);
     }
 
-    SqlIdentifier buildIdentifier(SQLPropertyExpr x) {
+    SqlNode buildIdentifier(SQLPropertyExpr x) {
         String name = SQLUtils.normalize(x.getName());
         if ("*".equals(name)) {
             name = "";
@@ -907,6 +920,15 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             names = new ArrayList<String>();
             buildIdentifier((SQLPropertyExpr) owner, names);
             names.add(name);
+        } else if (owner instanceof SQLVariantRefExpr) {
+            SQLVariantRefExpr owner1 = (SQLVariantRefExpr) owner;
+           if(owner1.isGlobal()){
+               return MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+           }else {
+               return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+           }
         } else {
             throw new FastsqlException("not support : " + owner);
         }
@@ -1025,16 +1047,45 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 }
                 break;
             case Add:
+                if (rightExpr instanceof SQLIntervalExpr || x.getLeft() instanceof SQLIntervalExpr) {
+                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    break;
+                }
                 operator = SqlStdOperatorTable.PLUS;
                 break;
             case Subtract:
+                if (rightExpr instanceof SQLIntervalExpr) {
+                    SQLExpr value = ((SQLIntervalExpr) rightExpr).getValue();
+                    SQLIntegerExpr value1 = (SQLIntegerExpr) value;
+                    right = convertToSqlNode(new SQLIntervalExpr(new SQLIntegerExpr(-value1.getNumber().longValue()),
+                            ((SQLIntervalExpr) rightExpr).getUnit()));
+                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    break;
+                }
                 operator = SqlStdOperatorTable.MINUS;
+                break;
+            case Union:
+                operator = SqlStdOperatorTable.UNION;
+                break;
+            case COLLATE: {
+                SQLMethodInvokeExpr convert = new SQLMethodInvokeExpr("convert", (SQLExpr) x.getParent(),
+                        x.getLeft());
+                convert.setUsing(x.getRight());
+                convert.accept(this);
+                return false;
+            }
+            case BitwiseXor:
+                operator = SqlStdOperatorTable.BIT_XOR;
+                break;
+            case BitwiseXorEQ:
                 break;
             case Multiply:
                 operator = SqlStdOperatorTable.MULTIPLY;
                 break;
             case Divide:
                 operator = SqlStdOperatorTable.DIVIDE;
+                break;
+            case DIV:
                 break;
             case Modulus:
                 operator = SqlStdOperatorTable.MOD;
@@ -1120,6 +1171,97 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         SqlFunctionCategory.USER_DEFINED_FUNCTION), new SqlNode[]{left, right}, SqlParserPos.ZERO);
                 return false;
             }
+            case LessThanOrEqualOrGreaterThan: {
+                sqlNode = new SqlBasicCall(new SqlUnresolvedFunction(new SqlIdentifier("<=>", SqlParserPos.ZERO),
+                        null,
+                        null,
+                        null,
+                        null,
+                        SqlFunctionCategory.USER_DEFINED_FUNCTION), new SqlNode[]{left, right}, SqlParserPos.ZERO);
+                return false;
+            }
+
+            case NotRegExp:
+                sqlNode = NotRegexpFunction.INSTANCE.createCall(SqlParserPos.ZERO, new SqlNode[]{left, right});
+                return false;
+            case RLike:
+            case RegExp:
+                sqlNode = RegexpFunction.INSTANCE.createCall(SqlParserPos.ZERO, new SqlNode[]{left, right});
+                return false;
+            case SoudsLike:
+                SQLBinaryOpExpr eq = SQLBinaryOpExpr.eq(
+                        new SQLMethodInvokeExpr("SOUNDEX", null, x.getLeft()),
+                        new SQLMethodInvokeExpr("SOUNDEX", null, x.getRight()));
+                eq.accept(this);
+                return false;
+            case Mod:
+
+            case SubGt:
+
+            case SubGtGt:
+
+            case PoundGt:
+
+            case PoundGtGt:
+
+            case QuesQues:
+
+            case QuesBar:
+
+            case QuesAmp:
+
+            case LeftShift:
+
+            case RightShift:
+
+            case BitwiseAnd:
+
+            case IsDistinctFrom:
+
+            case IsNotDistinctFrom:
+
+
+            case ILike:
+
+            case NotILike:
+
+            case AT_AT:
+
+            case SIMILAR_TO:
+
+            case POSIX_Regular_Match:
+
+            case POSIX_Regular_Match_Insensitive:
+
+            case POSIX_Regular_Not_Match:
+
+            case POSIX_Regular_Not_Match_POSIX_Regular_Match_Insensitive:
+
+            case Array_Contains:
+
+            case Array_ContainedBy:
+
+            case SAME_AS:
+
+            case JSONContains:
+
+            case NotRLike:
+
+            case NotLessThan:
+
+            case NotGreaterThan:
+
+
+            case BitwiseNot:
+
+            case BooleanXor:
+
+            case Assignment:
+
+            case PG_And:
+
+            case PG_ST_DISTANCE:
+
             default:
                 SqlUnresolvedFunction sqlUnresolvedFunction = new SqlUnresolvedFunction(new SqlIdentifier(x.getOperator().name(), SqlParserPos.ZERO),
                         null,
@@ -1226,7 +1368,8 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (str.indexOf('E') > 0 || str.indexOf('e') > 0) {
             sqlNode = SqlLiteral.createApproxNumeric(str, SqlParserPos.ZERO);
         } else {
-            sqlNode = SqlLiteral.createExactNumeric(str, SqlParserPos.ZERO);
+            BigDecimal bigDecimal = SqlParserUtil.parseDecimal(str);
+            sqlNode = MysqlExactNumericLiteral.create(bigDecimal, SqlParserPos.ZERO);
         }
         return false;
     }
@@ -1387,108 +1530,353 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         List<SqlNode> argNodes = new ArrayList<SqlNode>(arguments.size());
 
         long nameHashCode64 = x.methodNameHashCode64();
-
         SqlOperator functionOperator = func(nameHashCode64);
-
-
-        String methodName = x.getMethodName();
-
-
-
-
-        SqlLiteral functionQualifier = null;
-
-
+        String methodName = x.getMethodName().toUpperCase();
         for (SQLExpr exp : arguments) {
-            argNodes.add(convertToSqlNode(exp));
+            argNodes.add(Objects.requireNonNull(convertToSqlNode(exp)));
         }
 
-        if ((nameHashCode64 == FnvHash.Constants.TIMESTAMPDIFF || nameHashCode64 == FnvHash.Constants.TIMESTAMPADD)
-                && argNodes.size() > 0
-                && argNodes.get(0) instanceof SqlIdentifier
-        ) {
-            SqlIdentifier arg0 = (SqlIdentifier) argNodes.get(0);
-            TimeUnit timeUnit = TimeUnit.valueOf(arg0.toString().toUpperCase());
-            argNodes.set(0
-                    , SqlLiteral.createSymbol(timeUnit, SqlParserPos.ZERO)
-            );
-        }
-
-            if ("trim".equalsIgnoreCase(x.getMethodName())){
-                if ("both".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
+        switch (methodName) {
+            case "SCHEMA":
+            case "DATABASE": {
+                this.sqlNode = MycatDatabaseFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "LAST_INSERT_ID": {
+                this.sqlNode = MycatLastInsertIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "VERSION": {
+                this.sqlNode = MycatVersionFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "CONNECTION_ID": {
+                this.sqlNode = MycatConnectionIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "CURRENT_USER":{
+                this.sqlNode = MycatCurrentUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "SESSION_USER":
+            case "SYSTEM_USER":
+            case "USER":{
+                this.sqlNode = MycatUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
+            case "ADDDATE": {
+                SQLExpr sqlExpr = x.getArguments().get(1);
+                if (x.getArguments().size() > 1 &&
+                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                    argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
+                }
+            }
+            case "DATE_ADD": {
+                this.sqlNode = RexImpTable.DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SUBDATE": {
+                SQLExpr sqlExpr = x.getArguments().get(1);
+                if (x.getArguments().size() > 1 &&
+                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                    argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
+                }
+            }
+            case "DATE_SUB":
+                this.sqlNode = RexImpTable.DateSubFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            case "SUBTIME": {
+                this.sqlNode = SubTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME_FORMAT": {
+                this.sqlNode = TimeFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME_TO_SEC": {
+                this.sqlNode = TimeToSecFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TO_DAYS": {
+                this.sqlNode = ToDaysFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TO_SECONDS": {
+                this.sqlNode = ToSecondsFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_DATE": {
+                this.sqlNode = UtcDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_TIME": {
+                this.sqlNode = UtcTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UTC_TIMESTAMP": {
+                this.sqlNode = UtcTimestampFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEK": {
+                this.sqlNode = WeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEKDAY": {
+                this.sqlNode = WeekDayFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "WEEKOFYEAR": {
+                this.sqlNode = WeekOfYearFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "YEAR": {
+                this.sqlNode = YearFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "YEARWEEK": {
+                this.sqlNode = YearWeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SYSDATE": {
+                this.sqlNode = SysDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIME": {
+                this.sqlNode = TimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMEDIFF": {
+                this.sqlNode = TimeDiff2Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMESTAMP": {
+                if (argNodes.size() == 1) {
+                    this.sqlNode = Timestamp2Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                if (argNodes.size() == 2) {
+                    this.sqlNode = TimestampComposeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                throw new UnsupportedOperationException();
+            }
+            case "DAY":
+            case "DAYOFMONTH": {
+                ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.DAY, SqlParserPos.ZERO), argNodes.get(0));
+                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                return false;
+            }
+            case "DAYOFWEEK": {
+                this.sqlNode = DayOfWeekFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "FROM_DAYS": {
+                this.sqlNode = FromDaysFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "DAYOFYEAR": {
+                ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.YEAR, SqlParserPos.ZERO), argNodes.get(0));
+                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                return false;
+            }
+            case "HOUR": {
+                this.sqlNode = HourFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LAST_DAY": {
+                this.sqlNode = LastDayFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LOCALTIMESTAMP":
+            case "LOCALTIME":
+            case "CURRENT_TIMESTAMP":
+            case "NOW": {
+                this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MAKEDATE": {
+                this.sqlNode = MakeDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MAKETIME": {
+                this.sqlNode = MakeTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UNIX_TIMESTAMP": {
+                this.sqlNode = UnixTimestampFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MICROSECOND": {
+                this.sqlNode = MicrosecondFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MINUTE": {
+                this.sqlNode = MinuteFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "PERIOD_ADD": {
+                this.sqlNode = PeriodAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "PERIOD_DIFF": {
+                this.sqlNode = PeriodDiffFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "QUARTER": {
+                this.sqlNode = QuarterFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SECOND": {
+                this.sqlNode = SecondFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SEC_TO_TIME": {
+                this.sqlNode = SecToTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "STR_TO_DATE": {
+                this.sqlNode = SecToDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MONTHNAME": {
+                this.sqlNode = MonthNameFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MONTH": {
+                this.sqlNode = MonthFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMESTAMPDIFF": {
+                if (argNodes.size() > 0 && argNodes.get(0) instanceof SqlIdentifier) {
+                    SqlIdentifier arg0 = (SqlIdentifier) argNodes.get(0);
+                    argNodes.set(0, SqlLiteral.createCharString(arg0.toString().toUpperCase(), SqlParserPos.ZERO));
+                }
+                this.sqlNode = TimestampDiffFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TIMESTAMPADD": {
+                SQLExpr sqlExpr = arguments.get(0);
+                if (sqlExpr instanceof SQLIdentifierExpr) {
+                    SqlIdentifier arg0 = (SqlIdentifier) argNodes.get(0);
+                    argNodes.set(0, SqlLiteral.createCharString(arg0.toString().toUpperCase(), SqlParserPos.ZERO));
+                }
+                this.sqlNode = TimestampAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "CONVERT": {
+                SQLExpr usingExpr = x.getUsing();
+                String using;
+                if (usingExpr != null) {
+                    using = SQLUtils.normalize(usingExpr.toString());
+                } else {
+                    using = "utf8";
+                }
+                //     SELECT CONVERT('abc' USING utf8);
+                if (argNodes.size() == 1) {
+                    argNodes.add(SqlLiteral.createCharString(using, SqlParserPos.ZERO));
+                    this.sqlNode = ConvertFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                this.sqlNode = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "DATE_FORMAT": {
+                this.sqlNode = DateFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "FROM_UNIXTIME": {
+                if (argNodes.size() == 1) {
+                    this.sqlNode = FromUnixTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                    return false;
+                }
+                this.sqlNode = FromUnixTimeFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "GET_FORMAT": {
+                this.sqlNode = GetFormatFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        ImmutableList.of(
+                                SqlLiteral.createCharString(argNodes.get(0).toString(), SqlParserPos.ZERO),
+                                argNodes.get(1)
+                        ));
+                return false;
+            }
+            case "MYCATSESSIONVALUE": {
+                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TRIM": {
+                if ("both".equalsIgnoreCase(x.getTrimOption())) {
+                    functionOperator = new SqlUnresolvedFunction(
                             new SqlIdentifier("trim_both", SqlParserPos.ZERO),
                             null,
                             null,
                             null,
                             null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
+                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
                         @Override
                         public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
                             writer.print("trim(both,");
                             List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
+                            operandList.get(0).unparse(writer, 0, 0);
                             writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
+                            operandList.get(1).unparse(writer, 0, 0);
                             writer.print(")");
                         }
                     };
-                }else if ("TRAILING".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
+                } else if ("TRAILING".equalsIgnoreCase(x.getTrimOption())) {
+                    functionOperator = new SqlUnresolvedFunction(
                             new SqlIdentifier("trim_trailing", SqlParserPos.ZERO),
                             null,
                             null,
                             null,
                             null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
+                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
                         @Override
                         public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
                             writer.print("trim(trailing,");
                             List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
+                            operandList.get(0).unparse(writer, 0, 0);
                             writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
+                            operandList.get(1).unparse(writer, 0, 0);
                             writer.print(")");
                         }
                     };
-                }else if ("LEADING".equalsIgnoreCase(x.getTrimOption())){
-                    functionOperator  = new SqlUnresolvedFunction(
+                } else if ("LEADING".equalsIgnoreCase(x.getTrimOption())) {
+                    functionOperator = new SqlUnresolvedFunction(
                             new SqlIdentifier("trim_leading", SqlParserPos.ZERO),
                             null,
                             null,
                             null,
                             null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION){
+                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
                         @Override
                         public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
                             writer.print("trim(leading,");
                             List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer,0,0);
+                            operandList.get(0).unparse(writer, 0, 0);
                             writer.print(" from ");
-                            operandList.get(1).unparse(writer,0,0);
+                            operandList.get(1).unparse(writer, 0, 0);
                             writer.print(")");
                         }
                     };
                 }
+                sqlNode = functionOperator.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
             }
-
-
-        if (functionOperator == null) {
-            functionOperator = new SqlUnresolvedFunction(
-                    new SqlIdentifier(methodName, SqlParserPos.ZERO),
-                    null,
-                    null,
-                    null,
-                    null,
-                    SqlFunctionCategory.USER_DEFINED_FUNCTION);
+            default:
+                if (functionOperator == null) {
+                    functionOperator = new SqlUnresolvedFunction(
+                            new SqlIdentifier(methodName, SqlParserPos.ZERO),
+                            null,
+                            null,
+                            null,
+                            null,
+                            SqlFunctionCategory.USER_DEFINED_FUNCTION);
+                }
+                sqlNode = functionOperator.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
         }
-
-        this.sqlNode = new CalciteSqlBasicCall(functionOperator,
-                SqlParserUtil.toNodeArray(argNodes),
-                SqlParserPos.ZERO,
-                false,
-                functionQualifier);
-        return false;
+//        return false;
     }
 
     public boolean visit(SQLInListExpr x) {
@@ -1506,7 +1894,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            System.out.println("end");
+            if(x.isGlobal()){
+                this.sqlNode = MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
+            }else {
+                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
+            }
         }
         return false;
     }
@@ -1524,10 +1918,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = SqlStdOperatorTable.UNARY_MINUS.createCall(SqlParserPos.ZERO,
                         convertToSqlNode(x.getExpr()));
                 break;
-            case Compl:
             case BINARY:
+                this.sqlNode = BinaryFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        convertToSqlNode(x.getExpr()));
+                break;
+            case Compl:
+
             default:
-                super.visit(x);
+                throw new UnsupportedOperationException(operator.name());
         }
         return false;
     }
@@ -1694,7 +2092,6 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     public boolean visit(SQLIntervalExpr x) {
         TimeUnit timeUnits[] = getTimeUnit(x.getUnit());
-        List<SqlNode> convertedArgs = new ArrayList<SqlNode>(2);
         SqlIntervalQualifier unitNode = new SqlIntervalQualifier(timeUnits[0], timeUnits[1], SqlParserPos.ZERO);
         SqlLiteral valueNode = (SqlLiteral) convertToSqlNode(x.getValue());
         sqlNode = SqlIntervalLiteral.createInterval(1, valueNode.toValue(), unitNode, SqlParserPos.ZERO);
@@ -1704,54 +2101,58 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     public static TimeUnit[] getTimeUnit(SQLIntervalUnit unit) {
         TimeUnit[] timeUnits = new TimeUnit[2];
         switch (unit) {
-            // case MICROSECOND:
-            // timeUnits[0] = TimeUnit.MICROSECOND;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+            case SECOND_MICROSECOND:
+                timeUnits[0] = TimeUnit.SECOND;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
+            case MICROSECOND:
+                timeUnits[0] = TimeUnit.MICROSECOND;
+                timeUnits[1] = null;
+                break;
             case SECOND:
                 timeUnits[0] = TimeUnit.SECOND;
-                timeUnits[1] = TimeUnit.SECOND;
+                timeUnits[1] = null;
                 break;
             case MINUTE:
                 timeUnits[0] = TimeUnit.MINUTE;
-                timeUnits[1] = TimeUnit.MINUTE;
+                timeUnits[1] = null;
                 break;
             case HOUR:
                 timeUnits[0] = TimeUnit.HOUR;
-                timeUnits[1] = TimeUnit.HOUR;
+                timeUnits[1] = null;
                 break;
             case DAY:
                 timeUnits[0] = TimeUnit.DAY;
-                timeUnits[1] = TimeUnit.DAY;
+                timeUnits[1] = null;
                 break;
             case WEEK:
                 timeUnits[0] = TimeUnit.WEEK;
-                timeUnits[1] = TimeUnit.WEEK;
+                timeUnits[1] = null;
                 break;
             case MONTH:
                 timeUnits[0] = TimeUnit.MONTH;
-                timeUnits[1] = TimeUnit.MONTH;
+                timeUnits[1] = null;
                 break;
             case QUARTER:
                 timeUnits[0] = TimeUnit.QUARTER;
-                timeUnits[1] = TimeUnit.QUARTER;
+                timeUnits[1] = null;
                 break;
             case YEAR:
                 timeUnits[0] = TimeUnit.YEAR;
-                timeUnits[1] = TimeUnit.YEAR;
+                timeUnits[1] = null;
                 break;
-            // case MINUTE_MICROSECOND:
-            // timeUnits[0] = TimeUnit.MINUTE;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+            case MINUTE_MICROSECOND:
+                timeUnits[0] = TimeUnit.MINUTE;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case MINUTE_SECOND:
                 timeUnits[0] = TimeUnit.MINUTE;
                 timeUnits[1] = TimeUnit.SECOND;
                 break;
-            // case HOUR_MICROSECOND:
-            // timeUnits[0] = TimeUnit.HOUR;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+            case HOUR_MICROSECOND:
+                timeUnits[0] = TimeUnit.HOUR;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case HOUR_SECOND:
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1760,10 +2161,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[0] = TimeUnit.HOUR;
                 timeUnits[1] = TimeUnit.MINUTE;
                 break;
-            // case DAY_MICROSECOND:
-            // timeUnits[0] = TimeUnit.DAY;
-            // timeUnits[1] = TimeUnit.MICROSECOND;
-            // break;
+            case DAY_MICROSECOND:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.MICROSECOND;
+                break;
             case DAY_SECOND:
                 timeUnits[0] = TimeUnit.DAY;
                 timeUnits[1] = TimeUnit.SECOND;
@@ -1777,6 +2178,44 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 timeUnits[1] = TimeUnit.HOUR;
                 break;
             case YEAR_MONTH:
+                timeUnits[0] = TimeUnit.YEAR;
+                timeUnits[1] = TimeUnit.MONTH;
+                break;
+            case DAY_OF_WEEK:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.WEEK;
+                break;
+            case DOW:
+                timeUnits[0] = TimeUnit.DOW;
+                timeUnits[1] = null;
+                break;
+            case DAY_OF_MONTH:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.MONTH;
+                break;
+            case DAY_OF_YEAR:
+                timeUnits[0] = TimeUnit.DAY;
+                timeUnits[1] = TimeUnit.YEAR;
+                break;
+            case YEAR_OF_WEEK:
+                timeUnits[0] = TimeUnit.YEAR;
+                timeUnits[1] = TimeUnit.WEEK;
+                break;
+            case YOW:
+                throw new ParserException("Unsupported time unit");
+            case TIMEZONE_HOUR:
+                timeUnits[0] = TimeUnit.HOUR;
+                timeUnits[1] = TimeUnit.HOUR;
+                break;
+            case TIMEZONE_MINUTE:
+                timeUnits[0] = TimeUnit.MINUTE;
+                timeUnits[1] = TimeUnit.MINUTE;
+                break;
+            case DOY:
+                timeUnits[0] = TimeUnit.DOY;
+                timeUnits[1] = null;
+                break;
+            case YEAR_TO_MONTH:
                 timeUnits[0] = TimeUnit.YEAR;
                 timeUnits[1] = TimeUnit.MONTH;
                 break;
@@ -1802,13 +2241,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLExtractExpr x) {
-        x.getValue().accept(this);
+        SqlNode sqlNode = convertToSqlNode(x.getValue());
         TimeUnit timeUnits[] = getTimeUnit(x.getUnit());
+        TimeUnitRange range = TimeUnitRange.of(timeUnits[0], timeUnits[1]);
+        ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(range, SqlParserPos.ZERO), sqlNode);
 
-        sqlNode = SqlStdOperatorTable.EXTRACT
-                .createCall(SqlParserPos.ZERO
-                        , new SqlIntervalQualifier(timeUnits[0], timeUnits[1], SqlParserPos.ZERO)
-                        , sqlNode);
+        this.sqlNode = RexImpTable.ExtractFunction.INSTANCE
+                .createCall(SqlParserPos.ZERO, sqlNodes);
         return false;
     }
 

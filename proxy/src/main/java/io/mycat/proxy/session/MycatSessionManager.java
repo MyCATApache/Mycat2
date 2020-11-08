@@ -14,6 +14,10 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.Authenticator;
+import io.mycat.MycatDataContext;
+import io.mycat.TransactionSession;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
@@ -27,10 +31,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
@@ -43,13 +44,20 @@ import java.util.function.Function;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatSessionManager.class);
-    final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
     private final Authenticator authenticator;
+    private final Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap;
+    private final MycatContextThreadPool mycatContextThreadPool;
 
-    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function,Authenticator authenticator) {
+    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function,
+                               Authenticator authenticator,
+                               Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
+                               MycatContextThreadPool mycatContextThreadPool) {
         this.commandDispatcher = function;
         this.authenticator = Objects.requireNonNull(authenticator);
+        this.transcationFactoryMap = transcationFactoryMap;
+        this.mycatContextThreadPool = mycatContextThreadPool;
     }
 
 
@@ -84,7 +92,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
                                        Selector nioSelector, SocketChannel frontChannel) throws IOException {
         MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
         MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
-                mySQLClientAuthHandler, this);
+                mySQLClientAuthHandler, this, transcationFactoryMap, mycatContextThreadPool);
 
 
         //用于monitor监控获取session
@@ -114,15 +122,14 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
                 try {
                     if (!next.checkOpen()) {
                         next.close(false, "MycatSessionManager check");
-                        LOGGER.error("未关闭连接:{}",next);
+                        LOGGER.error("未关闭连接:{}", next);
                     }
-                }catch (Exception e){
-                    LOGGER.error("{}",e);
+                } catch (Exception e) {
+                    LOGGER.error("{}", e);
                 }
             }
         }
     }
-
 
 
     public void initCommandDispatcher(MycatSession session) {

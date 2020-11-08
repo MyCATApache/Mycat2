@@ -27,8 +27,9 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.client.InterceptorRuntime;
-import io.mycat.client.UserSpace;
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.commands.MycatdbCommand;
+import io.mycat.config.UserConfig;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.preparestatement.PrepareStatementManager;
@@ -55,8 +56,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
-    private static boolean useServerPrepStmts = Optional.ofNullable(RootHelper.INSTANCE.getConfigProvider().currentConfig())
-            .map(i -> i.getProperties()).map(i -> i.get("useServerPrepStmts")).isPresent();
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
@@ -67,23 +66,30 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MycatSession session) {
-        UserSpace interceptor = InterceptorRuntime.INSTANCE.getUserSpace(session.getUser().getUserName());
-        TransactionType defaultTransactionType = interceptor.getDefaultTransactionType();
-        if (defaultTransactionType != null) {
-            session.getDataContext().switchTransaction(defaultTransactionType);
+        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+        UserConfig userInfo = authenticator.getUserInfo(session.getUser().getUserName());
+        if (userInfo != null) {
+            session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
         }
     }
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
         try {
-
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            UserSpace userSpace = InterceptorRuntime.INSTANCE.getUserSpace(session.getUser().getUserName());
-            userSpace.execute(ByteBuffer.wrap(bytes), session);
+            Boolean hasRun = Optional.ofNullable(
+                    MetaClusterCurrent.exist(InterceptorRuntime.class)?
+                            MetaClusterCurrent.wrapper(InterceptorRuntime.class):null)
+                    .map(i -> i.getUserSpace(session.getUser().getUserName()))
+                    .map(i -> i.execute(ByteBuffer.wrap(bytes), session))
+                    .orElse(false);
+            if (!hasRun) {
+                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session, session.getDataContext());
+                return;
+            }
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
@@ -105,18 +111,14 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
-        if (!useServerPrepStmts) {
-            ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
-            receiver.sendError(new MycatException("unsupported useServerPrepStmts"));
-            return;
-        }
         MycatDataContext dataContext = session.getDataContext();
         boolean deprecateEOF = session.isDeprecateEOF();
         String sql = new String(sqlBytes);
         /////////////////////////////////////////////////////
 
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        metadataManager.resolveMetadata(sqlStatement);
         ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
         if (sqlStatement instanceof SQLSelectStatement) {
             List<SQLSelectItem> selectList = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().getSelectList();

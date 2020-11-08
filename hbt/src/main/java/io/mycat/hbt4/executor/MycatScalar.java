@@ -15,7 +15,7 @@
 package io.mycat.hbt4.executor;
 
 
-import io.mycat.hbt4.MycatContext;
+import org.apache.calcite.MycatContext;
 
 public interface MycatScalar {
     Object execute(MycatContext context);

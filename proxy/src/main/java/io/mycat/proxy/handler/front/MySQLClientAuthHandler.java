@@ -26,7 +26,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.session.Authenticator;
+import io.mycat.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;

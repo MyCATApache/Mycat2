@@ -22,7 +22,7 @@ public class ShowHelpCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         ResultSetBuilder builder = ResultSetBuilder.create();
         builder.addColumnInfo("STATEMENT", JDBCType.VARCHAR);
         builder.addColumnInfo("DESCRIPTION", JDBCType.VARCHAR);

@@ -1,5 +1,6 @@
 package io.mycat.manager.commands;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
 import io.mycat.replica.PhysicsInstance;
@@ -26,7 +27,7 @@ public class SwitchInstanceCommand implements ManageCommand {
     }
 
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         if (request.getText().toLowerCase().startsWith("switch @@backend.instance")) {
             handle(request, context, response);
             return true;
@@ -35,7 +36,7 @@ public class SwitchInstanceCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         String json = request.getText().split("=")[1];
         Map from = JsonUtil.from(json, Map.class);
 
@@ -43,7 +44,9 @@ public class SwitchInstanceCommand implements ManageCommand {
         String readable = (String) from.get("readable");
         String alive = (String) from.get("alive");
 
-        Map<String, PhysicsInstance> physicsInstanceMap = ReplicaSelectorRuntime.INSTANCE.getPhysicsInstanceMap();
+        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+
+        Map<String, PhysicsInstance> physicsInstanceMap = replicaSelectorRuntime.getPhysicsInstanceMap();
         PhysicsInstance physicsInstance = Objects.requireNonNull(physicsInstanceMap.get(name), "name is not existed");
 
         if (readable != null) {

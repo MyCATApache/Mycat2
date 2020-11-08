@@ -6,6 +6,9 @@ import io.mycat.beans.resultset.MycatResultSetType;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +19,7 @@ import java.util.Map;
  * date 2019-05-22 01:17
  * a simple proxy collector as map
  **/
-public interface RowBaseIterator extends Closeable {
+public interface RowBaseIterator extends Closeable,BaseIterator {
 
     MycatRowMetaData getMetaData();
 
@@ -44,11 +47,11 @@ public interface RowBaseIterator extends Closeable {
 
     byte[] getBytes(int columnIndex);
 
-    java.util.Date getDate(int columnIndex);
+    LocalDate getDate(int columnIndex);
 
-    java.sql.Time getTime(int columnIndex);
+    Duration getTime(int columnIndex);
 
-    java.sql.Timestamp getTimestamp(int columnIndex);
+    LocalDateTime getTimestamp(int columnIndex);
 
     java.io.InputStream getAsciiStream(int columnIndex);
 

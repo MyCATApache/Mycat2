@@ -36,4 +36,8 @@ public enum BoosterRuntime {
         int randomIndex = ThreadLocalRandom.current().nextInt(0, strings.size());
         return Optional.of(strings.get(randomIndex));
     }
+
+    public static void main(String[] args) {
+
+    }
 }

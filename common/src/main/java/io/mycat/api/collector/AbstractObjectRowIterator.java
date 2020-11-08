@@ -20,6 +20,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 
@@ -105,33 +108,24 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     }
 
     @Override
-    public java.util.Date  getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        if (o instanceof Number) {
-            return new Date(((Number) o).longValue());
-        }
-        return (java.util.Date ) o;
+        return (LocalDate ) o;
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        if (o instanceof Number) {
-            return new Time(((Number) o).longValue());
-        }
-        return (Time) o;
+        return (Duration) o;
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        if (o instanceof Number) {
-            return new Timestamp(((Number) o).longValue());
-        }
-        return (Timestamp) o;
+        return (LocalDateTime) o;
     }
 
     @Override

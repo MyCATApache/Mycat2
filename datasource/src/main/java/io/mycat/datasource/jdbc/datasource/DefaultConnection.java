@@ -60,9 +60,8 @@ public class DefaultConnection implements MycatConnection {
             long lastInsertId = 0;
             if (needGeneratedKeys) {
                 ResultSet generatedKeys = statement.getGeneratedKeys();
-                ResultSetMetaData metaData = generatedKeys.getMetaData();
-                if (metaData.getColumnCount() == 1) {
-                    lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
+                if (generatedKeys!=null&&generatedKeys.next()){
+                    lastInsertId =Math.max(lastInsertId,  generatedKeys.getLong(1));
                 }
             }
             return new long[]{statement.getUpdateCount(), lastInsertId};

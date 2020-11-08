@@ -1,6 +1,7 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatConnection;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
@@ -11,6 +12,7 @@ import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt4.DatasourceFactory;
 import io.mycat.hbt4.Executor;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.mpp.Row;
 import io.mycat.util.Pair;
 import lombok.SneakyThrows;
@@ -52,7 +54,8 @@ public class TmpSqlExecutor implements Executor {
             myCatResultSetEnumerator.close();
         }
         MycatRowMetaData calciteRowMetaData =mycatRowMetaData;
-        NameableExecutor mycatWorker = MycatWorkerProcessor.INSTANCE.getMycatWorker();
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+        NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
         LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
         Connection mycatConnection = factory.getConnection(target);
         SqlString sqlString = new SqlString(MycatSqlDialect.DEFAULT,sql);

@@ -1,23 +1,22 @@
 package io.mycat;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.*;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Response;
+import org.apache.calcite.avatica.proto.Common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static io.mycat.ExecuteType.QUERY_MASTER;
-import static io.mycat.ExecuteType.UPDATE;
+import static io.mycat.ExecuteType.*;
 
 
 public class ReceiverImpl implements Response {
@@ -27,7 +26,7 @@ public class ReceiverImpl implements Response {
     protected final SQLExecuterWriter sqlExecuterWriter;
 
     public ReceiverImpl(MycatSession session,int stmtSize, boolean binary,boolean explain) {
-        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session);
+        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session,this);
         this.session = session;
     }
 
@@ -39,21 +38,22 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void proxySelect(String defaultTargetName, String statement) {
-        sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(QUERY_MASTER, defaultTargetName, statement));
+        execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
     }
 
 
     @Override
     public void proxyUpdate(String defaultTargetName, String sql) {
-        sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(UPDATE, defaultTargetName, sql));
+        execute(ExplainDetail.create(UPDATE,Objects.requireNonNull(defaultTargetName), sql, null));
     }
 
     @Override
     public void tryBroadcastShow(String statement) {
-        JdbcConnectionManager connectionManager = JdbcRuntime.INSTANCE.getConnectionManager();
+        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<String> infos = new ArrayList<>();
-        List<String> keySet = new ArrayList<>(connectionManager.getDatasourceInfo().keySet());
-        Collections.shuffle(keySet);
+        List<String> keySet = new ArrayList<>();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        keySet.add(metadataManager.getPrototype());
         for (String datasourceName : keySet) {
             try (DefaultConnection connection = connectionManager.getConnection(datasourceName)) {
                 RowBaseIterator rowBaseIterator = connection.executeQuery(statement);
@@ -84,85 +84,29 @@ public class ReceiverImpl implements Response {
 
     @Override
     public void rollback() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE:
-                transactionSession.rollback();
-                if (session.isBindMySQLSession()) {
-                    proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
-                    LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
-                    return;
-                } else {
-                    sendOk();
-                    LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
-                    return;
-                }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.rollback();
-                LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
-                sendOk();
-                return;
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatRollbackResponse.INSTANCE);
     }
 
     @Override
     public void begin() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE: {
-                transactionSession.begin();
-                LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
-                sendOk();
-                return;
-            }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.begin();
-                LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
-                sendOk();
-                return;
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatBeginResponse.INSTANCE);
     }
 
     @Override
     public void commit() {
-        MycatDataContext dataContext = session.getDataContext();
-        TransactionType transactionType = dataContext.transactionType();
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        switch (transactionType) {
-            case PROXY_TRANSACTION_TYPE:
-                transactionSession.commit();
-                if (!session.isBindMySQLSession()) {
-                    LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
-                    sendOk();
-                    return;
-                } else {
-                    proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
-                    LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
-                    return;
-                }
-            case JDBC_TRANSACTION_TYPE: {
-                transactionSession.commit();
-                LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
-                sendOk();
-            }
-        }
+        sqlExecuterWriter.writeToMycatSession(MycatCommitResponse.INSTANCE);
     }
 
     @Override
     public void execute(ExplainDetail detail) {
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
-        String datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(detail.getTarget(), master, detail.getBalance());
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        String datasource = selectorRuntime.getDatasourceNameByReplicaName(Objects.requireNonNull(detail.getTarget()), master, detail.getBalance());
         sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(detail.getExecuteType(), datasource, detail.getSql()));
     }
 
     public void sendOk(){
-        sendOk(0,0);
+        sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
     }
     @Override
     public void sendOk(long lastInsertId, long affectedRow) {

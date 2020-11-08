@@ -17,7 +17,7 @@
 //    final static Logger logger = LoggerFactory.getLogger(DefErrorCommand.class);
 //
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        Map<String, String> tags = request.get("tags");
 //        String errorMessage = null;
 //        if (tags != null) {
@@ -32,7 +32,7 @@
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        String errorMessage = request.getOrDefault("errorMessage", "may be unknown error");
 //        int errorCode = Integer.parseInt(request.getOrDefault("errorCode", "-1"));
 //        Map<String, Object> map = new HashMap<>();

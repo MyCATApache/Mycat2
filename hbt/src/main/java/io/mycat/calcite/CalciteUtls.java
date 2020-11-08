@@ -133,6 +133,11 @@ public class CalciteUtls {
                 return new SqlIdentifier(ImmutableList.of(schemaName, tableName, fieldName),
                         SqlImplementor.POS);
             }
+
+            @Override
+            public SqlImplementor implementor() {
+                return null;
+            }
         };
         try {
             return " where " + context.toSql(null, rexNode).toSqlString(MycatSqlDialect.DEFAULT).getSql();

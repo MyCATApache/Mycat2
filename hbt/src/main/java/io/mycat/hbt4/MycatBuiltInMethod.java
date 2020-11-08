@@ -18,6 +18,7 @@ package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableMap;
 import io.mycat.hbt4.executor.MycatScalar;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
@@ -33,8 +34,7 @@ import java.lang.reflect.Modifier;
 public enum MycatBuiltInMethod {
     SCALAR_EXECUTE1(MycatScalar.class, "execute", MycatContext.class),
     SCALAR_EXECUTE2(MycatScalar.class, "execute", MycatContext.class, Object[].class),
-    CONTEXT_VALUES(MycatContext.class, "values", true),
-    CONTEXT_SLOTS(MycatContext.class, "slots", true),
+    CONTEXT_VALUES(MycatContext.class, "values", true)
 
 //    CONTEXT_ROOT(MycatContext.class, "root", true);
 ;
@@ -48,10 +48,14 @@ public enum MycatBuiltInMethod {
     static {
         final ImmutableMap.Builder<Method, MycatBuiltInMethod> builder =
                 ImmutableMap.builder();
-        for (MycatBuiltInMethod value : MycatBuiltInMethod.values()) {
-            if (value.method != null) {
-                builder.put(value.method, value);
+        try {
+            for (MycatBuiltInMethod value : MycatBuiltInMethod.values()) {
+                if (value.method != null) {
+                    builder.put(value.method, value);
+                }
             }
+        }catch (Throwable t){
+            t.printStackTrace();
         }
         MAP = builder.build();
     }

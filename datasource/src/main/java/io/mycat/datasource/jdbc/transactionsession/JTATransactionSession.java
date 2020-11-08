@@ -16,8 +16,8 @@ package io.mycat.datasource.jdbc.transactionsession;
 
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -25,10 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
-import java.sql.Connection;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -134,7 +130,8 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
 
     @Override
     public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
-        return JdbcRuntime.INSTANCE//jta不使用连接本身的autocommit开启事务
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        return jdbcConnectionManager//jta不使用连接本身的autocommit开启事务
                 .getConnection(name, null, transactionIsolation, readOnly);
     }
 

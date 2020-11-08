@@ -24,7 +24,7 @@ public class ShowStatCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         List<SqlRecord> values = SqlRecorderRuntime.INSTANCE.getRecords().values().stream().sorted().collect(Collectors.toList());
         ResultSetBuilder builder = ResultSetBuilder.create();
 

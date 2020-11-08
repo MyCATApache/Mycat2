@@ -23,7 +23,7 @@ public class ShowScheduleCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         ResultSetBuilder builder = ResultSetBuilder.create();
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
         String NAME = timer.toString();

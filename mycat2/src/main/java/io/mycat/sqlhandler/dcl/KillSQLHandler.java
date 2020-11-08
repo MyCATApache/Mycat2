@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class KillSQLHandler extends AbstractSQLHandler<MySqlKillStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlKillStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlKillStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.sendOk();
     }
 }

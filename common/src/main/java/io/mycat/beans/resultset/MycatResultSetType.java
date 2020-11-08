@@ -18,5 +18,8 @@ public enum MycatResultSetType {
   RRESULTSET,
   UPDATEOK,
   ERROR,
-  PROXY
+  PROXY,
+  COMMIT,
+  ROLLBACK,
+  BEGIN
 }

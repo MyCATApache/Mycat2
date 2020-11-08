@@ -7,8 +7,9 @@ public class CopyMycatRowMetaData implements MycatRowMetaData , Serializable {
     final Column[] columns;
 
     public CopyMycatRowMetaData(MycatRowMetaData mycatRowMetaData) {
-        this.columns = new Column[mycatRowMetaData.getColumnCount() + 1];
-        for (int i = 1; i <= this.columns.length; i++) {
+        int columnCount = mycatRowMetaData.getColumnCount();
+        this.columns = new Column[columnCount + 1];
+        for (int i = 1; i <= columnCount; i++) {
             boolean autoIncrement = mycatRowMetaData.isAutoIncrement(i);
             boolean caseSensitive = mycatRowMetaData.isCaseSensitive(i);
             boolean signed = mycatRowMetaData.isSigned(i);

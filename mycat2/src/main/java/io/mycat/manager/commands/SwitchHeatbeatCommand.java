@@ -18,14 +18,15 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     }
 
     @Override
-    public void handle(MycatRequest request, MycatDataContext context, Response response) {
+    public void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         try {
             String value = SQLUtils.normalize(request.getText().split("=")[1].trim());
-            if (Boolean.parseBoolean(value)) {
-                ReplicaSelectorRuntime.INSTANCE.restartHeatbeat();
-            }else {
-                ReplicaSelectorRuntime.INSTANCE.stopHeartBeat();
-            }
+//            if (Boolean.parseBoolean(value)) {
+//                ReplicaSelectorRuntime.INSTANCE.restartHeatbeat();
+//            }else {
+//                ReplicaSelectorRuntime.INSTANCE.stopHeartBeat();
+//            }
+            //@todo
             response.sendOk();
         } catch (Throwable e) {
             response.sendError(e);
@@ -33,7 +34,7 @@ public class SwitchHeatbeatCommand implements ManageCommand {
     }
 
     @Override
-    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         if(request.getText().startsWith("switch @@backend.heartbeat =")){
             handle(request, context, response);
             return true;

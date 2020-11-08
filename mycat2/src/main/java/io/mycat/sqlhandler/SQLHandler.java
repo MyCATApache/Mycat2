@@ -13,7 +13,7 @@ import io.mycat.util.Response;
  * @author wangzihaogithub 2020年4月18日23:09:18
  */
 public interface SQLHandler<Statement extends SQLStatement> {
-    default void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response){
+    default void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)throws Exception {
         response.sendError(new MycatException(request.getAst()+" not Implemented"));
     }
     public Class getStatementClass();

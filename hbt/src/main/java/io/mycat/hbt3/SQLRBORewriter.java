@@ -16,24 +16,32 @@ package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.logical.rel.MycatMergeSort;
+import io.mycat.metadata.CustomTableHandlerWrapper;
+import io.mycat.metadata.QueryBuilder;
+import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.ImmutableIntList;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -63,6 +71,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public RelNode visit(TableScan scan) {
         AbstractMycatTable abstractMycatTable = scan.getTable().unwrap(AbstractMycatTable.class);
         if (abstractMycatTable != null) {
+            if (abstractMycatTable.isCustom()) {
+                MycatLogicTable mycatLogicTable = (MycatLogicTable) abstractMycatTable;
+                CustomTableHandlerWrapper customTableHandler = (CustomTableHandlerWrapper) mycatLogicTable.getTable();
+                QueryBuilder queryBuilder = customTableHandler.createQueryBuilder(scan.getCluster());
+                return queryBuilder;
+            }
             return View.of(scan, abstractMycatTable.computeDataNode());
         }
         return scan;
@@ -81,11 +95,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (RelMdSqlViews.filter(input)) {
-            return filter(input, filter, optimizationContext);
-        } else {
-            return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
+        if (!userDefinedFunctionInFilter(filter)) {
+            if (RelMdSqlViews.filter(input)) {
+                return filter(input, filter, optimizationContext);
+            }
         }
+        return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
     }
 
     @Override
@@ -96,18 +111,84 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalProject project) {
         RelNode input = project.getInput().accept(this);
-        if (input instanceof LogicalTableScan) {
-            LogicalTableScan logicalTableScan = (LogicalTableScan) input;
-            RelOptTable table = logicalTableScan.getTable();
-            AbstractMycatTable abstractMycatTable = table.unwrap(AbstractMycatTable.class);
-            Distribution distribution = abstractMycatTable.computeDataNode();
-            return View.of(logicalTableScan, distribution);
+        boolean canProject = !userDefinedFunctionInProject(project);
+        if (canProject) {
+            if (RelMdSqlViews.project(input)) {
+                return project(input, project);
+            }
         }
-        if (RelMdSqlViews.project(input)) {
-            return project(input, project);
-        } else {
-            return project.copy(project.getTraitSet(), ImmutableList.of(input));
+        return project.copy(project.getTraitSet(), ImmutableList.of(input));
+    }
+
+    private static boolean userDefinedFunctionInProject(Project project) {
+        CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
+        for (RexNode node : project.getProjects()) {
+            node.accept(visitor);
+            if (visitor.containsUserDefinedFunction()) {
+                return true;
+            }
         }
+        return false;
+    }
+
+    private static boolean userDefinedFunctionInFilter(Filter filter) {
+        CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
+        RexNode condition = filter.getCondition();
+        condition.accept(visitor);
+        return filter.containsOver() || visitor.containsUserDefinedFunction();
+    }
+
+    /**
+     * Visitor that checks whether part of a projection is a user-defined
+     * function (UDF).
+     */
+    private static class CheckingUserDefinedAndConvertFunctionVisitor
+            extends RexVisitorImpl<Void> {
+
+        private boolean containsUsedDefinedFunction = false;
+
+        CheckingUserDefinedAndConvertFunctionVisitor() {
+            super(true);
+        }
+
+        public boolean containsUserDefinedFunction() {
+            return containsUsedDefinedFunction;
+        }
+
+        @Override
+        public Void visitCall(RexCall call) {
+            SqlOperator operator = call.getOperator();
+            String name = operator.getName();
+            if (operator instanceof SqlFunction) {
+                containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
+            }
+            return super.visitCall(call);
+        }
+    }
+
+    public static NameMap<Object> Information_Functions = new NameMap<>();
+
+    static {
+        Information_Functions.put("BENCHMARK", null);
+        Information_Functions.put("BINLOG_GTID_POS", null);
+        Information_Functions.put("CHARSET", null);
+        Information_Functions.put("COERCIBILITY", null);
+        Information_Functions.put("COLLATION", null);
+        Information_Functions.put("CONNECTION_ID", null);
+        Information_Functions.put("CURRENT_ROLE", null);
+        Information_Functions.put("CURRENT_USER", null);
+        Information_Functions.put("DATABASE", null);
+        Information_Functions.put("DEFAULT", null);
+        Information_Functions.put("FOUND_ROWS", null);
+        Information_Functions.put("LAST_INSERT_ID", null);
+        Information_Functions.put("LAST_VALUE", null);
+        Information_Functions.put("PROCEDURE_ANALYSE", null);
+        Information_Functions.put("ROW_COUNT", null);
+        Information_Functions.put("SCHEMA", null);
+        Information_Functions.put("SESSION_USER", null);
+        Information_Functions.put("SYSTEM_USER", null);
+        Information_Functions.put("USER", null);
+        Information_Functions.put("VERSION", null);
     }
 
     @Override
@@ -206,6 +287,36 @@ public class SQLRBORewriter extends RelShuttleImpl {
         }
         if (dataNodeInfo == null) {
             return sort.copy(input.getTraitSet(), ImmutableList.of(input));
+        }
+        if (input instanceof QueryBuilder) {
+            RexNode fetchRex = sort.fetch;
+            RexNode offsetRex = sort.offset;
+            Long fetchNumber = Long.MAX_VALUE;
+            Long offsetNumber = 0L;
+            RelCollation collation = sort.getCollation();
+            QueryBuilder mycatCustomTable = (QueryBuilder) input;
+
+            if (fetchRex instanceof RexLiteral) {
+                Object fetchValue = ((RexLiteral) fetchRex).getValue();
+                if (fetchValue != null && fetchValue instanceof Number) {
+                    fetchNumber = ((Number) fetchValue).longValue();
+                }
+            }
+
+            if (offsetRex instanceof RexLiteral) {
+                Object offsetValue = ((RexLiteral) offsetRex).getValue();
+                if (offsetValue != null && offsetValue instanceof Number) {
+                    offsetNumber = ((Number) offsetValue).longValue();
+                }
+            }
+            Optional<QueryBuilder> queryBuilder = mycatCustomTable
+                    .sort(offsetNumber, fetchNumber, collation);
+            if (queryBuilder.isPresent()) {
+                return queryBuilder.get();
+            }
+            return
+                    sort.copy(sort.getTraitSet()
+                            .replace(MycatConvention.INSTANCE), mycatCustomTable, collation);
         }
         if (dataNodeInfo.isSingle()) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
@@ -380,6 +491,16 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             return View.of(filter.copy(filter.getTraitSet(), (input), condition), distribution);
         }
+        if (input instanceof QueryBuilder) {
+            QueryBuilder queryBuilder = (QueryBuilder) input;
+            Optional<QueryBuilder> newFilter = queryBuilder.filter(filter.getCondition());
+            if (newFilter.isPresent()) {
+                return newFilter.get();
+            } else {
+                return filter.copy(filter.getTraitSet(),
+                        ImmutableList.of(queryBuilder));
+            }
+        }
         filter = (LogicalFilter) filter.copy(filter.getTraitSet(), ImmutableList.of(input));
         if (dataNodeInfo != null) {
             return View.of(filter, dataNodeInfo);
@@ -393,6 +514,18 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDistribution();
             input = ((View) input).getRelNode();
+        }
+        if (input instanceof QueryBuilder) {
+            QueryBuilder queryBuilder = (QueryBuilder) input;
+            Optional<QueryBuilder> builder = queryBuilder
+                    .project(
+                            ImmutableIntList.identity(
+                                    project.getRowType().getFieldCount())
+                                    .toIntArray());
+            if (builder.isPresent()) {
+                return builder.get();
+            }
+            return project.copy(project.getTraitSet(), ImmutableList.of(queryBuilder));
         }
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
         if (dataNodeInfo == null) {

@@ -33,7 +33,7 @@ public class ServerConfig {
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();
     private String handlerName;
-    private ThreadPoolExecutorConfig bindTransactionPool =  ThreadPoolExecutorConfig
+    private ThreadPoolExecutorConfig contextPool =  ThreadPoolExecutorConfig
             .builder()
             .corePoolSize(0)
             .maxPoolSize(512)
@@ -61,7 +61,7 @@ public class ServerConfig {
             .taskTimeout(1)
             .build();
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
-    private TimerConfig timer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
+    private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
 
     {
@@ -83,41 +83,8 @@ public class ServerConfig {
         }
     }
 
-    /**
-     *                               int corePoolSize,
-     *                               int maximumPoolSize,
-     *                               long keepAliveTime,
-     *                               TimeUnit unit
-     */
-    @Data
-    @ToString
-    @Builder
-    public static class ThreadPoolExecutorConfig {
-        private int corePoolSize = 0;
-        private int maxPoolSize = 1024;
-        private long keepAliveTime = 60;
-        private long taskTimeout = 600;
-        private String timeUnit = TimeUnit.SECONDS.toString();
-        private int maxPendingLimit = 65535;
 
-        public ThreadPoolExecutorConfig() {
-        }
 
-        public ThreadPoolExecutorConfig(int corePoolSize, int maxPoolSize, long keepAliveTime, long taskTimeout, String timeUnit, int maxPendingLimit) {
-            this.corePoolSize = corePoolSize;
-            this.maxPoolSize = maxPoolSize;
-            this.keepAliveTime = keepAliveTime;
-            this.taskTimeout = taskTimeout;
-            this.timeUnit = timeUnit;
-            this.maxPendingLimit = maxPendingLimit;
-        }
-    }
-
-    @Data
-    public static class BufferPoolConfig {
-        String poolName;
-        Map<String, String> args = new HashMap<>();
-    }
 
 
 }

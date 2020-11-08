@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class StartTransactionSQLHandler extends AbstractSQLHandler<SQLStartTransactionStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLStartTransactionStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLStartTransactionStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.begin();
     }
 }

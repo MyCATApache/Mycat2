@@ -15,7 +15,7 @@ import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
 public class DeleteSQLHandler extends AbstractSQLHandler<MySqlDeleteStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlDeleteStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlDeleteStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLExprTableSource tableSource = (SQLExprTableSource)request.getAst().getTableSource();
         updateHandler(request.getAst(),dataContext,tableSource,response);
     }

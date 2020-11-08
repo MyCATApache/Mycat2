@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.dml;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSetStatement;
 import io.mycat.MycatDataContext;
@@ -16,15 +17,14 @@ import java.util.Objects;
 public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         List<SQLAssignItem> items = request.getAst().getItems();
         if (items == null) {
             items = Collections.emptyList();
         }
         for (SQLAssignItem item : items) {
-            String name = Objects.toString(item.getTarget()).toLowerCase();
-            String value = Objects.toString(item.getValue());
-            dataContext.setVariable(name, value);
+            String name = SQLUtils.normalize(Objects.toString(item.getTarget()));
+            dataContext.setVariable(name, item.getValue());
         }
         response.sendOk();
     }

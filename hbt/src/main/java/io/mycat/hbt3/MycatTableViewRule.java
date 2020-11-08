@@ -20,8 +20,12 @@ public class MycatTableViewRule extends RelOptRule {
         RelOptTable table = rel.getTable();
         AbstractMycatTable mycatTable = table.unwrap(AbstractMycatTable.class);
         if (mycatTable != null) {
-            partInfo = mycatTable.computeDataNode();
-            call.transformTo(View.of(rel, partInfo));
+            if (!mycatTable.isCustom()){
+                partInfo = mycatTable.computeDataNode();
+                call.transformTo(View.of(rel, partInfo));
+            }else {
+
+            }
         }
     }
 }

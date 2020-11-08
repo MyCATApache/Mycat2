@@ -15,11 +15,13 @@
 package io.mycat.datasource.jdbc.datasourceprovider;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 /**
  * @author Junwen Chen
@@ -27,10 +29,10 @@ import java.util.concurrent.TimeUnit;
 public class DruidDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig config) {
+  public JdbcDataSource createDataSource(DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
-    String url = config.getUrl();
+    String url = Objects.requireNonNull(config.getUrl());
     String dbType = config.getDbType();
     int maxRetryCount = config.getMaxRetryCount();
     List<String> initSQLs = config.getInitSqls();
@@ -42,7 +44,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     datasource.setPassword(password);
     datasource.setUsername(username);
     datasource.setUrl(url);
-    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(1));
+    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(3));
     datasource.setMaxActive(maxCon);
     datasource.setMinIdle(minCon);
 

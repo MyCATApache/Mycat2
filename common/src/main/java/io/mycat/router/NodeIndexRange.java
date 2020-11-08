@@ -44,13 +44,13 @@ public final class NodeIndexRange {
         return (int)ranges.stream().mapToInt(i -> i.getNodeIndex()).distinct().count();
     }
 
-    public static List<NodeIndexRange> getLongRanges(Map<String, String> ranges) {
+    public static List<NodeIndexRange> getLongRanges(Map<String, Object> ranges) {
         ArrayList<NodeIndexRange> longRangeList = new ArrayList<>();
-        for (Entry<String, String> entry : ranges.entrySet()) {
+        for (Entry<String, Object> entry : ranges.entrySet()) {
             String[] pair = entry.getKey().split("-");
             long longStart = NumberParseUtil.parseLong(pair[0].trim());
             long longEnd = NumberParseUtil.parseLong(pair[1].trim());
-            int nodeId = Integer.parseInt(entry.getValue().trim());
+            int nodeId = Integer.parseInt(entry.getValue().toString().trim());
             longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
         }
         longRangeList.sort(Comparator.comparing(x -> x.valueStart));
@@ -68,16 +68,16 @@ public final class NodeIndexRange {
      * @param ranges
      * @return
      */
-    public static List<List<NodeIndexRange>> getSplitLongRanges(Map<String, String> ranges) {
+    public static List<List<NodeIndexRange>> getSplitLongRanges(Map<String, Object> ranges) {
         ArrayList<List<NodeIndexRange>> lists = new ArrayList<>();
-        for (Entry<String, String> entry : ranges.entrySet()) {
+        for (Entry<String, Object> entry : ranges.entrySet()) {
             String[] split = entry.getKey().split(",");
             ArrayList<NodeIndexRange> longRangeList = new ArrayList<>();
             for (String s : split) {
                 String[] pair =s.split("-");
                 long longStart = NumberParseUtil.parseLong(pair[0].trim());
                 long longEnd = NumberParseUtil.parseLong(pair[1].trim());
-                int nodeId = Integer.parseInt(entry.getValue().trim());
+                int nodeId = Integer.parseInt(entry.getValue().toString().trim());
                 longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
                 longRangeList.sort(Comparator.comparing(x -> x.valueStart));//顺序
             }

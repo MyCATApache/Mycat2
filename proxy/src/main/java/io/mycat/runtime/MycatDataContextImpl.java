@@ -1,5 +1,6 @@
 package io.mycat.runtime;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -12,11 +13,13 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
 @Setter
 public class MycatDataContextImpl implements MycatDataContext {
     final static Logger log = LoggerFactory.getLogger(MycatDataContextImpl.class);
+    private final long id;
     private TransactionType transactionType;
     private String defaultSchema;
     private String lastMessage;
@@ -49,11 +52,21 @@ public class MycatDataContextImpl implements MycatDataContext {
     private TransactionSession transactionSession = new ProxyTransactionSession(this);
     private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
-    private final Map<Long,PreparedStatement> preparedStatementMap = new HashMap<>();
+    private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
+
+    private static final AtomicLong IDS = new AtomicLong();
+
     public MycatDataContextImpl(TransactionSessionRunner runner) {
         this.runner = runner;
+        this.id = IDS.getAndIncrement();
+        switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
     }
 
+
+    @Override
+    public long getSessionId() {
+        return id;
+    }
 
     @Override
     public TransactionType transactionType() {
@@ -74,6 +87,31 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void switchTransaction(TransactionType transactionSessionType) {
         this.transactionType = transactionSessionType;
+    }
+
+    @Override
+    public Object getVariable(boolean global,String target) {
+        if (global){
+            MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+            return variableService.getGlobalVariable(target);
+        }
+        if (target.contains("autocommit")) {
+            return this.isAutocommit() ? "1" : "0" ;
+        } else if (target.equalsIgnoreCase("xa")) {
+            return this.getTransactionSession().name();
+        } else if (target.contains("net_write_timeout")) {
+            return this.getVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT);
+        } else if ("sql_select_limit".equalsIgnoreCase(target)) {
+            return this.getVariable(MycatDataContextEnum.SELECT_LIMIT);
+        } else if ("character_set_results".equalsIgnoreCase(target)) {
+            return this.getVariable(MycatDataContextEnum.CHARSET_SET_RESULT);
+        } else if (target.contains("read_only")) {
+            return this.getVariable(MycatDataContextEnum.IS_READ_ONLY);
+        } else if (target.contains("current_user")) {
+            return this.getUser().getUserName();
+        }
+        MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
+        return variableService.getVariable(target);
     }
 
     @Override
@@ -230,7 +268,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void useShcema(String schema) {
-        this.setDefaultSchema(schema);
+        this.setDefaultSchema(SQLUtils.normalize(schema));
     }
 
     @Override
@@ -319,4 +357,13 @@ public class MycatDataContextImpl implements MycatDataContext {
         runner.block(this, runnable);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return this == o;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) id;
+    }
 }

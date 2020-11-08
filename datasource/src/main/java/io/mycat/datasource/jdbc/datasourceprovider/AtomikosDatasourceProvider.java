@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc.datasourceprovider;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
 import com.mysql.cj.jdbc.MysqlXADataSource;
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
@@ -32,7 +33,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
 
   @SneakyThrows
   @Override
-  public JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig config) {
+  public JdbcDataSource createDataSource(DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
     String url = config.getUrl();

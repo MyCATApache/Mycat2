@@ -22,11 +22,15 @@ import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Date;
 import java.util.Iterator;
 
 /**
  * @author Junwen Chen
- *
  * @todo convertor对于某些分支未完善
  **/
 public class TextResultSetResponse extends AbstractMycatResultSetResponse {
@@ -72,8 +76,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                res = convertor
-                        .convertBigDecimal(value);
+                res = convertor.convertBigDecimal(value);
                 break;
             }
             case Types.BIT: {
@@ -124,9 +127,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertFloat(value);
                 break;
             }
-            case Types.FLOAT: {
-
-            }
+            case Types.FLOAT:
             case Types.DOUBLE: {
                 double value = rowBaseIterator.getDouble(columnIndex);
                 if (rowBaseIterator.wasNull()) {
@@ -135,12 +136,8 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertDouble(value);
                 break;
             }
-            case Types.BINARY: {
-
-            }
-            case Types.VARBINARY: {
-
-            }
+            case Types.BINARY:
+            case Types.VARBINARY:
             case Types.LONGVARBINARY: {
                 byte[] value = rowBaseIterator.getBytes(columnIndex);
                 if (rowBaseIterator.wasNull()) {
@@ -150,7 +147,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.DATE: {
-                java.util.Date  value = rowBaseIterator.getDate(columnIndex);
+                LocalDate value = rowBaseIterator.getDate(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
@@ -158,15 +155,15 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.TIME: {
-                Time value = rowBaseIterator.getTime(columnIndex);
+                Duration value = rowBaseIterator.getTime(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
-                res = convertor.convertTime(value);
+                res = convertor.convertDuration(value);
                 break;
             }
             case Types.TIMESTAMP: {
-                Timestamp value = rowBaseIterator.getTimestamp(columnIndex);
+                LocalDateTime  value = rowBaseIterator.getTimestamp(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }
@@ -217,7 +214,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
             }
             case Types.BOOLEAN: {
                 Boolean object = rowBaseIterator.getBoolean(columnIndex);
-                if (object == null) {
+                if (rowBaseIterator.wasNull()) {
                     return null;
                 }
                 res = convertor.convertBoolean(object);
@@ -243,11 +240,11 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
             default:
                 throw new RuntimeException("unsupport!");
         }
-   return res;
+        return res;
     }
 
     @Override
-    public void close()  {
+    public void close() {
         this.iterator.close();
     }
 }

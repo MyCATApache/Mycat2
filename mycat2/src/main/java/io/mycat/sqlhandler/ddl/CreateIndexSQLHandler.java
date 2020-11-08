@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.sendOk();
     }
 }

@@ -1,7 +1,7 @@
 package io.mycat.router.migrate;
 
 import io.mycat.router.NodeIndexRange;
-import io.mycat.router.function.ConsistentHashPreSlot;
+import io.mycat.router.mycat1xfunction.ConsistentHashPreSlot;
 import lombok.Getter;
 
 import java.util.List;

@@ -37,54 +37,13 @@ import java.util.List;
 @EqualsAndHashCode
 public class ClusterRootConfig {
     private List<ClusterConfig> clusters = new ArrayList<>();
-    private boolean close;
-    private TimerConfig timer = new TimerConfig();
+
 
     public ClusterRootConfig() {
     }
 
 
-    @AllArgsConstructor
-    @Data
-    @EqualsAndHashCode
-    public static class ClusterConfig {
-        private String replicaType;
-        private String switchType;
-        private String readBalanceType;
-        private String name;
-        private String readBalanceName;
-        private String writeBalanceName;
-        private List<String> masters;
-        private List<String> replicas;
-        private HeartbeatConfig heartbeat;
-        private Integer maxCon;
-
-        public ClusterConfig() {
-        }
-
-        public List<String>  getAllDatasources(){
-            if (masters == null){
-                masters = Collections.emptyList();
-            }
-            if (replicas == null){
-                replicas = Collections.emptyList();
-            }
-            ArrayList<String> nodes = new ArrayList<>(masters.size() + replicas.size());
-            nodes.addAll(masters);
-            nodes.addAll(replicas);
-            return nodes;
-        }
-
-    }
 
 
-    @Data
-    public static class HeartbeatConfig {
-        private int maxRetry;
-        private long minSwitchTimeInterval;
-        private long heartbeatTimeout;
-        private long slaveThreshold;
-        private String requestType;
-    }
 
 }

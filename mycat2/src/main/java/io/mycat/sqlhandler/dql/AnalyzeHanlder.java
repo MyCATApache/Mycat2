@@ -3,6 +3,7 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlAnalyzeStatement;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -25,7 +26,7 @@ import java.util.Optional;
  **/
 public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlAnalyzeStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = Optional.ofNullable(ast.getTableSources()).orElse(Collections.emptyList());
         if (tableSources.isEmpty()) {
@@ -47,7 +48,8 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                         "status",
                         "OK"
                 ));
-                TableHandler tableHandler = MetadataManager.INSTANCE.getTable(schemaName, tableName);
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
                 if (tableHandler == null) {
                     response.sendError(new MycatException(tableSource + "不存在"));
                     return ;

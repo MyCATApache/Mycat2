@@ -14,25 +14,42 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mysql.MysqlKeywords;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import org.apache.calcite.mycat.*;
+import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
+import io.mycat.calcite.sqlfunction.datefunction.*;
+import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
+import io.mycat.calcite.sqlfunction.datefunction.AddTimeFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ConvertTzFunction;
+import io.mycat.calcite.sqlfunction.datefunction.CurTimeFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateDiffFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateFormatFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DayOfMonthFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DayOfWeekFunction;
+import io.mycat.calcite.sqlfunction.datefunction.UnixTimestampFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.BinFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.BitLengthFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.CharFunction;
+import io.mycat.calcite.sqlfunction.stringfunction.*;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.util.Explains;
+import io.mycat.util.NameMap;
+import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
-import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.Driver;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
@@ -45,23 +62,20 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
-import org.apache.calcite.sql.type.SqlTypeCoercionRule;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.implicit.TypeCoercion;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionFactory;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -70,14 +84,13 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
+import org.apache.calcite.util.BuiltInMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,116 +101,290 @@ public enum MycatCalciteSupport implements Context {
     INSTANCE;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatCalciteSupport.class);
     public static final Driver DRIVER = new Driver();//触发驱动注册
-    public final FrameworkConfig config;
-    public final CalciteConnectionConfig calciteConnectionConfig;
-    public final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
-    public final Multimap<String, Function> functions = (Multimap) ImmutableMultimap.builder()
-            .put("date_format", ScalarFunctionImpl.create(MycatFunctions.DateFormatFunction.class, "eval"))
-            .put("UNIX_TIMESTAMP", ScalarFunctionImpl.create(MycatFunctions.UnixTimestampFunction.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.ConcatFunction.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat2Function.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat3Function.class, "eval"))
-            .put("concat", ScalarFunctionImpl.create(MycatFunctions.Concat4Function.class, "eval"))
-            .put("CONCAT_WS", ScalarFunctionImpl.create(MycatFunctions.ConcatWSFunction.class, "eval"))
-            .put("PI", ScalarFunctionImpl.create(MycatFunctions.PiFunction.class, "eval"))
-            .put("CONV", ScalarFunctionImpl.create(MycatFunctions.CONVFunction.class, "eval"))
-            .put("crc32", ScalarFunctionImpl.create(MycatFunctions.CRC32Function.class, "eval"))
-            .put("log", ScalarFunctionImpl.create(MycatFunctions.LOGFunction.class, "eval"))
-            .put("log2", ScalarFunctionImpl.create(MycatFunctions.LOG2Function.class, "eval"))
-            .put("log10", ScalarFunctionImpl.create(MycatFunctions.LOG10Function.class, "eval"))
-            .put("|", ScalarFunctionImpl.create(MycatFunctions.BitWiseOrFunction.class, "eval"))
-            .put("bin", ScalarFunctionImpl.create(MycatFunctions.BinFunction.class, "eval"))
-            .put("BIT_LENGTH", ScalarFunctionImpl.create(MycatFunctions.BitLengthFunction.class, "eval"))
-            .put("CHAR", ScalarFunctionImpl.create(MycatFunctions.CharFunction.class, "eval"))
-            .build();
+    public static final FrameworkConfig config;
+    public static final CalciteConnectionConfig calciteConnectionConfig;
+    public static final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
+    public static final NameMap<Class> functions = new NameMap<>();
 
-    /*
+    static {
+//        functions.put("date_format", DateFormatFunction.class)
+//                .put("UNIX_TIMESTAMP", UnixTimestampFunction.class)
+//                .put("concat", ConcatFunction.class)
+//                .put("CONCAT_WS", ConcatWSFunction.class)
+//                .put("PI", PiFunction.class)
+//                .put("CONV", CONVFunction.class)
+//                .put("crc32", CRC32Function.class)
+//                .put("log", LOGFunction.class)
+//                .put("log2", LOG2Function.class)
+//                .put("log10", LOG10Function.class)
+//                .put("|", BitWiseOrFunction.class)
+//                .put("bin", BinFunction.class)
+//                .put("BIT_LENGTH", BitLengthFunction.class)
+//                .put("CHAR", CharFunction.class)
+//                .put("LAST_INSERT_ID", LastInsertIdFunction.class);
 
-    new SqlParserImplFactory() {
-                @Override
-                @SneakyThrows
-                public SqlAbstractParserImpl getParser(Reader stream) {
-                    String string = CharStreams.toString(stream);
-                    SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                    SqlParserImplFactory factory = SqlParserImpl.FACTORY;
-                    CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
-                    sqlStatement.accept(calciteMySqlNodeVisitor);
-                    SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-                    return new SqlAbstractParserImpl() {
-                    };
-                }
-            }
-     */
-    public final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
-            .setConformance(SqlConformanceEnum.MYSQL_5)
-            .setCaseSensitive(false).build();
-    public MycatTypeSystem TypeSystem = new MycatTypeSystem();
-    public JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem) {
-        @Override
-        public Charset getDefaultCharset() {
-            return StandardCharsets.UTF_8;
-        }
-    };
-    public RexBuilder RexBuilder = new RexBuilder(TypeFactory);
-    public RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
+        fixCalcite();
+
+    }
+
+//    public static final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+//            .setConformance(SqlConformanceEnum.MYSQL_5)
+//            .setCaseSensitive(false).build();
+    public static final MycatTypeSystem TypeSystem = new MycatTypeSystem();
+    public static final RelDataTypeFactory TypeFactory = new MycatRelDataTypeFactory(TypeSystem);
+    public static RexBuilder RexBuilder = new RexBuilder(TypeFactory);
+    public static RelBuilderFactory relBuilderFactory = new RelBuilderFactory() {
         @Override
         public RelBuilder create(RelOptCluster cluster, RelOptSchema schema) {
             return new MycatRelBuilder(MycatCalciteSupport.INSTANCE, cluster, schema);
         }
     };
 
-    public final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
-            .withConfig(SqlToRelConverter.Config.DEFAULT)
+    public static final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
             .withTrimUnusedFields(true)
             .withInSubQueryThreshold(Integer.MAX_VALUE)
+            .withRelBuilderConfigTransform(config -> config.withSimplify(false))
             .withRelBuilderFactory(relBuilderFactory).build();
 
     public final SqlValidator.Config getValidatorConfig() {
+        SqlTypeMappingRule instance = SqlTypeMappingRules.instance(true);
+        Map<SqlTypeName, ImmutableSet<SqlTypeName>> typeMapping = instance.getTypeMapping();
+
+
+        final Map<SqlTypeName, ImmutableSet<SqlTypeName>> map = new HashMap(typeMapping);
+        map.put(SqlTypeName.BOOLEAN,
+                ImmutableSet.<SqlTypeName>builder()
+                        .addAll(typeMapping.get(SqlTypeName.BOOLEAN))
+                        .addAll(SqlTypeName.NUMERIC_TYPES).build());
+
+        for (SqlTypeName numericType : SqlTypeName.NUMERIC_TYPES) {
+            map.put(numericType,
+                    ImmutableSet.<SqlTypeName>builder()
+                            .addAll(typeMapping.get(numericType))
+                            .addAll(SqlTypeName.BOOLEAN_TYPES).build());
+        }
+
+        SqlTypeCoercionRule instance1 = SqlTypeCoercionRule.instance(map);
         return SqlValidator.Config.DEFAULT.withSqlConformance(calciteConnectionConfig.conformance())
-                .withTypeCoercionEnabled(true).withTypeCoercionRules(SqlTypeCoercionRule.instance()).withLenientOperatorLookup(true);
+                .withTypeCoercionEnabled(true)
+                .withTypeCoercionRules(instance1).withLenientOperatorLookup(true)
+                .withTypeCoercionFactory(new TypeCoercionFactory() {
+
+                    @Override
+                    public TypeCoercion create(RelDataTypeFactory typeFactory, SqlValidator validator) {
+                        return new TypeCoercionImpl(typeFactory, validator) {
+                            @Override
+                            public RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
+                                if (in.getSqlTypeName() == SqlTypeName.BOOLEAN && SqlTypeFamily.NUMERIC == expected) {
+                                    return super.factory.createSqlType(SqlTypeName.TINYINT);
+                                }
+                                if (SqlTypeName.STRING_TYPES.contains(in.getSqlTypeName()) && expected == SqlTypeFamily.DATE) {
+                                    return super.factory.createSqlType(SqlTypeName.DATE);
+                                }
+                                if (SqlTypeName.STRING_TYPES.contains(in.getSqlTypeName()) && expected == SqlTypeFamily.DATETIME) {
+                                    return super.factory.createSqlType(SqlTypeName.TIMESTAMP);
+                                }
+                                if (in.getSqlTypeName() == SqlTypeName.TIMESTAMP && expected == SqlTypeFamily.NUMERIC) {
+                                    return super.factory.createSqlType(SqlTypeName.DOUBLE);
+                                }
+                                if (in.getSqlTypeName() == SqlTypeName.TIME && expected == SqlTypeFamily.NUMERIC) {
+                                    return super.factory.createSqlType(SqlTypeName.DOUBLE);
+                                }
+                                if (in.getSqlTypeName() == SqlTypeName.DATE && expected == SqlTypeFamily.NUMERIC) {
+                                    return super.factory.createSqlType(SqlTypeName.BIGINT);
+                                }
+                                return super.implicitCast(in, expected);
+                            }
+                        };
+                    }
+                });
 //                .withSqlConformance(calciteConnectionConfig.conformance());
     }
 
-
-//    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
-//        return new MycatCalciteDataContext(uponDBContext);
-//    }
-
-    MycatCalciteSupport() {
-//        try {
-
+    static {
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
-        configBuilder.parserConfig(SQL_PARSER_CONFIG);
+//        configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
         configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
         SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
         instance.init();
         configBuilder.operatorTable(new SqlOperatorTable() {
-            final HashMap<String, SqlOperator> map = new HashMap<>();
-            final HashMap<String, SqlOperator> build = new HashMap<>();
+            final Multimap<String, SqlOperator> map = HashMultimap.create();
+            final Multimap<String, SqlOperator> build = HashMultimap.create();
 
             {
-                map.put("IFNULL", SqlStdOperatorTable.COALESCE);
-                build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-                build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
-                build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
-                build.put("LOG", SqlStdOperatorTable.LOG10);
-                build.put("PI", SqlStdOperatorTable.PI);
-                build.put("POW", SqlStdOperatorTable.POWER);
+                try {
+                    map.put("IFNULL", SqlStdOperatorTable.COALESCE);
+                    build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+                    build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
+//                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
+                    build.put("LOG", SqlStdOperatorTable.LOG10);
+                    build.put("PI", SqlStdOperatorTable.PI);
+                    build.put("POW", SqlStdOperatorTable.POWER);
+                    build.put("concat", ConcatFunction.INSTANCE);
+                    build.put("<=>", StrictEqualFunction.INSTANCE);
+                    build.put("regexp", RegexpFunction.INSTANCE);
+                    build.put("concat_ws", ConcatWsFunction.INSTANCE);
+                    build.put("regexp_instr", RegexpInstrFunction.INSTANCE);
+                    build.put("regexp_replace", RegexpReplaceFunction.INSTANCE);
+                    build.put("not regexp", NotRegexpFunction.INSTANCE);
 
-                for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entrySet()) {
-                    map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
-                    map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                    Arrays.asList(BitLengthFunction.INSTANCE,
+                            BinFunction.INSTANCE,
+                            AsciiFunction.INSTANCE,
+                            RegexpSubstrFunction.INSTANCE,
+                            BinaryFunction.INSTANCE,
+                            CharLengthFunction.INSTANCE,
+                            ChrFunction.INSTANCE,
+                            ConvertFunction.INSTANCE,
+                            EltFunction.INSTANCE,
+                            ExportSetFunction.INSTANCE,
+                            ExtractValueFunction.INSTANCE,
+                            FieldFunction.INSTANCE,
+                            FindInSetFunction.INSTANCE,
+                            FormatFunction.INSTANCE,
+                            FromBase64Function.INSTANCE,
+                            HexFunction.INSTANCE,
+                            InsertFunction.INSTANCE,
+                            InstrFunction.INSTANCE,
+                            LowerFunction.INSTANCE,
+                            LeftFunction.INSTANCE,
+                            LengthFunction.INSTANCE,
+                            loadFileFunction.INSTANCE,
+                            LocateFunction.INSTANCE,
+                            LpadFunction.INSTANCE,
+                            LtrimFunction.INSTANCE,
+                            MakeSetFunction.INSTANCE,
+                            MidFunction.INSTANCE,
+                            RepeatFunction.INSTANCE,
+                            OrdFunction.INSTANCE,
+                            PositionFunction.INSTANCE,
+                            QuoteFunction.INSTANCE,
+                            ReverseFunction.INSTANCE,
+                            RightFunction.INSTANCE,
+                            RpadFunction.INSTANCE,
+                            RtrimFunction.INSTANCE,
+                            SoundexFunction.INSTANCE,
+                            SpaceFunction.INSTANCE,
+                            StrCmpFunction.INSTANCE,
+                            SubStringFunction.INSTANCE,
+                            CharFunction.INSTANCE,
+                            StringIndexFunction.INSTANCE,
+                            ToBase64Function.INSTANCE,
+                            TrimFunction.INSTANCE,
+                            UpperFunction.INSTANCE,
+                            UncompressedLengthFunction.INSTANCE,
+                            UnhexFunction.INSTANCE,
+                            UpdateXMLFunction.INSTANCE,
+                            WeightStringFunction.INSTANCE,
+                            /////////////////////////////////////////
+                            AddDateFunction.INSTANCE,
+//                            DateAddFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
+                            ConvertTzFunction.INSTANCE,
+                            CurDateFunction.INSTANCE,
+                            DateDiffFunction.INSTANCE,
+                            DateFormatFunction.INSTANCE,
+                            DateFormat2Function.INSTANCE,
+                            StringToTimestampFunction.INSTANCE,
+                            RexImpTable.DateAddFunction.INSTANCE,
+                            RexImpTable.DateSubFunction.INSTANCE,
+                            RexImpTable.ExtractFunction.INSTANCE,
+                            DayOfWeekFunction.INSTANCE,
+                            FromDaysFunction.INSTANCE,
+                            HourFunction.INSTANCE,
+                            FromUnixTimeFormatFunction.INSTANCE,
+                            FromUnixTimeFunction.INSTANCE,
+                            GetFormatFunction.INSTANCE,
+                            LastDayFunction.INSTANCE,
+                            MakeDateFunction.INSTANCE,
+                            MakeTimeFunction.INSTANCE,
+                            MicrosecondFunction.INSTANCE,
+                            MinuteFunction.INSTANCE,
+                            MonthFunction.INSTANCE,
+                            MonthNameFunction.INSTANCE,
+                            PeriodAddFunction.INSTANCE,
+                            PeriodDiffFunction.INSTANCE,
+                            QuarterFunction.INSTANCE,
+                            SecondFunction.INSTANCE,
+                            SecToTimeFunction.INSTANCE,
+
+                            SecToDateFunction.INSTANCE,
+                            SubTimeFunction.INSTANCE,
+                            SysDateFunction.INSTANCE,
+                            TimeDiff2Function.INSTANCE,
+                            TimeDiffFunction.INSTANCE,
+                            TimeDiff3Function.INSTANCE,
+                            TimeFunction.INSTANCE,
+                            TimestampFunction.INSTANCE,
+                            Timestamp2Function.INSTANCE,
+                            Timestamp3Function.INSTANCE,
+                            TimestampComposeFunction.INSTANCE,
+                            TimestampAddFunction.INSTANCE,
+                            TimestampDiffFunction.INSTANCE,
+                            TimeFormatFunction.INSTANCE,
+                            TimeToSecFunction.INSTANCE,
+                            ToDaysFunction.INSTANCE,
+                            ToSecondsFunction.INSTANCE,
+                            UtcDateFunction.INSTANCE,
+                            UtcTimeFunction.INSTANCE,
+                            UtcTimestampFunction.INSTANCE,
+                            WeekFunction.INSTANCE,
+                            WeekDayFunction.INSTANCE,
+                            WeekOfYearFunction.INSTANCE,
+                            YearFunction.INSTANCE,
+                            YearWeekFunction.INSTANCE,
+                            MycatDatabaseFunction.INSTANCE,
+                            MycatSessionValueFunction.INSTANCE,
+                            MycatGlobalValueFunction.INSTANCE,
+                            MycatVersionFunction.INSTANCE,
+                            MycatLastInsertIdFunction.INSTANCE,
+                            MycatConnectionIdFunction.INSTANCE,
+                            MycatCurrentUserFunction.INSTANCE,
+                            MycatUserFunction.INSTANCE
+                    ).forEach(i -> build.put(i.getName(), i));
+                    build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
+                    build.put("LCASE", LowerFunction.INSTANCE);
+                    build.put("UCASE", UpperFunction.INSTANCE);
+                    build.put("LENGTHB", LengthFunction.INSTANCE);
+                    build.put("OCTET_LENGTH", LengthFunction.INSTANCE);
+                    build.put("SUBSTR", SubStringFunction.INSTANCE);
+                    build.put("CURRENT_DATE", CurDateFunction.INSTANCE);
+                    build.put("CURTIME", CurTimeFunction.INSTANCE);
+                    build.put("CURRENT_TIME", CurTimeFunction.INSTANCE);
+
+                    build.put("NOW", NowFunction.INSTANCE);
+                    build.put("CURRENT_TIMESTAMP", NowFunction.INSTANCE);
+                    build.put("LOCALTIME", NowFunction.INSTANCE);
+                    build.put("LOCALTIMESTAMP", NowFunction.INSTANCE);
+
+                    build.put("DATE", DateFunction.INSTANCE);
+                    build.put("DAY", DayOfMonthFunction.INSTANCE);
+                    build.put("DAYOFMONTH", DayOfMonthFunction.INSTANCE);
+                    build.put("UNIX_TIMESTAMP", UnixTimestampFunction.INSTANCE);
+
+                    ////////////////////////////////////////////////
+
+                    for (Map.Entry<String, SqlOperator> stringSqlOperatorEntry : build.entries()) {
+                        map.put(stringSqlOperatorEntry.getKey().toUpperCase(), stringSqlOperatorEntry.getValue());
+                        map.put(stringSqlOperatorEntry.getKey().toLowerCase(), stringSqlOperatorEntry.getValue());
+                    }
+                } catch (Throwable e) {
+                    LOGGER.warn("", e);
                 }
 
             }
 
             @Override
             public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
-                SqlOperator sqlOperator = map.get(opName.getSimple());
+                Collection<SqlOperator> sqlOperator = map.get(opName.getSimple().toUpperCase());
                 if (sqlOperator != null) {
-                    operatorList.add(sqlOperator);
+                    operatorList.addAll(sqlOperator);
+                    if (sqlOperator == ConvertFunction.INSTANCE) {//fix bug
+                        // class org.apache.calcite.sql.fun.SqlConvertFunction: CONVERT is broken.
+                        return;
+                    }
                 }
                 instance.lookupOperatorOverloads(opName, category, syntax, operatorList, nameMatcher);
             }
@@ -209,21 +396,91 @@ public enum MycatCalciteSupport implements Context {
         });
         configBuilder.convertletTable(MycatStandardConvertletTable.INSTANCE);
 
-        this.config = configBuilder.context(this).build();
-        this.calciteConnectionConfig = connectionConfig();
+        config = configBuilder.context(MycatCalciteSupport.INSTANCE).build();
+        calciteConnectionConfig = connectionConfig();
 
         map.put(FrameworkConfig.class, config);
         map.put(CalciteConnectionConfig.class, calciteConnectionConfig);
         map.put(RelDataTypeSystem.class, TypeSystem);
         map.put(MycatTypeSystem.class, TypeSystem);
-        map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
-        map.put(RexExecutor.class, RexUtil.EXECUTOR);
+//        map.put(SqlParser.Config.class, SQL_PARSER_CONFIG);
+        map.put(RexExecutor.class, MycatRexExecutor.INSTANCE);
+        map.put(RelBuilder.Config.class, RelBuilder.Config.DEFAULT);
+
+    }
+
+//    public MycatCalciteDataContext create(MycatDBContext uponDBContext) {
+//        return new MycatCalciteDataContext(uponDBContext);
+//    }
+
+    @SneakyThrows
+    MycatCalciteSupport() {
+        try {
+
+            Class<? extends BuiltInMethod> aClass = BuiltInMethod.STRING_TO_TIMESTAMP.getClass();
+            System.out.println();
+//            Class<? extends RexImpTable> aClass = RexImpTable.class;
+//            Field mapField = aClass.getDeclaredField("map");
+//            mapField.setAccessible(true);
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> o = (Map<SqlOperator, RexImpTable.RexCallImplementor>) mapField.get(RexImpTable.INSTANCE);
+//            System.out.println(o);
+//
+//            Method defineMethod = aClass.getDeclaredMethod("defineMethod", SqlOperator.class, Method.class,
+//                    NullPolicy.class);
+//            defineMethod.setAccessible(true);
+//
+//
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> res = new ConcurrentHashMap<SqlOperator, RexImpTable.RexCallImplementor>() {
+//
+//                @SneakyThrows
+//                @Override
+//                public RexImpTable.RexCallImplementor get(Object key) {
+//                    RexImpTable.RexCallImplementor rexCallImplementor = super.get(key);
+//                    if (rexCallImplementor != null) {
+//                        return rexCallImplementor;
+//                    }
+//                    SqlOperator k = (SqlOperator) key;
+//                    String name = k.getName();
+//                    switch (name.toLowerCase()){
+//                        case "regexp":{
+//                            ScalarFunctionImpl implementor = (ScalarFunctionImpl)RegexpFunction.scalarFunction;
+//                            defineMethod.invoke(RexImpTable.INSTANCE, key, implementor.method, NullPolicy.ANY);
+//                          break;
+//                        }
+//                    }
+//                    return get(key);
+//                }
+//            };
+//            res.putAll(o);
+//            mapField.set(RexImpTable.INSTANCE, res);
+//
+//            Field instanceField = aClass.getDeclaredField("INSTANCE");
+//            instanceField.setAccessible(true);
+
+//            Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
+//            declaredConstructor.setAccessible(true);
+
+        } catch (Throwable e) {
+            System.out.println(e);
+        }
+
 //        }catch (Throwable e){
 //          System.err.println(e);
 //        }
     }
 
-    private CalciteConnectionConfig connectionConfig() {
+    private static void fixCalcite() {
+//
+//        Map<SqlOperator, RexImpTable.RexCallImplementor> map = MycatClassResolver.forceStaticGet(RexImpTable.class, RexImpTable.INSTANCE, "map");
+//        map.put(SqlStdOperatorTable.CAST, new MycatCastImplementor());
+        //            Class<? extends RexImpTable> aClass = RexImpTable.class;
+//            Field mapField = aClass.getDeclaredField("map");
+//            mapField.setAccessible(true);
+//            Map<SqlOperator, RexImpTable.RexCallImplementor> o = (Map<SqlOperator, RexImpTable.RexCallImplementor>) mapField.get(RexImpTable.INSTANCE);
+//            System.out.println(o);
+    }
+
+    private static CalciteConnectionConfig connectionConfig() {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
@@ -233,7 +490,7 @@ public enum MycatCalciteSupport implements Context {
         properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
                 String.valueOf(false));
         properties.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
-                String.valueOf(config.getParserConfig().conformance()));
+                String.valueOf(SqlConformanceEnum.MYSQL_5));
 
         return new CalciteConnectionConfigImpl(properties) {
             @Override
@@ -332,6 +589,7 @@ public enum MycatCalciteSupport implements Context {
 
             return sqlRexConvertlet;
         }
+
     }
 
 //    public MycatCalcitePlanner createPlanner(MycatCalciteDataContext dataContext) {

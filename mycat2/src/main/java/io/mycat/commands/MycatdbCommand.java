@@ -92,7 +92,7 @@ public enum  MycatdbCommand {
             sqlHandlers.add(new ShowVariantsSQLHandler());
             sqlHandlers.add(new ShowWarningsSQLHandler());
             sqlHandlers.add(new ShowCreateFunctionHanlder());
-
+            sqlHandlers.add(new CreateTableSQLHandler());
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
 
@@ -127,7 +127,7 @@ public enum  MycatdbCommand {
                 Class aClass = sqlStatement.getClass();
                 SQLHandler instance = sqlHandlerMap.getInstance(aClass);
                 if (instance == null) {
-                    receiver.tryBroadcastShow(sqlStatement.toString());
+                    receiver.tryBroadcastShow(text);
                 } else {
                     instance.execute(request, dataContext, receiver);
                 }
@@ -166,7 +166,7 @@ public enum  MycatdbCommand {
             sqlStatements.add(sqlStartTransactionStatement);
             return sqlStatements;
         }
-        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, DbType.mysql, false);
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, DbType.mysql, true);
         LinkedList<SQLStatement> statementList = new LinkedList<SQLStatement>();
         parser.parseStatementList(statementList, -1, null);
         return statementList;

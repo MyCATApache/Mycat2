@@ -1,12 +1,9 @@
 package io.mycat.example;
 
-import io.mycat.ConfigProvider;
-import io.mycat.MycatCore;
-import io.mycat.RootHelper;
+import io.mycat.config.ServerConfiguration;
 import io.mycat.example.booster.BoosterExample;
 import io.mycat.example.customrule.CustomRuleExample;
 import io.mycat.example.customrulesegmentquery.CustomRuleSegExample;
-import io.mycat.example.manager.ManagerExample;
 import io.mycat.example.pstmt.PstmtShardingExample;
 import io.mycat.example.sharding.ShardingExample;
 import io.mycat.example.shardinglocal.ShardingLocalExample;
@@ -53,8 +50,8 @@ public class ExampleObject {
         System.out.println(resource);
         System.setProperty("MYCAT_HOME", resource);
         if (server && !NetUtil.isHostConnectable("0.0.0.0", 8066)) {
-            ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(currentClass);
-            MycatCore.INSTANCE.init(bootConfig);
+          //  ServerConfiguration bootConfig = RootHelper.INSTANCE.bootConfig(currentClass);
+           // MycatCore.INSTANCE.init(bootConfig);
         }
         if (test) {
             String message = "";
@@ -97,7 +94,7 @@ public class ExampleObject {
                 BoosterExample.class,
                 CustomRuleExample.class,
                 CustomRuleSegExample.class,
-                ManagerExample.class,
+//                ManagerExample.class,
                 PstmtShardingExample.class,
                 io.mycat.example.readwriteseparation.ReadWriteSeparationExample.class,
                 ShardingExample.class,

@@ -854,7 +854,7 @@ travelrecord: #逻辑表名
   columns:
     - columnName: id #分片字段信息,显式提供,
       shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
-      function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
       #提供表的字段信息,升级计划:通过已有数据库拉取该信息
   createTableSQL: |-
     CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -900,15 +900,15 @@ address:
   columns:
     - columnName: id
       shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败,如果配置了dataNode,则会使用dataNode校验
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
       map: [defaultDs]
     - columnName: addressname
       shardingType: MAP_SCHMEA
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}}
       map: [db1]
     - columnName: addressname
       shardingType: MAP_TABLE
-      function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+      function: { clazz: io.mycat.router.mycat1xfunction.PartitionConstant , properties: {defaultNode: '0'}}
       map: [address]
   createTableSQL: CREATE TABLE `address1` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
   dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: address}]
@@ -1239,7 +1239,7 @@ server:
 ## 分片算法配置
 
 ```yaml
-function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+function: { clazz: io.mycat.router.mycat1xfunction.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
 ```
 
 具体参考以下链接
@@ -1543,6 +1543,74 @@ Mycat2的聚合函数支持方式是ONLY_FULL_GROUP_BY
 
 #### 数学函数支持
 
+##### +
+
+###### Syntax
+
+```
++
+```
+
+不支持字符串相加，只支持数值类型相加
+
+
+
+##### -
+
+###### Syntax
+
+```
+-
+```
+
+只支持数值类型相减
+
+
+
+##### /
+
+###### Syntax
+
+```
+/
+```
+
+只支持数值类型除法
+
+
+
+*
+
+###### Syntax
+
+```
+*
+```
+
+只支持数值类型乘法
+
+
+
+%
+
+###### Syntax
+
+```sql
+%
+```
+
+只支持数值类型Modulo
+
+
+
+
+
+
+
+
+
+
+
 ##### abs
 
 Mycat内置
@@ -1659,203 +1727,31 @@ Mycat内置
 
 
 
-#### 字符串函数支持(正在开发)
+#### 不支持
 
-##### ascii
+##### DIV
 
-Mycat内置
+###### Syntax
 
-##### bin
-
-Mycat内置
-
-##### bit_length
-
-外置
-
-char 变长参数
-
-##### char_length
-
-Mycat内置
-
-##### character_length
-
-Mycat内置
-
-##### concat 
-
-变长参数
-
-Mycat2内置2到4个参数的实现
-
-##### concat_ws
-
-变长参数
-
-外置
-
-##### elt
-
-变长参数
-
-##### export_set
-
-field变长参数
-
-##### find_in_set
-
-变长参数
-
-##### format
-
-外置
-
-##### from_base64
-
-外置
-
-##### hex
-
-外置
-
-##### insert
-
-外置
-
-##### lcase
-
-内置
-
-##### lower
-
-内置
-
-##### left
-
-外置
-
-##### length
-
-外置
-
-##### locate
-
-外置
-
-##### lpad
-
-外置
-
-##### ltrim
-
-外置
-
-##### make_set
-
-变长参数
-
-##### mid
-
-外置
-
-##### oct
-
-外置
-
-##### octet_length
-
-外置
-
-##### ord
-
-外置
-
-##### position
-
-外置
-
-##### quote
-
-外置
-
-##### repeat
-
-外置
-
-##### replace
-
-外置
-
-##### reverse
-
-外置
-
-##### right
-
-外置
-
-##### rpad
-
-外置
-
-##### rtrim
-
-外置
-
-##### space
-
-外置
-
-##### substr
-
-外置
-
-##### substring
-
-外置
-
-##### substring_index
-
-外置
-
-##### to_base64
-
-外置
-
-##### ucase
-
-内置
-
-##### upper
-
-内置
-
-##### unhex
-
-外置
-
-
-
-
-
-
-
-实验性支持
-
-```
-TRIM([{BOTH | LEADING | TRAILING} [remstr] FROM] str)， TRIM([remstr FROM] str)
+```sql
+DIV
 ```
 
 
 
-###### 不支持
+不支持位运算函数
 
-load_file
+不支持动态字段函数
 
-soundex
+不支持地理函数
 
-weight_string
+不支持JSON函数
+
+不支持Spider存储引擎函数
+
+不支持窗口函数
+
+
 
 
 
@@ -2706,7 +2602,7 @@ io.mycat.router.CustomRuleFunction
 
 单值分片算法
 
-io.mycat.router.SingleValueRuleFunction
+io.mycat.router.Mycat1xSingleValueRuleFunction
 
 
 
@@ -3847,6 +3743,10 @@ START_POLLERS=5
 ```
 
 该参数可以在wrapper.conf里面配置
+
+
+
+
 
 
 

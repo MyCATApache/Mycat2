@@ -26,4 +26,6 @@ public interface MycatDataSource {
      * @return
      */
     String getName();
+
+    boolean isValid();
 }

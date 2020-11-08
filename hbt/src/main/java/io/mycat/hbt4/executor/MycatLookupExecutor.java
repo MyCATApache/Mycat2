@@ -15,6 +15,7 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
 import io.mycat.api.collector.ComposeFutureRowBaseIterator;
@@ -95,7 +96,7 @@ public class MycatLookupExecutor implements Executor {
         View newView = View.of(accept, this.view.getDistribution());
         ImmutableMultimap<String, SqlString> expandToSqls = newView.expandToSql(false, params);
 
-        MycatWorkerProcessor instance = MycatWorkerProcessor.INSTANCE;
+        MycatWorkerProcessor instance = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         NameableExecutor mycatWorker = instance.getMycatWorker();
         LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
         this.tmpConnections = factory.getTmpConnections(expandToSqls.keys().asList());

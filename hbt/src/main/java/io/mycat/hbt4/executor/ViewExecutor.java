@@ -1,6 +1,7 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableMultimap;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatConnection;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
@@ -53,7 +54,8 @@ public class ViewExecutor implements Executor {
             myCatResultSetEnumerator.close();
         }
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(view.getRelNode().getRowType().getFieldList());
-        NameableExecutor mycatWorker = MycatWorkerProcessor.INSTANCE.getMycatWorker();
+        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+        NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
         LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
 
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {

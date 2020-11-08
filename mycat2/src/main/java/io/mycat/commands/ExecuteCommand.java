@@ -27,7 +27,7 @@
 //     * needTransaction:true|false
 //     */
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        Map<String,String> tags = request.get("tags");
 //        String balanceConfig = tags.getOrDefault("balance", null);
 //        String targetsConfig = tags.getOrDefault("targets", null);
@@ -41,7 +41,7 @@
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        String balanceConfig = request.getOrDefault("balance", null);
 //        String targetsConfig = request.getOrDefault("targets", null);
 //        boolean needTransaction = Boolean.TRUE.toString().equalsIgnoreCase(request.getOrDefault("needTransaction", Boolean.TRUE.toString()));

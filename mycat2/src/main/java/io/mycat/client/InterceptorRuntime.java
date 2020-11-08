@@ -15,15 +15,12 @@
 
 package io.mycat.client;
 
-import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.booster.CacheConfig;
-import io.mycat.commands.MycatCommand;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.config.UserConfig;
 import io.mycat.matcher.Matcher;
 import io.mycat.matcher.StringEqualsFactory;
-import io.mycat.plug.command.MycatCommandLoader;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 import lombok.SneakyThrows;
@@ -37,11 +34,9 @@ import java.util.stream.Collectors;
 /**
  * @author Junwen Chen
  **/
-public enum InterceptorRuntime {
-    INSTANCE;
+public class InterceptorRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger(InterceptorRuntime.class);
     final Map<String, UserSpace> spaceMap = new ConcurrentHashMap<>();
-    volatile MycatConfig mycatConfig;
     public static final String DISTRIBUTED_QUERY = "distributedQuery";
     public static final String EXECUTE_PLAN = "executePlan";
 
@@ -50,37 +45,10 @@ public enum InterceptorRuntime {
         return Objects.requireNonNull(spaceMap.get(userName));
     }
 
-//    final static Map<String, Object> MYCAT_DB_COMMAND = (Map) ImmutableMap.builder().put("command", MycatdbCommand.INSTANCE.getName()).put("name", "defaultMycatdb").build();
-
     @SneakyThrows
-    private synchronized void flash() {
-
-//        addCommand(BeginCommand.INSTANCE);
-//        addCommand(CommitCommand.INSTANCE);
-//        addCommand(DefErrorCommand.INSTANCE);
-//        addCommand(DistributedDeleteCommand.INSTANCE);
-//        addCommand(DistributedInsertCommand.INSTANCE);
-//        addCommand(DistributedQueryCommand.INSTANCE);
-//        addCommand(DistributedUpdateCommand.INSTANCE);
-//        addCommand(ExecuteCommand.INSTANCE);
-//        addCommand(ExecutePlanCommand.INSTANCE);
-//        addCommand(ExplainSqlCommand.INSTANCE);
-//        addCommand(MycatdbCommand.INSTANCE);
-//        addCommand(OffXACommand.INSTANCE);
-//        addCommand(OkCommand.INSTANCE);
-//        addCommand(OnXACommand.INSTANCE);
-//        addCommand(RollbackCommand.INSTANCE);
-//        addCommand(SelectAutocommitCommand.INSTANCE);
-//        addCommand(SelectLastInsertIdCommand.INSTANCE);
-//        addCommand(SelectTransactionReadOnlyCommand.INSTANCE);
-//        addCommand(SetAutoCommitOffCommand.INSTANCE);
-//        addCommand(SetAutoCommitOnCommand.INSTANCE);
-//        addCommand(SetTransactionIsolationCommand.INSTANCE);
-//        addCommand(UseStatementCommand.INSTANCE);
-//        addCommand(BoostMycatdbCommand.INSTANCE);
-
+    public InterceptorRuntime(List<PatternRootConfig> patternRootConfigs) {
         //config
-        for (PatternRootConfig interceptor : Objects.requireNonNull(this.mycatConfig).getInterceptors()) {
+        for (PatternRootConfig interceptor : patternRootConfigs) {
             UserConfig user = Objects.requireNonNull(interceptor.getUser());
             String username = Objects.requireNonNull(user.getUsername());
             String matcherClazz = interceptor.getMatcherClazz();
@@ -119,23 +87,9 @@ public enum InterceptorRuntime {
                 }
             }
             final Matcher apply = factory.create(allItems, defaultHanlder != null ? Pair.of(null, defaultHanlder) : null);
-            TransactionType transactionType = TransactionType.parse(interceptor.getTransactionType());
+            TransactionType transactionType = TransactionType.parse(interceptor.getUser().getTransactionType());
             this.spaceMap.put(username, new UserSpace(username, transactionType, apply, cacheTasks));
         }
     }
-
-    private void addCommand(MycatCommand instance) {
-        MycatCommandLoader.INSTANCE.registerIfAbsent(instance.getName(), instance);
-    }
-
-    public synchronized void load(MycatConfig config) {
-        if (this.mycatConfig == config) {
-            return;
-        } else {
-            this.mycatConfig = config;
-        }
-        flash();
-    }
-
 
 }

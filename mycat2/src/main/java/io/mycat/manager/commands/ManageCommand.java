@@ -10,10 +10,10 @@ public interface ManageCommand extends MycatCommand {
 
     String description();
 
-    void handle(MycatRequest request, MycatDataContext context, Response response);
+    void handle(MycatRequest request, MycatDataContext context, Response response) throws Exception;
 
     @Override
-    default boolean run(MycatRequest request, MycatDataContext context, Response response) {
+    default boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
         if (statement().equalsIgnoreCase(request.getText())) {
             handle(request, context, response);
             return true;

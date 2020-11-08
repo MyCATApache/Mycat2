@@ -26,25 +26,25 @@ import java.util.Map;
  * 自定义路由算法接口
  */
 public abstract class CustomRuleFunction {
-    protected Map<String, String> properties;
-    protected Map<String, String> ranges;
+    protected Map<String, Object> properties;
+    protected Map<String, Object> ranges;
     protected ShardingTableHandler table;
 
     public abstract String name();
 
     public abstract List<DataNode> calculate(Map<String, Collection<RangeVariable>> values);
 
-    protected abstract void init(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges);
+    protected abstract void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges);
 
-    public Map<String, String> getProperties() {
+    public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public Map<String, String> getRanges() {
+    public Map<String, Object> getRanges() {
         return ranges;
     }
 
-    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, String> properties, Map<String, String> ranges) {
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
         this.properties = properties;
         this.ranges = ranges;
         this.table = tableHandler;

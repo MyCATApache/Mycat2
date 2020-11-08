@@ -13,7 +13,7 @@ import io.mycat.util.Response;
 public class RollbackSQLHandler extends AbstractSQLHandler<SQLRollbackStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLRollbackStatement> request, MycatDataContext dataContext, Response response) {
+    protected void onExecute(SQLRequest<SQLRollbackStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         response.rollback();
     }
 }

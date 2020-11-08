@@ -16,7 +16,7 @@
 //    final static Logger logger = LoggerFactory.getLogger(BoostMycatdbCommand.class);
 //
 //    @Override
-//    public boolean run(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean run(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        if (!context.isInTransaction() && context.isAutocommit()) {
 //            try {
 //                Object boostersInfo = request.get("boosters");
@@ -48,7 +48,7 @@
 //    }
 //
 //    @Override
-//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) {
+//    public boolean explain(MycatRequest request, MycatDataContext context, Response response) throws Exception {
 //        response.sendExplain(BoostMycatdbCommand.class, "boostMycatdb");
 //        return true;
 //    }

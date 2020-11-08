@@ -1,15 +1,10 @@
 package io.mycat.hbt4.executor;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.DataNode;
 import io.mycat.hbt3.Distribution;
 import io.mycat.hbt4.DatasourceFactory;
@@ -80,7 +75,7 @@ public class MycatUpdateExecutor implements Executor {
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
             this.affectedRow += preparedStatement.executeUpdate();
-            this.lastInsertId = Math.max(this.lastInsertId, getLastInsertId(insertId, preparedStatement));
+            this.lastInsertId = Math.max(this.lastInsertId, getInSingleSqlLastInsertId(insertId, preparedStatement));
         }
     }
 
@@ -113,13 +108,22 @@ public class MycatUpdateExecutor implements Executor {
         return groupHashMap;
     }
 
-    public static long getLastInsertId(boolean insertId, Statement preparedStatement) throws SQLException {
+    /**
+     *  ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+     *  会生成多个值,其中第一个是真正的值
+     * @param insertId
+     * @param preparedStatement
+     * @return
+     * @throws SQLException
+     */
+    public static long getInSingleSqlLastInsertId(boolean insertId, Statement preparedStatement) throws SQLException {
         long lastInsertId = 0;
         if (insertId) {
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys != null) {
                 if (generatedKeys.next()) {
-                    lastInsertId = generatedKeys.getLong(1);
+                    long aLong = generatedKeys.getLong(1);
+                    lastInsertId = Math.max(lastInsertId,aLong);
                 }
             }
         }

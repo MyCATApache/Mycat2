@@ -14,6 +14,7 @@
  */
 package io.mycat.beans.mycat;
 
+import io.mycat.MycatTimeUtil;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import lombok.SneakyThrows;
@@ -23,6 +24,9 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import static java.sql.Types.*;
@@ -190,27 +194,39 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public Date getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         try {
-            return resultSet.getDate(columnIndex);
+            Date date = resultSet.getDate(columnIndex);
+            if (date!=null){
+                return date.toLocalDate();
+            }
+            return null;
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         try {
-            return resultSet.getTime(columnIndex);
+            String string = resultSet.getString(columnIndex);
+            if (string == null){
+                return null;
+            }
+            return MycatTimeUtil.timeStringToTimeDuration(string);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         try {
-            return resultSet.getTimestamp(columnIndex);
+            Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+            if (timestamp==null){
+                return null;
+            }
+            return timestamp.toLocalDateTime();
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -309,17 +325,19 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
             case DATE: {
                 Date date = resultSet.getDate(columnIndex);
                 boolean b = resultSet.wasNull();
-                return b?null:date;
+                return b?null:date.toLocalDate();
             }
+            case TIME_WITH_TIMEZONE:
             case TIME: {
-                Time time = resultSet.getTime(columnIndex);
+                String time = resultSet.getString(columnIndex);
                 boolean b = resultSet.wasNull();
-                return b?null:time;
+                return b?null:MycatTimeUtil.timeStringToTimeDuration(time);
             }
+            case TIMESTAMP_WITH_TIMEZONE:
             case TIMESTAMP: {
                 Timestamp timestamp = resultSet.getTimestamp(columnIndex);
                 boolean b = resultSet.wasNull();
-                return b?null:timestamp;
+                return b?null:timestamp.toLocalDateTime();
             }
             case BINARY: {
                 byte[] bytes = resultSet.getBytes(columnIndex);
@@ -343,17 +361,6 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
                 boolean aBoolean = resultSet.getBoolean(columnIndex);
                 boolean b = resultSet.wasNull();
                 return  b?null:aBoolean;
-            }
-
-            case TIME_WITH_TIMEZONE: {
-                Time time = resultSet.getTime(columnIndex);
-                boolean b = resultSet.wasNull();
-                return  b?null:time;
-            }
-            case TIMESTAMP_WITH_TIMEZONE: {
-                Timestamp timestamp = resultSet.getTimestamp(columnIndex);
-                boolean b = resultSet.wasNull();
-                return  b?null:timestamp;
             }
             case ROWID:
             case NCHAR:

@@ -30,8 +30,8 @@ public enum PlanCache {
         }
     }
     public void put(String sql,Plan plan){
-        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
-        plans.add(plan);
+//        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
+//        plans.add(plan);
     }
 
 }

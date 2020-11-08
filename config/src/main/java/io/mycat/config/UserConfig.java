@@ -11,4 +11,5 @@ public class UserConfig {
     private String username;
     private String password;
     private String ip;
+    private String transactionType;
 }

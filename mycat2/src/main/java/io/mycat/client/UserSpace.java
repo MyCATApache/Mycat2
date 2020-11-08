@@ -43,13 +43,11 @@ import java.util.concurrent.TimeUnit;
 public class UserSpace {
     private static final Logger logger = LoggerFactory.getLogger(UserSpace.class);
     private final String userName;
-    private final TransactionType defaultTransactionType;
     private final Matcher<Map<String, Object>> matcher;
     private final Map<String, Task> cacheMap = new ConcurrentHashMap<>();
 
     public UserSpace(String userName, TransactionType defaultTransactionType, Matcher matcher, List<CacheTask> cacheTaskList) {
         this.userName = Objects.requireNonNull(userName);
-        this.defaultTransactionType = Objects.requireNonNull(defaultTransactionType);
         this.matcher = matcher;
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
         cacheTaskList.forEach(config -> {
@@ -61,7 +59,7 @@ public class UserSpace {
     }
 
 
-    public void execute(final ByteBuffer buffer, final MycatSession session) {
+    public boolean execute(final ByteBuffer buffer, final MycatSession session) {
         final CharBuffer charBuffer = StandardCharsets.UTF_8.decode(buffer);
         final Map<String, Object> extractor = new HashMap<>();
         List<Map<String, Object>> matchList = matcher.match(charBuffer, extractor);
@@ -76,10 +74,10 @@ public class UserSpace {
             for (Map<String, Object> item : matchList) {
                 HashMap<String, Object> context = new HashMap<>(item);
                 context.putAll(extractor);
-                if (execute(sessionId, dataContext, text, context, session,receiver)) return;
+                if (execute(sessionId, dataContext, text, context, session,receiver)) return true;
             }
         }
-        MycatdbCommand.INSTANCE.executeQuery(text,session,session.getDataContext());
+      return false;
     }
 
     public boolean execute(int sessionId,
@@ -131,7 +129,7 @@ public class UserSpace {
 
             @Override
             public void start(CacheConfig cacheConfig) {
-                NameableExecutor mycatWorker = MycatWorkerProcessor.INSTANCE.getMycatWorker();
+                NameableExecutor mycatWorker = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class).getMycatWorker();
                 timer.scheduleAtFixedRate(() -> mycatWorker.execute(() -> {
                             try {
                                 cache(cacheConfig);

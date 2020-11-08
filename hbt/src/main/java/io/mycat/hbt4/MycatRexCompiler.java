@@ -3,6 +3,7 @@ package io.mycat.hbt4;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.executor.MycatScalar;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
@@ -13,7 +14,7 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.Pair;
@@ -31,7 +32,7 @@ import java.util.List;
 
 public class MycatRexCompiler {
     final static RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-    final static SqlConformance conformance = MycatCalciteSupport.INSTANCE.config.getParserConfig().conformance();
+    final static SqlConformance conformance = MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig().conformance();
 
     final static boolean debug = true;
     final static RelDataType EmptyInputRowType = MycatCalciteSupport.INSTANCE.TypeFactory.builder().build();
@@ -49,9 +50,14 @@ public class MycatRexCompiler {
         for (RexNode node : nodes) {
             node=   node.accept(new RexShuttle(){
                 @Override
+                public RexNode visitCall(RexCall call) {
+                    return super.visitCall(call);
+                }
+
+                @Override
                 public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
                     RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-                    JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                    RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
                     int index1 = dynamicParam.getIndex();
                     Object o = params.get(index1);
                     RelDataType type = dynamicParam.getType();
@@ -147,7 +153,7 @@ public class MycatRexCompiler {
                 Expressions.classDecl(Modifier.PUBLIC, "Buzz", null,
                         ImmutableList.of(MycatScalar.class), declarations);
         String s = Expressions.toString(declarations, "\n", false);
-        if (debug) {
+        if (true) {
             Util.debugCode(System.out, s);
         }
         try {

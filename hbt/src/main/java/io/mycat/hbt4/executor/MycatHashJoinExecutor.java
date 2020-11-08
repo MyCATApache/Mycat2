@@ -17,7 +17,7 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.MycatContext;
+import org.apache.calcite.MycatContext;
 import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;

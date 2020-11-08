@@ -2,10 +2,15 @@ package io.mycat.calcite.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import org.apache.calcite.linq4j.Enumerator;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
+import java.sql.Types;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,6 +21,7 @@ public class MyCatResultSetEnumerator implements Enumerator<Object[]> {
     final RowBaseIterator rowBaseIterator;
     final int columnCount;
     boolean result = true;
+
     public MyCatResultSetEnumerator(AtomicBoolean CANCEL_FLAG, RowBaseIterator rowBaseIterator) {
         this.CANCEL_FLAG = CANCEL_FLAG;
         this.rowBaseIterator = rowBaseIterator;
@@ -26,13 +32,9 @@ public class MyCatResultSetEnumerator implements Enumerator<Object[]> {
     @Override
     public Object[] current() {
         Object[] res = new Object[columnCount];
+
         for (int i = 0, j = 1; i < columnCount; i++, j++) {
-            Object object = rowBaseIterator.getObject(j);
-            if (object instanceof java.util.Date) {
-                res[i] = ((java.util.Date) object).getTime();
-            }else {
-                res[i] = object;
-            }
+            res[i] = rowBaseIterator.getObject(j);
         }
         return (Object[]) res;
     }

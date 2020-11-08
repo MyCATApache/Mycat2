@@ -14,10 +14,8 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatDataContext;
-import io.mycat.MycatDataContextEnum;
-import io.mycat.MycatException;
-import io.mycat.MycatUser;
+import io.mycat.*;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -37,7 +35,7 @@ import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.SessionThread;
-import io.mycat.runtime.MycatDataContextSupport;
+import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +44,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.function.Function;
 
 //tcp.port in {8066} or tcp.port in  {3066}
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
@@ -85,7 +85,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private boolean gracefulShutdowning = false;
 
     public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
-                        SessionManager<MycatSession> sessionManager) {
+                        SessionManager<MycatSession> sessionManager,
+                        Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
+                                MycatContextThreadPool mycatContextThreadPool) {
         super(sessionId, nioHandler, sessionManager);
         this.proxyBuffer = new ProxyBufferImpl(bufferPool);
         this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(
@@ -94,7 +96,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.processState = ProcessState.READY;
         this.frontResolver = new FrontMySQLPacketResolver(bufferPool, this);
         this.packetId = 0;
-        this.dataContext = MycatDataContextSupport.INSTANCE.createDataContext(this);
+        this.dataContext = new MycatDataContextImpl(new ServerTransactionSessionRunner(transcationFactoryMap,mycatContextThreadPool,this));
     }
 
     public void setCommandHandler(CommandDispatcher commandHandler) {

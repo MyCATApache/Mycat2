@@ -9,6 +9,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -132,17 +135,17 @@ public class ComposeRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public java.util.Date  getDate(int columnIndex) {
+    public LocalDate getDate(int columnIndex) {
         return current.getDate(columnIndex);
     }
 
     @Override
-    public Time getTime(int columnIndex) {
+    public Duration getTime(int columnIndex) {
         return current.getTime(columnIndex);
     }
 
     @Override
-    public Timestamp getTimestamp(int columnIndex) {
+    public LocalDateTime getTimestamp(int columnIndex) {
         return current.getTimestamp(columnIndex);
     }
 

@@ -15,26 +15,30 @@
 package io.mycat.replica;
 
 import com.rits.cloning.Cloner;
-import io.mycat.ConfigProvider;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataStorageManager;
 import io.mycat.MycatConfig;
-import io.mycat.RootHelper;
-import io.mycat.config.ClusterRootConfig;
+import io.mycat.ScheduleUtil;
+import io.mycat.config.ClusterConfig;
+import io.mycat.config.TimerConfig;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
  * @author : chenjunwen date Date : 2019年05月15日 21:34
  */
 
-public class ReplicaDataSourceSelector implements LoadBalanceInfo {
+public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicaDataSourceSelector.class);
     protected final String name;
@@ -45,15 +49,19 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     protected final ReplicaType type;
     protected final LoadBalanceStrategy defaultReadLoadBalanceStrategy;
     protected final LoadBalanceStrategy defaultWriteLoadBalanceStrategy;
+    private ReplicaSelectorRuntime replicaSelectorRuntime;
     protected final List<PhysicsInstanceImpl> writeDataSourceList = new CopyOnWriteArrayList<>();//只能被getWriteDataSource读取
     protected final List<PhysicsInstanceImpl> readDataSource = new CopyOnWriteArrayList<>();
 
     private final static boolean DEFAULT_SELECT_AS_READ = true;
     private final static boolean DEFAULT_ALIVE = false;
+    private final ScheduledFuture<?> scheduled;
+
 
     public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type, int maxRequestCount,
                                      ReplicaSwitchType switchType, LoadBalanceStrategy defaultReadLoadBalanceStrategy,
-                                     LoadBalanceStrategy defaultWriteLoadBalanceStrategy) {
+                                     LoadBalanceStrategy defaultWriteLoadBalanceStrategy,
+                                     TimerConfig timer, ReplicaSelectorRuntime replicaSelectorRuntime) {
         this.name = name;
         this.balanceType = balanceType;
         this.maxRequestCount = maxRequestCount;
@@ -61,7 +69,33 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         this.type = type;
         this.defaultReadLoadBalanceStrategy = defaultReadLoadBalanceStrategy;
         this.defaultWriteLoadBalanceStrategy = defaultWriteLoadBalanceStrategy;
+        this.replicaSelectorRuntime = replicaSelectorRuntime;
         Objects.requireNonNull(balanceType, "balanceType is null");
+        if (timer!=null) {
+            this.scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+                String replicaName = name;
+                Enumeration<String> keys = datasourceMap.keys();
+                while (keys.hasMoreElements()) {
+                    String datasourceName = keys.nextElement();
+                    String key = replicaName + "." + datasourceName;
+                    HeartbeatFlow heartbeatFlow = replicaSelectorRuntime.getHeartbeatDetectorMap().get(key);
+                    if (heartbeatFlow != null) {
+                        if (LOGGER.isInfoEnabled()) {
+                            LOGGER.info("heartbeat:{}", key);
+                        }
+                        heartbeatFlow.heartbeat();
+                    }
+                }
+            }, timer.getInitialDelay(), timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
+        }else {
+            this.scheduled = null;
+        }
+    }
+
+    @Override
+    public void finalize() throws Throwable {
+        super.finalize();
+       close();
     }
 
     /**
@@ -185,11 +219,11 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
 
-    public PhysicsInstance getDataSource(boolean runOnMaster,
-                                         LoadBalanceStrategy strategy) {
-        return runOnMaster ? ReplicaSelectorRuntime.INSTANCE.getWriteDatasource(strategy, this)
-                : ReplicaSelectorRuntime.INSTANCE.getDatasource(strategy, this);
-    }
+//    public PhysicsInstance getDataSource(boolean runOnMaster,
+//                                         LoadBalanceStrategy strategy) {
+//        return runOnMaster ? ReplicaSelectorRuntime.INSTANCE.getWriteDatasource(strategy, this)
+//                : ReplicaSelectorRuntime.INSTANCE.getDatasource(strategy, this);
+//    }
 
     private synchronized boolean switchReadDatasource(List<PhysicsInstanceImpl> newReadDataSource) {
         return switchNode((List) this.readDataSource, newReadDataSource,"{} switch replica to {}");
@@ -214,12 +248,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     }
 
     private void updateFile(List<PhysicsInstanceImpl> newWriteDataSource) {
-        ConfigProvider configProvider = RootHelper.INSTANCE.getConfigProvider();
-        MycatConfig config = Cloner.standard().deepClone(configProvider.currentConfig());
-        ClusterRootConfig.ClusterConfig clusterConfig = config.getCluster().getClusters().stream().filter(i -> getName().equals(i.getName())).findFirst().get();
-        List<String> collect = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toList());
-        clusterConfig.setMasters(collect);
-        configProvider.reportReplica(clusterConfig.getName(), collect);
+        MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
+        Set<String> dsNames = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toSet());
+        metadataStorageManager.reportReplica(getName(), dsNames);
     }
 
     @Override
@@ -260,5 +291,16 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
     public List<PhysicsInstanceImpl> getReadDataSource() {
         return Collections.unmodifiableList(readDataSource);
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
+                scheduled.cancel(true);
+            }
+        }catch (Throwable t){
+
+        }
     }
 }

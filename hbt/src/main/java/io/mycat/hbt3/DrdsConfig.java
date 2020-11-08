@@ -15,6 +15,7 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.util.JsonUtil;
@@ -42,7 +43,8 @@ public class DrdsConfig implements DrdsConst {
 
     @Override
     public Map<String, SchemaHandler> schemas() {
-        Map<String, SchemaHandler> schemaMap = MetadataManager.INSTANCE.getSchemaMap();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        Map<String, SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         return schemaMap;
     }
 

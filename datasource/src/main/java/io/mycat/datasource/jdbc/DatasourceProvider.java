@@ -14,6 +14,7 @@
  */
 package io.mycat.datasource.jdbc;
 
+import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
@@ -24,7 +25,7 @@ import javax.transaction.*;
  **/
 public interface DatasourceProvider {
 
-    JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig dataSource);
+    JdbcDataSource createDataSource(DatasourceConfig dataSource);
 
     void closeDataSource(JdbcDataSource dataSource);
 

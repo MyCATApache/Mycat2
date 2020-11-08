@@ -16,6 +16,10 @@ package io.mycat.resultset;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * @author Junwen Chen
@@ -109,5 +113,72 @@ public enum TextConvertorImpl implements TextConvertor {
             return (byte[]) v;
         }
         return v.toString().getBytes();
+    }
+
+    @Override
+    public byte[] convertDuration(Duration duration) {
+        long seconds = duration.getSeconds();
+        int SECONDS_PER_HOUR = 60*60;
+        int SECONDS_PER_MINUTE = 60;
+        long hours = seconds / SECONDS_PER_HOUR;
+        int minutes = (int) ((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+        int secs = (int) (seconds % SECONDS_PER_MINUTE);
+        int nano = duration.getNano();
+        if (nano == 0) {
+            return String.format("%02d:%02d:%02d", hours, minutes, secs).getBytes();
+        }
+        return String.format("%02d:%02d:%02d.%09d", hours, minutes, secs,nano).getBytes();
+    }
+
+    @Override
+    public byte[] convertTime(LocalTime localTime) {
+        int hour = localTime.getHour();
+        int minute = localTime.getMinute();
+        int second = localTime.getSecond();
+        int nano = localTime.getNano();
+        if (nano == 0) {
+            return String.format("%02d:%02d:%02d", hour, minute, second).getBytes();
+        }
+        return String.format("%02d:%02d:%02d.%09d", hour, minute, second,nano).getBytes();
+    }
+
+    @Override
+    public byte[] convertTimeString(String s) {
+        return s.getBytes();
+    }
+
+    @Override
+    public byte[] convertTimeStamp(LocalDateTime value) {
+        int year = value.getYear();
+        int monthValue = value.getMonthValue();
+        int dayOfMonth = value.getDayOfMonth();
+        int hour = value.getHour();
+        int minute = value.getMinute();
+        int second = value.getSecond();
+        int nano = value.getNano();
+        if (nano == 0){
+            return String.format("%04d-%02d-%02d %02d:%02d:%02d",
+                    year,
+                    monthValue,
+                    dayOfMonth,
+                    hour,
+                    minute,
+                    second
+                    ).getBytes();
+        }
+        return String.format("%04d-%02d-%02d %02d:%02d:%02d.%09d",
+                year,
+                monthValue,
+                dayOfMonth,
+                hour,
+                minute,
+                second,
+                nano
+                ).getBytes();
+    }
+
+    @Override
+    public byte[] convertDate(LocalDate value) {
+        return value.toString().getBytes();
     }
 }
