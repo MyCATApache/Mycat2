@@ -32,7 +32,6 @@ public class CommandResolver {
                               CommandDispatcher commandHandler) {
         MycatMonitor.onCommandStart(mycat);
         //////////////////////////////////apply transaction///////////////////////////////////
-        MetaCluster metaCluster = MetaCluster.getCurrent();
         TransactionSession transactionSession = mycat.getDataContext().getTransactionSession();
         transactionSession.doAction();
         //////////////////////////////////////////////////////////////////////////////////////

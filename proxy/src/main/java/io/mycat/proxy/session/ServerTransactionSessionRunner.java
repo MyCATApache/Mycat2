@@ -41,7 +41,9 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
                     throw new IllegalArgumentException("正在处于事务状态,不能切换事务模式");
                 } else {
                     //
-                    TransactionSession newTransactionSession = map.get(container.transactionType()).apply(container);
+                    Function<MycatDataContext, TransactionSession> transactionSessionFunction =
+                            Objects.requireNonNull(map.get(container.transactionType()));
+                    TransactionSession newTransactionSession = transactionSessionFunction.apply(container);
 
                     newTransactionSession.setReadOnly(transactionSession.isReadOnly());
                     newTransactionSession.setAutocommit(transactionSession.isAutocommit());

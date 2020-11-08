@@ -23,6 +23,9 @@ public class MycatContext {
     public Long getConnectionId(){
         return CONTEXT.get().getSessionId();
     }
+    public Object getUserVariable(String name){
+        return null;
+    }
     public String getCurrentUser(){
         MycatUser user = CONTEXT.get().getUser();
         Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);

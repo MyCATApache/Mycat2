@@ -32,7 +32,7 @@ public class MySQLVariablesUtil {
         }
     }
 
-    public static Object getVariable(MycatDataContext dataContext,String target) {
+    public static Object getVariable(MycatDataContext dataContext, String target) {
         target = target.toLowerCase();
         if (target.contains("autocommit")) {
             return dataContext.isAutocommit() ? 1 : 0;
@@ -49,7 +49,7 @@ public class MySQLVariablesUtil {
         } else if (target.contains("current_user")) {
             return dataContext.getUser().getUserName();
         }
-       //todo
+        //todo
 //        Map<String, Object> map = RootHelper.INSTANCE.getConfigProvider().globalVariables();
 //        MySQLVariablesEnum mySQLVariablesEnum = MySQLVariablesEnum.parseFromColumnName(target);
 //        if (mySQLVariablesEnum != null) {
@@ -59,6 +59,10 @@ public class MySQLVariablesUtil {
 //            return null;
 //        }
         return null;
+    }
+
+    public static int toInt(Object s) {
+        return toInt(Objects.toString(s));
     }
 
     public static int toInt(String s) {

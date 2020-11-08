@@ -133,7 +133,7 @@ public class MycatInsertExecutor implements Executor {
             }
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
             List<DataNode> dataNodes = function.calculate((Map) variables);
-            if (dataNodes.size() > 1) {
+            if (dataNodes.size() != 1) {
                 throw new IllegalArgumentException();
             }
             DataNode dataNode = Objects.requireNonNull(dataNodes.get(0));
@@ -176,7 +176,7 @@ public class MycatInsertExecutor implements Executor {
             List<SQLExpr> values = valuesClause.getValues();
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, values);
             List<DataNode> dataNodes = function.calculate((Map) variables);
-            if (dataNodes.size() > 1) {
+            if (dataNodes.size() != 1) {
                 throw new IllegalArgumentException();
             }
             DataNode dataNode = dataNodes.get(0);

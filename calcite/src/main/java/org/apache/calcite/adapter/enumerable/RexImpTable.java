@@ -746,6 +746,9 @@ public class RexImpTable {
     if (operator == MycatGlobalValueFunction.INSTANCE){
       return RexImpTable.MycatGlobalValueImplementor.INSTANCE;
     }
+    if (operator == MycatUserValueFunction.INSTANCE){
+      return MycatUserValueImplementor.INSTANCE;
+    }
     if (operator == MycatDatabaseFunction.INSTANCE){
       return RexImpTable.MycatDatabaseImplementor.INSTANCE;
     }
@@ -2447,6 +2450,23 @@ public class RexImpTable {
      ,argValueList.get(0));
    }
  }
+  public static class MycatUserValueImplementor extends AbstractRexCallImplementor{
+    public static final MycatUserValueImplementor INSTANCE = new MycatUserValueImplementor();
+    MycatUserValueImplementor() {
+      super(NullPolicy.STRICT, false);
+    }
+
+    @Override
+    String getVariableName() {
+      return "mycatUserValue";
+    }
+
+    @Override
+    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getUserVariable"
+              ,argValueList.get(0));
+    }
+  }
   public static class MycatGlobalValueImplementor extends AbstractRexCallImplementor{
     public static final MycatGlobalValueImplementor INSTANCE = new MycatGlobalValueImplementor();
     MycatGlobalValueImplementor() {

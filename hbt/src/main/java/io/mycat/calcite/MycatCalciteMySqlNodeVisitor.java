@@ -921,19 +921,30 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             buildIdentifier((SQLPropertyExpr) owner, names);
             names.add(name);
         } else if (owner instanceof SQLVariantRefExpr) {
-            SQLVariantRefExpr owner1 = (SQLVariantRefExpr) owner;
-           if(owner1.isGlobal()){
-               return MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
-           }else {
-               return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                       SqlLiteral.createCharString(name, SqlParserPos.ZERO));
-           }
+            return handleSQLVariantRefExpr(name, (SQLVariantRefExpr) owner);
         } else {
             throw new FastsqlException("not support : " + owner);
         }
 
         return new SqlIdentifier(names, SqlParserPos.ZERO);
+    }
+
+    public static SqlNode handleSQLVariantRefExpr(String name, SQLVariantRefExpr owner) {
+        if(owner.isGlobal()){
+            return MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                    SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+        }else {
+            if (name.startsWith("@@")){
+                return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(name.substring(2), SqlParserPos.ZERO));
+            }
+            if (name.startsWith("@")){
+                return MycatUserValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                        SqlLiteral.createCharString(name.substring(1), SqlParserPos.ZERO));
+            }
+            return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
+                    SqlLiteral.createCharString(name, SqlParserPos.ZERO));
+        }
     }
 
     void buildIdentifier(SQLPropertyExpr x, List<String> names) {
@@ -1894,15 +1905,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            if(x.isGlobal()){
-                this.sqlNode = MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
-            }else {
-                this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
-                        SqlLiteral.createCharString(x.getName(), SqlParserPos.ZERO));
-            }
+            this.sqlNode =  handleSQLVariantRefExpr(x.getName(),x);
+            return false;
         }
-        return false;
     }
 
     @Override

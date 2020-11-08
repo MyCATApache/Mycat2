@@ -3,11 +3,8 @@ package io.mycat.example.assemble;
 import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.example.ExampleObject;
 import io.mycat.example.TestUtil;
-import io.mycat.example.sharding.ShardingExample;
 import io.mycat.util.JsonUtil;
-import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,7 +22,6 @@ public class AssembleExample {
 
         Connection mysql3306 = TestUtil.getMySQLConnection(3306);
         Connection mysql3307 = TestUtil.getMySQLConnection(3307);
-
 
         List<Map<String, Object>> maps = executeQuery(mycatConnection,
                 "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
@@ -126,7 +122,7 @@ public class AssembleExample {
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
 
-        Assert.assertFalse(existTable(mycatConnection, "db1","travelreord"));
+        Assert.assertFalse(existTable(mycatConnection, "db1", "travelreord"));
 
 
         ////////////////////////////////////////////end/////////////////////////////////////////
@@ -174,7 +170,7 @@ public class AssembleExample {
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8" + " BROADCAST;");
 
-        execute(mycatConnection,"delete from db1.travelrecord");
+        execute(mycatConnection, "delete from db1.travelrecord");
         execute(mycatConnection,
                 "insert  into db1.`travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
         );
@@ -189,10 +185,10 @@ public class AssembleExample {
         }
         execute(mycatConnection, "drop table db1.travelrecord");
 
-        Assert.assertFalse(existTable(mycatConnection, "db1","travelreord"));
+        Assert.assertFalse(existTable(mycatConnection, "db1", "travelreord"));
 
 
-        execute(mycatConnection,"CREATE TABLE db1.`travelrecord` (\n" +
+        execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                 "  `user_id` varchar(100) DEFAULT NULL,\n" +
                 "  `traveldate` date DEFAULT NULL,\n" +
@@ -202,10 +198,10 @@ public class AssembleExample {
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                +" dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
+                + " dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
 
-        Assert.assertTrue(existTable(mycatConnection, "db1","travelrecord"));
-        execute(mycatConnection,"delete from db1.travelrecord");
+        Assert.assertTrue(existTable(mycatConnection, "db1", "travelrecord"));
+        execute(mycatConnection, "delete from db1.travelrecord");
         execute(mycatConnection,
                 "insert  into db1.`travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
         );
@@ -217,16 +213,30 @@ public class AssembleExample {
         Assert.assertTrue(
                 executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
         );
-        Assert.assertEquals(executeQuery(mycatConnection,"select * from db1.travelrecord").size(),5);
-        execute(mycatConnection,"delete from db1.travelrecord");
+        Assert.assertEquals(executeQuery(mycatConnection, "select * from db1.travelrecord").size(), 5);
+        execute(mycatConnection, "delete from db1.travelrecord");
         execute(mycatConnection, "\n" +
                 "insert  into `travelrecord`(`user_id`,`traveldate`,`fee`,`days`,`blob`) values ('999',NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),(NULL,NULL,NULL,NULL,NULL),('999',NULL,NULL,NULL,NULL);\n");
         List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select id from db1.travelrecord");
         execute(mycatConnection, "drop table db1.travelrecord");
-        Assert.assertFalse(existTable(mycatConnection, "db1","travelrecord"));
+        Assert.assertFalse(existTable(mycatConnection, "db1", "travelrecord"));
         //////////////////////////////////////transcation/////////////////////////////////////////////
 
-        execute(mycatConnection,"CREATE TABLE db1.`travelrecord` (\n" +
+        execute(mycatConnection, "set xa = 0");
+        Assert.assertTrue(executeQuery(mycatConnection, "select @@xa").toString().contains("0"));
+
+        testNormalTranscation(mycatConnection);
+
+        execute(mycatConnection, "set xa = 1");
+        Assert.assertTrue(executeQuery(mycatConnection, "select @@xa").toString().contains("1"));
+
+        testNormalTranscation(mycatConnection);
+    }
+
+    private void testNormalTranscation(Connection mycatConnection) throws SQLException {
+        execute(mycatConnection, "CREATE DATABASE db1");
+        execute(mycatConnection, "use db1");
+        execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                 "  `user_id` varchar(100) DEFAULT NULL,\n" +
                 "  `traveldate` date DEFAULT NULL,\n" +
@@ -236,12 +246,12 @@ public class AssembleExample {
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                +" dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
+                + " dbpartition by hash(id) tbpartition by hash(user_id) tbpartitions 2 dbpartitions 2;");
 
-        deleteData(mycatConnection,"db1", "travelrecord");
+        deleteData(mycatConnection, "db1", "travelrecord");
         mycatConnection.setAutoCommit(false);
         Assert.assertTrue(
-                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("0")
+                executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("0")
         );
         execute(mycatConnection,
                 "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
@@ -249,7 +259,7 @@ public class AssembleExample {
 
         mycatConnection.setAutoCommit(true);
         Assert.assertTrue(
-                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("1")
+                executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("1")
         );
         Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
 
@@ -257,7 +267,7 @@ public class AssembleExample {
         ///////////////////////////////////////////////////////////////////////////////////////
         mycatConnection.setAutoCommit(false);
         Assert.assertTrue(
-                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("0")
+                executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("0")
         );
         execute(mycatConnection,
                 "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
@@ -265,21 +275,24 @@ public class AssembleExample {
 
         mycatConnection.setAutoCommit(true);
         Assert.assertTrue(
-                executeQuery(mycatConnection,"SELECT @@autocommit;").toString().contains("1")
+                executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("1")
         );
         Assert.assertEquals(2, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
     }
 
-    private boolean existTable(Connection connection,String db, String table) throws SQLException {
-        return !executeQuery(connection, String.format("SHOW TABLES from %s LIKE '%s';",db, table)).isEmpty();
+    private boolean existTable(Connection connection, String db, String table) throws SQLException {
+        return !executeQuery(connection, String.format("SHOW TABLES from %s LIKE '%s';", db, table)).isEmpty();
 
     }
-    private boolean hasData(Connection connection,String db, String table) throws SQLException {
-        return !executeQuery(connection, String.format("select * from %s.%s limit 1",db, table)).isEmpty();
+
+    private boolean hasData(Connection connection, String db, String table) throws SQLException {
+        return !executeQuery(connection, String.format("select * from %s.%s limit 1", db, table)).isEmpty();
     }
-    private void deleteData(Connection connection,String db, String table) throws SQLException {
-         execute(connection, String.format("delete  from %s.%s",db, table));
+
+    private void deleteData(Connection connection, String db, String table) throws SQLException {
+        execute(connection, String.format("delete  from %s.%s", db, table));
     }
+
     enum Cmd {
         showSchemas("showSchemas"),
         showTables("showTables"),
