@@ -3,11 +3,13 @@ package io.mycat.resultset;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.MySQLPacketUtil;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.util.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.Types;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -160,36 +162,42 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                     }
                     rows[i] = value;
                 }
-                return MySQLPacketUtil.generateBinaryRow(rows);
+                byte[] bytes = MySQLPacketUtil.generateBinaryRow(rows);
+                return bytes;
             }
         };
     }
 
     private byte[] convertToFloat32(Number object) {
-        return ByteBuffer.allocate(4).putDouble(object.floatValue()).array();
+        return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putFloat(object.floatValue()).array();
     }
 
     private byte[] convertToInt64(Number object) {
-        return ByteBuffer.allocate(8).putDouble(object.longValue()).array();
+        return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(object.longValue()).array();
     }
 
     private byte[] convertString(Object object) {
+        byte[] bytes;
         if (object instanceof byte[]) {
-            return (byte[]) object;
+            bytes = (byte[]) object;
+        }else {
+            bytes = object.toString().getBytes();
         }
-        return object.toString().getBytes();
+        MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(bytes.length);
+        mySQLPayloadWriter.writeLenencBytes(bytes);
+       return mySQLPayloadWriter.toByteArray();
     }
 
     private byte[] convertToFloat64(Number object) {
-       return ByteBuffer.allocate(8).putDouble(object.doubleValue()).array();
+       return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putDouble(object.doubleValue()).array();
     }
 
     private byte[] convertToInt32(Number object) {
-        return ByteBuffer.allocate(4).putInt(object.intValue()).array();
+        return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(object.intValue()).array();
     }
 
     private byte[] convertToInt16(Number object) {
-        return ByteBuffer.allocate(2).putDouble(object.shortValue()).array();
+        return ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(object.shortValue()).array();
     }
 
     private byte[] convertLong(Number object) {
