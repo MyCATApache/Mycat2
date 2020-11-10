@@ -453,9 +453,11 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
         return this;
     }
 
-    public void setBuffer(ByteBuffer byteBuffer, BufferPool bufferPool) {
-        assert this.buffer == null;
-        assert this.bufferPool == bufferPool;
+    public void setBuffer(ByteBuffer byteBuffer) {
+        if (buffer != null) {
+            LOGGER.warn("[bug] when buffer is not null but newBuffer");
+            reset();
+        }
         this.buffer = byteBuffer;
     }
 

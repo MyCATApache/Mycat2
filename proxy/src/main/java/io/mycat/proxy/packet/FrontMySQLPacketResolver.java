@@ -98,15 +98,17 @@ public class FrontMySQLPacketResolver {
     }
   }
 
-  public MySQLPacket getPayload(BufferPool bufferPool) {
+  public MySQLPacket getPayload() {
     head.position(0);
     payload = null;
     try {
       currentMySQLPacket = (ProxyBufferImpl) session.currentProxyBuffer();
+
       if (multiPacketList.size() == 1) {
         ByteBuffer byteBuffer = multiPacketList.remove(0);
         int size = byteBuffer.limit();
-        currentMySQLPacket.setBuffer(byteBuffer, bufferPool);
+        currentMySQLPacket.reset();
+        currentMySQLPacket.setBuffer(byteBuffer);
         currentMySQLPacket.channelReadStartIndex(0);
         currentMySQLPacket.channelReadEndIndex(size);
         return currentMySQLPacket;
@@ -115,6 +117,7 @@ public class FrontMySQLPacketResolver {
         for (ByteBuffer byteBuffer : multiPacketList) {
           size += byteBuffer.limit();
         }
+        currentMySQLPacket.reset();
         currentMySQLPacket.newBuffer(size);
         for (ByteBuffer byteBuffer : multiPacketList) {
           byteBuffer.position(0);
@@ -129,8 +132,9 @@ public class FrontMySQLPacketResolver {
     }
   }
 
-  public MySQLPacket getPayload() {
-    return getPayload(pool);
+  @Override
+  protected void finalize() throws Throwable {
+    super.finalize();
+    reset();
   }
-
 }
