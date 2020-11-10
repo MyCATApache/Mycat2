@@ -47,7 +47,7 @@ public class JavaClassToMySQLTypeUtil {
     } else if (clazz == Double.class) {
       return ByteBuffer.allocate(8).putDouble((Double) object).array();
     } else if (clazz == Float.class) {
-      return ByteBuffer.allocate(8).putDouble((Float) object).array();
+      return ByteBuffer.allocate(4).putFloat((Float) object).array();
     } else if (clazz == byte[].class) {
       return (byte[]) object;
     } else {
