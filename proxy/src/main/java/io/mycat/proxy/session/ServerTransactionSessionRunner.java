@@ -69,9 +69,6 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
                     runner.onException(container, e);
                 }
                 return;
-            case BINDING_THREADING:
-                threadPool.runOnBinding(container, runner);
-                return;
             case MULTI_THREADING:
                 threadPool.run(container, runner);
                 return;

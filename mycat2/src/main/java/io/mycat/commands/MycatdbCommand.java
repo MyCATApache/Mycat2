@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -34,13 +33,13 @@ import java.util.Objects;
 /**
  * @author Junwen Chen
  **/
-public enum  MycatdbCommand {
+public enum MycatdbCommand {
     INSTANCE;
-    final  Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
-      ImmutableClassToInstanceMap<SQLHandler> sqlHandlerMap;
+    final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
+    static final ImmutableClassToInstanceMap<SQLHandler> sqlHandlerMap;
 
-
-    MycatdbCommand() {
+    static {
+        ImmutableClassToInstanceMap.Builder<SQLHandler> builder = ImmutableClassToInstanceMap.builder();
         try {
             final HashSet<SQLHandler> sqlHandlers = new HashSet<>();
             sqlHandlers.add(new SelectSQLHandler());
@@ -96,19 +95,23 @@ public enum  MycatdbCommand {
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
 
-            ImmutableClassToInstanceMap.Builder<SQLHandler> builder = ImmutableClassToInstanceMap.builder();
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();
                 Objects.requireNonNull(statementClass);
                 builder.put(statementClass, sqlHandler);
             }
-            sqlHandlerMap = builder.build();
-        }catch (Throwable e){
-            logger.error("",e);
+
+        } catch (Throwable e) {
+            logger.error("", e);
         }
+        sqlHandlerMap = builder.build();
     }
 
-    public    void executeQuery(String text, MycatSession session, MycatDataContext dataContext) {
+    MycatdbCommand() {
+
+    }
+
+    public void executeQuery(String text, MycatSession session, MycatDataContext dataContext) {
         try {
             if (isHbt(text)) {
                 executeHbt(dataContext, text.substring(12), new ReceiverImpl(session, 1, false, false));
@@ -123,14 +126,7 @@ public enum  MycatdbCommand {
                 receiver = new ReceiverImpl(session, statements.size(), false, false);
             }
             for (SQLStatement sqlStatement : statements) {
-                SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
-                Class aClass = sqlStatement.getClass();
-                SQLHandler instance = sqlHandlerMap.getInstance(aClass);
-                if (instance == null) {
-                    receiver.tryBroadcastShow(text);
-                } else {
-                    instance.execute(request, dataContext, receiver);
-                }
+                execute(dataContext, receiver, sqlStatement);
             }
         } catch (Throwable e) {
             session.setLastMessage(e);
@@ -138,6 +134,17 @@ public enum  MycatdbCommand {
             return;
         }
 
+    }
+
+    public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
+        SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+        Class aClass = sqlStatement.getClass();
+        SQLHandler instance =   sqlHandlerMap.getInstance(aClass);
+        if (instance!=null) {
+            instance.execute(request, dataContext, receiver);
+        }else {
+            receiver.tryBroadcastShow(sqlStatement.toString());
+        }
     }
 
     private static boolean isHbt(String text) {

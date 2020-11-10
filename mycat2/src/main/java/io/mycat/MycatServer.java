@@ -8,7 +8,6 @@ import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider;
-import io.mycat.datasource.jdbc.transactionsession.JTATransactionSession;
 import io.mycat.manager.ManagerCommandDispatcher;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
@@ -50,7 +49,7 @@ public class MycatServer {
 
     private final MycatWorkerProcessor mycatWorkerProcessor;
 
-    private final DatasourceConfigProvider  datasourceConfigProvider;
+    private final DatasourceConfigProvider datasourceConfigProvider;
 
     private final Authenticator authenticator;
 
@@ -64,19 +63,11 @@ public class MycatServer {
         this.datasourceConfigProvider = datasourceConfigProvider;
         io.mycat.config.ServerConfig serverConfigServer = serverConfig.getServer();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(serverConfigServer.getWorkerPool(), serverConfigServer.getTimeWorkerPool());
-        String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(DruidDatasourceProvider.class.getName());
-        boolean xa = AtomikosDatasourceProvider.class.getName().equalsIgnoreCase(datasourceProvider);
         this.transcationFactoryMap = new HashMap<>();
         this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
+        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
         ThreadPoolExecutorConfig contextPool = serverConfigServer.getContextPool();
-        if (xa) {
-            AtomikosDatasourceProvider atomikosDatasourceProvider = new AtomikosDatasourceProvider();
-            this.mycatContextThreadPool = new SimpleMycatContextBindingThreadPool(contextPool, mycatWorkerProcessor.getMycatWorker());
-            this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> atomikosDatasourceProvider.createUserTransaction()));
-        } else {
-            this.mycatContextThreadPool = new MycatContextThreadPoolImpl(contextPool, mycatWorkerProcessor.getMycatWorker());
-            this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
-        }
+        this.mycatContextThreadPool = new MycatContextThreadPoolImpl(contextPool, mycatWorkerProcessor.getMycatWorker());
     }
 
     @SneakyThrows
@@ -140,7 +131,7 @@ public class MycatServer {
                     throw new RuntimeException(e);
                 }
             };
-            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager( function, authenticator,transcationFactoryMap,mycatContextThreadPool));
+            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function, authenticator, transcationFactoryMap, mycatContextThreadPool));
             thread.start();
             list.add(thread);
         }

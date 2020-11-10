@@ -206,12 +206,15 @@ public class MySQLPayloadWriter extends ByteArrayOutput implements
 
   @Override
   public MySQLPayloadWriter writeLenencInt(long val) {
-    if (val < 251) {
+    if (val < 0) {
+      writeByte((byte) 254);
+      writeFixInt(8,val);
+    } else  if (val < 251) {
       writeByte((byte) val);
-    } else if (val >= 251 && val < (1 << 16)) {
+    } else if (val <0x10000L) {
       writeByte((byte) 0xfc);
       writeFixInt(2, val);
-    } else if (val >= (1 << 16) && val < (1 << 24)) {
+    } else if (val < 0x1000000L) {
       writeByte((byte) 0xfd);
       writeFixInt(3, val);
     } else {

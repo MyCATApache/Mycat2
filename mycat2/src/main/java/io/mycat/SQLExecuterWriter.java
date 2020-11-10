@@ -24,11 +24,13 @@ import io.mycat.bindthread.BindThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.util.ByteUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     final int total;
@@ -64,11 +66,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     }
 
     public void writeToMycatSession(MycatResponse response) {
+        boolean moreResultSet = !(this.count == 1);
         if (explain) {
-            sendResultSet(true, response.explain());
+            sendResultSet(moreResultSet, response.explain());
             return;
         }
-        boolean moreResultSet = !(this.count == 1);
+
         try (MycatResponse mycatResponse = response) {
             switch (mycatResponse.getType()) {
                 case RRESULTSET: {
@@ -211,7 +214,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         }
     }
 
-    private void sendResultSet(boolean end, RowBaseIterator resultSet) {
+    private void sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
         MycatResultSetResponse currentResultSet;
         if (!binary) {
             currentResultSet = new TextResultSetResponse(resultSet);
@@ -227,9 +230,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         session.writeColumnEndPacket();
         Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
         while (rowIterator.hasNext()) {
-            session.writeBytes(rowIterator.next(), false);
+            byte[] row = rowIterator.next();
+            String dump = ByteUtil.dump(row, 0, row.length);
+            session.writeBytes(row, false);
+            System.out.println(dump);
         }
-        session.writeRowEndPacket(end, false);
+        session.writeRowEndPacket(moreResultSet, false);
     }
 
     public boolean isExplain() {

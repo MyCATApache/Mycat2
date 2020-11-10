@@ -1,10 +1,15 @@
 package io.mycat.example.assemble;
 
 import com.alibaba.druid.util.JdbcUtils;
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.example.TestUtil;
+import io.mycat.hint.AddClusterHint;
+import io.mycat.hint.AddDatasourceHint;
 import io.mycat.util.JsonUtil;
+import lombok.SneakyThrows;
+import org.apache.calcite.linq4j.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -12,48 +17,104 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class AssembleExample {
 
+
+
+    Connection getMySQLConnection(int port) throws SQLException {
+        String username = "root";
+        String password = "123456";
+//        properties.put("useBatchMultiSend", "false");
+//        properties.put("usePipelineAuth", "false");
+        String url = "jdbc:mysql://127.0.0.1:" +
+                port +
+                "/?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        MysqlDataSource mysqlDataSource = new MysqlDataSource();
+        mysqlDataSource.setUrl(url);
+        mysqlDataSource.setUser(username);
+        mysqlDataSource.setPassword(password);
+     
+        return mysqlDataSource.getConnection();
+    }
     @Test
-    public void testWrapper() throws Exception {
-        Connection mycatConnection = TestUtil.getMySQLConnection(8066);
+    public void testTranscationFail2() throws Exception {
+        Consumer<Connection> connectionFunction = new Consumer<Connection>() {
 
+            @SneakyThrows
+            @Override
+            public void accept(Connection mycatConnection) {
+                AssembleExample.this.execute(mycatConnection, "set xa  = off");
+            }
+        };
+        testTranscation(connectionFunction);
+    }
 
-        Connection mysql3306 = TestUtil.getMySQLConnection(3306);
-        Connection mysql3307 = TestUtil.getMySQLConnection(3307);
+    @Test
+    public void testTranscationFail() throws Exception {
+        Consumer<Connection> connectionFunction = new Consumer<Connection>() {
+
+            @SneakyThrows
+            @Override
+            public void accept(Connection mycatConnection) {
+                AssembleExample.this.execute(mycatConnection, "set xa  = on");
+            }
+        };
+        testTranscation(connectionFunction);
+    }
+
+    private void testTranscation(Consumer<Connection> connectionFunction) throws SQLException {
+        try (Connection mycatConnection = getMySQLConnection(8066)) {
+            initCluster(mycatConnection);
+            connectionFunction.accept(mycatConnection);
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int DEFAULT NULL,\n" +
+                    "  `blob` longblob,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+            execute(mycatConnection, "use db1");
+            deleteData(mycatConnection, "db1", "travelrecord");
+            mycatConnection.setAutoCommit(false);
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`,`user_id`) VALUES ('1',999/0);");
+        } catch (Throwable ignored) {
+
+        }
+        try (Connection mycatConnection = getMySQLConnection(8066)) {
+            connectionFunction.accept(mycatConnection);
+            execute(mycatConnection, "use db1");
+            Assert.assertTrue(executeQuery(mycatConnection,
+                    "select *  from travelrecord"
+            ).isEmpty());
+            mycatConnection.setAutoCommit(false);
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+            execute(mycatConnection, "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('1');");
+            mycatConnection.commit();
+            Assert.assertTrue(hasData(mycatConnection, "db1", "travelrecord"));
+        }
+    }
+
+    @Test
+    public void testBase() throws Exception {
+        Connection mycatConnection = getMySQLConnection(8066);
+
+        Connection mysql3306 = getMySQLConnection(3306);
+        Connection mysql3307 = getMySQLConnection(3307);
 
         List<Map<String, Object>> maps = executeQuery(mycatConnection,
                 "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
-        // show databases
-        executeQuery(mycatConnection, "show databases");
-
-
-        // use
-        execute(mycatConnection, "USE `information_schema`;");
-        Assert.assertTrue(executeQuery(mycatConnection, "select database()").toString().contains("information_schema"));
-        execute(mycatConnection, "USE `mysql`;");
-
-        // database();
-        Assert.assertTrue(executeQuery(mycatConnection, "select database()").toString().contains("mysql"));
-
-        // VERSION()
-        Assert.assertTrue(executeQuery(mycatConnection, "select VERSION()").toString().contains("8.19"));
-
-        // LAST_INSERT_ID()
-        executeQuery(mycatConnection, "select CONNECTION_ID()");
-
-        // CURRENT_USER()
-        executeQuery(mycatConnection, "select CURRENT_USER()");
-
-        // SYSTEM_USER()
-        executeQuery(mycatConnection, "select SYSTEM_USER()");
-
-        // SESSION_USER()
-        executeQuery(mycatConnection, "select SESSION_USER()");
-
-        executeQuery(mycatConnection, "select SESSION_USER()");
+        testInfoFunction(mycatConnection);
 
 
         execute(mycatConnection, "DROP DATABASE db1");
@@ -93,9 +154,9 @@ public class AssembleExample {
         execute(mycatConnection,
                 "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
         );
-
-        Assert.assertTrue(
-                executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("12")
+        List<Map<String, Object>> maps2 = executeQuery(mycatConnection, "select LAST_INSERT_ID()");
+        Assert.assertTrue(maps2
+             .toString().contains("12")
         );
         execute(mycatConnection, "\n" +
                 "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(2,NULL,NULL,NULL,NULL,NULL),(6666,NULL,NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);\n");
@@ -127,35 +188,7 @@ public class AssembleExample {
 
         ////////////////////////////////////////////end/////////////////////////////////////////
 
-        execute(mycatConnection,
-                AddDatasourceHint
-                        .create("dw0",
-                                "jdbc:mysql://127.0.0.1:3306"));
-
-        execute(mycatConnection,
-                AddDatasourceHint
-                        .create("dr0",
-                                "jdbc:mysql://127.0.0.1:3306"));
-
-        execute(mycatConnection,
-                AddDatasourceHint
-                        .create("dw1",
-                                "jdbc:mysql://127.0.0.1:3307"));
-
-        execute(mycatConnection,
-                AddDatasourceHint
-                        .create("dr1",
-                                "jdbc:mysql://127.0.0.1:3307"));
-
-        execute(mycatConnection,
-                AddClusterHint
-                        .create("c0",
-                                Arrays.asList("dw0"), Arrays.asList("dr0")));
-
-        execute(mycatConnection,
-                AddClusterHint
-                        .create("c1",
-                                Arrays.asList("dw1"), Arrays.asList("dr1")));
+        initCluster(mycatConnection);
 
 
         execute(mycatConnection, "drop table db1.travelrecord");
@@ -233,6 +266,76 @@ public class AssembleExample {
         testNormalTranscation(mycatConnection);
     }
 
+    private void initCluster(Connection mycatConnection) throws SQLException {
+        execute(mycatConnection,
+                AddDatasourceHint
+                        .create("dw0",
+                                "jdbc:mysql://127.0.0.1:3306"));
+
+        execute(mycatConnection,
+                AddDatasourceHint
+                        .create("dr0",
+                                "jdbc:mysql://127.0.0.1:3306"));
+
+        execute(mycatConnection,
+                AddDatasourceHint
+                        .create("dw1",
+                                "jdbc:mysql://127.0.0.1:3307"));
+
+        execute(mycatConnection,
+                AddDatasourceHint
+                        .create("dr1",
+                                "jdbc:mysql://127.0.0.1:3307"));
+
+        execute(mycatConnection,
+                AddClusterHint
+                        .create("c0",
+                                Arrays.asList("dw0"), Arrays.asList("dr0")));
+
+        execute(mycatConnection,
+                AddClusterHint
+                        .create("c1",
+                                Arrays.asList("dw1"), Arrays.asList("dr1")));
+    }
+
+    @Test
+    public void testInfoFunction() throws SQLException {
+        try (Connection mycatConnection = getMySQLConnection(8066)) {
+            testInfoFunction(mycatConnection);
+        }
+    }
+
+    private void testInfoFunction(Connection mycatConnection) throws SQLException {
+        // show databases
+        executeQuery(mycatConnection, "select database()");
+
+
+        // use
+        execute(mycatConnection, "USE `information_schema`;");
+        Assert.assertTrue(executeQuery(mycatConnection, "select database()").toString().contains("information_schema"));
+        execute(mycatConnection, "USE `mysql`;");
+
+        // database();
+        Assert.assertTrue(executeQuery(mycatConnection, "select database()").toString().contains("mysql"));
+
+        // VERSION()
+        Assert.assertTrue(executeQuery(mycatConnection, "select VERSION()").toString().contains("8.19"));
+
+        // LAST_INSERT_ID()
+        executeQuery(mycatConnection, "select CONNECTION_ID()");
+
+        // CURRENT_USER()
+        executeQuery(mycatConnection, "select CURRENT_USER()");
+
+        // SYSTEM_USER()
+        executeQuery(mycatConnection, "select SYSTEM_USER()");
+
+        // SESSION_USER()
+        executeQuery(mycatConnection, "select SESSION_USER()");
+
+        executeQuery(mycatConnection, "select SESSION_USER()");
+    }
+
     private void testNormalTranscation(Connection mycatConnection) throws SQLException {
         execute(mycatConnection, "CREATE DATABASE db1");
         execute(mycatConnection, "use db1");
@@ -293,250 +396,19 @@ public class AssembleExample {
         execute(connection, String.format("delete  from %s.%s", db, table));
     }
 
-    enum Cmd {
-        showSchemas("showSchemas"),
-        showTables("showTables"),
-        showClusters("showClusters"),
-        showDatasources("showDatasources"),
-        showHeartbeats("showHeartbeats"),
-        showHeartbeatStatus("showHeartbeatStatus"),
-        showReactors("showReactors"),
-        showThreadPools("showThreadPools"),
-        showNativeBackends("showNativeBackends"),
-        showConnections("showConnections"),
-        showSchedules("showSchedules"),
-        ;
-        private final String text;
-
-        Cmd(String text) {
-            this.text = text;
-        }
-
-        public String getText() {
-            return text;
-        }
-    }
-
-    public static abstract class HintBuilder {
-        final Map<String, Object> map = new HashMap<>();
-
-        public String build() {
-            return MessageFormat.format("/* ! mycat:{0}{1} */;",
-                    getCmd(),
-                    JsonUtil.toJson(map));
-        }
-
-        public abstract String getCmd();
-    }
-
-    public static class AddDatasourceHint extends HintBuilder {
-        private DatasourceConfig config;
-
-        public void setDatasourceConfig(DatasourceConfig config) {
-            this.config = config;
-        }
-
-        @Override
-        public String getCmd() {
-            return "addDatasource";
-        }
-
-        @Override
-        public String build() {
-            return MessageFormat.format("/*! mycat:{0}{1} */;",
-                    getCmd(),
-                    JsonUtil.toJson(config));
-        }
-
-        public static String create(DatasourceConfig config) {
-            AddDatasourceHint addDatasourceHint = new AddDatasourceHint();
-            addDatasourceHint.setDatasourceConfig(config);
-            return addDatasourceHint.build();
-        }
-
-        public static String create(
-                String name,
-                String url
-        ) {
-            return create(name, "root", "123456", url);
-        }
-
-        public static String create(
-                String name,
-                String user,
-                String password,
-                String url
-        ) {
-            DatasourceConfig datasourceConfig = new DatasourceConfig();
-            datasourceConfig.setName(name);
-            datasourceConfig.setUrl(url);
-            datasourceConfig.setPassword(password);
-            datasourceConfig.setUser(user);
-            datasourceConfig.setPassword(password);
-            return create(datasourceConfig);
-        }
-    }
-
-    public static class AddClusterHint extends HintBuilder {
-        private ClusterConfig config;
-
-        public static String create(String name, List<String> dsNames, List<String> ss) {
-            ClusterConfig clusterConfig = new ClusterConfig();
-            clusterConfig.setName(name);
-            clusterConfig.setMasters(dsNames);
-            clusterConfig.setReplicas(ss);
-
-            AddClusterHint addClusterHint = new AddClusterHint();
-            addClusterHint.setConfig(clusterConfig);
-
-            return addClusterHint.build();
-        }
 
 
-        public void setConfig(ClusterConfig config) {
-            this.config = config;
-        }
 
-        @Override
-        public String getCmd() {
-            return "addCluster";
-        }
 
-        @Override
-        public String build() {
-            return MessageFormat.format("/*! mycat:{0}{1} */;",
-                    getCmd(),
-                    JsonUtil.toJson(config));
-        }
 
-        public static AddClusterHint create(ClusterConfig clusterConfig) {
-            AddClusterHint addClusterHint = new AddClusterHint();
-            addClusterHint.setConfig(clusterConfig);
-            return addClusterHint;
-        }
-    }
 
-    public static class ShowSchemasHint extends HintBuilder {
-        public void setSchemaName(String name) {
-            map.put("schemaName", name);
-        }
 
-        @Override
-        public String getCmd() {
-            return "showSchemas";
-        }
-    }
 
-    public static class ShowTablesHint extends HintBuilder {
-        public void setGlobalType() {
-            setType("global");
-        }
 
-        public void setShardingType() {
-            setType("sharding");
-        }
 
-        public void setNormalType() {
-            setType("normal");
-        }
 
-        public void setCustomType() {
-            setType("custom");
-        }
 
-        public void setType(String name) {
-            map.put("type", name);
-        }
 
-        public void setSchemaName(String name) {
-            map.put("schemaName", name);
-        }
-
-        @Override
-        public String getCmd() {
-            return "showTables";
-        }
-    }
-
-    public static class ShowClustersHint extends HintBuilder {
-
-        public void setName(String name) {
-            map.put("name", name);
-        }
-
-        @Override
-        public String getCmd() {
-            return "showClusters";
-        }
-    }
-
-    public static class showDatasourcesHint extends HintBuilder {
-
-        public void setName(String name) {
-            map.put("name", name);
-        }
-
-        @Override
-        public String getCmd() {
-            return "showDatasources";
-        }
-    }
-
-    public static class ShowHeartbeatsHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showHeartbeats";
-        }
-    }
-
-    public static class showHeartbeatStatusHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showHeartbeatStatus";
-        }
-    }
-
-    public static class ShowInstanceHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showInstances";
-        }
-    }
-
-    public static class ShowReactorsHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showReactors";
-        }
-    }
-
-    public static class ShowThreadPoolHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showThreadPools";
-        }
-    }
-
-    public static class ShowNativeBackendHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showNativeBackends";
-        }
-    }
-
-    public static class ShowConnectionsHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showConnections";
-        }
-    }
-
-    public static class ShowSchedulesHint extends HintBuilder {
-        @Override
-        public String getCmd() {
-            return "showSchedules";
-        }
-    }
 
     private void execute(Connection mySQLConnection, String sql) throws SQLException {
         JdbcUtils.execute(mySQLConnection, sql);

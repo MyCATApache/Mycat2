@@ -15,7 +15,8 @@ public class MycatContext {
         return CONTEXT.get().getVariable(true,name);
     }
     public String getDatabase(){
-        return CONTEXT.get().getDefaultSchema();
+        MycatDataContext mycatDataContext = CONTEXT.get();
+        return mycatDataContext.getDefaultSchema();
     }
     public Long getLastInsertId(){
         return CONTEXT.get().getLastInsertId();

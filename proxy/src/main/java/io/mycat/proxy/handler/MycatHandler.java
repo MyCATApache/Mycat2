@@ -51,7 +51,9 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
             if (processState == ProcessState.READY) {
                 if (resolver.readFromChannel()) {
                     mycat.clearReadWriteOpts();
-                    CommandResolver.handle(mycat, resolver.getPayload(),new ThreadModeCommandHanlderImpl( mycat.getCommandHandler()));
+
+                        CommandResolver.handle(mycat, resolver.getPayload(),new ThreadModeCommandHanlderImpl( mycat.getCommandHandler()));
+
                     return;
                 } else {
                     return;

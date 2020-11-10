@@ -82,7 +82,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private byte packetId = 0;
     private final ArrayDeque<NIOJob> delayedNioJobs = new ArrayDeque<>();
 
-    private boolean gracefulShutdowning = false;
 
     public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
                         SessionManager<MycatSession> sessionManager,
@@ -114,22 +113,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public void onHandlerFinishedClear() {
         resetPacket();
         setResponseFinished(ProcessState.READY);
-        if (!isInTransaction() || !isBindMySQLSession()) {
-            //todo
-//            if (getRuntime().isGracefulShutdown() && gracefulShutdowning == false) {
-//                gracefulShutdowning = true;
-//                this.close(true, "gracefulShutdown");
-//                return;
-//            }
-        }
-        switch (this.writeHandler.getType()) {
-            case SERVER:
-                this.change2ReadOpts();
-                break;
-            case PROXY:
-                this.change2ReadOpts();
-                break;
-        }
+        this.change2ReadOpts();
     }
 
     public MySQLIsolation getIsolation() {
@@ -235,27 +219,14 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.dataContext.setAffectedRows(affectedRows);
     }
 
-
-    @Override
-    public Queue<ByteBuffer> writeQueue() {
-        return writeQueue;
-    }
-
-    ByteBuffer lastWritePacket;
-
-    @Override
-    public ByteBuffer lastWritePacket() {
-        return lastWritePacket;
-    }
-
-    @Override
-    public void setLastWritePacket(ByteBuffer buffer) {
-        this.lastWritePacket = buffer;
-    }
-
     @Override
     public CrossSwapThreadBufferPool writeBufferPool() {
         return this.crossSwapThreadBufferPool;
+    }
+
+    @Override
+    public LinkedTransferQueue<ByteBuffer> writeQueue() {
+        return writeQueue;
     }
 
     @Override
@@ -382,7 +353,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public void writeToChannel() throws IOException {
+    public  void writeToChannel() throws IOException {
         try {
             writeHandler.writeToChannel(this);
         } catch (Exception e) {

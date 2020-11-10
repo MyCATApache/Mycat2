@@ -20,6 +20,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class ResponseExecutorImplementor extends ExecutorImplementorImpl implements ExecutorImplementor {
     protected final Response response;
@@ -48,7 +49,10 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
 
     @Override
     public void implementRoot(MycatRel rel) {
-        Executor executor = rel.implement(this);
+        Objects.requireNonNull(rel);
+        Executor executor = Objects.requireNonNull(
+                rel.implement(this)
+        );
         try {
             if (executor instanceof MycatInsertExecutor) {
                 MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;

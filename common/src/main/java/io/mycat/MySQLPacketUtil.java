@@ -215,10 +215,10 @@ public class MySQLPacketUtil {
     final int payloayEstimateMaxSize = generateBinaryRowHeader(rows, nullMap);
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(payloayEstimateMaxSize)) {
       writer.write(00);
-      writer.writeLenencString(nullMap);
+      writer.write(nullMap);
       for (byte[] row : rows) {
         if (row != null) {
-          writer.writeLenencString(row);
+          writer.write(row);
         }
       }
       return writer.toByteArray();

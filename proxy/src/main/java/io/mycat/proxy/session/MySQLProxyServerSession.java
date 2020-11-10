@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
 
 /**
  * @author jamie12221 date 2019-05-08 00:06
@@ -26,17 +27,14 @@ import java.util.Queue;
  * mysql server session 该接口实现服务器模式
  **/
 public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T>, Session<T> {
-     static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
+
     CrossSwapThreadBufferPool writeBufferPool();
 
     /**
      * 前端写入队列
      */
-    Queue<ByteBuffer> writeQueue();
-
-    ByteBuffer lastWritePacket();
-
-    void setLastWritePacket(ByteBuffer buffer);
+    LinkedTransferQueue<ByteBuffer> writeQueue();
 
     /**
      * mysql 报文头 辅助buffer
@@ -60,47 +58,10 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         //@ ServerTransactionSessionRunner
         try {
             switchMySQLServerWriteHandler();
-            setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             Queue<ByteBuffer> byteBuffers = writeQueue();
-            if (!end) {
-                while (!byteBuffers.offer(buffer)) {//never loop
-                }
-            }
-            if (!end) {
-                if (writeMySQLPacket(this, byteBuffers)) {
-                    return;
-                }
-            } else {
-                MycatSession session = (MycatSession) this;
-                setLastWritePacket(buffer);
-                if (session.isIOThreadMode()) {
-                    writeToChannel();
-                } else {
-                    LOGGER.debug("onLastPacket sessionId:{}", sessionId());
-                    session.addDelayedNioJob(new NIOJob() {
-                        @Override
-                        public void run(ReactorEnvThread reactor) throws Exception {
-                            if (session.lastWritePacket() != null) {
-                                writeToChannel();
-                            } else {
-                                LOGGER.debug("no response data , may be it is longdata sessionId:{}", sessionId());
-                            }
-                        }
-
-                        @Override
-                        public void stop(ReactorEnvThread reactor, Exception reason) {
-                            session.setLastMessage(reason);
-                            session.writeErrorEndPacketBySyncInProcessError();
-                        }
-
-                        @Override
-                        public String message() {
-                            return "writeLastPacket";
-                        }
-                    });
-                }
-                //在线程处理结束的时候,向IO Thread添加添加任务 onLastPacket ServerTransactionSessionRunner
-            }
+            byteBuffers.offer(buffer);
+            change2WriteOpts();
+            setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
         }
@@ -164,7 +125,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     /**
      * 前端写入处理器
      */
-   public static enum WriteHandler implements MycatSessionWriteHandler {
+    public static enum WriteHandler implements MycatSessionWriteHandler {
         INSTANCE;
 
         @Override
@@ -174,12 +135,13 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                     throw new AssertionError();
                 }
                 Queue<ByteBuffer> byteBuffers = session.writeQueue();
-                if (writeMySQLPacket(session, byteBuffers)) {
+                writeMySQLPacket(session, byteBuffers);
+                if (byteBuffers.isEmpty() && session.getProcessState() == ProcessState.DONE) {
+                    session.writeFinished(session);
+                    session.change2ReadOpts();
+                } else {
                     session.change2WriteOpts();
                     return;
-                }
-                if (session.lastWritePacket() != null) {
-                    writeLastPacket(session);
                 }
             } catch (Exception e) {
                 onException(session, e);
@@ -201,10 +163,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 bufPool.recycle(byteBuffer);
             }
             session.writeQueue().clear();
-            if (session.lastWritePacket()!=null){
-                bufPool.recycle(session.lastWritePacket());
-            }
-
         }
 
         @Override
@@ -213,23 +171,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         }
 
     }
-
-    static void writeLastPacket(MycatSession mycat) throws IOException {
-        mycat.switchMySQLServerWriteHandler();
-        Queue<ByteBuffer> byteBuffers = mycat.writeQueue();
-        byteBuffers.add(mycat.lastWritePacket());
-        mycat.setLastWritePacket(null);
-        while (writeMySQLPacket(mycat, byteBuffers)) {
-
-        }
-        LOGGER.info("------------has response--------------:" + mycat.sessionId());
-        byteBuffers.clear();
-        mycat.writeFinished(mycat);
-        mycat.change2ReadOpts();
-    }
-
-    ByteBuffer END_PACKET = ByteBuffer.allocate(0);
-
 
     /**
      * @param session

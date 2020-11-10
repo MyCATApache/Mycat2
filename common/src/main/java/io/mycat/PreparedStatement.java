@@ -23,11 +23,15 @@
  */
 package io.mycat;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.*;
+import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.parser.ParserException;
 import lombok.SneakyThrows;
@@ -124,17 +128,28 @@ public class PreparedStatement {
 
     /**
      * 组装sql语句,替换动态参数为实际参数值
+     *
      * @param values
      */
     public String getSqlByBindValue(BindValue[] values) {
         SQLStatement sqlStatement = getSQLStatementByBindValue(values);
         return sqlStatement.toString();
     }
+
     public SQLStatement getSQLStatementByBindValue(BindValue[] values) {
-        if (this.bindValues != values){
+        if (this.bindValues != values) {
             throw new AssertionError();
         }
-        SQLStatement sqlStatement = statement.clone();
+        SQLStatement sqlStatement;
+        if (statement instanceof SQLSelectStatement ||
+                statement instanceof SQLInsertStatement ||
+                statement instanceof SQLUpdateStatement ||
+                statement instanceof SQLDeleteStatement) {
+            sqlStatement= statement.clone();
+        }else {
+            sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
+        }
+
         sqlStatement.accept(new MySqlASTVisitorAdapter() {
             int index;
 
@@ -156,6 +171,7 @@ public class PreparedStatement {
         });
         return sqlStatement;
     }
+
     public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
         if (o == null) {
             return new SQLNullExpr();
@@ -183,6 +199,7 @@ public class PreparedStatement {
 
         throw new ParserException("not support class : " + o.getClass());
     }
+
     public static SQLExpr fromJavaObject(Object o) {
         return fromJavaObject(o, null);
     }
