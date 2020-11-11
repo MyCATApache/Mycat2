@@ -231,9 +231,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
         while (rowIterator.hasNext()) {
             byte[] row = rowIterator.next();
-            String dump = ByteUtil.dump(row, 0, row.length);
             session.writeBytes(row, false);
-            System.out.println(dump);
         }
         session.writeRowEndPacket(moreResultSet, false);
     }
