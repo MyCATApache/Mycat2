@@ -19,8 +19,6 @@ import io.mycat.util.Dumper;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class HeapBufferPool implements BufferPool {
 
@@ -28,55 +26,29 @@ public class HeapBufferPool implements BufferPool {
     private int pageSize;
     private int pageCount;
 
-    public final static String CHUNK_SIZE = "chunkSize";
-    public final static String PAGE_SIZE = "pageSize";
-    public final static String PAGE_COUNT = "pageCount";
-
-    private final AtomicInteger trace = new AtomicInteger(0);
-
-    @Override
-    public void init(Map<String, String> args) {
-        String chunkSizeText = args.get(CHUNK_SIZE);
-        String pageSizeText = args.get(PAGE_SIZE);
-        String pageCountText = args.get(PAGE_COUNT);
-
-        if (chunkSizeText == null) {
-            this.chunkSize = 8192;
-        } else {
-            this.chunkSize = Integer.parseInt(chunkSizeText);
-        }
-
-//        this.chunkSize = Integer.parseInt(chunkSizeText);
-//        this.pageSize = Integer.parseInt(pageSizeText);
-//        this.pageCount = Integer.parseInt(pageCountText);
-    }
-
     @Override
     public ByteBuffer allocate() {
-        trace.incrementAndGet();
         return ByteBuffer.allocate(chunkSize);
     }
 
     @Override
     public ByteBuffer allocate(int size) {
-        trace.incrementAndGet();
         return ByteBuffer.allocate(size);
     }
 
     @Override
     public ByteBuffer allocate(byte[] bytes) {
-        trace.incrementAndGet();
         return ByteBuffer.wrap(Arrays.copyOf(bytes, bytes.length));
     }
 
     @Override
     public int trace() {
-        return trace.get();
+        return 0;
     }
 
     @Override
     public void recycle(ByteBuffer theBuf) {
-        trace.decrementAndGet();
+
     }
 
     @Override
@@ -91,6 +63,6 @@ public class HeapBufferPool implements BufferPool {
 
     @Override
     public Dumper snapshot() {
-        return Dumper.create().addText("chunkSize",chunkSize).addText("trace",trace.get());
+        return Dumper.create().addText("chunkSize",chunkSize).addText("trace",0);
     }
 }

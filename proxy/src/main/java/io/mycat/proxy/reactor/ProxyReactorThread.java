@@ -15,6 +15,7 @@
 package io.mycat.proxy.reactor;
 
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.ReactorBufferPool;
 import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.session.Session;
@@ -46,7 +47,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyReactorThread.class);
     protected final FrontSessionManager<T> frontManager;
     protected Selector selector;
-    protected final BufferPool bufPool;
+    protected final ReactorBufferPool bufPool;
     protected Session session;
     protected volatile boolean prepareStop = false;
 
@@ -59,7 +60,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     /////////////////////////
 
     @SuppressWarnings("unchecked")
-    public ProxyReactorThread(BufferPool bufPool, FrontSessionManager<T> sessionMan)
+    public ProxyReactorThread(ReactorBufferPool bufPool, FrontSessionManager<T> sessionMan)
             throws IOException {
         this.bufPool = bufPool;
         this.selector = Selector.open();
@@ -87,7 +88,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
             public void run(ReactorEnvThread reactor) {
                 try {
                     frontManager
-                            .acceptNewSocketChannel(keyAttachement, bufPool,
+                            .acceptNewSocketChannel(keyAttachement, bufPool.newSessionBufferPool(),
                                     selector, socketChannel);
                 } catch (Exception e) {
                     LOGGER.warn("Register new connection error", e);

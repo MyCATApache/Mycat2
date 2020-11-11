@@ -1,3 +1,4 @@
+
 package io.mycat.buffer;
 
 import org.slf4j.Logger;
@@ -8,24 +9,21 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * DirectByteBuffer池，可以分配任意指定大小的DirectByteBuffer，用完需要归还
  * DirectByteBufferPool
  *
  * @author wuzhih
  * @author zagnix
  */
 @SuppressWarnings("restriction")
-public class DirectByte16BufferPool {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DirectByte16BufferPool.class);
-    public static final String LOCAL_BUF_THREAD_PREX = "$_";
+public class MycatDirectByteBufferPool {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatDirectByteBufferPool.class);
     private ByteBufferPage[] allPages;
     private final int chunkSize;
-    // private int prevAllocatedPage = 0;
     private AtomicLong prevAllocatedPage;
     private final int pageSize;
-    private final int pageCount;
+    private final short pageCount;
 
-    public DirectByte16BufferPool(int pageSize, int chunkSize, int pageCount) {
+    public MycatDirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];
         this.chunkSize = chunkSize;
         this.pageSize = pageSize;
@@ -34,24 +32,6 @@ public class DirectByte16BufferPool {
         for (int i = 0; i < pageCount; i++) {
             allPages[i] = new ByteBufferPage(ByteBuffer.allocateDirect(pageSize), chunkSize);
         }
-    }
-
-    /**
-     * TODO 当页不够时，考虑扩展内存池的页的数量...........
-     *
-     * @param  buffer
-     * @return ByteBuffer
-     */
-    public ByteBuffer expandBuffer(ByteBuffer buffer) {
-        int oldCapacity = buffer.capacity();
-        int newCapacity = oldCapacity << 1;
-        ByteBuffer newBuffer = allocate(newCapacity);
-        int newPosition = buffer.position();
-        buffer.flip();
-        newBuffer.put(buffer);
-        newBuffer.position(newPosition);
-        recycle(buffer);
-        return newBuffer;
     }
 
     public ByteBuffer allocate() {
@@ -73,8 +53,17 @@ public class DirectByte16BufferPool {
         return byteBuf;
     }
 
+
+    public ByteBuffer allocate(byte[] bytes) {
+        ByteBuffer allocate = allocate(bytes.length);
+        allocate.put(bytes);
+        allocate.position(0);
+        allocate.limit(bytes.length);
+        return allocate;
+    }
+
     public void recycle(ByteBuffer theBuf) {
-        if (!(theBuf instanceof DirectBuffer)) {
+        if (!(theBuf.isDirect())) {
             theBuf.clear();
             return;
         }
@@ -124,10 +113,15 @@ public class DirectByte16BufferPool {
      * @return long
      */
     public long size() {
+        long usage = usage();
+        return this.capacity() - usage;
+    }
+
+    public long usage() {
         long usage = 0L;
         for (ByteBufferPage page : allPages) {
             usage += page.getUsage();
         }
-        return this.capacity() - usage;
+        return usage;
     }
 }

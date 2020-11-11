@@ -8,9 +8,6 @@ manager:
   port: 9066
   users: []
 server:
-  bufferPool:
-    args: {}
-    poolName: null
   contextPool: {corePoolSize: 0, keepAliveTime: 1, maxPendingLimit: 65535, maxPoolSize: 512,
                 taskTimeout: 1, timeUnit: MINUTES}
   handlerName: null

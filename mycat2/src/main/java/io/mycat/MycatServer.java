@@ -3,7 +3,9 @@ package io.mycat;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.buffer.HeapBufferPool;
+import io.mycat.buffer.ReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider;
@@ -86,8 +88,6 @@ public class MycatServer {
             return;
         }
         List<MycatReactorThread> list = new ArrayList<>(1);
-        BufferPool bufferPool = new HeapBufferPool();
-        bufferPool.init(Collections.emptyMap());
         Function<MycatSession, CommandDispatcher> function = session -> {
             try {
                 CommandDispatcher commandDispatcher = new ManagerCommandDispatcher();
@@ -97,8 +97,18 @@ public class MycatServer {
                 throw new RuntimeException(e);
             }
         };
+
+        int bufferPoolPageSize = 1024 * 1024 * 2;
+        short bufferPoolChunkSize = 8192;
+        short bufferPoolPageNumber = (short) (Runtime.getRuntime().maxMemory() * 0.8 / bufferPoolPageSize);
         Map<String, UserConfig> userConfigMap = users.stream().collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
-        MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function,
+
+        Map<String, Object> bufferConfig = new HashMap<>();
+        bufferConfig.put("pageSize", bufferPoolPageSize);
+        bufferConfig.put("chunkSize", bufferPoolChunkSize);
+        bufferConfig.put("pageCount", bufferPoolPageNumber);
+
+        MycatReactorThread thread = new MycatReactorThread(new DefaultReactorBufferPool(bufferConfig), new MycatSessionManager(function,
                 new AuthenticatorImpl(userConfigMap),
                 this.transcationFactoryMap,
                 this.mycatContextThreadPool));
@@ -111,17 +121,18 @@ public class MycatServer {
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
 
-        String bufferPoolText = Optional.ofNullable(serverConfig).map(i -> i.getBufferPool()).map(i -> i.getPoolName()).orElse(HeapBufferPool.class.getName());
+
         String handlerConstructorText = Optional.ofNullable(serverConfig).map(i -> i.getHandlerName()).orElse(DefaultCommandHandler.class.getName());
 
-        Constructor<?> bufferPoolConstructor = getConstructor(bufferPoolText);
+
+        DefaultReactorBufferPool defaultReactorBufferPool = new DefaultReactorBufferPool(Optional
+                .ofNullable(serverConfig).map(i -> i.getBufferPool()).map(i -> i.getArgs()).orElse(BufferPoolConfig.defaultValue()));
+
         Constructor<?> handlerConstructor = getConstructor(handlerConstructorText);
 
-        int reactorNumber = serverConfig.getReactorNumber();
+        int reactorNumber = Optional.ofNullable(serverConfig).map(i -> i.getReactorNumber()).orElse(1);
         List<MycatReactorThread> list = new ArrayList<>(reactorNumber);
         for (int i = 0; i < reactorNumber; i++) {
-            BufferPool bufferPool = (BufferPool) bufferPoolConstructor.newInstance();
-            bufferPool.init(serverConfig.getBufferPool().getArgs());
             Function<MycatSession, CommandDispatcher> function = session -> {
                 try {
                     CommandDispatcher commandDispatcher = (CommandDispatcher) handlerConstructor.newInstance();
@@ -131,7 +142,7 @@ public class MycatServer {
                     throw new RuntimeException(e);
                 }
             };
-            MycatReactorThread thread = new MycatReactorThread(new ProxyBufferPoolMonitor(bufferPool), new MycatSessionManager(function, authenticator, transcationFactoryMap, mycatContextThreadPool));
+            MycatReactorThread thread = new MycatReactorThread(defaultReactorBufferPool, new MycatSessionManager(function, authenticator, transcationFactoryMap, mycatContextThreadPool));
             thread.start();
             list.add(thread);
         }

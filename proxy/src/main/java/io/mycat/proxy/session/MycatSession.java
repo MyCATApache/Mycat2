@@ -67,7 +67,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private final ByteBuffer header = ByteBuffer.allocate(4);//gc
     private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
     //  private final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);//clearQueue
-    private final CrossSwapThreadBufferPool crossSwapThreadBufferPool;
+    private final BufferPool crossSwapThreadBufferPool;
 
 
     /**
@@ -89,8 +89,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
                                 MycatContextThreadPool mycatContextThreadPool) {
         super(sessionId, nioHandler, sessionManager);
         this.proxyBuffer = new ProxyBufferImpl(bufferPool);
-        this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(
-                bufferPool);
+        this.crossSwapThreadBufferPool = bufferPool;
 
         this.processState = ProcessState.READY;
         this.frontResolver = new FrontMySQLPacketResolver(bufferPool, this);
@@ -164,16 +163,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
             setLastMessage(hint);
         }
         assert hint != null;
-        try {
-            if (crossSwapThreadBufferPool != null) {
-                SessionThread source = crossSwapThreadBufferPool.getSource();
-                if (source != null) {
-                    source.setCurSession(null);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("", e);
-        }
+
         try {
             MySQLClientSession sqlSession = getMySQLSession();
             if (sqlSession != null) {
@@ -220,7 +210,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     @Override
-    public CrossSwapThreadBufferPool writeBufferPool() {
+    public BufferPool writeBufferPool() {
         return this.crossSwapThreadBufferPool;
     }
 
@@ -444,26 +434,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public MycatSessionWriteHandler getWriteHandler() {
         return writeHandler;
     }
-
-    /**
-     * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
-     */
-    public void deliverWorkerThread(SessionThread thread) {
-        LOGGER.info("{}", thread);
-        crossSwapThreadBufferPool.bindSource(thread);
-        assert thread == Thread.currentThread();
-    }
-
-    /**
-     * 业务线程执行结束,清除业务线程的session,并代表处理结束
-     */
-    @Override
-    public void backFromWorkerThread() {
-        Thread thread = Thread.currentThread();
-        assert getIOThread() != thread && thread instanceof SessionThread;
-        writeBufferPool().bindSource(null);
-    }
-
 
     public FrontMySQLPacketResolver getMySQLPacketResolver() {
         return frontResolver;

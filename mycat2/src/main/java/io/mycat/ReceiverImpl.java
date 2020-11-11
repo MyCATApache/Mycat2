@@ -114,4 +114,15 @@ public class ReceiverImpl implements Response {
         session.setAffectedRows(affectedRow);
         sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
     }
+
+    @Override
+    public <T> T unWrapper(Class<T> clazz) {
+        if(MycatSession.class == clazz){
+            return clazz.cast(session);
+        }
+        if(SQLExecuterWriter.class == clazz){
+            return clazz.cast(sqlExecuterWriter);
+        }
+        return null;
+    }
 }

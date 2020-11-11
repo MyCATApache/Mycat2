@@ -6,8 +6,6 @@ import io.mycat.*;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.client.MycatRequest;
-import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
@@ -35,7 +33,6 @@ import java.sql.JDBCType;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,6 +56,14 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("showBufferUsage".equalsIgnoreCase(cmd)) {
+                    ResultSetBuilder builder = ResultSetBuilder.create();
+                    builder.addColumnInfo("bufferUsage", JDBCType.BIGINT);
+                    MycatSession mycatSession = response.unWrapper(MycatSession.class);
+                    builder.addObjectRowPayload(Arrays.asList(mycatSession.writeBufferPool().trace()));
+                    response.sendResultSet(() -> builder.build());
+                    return;
+                }
 
                 if ("showSchemas".equalsIgnoreCase(cmd)) {
                     Map map = JsonUtil.from(body, Map.class);
@@ -82,6 +87,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         builder.addObjectRowPayload(Arrays.asList(SCHEMA_NAME, DEFAULT_TARGET_NAME, TABLE_NAMES));
                     }
                     response.sendResultSet(() -> builder.build());
+                    return;
                 }
 
                 if ("showTables".equalsIgnoreCase(cmd)) {

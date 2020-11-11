@@ -16,7 +16,7 @@ public class Dumper {
         return new Dumper();
     }
 
-    public static Dumper create(Map<String, String> map) {
+    public static Dumper create(Map<String, Object> map) {
         if (map == null) {
             return create();
         }

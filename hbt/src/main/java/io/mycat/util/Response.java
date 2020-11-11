@@ -41,4 +41,6 @@ public interface Response {
     }
 
     void sendOk(long lastInsertId, long affectedRow);
+
+    <T> T unWrapper(Class<T> clazz);
 }

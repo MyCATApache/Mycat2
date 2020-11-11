@@ -29,7 +29,7 @@ import java.util.concurrent.LinkedTransferQueue;
 public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T>, Session<T> {
     static final Logger LOGGER = LoggerFactory.getLogger(MySQLProxyServerSession.class);
 
-    CrossSwapThreadBufferPool writeBufferPool();
+    BufferPool writeBufferPool();
 
     /**
      * 前端写入队列
@@ -71,12 +71,8 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 写入payload
      */
     default void writeBytes(byte[] payload, boolean end) {
-        ByteBuffer buffer = ByteBuffer.wrap(payload);
-        writeBytes(buffer, end);
+        writeBytes(writeBufferPool().allocate(payload), end);
     }
-
-    void backFromWorkerThread();
-
 
     default void writeErrorEndPacketBySyncInProcessError() {
         writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);

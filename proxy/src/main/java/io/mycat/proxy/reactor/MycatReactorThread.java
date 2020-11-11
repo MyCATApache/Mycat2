@@ -15,6 +15,7 @@
 package io.mycat.proxy.reactor;
 
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.ReactorBufferPool;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLProxyServerSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -36,7 +37,7 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 
   private final MySQLSessionManager mySQLSessionManager;
 
-  public MycatReactorThread(BufferPool bufPool, FrontSessionManager<MycatSession> sessionManager)
+  public MycatReactorThread(ReactorBufferPool bufPool, FrontSessionManager<MycatSession> sessionManager)
       throws IOException {
     super(bufPool, sessionManager);
     this.mySQLSessionManager  = new MySQLSessionManager();

@@ -34,10 +34,6 @@ public final class ProxyBufferPoolMonitor implements BufferPool {
         this.bufferPool = bufferPool;
     }
 
-    @Override
-    public void init(Map<String, String> args) {
-
-    }
 
     @Override
     public ByteBuffer allocate() {
