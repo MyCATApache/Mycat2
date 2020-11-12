@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * @author Junwen Chen
  **/
-public class MycatImplementor extends RelToSqlConverter  {
+public class MycatImplementor extends RelToSqlConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
     private final List<Object> params;
 
@@ -57,7 +57,7 @@ public class MycatImplementor extends RelToSqlConverter  {
                 return super.visit(e);
             }
         } catch (Throwable e1) {
-            LOGGER.error("",e1);
+            LOGGER.error("", e1);
             return null;
         }
 
@@ -85,7 +85,7 @@ public class MycatImplementor extends RelToSqlConverter  {
             Result x = visitChild(0, e.getInput());
             final Builder builder =
                     x.builder(e, Clause.SELECT);
-            builder.setSelect(new SqlNodeList(Collections.singleton(SqlLiteral.createNull(POS)), POS));
+            builder.setSelect(new SqlNodeList(Collections.singleton(SqlLiteral.createApproxNumeric("1",POS)), POS));
             return builder.result();
         }
         return super.visit(e);
@@ -117,24 +117,26 @@ public class MycatImplementor extends RelToSqlConverter  {
     @Override
     public Result visit(Sort e) {
         RexNode fetch = e.fetch;
-        if (fetch!=null&&fetch.getKind()==SqlKind.PLUS){
+        if (fetch != null && fetch.getKind() == SqlKind.PLUS) {
             RexCall fetch1 = (RexCall) fetch;
-            if (!params.isEmpty()){
+            if (!params.isEmpty()) {
                 List<RexNode> operands = fetch1.getOperands();
                 RexNode offsetRexNode = operands.get(0);
                 RexNode limitRexNode = operands.get(1);
-                if (offsetRexNode instanceof RexDynamicParam&&limitRexNode instanceof RexDynamicParam){
-                    RexDynamicParam left = (RexDynamicParam)operands.get(0);
-                    RexDynamicParam right =  (RexDynamicParam)operands.get(1);
+                if (offsetRexNode instanceof RexDynamicParam && limitRexNode instanceof RexDynamicParam) {
+                    RexDynamicParam left = (RexDynamicParam) operands.get(0);
+                    RexDynamicParam right = (RexDynamicParam) operands.get(1);
                     Number first = (Number) params.get(left.getIndex());
                     Number second = (Number) params.get(right.getIndex());
-                e = computeSortFetch(e, first, second);
-            }
-            }else {
+                    e = computeSortFetch(e, first, second);
+                } else if (offsetRexNode instanceof RexLiteral && limitRexNode instanceof RexLiteral) {
+                    e = computeSortFetch(e, ((RexLiteral) offsetRexNode).getValueAs(Long.class), ((RexLiteral) limitRexNode).getValueAs(Long.class));
+                }
+            } else {
                 List<RexNode> operands = fetch1.getOperands();
-                RexLiteral offsetRexNode = (RexLiteral)operands.get(0);
-                RexLiteral limitRexNode =(RexLiteral) operands.get(1);
-                e = computeSortFetch(e, ((Number) offsetRexNode.getValue()).longValue() ,  ((Number) limitRexNode.getValue()).longValue());
+                RexLiteral offsetRexNode = (RexLiteral) operands.get(0);
+                RexLiteral limitRexNode = (RexLiteral) operands.get(1);
+                e = computeSortFetch(e, ((Number) offsetRexNode.getValue()).longValue(), ((Number) limitRexNode.getValue()).longValue());
             }
 
         }
@@ -143,8 +145,8 @@ public class MycatImplementor extends RelToSqlConverter  {
 
     private Sort computeSortFetch(Sort e, Number first, Number second) {
         RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-        e = e.copy(e.getTraitSet(),e.getInput(),e.getCollation(),e.offset,rexBuilder.makeExactLiteral(
-                BigDecimal.valueOf(first.longValue()+second.longValue())));
+        e = e.copy(e.getTraitSet(), e.getInput(), e.getCollation(), e.offset, rexBuilder.makeExactLiteral(
+                BigDecimal.valueOf(first.longValue() + second.longValue())));
         return e;
     }
 }

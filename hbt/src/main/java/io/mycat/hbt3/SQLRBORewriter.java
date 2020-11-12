@@ -339,7 +339,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
             } else if (sort.offset != null && sort.fetch == null) {
                 rexNode = sort.offset;
             } else {
-                rexNode = rexBuilder.makeCall(SqlStdOperatorTable.PLUS, sort.offset, sort.fetch);
+                if (sort.offset instanceof RexLiteral && sort.fetch instanceof RexLiteral) {
+                    BigDecimal decimal = ((RexLiteral) sort.offset).getValueAs(BigDecimal.class).add(
+                            ((RexLiteral) sort.fetch).getValueAs(BigDecimal.class));
+                    rexNode = rexBuilder.makeExactLiteral(decimal);
+                } else {
+                    rexNode = rexBuilder.makeCall(SqlStdOperatorTable.PLUS, sort.offset, sort.fetch);
+                }
             }
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)

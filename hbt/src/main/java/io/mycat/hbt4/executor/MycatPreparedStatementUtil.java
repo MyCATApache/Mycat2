@@ -20,44 +20,51 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hbt4.Group;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MycatPreparedStatementUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatPreparedStatementUtil.class);
+
     public static void collect(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
-//
-//            @Override
-//            public boolean visit(SQLOrderBy x) {
-//                try {
-//                    this.parameterized = false;
-//                    return super.visit(x);
-//                } finally {
-//                    this.parameterized = true;
-//                }
-//            }
-//            @Override
-//            public boolean visit(SQLLimit x) {
-//                try {
-//                    this.parameterized = false;
-//                    return super.visit(x);
-//                } finally {
-//                    this.parameterized = true;
-//                }
-//            }
-//
-//
-//            @Override
-//            public boolean visit(SQLSelectItem x) {
-//                try {
-//                    this.parameterized = false;
-//                    return super.visit(x);
-//                } finally {
-//                    this.parameterized = true;
-//                }
-//            }
+
+            @Override
+            public boolean visit(SQLOrderBy x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
+
+            @Override
+            public boolean visit(SQLLimit x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
+
+
+            @Override
+            public boolean visit(SQLSelectItem x) {
+                try {
+                    this.parameterized = false;
+                    return super.visit(x);
+                } finally {
+                    this.parameterized = true;
+                }
+            }
         };
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
@@ -73,12 +80,12 @@ public class MycatPreparedStatementUtil {
         sqlStatement.accept(parameterVisitor);
     }
 
-    public static void collect2(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
+    public static void outputToParameters(SQLStatement sqlStatement, StringBuilder sb, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
 
         };
         parameterVisitor.setShardingSupport(false);
-        parameterVisitor.setInputParameters(inputParameters);
+        parameterVisitor.setInputParameters(Collections.emptyList());
         sqlStatement.accept(parameterVisitor);
     }
 
@@ -161,8 +168,13 @@ public class MycatPreparedStatementUtil {
         if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
             MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
         }
-        ResultSet resultSet = preparedStatement.executeQuery();
-        return new JdbcRowBaseIterator(calciteRowMetaData, preparedStatement, resultSet, null, sql);
+        try {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return new JdbcRowBaseIterator(calciteRowMetaData, preparedStatement, resultSet, null, sql);
+        } catch (Throwable throwable) {
+            LOGGER.error("sql:{} {}", sql, (params).toString(), throwable);
+            throw throwable;
+        }
     }
 
 }

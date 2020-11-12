@@ -4,18 +4,14 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlFlashbackStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
-import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
@@ -24,7 +20,6 @@ import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.Group;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
-import io.mycat.metadata.MetadataManager;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -35,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -147,7 +141,7 @@ public class MycatInsertExecutor implements Executor {
 
             List<Object> outParams = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
-            MycatPreparedStatementUtil.collect2(template, sb, Collections.emptyList(), outParams);
+            MycatPreparedStatementUtil.outputToParameters(template, sb, outParams);
             String sql = sb.toString();
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
