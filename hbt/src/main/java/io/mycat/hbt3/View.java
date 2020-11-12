@@ -16,6 +16,7 @@ package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
@@ -38,8 +39,12 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.util.SqlString;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 
 public class View extends AbstractRelNode implements MycatRel {
@@ -89,7 +94,13 @@ public class View extends AbstractRelNode implements MycatRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("relNode",getSql()).item("distribution",distribution);
+        writer.item("\nrelNode",getSql());
+        String msg = StreamSupport
+                .stream(distribution.getDataNodes().spliterator(), false)
+                .map(i -> i.toString()).collect(Collectors.joining(",\n"));
+        writer.item("\ndistribution","\n"+msg);
+
+
 //        RelNode relNode = expandToPhyRelNode();
 //        if (relNode instanceof Union) {
 //            int index = 0;

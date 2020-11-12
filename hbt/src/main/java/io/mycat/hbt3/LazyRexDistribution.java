@@ -1,20 +1,23 @@
 package io.mycat.hbt3;
 
+import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.rex.RexNode;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
 @AllArgsConstructor
 public class LazyRexDistribution extends Distribution {
     final AbstractMycatTable tableHandler;
-    Function<List<Object>,Iterable<DataNode>> function;List<RexNode> conditions;
+    Function<List<Object>, Iterable<DataNode>> function;
+    List<RexNode> conditions;
 
-    public static LazyRexDistribution of(AbstractMycatTable tableHandler,List<RexNode> conditions,
-                                         Function<List<Object>,Iterable<DataNode>> function) {
-        return new LazyRexDistribution(tableHandler,function,conditions);
+    public static LazyRexDistribution of(AbstractMycatTable tableHandler, List<RexNode> conditions,
+                                         Function<List<Object>, Iterable<DataNode>> function) {
+        return new LazyRexDistribution(tableHandler, function, conditions);
     }
 
     @Override
@@ -56,5 +59,10 @@ public class LazyRexDistribution extends Distribution {
     @Override
     public boolean isPhy() {
         return tableHandler.isNormal();
+    }
+
+    @Override
+    public String toString() {
+        return Collections.singletonMap("dataNodes", Iterables.toString(getDataNodes())).toString();
     }
 }
