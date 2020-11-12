@@ -62,6 +62,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             byteBuffers.offer(buffer);
             change2WriteOpts();
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
+            getIOThread().wakeup();
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
         }
