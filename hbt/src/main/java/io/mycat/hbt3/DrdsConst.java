@@ -20,13 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface DrdsConst {
-    public int getDatasourceNum();
-
-    public int getShardingSchemaNum();
-
     public  Map<String, SchemaHandler>  schemas();
-
-    boolean isAutoCreateTable();
 
     boolean isPlanCache();
 }

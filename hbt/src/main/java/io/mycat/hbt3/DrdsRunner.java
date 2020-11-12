@@ -204,9 +204,6 @@ public class DrdsRunner {
             plus.add(schemaName, schema);
             schemas.add(schema);
         }
-        if (config.isAutoCreateTable()) {
-            autoCreateTable(factory, schemas);
-        }
         return plus;
     }
 
@@ -640,36 +637,6 @@ public class DrdsRunner {
                 c = true;
             }
             return super.visit(join);
-        }
-    }
-
-    public static void autoCreateTable(DatasourceFactory datasourceFactory, List<MycatSchema> schemas) {
-        for (MycatSchema mycatSchema : schemas) {
-            for (Table table : mycatSchema.getMycatTableMap().values()) {
-//                String schemaName = table.getSchemaName();
-//                String createTableSql = table.getCreateTableSql();
-//                MySqlCreateTableStatement proto = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSql);
-//                proto.setDbPartitionBy(null);
-//                proto.setDbPartitions(null);
-//                proto.setTablePartitionBy(null);
-//                proto.setTablePartitions(null);
-//                proto.setExPartition(null);
-//                proto.setStoredBy(null);
-//                proto.setDistributeByType(null);
-//
-//                MySqlCreateTableStatement cur = proto.clone();
-//
-//                Distribution partInfo = table.computeDataNode();
-//                cur.setTableName(table.getTableName());
-//                cur.setSchema(schemaName);
-//                for (DataNode dataNode : partInfo.dataNodes()) {
-//                    String backendSchemaName = dataNode.getSchema();
-//                    String backendTableName = dataNode.getTable();
-//                    cur.setTableName(backendTableName);
-//                    cur.setSchema(backendSchemaName);
-//                    datasourceFactory.createTableIfNotExisted(dataNode.getTargetName(), cur.toString());
-//                }
-            }
         }
     }
 

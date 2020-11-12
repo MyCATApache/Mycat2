@@ -27,9 +27,6 @@ import java.util.Map;
 
 @Data
 public class DrdsConfig implements DrdsConst {
-     int shardingSchemaNum = 8;
-     int datasourceNum = 1;
-     boolean autoCreateTable = true;
      boolean planCache = false;
 
     public static void main(String[] args) {

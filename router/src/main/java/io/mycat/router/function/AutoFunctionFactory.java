@@ -23,7 +23,6 @@ import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
 import io.mycat.*;
 import io.mycat.config.ShardingFuntion;
-import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.SplitUtil;
@@ -31,10 +30,12 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.StringWriter;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
@@ -108,58 +109,79 @@ public class AutoFunctionFactory {
             SQLMethodInvokeExpr methodInvokeExpr = dbMethod;
 
             if (SQLUtils.nameEquals("HASH", methodInvokeExpr.getMethodName())) {
-
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
-
-                dbFunction = o -> singleRemainderHash(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+                SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
+                dbFunction = specilizeSingleRemainderHash(num, columnInfo);
             }
             if (SQLUtils.nameEquals("MODE_HASH", methodInvokeExpr.getMethodName())) {
-
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
-
-                dbFunction = o -> singleModHash(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+                SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
+                dbFunction = specilizeSingleModHash(num, columnInfo);
             }
             if (SQLUtils.nameEquals("UNI_HASH", methodInvokeExpr.getMethodName())) {
-
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
-
-                dbFunction = o -> singleRemainderHash(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+                SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
+                dbFunction = specilizeSingleRemainderHash(num, columnInfo);
             }
             if (SQLUtils.nameEquals("RIGHT_SHIFT", methodInvokeExpr.getMethodName())) {
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
 
                 int shift = Integer.parseInt(getShardingKey(methodInvokeExpr, 1));
-                dbFunction = o -> singleRightShift(num, shift, o);
+                SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
+                dbFunction = specilizeSingleRightShift(num, shift, columnInfo);
             }
 
             if (SQLUtils.nameEquals("RANGE_HASH", methodInvokeExpr.getMethodName())) {
+                String shardingKey1 = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey1);
 
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey2 = getShardingKey(methodInvokeExpr, 1);
+                dbShardingKeys.add(shardingKey2);
 
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr, 1));
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey1)
+                );
+                SimpleColumnInfo column2 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey2)
+                );
 
+                if (column1.getType() == column2.getType()) {
+                    throw new IllegalArgumentException();
+                }
                 int n;
                 if (methodInvokeExpr.getArguments().size() > 2) {
                     n = Integer.parseInt(getShardingKey(methodInvokeExpr, 2));
                 } else {
                     n = 0;
                 }
-                dbFunction = o -> singleRangeHash(num, n, o);
+                dbFunction = specilizeSingleRangeHash(num, n, column1);
             }
             if (SQLUtils.nameEquals("YYYYDD", methodInvokeExpr.getMethodName())) {
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
 
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
 
-                dbFunction = o -> yyyydd(num, o);
+                dbFunction = specilizeyyyydd(num, column1);
             }
             if (SQLUtils.nameEquals("YYYYWEEK", methodInvokeExpr.getMethodName())) {
-
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
-
-                dbFunction = o -> yyyyWeek(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                dbFunction = specilizeyyyyWeek(num, column1);
             }
             if ("STR_HASH".equalsIgnoreCase(methodInvokeExpr.getMethodName())) {
-                dbShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                dbShardingKeys.add(shardingKey);
+
                 List<SQLExpr> arguments = methodInvokeExpr.getArguments();
                 int startIndex;
                 int endIndex;
@@ -182,9 +204,10 @@ public class AutoFunctionFactory {
                 } else {
                     randSeed = 31;
                 }
-
-                tableFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed, value);
-
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                dbFunction = specilizeStrHash(num, startIndex, endIndex, valType, randSeed, column1);
             }
 
         }
@@ -192,24 +215,41 @@ public class AutoFunctionFactory {
             int num = tableNum;
             SQLMethodInvokeExpr methodInvokeExpr = tableMethod;
             if (SQLUtils.nameEquals("HASH", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> singleRemainderHash(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeSingleRemainderHash(num, column1);
             }
             if (SQLUtils.nameEquals("MOD_HASH", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> singleModHash(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeSingleModHash(num, column1);
             }
             if (SQLUtils.nameEquals("UNI_HASH", methodInvokeExpr.getMethodName())) {
+                String shardingKey = getShardingKey(methodInvokeExpr);
                 tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> singleRemainderHash(num, o);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeSingleRemainderHash(num, column1);
             }
             if (SQLUtils.nameEquals("RIGHT_SHIFT", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
                 int shift = Integer.parseInt(getShardingKey(methodInvokeExpr, 1));
-                tableFunction = o -> singleRightShift(num, shift, o);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeSingleRightShift(num, shift, column1);
             }
             if (SQLUtils.nameEquals("RANGE_HASH", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
                 tableShardingKeys.add(getShardingKey(methodInvokeExpr, 1));
                 int n;
                 if (methodInvokeExpr.getArguments().size() > 2) {
@@ -217,38 +257,73 @@ public class AutoFunctionFactory {
                 } else {
                     n = 0;
                 }
-                tableFunction = o -> singleRangeHash(num, n, o);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeSingleRangeHash(num, n, column1);
             }
             if (SQLUtils.nameEquals("YYYYMM", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> yyyymm(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeyyyymm(num, column1);
             }
             if (SQLUtils.nameEquals("YYYYDD", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> yyyydd(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeyyyydd(num, column1);
             }
             if (SQLUtils.nameEquals("YYYYWEEK", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> yyyyWeek(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                tableShardingKeys.add(shardingKey);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableFunction = specilizeyyyyWeek(num, column1);
             }
             if (SQLUtils.nameEquals("WEEK", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> week(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableShardingKeys.add(shardingKey);
+                tableFunction = specilizeWeek(num, column1);
             }
             if (SQLUtils.nameEquals("MMDD", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> mmdd(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableShardingKeys.add(shardingKey);
+                tableFunction = specilizemmdd(num, column1);
             }
             if (SQLUtils.nameEquals("DD", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> dd(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableShardingKeys.add(shardingKey);
+                tableFunction = specilizedd(num, column1);
             }
             if (SQLUtils.nameEquals("MM", methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
-                tableFunction = o -> mm(num, o);
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableShardingKeys.add(shardingKey);
+                tableFunction = specilizemm(num, column1);
             }
             if ("STR_HASH".equalsIgnoreCase(methodInvokeExpr.getMethodName())) {
-                tableShardingKeys.add(getShardingKey(methodInvokeExpr));
+                String shardingKey = getShardingKey(methodInvokeExpr);
+                SimpleColumnInfo column1 = Objects.requireNonNull(
+                        tableHandler.getColumnByName(shardingKey)
+                );
+                tableShardingKeys.add(shardingKey);
                 List<SQLExpr> arguments = methodInvokeExpr.getArguments();
                 int startIndex;
                 int endIndex;
@@ -271,29 +346,31 @@ public class AutoFunctionFactory {
                 } else {
                     randSeed = 31;
                 }
-
-                tableFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed, value);
+                tableFunction = specilizeStrHash(num, startIndex, endIndex, valType, randSeed, column1);
             }
         }
         if (dbMethod != null && tableMethod != null) {
             if (SQLUtils.nameEquals("HASH", dbMethod.getMethodName())) {
                 if (SQLUtils.nameEquals("HASH", tableMethod.getMethodName())) {
-                    String tableShardingKey = getShardingKey(tableMethod);
+                    String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
                     String dbShardingKey = getShardingKey(dbMethod);
+
+                    SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
+                    SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
+
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
-                        tableFunction = o -> {
-                            return singleRemainderHash(total, o);
-                        };
+                        tableFunction = specilizeSingleRemainderHash(total, tableColumn);
                         dbFunction = (o) -> {
+                            o = dbColumn.normalizeValue(o);
                             if (o == null) return 0;
                             if (o instanceof Number) {
                                 long l = ((Number) o).longValue();
-                                long i = l% total / tableNum;
+                                long i = l % total / tableNum;
                                 if (i < 0) {
                                     throw new IllegalArgumentException();
                                 }
-                                return (int)i;
+                                return (int) i;
                             }
                             if (o instanceof String) {
                                 return hashCode((String) o) % total / tableNum;
@@ -301,18 +378,21 @@ public class AutoFunctionFactory {
                             throw new UnsupportedOperationException();
                         };
                     } else {
-                        tableFunction = o -> singleRemainderHash(tableNum, o);
-                        dbFunction = o -> singleRemainderHash(dbNum, o);
+                        tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
+                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
                     }
 
                 }
             }
             if (SQLUtils.nameEquals("UNI_HASH", dbMethod.getMethodName())) {
                 if (SQLUtils.nameEquals("UNI_HASH", tableMethod.getMethodName())) {
-                    String tableShardingKey = getShardingKey(tableMethod);
+                    String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
                     String dbShardingKey = getShardingKey(dbMethod);
+                    SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
+                    SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         tableFunction = (o) -> {
+                            o = tableColumn.normalizeValue(o);
                             int total = dbNum * tableNum;
                             if (o instanceof Number) {
                                 long intValue = ((Number) o).longValue();
@@ -320,18 +400,17 @@ public class AutoFunctionFactory {
                                 long l = (intValue) % dbNum * tableNum
                                         +
                                         (intValue / dbNum) % tableNum;
-                                return (int)l;
+                                return (int) l;
                             }
                             if (o instanceof String) {
                                 return hashCode((String) o) % total / tableNum;
                             }
                             throw new UnsupportedOperationException();
                         };
-                        dbFunction = (o) -> singleRemainderHash(dbNum, o);
-
+                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
                     } else {
-                        tableFunction = o -> singleRemainderHash(tableNum, o);
-                        dbFunction = o -> singleRemainderHash(dbNum, o);
+                        tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
+                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
                     }
                 }
 
@@ -339,6 +418,8 @@ public class AutoFunctionFactory {
         }
         final ToIntFunction<Object> finalDbFunction = dbFunction;
         final ToIntFunction<Object> finalTableFunction = tableFunction;
+
+
         Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function = new Function<Map<String, Collection<RangeVariable>>, List<DataNode>>() {
             @Override
             public List<DataNode> apply(Map<String, Collection<RangeVariable>> stringCollectionMap) {
@@ -439,6 +520,348 @@ public class AutoFunctionFactory {
                 return keys.contains(SQLUtils.normalize(name));
             }
         };
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizemm(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> mm(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> mm(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> mm(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> mm(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> mm(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> mm(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizedd(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> dd(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> dd(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> dd(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> dd(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> dd(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> dd(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizemmdd(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> mmdd(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> mmdd(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> mmdd(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> mmdd(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> mmdd(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> mmdd(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeWeek(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> week(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> week(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> week(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> week(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> week(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> week(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeyyyymm(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> yyyymm(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> yyyymm(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> yyyymm(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> yyyymm(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> yyyymm(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> yyyymm(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeSingleModHash(int num, SimpleColumnInfo columnInfo) {
+        ToIntFunction<Object> dbFunction;
+        switch (columnInfo.getType()) {
+            case NUMBER:
+                dbFunction = o -> singleModHash(num, (Number) columnInfo.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> singleModHash(num, (String) columnInfo.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> singleModHash(num, (byte[]) columnInfo.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> singleModHash(num, (Duration) columnInfo.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> singleModHash(num, (LocalDate) columnInfo.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> singleModHash(num, (LocalDateTime) columnInfo.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeSingleRightShift(int num, int shift, SimpleColumnInfo columnInfo) {
+        ToIntFunction<Object> dbFunction;
+        switch (columnInfo.getType()) {
+            case NUMBER:
+                dbFunction = o -> singleRightShift(num, shift, (Number) columnInfo.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> singleRightShift(num, shift, (String) columnInfo.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> singleRightShift(num, shift, (byte[]) columnInfo.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> singleRightShift(num, shift, (Duration) columnInfo.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> singleRightShift(num, shift, (LocalDate) columnInfo.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> singleRightShift(num, shift, (LocalDateTime) columnInfo.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeSingleRangeHash(int num, int n, SimpleColumnInfo column1) {
+        ToIntFunction<Object> dbFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                dbFunction = o -> singleRangeHash(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> singleRangeHash(num, n, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> singleRangeHash(num, n, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> singleRangeHash(num, n, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> singleRangeHash(num, n, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> singleRangeHash(num, n, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeyyyydd(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> dbFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                dbFunction = o -> yyyydd(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> yyyydd(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> yyyydd(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> yyyydd(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> yyyydd(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> yyyydd(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeyyyyWeek(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> dbFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                dbFunction = o -> yyyyWeek(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> yyyyWeek(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> yyyyWeek(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> yyyyWeek(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> yyyyWeek(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> yyyyWeek(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeStrHash(int num, int startIndex, int endIndex, int valType, int randSeed, SimpleColumnInfo column1) {
+        ToIntFunction<Object> dbFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (Number) column1.normalizeValue(value));
+                break;
+            case STRING:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (String) column1.normalizeValue(value));
+                break;
+            case BLOB:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (byte[]) column1.normalizeValue(value));
+                break;
+            case TIME:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (Duration) column1.normalizeValue(value));
+                break;
+            case DATE:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (LocalDate) column1.normalizeValue(value));
+                break;
+            case TIMESTAMP:
+                dbFunction = value -> strHash(num, startIndex, endIndex, valType, randSeed,
+                        (LocalDateTime) column1.normalizeValue(value));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return dbFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeSingleRemainderHash(int num, SimpleColumnInfo column1) {
+        ToIntFunction<Object> tableFunction;
+        switch (column1.getType()) {
+            case NUMBER:
+                tableFunction = o -> singleRemainderHash(num, (Number) column1.normalizeValue(o));
+                break;
+            case STRING:
+                tableFunction = o -> singleRemainderHash(num, (String) column1.normalizeValue(o));
+                break;
+            case BLOB:
+                tableFunction = o -> singleRemainderHash(num, (byte[]) column1.normalizeValue(o));
+                break;
+            case TIME:
+                tableFunction = o -> singleRemainderHash(num, (Duration) column1.normalizeValue(o));
+                break;
+            case DATE:
+                tableFunction = o -> singleRemainderHash(num, (LocalDate) column1.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                tableFunction = o -> singleRemainderHash(num, (LocalDateTime) column1.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + column1.getType());
+        }
+        return tableFunction;
     }
 
     public static int mm(int num, Object o) {
@@ -603,49 +1026,90 @@ public class AutoFunctionFactory {
     }
 
     public static int singleRangeHash(int num, int n, Object o) {
-        if (o == null) o = "null";
+
         if (o instanceof Number) {
-            return (int) (((Number) o).longValue() % num);
+            return singleRangeHash(num, (Number) o);
         }
         if (o instanceof String) {
-            return hashCode(((String) o).substring(n)) % num;
+            return singleRangeHash(num, n, (String) o);
         }
         throw new UnsupportedOperationException();
+    }
+
+    public static int singleRangeHash(int num, int n, String o) {
+        if (o == null) o = "null";
+        return hashCode(o.substring(n)) % num;
+    }
+
+    public static int singleRangeHash(int num, Number o) {
+        if (o == null) o = 0;
+        return (int) (o.longValue() % num);
     }
 
     public static int singleRightShift(int num, int shift, Object o) {
-        if (o == null) o = "null";
         if (o instanceof Number) {
-            return (int)( ((Number) o).longValue() >> shift % num);
+            return singleRightShift(num, shift, (Number) o);
         }
         if (o instanceof String) {
-            return hashCode((String) o) >> shift % num;
+            return singleRightShift(num, shift, (String) o);
         }
         throw new UnsupportedOperationException();
+    }
+
+    public static int singleRightShift(int num, int shift, String o) {
+        if (o == null) o = "null";
+        return hashCode(o) >> shift % num;
+    }
+
+    public static int singleRightShift(int num, int shift, Number o) {
+        return (int) (o.longValue() >> shift % num);
     }
 
     public static int singleModHash(int num, Object o) {
-        if (o == null) o = "null";
         if (o instanceof Number) {
-            return (int)Math.floorMod(((Number) o).longValue(), num);
+            return singleModHash(num, (Number) o);
         }
         if (o instanceof String) {
-            return Math.floorMod(hashCode((String) o), num);
+            return singleModHash(num, (String) o);
         }
         throw new UnsupportedOperationException();
     }
 
-    public static int singleRemainderHash(int num, Object o) {
+    public static int singleModHash(int num, String o) {
         if (o == null) o = "null";
-        if (o instanceof Number) {
-            long l = ((Number) o).longValue();
-            long l1 = l % num;
-            return (int)l1;
+        return Math.floorMod(hashCode(o), num);
+    }
+
+    public static int singleModHash(int num, Number o) {
+        if (o == null) {
+            o = 0;
         }
+        return (int) Math.floorMod(o.longValue(), num);
+    }
+
+    public static int singleRemainderHash(int num, Object o) {
+        if (o instanceof Number) {
+            return singleRemainderHash(num, (Number) o);
+        }
+
         if (o instanceof String) {
-            return hashCode((String) o) % num;
+            return singleRemainderHash(num, (String) o);
         }
         throw new UnsupportedOperationException();
+    }
+
+    public static int singleRemainderHash(int num, String o) {
+        if (o == null) o = "null";
+        return hashCode(o) % num;
+    }
+
+    public static int singleRemainderHash(int num, Number o) {
+        if (o == null) {
+            o = 1;
+        }
+        long l = o.longValue();
+        long l1 = l % num;
+        return (int) l1;
     }
 
     @Nullable
