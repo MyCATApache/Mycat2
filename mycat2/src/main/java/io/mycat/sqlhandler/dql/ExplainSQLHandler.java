@@ -1,6 +1,7 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -35,14 +36,10 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             response.tryBroadcastShow(ast.toString());
             return;
         }
-        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-            DrdsConst drdsConst = new DrdsConfig();
-            DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
-                    datasourceFactory,
-                    PlanCache.INSTANCE,
-                    dataContext);
-            Iterable<DrdsSql> drdsSqls = drdsRunners.preParse(Collections.singletonList(ast.getStatement()), Collections.emptyList());
-            Iterable<DrdsSql> iterable = drdsRunners.convertToMycatRel(drdsSqls);
+        try (DatasourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
+            DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+            Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(ast.getStatement()), Collections.emptyList());
+            Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls,dataContext);
             DrdsSql drdsSql = iterable.iterator().next();
             MycatRel relNode = (MycatRel) drdsSql.getRelNode();
             String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode);

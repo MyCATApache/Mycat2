@@ -1,12 +1,8 @@
 package io.mycat;
 
-import io.mycat.config.ClusterRootConfig;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MetaClusterCurrent {

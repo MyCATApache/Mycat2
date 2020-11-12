@@ -14,6 +14,8 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.booster.BoosterRuntime;
 import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.hbt4.DatasourceFactory;
+import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
@@ -172,8 +174,9 @@ public class SelectSQLHandler extends ShardingSQLHandler {
             receiver.proxySelect(schemaHandler.defaultTargetName(), statement.toString());
             return;
         }
-
-        DrdsRunners.runOnDrds(dataContext,  statement,ResponseExecutorImplementor.create(dataContext,receiver));
+        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+            DrdsRunners.runOnDrds(dataContext, request.getAst(), ResponseExecutorImplementor.create(dataContext, receiver, datasourceFactory));
+        }
         return;
     }
 

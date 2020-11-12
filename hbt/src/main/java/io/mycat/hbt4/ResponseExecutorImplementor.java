@@ -25,9 +25,8 @@ import java.util.Objects;
 public class ResponseExecutorImplementor extends ExecutorImplementorImpl implements ExecutorImplementor {
     protected final Response response;
 
-    public static ResponseExecutorImplementor create(MycatDataContext context, Response response) {
+    public static ResponseExecutorImplementor create(MycatDataContext context, Response response,DatasourceFactory datasourceFactory) {
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-        DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
         TransactionType transactionType = context.getTransactionSession().transactionType();
         switch (transactionType) {
             case PROXY_TRANSACTION_TYPE:

@@ -21,6 +21,4 @@ import java.util.Map;
 
 public interface DrdsConst {
     public  Map<String, SchemaHandler>  schemas();
-
-    boolean isPlanCache();
 }

@@ -20,14 +20,12 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
-import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.MetaClusterCurrent;
@@ -70,16 +68,13 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.CalciteException;
-import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -100,16 +95,14 @@ import java.util.*;
 
 public class DrdsRunner {
     final static Logger log = LoggerFactory.getLogger(DrdsRunner.class);
+    private final SchemaPlus schemas;
     DrdsConst config;
-    DatasourceFactory factory;
     PlanCache planCache;
-    MycatDataContext dataContext;
 
-    public DrdsRunner(DrdsConst config, DatasourceFactory factory, PlanCache planCache, MycatDataContext dataContext) {
+    public DrdsRunner(DrdsConst config, PlanCache planCache) {
         this.config = config;
-        this.factory = factory;
         this.planCache = planCache;
-        this.dataContext = dataContext;
+        this.schemas = convertRoSchemaPlus(config);
     }
 
 //    public List<String> explainSql(String originalSql) {
@@ -123,14 +116,14 @@ public class DrdsRunner {
 //    }
 
     @SneakyThrows
-    public MycatRel doHbt(String hbtText) {
+    public MycatRel doHbt(String hbtText, MycatDataContext dataContext) {
         log.debug("reveice hbt");
         log.debug(hbtText);
         HBTParser hbtParser = new HBTParser(hbtText);
         ParseNode statement = hbtParser.statement();
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         Schema originSchema = schemaConvertor.transforSchema(statement);
-        SchemaPlus plus = convertRoSchemaPlus(config, factory);
+        SchemaPlus plus = this.schemas;
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 ImmutableList.of(),
@@ -184,12 +177,12 @@ public class DrdsRunner {
 
 
     @SneakyThrows
-    public Iterable<DrdsSql> convertToMycatRel(Iterable<DrdsSql> stmtList) {
-        SchemaPlus plus = convertRoSchemaPlus(config, factory);
-        return convertToMycatRel(planCache, stmtList, plus);
+    public Iterable<DrdsSql> convertToMycatRel(Iterable<DrdsSql> stmtList, MycatDataContext dataContext) {
+        SchemaPlus plus = this.schemas;
+        return convertToMycatRel(planCache, stmtList, plus, dataContext);
     }
 
-    private SchemaPlus convertRoSchemaPlus(DrdsConst config, DatasourceFactory factory) {
+    public SchemaPlus convertRoSchemaPlus(DrdsConst config) {
         SchemaPlus plus = CalciteSchema.createRootSchema(false).plus();
         List<MycatSchema> schemas = new ArrayList<>();
         for (Map.Entry<String, SchemaHandler> entry : config.schemas().entrySet()) {
@@ -245,7 +238,9 @@ public class DrdsRunner {
 
 
     public Iterable<DrdsSql> convertToMycatRel(PlanCache planCache,
-                                               Iterable<DrdsSql> stmtList, SchemaPlus plus) {
+                                               Iterable<DrdsSql> stmtList,
+                                               SchemaPlus plus,
+                                               MycatDataContext dataContext) {
         Iterator<DrdsSql> iterator = stmtList.iterator();
         return () -> new Iterator<DrdsSql>() {
             @Override
@@ -264,7 +259,7 @@ public class DrdsRunner {
                         case PARSE:
                             drdsSql.setRelNode(minCostPlan.getRelNode());
                             OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                            rel = dispatch(optimizationContext, drdsSql, plus);
+                            rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
                             break;
                         case FINAL:
                             rel = (MycatRel) minCostPlan.getRelNode();
@@ -274,7 +269,7 @@ public class DrdsRunner {
                     }
                 } else {
                     OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                    rel = dispatch(optimizationContext, drdsSql, plus);
+                    rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
                 }
                 drdsSql.setRelNode(rel);
                 return drdsSql;
@@ -284,7 +279,7 @@ public class DrdsRunner {
 
     public MycatRel dispatch(OptimizationContext optimizationContext,
                              DrdsSql drdsSql,
-                             SchemaPlus plus) {
+                             SchemaPlus plus, MycatDataContext dataContext) {
         SQLStatement sqlStatement = drdsSql.getSqlStatement();
         if (sqlStatement instanceof SQLSelectStatement) {
             return compileQuery(dataContext.getDefaultSchema(), optimizationContext, plus, drdsSql);

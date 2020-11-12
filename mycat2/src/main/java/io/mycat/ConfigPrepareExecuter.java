@@ -4,7 +4,12 @@ import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.MycatRouterConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.hbt3.DrdsConfig;
+import io.mycat.hbt3.DrdsConst;
+import io.mycat.hbt3.DrdsRunner;
+import io.mycat.hbt4.PlanCache;
 import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.SchemaHandler;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
@@ -219,7 +224,7 @@ public class ConfigPrepareExecuter {
         context.put(MysqlVariableService.class, this.metadataManager);
         MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
         context.put(MycatRouterConfig.class, mycatRouterConfig);
-
+        context.put(DrdsRunner.class,new DrdsRunner(() -> this.metadataManager.getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }
 }
