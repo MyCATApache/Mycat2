@@ -62,7 +62,11 @@ public class SequenceGenerator {
                     TimeBasedSequence timeBasedSequence = new TimeBasedSequence();
                     timeBasedSequence.init(sequenceConfig1, workerId);
                 }
-                return null;
+                String clazz = sequenceConfig1.getClazz();
+                Class<?> aClass = Class.forName(clazz);
+                SequenceHandler o = (SequenceHandler)aClass.newInstance();
+                o.init(sequenceConfig1,workerId);
+                return o;
             }
         });
     }

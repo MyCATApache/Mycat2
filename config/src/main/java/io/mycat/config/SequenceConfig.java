@@ -22,7 +22,6 @@ public class SequenceConfig {
     private Long cacheValue;
     private Boolean order;
 
-    // for drds
     private boolean simple;
     private boolean group;
     private boolean time;
@@ -31,6 +30,8 @@ public class SequenceConfig {
     private Long unitIndex;
 
     private Long step;
+
+    private String clazz;
 
     public SequenceConfig() {
     }
