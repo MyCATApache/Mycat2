@@ -14,6 +14,7 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
+import io.mycat.ConnectionManager;
 import io.mycat.MycatConnection;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;

@@ -12,20 +12,21 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.datasource;
+package io.mycat;
 
+import io.mycat.MycatConnection;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.DatasourceRootConfig;
 
 /**
  * @author Junwen Chen
  **/
-public interface ConnectionManager {
+public interface ConnectionManager<T extends MycatConnection> {
     void addDatasource(DatasourceConfig key);
 
     void removeDatasource(String name);
 
-    DefaultConnection getConnection(String name) throws Exception;
+    T getConnection(String name) throws Exception;
 
-    void closeConnection(DefaultConnection connection) throws Exception;
+    void closeConnection(T connection) throws Exception;
 }

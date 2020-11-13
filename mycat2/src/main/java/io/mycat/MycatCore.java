@@ -56,12 +56,12 @@ public class MycatCore {
         context.put(loadBalanceManager.getClass(), loadBalanceManager);
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(mycatServer.getClass(), mycatServer);
-
+        MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
-                metadataStorageManager = new FileMetadataStorageManager(datasourceProvider, this.baseDirectory);
+                metadataStorageManager = new FileMetadataStorageManager(serverConfig,datasourceProvider, this.baseDirectory);
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
@@ -69,7 +69,7 @@ public class MycatCore {
                 if (zkAddress != null) {
                     ZKStore zkStore = new ZKStore("mycat", zkAddress);
                     metadataStorageManager =
-                            new CoordinatorMetadataStorageManager(zkStore,
+                            new CoordinatorMetadataStorageManager(serverConfig,zkStore,
                                     ConfigReaderWriter.getReaderWriterBySuffix("json"),
                                     datasourceProvider);
                     break;

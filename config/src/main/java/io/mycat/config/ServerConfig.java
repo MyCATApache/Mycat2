@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 @Data
 @EqualsAndHashCode
 public class ServerConfig {
+    private int workId = 1;
     private String ip = "127.0.0.1";
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();

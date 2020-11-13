@@ -26,13 +26,15 @@ import java.util.stream.Stream;
 
 public class FileMetadataStorageManager extends MetadataStorageManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileMetadataStorageManager.class);
+    private MycatServerConfig serverConfig;
     private final String datasourceProvider;
     private final Path baseDirectory;
     private final State state = new State();
 
 
     @SneakyThrows
-    public FileMetadataStorageManager(String datasourceProvider, Path baseDirectory) {
+    public FileMetadataStorageManager(MycatServerConfig serverConfig, String datasourceProvider, Path baseDirectory) {
+        this.serverConfig = serverConfig;
         this.datasourceProvider = datasourceProvider;
         this.baseDirectory = baseDirectory;
     }
@@ -285,7 +287,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         writeFile(t, filePath);
                     }
                     for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
-                        String fileName = sequenceConfig.getUniqueName() + ".sequence." + suffix;
+                        String fileName = sequenceConfig.getName() + ".sequence." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(sequenceConfig);
                         Path filePath = sequences.resolve(fileName);

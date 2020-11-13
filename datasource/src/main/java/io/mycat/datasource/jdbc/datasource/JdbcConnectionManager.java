@@ -15,6 +15,7 @@
 package io.mycat.datasource.jdbc.datasource;
 
 
+import io.mycat.ConnectionManager;
 import io.mycat.MycatException;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.ScheduleUtil;
@@ -28,8 +29,6 @@ import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -37,12 +36,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * @author jamie12221 date 2019-05-10 14:46 该类型需要并发处理
  **/
-public class JdbcConnectionManager implements ConnectionManager {
+public class JdbcConnectionManager implements ConnectionManager<DefaultConnection> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;

@@ -11,9 +11,10 @@ import java.util.stream.Collectors;
 
 public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
 
-    public CoordinatorMetadataStorageManager(Store store,
+    public CoordinatorMetadataStorageManager(MycatServerConfig serverConfig, Store store,
                                              ConfigReaderWriter readerWriter,
                                              String datasourceProvider) {
+        this.serverConfig = serverConfig;
         this.store = store;
         this.readerWriter = readerWriter;
         this.datasourceProvider = datasourceProvider;
@@ -86,7 +87,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                 String sequenceName = endPath(path);
                 try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
                     if (delete) {
-                        ops.removeSequence(sequenceName);
+                        ops.removeSequenceByName(sequenceName);
                     } else {
                         ops.putSequence(JsonUtil.from(text, SequenceConfig .class));
                     }
@@ -115,6 +116,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
         });
     }
 
+    private MycatServerConfig serverConfig;
     final Store store;
     final FileMetadataStorageManager.State state = new FileMetadataStorageManager.State();
     final ConfigReaderWriter readerWriter;
@@ -171,7 +173,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             store.set("sequences", sequences = defaultRouterConfig.getSequences()
                     .stream()
                     .collect(Collectors
-                            .toMap(k -> k.getUniqueName(), v -> readerWriter.transformation(v))));
+                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 //
 //            store.set("prototype", prototype = defaultRouterConfig.getPrototype());
 
@@ -287,7 +289,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                     .getSequences()
                                     .stream()
                                     .collect(Collectors
-                                            .toMap(k -> k.getUniqueName(), v -> readerWriter.transformation(v))));
+                                            .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
                 }
 //                if (routerConfig.isUpdatePrototype()) {
 //                    store.set("prototype",

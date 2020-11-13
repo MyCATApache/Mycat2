@@ -1,15 +1,10 @@
 package io.mycat;
 
-import io.mycat.config.ClusterConfig;
-import io.mycat.config.DatasourceConfig;
-import io.mycat.config.MycatRouterConfig;
+import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.hbt3.DrdsConfig;
-import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt4.PlanCache;
 import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
@@ -76,8 +71,8 @@ public class ConfigPrepareExecuter {
             case SEQUENCE: {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-
-                this.sequenceGenerator = new SequenceGenerator(ops.getSequences());
+                ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
+                this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(),ops.getSequences());
                 break;
             }
             case ROUTER: {
@@ -141,7 +136,8 @@ public class ConfigPrepareExecuter {
                 return datasourceConfigMap;
             }
         };
-        this.sequenceGenerator = new SequenceGenerator(mycatRouterConfig.getSequences());
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
+        this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
         this.metadataManager = new MetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
     }

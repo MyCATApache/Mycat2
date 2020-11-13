@@ -92,6 +92,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new ShowWarningsSQLHandler());
             sqlHandlers.add(new ShowCreateFunctionHanlder());
             sqlHandlers.add(new CreateTableSQLHandler());
+            sqlHandlers.add(new CreateSequenceHandler());
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
 
