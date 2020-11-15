@@ -4,6 +4,7 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *  全局二级索引 (Global Secondary Index, GSI)
@@ -45,10 +46,10 @@ public interface GSIService {
     int create(String tableName, String indexName, String[] pkColumnNames, String[] indexColumnNames);
 
     Transaction insert(String tableName, IndexRowData rowData);
-    Transaction updateByIndex(String tableName, IndexRowData rowData, ColumnValue[] index);
-    Transaction updateByPk(String tableName, IndexRowData rowData, ColumnValue[] pk);
-    Transaction deleteByIndex(String tableName, ColumnValue[] index);
-    Transaction deleteByPk(String tableName, ColumnValue[] pk);
+    Transaction updateByIndex(String tableName, IndexRowData rowData, Map<String, Object> index);
+    Transaction updateByPk(String tableName, IndexRowData rowData, Map<String, Object> pk);
+    Transaction deleteByIndex(String tableName, Map<String, Object> index);
+    Transaction deleteByPk(String tableName, Map<String, Object> pk);
 
     boolean preCommit(Long txId);
     boolean commit(Long txId);
@@ -64,13 +65,8 @@ public interface GSIService {
     @Data
     class IndexRowData{
         private String datasourceKey;
-        private ColumnValue[] pkColumnValues;
-        private ColumnValue[] indexColumnValues;
+        private Map<String,Object> pkColumnValues;
+        private Map<String,Object> indexColumnValues;
     }
 
-    @Data
-    class ColumnValue {
-        private String columnName;
-        private Object columnValue;
-    }
 }
