@@ -1,5 +1,7 @@
 package io.mycat.router.gsi.impl;
 
+import com.alibaba.fastjson.parser.ParserConfig;
+import com.alibaba.fastjson.util.TypeUtils;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
@@ -9,6 +11,7 @@ import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import io.mycat.router.gsi.GSIService;
+import io.mycat.util.ClassUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -153,8 +156,8 @@ public class MapDBGSIService implements GSIService {
             for (int i = 0; i < index.getIndexColumns().length; i++) {
                 Column column = index.getIndexColumns()[i];
                 Object value = rowData.getIndexColumnValues().get(column.getName());
-                indexValues[i] = value;
-                existIndexData |= value != null;
+                indexValues[i] = column.cast(value);
+                existIndexData |= indexValues[i] != null;
             }
             if(!existIndexData){
                 continue;
@@ -164,7 +167,7 @@ public class MapDBGSIService implements GSIService {
             for (int i = 0; i < index.getPkColumns().length; i++) {
                 Column column = index.getPkColumns()[i];
                 Object value = rowData.getPkColumnValues().get(column.getName());
-                pkValues[i] = value;
+                pkValues[i] = column.cast(value);
             }
             index.getData().put(indexValues,pkValues);
         }
@@ -317,23 +320,26 @@ public class MapDBGSIService implements GSIService {
     }
 
     private IndexData buildIndexData(String tableName, String indexName, String[] indexColumnNames, String[] pkColumnNames){
-        String key = tableName+"."+indexName;
-        Serializer[] indexSerializers = columnToSerializer(tableName,indexColumnNames);
-        Serializer[] pkSerializers = columnToSerializer(tableName,pkColumnNames);
-        BTreeMap<Object[], Object[]> bTreeMap = db.treeMap(key)
+        Serializer[] indexSerializers = new Serializer[indexColumnNames.length];
+        Serializer[] pkSerializers = new Serializer[pkColumnNames.length];
+        Column[] indexColumns = new Column[indexColumnNames.length];
+        Column[] pkColumns = new Column[pkColumnNames.length];
+
+        for (int i = 0; i < indexColumnNames.length; i++) {
+            Class type = metaDataService.apply(tableName, indexColumnNames[i]);
+            indexSerializers[i] = SerializerUtils.serializerForClass(type);
+            indexColumns[i] = new Column(indexColumnNames[i],indexSerializers[i],type);
+        }
+        for (int i = 0; i < pkColumnNames.length; i++) {
+            Class type = metaDataService.apply(tableName, pkColumnNames[i]);
+            pkSerializers[i] = SerializerUtils.serializerForClass(type);
+            pkColumns[i] = new Column(pkColumnNames[i],pkSerializers[i],type);
+        }
+
+        BTreeMap<Object[], Object[]> bTreeMap = db.treeMap(tableName+"."+indexName)
                 .keySerializer(new SerializerArrayTuple(indexSerializers))
                 .valueSerializer(new SerializerArrayTuple(pkSerializers))
                 .createOrOpen();
-
-
-        Column[] indexColumns = new Column[indexColumnNames.length];
-        Column[] pkColumns = new Column[pkColumnNames.length];
-        for (int i = 0; i < indexColumns.length; i++) {
-            indexColumns[i] = new Column(indexColumnNames[i],indexSerializers[i]);
-        }
-        for (int i = 0; i < pkColumns.length; i++) {
-            pkColumns[i] = new Column(pkColumnNames[i],pkSerializers[i]);
-        }
 
         IndexData index = new IndexData();
         index.setData(bTreeMap);
@@ -420,12 +426,21 @@ public class MapDBGSIService implements GSIService {
         }
     }
 
-    @AllArgsConstructor
     @Getter
     static class Column{
         private String name;
         private Serializer serializer;
+        private Class type;
+        public Column(String name, Serializer serializer,Class type) {
+            this.name = name;
+            this.serializer = Objects.requireNonNull(serializer);
+            this.type = Objects.requireNonNull(type);;
+        }
 
+        public Object cast(Object value){
+            Object cast = TypeUtils.cast(value, type, ParserConfig.getGlobalInstance());
+            return cast;
+        }
         @Override
         public String toString() {
             return name;
