@@ -294,7 +294,7 @@ public class MapDBGSIService implements GSIService {
         IndexData result = null;
         for (IndexData indexData : indexDataList) {
             int match = indexData.match(columnNames);
-            if(match > maxMatch){
+            if(result == null || match > maxMatch){
                 result = indexData;
             }
         }
