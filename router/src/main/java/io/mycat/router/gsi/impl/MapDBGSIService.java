@@ -385,13 +385,14 @@ public class MapDBGSIService implements GSIService {
          * @return
          */
         public int match(String[] columns){
-            int i;
-            for (i = 0; i < indexColumns.length && i<columns.length; i++) {
+            int score = 0;
+            for (int i = 0; i < indexColumns.length && i<columns.length; i++) {
                 if(!Objects.equals(indexColumns[i].getName(),columns[i])){
                     break;
                 }
+                score = i;
             }
-            return i;
+            return score;
         }
 
         public List<IndexRowData> getByPrefix(Object...keys){
@@ -434,7 +435,7 @@ public class MapDBGSIService implements GSIService {
         public Column(String name, Serializer serializer,Class type) {
             this.name = name;
             this.serializer = Objects.requireNonNull(serializer);
-            this.type = Objects.requireNonNull(type);;
+            this.type = Objects.requireNonNull(type);
         }
 
         public Object cast(Object value){
