@@ -41,16 +41,6 @@ public interface TableHandler {
 
     void dropPhysicalTables();
 
-    default String normalizeCreateTableSQLToMySQL(String createTableSQL) {
-        MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
-        mySqlCreateTableStatement.setBroadCast(false);
-        mySqlCreateTableStatement.setDbPartitionBy(null);
-        mySqlCreateTableStatement.setDbPartitions(null);
-        mySqlCreateTableStatement.setTableGroup("");
-        mySqlCreateTableStatement.setTablePartitionBy(null);
-        mySqlCreateTableStatement.setTablePartitions(null);
-        return mySqlCreateTableStatement.toString();
-    }
 
 
 }

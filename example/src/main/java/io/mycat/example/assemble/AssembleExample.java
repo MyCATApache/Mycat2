@@ -201,7 +201,7 @@ public class AssembleExample {
                 "  `blob` longblob,\n" +
                 "  PRIMARY KEY (`id`),\n" +
                 "  KEY `id` (`id`)\n" +
-                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8" + " BROADCAST;");
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 BROADCAST;");
 
         execute(mycatConnection, "delete from db1.travelrecord");
         execute(mycatConnection,
@@ -266,7 +266,7 @@ public class AssembleExample {
         testNormalTranscation(mycatConnection);
     }
 
-    private void initCluster(Connection mycatConnection) throws SQLException {
+    protected void initCluster(Connection mycatConnection) throws SQLException {
         execute(mycatConnection,
                 AddDatasourceHint
                         .create("dw0",
@@ -396,22 +396,8 @@ public class AssembleExample {
         execute(connection, String.format("delete  from %s.%s", db, table));
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private void execute(Connection mySQLConnection, String sql) throws SQLException {
-        JdbcUtils.execute(mySQLConnection, sql);
+    protected void execute(Connection mySQLConnection, String sql) throws SQLException {
+         JdbcUtils.execute(mySQLConnection, sql);
     }
 
     public static List<Map<String, Object>> executeQuery(Connection mySQLConnection, String sql) throws SQLException {

@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static io.mycat.metadata.CreateTableUtils.createPhysicalTable;
+import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.metadata.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
@@ -91,10 +93,7 @@ public class NormalTable implements NormalTableHandler {
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : Collections.singleton(getDataNode())) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-                DDLHelper.createDatabaseIfNotExist(connection, node);
-                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), node.getSchema(), node.getTable()), false);
-            }
+            createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
         }
     }
 

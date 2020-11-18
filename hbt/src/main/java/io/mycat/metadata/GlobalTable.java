@@ -10,6 +10,8 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static io.mycat.metadata.CreateTableUtils.createPhysicalTable;
+import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 public class GlobalTable implements GlobalTableHandler {
@@ -121,10 +123,7 @@ public class GlobalTable implements GlobalTableHandler {
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : getGlobalDataNode()) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-                DDLHelper.createDatabaseIfNotExist(connection, node);
-                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), node.getSchema(), node.getTable()), false);
-            }
+            createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());
         }
     }
 

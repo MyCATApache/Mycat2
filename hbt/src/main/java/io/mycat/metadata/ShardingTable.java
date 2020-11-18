@@ -4,6 +4,7 @@ import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.sequence.SequenceGenerator;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import lombok.Getter;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.metadata.DDLHelper.createDatabaseIfNotExist;
 import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
@@ -18,13 +20,13 @@ import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 public class ShardingTable implements ShardingTableHandler {
     private final LogicTable logicTable;
     private CustomRuleFunction shardingFuntion;
-    private  List<DataNode> backends;
+    private List<DataNode> backends;
 
     public ShardingTable(LogicTable logicTable,
                          List<DataNode> backends,
                          CustomRuleFunction shardingFuntion) {
         this.logicTable = logicTable;
-        this.backends = (backends == null||backends.isEmpty()) ? Collections.emptyList(): backends;
+        this.backends = (backends == null || backends.isEmpty()) ? Collections.emptyList() : backends;
         this.shardingFuntion = shardingFuntion;
     }
 
@@ -68,23 +70,21 @@ public class ShardingTable implements ShardingTableHandler {
     public void createPhysicalTables() {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            createDatabaseIfNotExist(connection,getSchemaName());
+            createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
         for (DataNode node : getBackends()) {
-            try (DefaultConnection connection = jdbcConnectionManager.getConnection(node.getTargetName())) {
-                createDatabaseIfNotExist(connection,node);
-                connection.executeUpdate(rewriteCreateTableSql(normalizeCreateTableSQLToMySQL(getCreateTableSQL()),node.getSchema(), node.getTable()), false);
-            }
+            CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL());
         }
     }
 
     @Override
     public void dropPhysicalTables() {
+
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         String dropTemplate = "drop table `%s`.`%s`";
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
-            connection.executeUpdate(String.format(dropTemplate,getSchemaName(),getTableName()), false);
+            connection.executeUpdate(String.format(dropTemplate, getSchemaName(), getTableName()), false);
         }
     }
 
@@ -131,7 +131,7 @@ public class ShardingTable implements ShardingTableHandler {
 
     public void setShardingFuntion(CustomRuleFunction shardingFuntion) {
         this.shardingFuntion = shardingFuntion;
-        if(this.backends == null||this.backends.isEmpty()){
+        if (this.backends == null || this.backends.isEmpty()) {
             this.backends = shardingFuntion.calculate(Collections.emptyMap());
         }
     }

@@ -75,7 +75,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
             } else {
                 Map<String, Object> infos = hint;
-                switch (infos.get("type").toString()) {
+                switch (Objects.requireNonNull(infos.get("type")).toString()) {
                     case "normal": {
                         String targetName = (String) infos.get("targetName");
                         ops.putNormalTable(schemaName, tableName, createTableSql, targetName);

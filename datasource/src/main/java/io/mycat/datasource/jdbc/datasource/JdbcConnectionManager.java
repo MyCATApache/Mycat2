@@ -82,7 +82,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
         for (ClusterConfig replica : clusterConfigs.values()) {
             String replicaName = replica.getName();
-            for (String datasource : replica.getAllDatasources()) {
+            for (String datasource : replica.allDatasources()) {
                 putHeartFlow(replicaName, datasource);
             }
         }

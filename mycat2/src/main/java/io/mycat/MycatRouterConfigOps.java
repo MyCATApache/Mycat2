@@ -145,7 +145,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         first.ifPresent(logicSchemaConfig -> {
             Map<String, GlobalTableConfig> globalTableConfigMap = logicSchemaConfig.getGlobalTables();
             List<ClusterConfig> clusters = mycatRouterConfig.getClusters();
-            List<String> allReplica = clusters.stream().map(i -> i.getName()).collect(Collectors.toList());
+            List<String> allReplica = clusters.stream().map(i -> i.getName()).filter(i->i.startsWith("c")).collect(Collectors.toList());
             globalTableConfig.setCreateTableSQL(sqlString.toString());
             globalTableConfig.setDataNodes(allReplica.stream()
                     .map(i -> {

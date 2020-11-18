@@ -27,7 +27,7 @@ public class ClusterConfig {
     public ClusterConfig() {
     }
 
-    public List<String> getAllDatasources() {
+    public List<String> allDatasources() {
         if (masters == null) {
             masters = Collections.emptyList();
         }
