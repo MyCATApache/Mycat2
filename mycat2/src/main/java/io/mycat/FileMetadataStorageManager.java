@@ -147,14 +147,14 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             datasourceConfig.setDbType("jdbc");
             datasourceConfig.setUser("root");
             datasourceConfig.setPassword("123456");
-            datasourceConfig.setName("prototype");
+            datasourceConfig.setName("prototypeDs");
             datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC");
             routerConfig.getDatasources().add(datasourceConfig);
         }
         if (routerConfig.getClusters().isEmpty()) {
             ClusterConfig clusterConfig = new ClusterConfig();
-            clusterConfig.setName("c0");
-            clusterConfig.setMasters(Lists.newArrayList("prototype"));
+            clusterConfig.setName("prototype");
+            clusterConfig.setMasters(Lists.newArrayList("prototypeDs"));
             clusterConfig.setMaxCon(200);
             clusterConfig.setReplicaType(ReplicaType.SINGLE_NODE.name());
             clusterConfig.setSwitchType(ReplicaSwitchType.NOT_SWITCH.name());
