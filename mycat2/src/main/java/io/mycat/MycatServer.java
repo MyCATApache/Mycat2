@@ -64,12 +64,15 @@ public class MycatServer {
         this.loadBalanceManager = new LoadBalanceManager(serverConfig.getLoadBalance());
         this.datasourceConfigProvider = datasourceConfigProvider;
         io.mycat.config.ServerConfig serverConfigServer = serverConfig.getServer();
-        this.mycatWorkerProcessor = new MycatWorkerProcessor(serverConfigServer.getWorkerPool(), serverConfigServer.getTimeWorkerPool());
+        ThreadPoolExecutorConfig workerPool = serverConfigServer.getWorkerPool();
+        this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfigServer.getTimeWorkerPool());
         this.transcationFactoryMap = new HashMap<>();
         this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
         this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
-        ThreadPoolExecutorConfig contextPool = serverConfigServer.getContextPool();
-        this.mycatContextThreadPool = new MycatContextThreadPoolImpl(contextPool, mycatWorkerProcessor.getMycatWorker());
+        this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
+                mycatWorkerProcessor.getMycatWorker(),
+                workerPool.getTaskTimeout(),
+                TimeUnit.valueOf(workerPool.getTimeUnit()));
     }
 
     @SneakyThrows
@@ -122,7 +125,7 @@ public class MycatServer {
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
 
 
-        String handlerConstructorText = Optional.ofNullable(serverConfig).map(i -> i.getHandlerName()).orElse(DefaultCommandHandler.class.getName());
+        String handlerConstructorText = (DefaultCommandHandler.class.getName());
 
 
         DefaultReactorBufferPool defaultReactorBufferPool = new DefaultReactorBufferPool(Optional

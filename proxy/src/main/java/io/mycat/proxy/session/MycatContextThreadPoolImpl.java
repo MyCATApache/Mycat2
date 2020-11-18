@@ -22,8 +22,8 @@ public class MycatContextThreadPoolImpl implements MycatContextThreadPool {
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
 
-    public MycatContextThreadPoolImpl(ThreadPoolExecutorConfig worker, ExecutorService noBindingPool) {
-        this(noBindingPool, (e) -> LOGGER.error("", e), worker.getTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()));
+    public MycatContextThreadPoolImpl(ExecutorService noBindingPool,long waitTaskTimeout,TimeUnit timeoutUnit) {
+        this(noBindingPool, (e) -> LOGGER.error("", e), waitTaskTimeout, timeoutUnit);
     }
 
     public MycatContextThreadPoolImpl(ExecutorService noBindingPool,
@@ -56,11 +56,5 @@ public class MycatContextThreadPoolImpl implements MycatContextThreadPool {
 
             }
         });
-    }
-
-
-    @Override
-    public void runOnBinding(MycatDataContext container, BindThreadCallback bindThreadCallback) {
-        throw new IllegalArgumentException();
     }
 }

@@ -15,35 +15,28 @@
 
 package io.mycat.config;
 
+import io.mycat.util.JsonUtil;
 import lombok.*;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Data
 @EqualsAndHashCode
 public class ServerConfig {
-    private int workId = 1;
+    private int mycatId = 1;
     private String ip = "127.0.0.1";
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();
-    private String handlerName;
-    private ThreadPoolExecutorConfig contextPool =  ThreadPoolExecutorConfig
-            .builder()
-            .corePoolSize(0)
-            .maxPoolSize(512)
-            .keepAliveTime(1)
-            .timeUnit(TimeUnit.MINUTES.name())
-            .maxPendingLimit(65535)
-            .taskTimeout(1)
-            .build();
-    private ThreadPoolExecutorConfig workerPool =  ThreadPoolExecutorConfig
+    private ThreadPoolExecutorConfig workerPool = ThreadPoolExecutorConfig
             .builder()
             .corePoolSize(Runtime.getRuntime().availableProcessors())
             .maxPoolSize(1024)
@@ -66,16 +59,30 @@ public class ServerConfig {
     private String tempDirectory;
 
     {
+        String mycat_temp_directory = "mycat_temp_directory";
         if (tempDirectory == null) {
             try {
-                Path target = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).resolve("target");
-                if (!Files.exists(target)) {
-                    Files.createDirectories(target);
+
+                Path target = Optional.ofNullable(ServerConfig.class.getClassLoader())
+                        .map(i -> i.getResource(""))
+                        .map(i -> {
+                            try {
+                                return i.toURI();
+                            } catch (URISyntaxException e) {
+                                return null;
+                            }
+                        })
+                        .map(i -> i.resolve("target"))
+                        .map(Paths::get)
+                        .orElse(null);
+                if (target != null && Files.exists(target)) {
+                    tempDirectory = target.toString();
+                } else {
+                    tempDirectory = Files.createTempDirectory(mycat_temp_directory).toAbsolutePath().toString();
                 }
-                tempDirectory = target.toString();
             } catch (Throwable e) {
                 try {
-                    tempDirectory = Files.createTempDirectory("").toAbsolutePath().toString();
+                    tempDirectory = Files.createTempDirectory(mycat_temp_directory).toAbsolutePath().toString();
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -84,8 +91,7 @@ public class ServerConfig {
         }
     }
 
-
-
-
-
+    public static void main(String[] args) {
+        System.out.println(JsonUtil.toJson(new ServerConfig()));
+    }
 }

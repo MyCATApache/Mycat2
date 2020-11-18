@@ -72,7 +72,7 @@ public class ConfigPrepareExecuter {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
-                this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(), ops.getSequences());
+                this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), ops.getSequences());
                 break;
             }
             case ROUTER: {
@@ -137,7 +137,7 @@ public class ConfigPrepareExecuter {
             }
         };
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
-        this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(), mycatRouterConfig.getSequences());
+        this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
         this.metadataManager = new MetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
     }
