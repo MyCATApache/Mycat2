@@ -11,10 +11,13 @@ import io.mycat.hbt4.DatasourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
+import io.mycat.router.custom.MergeSubTablesFunction;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
@@ -32,7 +35,7 @@ public class MycatUpdateExecutor implements Executor {
     private DatasourceFactory factory;
     public long lastInsertId = 0;
     public long affectedRow = 0;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
     public MycatUpdateExecutor(Distribution values,
                                SQLStatement sqlStatement,
                                List<Object> parameters,
@@ -72,6 +75,9 @@ public class MycatUpdateExecutor implements Executor {
             String sql = key.getParameterizedSql();
             String target = key.getTarget();
             Connection connection = connections.get(target);
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("targetName:{} sql:{} parameters:{}",target,sql,parameters);
+            }
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
             this.affectedRow += preparedStatement.executeUpdate();

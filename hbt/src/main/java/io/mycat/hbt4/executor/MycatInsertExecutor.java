@@ -128,6 +128,7 @@ public class MycatInsertExecutor implements Executor {
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
+                function.calculate((Map) variables);
                 throw new IllegalArgumentException();
             }
             DataNode dataNode = Objects.requireNonNull(dataNodes.get(0));
@@ -196,7 +197,7 @@ public class MycatInsertExecutor implements Executor {
             String sql = key.getParameterizedSql();
             Group value = e.getValue();
             Connection connection = connections.get(targetName);
-            MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection);
+            MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection,targetName);
             lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
             affected += res.getAffected();
         }

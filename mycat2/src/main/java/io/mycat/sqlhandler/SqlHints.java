@@ -27,7 +27,19 @@ public class SqlHints {
         if (text.startsWith("!")){
             text = text.substring(1);
         }
-
+        /////////////////////////////////////////////////////
+        if (text.startsWith("/* +")) {
+            text = text.substring(2);
+        }
+        if (text.startsWith("/*")) {
+            text = text.substring(3);
+        }
+        if (text.startsWith("/*")) {
+            text = text.substring(2);
+        }
+        if (text.startsWith("+")){
+            text = text.substring(1);
+        }
         return text.trim();
     }
 

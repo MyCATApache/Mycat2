@@ -2,6 +2,7 @@ package io.mycat.hbt4.logical.rel;
 
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import io.mycat.ParameterizedValues;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt4.*;
 import io.mycat.router.ShardingTableHandler;
@@ -57,17 +58,6 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         writer.name("MycatInsertRel").into();
-//        for (ParameterizedValues value : values) {
-//
-//            String target = value.getTarget();
-//            String sql = value.getSql();
-//            List<Object> params = value.getParams();
-//            writer.name("Values").item("targetName", target)
-//                    .item("sql", sql)
-//                    .item("params", params)
-//                    .ret();
-//        }
-
         return writer.ret();
     }
 

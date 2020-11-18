@@ -19,7 +19,7 @@ public  class AddDatasourceHint extends HintBuilder {
 
         @Override
         public String build() {
-            return MessageFormat.format("/*! mycat:{0}{1} */;",
+            return MessageFormat.format("/*+ mycat:{0}{1} */;",
                     getCmd(),
                     JsonUtil.toJson(config));
         }

@@ -89,7 +89,12 @@ public class MycatPreparedStatementUtil {
         sqlStatement.accept(parameterVisitor);
     }
 
-    public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection) {
+    public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection, String targetName) {
+        if(LOGGER.isDebugEnabled()){
+            for (List<Object> arg : value.getArgs()) {
+                LOGGER.debug("targetName:{} sql:{} parameters:{}",targetName,sql,arg);
+            }
+        }
         ExecuteBatchInsert executeBatchInsert = new ExecuteBatchInsert(sql, value, connection);
         return executeBatchInsert.invoke();
     }
@@ -167,6 +172,9 @@ public class MycatPreparedStatementUtil {
         ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
         if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
             MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
+        }
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("sql:{} {}", sql, (params).toString());
         }
         try {
             ResultSet resultSet = preparedStatement.executeQuery();

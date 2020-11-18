@@ -42,6 +42,7 @@ import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
 public class AutoFunctionFactory {
@@ -358,10 +359,12 @@ public class AutoFunctionFactory {
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
                     SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
 
+                    tableShardingKeys.add(tableShardingKey);
+                    dbShardingKeys.add(dbShardingKey);
+
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
-                        tableFunction = specilizeSingleRemainderHash(total, tableColumn);
-                        dbFunction = (o) -> {
+                        final ToIntFunction<Object> function = (o) -> {
                             o = dbColumn.normalizeValue(o);
                             if (o == null) return 0;
                             if (o instanceof Number) {
@@ -377,6 +380,10 @@ public class AutoFunctionFactory {
                             }
                             throw new UnsupportedOperationException();
                         };
+                        Set<String> shardingKeys = new HashSet<>();
+                        shardingKeys.addAll(tableShardingKeys);
+                        shardingKeys.addAll(dbShardingKeys);
+                        return createDoubleFunction(datanodes, dbShardingKey, shardingKeys, function);
                     } else {
                         tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
                         dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
@@ -391,7 +398,11 @@ public class AutoFunctionFactory {
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
                     SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
-                        tableFunction = (o) -> {
+                        Set<String> shardingKeys = new HashSet<>();
+                        shardingKeys.addAll(tableShardingKeys);
+                        shardingKeys.addAll(dbShardingKeys);
+
+                        ToIntFunction<Object> function = (o) -> {
                             o = tableColumn.normalizeValue(o);
                             int total = dbNum * tableNum;
                             if (o instanceof Number) {
@@ -407,7 +418,7 @@ public class AutoFunctionFactory {
                             }
                             throw new UnsupportedOperationException();
                         };
-                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
+                        return createDoubleFunction((List<IndexDataNode>) datanodes, dbShardingKey, shardingKeys, function);
                     } else {
                         tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
                         dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
@@ -468,11 +479,14 @@ public class AutoFunctionFactory {
                     }
                 }
                 if (getDbIndex && getTIndex) {
-                    DataNode dataNode = cache.get(new Key(dIndex, tIndex));
-                    if (dataNode == null) {
-                        return (List) datanodes;
+                    for (IndexDataNode datanode : datanodes) {
+                        if (tIndex == datanode.getTableIndex()
+                                &&
+                                dIndex == datanode.getDbIndex()) {
+                            return Collections.singletonList(datanode);
+                        }
                     }
-                    return Collections.singletonList(dataNode);
+                    return (List) datanodes;
                 }
                 if (getDbIndex) {
                     List<DataNode> list = new ArrayList<>();
@@ -518,6 +532,47 @@ public class AutoFunctionFactory {
             @Override
             public boolean isShardingKey(String name) {
                 return keys.contains(SQLUtils.normalize(name));
+            }
+        };
+    }
+
+    @NotNull
+    private static CustomRuleFunction createDoubleFunction(List<IndexDataNode> datanodes, String dbShardingKey, Set<String> shardingKeys, ToIntFunction<Object> function) {
+        return new CustomRuleFunction() {
+            @Override
+            public String name() {
+                return null;
+            }
+
+            @Override
+            public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
+                Collection<RangeVariable> rangeVariables = values.get(dbShardingKey);
+                if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                    for (RangeVariable rangeVariable : rangeVariables) {
+                        switch (rangeVariable.getOperator()) {
+                            case EQUAL:
+                                Object value = rangeVariable.getValue();
+                                int i = function.applyAsInt(value);
+                                return Collections.singletonList(datanodes.get(i));
+                        }
+                    }
+                }
+                return (List) datanodes;
+            }
+
+            @Override
+            protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
+
+            }
+
+            @Override
+            public boolean isShardingKey(String name) {
+                for (String shardingKey : shardingKeys) {
+                    if (shardingKey.equalsIgnoreCase(name)) {
+                        return true;
+                    }
+                }
+                return false;
             }
         };
     }

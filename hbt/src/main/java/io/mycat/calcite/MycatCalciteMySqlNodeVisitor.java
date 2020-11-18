@@ -1097,6 +1097,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 operator = SqlStdOperatorTable.DIVIDE;
                 break;
             case DIV:
+                operator = SqlStdOperatorTable.DIVIDE_INTEGER;
                 break;
             case Modulus:
                 operator = SqlStdOperatorTable.MOD;

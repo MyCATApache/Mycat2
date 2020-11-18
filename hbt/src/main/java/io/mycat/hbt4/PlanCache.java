@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public enum PlanCache {
     INSTANCE;
-    ConcurrentHashMap<String, PriorityQueue<Plan>> cache = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, PriorityQueue<Plan>> cache = new ConcurrentHashMap<>();
 
     public Plan getMinCostPlan(String sql) {
         PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
@@ -34,4 +34,7 @@ public enum PlanCache {
         plans.add(plan);
     }
 
+    public void clear(){
+        cache.clear();
+    }
 }

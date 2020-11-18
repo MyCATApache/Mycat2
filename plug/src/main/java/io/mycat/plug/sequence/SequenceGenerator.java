@@ -58,15 +58,17 @@ public class SequenceGenerator {
                             sequenceConfig.setName(uniqueName);
                             return sequenceConfig;
                         });
-                if (sequenceConfig1.isTime()) {
+                if (sequenceConfig1.isTime()&&sequenceConfig1.getClazz()==null) {
                     TimeBasedSequence timeBasedSequence = new TimeBasedSequence();
                     timeBasedSequence.init(sequenceConfig1, workerId);
+                    return timeBasedSequence;
+                }else {
+                    String clazz = sequenceConfig1.getClazz();
+                    Class<?> aClass = Class.forName(clazz);
+                    SequenceHandler o = (SequenceHandler)aClass.newInstance();
+                    o.init(sequenceConfig1,workerId);
+                    return o;
                 }
-                String clazz = sequenceConfig1.getClazz();
-                Class<?> aClass = Class.forName(clazz);
-                SequenceHandler o = (SequenceHandler)aClass.newInstance();
-                o.init(sequenceConfig1,workerId);
-                return o;
             }
         });
     }

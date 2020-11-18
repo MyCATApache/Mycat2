@@ -72,7 +72,7 @@ public class ConfigPrepareExecuter {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
-                this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(),ops.getSequences());
+                this.sequenceGenerator = new SequenceGenerator(serverConfig.getWorkId(), ops.getSequences());
                 break;
             }
             case ROUTER: {
@@ -88,7 +88,7 @@ public class ConfigPrepareExecuter {
                 break;
             }
             case DROP_TABLE: {
-                MetadataManager oldMetadataManager= MetaClusterCurrent.wrapper(MetadataManager.class);
+                MetadataManager oldMetadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
 
                 String schemaName = ops.getSchemaName();
                 String tableName = ops.getTableName();
@@ -220,7 +220,8 @@ public class ConfigPrepareExecuter {
         context.put(MysqlVariableService.class, this.metadataManager);
         MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
         context.put(MycatRouterConfig.class, mycatRouterConfig);
-        context.put(DrdsRunner.class,new DrdsRunner(() -> this.metadataManager.getSchemaMap(), PlanCache.INSTANCE));
+        PlanCache.INSTANCE.clear();
+        context.put(DrdsRunner.class, new DrdsRunner(() -> this.metadataManager.getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }
 }
