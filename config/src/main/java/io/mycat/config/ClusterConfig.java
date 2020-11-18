@@ -1,5 +1,6 @@
 package io.mycat.config;
 
+import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,7 +13,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode
 public class ClusterConfig {
-    private String replicaType = "MASTER_SLAVE";
+    private String clusterType = "MASTER_SLAVE";
     private String switchType = "SWITCH";
     private String readBalanceType = "BALANCE_ALL";
     private String name;
@@ -20,7 +21,12 @@ public class ClusterConfig {
     private String writeBalanceName;
     private List<String> masters;
     private List<String> replicas;
-    private HeartbeatConfig heartbeat;
+    private HeartbeatConfig heartbeat = HeartbeatConfig.builder()
+            .minSwitchTimeInterval(300)
+            .heartbeatTimeout(1000)
+            .slaveThreshold(0)
+            .maxRetry(3)
+            .build();
     private Integer maxCon = 2000;
     private TimerConfig timer = null;
 
@@ -38,6 +44,11 @@ public class ClusterConfig {
         nodes.addAll(masters);
         nodes.addAll(replicas);
         return nodes;
+    }
+
+    public static void main(String[] args) {
+        ClusterConfig clusterConfig = new ClusterConfig();
+        System.out.println(JsonUtil.toJson(clusterConfig));
     }
 
 }

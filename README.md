@@ -1,4 +1,8 @@
-### 入门启动Mycat2
+# Mycat2
+
+[文档](https://github.com/MyCATApache/Mycat2/wiki)
+
+### 入门Mycat2
 
 
 

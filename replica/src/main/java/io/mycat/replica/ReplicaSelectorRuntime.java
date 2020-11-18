@@ -16,7 +16,6 @@ package io.mycat.replica;
 
 import io.mycat.MetadataStorageManager;
 import io.mycat.MycatConfig;
-import io.mycat.ScheduleUtil;
 import io.mycat.config.*;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -190,7 +189,7 @@ public class ReplicaSelectorRuntime implements Closeable {
 
     private void addCluster(Map<String, DatasourceConfig> datasourceConfigMap, ClusterConfig replicaConfig) {
         String name = replicaConfig.getName();
-        ReplicaType replicaType = ReplicaType.valueOf(replicaConfig.getReplicaType());
+        ReplicaType replicaType = ReplicaType.valueOf(replicaConfig.getClusterType());
         BalanceType balanceType = BalanceType.valueOf(replicaConfig.getReadBalanceType());
         ReplicaSwitchType switchType = ReplicaSwitchType.valueOf(replicaConfig.getSwitchType());
 
@@ -328,7 +327,7 @@ public class ReplicaSelectorRuntime implements Closeable {
                     DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(this, physicsInstance, replicaName, datasourceName,
                             heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
                             ReplicaSwitchType.valueOf(c.getSwitchType()),
-                            heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getReplicaType()),
+                            heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getClusterType()),
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);

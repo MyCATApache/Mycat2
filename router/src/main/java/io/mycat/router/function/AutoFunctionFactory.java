@@ -58,10 +58,17 @@ public class AutoFunctionFactory {
     @SneakyThrows
     public static final CustomRuleFunction
     getTableFunction(ShardingTableHandler tableHandler, ShardingFuntion config) {
+
         Map<String, Object> properties = config.getProperties();
-        int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 8).toString());
+
+        int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
-        Integer groupNum = Objects.requireNonNull(Integer.parseInt(properties.get("storeNum").toString()));
+
+        Integer groupNum =   Optional.ofNullable(properties.get("storeNum"))
+                .map(i-> Integer.parseInt(i.toString()))
+                .orElseGet(()->Optional.ofNullable(tableHandler.dataNodes()).filter(i->!i.isEmpty()).map(i->i.size())
+                        .orElseThrow(()->new IllegalArgumentException("can not get storeNum")));
+
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
