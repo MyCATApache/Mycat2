@@ -26,6 +26,6 @@ public class TimeBasedSequence implements SequenceHandler {
 
     @Override
     public Number get() {
-        return get();
+        return nextId();
     }
 }
