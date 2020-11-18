@@ -1,8 +1,8 @@
-### [入门]启动Mycat2
+### 入门启动Mycat2
 
 
 
-![架构](C:\Users\jamie12221\AppData\Roaming\Typora\typora-user-images\1605604484564.png)
+![product_arch_single](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/product_arch_single.png)
 
 
 
@@ -26,13 +26,13 @@
 
 
 
-![扩展架构](C:\Users\jamie12221\AppData\Roaming\Typora\typora-user-images\1605605407314.png)
+![product_arch_expand](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/product_arch_expand.png)
 
 当需要进行数据分片的时候，通过扩展存储节点。
 
 
 
-##### 简易启动方法
+##### 入门
 
 前提:
 
