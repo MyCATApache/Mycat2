@@ -58,7 +58,7 @@ server:
 
 
 
-[启动请参考文档](https://github.com/MyCATApache/Mycat2/wiki/%E5%AE%89%E8%A3%85%E4%B8%8E%E5%90%AF%E5%8A%A8)
+[启动请参考文档(安装与启动)](https://github.com/MyCATApache/Mycat2/wiki)
 
 
 
