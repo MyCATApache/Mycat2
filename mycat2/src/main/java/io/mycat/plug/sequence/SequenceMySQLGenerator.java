@@ -74,11 +74,12 @@ public class SequenceMySQLGenerator implements SequenceHandler {
         String[] split = args.getName().split("_");
         String db = split[0];
         String table = split[1];
-        init(MessageFormat.format("select {0}.nextval('{1}')",db,table),"prototype");
+        init(String.format("select %s.mycat_seq_nextval('%s')",db, args.getName()),"prototype");
     }
 
     @Override
     public void setStart(Number value) {
 
     }
+
 }

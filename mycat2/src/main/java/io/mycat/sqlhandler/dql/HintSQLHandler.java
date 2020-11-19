@@ -741,15 +741,9 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 ops.commit();
             }
         }
-        if ("addSequence".equalsIgnoreCase(cmd)) {
+        if ("setSequence".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putSequence(JsonUtil.from(body, SequenceConfig.class));
-                ops.commit();
-            }
-        }
-        if ("removeSequence".equalsIgnoreCase(cmd)) {
-            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-                ops.removeSequenceByName(JsonUtil.from(body, SequenceConfig.class).getName());
                 ops.commit();
             }
         }
