@@ -1086,7 +1086,7 @@ public class AutoFunctionFactory {
         if (YYYY == null && MM == null) {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * MM + MM) % num;
+        return (YYYY * 12 + MM) % num;
     }
 
     public static int singleRangeHash(int num, int n, Object o) {
