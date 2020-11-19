@@ -47,8 +47,16 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
             if (s.startsWith("mycat:")) {
                 s = s.substring(6);
                 int bodyStartIndex = s.indexOf('{');
-                String cmd = s.substring(0, bodyStartIndex);
-                String body = s.substring(bodyStartIndex);
+                String cmd;
+                String body;
+                if (bodyStartIndex == -1){
+                    cmd  = s;
+                    body  = "{}";
+                }else {
+                     cmd = s.substring(0, bodyStartIndex);
+                     body = s.substring(bodyStartIndex);
+                }
+
 
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
@@ -61,6 +69,23 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     builder.addColumnInfo("bufferUsage", JDBCType.BIGINT);
                     MycatSession mycatSession = response.unWrapper(MycatSession.class);
                     builder.addObjectRowPayload(Arrays.asList(mycatSession.writeBufferPool().trace()));
+                    response.sendResultSet(() -> builder.build());
+                    return;
+                }
+                if ("showUsers".equalsIgnoreCase(cmd)){
+                    ResultSetBuilder builder = ResultSetBuilder.create();
+                    builder.addColumnInfo("username", JDBCType.VARCHAR);
+                    builder.addColumnInfo("ip", JDBCType.VARCHAR);
+                    builder.addColumnInfo("transactionType", JDBCType.VARCHAR);
+                    Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+                    List<UserConfig> userConfigs = authenticator.allUsers();
+                    for (UserConfig userConfig : userConfigs) {
+                        builder.addObjectRowPayload(Arrays.asList(
+                                userConfig.getUsername(),
+                                userConfig.getPassword(),
+                                userConfig.getTransactionType()
+                                ));
+                    }
                     response.sendResultSet(() -> builder.build());
                     return;
                 }

@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
@@ -184,6 +185,7 @@ public class ConfigPrepareExecuter {
         Authenticator authenticator = this.authenticator;
         MetadataStorageManager metadataStorageManager = this.metadataStorageManager;
         SequenceGenerator sequenceGenerator = this.sequenceGenerator;
+        MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
 
         HashMap<Class, Object> context = new HashMap<>();
 
@@ -201,6 +203,7 @@ public class ConfigPrepareExecuter {
         }
         if (metadataManager != null) {
             context.put(metadataManager.getClass(), metadataManager);
+            context.put(MysqlVariableService.class, metadataManager);
         }
         if (datasourceConfigProvider != null) {
             context.put(datasourceConfigProvider.getClass(), datasourceConfigProvider);
@@ -212,16 +215,16 @@ public class ConfigPrepareExecuter {
         }
         if (metadataStorageManager != null) {
             context.put(metadataStorageManager.getClass(), metadataStorageManager);
+            context.put(MetadataStorageManager.class, metadataStorageManager);
         }
         if (sequenceGenerator != null) {
             context.put(sequenceGenerator.getClass(), sequenceGenerator);
         }
-        context.put(MetadataStorageManager.class, this.metadataStorageManager);
-        context.put(MysqlVariableService.class, this.metadataManager);
-        MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
-        context.put(MycatRouterConfig.class, mycatRouterConfig);
+        if (mycatRouterConfig!=null){
+            context.put(MycatRouterConfig.class, mycatRouterConfig);
+        }
         PlanCache.INSTANCE.clear();
-        context.put(DrdsRunner.class, new DrdsRunner(() -> this.metadataManager.getSchemaMap(), PlanCache.INSTANCE));
+        context.put(DrdsRunner.class, new DrdsRunner(() ->((MetadataManager)context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }
 }

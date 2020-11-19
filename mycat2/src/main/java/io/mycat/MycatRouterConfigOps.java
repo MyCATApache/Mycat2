@@ -18,7 +18,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     List<UserConfig> users = null;
     List<SequenceConfig> sequences = null;
     List<DatasourceConfig> datasources = null;
-//    String prototype = null;
+    //    String prototype = null;
     UpdateType updateType = UpdateType.FULL;
 
     String tableName;
@@ -145,7 +145,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         first.ifPresent(logicSchemaConfig -> {
             Map<String, GlobalTableConfig> globalTableConfigMap = logicSchemaConfig.getGlobalTables();
             List<ClusterConfig> clusters = mycatRouterConfig.getClusters();
-            List<String> allReplica = clusters.stream().map(i -> i.getName()).filter(i->i.startsWith("c")).collect(Collectors.toList());
+            List<String> allReplica = clusters.stream().map(i -> i.getName()).filter(i -> i.startsWith("c")).collect(Collectors.toList());
             globalTableConfig.setCreateTableSQL(sqlString.toString());
             globalTableConfig.setDataNodes(allReplica.stream()
                     .map(i -> {
@@ -245,6 +245,8 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public void putUser(UserConfig userConfig) {
         this.users = mycatRouterConfig.getUsers();
+        this.users.stream().filter(u -> u.getUsername().equals(userConfig.getUsername()))
+                .findFirst().ifPresent(find -> this.users.remove(userConfig));
         users.add(userConfig);
         updateType = UpdateType.USER;
     }
@@ -339,7 +341,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
 
-    public void commit() throws Exception  {
+    public void commit() throws Exception {
         this.configOps.commit(this);
     }
 
@@ -363,21 +365,21 @@ public class MycatRouterConfigOps implements AutoCloseable {
         SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
         HashMap<String, Object> properties = new HashMap<>();
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        properties.put("storeNum",metadataManager.getStoreNodeNum());
+        properties.put("storeNum", metadataManager.getStoreNodeNum());
         if (dbPartitionBy != null) {
             int dbPartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getDbPartitions().toString()));
             properties.put("dbNum", Objects.toString(dbPartitions));
-            properties.put("dbMethod",Objects.toString(dbPartitionBy));
+            properties.put("dbMethod", Objects.toString(dbPartitionBy));
         }
 
         SQLExpr tablePartitionBy = createTableSql.getTablePartitionBy();
         if (tablePartitionBy != null) {
             int tablePartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getTablePartitions().toString()));
-            properties.put("tableNum",Objects.toString(tablePartitions));
-            properties.put("tableMethod",Objects.toString(tablePartitionBy));
+            properties.put("tableNum", Objects.toString(tablePartitions));
+            properties.put("tableMethod", Objects.toString(tablePartitionBy));
         }
 
-        putHashTable(schemaName, tableName, createTableSql,properties);
+        putHashTable(schemaName, tableName, createTableSql, properties);
     }
 
 }

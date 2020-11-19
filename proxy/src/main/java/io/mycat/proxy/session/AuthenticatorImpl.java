@@ -6,7 +6,9 @@ import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -44,6 +46,11 @@ public class AuthenticatorImpl implements Authenticator {
     @Override
     public UserConfig getUserInfo(String username) {
         return map.get(username);
+    }
+
+    @Override
+    public List<UserConfig> allUsers() {
+        return new ArrayList<>(map.values());
     }
 
     @AllArgsConstructor

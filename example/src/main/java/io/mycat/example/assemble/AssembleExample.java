@@ -396,7 +396,7 @@ public class AssembleExample {
         execute(connection, String.format("delete  from %s.%s", db, table));
     }
 
-    protected void execute(Connection mySQLConnection, String sql) throws SQLException {
+    public static void execute(Connection mySQLConnection, String sql) throws SQLException {
          JdbcUtils.execute(mySQLConnection, sql);
     }
 
