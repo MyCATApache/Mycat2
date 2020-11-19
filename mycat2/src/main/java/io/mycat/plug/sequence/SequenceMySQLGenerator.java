@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class SequenceMySQLGenerator implements SequenceHandler {
@@ -73,8 +74,8 @@ public class SequenceMySQLGenerator implements SequenceHandler {
     public void init(SequenceConfig args, long workerId) {
         String[] split = args.getName().split("_");
         String db = split[0];
-        String table = split[1];
-        init(String.format("select %s.mycat_seq_nextval('%s')",db, args.getName()),"prototype");
+        String targetName = Optional.ofNullable(args.getTargetName()).orElse("prototype");
+        init(String.format("select %s.mycat_seq_nextval('%s')",db, args.getName()),targetName);
     }
 
     @Override

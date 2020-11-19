@@ -89,6 +89,10 @@ public class CreateSequenceHandler extends AbstractSQLHandler<SQLCreateSequenceS
                 .map(i -> SQLUtils.normalize(i)).ifPresent(text -> {
             config.setStep( Long.parseLong(text));
         });
+        Optional.ofNullable(requestAst.getStep()).map(i -> i.toString())
+                .map(i -> SQLUtils.normalize(i)).ifPresent(text -> {
+            config.setStep( Long.parseLong(text));
+        });
         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
             ops.putSequence(config);
             ops.commit();

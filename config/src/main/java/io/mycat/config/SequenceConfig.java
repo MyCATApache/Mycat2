@@ -33,6 +33,8 @@ public class SequenceConfig {
 
     private String clazz;
 
+    private String targetName;
+
     public SequenceConfig() {
     }
 }
