@@ -156,6 +156,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             clusterConfig.setMaxCon(200);
             clusterConfig.setClusterType(ReplicaType.SINGLE_NODE.name());
             clusterConfig.setSwitchType(ReplicaSwitchType.NOT_SWITCH.name());
+            routerConfig.getClusters().add(clusterConfig);
         }
 
         routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));
