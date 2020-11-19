@@ -15,13 +15,16 @@
 
 package io.mycat.router.function;
 
-import com.alibaba.fastsql.sql.parser.SQLExprParser;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.fastsql.sql.parser.SQLExprParser;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
-import io.mycat.*;
+import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
+import io.mycat.RangeVariable;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -42,7 +45,6 @@ import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
 public class AutoFunctionFactory {
@@ -120,7 +122,7 @@ public class AutoFunctionFactory {
                 String shardingKey = getShardingKey(methodInvokeExpr);
                 dbShardingKeys.add(shardingKey);
                 SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
-                dbFunction = specilizeSingleRemainderHash(num, columnInfo);
+                dbFunction = specilizeSingleModHash(num, columnInfo);
             }
             if (SQLUtils.nameEquals("MODE_HASH", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
@@ -132,7 +134,7 @@ public class AutoFunctionFactory {
                 String shardingKey = getShardingKey(methodInvokeExpr);
                 dbShardingKeys.add(shardingKey);
                 SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
-                dbFunction = specilizeSingleRemainderHash(num, columnInfo);
+                dbFunction = specilizeSingleModHash(num, columnInfo);
             }
             if (SQLUtils.nameEquals("RIGHT_SHIFT", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
@@ -228,7 +230,7 @@ public class AutoFunctionFactory {
                 SimpleColumnInfo column1 = Objects.requireNonNull(
                         tableHandler.getColumnByName(shardingKey)
                 );
-                tableFunction = specilizeSingleRemainderHash(num, column1);
+                tableFunction = specilizeSingleModHash(num, column1);
             }
             if (SQLUtils.nameEquals("MOD_HASH", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
@@ -244,7 +246,7 @@ public class AutoFunctionFactory {
                 SimpleColumnInfo column1 = Objects.requireNonNull(
                         tableHandler.getColumnByName(shardingKey)
                 );
-                tableFunction = specilizeSingleRemainderHash(num, column1);
+                tableFunction = specilizeSingleModHash(num, column1);
             }
             if (SQLUtils.nameEquals("RIGHT_SHIFT", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
@@ -358,8 +360,8 @@ public class AutoFunctionFactory {
             }
         }
         if (dbMethod != null && tableMethod != null) {
-            if (SQLUtils.nameEquals("HASH", dbMethod.getMethodName())) {
-                if (SQLUtils.nameEquals("HASH", tableMethod.getMethodName())) {
+            if (SQLUtils.nameEquals("MOD_HASH", dbMethod.getMethodName())) {
+                if (SQLUtils.nameEquals("MOD_HASH", tableMethod.getMethodName())) {
                     String tableShardingKey = Objects.requireNonNull(getShardingKey(tableMethod));
                     String dbShardingKey = getShardingKey(dbMethod);
 
@@ -392,8 +394,8 @@ public class AutoFunctionFactory {
                         shardingKeys.addAll(dbShardingKeys);
                         return createDoubleFunction(datanodes, dbShardingKey, shardingKeys, function);
                     } else {
-                        tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
-                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
+                        tableFunction = specilizeSingleModHash(tableNum, tableColumn);
+                        dbFunction = specilizeSingleModHash(dbNum, dbColumn);
                     }
 
                 }
@@ -427,8 +429,8 @@ public class AutoFunctionFactory {
                         };
                         return createDoubleFunction((List<IndexDataNode>) datanodes, dbShardingKey, shardingKeys, function);
                     } else {
-                        tableFunction = specilizeSingleRemainderHash(tableNum, tableColumn);
-                        dbFunction = specilizeSingleRemainderHash(dbNum, dbColumn);
+                        tableFunction = specilizeSingleModHash(tableNum, tableColumn);
+                        dbFunction = specilizeSingleModHash(dbNum, dbColumn);
                     }
                 }
 
@@ -898,33 +900,33 @@ public class AutoFunctionFactory {
         return dbFunction;
     }
 
-    @NotNull
-    public static ToIntFunction<Object> specilizeSingleRemainderHash(int num, SimpleColumnInfo column1) {
-        ToIntFunction<Object> tableFunction;
-        switch (column1.getType()) {
-            case NUMBER:
-                tableFunction = o -> singleRemainderHash(num, (Number) column1.normalizeValue(o));
-                break;
-            case STRING:
-                tableFunction = o -> singleRemainderHash(num, (String) column1.normalizeValue(o));
-                break;
-            case BLOB:
-                tableFunction = o -> singleRemainderHash(num, (byte[]) column1.normalizeValue(o));
-                break;
-            case TIME:
-                tableFunction = o -> singleRemainderHash(num, (Duration) column1.normalizeValue(o));
-                break;
-            case DATE:
-                tableFunction = o -> singleRemainderHash(num, (LocalDate) column1.normalizeValue(o));
-                break;
-            case TIMESTAMP:
-                tableFunction = o -> singleRemainderHash(num, (LocalDateTime) column1.normalizeValue(o));
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + column1.getType());
-        }
-        return tableFunction;
-    }
+//    @NotNull
+//    public static ToIntFunction<Object> specilizeSingleRemainderHash(int num, SimpleColumnInfo column1) {
+//        ToIntFunction<Object> tableFunction;
+//        switch (column1.getType()) {
+//            case NUMBER:
+//                tableFunction = o -> singleRemainderHash(num, (Number) column1.normalizeValue(o));
+//                break;
+//            case STRING:
+//                tableFunction = o -> singleRemainderHash(num, (String) column1.normalizeValue(o));
+//                break;
+//            case BLOB:
+//                tableFunction = o -> singleRemainderHash(num, (byte[]) column1.normalizeValue(o));
+//                break;
+//            case TIME:
+//                tableFunction = o -> singleRemainderHash(num, (Duration) column1.normalizeValue(o));
+//                break;
+//            case DATE:
+//                tableFunction = o -> singleRemainderHash(num, (LocalDate) column1.normalizeValue(o));
+//                break;
+//            case TIMESTAMP:
+//                tableFunction = o -> singleRemainderHash(num, (LocalDateTime) column1.normalizeValue(o));
+//                break;
+//            default:
+//                throw new IllegalStateException("Unexpected value: " + column1.getType());
+//        }
+//        return tableFunction;
+//    }
 
     public static int mm(int num, Object o) {
         if (o == null) return 0;
@@ -1008,17 +1010,17 @@ public class AutoFunctionFactory {
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             YYYY = localDate.getYear();
-            WEEK = localDate.get(WeekFields.ISO.weekOfYear());
+            WEEK = localDate.get(WeekFields.ISO.weekOfWeekBasedYear());
         }
         if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             YYYY = localDateTime.getYear();
-            WEEK = localDateTime.get(WeekFields.ISO.weekOfYear());
+            WEEK = localDateTime.get(WeekFields.ISO.weekOfWeekBasedYear());
         }
         if (YYYY == null && WEEK == null) {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * WEEK + 1) % num;
+        return (YYYY * 54 + WEEK) % num;
     }
 
     public static int week(int num, Object o) {
@@ -1061,7 +1063,7 @@ public class AutoFunctionFactory {
         if (YYYY == null && DD == null) {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * DD + DD) % num;
+        return (YYYY * 366 + DD) % num;
     }
 
     public static int yyyymm(int num, Object o) {
@@ -1139,26 +1141,26 @@ public class AutoFunctionFactory {
 
     public static int singleModHash(int num, String o) {
         if (o == null) o = "null";
-        return Math.floorMod(hashCode(o), num);
+        return singleModHash(hashCode(o), num);
     }
 
     public static int singleModHash(int num, Number o) {
         if (o == null) {
             o = 0;
         }
-        return (int) Math.floorMod(o.longValue(), num);
+        return (int) o.longValue()% num;
     }
 
-    public static int singleRemainderHash(int num, Object o) {
-        if (o instanceof Number) {
-            return singleRemainderHash(num, (Number) o);
-        }
-
-        if (o instanceof String) {
-            return singleRemainderHash(num, (String) o);
-        }
-        throw new UnsupportedOperationException();
-    }
+//    public static int singleRemainderHash(int num, Object o) {
+//        if (o instanceof Number) {
+//            return singleRemainderHash(num, (Number) o);
+//        }
+//
+//        if (o instanceof String) {
+//            return singleRemainderHash(num, (String) o);
+//        }
+//        return singleRemainderHash(num,Objects.toString(o));
+//    }
 
     public static int singleRemainderHash(int num, String o) {
         if (o == null) o = "null";
