@@ -1,6 +1,6 @@
 # Mycat2
 
-该readme显示的版本尚未发布,是master仓库,已经发布的版本在release里
+该readme显示的版本尚未发布,是master仓库,已经发布的旧版本(配置完全不一样)在release里
 
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
 
