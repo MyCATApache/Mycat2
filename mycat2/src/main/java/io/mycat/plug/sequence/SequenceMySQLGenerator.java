@@ -1,6 +1,7 @@
 package io.mycat.plug.sequence;
 
 import io.mycat.MetaClusterCurrent;
+import io.mycat.config.SequenceConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -12,69 +13,48 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
-public class SequenceMySQLGenerator implements Supplier<String> {
+public class SequenceMySQLGenerator implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory
             .getLogger(SequenceMySQLGenerator.class);
-    private final String sql;
-    private final String queryTargetName;
-    private final BiFunction<String, String, String> function;
+    private String sql;
+    private String queryTargetName;
+    private BiFunction<String, String, String> function;
     private long count = 0;
     private long limit = -1;
 
-    public SequenceMySQLGenerator(String config) {
-        this(config, (s, s2) -> {
+    public void init(String sql, String targetName) {
+        init(sql, targetName, (s, s2) -> {
             ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             String datasourceName = selectorRuntime.getDatasourceNameByReplicaName(s, true, null);
             JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(datasourceName);
-            try(Connection connection1 = jdbcDataSource.getDataSource().getConnection()){
-                try(Statement statement = connection1.createStatement()){
-                   try( ResultSet resultSet = statement.executeQuery(s2)) {
-                       while (resultSet.next()) {
-                           return resultSet.getString(1);
-                       }
-                   }
+            try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
+                try (Statement statement = connection1.createStatement()) {
+                    try (ResultSet resultSet = statement.executeQuery(s2)) {
+                        while (resultSet.next()) {
+                            return resultSet.getString(1);
+                        }
+                    }
                 }
             } catch (SQLException e) {
-               throw new RuntimeException("can not get queryTargetName:"+s+",sql:"+s2+" e");
+                throw new RuntimeException("can not get queryTargetName:" + s + ",sql:" + s2 + " e");
             }
             return null;
         });
     }
 
-    public SequenceMySQLGenerator(String config, BiFunction<String, String, String> function) {
-        String[] split = config.split(",");
-        String queryTargetName = null;
-        String sql = null;
-        for (String s : split) {
-            String[] split1 = s.split(":");
-            String key = split1[0].trim().toLowerCase();
-            String value = split1[1].trim();
-            switch (key) {
-                case "sql": {
-                    sql = value;
-                    break;
-                }
-                case "targetname": {
-                    queryTargetName = value;
-                    break;
-                }
-                default:
-                    throw new IllegalArgumentException(key);
-            }
-        }
-
+    public void init(String sql, String targetName, BiFunction<String, String, String> function) {
         this.sql = Objects.requireNonNull(sql);
-        this.queryTargetName = Objects.requireNonNull(queryTargetName);
+        this.queryTargetName = Objects.requireNonNull(targetName);
         this.function = Objects.requireNonNull(function);
     }
 
     @Override
-    public synchronized String get() {
+    public synchronized Number get() {
         if (count > limit) {
             try {
                 String s = function.apply(queryTargetName, sql);
@@ -86,6 +66,19 @@ public class SequenceMySQLGenerator implements Supplier<String> {
                 throw new RuntimeException(e);
             }
         }
-        return String.valueOf(count++);
+        return (count++);
+    }
+
+    @Override
+    public void init(SequenceConfig args, long workerId) {
+        String[] split = args.getName().split("_");
+        String db = split[0];
+        String table = split[1];
+        init(MessageFormat.format("select {0}.nextval('{1}')",db,table),"prototype");
+    }
+
+    @Override
+    public void setStart(Number value) {
+
     }
 }
