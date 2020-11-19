@@ -51,9 +51,13 @@ Mycat2的jar包
 保证配置文件夹有server.json，内容至少是
 
 ```sql
-server:
-  ip: 127.0.0.1
-  port: 8066
+{
+  "server":{
+    "ip":"127.0.0.1",
+    "mycatId":1,
+    "port":8066,
+  }
+}
 ```
 
 

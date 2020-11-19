@@ -72,8 +72,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @NotNull
     @SneakyThrows
     private MycatRouterConfig getRouterConfig(Path baseDirectory) {
-        Path mycatPath = resolveFileName("mycat");
-        String suffix = getSuffix(mycatPath.toString());
+//        Path mycatPath = resolveFileName("mycat");
+//        String suffix = getSuffix(mycatPath.toString());
         Path schemasPath = baseDirectory.resolve("schemas");
         Path clustersPath = baseDirectory.resolve("clusters");
         Path datasources = baseDirectory.resolve("datasources");
@@ -86,9 +86,9 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         if (Files.notExists(users)) Files.createDirectory(users);
         if (Files.notExists(sequences)) Files.createDirectory(sequences);
 
-        if (Files.notExists(mycatPath)) {
-            writeFile(getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()),mycatPath);
-        }
+//        if (Files.notExists(mycatPath)) {
+//            writeFile(getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()),mycatPath);
+//        }
 
         Stream<Path> schemaPaths = Files.list(baseDirectory.resolve("schemas")).filter(i -> isSuffix(i, "schema"));
         Stream<Path> clusterPaths = Files.list(baseDirectory.resolve("clusters")).filter(i -> isSuffix(i, "cluster"));
@@ -96,7 +96,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         Stream<Path> userPaths = Files.list(baseDirectory.resolve("users")).filter(i -> isSuffix(i, "user"));
         Stream<Path> sequencePaths = Files.list(baseDirectory.resolve("sequences")).filter(i -> isSuffix(i, "sequence"));
 
-        MycatRouterConfig routerConfig = getConfigReaderWriter(mycatPath).transformation(readString(mycatPath), MycatRouterConfig.class);
+        MycatRouterConfig routerConfig = new MycatRouterConfig();
 
         List<LogicSchemaConfig> logicSchemaConfigs = schemaPaths.map(i -> {
             ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
@@ -155,7 +155,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             clusterConfig.setMasters(Lists.newArrayList("prototypeDs"));
             clusterConfig.setMaxCon(200);
             clusterConfig.setClusterType(ReplicaType.SINGLE_NODE.name());
-            clusterConfig.setSwitchType(ReplicaSwitchType.NOT_SWITCH.name());
+            clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
             routerConfig.getClusters().add(clusterConfig);
         }
 
@@ -210,8 +210,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops)throws Exception  {
-                    Path mycatPath = resolveFileName("mycat");
-                    String suffix = getSuffix(mycatPath.getFileName().toString());
+                   //Path mycatPath = resolveFileName("mycat");
+                    String suffix = "json";
                     ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                     MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
                     ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);

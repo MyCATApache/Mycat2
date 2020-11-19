@@ -13,7 +13,7 @@ public class ServerConfigurationImpl extends ServerConfiguration {
     @SneakyThrows
     public ServerConfigurationImpl(Class rootClass, String path) {
         super(rootClass);
-        this.mycatServerConfig = YamlUtil.load(MycatServerConfig.class, new FileReader(Paths.get(path).resolve("server.yml").toString()));
+        this.mycatServerConfig = YamlUtil.load(MycatServerConfig.class, new FileReader(Paths.get(path).resolve("server.json").toString()));
     }
 
     @Override

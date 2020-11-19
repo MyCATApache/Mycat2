@@ -1,0 +1,45 @@
+{
+  "datasourceProvider":"io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider",
+  "loadBalance":{
+    "defaultLoadBalance":"BalanceRandom",
+    "loadBalances":[]
+  },
+  "manager":{
+    "ip":"127.0.0.1",
+    "port":9066,
+    "users":[]
+  },
+  "mode":"local",
+  "properties":{},
+  "server":{
+    "bufferPool":{
+
+    },
+    "idleTimer":{
+      "initialDelay":3,
+      "period":15,
+      "timeUnit":"SECONDS"
+    },
+    "ip":"127.0.0.1",
+    "mycatId":1,
+    "port":8066,
+    "reactorNumber":8,
+    "tempDirectory":null,
+    "timeWorkerPool":{
+      "corePoolSize":0,
+      "keepAliveTime":1,
+      "maxPendingLimit":65535,
+      "maxPoolSize":2,
+      "taskTimeout":1,
+      "timeUnit":"MINUTES"
+    },
+    "workerPool":{
+      "corePoolSize":8,
+      "keepAliveTime":1,
+      "maxPendingLimit":65535,
+      "maxPoolSize":1024,
+      "taskTimeout":1,
+      "timeUnit":"MINUTES"
+    }
+  }
+}

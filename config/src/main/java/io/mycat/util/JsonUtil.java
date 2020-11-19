@@ -2,6 +2,7 @@ package io.mycat.util;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +25,6 @@ public class JsonUtil {
     }
 
     public static String toJson(Object o) {
-        return JSON.toJSONString(o);
+        return JSON.toJSONString(o, SerializerFeature.PrettyFormat);
     }
 }
