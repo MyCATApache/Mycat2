@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
+    protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         Optional<Map<String, Object>> afterJson = request.getAnyJson();
         MySqlHintStatement ast = request.getAst();
         List<SQLCommentHint> hints = ast.getHints();
@@ -53,12 +53,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 int bodyStartIndex = s.indexOf('{');
                 String cmd;
                 String body;
-                if (bodyStartIndex == -1){
-                    cmd  = s;
-                    body  = "{}";
-                }else {
-                     cmd = s.substring(0, bodyStartIndex);
-                     body = s.substring(bodyStartIndex);
+                if (bodyStartIndex == -1) {
+                    cmd = s;
+                    body = "{}";
+                } else {
+                    cmd = s.substring(0, bodyStartIndex);
+                    body = s.substring(bodyStartIndex);
                 }
 
 
@@ -76,7 +76,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> builder.build());
                     return;
                 }
-                if ("showUsers".equalsIgnoreCase(cmd)){
+                if ("showUsers".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
                     builder.addColumnInfo("username", JDBCType.VARCHAR);
                     builder.addColumnInfo("ip", JDBCType.VARCHAR);
@@ -88,7 +88,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 userConfig.getUsername(),
                                 userConfig.getPassword(),
                                 userConfig.getTransactionType()
-                                ));
+                        ));
                     }
                     response.sendResultSet(() -> builder.build());
                     return;
@@ -232,7 +232,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> resultSetBuilder.build());
                     return;
                 }
-                if ("showDatasources".equalsIgnoreCase(cmd)) {
+                if ("showDataSources".equalsIgnoreCase(cmd)) {
 
                     Map<String, DatasourceConfig> datasourceConfigMap = routerConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
                     Optional<JdbcConnectionManager> connectionManager = Optional.ofNullable(jdbcConnectionManager);
@@ -325,6 +325,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 IDLE_TIMEOUT, DRIVER, TYPE, IS_MYSQL));
                     }
                     response.sendResultSet(() -> resultSetBuilder.build());
+                    return;
                 }
                 if ("showHeartbeats".equalsIgnoreCase(cmd)) {
                     Map<String, DatasourceConfig> dataSourceConfig = routerConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -382,7 +383,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String HB_DS_STATUS = DS_STATUS_OBJECT.getStatus().name();
                         boolean IS_SLAVE_BEHIND_MASTER = DS_STATUS_OBJECT.isSlaveBehindMaster();
                         LocalDateTime LAST_SEND_QUERY_TIME =
-                        new Timestamp(heartbeatFlow.getLastSendQryTime()).toLocalDateTime();
+                                new Timestamp(heartbeatFlow.getLastSendQryTime()).toLocalDateTime();
                         LocalDateTime LAST_RECEIVED_QUERY_TIME =
                                 new Timestamp(heartbeatFlow.getLastReceivedQryTime()).toLocalDateTime();
                         Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
@@ -679,11 +680,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     boolean IS_SHUTDOWN = timer.isShutdown();
                     int SCHEDULE_COUNT = ScheduleUtil.getScheduleCount();
                     builder.addColumnInfo("NAME", JDBCType.VARCHAR)
-                            .addColumnInfo("IS_TERMINATED",JDBCType.BOOLEAN)
-                            .addColumnInfo("IS_SHUTDOWN",JDBCType.BOOLEAN)
-                            .addColumnInfo("SCHEDULE_COUNT",JDBCType.BIGINT);
-                    builder.addObjectRowPayload(Arrays.asList(NAME,IS_TERMINATED,IS_SHUTDOWN,SCHEDULE_COUNT));
-                    response.sendResultSet(()->builder.build());
+                            .addColumnInfo("IS_TERMINATED", JDBCType.BOOLEAN)
+                            .addColumnInfo("IS_SHUTDOWN", JDBCType.BOOLEAN)
+                            .addColumnInfo("SCHEDULE_COUNT", JDBCType.BIGINT);
+                    builder.addObjectRowPayload(Arrays.asList(NAME, IS_TERMINATED, IS_SHUTDOWN, SCHEDULE_COUNT));
+                    response.sendResultSet(() -> builder.build());
                     return;
                 }
                 mycatDmlHandler(cmd, body);
@@ -718,7 +719,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 ops.commit();
             }
         }
-        if ("removeDataSource".equalsIgnoreCase(cmd)) {
+        if ("dropDataSource".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.removeDatasource(JsonUtil.from(body, DatasourceConfig.class).getName());
                 ops.commit();

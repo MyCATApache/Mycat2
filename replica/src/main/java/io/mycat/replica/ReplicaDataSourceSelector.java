@@ -166,6 +166,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
         switch (type) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
+                if (this.writeDataSourceList.isEmpty()){
+                    return Collections.emptyList();
+                }
                 return Collections.singletonList(this.writeDataSourceList.get(0));
             case GARELA_CLUSTER:
             case NONE:

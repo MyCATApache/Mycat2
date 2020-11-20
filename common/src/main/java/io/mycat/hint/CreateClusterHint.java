@@ -9,11 +9,11 @@ import java.util.List;
 public  class CreateClusterHint extends HintBuilder {
         private ClusterConfig config;
 
-        public static String create(String name, List<String> dsNames, List<String> ss) {
+        public static String create(String name, List<String> masters, List<String> reads) {
             ClusterConfig clusterConfig = new ClusterConfig();
             clusterConfig.setName(name);
-            clusterConfig.setMasters(dsNames);
-            clusterConfig.setReplicas(ss);
+            clusterConfig.setMasters(masters);
+            clusterConfig.setReplicas(reads);
 
             CreateClusterHint createClusterHint = new CreateClusterHint();
             createClusterHint.setConfig(clusterConfig);

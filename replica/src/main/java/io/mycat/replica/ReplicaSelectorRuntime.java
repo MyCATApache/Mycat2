@@ -91,7 +91,12 @@ public class ReplicaSelectorRuntime implements Closeable {
             c.notifyChangeAlive(true);
         });
 
-        Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = replicaMap.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toMap(k -> k.getName(), v -> v));
+        Map<String, PhysicsInstanceImpl> newphysicsInstanceMap = new HashMap<>();
+        for (ReplicaDataSourceSelector i : replicaMap.values()) {
+            for (PhysicsInstanceImpl k : i.datasourceMap.values()) {
+                newphysicsInstanceMap.put(k.getName(), k);
+            }
+        }
         CollectionUtil.safeUpdateByUpdate(this.physicsInstanceMap, newphysicsInstanceMap);
     }
 
@@ -199,8 +204,12 @@ public class ReplicaSelectorRuntime implements Closeable {
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
                 replicaType, maxRequestCount, switchType, readLB, writeLB, replicaConfig.getTimer());
 
-        registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
-        registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
+        if (replicaConfig.getMasters() != null) {
+            registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
+        }
+        if (replicaConfig.getReplicas() != null) {
+            registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
+        }
     }
 
     private void registerDatasource(Map<String, DatasourceConfig> datasourceConfigMap, ReplicaDataSourceSelector selector, List<String> datasourceNameList, boolean master) {
