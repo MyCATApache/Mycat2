@@ -40,7 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ManagerHintHandler extends AbstractSQLHandler<MySqlHintStatement> {
+public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
     protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         Optional<Map<String, Object>> afterJson = request.getAnyJson();

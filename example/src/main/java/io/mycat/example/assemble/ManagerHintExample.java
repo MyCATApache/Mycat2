@@ -11,7 +11,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-public class HintExample {
+public class ManagerHintExample {
 
     Connection getMySQLConnection(int port) throws SQLException {
         String username = "root";
