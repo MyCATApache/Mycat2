@@ -5,7 +5,7 @@ import io.mycat.util.JsonUtil;
 
 import java.text.MessageFormat;
 
-public  class AddDatasourceHint extends HintBuilder {
+public  class CreateDataSourceHint extends HintBuilder {
         private DatasourceConfig config;
 
         public void setDatasourceConfig(DatasourceConfig config) {
@@ -14,7 +14,7 @@ public  class AddDatasourceHint extends HintBuilder {
 
         @Override
         public String getCmd() {
-            return "addDatasource";
+            return "createDataSource";
         }
 
         @Override
@@ -25,9 +25,9 @@ public  class AddDatasourceHint extends HintBuilder {
         }
 
         public static String create(DatasourceConfig config) {
-            AddDatasourceHint addDatasourceHint = new AddDatasourceHint();
-            addDatasourceHint.setDatasourceConfig(config);
-            return addDatasourceHint.build();
+            CreateDataSourceHint createDataSourceHint = new CreateDataSourceHint();
+            createDataSourceHint.setDatasourceConfig(config);
+            return createDataSourceHint.build();
         }
 
         public static String create(

@@ -6,7 +6,7 @@ import io.mycat.util.JsonUtil;
 import java.text.MessageFormat;
 import java.util.List;
 
-public  class AddClusterHint extends HintBuilder {
+public  class CreateClusterHint extends HintBuilder {
         private ClusterConfig config;
 
         public static String create(String name, List<String> dsNames, List<String> ss) {
@@ -15,10 +15,10 @@ public  class AddClusterHint extends HintBuilder {
             clusterConfig.setMasters(dsNames);
             clusterConfig.setReplicas(ss);
 
-            AddClusterHint addClusterHint = new AddClusterHint();
-            addClusterHint.setConfig(clusterConfig);
+            CreateClusterHint createClusterHint = new CreateClusterHint();
+            createClusterHint.setConfig(clusterConfig);
 
-            return addClusterHint.build();
+            return createClusterHint.build();
         }
 
 
@@ -28,7 +28,7 @@ public  class AddClusterHint extends HintBuilder {
 
         @Override
         public String getCmd() {
-            return "addCluster";
+            return "createCluster";
         }
 
         @Override
@@ -38,9 +38,9 @@ public  class AddClusterHint extends HintBuilder {
                     JsonUtil.toJson(config));
         }
 
-        public static AddClusterHint create(ClusterConfig clusterConfig) {
-            AddClusterHint addClusterHint = new AddClusterHint();
-            addClusterHint.setConfig(clusterConfig);
-            return addClusterHint;
+        public static CreateClusterHint create(ClusterConfig clusterConfig) {
+            CreateClusterHint createClusterHint = new CreateClusterHint();
+            createClusterHint.setConfig(clusterConfig);
+            return createClusterHint;
         }
     }

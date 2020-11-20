@@ -2,23 +2,16 @@ package io.mycat.example.assemble;
 
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
-import io.mycat.config.ClusterConfig;
-import io.mycat.config.DatasourceConfig;
-import io.mycat.example.TestUtil;
-import io.mycat.hint.AddClusterHint;
-import io.mycat.hint.AddDatasourceHint;
-import io.mycat.util.JsonUtil;
+import io.mycat.hint.CreateClusterHint;
+import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
-import org.apache.calcite.linq4j.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 public class AssembleExample {
 
@@ -268,32 +261,32 @@ public class AssembleExample {
 
     protected void initCluster(Connection mycatConnection) throws SQLException {
         execute(mycatConnection,
-                AddDatasourceHint
+                CreateDataSourceHint
                         .create("dw0",
                                 "jdbc:mysql://127.0.0.1:3306"));
 
         execute(mycatConnection,
-                AddDatasourceHint
+                CreateDataSourceHint
                         .create("dr0",
                                 "jdbc:mysql://127.0.0.1:3306"));
 
         execute(mycatConnection,
-                AddDatasourceHint
+                CreateDataSourceHint
                         .create("dw1",
                                 "jdbc:mysql://127.0.0.1:3307"));
 
         execute(mycatConnection,
-                AddDatasourceHint
+                CreateDataSourceHint
                         .create("dr1",
                                 "jdbc:mysql://127.0.0.1:3307"));
 
         execute(mycatConnection,
-                AddClusterHint
+                CreateClusterHint
                         .create("c0",
                                 Arrays.asList("dw0"), Arrays.asList("dr0")));
 
         execute(mycatConnection,
-                AddClusterHint
+                CreateClusterHint
                         .create("c1",
                                 Arrays.asList("dw1"), Arrays.asList("dr1")));
     }
@@ -397,10 +390,12 @@ public class AssembleExample {
     }
 
     public static void execute(Connection mySQLConnection, String sql) throws SQLException {
-         JdbcUtils.execute(mySQLConnection, sql);
+        System.out.println(sql);
+        JdbcUtils.execute(mySQLConnection, sql);
     }
 
     public static List<Map<String, Object>> executeQuery(Connection mySQLConnection, String sql) throws SQLException {
+        System.out.println(sql);
         return JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
     }
 

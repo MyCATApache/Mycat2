@@ -712,37 +712,37 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 ops.commit();
             }
         }
-        if ("addDatasource".equalsIgnoreCase(cmd)) {
+        if ("createDataSource".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putDatasource(JsonUtil.from(body, DatasourceConfig.class));
                 ops.commit();
             }
         }
-        if ("removeDatasource".equalsIgnoreCase(cmd)) {
+        if ("removeDataSource".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.removeDatasource(JsonUtil.from(body, DatasourceConfig.class).getName());
                 ops.commit();
             }
         }
-        if ("addUser".equalsIgnoreCase(cmd)) {
+        if ("createUser".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putUser(JsonUtil.from(body, UserConfig.class));
                 ops.commit();
             }
         }
-        if ("removeUser".equalsIgnoreCase(cmd)) {
+        if ("dropUser".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.deleteUser(JsonUtil.from(body, UserConfig.class).getUsername());
                 ops.commit();
             }
         }
-        if ("addCluster".equalsIgnoreCase(cmd)) {
+        if ("createCluster".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putReplica(JsonUtil.from(body, ClusterConfig.class));
                 ops.commit();
             }
         }
-        if ("removeCluster".equalsIgnoreCase(cmd)) {
+        if ("dropCluster".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.removeReplica(JsonUtil.from(body, ClusterConfig.class).getName());
                 ops.commit();
@@ -754,13 +754,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 ops.commit();
             }
         }
-        if ("putSchema".equalsIgnoreCase(cmd)) {
+        if ("createSchema".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putSchema(JsonUtil.from(body, LogicSchemaConfig.class));
                 ops.commit();
             }
         }
-        if ("removeSchema".equalsIgnoreCase(cmd)) {
+        if ("dropSchema".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.dropSchema(JsonUtil.from(body, LogicSchemaConfig.class).getSchemaName());
                 ops.commit();

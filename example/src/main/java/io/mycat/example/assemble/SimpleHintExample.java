@@ -1,11 +1,7 @@
 package io.mycat.example.assemble;
 
-import io.mycat.hint.AddClusterHint;
-import io.mycat.hint.AddDatasourceHint;
-
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 public class SimpleHintExample extends AssembleExample{
     @Override

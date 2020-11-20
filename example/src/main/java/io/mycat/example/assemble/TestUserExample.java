@@ -26,7 +26,7 @@ public class TestUserExample {
     @Test
     public void testCreateUser() throws SQLException {
         try (Connection connection = getMySQLConnection(8066)) {
-            AssembleExample.execute(connection, "/*+ mycat:addUser{\n" +
+            AssembleExample.execute(connection, "/*+ mycat:createUser{\n" +
                     "\t\"username\":\"user\",\n" +
                     "\t\"password\":\"\",\n" +
                     "\t\"ip\":\"127.0.0.1\",\n" +
@@ -34,7 +34,7 @@ public class TestUserExample {
                     "} */");
             List<Map<String, Object>> maps = AssembleExample.executeQuery(connection, "/*+ mycat:showUsers */");
             Assert.assertTrue(maps.stream().map(i -> i.get("username")).anyMatch(i -> i.equals("user")));
-            AssembleExample.execute(connection, "/*+ mycat:removeUser{\n" +
+            AssembleExample.execute(connection, "/*+ mycat:dropUser{\n" +
                     "\t\"username\":\"user\"" +
                     "} */");
             List<Map<String, Object>> maps2 = AssembleExample.executeQuery(connection, "/*+ mycat:showUsers */");

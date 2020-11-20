@@ -76,7 +76,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putSchema(LogicSchemaConfig schemaConfig) {
         this.schemas = mycatRouterConfig.getSchemas();
         List<LogicSchemaConfig> schemas = this.schemas;
-        Optional<LogicSchemaConfig> first = schemas.stream().filter(i -> schemaName.equals(i.getSchemaName())).findFirst();
+        Optional<LogicSchemaConfig> first = schemas.stream().filter(i ->
+                Objects.requireNonNull(schemaConfig.getSchemaName(),"schema name is null")
+                        .equals(i.getSchemaName())).findFirst();
         first.ifPresent(schemas::remove);
         schemas.add(schemaConfig);
         updateType = UpdateType.ROUTER;
