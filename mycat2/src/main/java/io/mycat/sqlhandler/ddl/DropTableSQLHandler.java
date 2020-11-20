@@ -11,16 +11,12 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.sqlhandler.dql.HintSQLHandler;
-import io.mycat.util.JsonUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
 
 
 public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatement> {

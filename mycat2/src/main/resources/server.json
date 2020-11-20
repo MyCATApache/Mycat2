@@ -4,11 +4,6 @@
     "defaultLoadBalance":"BalanceRandom",
     "loadBalances":[]
   },
-  "manager":{
-    "ip":"127.0.0.1",
-    "port":9066,
-    "users":[]
-  },
   "mode":"local",
   "properties":{},
   "server":{

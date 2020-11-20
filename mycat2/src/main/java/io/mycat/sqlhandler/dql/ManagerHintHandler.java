@@ -31,12 +31,16 @@ import io.mycat.util.Response;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
+public class ManagerHintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
     protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         Optional<Map<String, Object>> afterJson = request.getAnyJson();
@@ -339,7 +343,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     resultSetBuilder.addColumnInfo("SLAVE_THRESHOLD", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("IS_HEARTBEAT_TIMEOUT", JDBCType.BOOLEAN);
                     resultSetBuilder.addColumnInfo("HB_ERROR_COUNT", JDBCType.BIGINT);
-                    resultSetBuilder.addColumnInfo("HB_LAST_SWITCH_TIME", JDBCType.DATE);
+                    resultSetBuilder.addColumnInfo("HB_LAST_SWITCH_TIME", JDBCType.TIMESTAMP);
                     resultSetBuilder.addColumnInfo("HB_MAX_RETRY", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("IS_CHECKING", JDBCType.BOOLEAN);
                     resultSetBuilder.addColumnInfo("MIN_SWITCH_TIME_INTERVAL", JDBCType.BIGINT);
@@ -347,8 +351,8 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     resultSetBuilder.addColumnInfo("SYNC_DS_STATUS", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("HB_DS_STATUS", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("IS_SLAVE_BEHIND_MASTER", JDBCType.BOOLEAN);
-                    resultSetBuilder.addColumnInfo("LAST_SEND_QUERY_TIME", JDBCType.DATE);
-                    resultSetBuilder.addColumnInfo("LAST_RECEIVED_QUERY_TIME", JDBCType.DATE);
+                    resultSetBuilder.addColumnInfo("LAST_SEND_QUERY_TIME", JDBCType.TIMESTAMP);
+                    resultSetBuilder.addColumnInfo("LAST_RECEIVED_QUERY_TIME", JDBCType.TIMESTAMP);
 
 
                     for (HeartbeatFlow heartbeatFlow : replicaSelectorRuntime.getHeartbeatDetectorMap().values()) {
@@ -367,7 +371,8 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         boolean IS_HEARTBEAT_TIMEOUT = heartbeatFlow.isHeartbeatTimeout();
                         final HeartBeatStatus HEART_BEAT_STATUS = heartbeatFlow.getHbStatus();
                         int HB_ERROR_COUNT = HEART_BEAT_STATUS.getErrorCount();
-                        long HB_LAST_SWITCH_TIME = (HEART_BEAT_STATUS.getLastSwitchTime());
+                        LocalDateTime HB_LAST_SWITCH_TIME =
+                                new Timestamp(HEART_BEAT_STATUS.getLastSwitchTime()).toLocalDateTime();
                         int HB_MAX_RETRY = HEART_BEAT_STATUS.getMaxRetry();
                         boolean IS_CHECKING = HEART_BEAT_STATUS.isChecking();
                         long MIN_SWITCH_TIME_INTERVAL = HEART_BEAT_STATUS.getMinSwitchTimeInterval();
@@ -376,9 +381,10 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String SYNC_DS_STATUS = DS_STATUS_OBJECT.getDbSynStatus().name();
                         String HB_DS_STATUS = DS_STATUS_OBJECT.getStatus().name();
                         boolean IS_SLAVE_BEHIND_MASTER = DS_STATUS_OBJECT.isSlaveBehindMaster();
-                        Date LAST_SEND_QUERY_TIME = new Date(heartbeatFlow.getLastSendQryTime());
-                        Date LAST_RECEIVED_QUERY_TIME = new Date(heartbeatFlow.getLastReceivedQryTime());
-
+                        LocalDateTime LAST_SEND_QUERY_TIME =
+                        new Timestamp(heartbeatFlow.getLastSendQryTime()).toLocalDateTime();
+                        LocalDateTime LAST_RECEIVED_QUERY_TIME =
+                                new Timestamp(heartbeatFlow.getLastReceivedQryTime()).toLocalDateTime();
                         Optional<DatasourceConfig> e = Optional.ofNullable(dataSourceConfig.get(NAME));
 
                         String replicaDataSourceSelectorList = String.join(",", replicaSelectorRuntime.getRepliaNameListByInstanceName(NAME));
@@ -484,7 +490,7 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         Integer CUR_SESSION_ID = Optional.ofNullable(mycatReactorThread.getCurSession()).map(i -> i.sessionId()).orElse(null);
                         boolean PREPARE_STOP = mycatReactorThread.isPrepareStop();
                         String BUFFER_POOL_SNAPSHOT = Optional.ofNullable(mycatReactorThread.getBufPool()).map(i -> i.snapshot().toString("|")).orElse("");
-                        Timestamp LAST_ACTIVE_TIME = new Timestamp(mycatReactorThread.getLastActiveTime());
+                        LocalDateTime LAST_ACTIVE_TIME = new Timestamp(mycatReactorThread.getLastActiveTime()).toLocalDateTime();
                         resultSetBuilder.addObjectRowPayload(Arrays.asList(
                                 THREAD_NAME,
                                 THREAD_ID,
@@ -681,8 +687,9 @@ public class HintSQLHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     return;
                 }
                 mycatDmlHandler(cmd, body);
+                response.sendOk();
+                return;
             }
-            System.out.println();
         }
         response.sendOk();
     }
