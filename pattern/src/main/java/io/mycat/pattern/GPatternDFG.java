@@ -14,7 +14,6 @@
  */
 package io.mycat.pattern;
 
-import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +128,7 @@ public interface GPatternDFG {
         }
 
 
-        @Log4j
+
         public static class State {
             final int depth;
             public GPatternSeq nextToken;
@@ -159,7 +158,7 @@ public interface GPatternDFG {
 
             public void addWildcard(String name, State matcher) {
                 if (!success.isEmpty()) {
-                    log.warn(MessageFormat.format("'{' {0} '}' '{' {1} '}' are ambiguous",this.success.keySet(), name));
+                    //log.warn(MessageFormat.format("'{' {0} '}' '{' {1} '}' are ambiguous",this.success.keySet(), name));
                 }
 
                 if (this.name == null) {

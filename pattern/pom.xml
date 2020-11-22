@@ -28,11 +28,6 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.9</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.9</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
         <dependency>
             <groupId>com.alibaba.fastsql</groupId>
