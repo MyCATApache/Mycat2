@@ -1,4 +1,4 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import org.junit.Assert;

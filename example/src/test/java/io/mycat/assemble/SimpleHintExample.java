@@ -1,9 +1,9 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class SimpleHintExample extends AssembleExample{
+public class SimpleHintExample extends AssembleExample {
     @Override
     protected void initCluster(Connection mycatConnection) throws SQLException {
         execute(mycatConnection,

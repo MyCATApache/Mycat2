@@ -1,4 +1,4 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import org.junit.Test;
@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class PstmtAssembleExample extends  AssembleExample{
+public class PstmtAssembleExample extends AssembleExample {
 
     @Override
     Connection getMySQLConnection(int port) throws SQLException {

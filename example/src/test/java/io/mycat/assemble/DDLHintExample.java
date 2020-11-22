@@ -1,4 +1,4 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
 import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;

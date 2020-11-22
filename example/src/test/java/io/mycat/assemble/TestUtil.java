@@ -1,4 +1,4 @@
-package io.mycat.example;
+package io.mycat.assemble;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.hbt.TextConvertor;

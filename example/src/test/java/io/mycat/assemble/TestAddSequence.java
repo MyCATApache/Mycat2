@@ -1,9 +1,5 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import org.junit.Assert;
 import org.junit.Test;
