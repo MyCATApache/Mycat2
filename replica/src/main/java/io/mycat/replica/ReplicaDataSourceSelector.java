@@ -306,4 +306,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
 
         }
     }
+
+    public Collection<String> getAllDataSources() {
+      return   this.datasourceMap.keySet();
+    }
 }

@@ -112,7 +112,6 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     @Override
     public void check() {
-        LOGGER.info("MycatSessionManager is checking");
         Iterator<MycatSession> iterator = mycatSessions.iterator();
         while (iterator.hasNext()) {
             MycatSession next = iterator.next();
@@ -122,7 +121,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
                 try {
                     if (!next.checkOpen()) {
                         next.close(false, "MycatSessionManager check");
-                        LOGGER.error("未关闭连接:{}", next);
+                        LOGGER.warn("未关闭连接:{}", next);
                     }
                 } catch (Exception e) {
                     LOGGER.error("{}", e);

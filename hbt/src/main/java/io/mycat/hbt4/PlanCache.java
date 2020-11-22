@@ -14,27 +14,64 @@
  */
 package io.mycat.hbt4;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Collections;
 import java.util.PriorityQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
 public enum PlanCache {
     INSTANCE;
-    final ConcurrentHashMap<String, PriorityQueue<Plan>> cache = new ConcurrentHashMap<>();
+
+    private Cache<String, PriorityQueue<Plan>> cache;
+
+    PlanCache() {
+        this.cache = newCache();
+    }
+
+    @NotNull
+    private Cache<String, PriorityQueue<Plan>> newCache() {
+        return CacheBuilder.newBuilder().maximumSize(65535)
+                .build();
+    }
+
 
     public Plan getMinCostPlan(String sql) {
-        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
-        if (plans.isEmpty()){
+        PriorityQueue<Plan> plans = computeIfAbsent(sql, () -> new PriorityQueue<>(Comparable::compareTo));
+        if (plans.isEmpty()) {
             return null;
-        }else {
+        } else {
             return plans.poll();
         }
     }
-    public void put(String sql,Plan plan){
-        PriorityQueue<Plan> plans = cache.computeIfAbsent(sql, s -> new PriorityQueue<>(Comparable::compareTo));
+
+    @SneakyThrows
+    private PriorityQueue<Plan> computeIfAbsent(String sql, Supplier<PriorityQueue<Plan>> o) {
+        return this.cache.get(sql, new Callable<PriorityQueue<Plan>>() {
+            @Override
+            public PriorityQueue<Plan> call() throws Exception {
+                return o.get();
+            }
+        });
+
+    }
+
+    public void put(String sql, Plan plan) {
+        PriorityQueue<Plan> plans = computeIfAbsent(sql, () -> new PriorityQueue<>(Comparable::compareTo));
         plans.add(plan);
     }
 
-    public void clear(){
-        cache.clear();
+    public void clear() {
+        if (this.cache != null) {
+            this.cache.cleanUp();
+            this.cache = newCache();
+        }
     }
 }

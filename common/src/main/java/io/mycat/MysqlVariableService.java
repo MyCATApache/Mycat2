@@ -16,5 +16,5 @@ public interface MysqlVariableService {
 
     Object getSessionVariable(String name);
 
-    int getStoreNodeNum();
+    int getDefaultStoreNodeNum();
 }

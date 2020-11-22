@@ -4,6 +4,7 @@ import io.mycat.router.CustomRuleFunction;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.JDBCType;
 import java.time.Duration;
 import java.time.LocalDate;

@@ -92,7 +92,7 @@ public class MycatPreparedStatementUtil {
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection, String targetName) {
         if(LOGGER.isDebugEnabled()){
             for (List<Object> arg : value.getArgs()) {
-                LOGGER.debug("targetName:{} sql:{} parameters:{}",targetName,sql,arg);
+                LOGGER.debug("batchInsert targetName:{} sql:{} parameters:{}",targetName,sql,arg);
             }
         }
         ExecuteBatchInsert executeBatchInsert = new ExecuteBatchInsert(sql, value, connection);

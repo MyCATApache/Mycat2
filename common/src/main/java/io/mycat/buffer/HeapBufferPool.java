@@ -23,8 +23,10 @@ import java.util.Arrays;
 public class HeapBufferPool implements BufferPool {
 
     private int chunkSize;
-    private int pageSize;
-    private int pageCount;
+
+    public void setChunkSize(int chunkSize) {
+        this.chunkSize = chunkSize;
+    }
 
     @Override
     public ByteBuffer allocate() {

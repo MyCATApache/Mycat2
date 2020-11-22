@@ -1,6 +1,7 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.fastsql.sql.ast.SQLCommentHint;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import io.mycat.*;
 import io.mycat.beans.MySQLDatasource;
@@ -28,6 +29,7 @@ import io.mycat.sqlhandler.*;
 import io.mycat.sqlhandler.ddl.CreateTableSQLHandler;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.Response;
+import oshi.demo.Json;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
@@ -43,7 +45,6 @@ import java.util.stream.Stream;
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
     protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        Optional<Map<String, Object>> afterJson = request.getAnyJson();
         MySqlHintStatement ast = request.getAst();
         List<SQLCommentHint> hints = ast.getHints();
         if (hints.size() == 1) {
@@ -687,7 +688,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> builder.build());
                     return;
                 }
-                mycatDmlHandler(cmd, body);
+                mycatDmlHandler(cmd, body,ast);
                 response.sendOk();
                 return;
             }
@@ -695,14 +696,14 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         response.sendOk();
     }
 
-    public static void mycatDmlHandler(String cmd, String body) throws Exception {
+    public static void mycatDmlHandler(String cmd, String body, MySqlHintStatement ast) throws Exception {
         if ("createTable".equalsIgnoreCase(cmd)) {
-            CreateTableSQLHandler.INSTANCE.createTable(
-                    JsonUtil.from(body, Map.class),
-                    null,
-                    null,
-                    null
-            );
+            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                CreateTableConfig createTableConfig = JsonUtil.from(body, CreateTableConfig.class);
+                ops.putTable(createTableConfig);
+                ops.commit();
+            }
+            return;
         }
         if ("dropTable".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
@@ -712,60 +713,70 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 ops.removeTable(schemaName, tableName);
                 ops.commit();
             }
+            return;
         }
         if ("createDataSource".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putDatasource(JsonUtil.from(body, DatasourceConfig.class));
                 ops.commit();
             }
+            return;
         }
         if ("dropDataSource".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.removeDatasource(JsonUtil.from(body, DatasourceConfig.class).getName());
                 ops.commit();
             }
+            return;
         }
         if ("createUser".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putUser(JsonUtil.from(body, UserConfig.class));
                 ops.commit();
             }
+            return;
         }
         if ("dropUser".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.deleteUser(JsonUtil.from(body, UserConfig.class).getUsername());
                 ops.commit();
             }
+            return;
         }
         if ("createCluster".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putReplica(JsonUtil.from(body, ClusterConfig.class));
                 ops.commit();
             }
+            return;
         }
         if ("dropCluster".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.removeReplica(JsonUtil.from(body, ClusterConfig.class).getName());
                 ops.commit();
             }
+            return;
         }
         if ("setSequence".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putSequence(JsonUtil.from(body, SequenceConfig.class));
                 ops.commit();
             }
+            return;
         }
         if ("createSchema".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.putSchema(JsonUtil.from(body, LogicSchemaConfig.class));
                 ops.commit();
             }
+            return;
         }
         if ("dropSchema".equalsIgnoreCase(cmd)) {
             try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
                 ops.dropSchema(JsonUtil.from(body, LogicSchemaConfig.class).getSchemaName());
                 ops.commit();
             }
+            return;
         }
     }
 }

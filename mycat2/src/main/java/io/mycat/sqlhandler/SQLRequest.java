@@ -31,9 +31,12 @@ public class SQLRequest<Statement extends SQLStatement> {
         List<String> afterCommentsDirect = ast.getAfterCommentsDirect();
         return Optional.empty();
     }
-    public <T> T afterCommentAsJson(Class<T> c){
+    public <T> T beforeCommentAsJson(Class<T> c){
+        List<SQLCommentHint> headHintsDirect = ast.getHeadHintsDirect();
+        List<String> beforeCommentsDirect = ast.getBeforeCommentsDirect();
         List<String> afterCommentsDirect = ast.getAfterCommentsDirect();
-      return   Optional.ofNullable(afterCommentsDirect).filter(i->!i.isEmpty()).map(i->i.get(0).trim())
+      return   Optional.ofNullable(headHintsDirect).filter(i->!i.isEmpty())
+              .map(i->i.get(0)).map(i->i.getText().trim())
                 .map(i-> {
                     return c.cast(JsonUtil.from(SqlHints.unWrapperHint(i),c));
                 }).orElse(null);

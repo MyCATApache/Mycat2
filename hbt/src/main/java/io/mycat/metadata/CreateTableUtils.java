@@ -23,7 +23,10 @@ public class CreateTableUtils {
             set.add(node.getTargetName());
         }
         if (selectorRuntime.isReplicaName(node.getTargetName())) {
-            set.addAll(selectorRuntime.getRepliaNameListByInstanceName(node.getTargetName()));
+            set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getAllDataSources());
+        }
+        if (set.isEmpty()){
+            throw new IllegalArgumentException();
         }
         for (String s : set) {
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(s)) {

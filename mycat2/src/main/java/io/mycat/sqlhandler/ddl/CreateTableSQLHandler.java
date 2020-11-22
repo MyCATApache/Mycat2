@@ -1,7 +1,6 @@
 package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
@@ -9,12 +8,14 @@ import io.mycat.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.util.JsonUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * chenjunwnen
@@ -28,7 +29,14 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
 
     @Override
     protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
-        Map hint = request.afterCommentAsJson(Map.class);
+        Map hint= Optional.ofNullable( request.getAst().getHeadHintsDirect())
+              .map(i->i.get(0))
+              .map(i->i.getText())
+              .filter(i->{
+                  i=i.replaceAll(" ","");
+                  return i.contains("+mycat:createTable{");
+              }).map(i->i.substring(i.indexOf("{"))).map(i-> JsonUtil.from(i,Map.class)).orElse(null);
+
         MySqlCreateTableStatement ast = request.getAst();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
         String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());

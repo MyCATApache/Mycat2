@@ -25,7 +25,7 @@
       "keepAliveTime":1,
       "maxPendingLimit":65535,
       "maxPoolSize":2,
-      "taskTimeout":1,
+      "taskTimeout":5,
       "timeUnit":"MINUTES"
     },
     "workerPool":{
@@ -33,7 +33,7 @@
       "keepAliveTime":1,
       "maxPendingLimit":65535,
       "maxPoolSize":1024,
-      "taskTimeout":1,
+      "taskTimeout":5,
       "timeUnit":"MINUTES"
     }
   }

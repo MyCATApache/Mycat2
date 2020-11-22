@@ -807,13 +807,14 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @Override
-    public int getStoreNodeNum() {
-        return (int)replicaSelectorRuntime.getReplicaMap()
+    public int getDefaultStoreNodeNum() {
+        long c = replicaSelectorRuntime.getReplicaMap()
                 .keySet()
                 .stream()
                 .distinct()
-                .map(i -> i.startsWith("c"))
+                .filter(i -> i.startsWith("c"))
                 .count();
+        return (int)c;
     }
 
 

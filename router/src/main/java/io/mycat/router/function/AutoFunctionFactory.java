@@ -37,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -66,10 +67,10 @@ public class AutoFunctionFactory {
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
 
-        Integer groupNum =   Optional.ofNullable(properties.get("storeNum"))
-                .map(i-> Integer.parseInt(i.toString()))
-                .orElseGet(()->Optional.ofNullable(tableHandler.dataNodes()).filter(i->!i.isEmpty()).map(i->i.size())
-                        .orElseThrow(()->new IllegalArgumentException("can not get storeNum")));
+        Integer groupNum = Optional.ofNullable(properties.get("storeNum"))
+                .map(i -> Integer.parseInt(i.toString()))
+                .orElseGet(() -> Optional.ofNullable(tableHandler.dataNodes()).filter(i -> !i.isEmpty()).map(i -> i.size())
+                        .orElseThrow(() -> new IllegalArgumentException("can not get storeNum")));
 
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
@@ -930,62 +931,56 @@ public class AutoFunctionFactory {
 
     public static int mm(int num, Object o) {
         if (o == null) return 0;
-        Integer mm = null;
+        long mm ;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             mm = localDate.getMonthValue();
-        }
-        if (o instanceof LocalDateTime) {
+        }else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             mm = localDateTime.getMonthValue();
-        }
-        if (mm == null) {
+        }else {
             throw new UnsupportedOperationException();
         }
-        return (mm) % num;
+        return (int) (mm % num);
     }
 
     public static int dd(int num, Object o) {
         if (o == null) return 0;
-        Integer day = null;
+        long day ;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             day = localDate.getDayOfMonth();
-        }
-        if (o instanceof LocalDateTime) {
+        }else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             day = localDateTime.getDayOfMonth();
-        }
-        if (day == null) {
+        }else {
             throw new UnsupportedOperationException();
         }
-        return (day) % num;
+        return (int) (day% num);
     }
 
     public static int mmdd(int num, Object o) {
         if (o == null) return 0;
-        Integer day = null;
+        long day;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             day = localDate.getDayOfYear();
-        }
-        if (o instanceof LocalDateTime) {
+        }else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             day = localDateTime.getDayOfYear();
-        }
-        if (day == null) {
+        }else {
             throw new UnsupportedOperationException();
         }
-        return (day) % num;
+        return (int)((day) % num);
     }
 
     public static int strHash(int num, int startIndex, int endIndex, int valType, int randSeed, Object value) {
@@ -995,15 +990,15 @@ public class AutoFunctionFactory {
             return hashCode(s, randSeed) % num;
         }
         if (valType == 1) {
-            return Integer.parseInt(s) % num;
+            return (int)(Long.parseLong(s) % num);
         }
         throw new UnsupportedOperationException();
     }
 
     public static int yyyyWeek(int num, Object o) {
         if (o == null) return 0;
-        Integer YYYY = null;
-        Integer WEEK = null;
+        long YYYY;
+        long WEEK;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
@@ -1011,42 +1006,38 @@ public class AutoFunctionFactory {
             LocalDate localDate = (LocalDate) o;
             YYYY = localDate.getYear();
             WEEK = localDate.get(WeekFields.ISO.weekOfWeekBasedYear());
-        }
-        if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             YYYY = localDateTime.getYear();
             WEEK = localDateTime.get(WeekFields.ISO.weekOfWeekBasedYear());
-        }
-        if (YYYY == null && WEEK == null) {
+        } else {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * 54 + WEEK) % num;
+        return (int) ((YYYY * 54 + WEEK) % num);
     }
 
     public static int week(int num, Object o) {
         if (o == null) return 0;
-        Integer day = null;
+        long day;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             day = localDate.getDayOfWeek().getValue();
-        }
-        if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             day = localDateTime.getDayOfWeek().getValue();
-        }
-        if (day == null) {
+        } else {
             throw new UnsupportedOperationException();
         }
-        return (day) % num;
+        return (int) ((day) % num);
     }
 
     public static int yyyydd(int num, Object o) {
         if (o == null) return 0;
-        Integer YYYY = null;
-        Integer DD = null;
+        long YYYY;
+        long DD;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
@@ -1054,16 +1045,14 @@ public class AutoFunctionFactory {
             LocalDate localDate = (LocalDate) o;
             YYYY = localDate.getYear();
             DD = localDate.getDayOfYear();
-        }
-        if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             YYYY = localDateTime.getYear();
             DD = localDateTime.getDayOfYear();
-        }
-        if (YYYY == null && DD == null) {
+        } else {
             throw new UnsupportedOperationException();
         }
-        return (YYYY * 366 + DD) % num;
+        return (int) ((YYYY * 366 + DD) % num);
     }
 
     public static int yyyymm(int num, Object o) {
@@ -1148,7 +1137,7 @@ public class AutoFunctionFactory {
         if (o == null) {
             o = 0;
         }
-        return (int) o.longValue()% num;
+        return (int) (o.longValue() % num);
     }
 
 //    public static int singleRemainderHash(int num, Object o) {
