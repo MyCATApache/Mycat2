@@ -4,6 +4,8 @@
 
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
 
+[优化器文档](https://github.com/MyCATApache/Mycat2/blob/master/doc/104-optimizer.md)
+
 ### 入门Mycat2
 
 

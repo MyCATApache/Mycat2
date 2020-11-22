@@ -1,4 +1,4 @@
-package io.mycat.example.assemble;
+package io.mycat.assemble;
 
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
@@ -10,7 +10,10 @@ import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class AssembleExample {
