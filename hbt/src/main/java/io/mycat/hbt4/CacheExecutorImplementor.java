@@ -4,8 +4,6 @@ import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIteratorCacher;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
-import io.mycat.hbt4.executor.MycatInsertExecutor;
-import io.mycat.hbt4.executor.MycatUpdateExecutor;
 import io.mycat.hbt4.executor.TempResultSetFactory;
 import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
@@ -14,6 +12,7 @@ import io.mycat.util.Response;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 
+import java.util.List;
 import java.util.Objects;
 
 public class CacheExecutorImplementor  extends ExecutorImplementorImpl {
@@ -31,7 +30,7 @@ public class CacheExecutorImplementor  extends ExecutorImplementorImpl {
     }
 
     @Override
-    public void implementRoot(MycatRel rel) {
+    public void implementRoot(MycatRel rel, List<String> aliasList) {
         if (rel instanceof MycatInsertRel){
             return;
         }

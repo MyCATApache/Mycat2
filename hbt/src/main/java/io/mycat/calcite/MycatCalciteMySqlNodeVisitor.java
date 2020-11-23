@@ -278,6 +278,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         // select list
         List<SqlNode> columnNodes = new ArrayList<SqlNode>(x.getSelectList().size());
         for (SQLSelectItem selectItem : x.getSelectList()) {
+            if (selectItem.getAlias() == null) {//fix alias
+                selectItem.setAlias(selectItem.toString());
+            }
             SqlNode column = convertToSqlNode(selectItem);
             columnNodes.add(column);
         }
@@ -930,15 +933,15 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     }
 
     public static SqlNode handleSQLVariantRefExpr(String name, SQLVariantRefExpr owner) {
-        if(owner.isGlobal()){
+        if (owner.isGlobal()) {
             return MycatGlobalValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                     SqlLiteral.createCharString(name, SqlParserPos.ZERO));
-        }else {
-            if (name.startsWith("@@")){
+        } else {
+            if (name.startsWith("@@")) {
                 return MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                         SqlLiteral.createCharString(name.substring(2), SqlParserPos.ZERO));
             }
-            if (name.startsWith("@")){
+            if (name.startsWith("@")) {
                 return MycatUserValueFunction.INSTANCE.createCall(SqlParserPos.ZERO,
                         SqlLiteral.createCharString(name.substring(1), SqlParserPos.ZERO));
             }
@@ -1566,13 +1569,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatConnectionIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
-            case "CURRENT_USER":{
+            case "CURRENT_USER": {
                 this.sqlNode = MycatCurrentUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
             case "SESSION_USER":
             case "SYSTEM_USER":
-            case "USER":{
+            case "USER": {
                 this.sqlNode = MycatUserFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
@@ -1906,7 +1909,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SqlParserPos.ZERO);
             return false;
         } else {
-            this.sqlNode =  handleSQLVariantRefExpr(x.getName(),x);
+            this.sqlNode = handleSQLVariantRefExpr(x.getName(), x);
             return false;
         }
     }

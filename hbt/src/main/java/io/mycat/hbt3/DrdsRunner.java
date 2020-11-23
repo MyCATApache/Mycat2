@@ -58,6 +58,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -83,6 +84,7 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +94,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DrdsRunner {
     final static Logger log = LoggerFactory.getLogger(DrdsRunner.class);
@@ -212,30 +215,6 @@ public class DrdsRunner {
         }
         return builder.build();
     }
-
-    public void execute(MycatRel relNode1, ExecutorImplementor executorImplementor) {
-        String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode1);
-        executorImplementor.implementRoot(relNode1);
-        return;
-
-//        factory.open();
-//        implement.open();
-//        if (implement instanceof MycatInsertExecutor) {
-//            MycatInsertExecutor insertExecutor = (MycatInsertExecutor) implement;
-//            return new long[]{insertExecutor.lastInsertId, insertExecutor.affectedRow};
-//        }
-//        if (implement instanceof MycatUpdateExecutor) {
-//            MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) implement;
-//            return new long[]{updateExecutor.lastInsertId, updateExecutor.affectedRow};
-//        }
-//        RelDataType rowType = relNode1.getRowType();
-//
-//
-//        return new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()), Linq4j.asEnumerable(() -> implement.outputObjectIterator()).enumerator(),
-//                () -> {
-//                });
-    }
-
 
     public Iterable<DrdsSql> convertToMycatRel(PlanCache planCache,
                                                Iterable<DrdsSql> stmtList,
@@ -573,6 +552,9 @@ public class DrdsRunner {
                 MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
 
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
+        drdsSql.setAliasList(
+                root.fields.stream()
+                        .map(Pair::getValue).collect(Collectors.toList()));
         final RelRoot root2 =
                 root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
 

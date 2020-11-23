@@ -8,6 +8,8 @@ import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.util.Pair;
 import io.mycat.util.Response;
 
+import java.util.List;
+
 public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
 
     public static ProxyExecutorImplementor create(MycatDataContext context, Response response){
@@ -23,7 +25,7 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
     }
 
     @Override
-    public void implementRoot(MycatRel rel) {
+    public void implementRoot(MycatRel rel, List<String> aliasList) {
         if (rel instanceof MycatInsertRel) {
             Executor executor = super.implement((MycatInsertRel) rel);
             MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
@@ -52,10 +54,10 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
                 Pair<String, String> singleSql = viewExecutor.getSingleSql();
                 response.proxySelect(singleSql.getKey(), singleSql.getValue());
             } else {
-                runQuery(rel,viewExecutor);
+                runQuery(rel,viewExecutor,aliasList);
             }
             return;
         }
-        super.implementRoot(rel);
+        super.implementRoot(rel, aliasList);
     }
 }

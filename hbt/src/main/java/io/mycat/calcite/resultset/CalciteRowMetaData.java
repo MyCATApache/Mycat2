@@ -26,8 +26,9 @@ import java.util.List;
 /**
  * @author Junwen Chen
  **/
-public class CalciteRowMetaData  implements MycatRowMetaData {
+public class CalciteRowMetaData implements MycatRowMetaData {
     final ArrayList<RelDataTypeField> fieldList;
+    private List<String> aliasList = null;
 
     public CalciteRowMetaData(List<RelDataTypeField> fieldList) {
         ArrayList<RelDataTypeField> objects = new ArrayList<>();
@@ -36,9 +37,14 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
         this.fieldList = objects;
     }
 
+    public CalciteRowMetaData(List<RelDataTypeField> fieldList, List<String> aliasList) {
+        this(fieldList);
+        this.aliasList = aliasList;
+    }
+
     @Override
     public int getColumnCount() {
-        return fieldList.size()-1;
+        return fieldList.size() - 1;
     }
 
     @Override
@@ -50,6 +56,7 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
     public boolean isCaseSensitive(int column) {
         return false;
     }
+
     @Override
     public boolean isNullable(int column) {
         RelDataTypeField column1 = getColumn(column);
@@ -70,6 +77,9 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
 
     @Override
     public String getColumnName(int column) {
+        if (this.aliasList != null) {
+            return this.aliasList.get(column - 1);
+        }
         return getColumn(column).getName();
     }
 
@@ -96,7 +106,7 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
     @Override
     public int getColumnType(int column) {
         int jdbcOrdinal = getColumn(column).getType().getSqlTypeName().getJdbcOrdinal();
-        if (jdbcOrdinal >= 1000){
+        if (jdbcOrdinal >= 1000) {
             return Types.VARCHAR;
         }
         return jdbcOrdinal;
@@ -111,6 +121,7 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
     public ResultSetMetaData metaData() {
         return null;
     }
+
     private RelDataTypeField getColumn(int column) {
         return fieldList.get(column);
     }

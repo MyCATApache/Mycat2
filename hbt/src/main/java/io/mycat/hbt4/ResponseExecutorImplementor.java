@@ -47,7 +47,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
     }
 
     @Override
-    public void implementRoot(MycatRel rel) {
+    public void implementRoot(MycatRel rel, List<String> aliasList) {
         Objects.requireNonNull(rel);
         Executor executor = Objects.requireNonNull(
                 rel.implement(this)
@@ -63,7 +63,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 runUpdate(updateExecutor);
                 return;
             }
-            runQuery(rel, executor);
+            runQuery(rel, executor, aliasList);
         } catch (Exception e) {
             if (executor != null) {
                 executor.close();
@@ -73,10 +73,14 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         return;
     }
 
-    protected void runQuery(MycatRel rel, Executor executor) {
+    protected void runQuery(MycatRel rel, Executor executor, List<String> aliasList) {
         RelDataType rowType = rel.getRowType();
 
-        EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
+        CalciteRowMetaData calciteRowMetaData = aliasList!=null?
+                new CalciteRowMetaData(rowType.getFieldList(), aliasList)
+                : new CalciteRowMetaData(rowType.getFieldList());
+        EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(
+                calciteRowMetaData,
                 Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
         });
         response.sendResultSet(new RowIterable(rowIterator) {

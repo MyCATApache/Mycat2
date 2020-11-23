@@ -28,7 +28,7 @@ public class DrdsRunners {
             Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls, dataContext);
             DrdsSql drdsSql = iterable.iterator().next();
             executorImplementor.setParams(drdsSql.getParams());
-            executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode());
+            executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode(),drdsSql.getAliasList());
     }
 
     public static void runHbtOnDrds(MycatDataContext dataContext, String statement, ExecutorImplementor executorImplementor) throws Exception {
@@ -37,6 +37,6 @@ public class DrdsRunners {
         DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
                 PlanCache.INSTANCE);
         MycatRel mycatRel = drdsRunners.doHbt(statement, dataContext);
-        executorImplementor.implementRoot(mycatRel);
+        executorImplementor.implementRoot(mycatRel, Collections.emptyList());
     }
 }
