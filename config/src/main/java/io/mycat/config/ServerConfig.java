@@ -16,16 +16,14 @@
 package io.mycat.config;
 
 import io.mycat.util.JsonUtil;
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -58,11 +56,10 @@ public class ServerConfig {
     private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
 
-    {
+    public String getTempDirectory() {
         String mycat_temp_directory = "mycat_temp_directory";
         if (tempDirectory == null) {
             try {
-
                 Path target = Optional.ofNullable(ServerConfig.class.getClassLoader())
                         .map(i -> i.getResource(""))
                         .map(i -> {
@@ -89,7 +86,9 @@ public class ServerConfig {
             }
             System.out.println("tempDirectory:" + tempDirectory);
         }
+        return tempDirectory;
     }
+
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
