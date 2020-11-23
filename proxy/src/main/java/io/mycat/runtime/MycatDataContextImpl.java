@@ -109,6 +109,8 @@ public class MycatDataContextImpl implements MycatDataContext {
             return this.getVariable(MycatDataContextEnum.IS_READ_ONLY);
         } else if (target.contains("current_user")) {
             return this.getUser().getUserName();
+        }else if (target.contains("transaction_policy")){
+            return this.getTransactionType().getName();
         }
         MysqlVariableService variableService = MetaClusterCurrent.wrapper(MysqlVariableService.class);
         return variableService.getVariable(target);

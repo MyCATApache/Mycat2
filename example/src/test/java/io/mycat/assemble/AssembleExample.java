@@ -42,7 +42,7 @@ public class AssembleExample {
             @SneakyThrows
             @Override
             public void accept(Connection mycatConnection) {
-                AssembleExample.this.execute(mycatConnection, "set xa  = off");
+                AssembleExample.this.execute(mycatConnection, "set transaction_policy  = proxy");
             }
         };
         testTranscation(connectionFunction);
@@ -55,7 +55,7 @@ public class AssembleExample {
             @SneakyThrows
             @Override
             public void accept(Connection mycatConnection) {
-                AssembleExample.this.execute(mycatConnection, "set xa  = on");
+                AssembleExample.this.execute(mycatConnection, "set transaction_policy  = xa");
             }
         };
         testTranscation(connectionFunction);
@@ -257,13 +257,13 @@ public class AssembleExample {
         Assert.assertFalse(existTable(mycatConnection, "db1", "travelrecord"));
         //////////////////////////////////////transcation/////////////////////////////////////////////
 
-        execute(mycatConnection, "set xa = 0");
-        Assert.assertTrue(executeQuery(mycatConnection, "select @@xa").toString().contains("0"));
+        execute(mycatConnection, "set transaction_policy = proxy");
+        Assert.assertTrue(executeQuery(mycatConnection, "select @@transaction_policy").toString().contains("proxy"));
 
         testNormalTranscation(mycatConnection);
 
-        execute(mycatConnection, "set xa = 1");
-        Assert.assertTrue(executeQuery(mycatConnection, "select @@xa").toString().contains("1"));
+        execute(mycatConnection, "set transaction_policy = xa");
+        Assert.assertTrue(executeQuery(mycatConnection, "select @@transaction_policy").toString().contains("xa"));
 
         testNormalTranscation(mycatConnection);
     }
