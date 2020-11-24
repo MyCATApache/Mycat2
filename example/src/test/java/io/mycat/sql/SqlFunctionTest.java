@@ -2,6 +2,8 @@ package io.mycat.sql;
 
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import io.mycat.hint.CreateClusterHint;
+import io.mycat.hint.CreateDataSourceHint;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -9,6 +11,8 @@ import org.junit.Test;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.mycat.assemble.AssembleExample.execute;
 
 public class SqlFunctionTest {
 
@@ -253,6 +257,81 @@ public class SqlFunctionTest {
         checkValue("SELECT WEEKOFYEAR(\"2017-06-15\");");
         checkValue("SELECT YEAR(\"2017-06-15\");");
         checkValue("SELECT YEARWEEK(\"2017-06-15\");");
+    }
+
+    @Test
+    public void testAggFunction() throws SQLException{
+        initShardingTable();
+
+        checkValue("select id from db1.travelrecord GROUP BY id", "(1)(999999999)");
+        checkValue("select id from db1.travelrecord GROUP BY id,user_id order by id ", "(999999999)(1)");
+        checkValue("select id from db1.travelrecord GROUP BY id,user_id having id != 1 order by id", "(999999999)");
+        checkValue("select id from db1.travelrecord GROUP BY id,user_id having max(id) > 1 order by id", "(999999999)");
+        checkValue("select id,COUNT(user_id) from db1.travelrecord GROUP BY id order by id", "(1,1)(999999999,1)");
+        checkValue("select id,COUNT(DISTINCT user_id) from db1.travelrecord GROUP BY id order by id", "(1,1)(999999999,1)");
+        checkValue("select MAX(id) from db1.travelrecord order by any_value(id)", "(999999999)");
+        checkValue("select MIN(id) from db1.travelrecord order by any_value(id)", "(1)");
+        checkValue("select id,sum(id) from db1.travelrecord GROUP BY id order by id limit 2", "(1,1)(999999999,999999999)");
+        uncheckValue("select id,avg(id*1.1) from db1.travelrecord GROUP BY id order by id limit 2");
+
+        checkValue("select id from db1.travelrecord order by id asc", "(1)(999999999)");
+        checkValue("select id from db1.travelrecord order by id desc", "(999999999)(1)");
+
+        checkValue("select id from db1.travelrecord order by id desc limit 1", "(999999999)");
+        checkValue("select id from db1.travelrecord order by id desc limit 1,1", "(1)");
+        checkValue("select id from db1.travelrecord order by id desc limit 1 offset 0", "(999999999)");
+    }
+
+    private void initShardingTable() throws SQLException {
+        Connection mycatConnection = getMySQLConnection(8066);
+
+        Connection mysql3306 = getMySQLConnection(3306);
+        Connection mysql3307 = getMySQLConnection(3307);
+
+        execute(mycatConnection, "DROP DATABASE db1");
+
+        execute(mycatConnection, "CREATE DATABASE db1");
+        execute(mycatConnection,"CREATE DATABASE db1");
+
+
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds0",
+                        "jdbc:mysql://127.0.0.1:3306"));
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds1",
+                        "jdbc:mysql://127.0.0.1:3306"));
+
+        execute(mycatConnection,
+                CreateClusterHint.create("c0",
+                        Arrays.asList("ds0"), Collections.emptyList()));
+        execute(mycatConnection,
+                CreateClusterHint.create("c1",
+                        Arrays.asList("ds1"), Collections.emptyList()));
+
+        execute(mycatConnection, "USE `db1`;");
+        execute(mysql3306, "USE `db1`;");
+
+        execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +
+                "  `id` bigint NOT NULL\n," +
+                "  `user_id` varchar(100) DEFAULT NULL" +
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                + " dbpartition by hash(id) dbpartitions 2");
+        execute(mysql3306,"CREATE TABLE if not exists db1.`travelrecord` (\n" +
+                "  `id` bigint NOT NULL\n," +
+                "  `user_id` varchar(100) DEFAULT NULL" +
+                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+
+        execute(mycatConnection, "delete from db1.travelrecord");
+        execute(mysql3306, "delete from db1.travelrecord");
+
+        for (int i = 1; i < 10; i++) {
+            execute(mycatConnection, "insert db1.travelrecord (id) values("+i+")");
+            execute(mysql3306, "insert db1.travelrecord (id) values("+i+")");
+        }
+        mycatConnection.close();
+        mysql3306.close();
+        mysql3307.close();
     }
 }
 
