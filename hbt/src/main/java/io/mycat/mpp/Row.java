@@ -10,11 +10,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 @ToString
-@AllArgsConstructor
-@NoArgsConstructor
+
 @Getter
 public class Row implements Comparable<Row> {
-    public Object[] values;
+    public final Object[] values;
+
+    public Row(Object[] values) {
+        this.values = Arrays.copyOf(values, values.length);
+    }
 
     @NotNull
     public static Function2<Row, Row, Row> composeJoinRow(int leftFieldCount, int rightFieldCount) {
@@ -30,12 +33,11 @@ public class Row implements Comparable<Row> {
     }
 
     public Row compose(Row right) {
-        Row row = new Row();
         int newLength = this.values.length + right.values.length;
-        row.values = new Object[newLength];
-        System.arraycopy(this.values, 0, row.values, 0, this.values.length);
-        System.arraycopy(right.values, 0, row.values, this.values.length, right.values.length);
-        return row;
+        Object[] values = new Object[newLength];
+        System.arraycopy(this.values, 0, values, 0, this.values.length);
+        System.arraycopy(right.values, 0, values, this.values.length, right.values.length);
+        return new Row(values);
     }
 
     public Object getObject(int i) {
@@ -43,14 +45,12 @@ public class Row implements Comparable<Row> {
     }
 
     public static Row create(int size) {
-        Row row = new Row();
-        row.values = new Object[size];
+        Row row = new Row(new Object[size]);
         return row;
     }
 
     public static Row of(Object[] objects) {
-        Row row = new Row();
-        row.values = objects;
+        Row row = new Row(objects);
         return row;
     }
 

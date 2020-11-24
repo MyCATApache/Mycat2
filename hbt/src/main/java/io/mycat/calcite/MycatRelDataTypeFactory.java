@@ -1,5 +1,6 @@
 package io.mycat.calcite;
 
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -15,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-public class MycatRelDataTypeFactory implements RelDataTypeFactory {
+public class MycatRelDataTypeFactory implements JavaTypeFactory {
     final RelDataTypeSystem relDataTypeSystem;
     final JavaTypeFactoryImpl javaTypeFactory;
 
@@ -158,5 +159,30 @@ public class MycatRelDataTypeFactory implements RelDataTypeFactory {
     @Override
     public FieldInfoBuilder builder() {
         return  this.javaTypeFactory.builder();
+    }
+
+    @Override
+    public RelDataType createStructType(Class clazz) {
+        return javaTypeFactory.createStructType(clazz);
+    }
+
+    @Override
+    public RelDataType createType(Type type) {
+        return javaTypeFactory.createType(type);
+    }
+
+    @Override
+    public Type getJavaClass(RelDataType type) {
+        return javaTypeFactory.getJavaClass(type);
+    }
+
+    @Override
+    public Type createSyntheticType(List<Type> types) {
+        return javaTypeFactory.createSyntheticType(types);
+    }
+
+    @Override
+    public RelDataType toSql(RelDataType type) {
+        return javaTypeFactory.toSql(type);
     }
 }

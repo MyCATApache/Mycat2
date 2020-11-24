@@ -95,7 +95,7 @@ public class SqlFunctionTest {
 
     }
 
-    private void checkValue(String s, String s1)throws SQLException  {
+    private void checkValue(String s, String s1) throws SQLException {
         checkValue(s);
     }
 
@@ -108,22 +108,24 @@ public class SqlFunctionTest {
                     , (executeQueryAsString(mycatConnection, s)));
         }
     }
+
     private void uncheckValue(String s) throws SQLException {
         try (
-             Connection mycatConnection = getMySQLConnection(8066);
+                Connection mycatConnection = getMySQLConnection(8066);
         ) {
             executeQuery(mycatConnection, s);
         }
     }
+
     private void checkValue(String s) throws SQLException {
         try (Connection mySQLConnection = getMySQLConnection(3306);
              Connection mycatConnection = getMySQLConnection(8066);
         ) {
             Assert.assertEquals(
                     executeQuery(mySQLConnection, s)
-                            .stream().map(i->i.values()).collect(Collectors.toList()).toString()
+                            .stream().map(i -> i.values()).collect(Collectors.toList()).toString()
                     , (executeQuery(mycatConnection, s))
-                            .stream().map(i->i.values()).collect(Collectors.toList()).toString()
+                            .stream().map(i -> i.values()).collect(Collectors.toList()).toString()
             );
         }
     }
@@ -154,8 +156,11 @@ public class SqlFunctionTest {
                 Map<String, Object> row = new LinkedHashMap<String, Object>();
 
                 for (int i = 0, size = rsMeta.getColumnCount(); i < size; ++i) {
-                    String columName = rsMeta.getColumnLabel(i + 1).replaceAll(" ","");
+                    String columName = rsMeta.getColumnLabel(i + 1).replaceAll(" ", "");
                     Object value = rs.getString(i + 1);
+                    if (row.containsKey(columName)){
+                        columName = columName+i;
+                    }
                     row.put(columName, value);
                 }
 
@@ -167,6 +172,7 @@ public class SqlFunctionTest {
         }
         return rows;
     }
+
     @Test
     public void testMathFunction() throws SQLException {
         checkValue("SELECT abs(-1)", "1");//
@@ -177,19 +183,19 @@ public class SqlFunctionTest {
         checkValue("SELECT ATAN(-1)", "-0.7853981633974483");//
         checkValue("SELECT CEIL(-1)", "-1");//
         checkValue("SELECT CEILING(-1)", "-1");//
-        checkValue("SELECT CONV(16,10,16) ","10");
+        checkValue("SELECT CONV(16,10,16) ", "10");
         checkValue("SELECT COS(-1)", "0.5403023058681398");//
         checkValue("SELECT COT(-1)", "-0.6420926159343306");//
-        checkValue("SELECT CRC32(-1) ","808273962");
+        checkValue("SELECT CRC32(-1) ", "808273962");
         checkValue("SELECT DEGREES(-1)", "-57.29577951308232");//
         checkValue("SELECT EXP(-1)", "0.36787944117144233");//
         checkValue("SELECT FLOOR(-1)", "-1");//
         checkValue("SELECT LN(2)", "0.6931471805599453");//
-        checkValue("SELECT LOG(10) ","1.0");//
-        checkValue("SELECT LOG10(10) ","1.0");//
+        checkValue("SELECT LOG(10) ", "1.0");//
+        checkValue("SELECT LOG10(10) ", "1.0");//
         //checkValue("SELECT LOG2(10) ","3.3219280948873626");//精度过高
         checkValue("SELECT MOD(6,5)", "1");//
-       // checkValue("SELECT PI() ","3.141593");//精度过高
+        // checkValue("SELECT PI() ","3.141593");//精度过高
         checkValue("SELECT POW(-1,2)");//
         checkValue("SELECT POWER(-1,2)");//
         uncheckValue("SELECT RAND(1)");//
@@ -203,7 +209,7 @@ public class SqlFunctionTest {
     }
 
     @Test
-    public void testTimeFunction() throws SQLException{
+    public void testTimeFunction() throws SQLException {
         checkValue("SELECT ADDDATE(\"2017-06-15\", INTERVAL 10 DAY);");//
         checkValue("SELECT ADDTIME(\"2017-06-15 09:34:21\", \"2\");");//
         checkValue("SELECT CURDATE();");//
@@ -260,7 +266,7 @@ public class SqlFunctionTest {
     }
 
     @Test
-    public void testAggFunction() throws SQLException{
+    public void testAggFunction() throws SQLException {
         initShardingTable();
 
         checkValue("select id from db1.travelrecord GROUP BY id", "(1)(999999999)");
@@ -282,16 +288,17 @@ public class SqlFunctionTest {
         checkValue("select id from db1.travelrecord order by id desc limit 1 offset 0", "(999999999)");
     }
 
+
     private void initShardingTable() throws SQLException {
         Connection mycatConnection = getMySQLConnection(8066);
 
         Connection mysql3306 = getMySQLConnection(3306);
-        Connection mysql3307 = getMySQLConnection(3307);
 
         execute(mycatConnection, "DROP DATABASE db1");
 
+
         execute(mycatConnection, "CREATE DATABASE db1");
-        execute(mycatConnection,"CREATE DATABASE db1");
+        execute(mycatConnection, "CREATE DATABASE db1");
 
 
         execute(mycatConnection, CreateDataSourceHint
@@ -316,22 +323,102 @@ public class SqlFunctionTest {
                 "  `user_id` varchar(100) DEFAULT NULL" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                 + " dbpartition by hash(id) dbpartitions 2");
-        execute(mysql3306,"CREATE TABLE if not exists db1.`travelrecord` (\n" +
+        execute(mycatConnection, "CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
+        execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL\n," +
                 "  `user_id` varchar(100) DEFAULT NULL" +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
-
+        execute(mysql3306, "CREATE TABLE if not exists `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
         execute(mycatConnection, "delete from db1.travelrecord");
         execute(mysql3306, "delete from db1.travelrecord");
+        execute(mycatConnection, "delete from `db1`.`company`");
+        execute(mysql3306, "delete from `db1`.`company`");
 
         for (int i = 1; i < 10; i++) {
-            execute(mycatConnection, "insert db1.travelrecord (id) values("+i+")");
-            execute(mysql3306, "insert db1.travelrecord (id) values("+i+")");
+            execute(mycatConnection, "insert db1.travelrecord (id) values(" + i + ")");
+            execute(mysql3306, "insert db1.travelrecord (id) values(" + i + ")");
         }
+
+        execute(mycatConnection, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (1,'Intel',1)");
+        execute(mycatConnection, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (2,'IBM',2)");
+        execute(mycatConnection, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (3,'Dell',3)");
+
+//
+//        execute(mysql3306, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (1,'Intel',1)");
+//        execute(mysql3306, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (2,'IBM',2)");
+//        execute(mysql3306, "INSERT INTO `db1`.`company` (id,`companyname`,`addressid`) VALUES (3,'Dell',3)");
+//
+
         mycatConnection.close();
         mysql3306.close();
-        mysql3307.close();
+    }
+
+
+    @Test
+    public void testComplexQuery() throws SQLException {
+        initShardingTable();
+        checkValue("select * from db1.travelrecord as t,db1.company as c  where t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
+        checkValue("select * from db1.travelrecord as t INNER JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
+        checkValue("select * from db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id order by  t.id", "(999999999,999,null,null,null,null,null,null,null)(1,999,null,null,null,null,1,Intel,1)");
+        checkValue("select * from db1.travelrecord as t RIGHT   JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)(null,null,null,null,null,null,2,IBM,2)(null,null,null,null,null,null,3,Dell,3)");
+
+        //三表
+        checkValue(
+                "select * from (db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id )  LEFT  JOIN db1.company as c2 on t.id = c2.id order by t.id");
+
+
+        checkValue("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1 order by t.id", "(1)");
+        checkValue("select * from db1.travelrecord as t where  EXISTS (select id from db1.company as c where t.id =c.id ) order by t.id", "(1,999,null,null,null,null)");
+        checkValue("select * from db1.travelrecord as t where not EXISTS (select id from db1.company as c where t.id =c.id ) order by t.id", "(999999999,999,null,null,null,null)");
+
+        checkValue("select * from db1.travelrecord t where id in (select id from db1.company) order by t.id;", "(1,999,null,null,null,null)");
+        checkValue("select * from db1.travelrecord t where id in (1,999) order by t.id;", "(1,999,null,null,null,null)");
+
+
+        int min = 1;
+        int max = 999;
+        /*
+        SELECT [ALL | DISTINCT]
+                */
+        checkValue("select distinct(user_id) from db1.travelrecord t ", "999");
+        checkValue("select all(user_id) from db1.travelrecord t ", "(999)(999)");
+
+        /*
+        SELECT [ALL | DISTINCT] select_expr [, select_expr ...]  FROM table_references
+         */
+        //     算术表达式测试
+        checkValue("select user_id+id from db1.travelrecord", 999 + max + ")(" + (999 + min));
+        checkValue("select user_id-id from db1.travelrecord", (999 - max) + ")(" + (999 - min));
+        checkValue("select user_id*id from db1.travelrecord", (999 * max) + ")(" + (999 * min));
+        checkValue("select (user_id*1.0)/(id*1.0) from db1.travelrecord");//结果不确定
+//        check("select user_id DIV id from db1.travelrecord",(999/max)+")("+(999/min));不支持
+        checkValue("select user_id % id from db1.travelrecord");//结果不确定
+        checkValue("select user_id MOD id from db1.travelrecord");//结果不确定
+
+
+        /*
+        SELECT [ALL | DISTINCT] select_expr [, select_expr ...] [FROM table_references  [WHERE where_condition]
+        逻辑运算符 测试
+         */
+        checkValue("select id,user_id from db1.travelrecord where id = " + min, "(" + min + ",999)");
+        checkValue("select id,user_id from db1.travelrecord where id = " + max, "(" + max + ",999)");
+
+        //or表达式
+        checkValue("select id,user_id from db1.travelrecord where id = " + min + " or " + " id = " + max+" order by id", "(" + min + ",999)" + "(" + max + ",999)");
+
+        //and表达式
+        checkValue("select id,user_id from db1.travelrecord where id = " + min + " and " + " user_id = 999 order by id", "(" + min + ",999)");
+
+        //not表达式
+        checkValue("select id,user_id from db1.travelrecord where !(id = " + min + " and " + " user_id = 999" + ") order by id", "(" + max + ",999)");
+
+        //between
+        checkValue("select id,user_id from db1.travelrecord where id between 1 and 999 order by id", "(" + min + ",999)");
+
+        //like
+        checkValue("select id,user_id from db1.travelrecord where user_id LIKE '99%' order by id");
+
     }
 }
 

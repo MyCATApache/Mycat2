@@ -38,6 +38,7 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.util.SqlString;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -94,12 +95,8 @@ public class View extends AbstractRelNode implements MycatRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("\nrelNode",getSql());
-        String msg = StreamSupport
-                .stream(distribution.getDataNodes().spliterator(), false)
-                .map(i -> i.toString()).collect(Collectors.joining(",\n"));
-        writer.item("\ndistribution","\n"+msg);
-
+        writer.item("relNode",relNode);
+        writer.item("distribution",distribution);
 
 //        RelNode relNode = expandToPhyRelNode();
 //        if (relNode instanceof Union) {
@@ -122,6 +119,17 @@ public class View extends AbstractRelNode implements MycatRel {
 //            writer.item(slice.toString(), sql);
 //        }
 
+        return writer;
+    }
+
+    @NotNull
+    private RelWriter innerExplainTerms(RelWriter pw) {
+        RelWriter writer = super.explainTerms(pw);
+        writer.item("\nrelNode",getSql());
+        String msg = StreamSupport
+                .stream(distribution.getDataNodes().spliterator(), false)
+                .map(i -> i.toString()).collect(Collectors.joining(",\n"));
+        writer.item("\ndistribution","\n"+msg);
         return writer;
     }
 

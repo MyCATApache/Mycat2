@@ -3,6 +3,7 @@ package io.mycat.hbt3;
 import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.apache.calcite.rex.RexNode;
 
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.function.Function;
 
 @AllArgsConstructor
+@EqualsAndHashCode
 public class LazyRexDistribution extends Distribution {
     final AbstractMycatTable tableHandler;
     Function<List<Object>, Iterable<DataNode>> function;

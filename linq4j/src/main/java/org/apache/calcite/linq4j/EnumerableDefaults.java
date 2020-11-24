@@ -1949,7 +1949,7 @@ public abstract class EnumerableDefaults {
    * Implementation of nested loop join that builds the complete result as a list
    * and then returns it. This is an easy-to-implement solution, but hogs memory.
    */
-  private static <TSource, TInner, TResult> Enumerable<TResult> nestedLoopJoinAsList(
+  public static <TSource, TInner, TResult> Enumerable<TResult> nestedLoopJoinAsList(
       final Enumerable<TSource> outer, final Enumerable<TInner> inner,
       final Predicate2<TSource, TInner> predicate,
       Function2<TSource, TInner, TResult> resultSelector,

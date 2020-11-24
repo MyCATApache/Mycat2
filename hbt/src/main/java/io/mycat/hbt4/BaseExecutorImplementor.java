@@ -152,8 +152,13 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput,params);
         MycatContext context = new MycatContext();
         Predicate<Row> predicate = row -> {
-            context.values = row.values;
-            return scalar.execute(context) == Boolean.TRUE;
+            try {
+                context.values = row.values;
+                return scalar.execute(context) == Boolean.TRUE;
+            }catch (Throwable throwable){
+                log.error(mycatFilter.toString(),throwable);
+                throw throwable;
+            }
         };
         return MycatFilterExecutor.create(predicate, input);
     }

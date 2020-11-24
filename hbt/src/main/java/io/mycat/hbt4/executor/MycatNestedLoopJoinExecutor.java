@@ -81,7 +81,7 @@ public class MycatNestedLoopJoinExecutor implements Executor {
                 originalRightSource.close();
             }
         }
-        this.iterator = EnumerableDefaults.nestedLoopJoin(
+        this.iterator = EnumerableDefaults.nestedLoopJoinAsList(
                 Linq4j.asEnumerable(leftSource),
                 Linq4j.asEnumerable(rightSource),
                 predicate, resultSelector, joinType)

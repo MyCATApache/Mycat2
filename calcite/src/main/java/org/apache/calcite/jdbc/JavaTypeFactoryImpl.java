@@ -204,6 +204,7 @@ public class JavaTypeFactoryImpl
       case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
         return LocalDateTime.class;
       case INTEGER:
+        return type.isNullable() ? Integer.class : int.class;
       case BIGINT:
         return type.isNullable() ? Long.class : long.class;
       case SMALLINT:
