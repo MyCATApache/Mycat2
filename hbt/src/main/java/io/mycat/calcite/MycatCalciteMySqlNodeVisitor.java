@@ -279,10 +279,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         // select list
         List<SqlNode> columnNodes = new ArrayList<SqlNode>(x.getSelectList().size());
         for (SQLSelectItem selectItem : x.getSelectList()) {
-            if (selectItem.getAlias() == null) {//fix alias
+            if (selectItem.getAlias() == null && !(selectItem.getExpr() instanceof SQLAllColumnExpr)) {//fix alias
                 StringBuilder sb = new StringBuilder();
                 selectItem.output(sb);
-                selectItem.setAlias(sb.toString().replaceAll(" ",""));
+                selectItem.setAlias(sb.toString().replaceAll(" ", ""));
             }
             SqlNode column = convertToSqlNode(selectItem);
             columnNodes.add(column);
@@ -1555,37 +1555,37 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
-            case "DAYNAME":{
-                this.sqlNode = DaynameFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+            case "DAYNAME": {
+                this.sqlNode = DaynameFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "CURDATE":
-            case "CURRENT_DATE":{
-                this.sqlNode = CurDateFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+            case "CURRENT_DATE": {
+                this.sqlNode = CurDateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "ADDTIME": {
-                this.sqlNode = RexImpTable.AddTimeFunction .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = RexImpTable.AddTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "TRUNCATE": {
-                this.sqlNode = TruncateFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = TruncateFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "RAND": {
-                this.sqlNode = RandFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = RandFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "LOG2": {
-                this.sqlNode = Log2Function.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = Log2Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "LOG": {
-                this.sqlNode = LogFunction  .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = LogFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "CONV": {
-                this.sqlNode = ConvFunction .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                this.sqlNode = ConvFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "SCHEMA":
@@ -1909,7 +1909,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                             writer.print(")");
                         }
                     };
-                }else{
+                } else {
                     functionOperator = SqlStdOperatorTable.TRIM;
                 }
                 sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
