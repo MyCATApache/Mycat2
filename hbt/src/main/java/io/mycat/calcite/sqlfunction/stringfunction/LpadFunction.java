@@ -19,16 +19,26 @@ public class LpadFunction extends MycatStringFunction {
     }
 
     public static String lpad(String str, Integer len, String padstr) {
-        if (str == null || len == null || len < 0 ||padstr == null||padstr.isEmpty()) {
+        if (str == null || len == null || len < 0 || padstr == null || padstr.isEmpty()) {
             return null;
         }
-        if (len<str.length()){
-            return str.substring(0,len);
+        if (len < str.length()) {
+            return str.substring(0, len);
         }
         StringBuilder sb = new StringBuilder();
         int count = len - str.length();
-        for (int i = 0; i < count; i++) {
-            sb.append(padstr);
+
+        boolean conti = true;
+        while (conti) {
+            int length = padstr.length();
+            for (int i = 0; i < length; i++) {
+                if (sb.length() < count) {
+                    sb.append(padstr.charAt(i));
+                }else {
+                    conti = false;
+                    break;
+                }
+            }
         }
         return sb.append(str).toString();
     }

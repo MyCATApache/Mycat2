@@ -127,6 +127,6 @@ public abstract class MycatSqlDefinedFunction extends SqlFunction implements Cal
 
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
-        return ((ImplementableFunction) function).getImplementor().implement(translator, call, nullAs);
+        return ((ImplementableFunction)Objects.requireNonNull(function)).getImplementor().implement(translator, call, nullAs);
     }
 }

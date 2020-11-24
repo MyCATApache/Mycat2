@@ -253,6 +253,7 @@ public enum MycatCalciteSupport implements Context {
                             LengthFunction.INSTANCE,
                             loadFileFunction.INSTANCE,
                             LocateFunction.INSTANCE,
+                            Locate2Function.INSTANCE,
                             LpadFunction.INSTANCE,
                             LtrimFunction.INSTANCE,
                             MakeSetFunction.INSTANCE,
@@ -343,7 +344,12 @@ public enum MycatCalciteSupport implements Context {
                             MycatLastInsertIdFunction.INSTANCE,
                             MycatConnectionIdFunction.INSTANCE,
                             MycatCurrentUserFunction.INSTANCE,
-                            MycatUserFunction.INSTANCE
+                            MycatUserFunction.INSTANCE,
+                            ConvFunction.INSTANCE,
+                            BitOrFunction.INSTANCE,
+                            TrimLeadingFunction.INSTANCE,
+                            TrimBothFunction.INSTANCE,
+                            TrimTrailingFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);

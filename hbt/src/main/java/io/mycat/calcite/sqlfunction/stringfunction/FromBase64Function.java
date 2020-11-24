@@ -17,19 +17,39 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 import io.mycat.calcite.MycatScalarFunction;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
+import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.schema.ScalarFunction;
+import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.OperandTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeName;
+
+import java.lang.reflect.Method;
 
 
-
-public class FromBase64Function extends MycatStringFunction {
+public class FromBase64Function extends MycatSqlDefinedFunction {
     public static ScalarFunction scalarFunction = MycatScalarFunction.create(FromBase64Function.class,
             "fromBase64", 1);
     public static FromBase64Function INSTANCE = new FromBase64Function();
 
 
     public FromBase64Function() {
-        super("FROM_BASE64", scalarFunction);
+        super("FROM_BASE64",
+                ReturnTypes.explicit(SqlTypeName.BINARY), InferTypes.FIRST_KNOWN, OperandTypes.STRING, null, SqlFunctionCategory.STRING);
+    }
+
+    @Override
+    public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
+        Method method = Types.lookupMethod(FromBase64Function.class, "fromBase64", String.class);
+       return Expressions.call(method,translator.translateList(call.getOperands(),nullAs));
     }
 
     public static ByteString fromBase64(String expr) {

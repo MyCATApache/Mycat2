@@ -13,12 +13,9 @@ import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.sqlfunction.stringfunction.*;
 import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.datefunction.*;
-import io.mycat.calcite.sqlfunction.stringfunction.BinaryFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.ConvertFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.NotRegexpFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.RegexpFunction;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -279,7 +276,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         List<SqlNode> columnNodes = new ArrayList<SqlNode>(x.getSelectList().size());
         for (SQLSelectItem selectItem : x.getSelectList()) {
             if (selectItem.getAlias() == null) {//fix alias
-                selectItem.setAlias(selectItem.toString());
+                StringBuilder sb = new StringBuilder();
+                selectItem.output(sb);
+                selectItem.setAlias(sb.toString().replaceAll(" ",""));
             }
             SqlNode column = convertToSqlNode(selectItem);
             columnNodes.add(column);
@@ -1552,6 +1551,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
+            case "CONV": {
+                this.sqlNode = ConvFunction .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
             case "SCHEMA":
             case "DATABASE": {
                 this.sqlNode = MycatDatabaseFunction.INSTANCE.createCall(SqlParserPos.ZERO);
@@ -1874,8 +1877,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                             writer.print(")");
                         }
                     };
+                }else{
+                    functionOperator = SqlStdOperatorTable.TRIM;
                 }
-                sqlNode = functionOperator.createCall(SqlParserPos.ZERO, argNodes);
+                sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             default:

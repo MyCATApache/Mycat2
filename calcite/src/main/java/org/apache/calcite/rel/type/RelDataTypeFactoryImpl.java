@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.rel.type;
 
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.type.JavaToSqlTypeConversionRules;
@@ -77,6 +78,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
   private static final Map<Class, RelDataTypeFamily> CLASS_FAMILIES =
       ImmutableMap.<Class, RelDataTypeFamily>builder()
+          .put(ByteString.class, SqlTypeFamily.BINARY)
           .put(String.class, SqlTypeFamily.CHARACTER)
           .put(byte[].class, SqlTypeFamily.BINARY)
           .put(boolean.class, SqlTypeFamily.BOOLEAN)

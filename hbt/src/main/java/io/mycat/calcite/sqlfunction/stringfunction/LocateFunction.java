@@ -26,7 +26,4 @@ public class LocateFunction extends MycatStringFunction {
         }
         return str.indexOf(substr.toLowerCase(),pos)+1;
     }
-    public static Integer locate(String substr,String str) {
-        return locate(substr, str,0);
-    }
 }

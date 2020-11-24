@@ -31,10 +31,7 @@ import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Resources;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.SqlOperandMetadata;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -717,9 +714,15 @@ public abstract class SqlUtil {
       List<String> argNames, RelDataTypePrecedenceList precList) {
     RelDataType bestMatch = null;
     for (SqlFunction function : sqlFunctions) {
-      if (!function.getOperandTypeChecker().isFixedParameters()) {
+      SqlOperandTypeChecker operandTypeChecker = function.getOperandTypeChecker();
+      if (operandTypeChecker!=null){
+        if (!operandTypeChecker.isFixedParameters()) {
+          continue;
+        }
+      }else {
         continue;
       }
+
       final SqlOperandMetadata operandMetadata =
           (SqlOperandMetadata) function.getOperandTypeChecker();
       final List<RelDataType> paramTypes =

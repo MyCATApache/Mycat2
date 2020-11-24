@@ -17,32 +17,53 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
 
+import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
+import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.OperandTypes;
-import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 
-public class CharFunction extends MycatStringFunction {
-    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(CharFunction.class,
-            "charFunction");
+public class CharFunction extends MycatSqlDefinedFunction {
     public static CharFunction INSTANCE = new CharFunction();
-   private static final Logger LOGGER = LoggerFactory.getLogger(CharFunction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CharFunction.class);
+    private final Method charFunction;
 
+    @SneakyThrows
     public CharFunction() {
-        super("char", scalarFunction);
+        super("char",
+                ReturnTypes.VARCHAR_2000, InferTypes.VARCHAR_1024, OperandTypes.SAME_VARIADIC, null, SqlFunctionCategory.STRING);
+        this.charFunction = CharFunction.class.getMethod("charFunction", Object[].class);
     }
+
+    @Override
+    public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
+        List<Expression> expressions = translator.translateList(call.getOperands(),nullAs);
+        return Expressions.call(charFunction,expressions);
+    }
+//
+//    public CharFunction() {
+//        super("char");
+//    }
 
     public static String charFunction(Object... exprs) {
         if (exprs == null || exprs.length == 0) {
@@ -50,7 +71,7 @@ public class CharFunction extends MycatStringFunction {
         }
         try {
             Object mayUsing = exprs[exprs.length - 1];
-            Charset charset = StandardCharsets.UTF_8;
+            Charset charset = StandardCharsets.US_ASCII;
             if (mayUsing != null && mayUsing instanceof String) {
                 try {
                     charset = Charset.forName((String) mayUsing);
@@ -76,7 +97,7 @@ public class CharFunction extends MycatStringFunction {
             }
             return new String(res, charset);
         } catch (Throwable e) {
-            LOGGER.warn("",e);
+            LOGGER.warn("", e);
             return null;
         }
     }

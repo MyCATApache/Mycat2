@@ -19,6 +19,6 @@ public class PositionFunction extends MycatStringFunction {
     }
 
     public static Integer position(String substr,String str) {
-      return LocateFunction.locate(substr,str);
+      return LocateFunction.locate(substr,str,0);
     }
 }
