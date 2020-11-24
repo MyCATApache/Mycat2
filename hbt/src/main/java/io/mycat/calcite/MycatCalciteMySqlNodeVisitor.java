@@ -13,6 +13,10 @@ import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
+import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
 import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -1551,6 +1555,22 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
+            case "TRUNCATE": {
+                this.sqlNode = TruncateFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
+            case "RAND": {
+                this.sqlNode = RandFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
+            case "LOG2": {
+                this.sqlNode = Log2Function.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
+            case "LOG": {
+                this.sqlNode = LogFunction  .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
             case "CONV": {
                 this.sqlNode = ConvFunction .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
                 return false;

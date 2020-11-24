@@ -21,6 +21,11 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.sqlfunction.CRC32Function;
+import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
+import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
 import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -219,7 +224,7 @@ public enum MycatCalciteSupport implements Context {
                     build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
                     build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
 //                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
-                    build.put("LOG", SqlStdOperatorTable.LOG10);
+//                    build.put("LOG", SqlStdOperatorTable.LOG);
                     build.put("PI", SqlStdOperatorTable.PI);
                     build.put("POW", SqlStdOperatorTable.POWER);
                     build.put("concat", ConcatFunction.INSTANCE);
@@ -349,7 +354,12 @@ public enum MycatCalciteSupport implements Context {
                             BitOrFunction.INSTANCE,
                             TrimLeadingFunction.INSTANCE,
                             TrimBothFunction.INSTANCE,
-                            TrimTrailingFunction.INSTANCE
+                            TrimTrailingFunction.INSTANCE,
+                            CRC32Function.INSTANCE,
+                            LogFunction.INSTANCE,
+                            Log2Function.INSTANCE,
+                            RandFunction.INSTANCE,
+                            TruncateFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);

@@ -1605,6 +1605,9 @@ public class SqlFunctions {
     return struncate(b0, 0);
   }
 
+  public static BigDecimal struncate(BigDecimal b0, long b1){
+    return struncate(b0,(int)b1);
+  }
   public static BigDecimal struncate(BigDecimal b0, int b1) {
     return b0.movePointRight(b1)
         .setScale(0, RoundingMode.DOWN).movePointLeft(b1);
