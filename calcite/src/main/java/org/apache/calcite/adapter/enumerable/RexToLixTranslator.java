@@ -2142,8 +2142,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     case INTERVAL_YEAR:
     case INTERVAL_YEAR_MONTH:
     case INTERVAL_MONTH:
-      value2 = literal.getValueAs(Integer.class);
-      javaClass = int.class;
+      value2 = literal.getValueAs(Period.class);
+      javaClass = Period.class;
       break;
     case TIMESTAMP:
     case TIMESTAMP_WITH_LOCAL_TIME_ZONE:

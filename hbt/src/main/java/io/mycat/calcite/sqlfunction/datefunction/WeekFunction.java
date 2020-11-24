@@ -28,14 +28,10 @@ public class WeekFunction extends MycatDateFunction {
             mode = 0;
         }
         LocalDate localDate = date;
-        int day = localDate.getDayOfWeek().getValue();
-        if (day > 0) {
-            localDate = localDate.minusDays(day);
-        }
         int offset;
         switch (mode){
             case 0:
-                offset = 1;
+                offset = 0;
                 break;
             case 1:
                 offset = 0;

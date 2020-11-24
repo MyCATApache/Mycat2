@@ -69,13 +69,13 @@ public class DateFormatFunction extends MycatDateFunction {
     }
 
     @Nullable
-    public static String dateFormat(String dateText, String format, Locale locale) {
+    private static String dateFormat(String dateText, String format, Locale locale) {
         Temporal temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(dateText);
         return dateFormat(format, locale, temporal);
     }
 
     @Nullable
-    public static String dateFormat(String format, Locale locale, Temporal temporal) {
+    private static String dateFormat(String format, Locale locale, Temporal temporal) {
         DateTimeFormatterBuilder dateTimeFormatterBuilder = new DateTimeFormatterBuilder();
         int length = format.length();
         for (int i = 0; i < length; i++) {

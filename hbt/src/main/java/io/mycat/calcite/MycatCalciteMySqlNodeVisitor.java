@@ -1555,6 +1555,19 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
+            case "DAYNAME":{
+                this.sqlNode = DaynameFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
+            case "CURDATE":
+            case "CURRENT_DATE":{
+                this.sqlNode = CurDateFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
+            case "ADDTIME": {
+                this.sqlNode = RexImpTable.AddTimeFunction .INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
+                return false;
+            }
             case "TRUNCATE": {
                 this.sqlNode = TruncateFunction.INSTANCE.createCall(SqlParserPos.ZERO,argNodes);
                 return false;
@@ -1713,8 +1726,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 return false;
             }
             case "DAYOFYEAR": {
-                ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.YEAR, SqlParserPos.ZERO), argNodes.get(0));
-                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                this.sqlNode = DayOfYearFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "HOUR": {

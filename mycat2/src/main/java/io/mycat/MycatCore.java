@@ -33,7 +33,7 @@ public class MycatCore {
 
     @SneakyThrows
     public MycatCore(String path) {
-        TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
+       // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         if (path == null) {
             String configResourceKeyName = "MYCAT_HOME";
             path = System.getProperty(configResourceKeyName);

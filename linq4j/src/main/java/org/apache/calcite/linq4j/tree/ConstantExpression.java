@@ -24,6 +24,7 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -195,6 +196,9 @@ public class ConstantExpression extends Expression {
     }
     if (value instanceof Duration) {
       return writer.append("java.time.Duration.parse(\""+value+"\")");
+    }
+    if (value instanceof Period) {
+      return writer.append("java.time.Period.parse(\""+value+"\")");
     }
     Constructor constructor = matchingConstructor(value);
     if (constructor != null) {

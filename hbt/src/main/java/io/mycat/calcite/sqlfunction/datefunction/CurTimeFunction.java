@@ -4,6 +4,7 @@ import org.apache.calcite.linq4j.function.Parameter;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalTime;
 
@@ -20,7 +21,8 @@ public class CurTimeFunction extends MycatDateFunction {
 
     public static Duration curTime(@Parameter( name="precision",optional = true) Integer precision) {
         if (precision == null) {
-           return Duration.ofNanos(LocalTime.now().toNanoOfDay());
+            Duration duration = Duration.ofSeconds(LocalTime.now().toSecondOfDay());
+            return duration;
         }
         LocalTime now = LocalTime.now();
         int nano = now.getNano();

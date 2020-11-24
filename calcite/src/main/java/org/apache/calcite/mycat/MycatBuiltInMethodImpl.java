@@ -16,6 +16,11 @@ import java.time.temporal.Temporal;
 import java.time.temporal.WeekFields;
 
 public class MycatBuiltInMethodImpl {
+    public static String dateSubString(java.lang.String date,  java.time.Period sub) {
+        if (date == null|| sub ==null) return null;
+        LocalDate date1 = stringToDate(date);
+       return dateToString(date1.minus(sub));
+    }
     public static Byte booleanToTinyint(Boolean b) {
         if (b == null) return null;
         return (byte) (b ? 1 : 0);

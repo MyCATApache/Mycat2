@@ -3,6 +3,7 @@ package io.mycat.calcite.sqlfunction.datefunction;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class CurDateFunction  extends MycatDateFunction {
@@ -14,7 +15,7 @@ public class CurDateFunction  extends MycatDateFunction {
         super("CURDATE", scalarFunction);
     }
 
-    public static LocalDateTime curDate(){
-        return LocalDateTime.now();
+    public static LocalDate curDate(){
+        return LocalDate.now();
     }
 }

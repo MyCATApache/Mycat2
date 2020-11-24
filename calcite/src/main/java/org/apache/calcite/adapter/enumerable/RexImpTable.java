@@ -61,6 +61,10 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -595,7 +599,7 @@ public class RexImpTable {
     // Current time functions
     map.put(CURRENT_TIME, systemFunctionImplementor);
     map.put(CURRENT_TIMESTAMP, systemFunctionImplementor);
-    map.put(CURRENT_DATE, systemFunctionImplementor);
+//    map.put(CURRENT_DATE, systemFunctionImplementor);
 //    map.put(LOCALTIME, systemFunctionImplementor);
 //    map.put(LOCALTIMESTAMP, systemFunctionImplementor);
 
@@ -763,6 +767,9 @@ public class RexImpTable {
     }
     if (operator == MycatUserFunction .INSTANCE){
       return MycatUserImplementor.INSTANCE;
+    }
+    if (operator == RexImpTable.AddTimeFunction .INSTANCE){
+      return  RexImpTable.AddTimeFunction .INSTANCE.getRexCallImplementor();
     }
     if (operator instanceof MycatSqlDefinedFunction ){
       CallImplementor implementor = ((MycatSqlDefinedFunction) operator);
@@ -3696,6 +3703,105 @@ public class RexImpTable {
         };
       }
     }
+  public static class AddTimeFunction extends SqlFunction {
+    public static  final AddTimeFunction INSTANCE =new AddTimeFunction();
+
+    public AddTimeFunction() {
+      super("ADDTIME", SqlKind.OTHER_FUNCTION,
+              ReturnTypes.VARCHAR_2000_NULLABLE
+              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
+    }
+    @Override
+    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
+      return super.checkOperandTypes(callBinding, throwOnFailure);
+    }
+    //SqlParserUtil
+    //DateTimeUtils
+    //SqlLiteral
+    public static String addTime(String time, String tmp) {
+      boolean sub  = false;
+      return addTime(time, tmp, sub);
+    }
+
+    public static String addTime(String time, String tmp, boolean sub) {
+      if (time == null || tmp == null) {
+        return null;
+      }
+      Duration duration = MycatBuiltInMethodImpl.timeStringToTimeDuration(tmp);
+      Temporal temporal;
+      if (time.contains(":") && !time.contains("-")) {//time
+        Duration duration1 = MycatBuiltInMethodImpl.timeStringToTimeDuration(time);
+        duration1 =!sub?  duration1.plus(duration):duration1.minus(duration);
+        long days1 = duration1.toDays();
+        if (days1 == 0){
+          long hours = java.util.concurrent.TimeUnit.SECONDS.toHours(duration1.getSeconds());
+          int SECONDS_PER_HOUR = 60*60;
+          int SECONDS_PER_MINUTE = 60;
+          int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+          int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
+          int nano = duration1.getNano();
+          //01:00:00.999999
+          return String.format("%02d:%02d:%02d.%09d",hours, minutes, secs, nano);
+        }else {
+          long hours = java.util.concurrent.TimeUnit.SECONDS.toHours(duration1.getSeconds());
+          int SECONDS_PER_HOUR = 60*60;
+          int SECONDS_PER_MINUTE = 60;
+          int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+          int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
+          int nano = duration1.getNano();
+          return String.format("%02d:%02d:%02d:%02d.%09d", days1, hours, minutes, secs, nano);
+        }
+      }
+      temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(time);
+
+      Temporal res = !sub?addTime(temporal, duration):subTime(temporal,duration);
+      if (res instanceof LocalDateTime) {
+        LocalDateTime res1 = (LocalDateTime) res;
+        return res1.toLocalDate().toString() + " " + res1.toLocalTime().toString();
+      }
+      if (res instanceof LocalTime) {
+        LocalTime res1 = (LocalTime) res;
+        return res1.toString();
+      }
+      return res.toString();
+    }
+
+    private static Temporal addTime(Temporal temporal, Duration duration) {
+      if (temporal == null || duration == null) {
+        return null;
+      }
+      Temporal plus = temporal.plus(duration);
+      return plus;
+    }
+    private static Temporal subTime(Temporal temporal, Duration duration) {
+      if (temporal == null || duration == null) {
+        return null;
+      }
+      Temporal plus = temporal.minus(duration);
+      return plus;
+    }
+
+
+    public RexCallImplementor getRexCallImplementor(){
+      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
+
+        @Override
+        protected String getVariableName() {
+          return "ADDTIME";
+        }
+
+        @Override
+        public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+          Expression one = argValueList.get(0);
+          Expression second = argValueList.get(1);
+          Class firstClass = (Class) one.getType();
+          Class secondClass =(Class) second.getType();
+          Method addtime = Types.lookupMethod(AddTimeFunction.class, "addTime", firstClass, secondClass);
+          return Expressions.call(addtime,one,second);
+        }
+      };
+    }
+  }
   public static class DateSubFunction extends SqlFunction {
     public static  final DateSubFunction INSTANCE =new DateSubFunction();
     public static final SqlReturnTypeInference SCOPE = opBinding -> {
@@ -3741,7 +3847,12 @@ public class RexImpTable {
             Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
             return Expressions.call(dateAdd,second,one);
           }
-          return null;
+          if (one.getType() ==String.class&&second.getType() == Period.class&&
+                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
+            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Period.class);
+            return Expressions.call(dateAdd,one,second);
+          }
+        throw new UnsupportedOperationException("unsupport:"+call);
         }
       };
     }

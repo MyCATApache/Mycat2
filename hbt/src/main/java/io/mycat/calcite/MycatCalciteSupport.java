@@ -221,8 +221,8 @@ public enum MycatCalciteSupport implements Context {
                 try {
                     map.put("IFNULL", SqlStdOperatorTable.COALESCE);
                     build.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-                    build.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
-                    build.put("CURRENT_DATE", SqlStdOperatorTable.CURRENT_DATE);
+                    build.put("CURDATE", CurDateFunction.INSTANCE);
+                    build.put("CURRENT_DATE", CurDateFunction.INSTANCE);
 //                    build.put("NOW", SqlStdOperatorTable.LOCALTIMESTAMP);
 //                    build.put("LOG", SqlStdOperatorTable.LOG);
                     build.put("PI", SqlStdOperatorTable.PI);
@@ -287,7 +287,7 @@ public enum MycatCalciteSupport implements Context {
                             /////////////////////////////////////////
                             AddDateFunction.INSTANCE,
 //                            DateAddFunction.INSTANCE,
-                            AddTimeFunction.INSTANCE,
+                            RexImpTable.AddTimeFunction.INSTANCE,
                             ConvertTzFunction.INSTANCE,
                             CurDateFunction.INSTANCE,
                             DateDiffFunction.INSTANCE,
@@ -359,7 +359,9 @@ public enum MycatCalciteSupport implements Context {
                             LogFunction.INSTANCE,
                             Log2Function.INSTANCE,
                             RandFunction.INSTANCE,
-                            TruncateFunction.INSTANCE
+                            TruncateFunction.INSTANCE,
+                            DaynameFunction.INSTANCE,
+                            DayOfYearFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);

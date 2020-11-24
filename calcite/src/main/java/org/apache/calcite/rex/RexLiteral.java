@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -60,6 +61,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
+
+import static org.apache.calcite.sql.type.SqlTypeName.*;
 
 /**
  * Constant value in a row-expression.
@@ -1160,8 +1163,23 @@ public class RexLiteral extends RexNode {
       }
       break;
     case INTERVAL_YEAR:
+      if (clazz == Period.class) {
+        return clazz.cast(Period.ofYears(((Number)value).intValue()));
+      }else {
+        throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR);
+      }
     case INTERVAL_YEAR_MONTH:
+      if (clazz == Period.class) {
+        throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR_MONTH);
+      }else {
+        throw new UnsupportedOperationException("unsupport "+INTERVAL_YEAR_MONTH);
+      }
     case INTERVAL_MONTH:
+      if (clazz == Period.class) {
+        return clazz.cast(Period.ofMonths(((Number)value).intValue()));
+      }else {
+        throw new UnsupportedOperationException("unsupport "+INTERVAL_MONTH);
+      }
     case INTERVAL_DAY:
     case INTERVAL_DAY_HOUR:
     case INTERVAL_DAY_MINUTE:
@@ -1173,9 +1191,9 @@ public class RexLiteral extends RexNode {
     case INTERVAL_MINUTE_SECOND:
     case INTERVAL_SECOND:
       if (clazz == Integer.class) {
-        return clazz.cast(((BigDecimal) value).intValue());
+        return clazz.cast(new BigInteger(value.toString()).intValue());
       } else if (clazz == Long.class) {
-        return clazz.cast(((BigDecimal) value).longValue());
+        return clazz.cast(new BigInteger(value.toString()).longValue());
       } else if (clazz == String.class) {
         return clazz.cast(intervalString(getValueAs(BigDecimal.class).abs()));
       } else if (clazz == Boolean.class) {

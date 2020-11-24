@@ -19,6 +19,6 @@ public class MonthNameFunction extends MycatDateFunction {
     }
 
     public static String monthName(LocalDate localDate) {
-        return localDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.getDefault());
+        return localDate.getMonth().getDisplayName(TextStyle.FULL, Locale.US);
     }
 }

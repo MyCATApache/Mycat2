@@ -735,7 +735,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 //      map.put("SECOND", simple(SqlStdOperatorTable.SECOND));
 
       map.put("CONVERT_TIMEZONE", simple(SqlLibraryOperators.CONVERT_TIMEZONE));
-      map.put("CURDATE", simple(SqlStdOperatorTable.CURRENT_DATE));
+     // map.put("CURDATE", simple(SqlStdOperatorTable.CURRENT_DATE));
       map.put("CURTIME", simple(SqlStdOperatorTable.LOCALTIME));
       map.put("NOW", simple(SqlStdOperatorTable.CURRENT_TIMESTAMP));
 //      map.put("TIMESTAMPADD", simple(SqlStdOperatorTable.TIMESTAMP_ADD));

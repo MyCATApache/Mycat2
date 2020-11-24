@@ -132,6 +132,9 @@ public class MycatTimeUtil {
             if (s.contains(":")) {
                 return LocalTime.parse(s);
             }
+            if (Character.isDigit(s.charAt(s.length()-1))){//只有数字则默认是秒
+                return LocalTime.of(0,0,Integer.parseInt(s));
+            }
             throw new UnsupportedOperationException();
         } else {
             if (s.contains(" ")) {

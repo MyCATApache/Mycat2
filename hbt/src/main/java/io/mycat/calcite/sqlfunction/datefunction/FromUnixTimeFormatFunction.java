@@ -1,5 +1,6 @@
 package io.mycat.calcite.sqlfunction.datefunction;
 
+import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
@@ -19,7 +20,7 @@ public class FromUnixTimeFormatFunction extends MycatDateFunction {
 
     public static String fromUnixTime(long unix_timestamp,String format) {
         LocalDateTime localDateTime = FromUnixTimeFunction.fromUnixTime(unix_timestamp);
-        return DateFormatFunction.dateFormat(format,Locale.getDefault(),localDateTime);
+        return DateFormatFunction.dateFormat(MycatBuiltInMethodImpl.timestampToString(localDateTime),format,Locale.getDefault().toString());
     }
 }
 

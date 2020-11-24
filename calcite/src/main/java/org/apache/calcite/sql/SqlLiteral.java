@@ -367,7 +367,12 @@ public class SqlLiteral extends SqlNode {
         if (clazz == SqlIntervalQualifier.class&&value instanceof SqlIntervalLiteral.IntervalValue) {
           return clazz.cast((( SqlIntervalLiteral.IntervalValue ) value).getIntervalQualifier());
         }
-      break;
+        if (Number.class.isAssignableFrom(clazz)&&value instanceof SqlIntervalLiteral.IntervalValue) {
+          if (clazz == Long.class){
+            return clazz.cast(Long.parseLong(value.toString()));
+          }
+        }
+        throw new UnsupportedOperationException();
       case INTERVAL_YEAR_MONTH:
         if (clazz == Period.class) {
           final SqlIntervalLiteral.IntervalValue valTime =

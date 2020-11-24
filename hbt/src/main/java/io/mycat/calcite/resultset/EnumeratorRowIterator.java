@@ -84,14 +84,14 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
 
     @Override
     public LocalDateTime getTimestamp(int columnIndex) {
-        LocalDateTime o = getTimestamp(columnIndex);
+        LocalDateTime o = (LocalDateTime)getObject(columnIndex);
         if (wasNull) return null;
         return (LocalDateTime) o;
     }
 
     @Override
     public Duration getTime(int columnIndex) {
-        Duration o = getTime(columnIndex);
+        Duration o = (Duration)getObject(columnIndex);
         if (wasNull) return null;
         return (Duration) o;
     }
