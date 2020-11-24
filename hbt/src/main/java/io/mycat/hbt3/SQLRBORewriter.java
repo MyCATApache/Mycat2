@@ -389,7 +389,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 View multiView = View.of(
                         bestExp.getInput(0).getInput(0),
                         dataNodeInfo);
-                return aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
+                return bestExp.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
             } else {
                 return View.of(
                         backup,
