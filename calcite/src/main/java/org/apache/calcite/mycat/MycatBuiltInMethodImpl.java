@@ -183,7 +183,7 @@ public class MycatBuiltInMethodImpl {
         return b.longValue();
     }
 
-    public static Long integerToBigint(Byte b) {
+    public static Long integerToBigint(Integer b) {
         if (b == null) return null;
         return b.longValue();
     }
