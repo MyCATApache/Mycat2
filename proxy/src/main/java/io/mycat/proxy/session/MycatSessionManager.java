@@ -98,11 +98,10 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
         //用于monitor监控获取session
         SessionThread thread = (SessionThread) Thread.currentThread();
         thread.setCurSession(mycat);
-        mySQLClientAuthHandler.setMycatSession(mycat);
         try {
             mycat.register(nioSelector, frontChannel, SelectionKey.OP_READ);
             MycatMonitor.onNewMycatSession(mycat);
-            mySQLClientAuthHandler.sendAuthPackge();
+            mySQLClientAuthHandler.sendAuthPackge(mycat);
             this.mycatSessions.add(mycat);
         } catch (Exception e) {
             MycatMonitor.onAuthHandlerWriteException(mycat, e);

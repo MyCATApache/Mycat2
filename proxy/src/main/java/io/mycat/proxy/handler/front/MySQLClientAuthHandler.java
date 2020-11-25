@@ -50,7 +50,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
     public byte[] seed;
-    public MycatSession mycat;
+//    public MycatSession mycat;
     private boolean finished = false;
     private AuthPacket auth;
     public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
@@ -61,9 +61,9 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         this.mycatSessionManager = mycatSessionManager;
     }
 
-    public void setMycatSession(MycatSession mycatSession) {
-        this.mycat = mycatSession;
-    }
+//    public void setMycatSession(MycatSession mycatSession) {
+//        this.mycat = mycatSession;
+//    }
 
     @Override
     public void onSocketRead(MycatSession mycat) {
@@ -74,7 +74,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             if (!mycat.readFromChannel()) {
                 return;
             }
-            this.mycat.setResponseFinished(ProcessState.READY);
+            mycat.setResponseFinished(ProcessState.READY);
 //            MycatSecurityConfig securityManager = runtime.getSecurityManager();
             byte[] password = new byte[]{};
             if (!isChangeAuthPlugin) {
@@ -203,8 +203,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     public void onException(MycatSession session, Exception e) {
         MycatMonitor.onAuthHandlerException(session, e);
         LOGGER.error("{}", e);
-        onClear(mycat);
-        mycat.close(false, e);
+        onClear(session);
+        session.close(false, e);
     }
 
     public void onClear(MycatSession session) {
@@ -212,7 +212,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         MycatMonitor.onAuthHandlerClear(session);
     }
 
-    public void sendAuthPackge() {
+    public void sendAuthPackge(MycatSession mycat) {
         byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
         this.seed = seedParts[2];
         HandshakePacket hs = new HandshakePacket();
