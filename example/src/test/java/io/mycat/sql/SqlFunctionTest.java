@@ -16,14 +16,6 @@ import static io.mycat.assemble.AssembleTest.execute;
 
 public class SqlFunctionTest {
 
-    @Test
-    public void testFunction() throws SQLException {
-        while (true) {
-            Connection mySQLConnection = getMySQLConnection(8066);
-            mySQLConnection.close();
-        }
-    }
-
     Connection getMySQLConnection(int port) throws SQLException {
         String username = "root";
         String password = "123456";
