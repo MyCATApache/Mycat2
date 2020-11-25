@@ -489,10 +489,4 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         }
     }
 
-    @Override
-    public boolean checkOpen() {
-        boolean b = super.checkOpen() && dataContext.isRunning();
-        boolean b1 = processState == ProcessState.READY || ((processState == ProcessState.DONE || processState == ProcessState.DOING) && !isIOTimeout());
-        return b && b1;
-    }
 }

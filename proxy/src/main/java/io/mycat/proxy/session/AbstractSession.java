@@ -134,23 +134,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
      */
     public boolean checkOpen() {
         SocketChannel channel = channel();
-        if(this.channel.isConnectionPending()){
-            return true;
-        }
-        boolean open = !hasClosed() && channel.isOpen() && channel.isConnected();
-        if (open) {
-            ByteBuffer allocate = ByteBuffer.allocate(0);
-
-            boolean close;
-            try {
-                close = -1 == channel.read(allocate);
-            } catch (IOException e) {
-                close = true;
-            }
-            if (close) {
-                this.close(false, "check open");
-                return false;
-            }
+        if (this.channel.isConnectionPending() || channel.isConnected()) {
             return true;
         }
         return false;
