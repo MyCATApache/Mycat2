@@ -77,15 +77,15 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                 case RRESULTSET: {
                     RowIterable rowIterable = (RowIterable) mycatResponse;
                     sendResultSet(moreResultSet, rowIterable.get());
-                    break;
+                    return;
                 }
                 case UPDATEOK: {
                     session.writeOk(moreResultSet);
-                    break;
+                    return;
                 }
                 case ERROR: {
                     session.writeErrorEndPacketBySyncInProcessError();
-                    break;
+                    return;
                 }
                 case PROXY: {
                     MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
@@ -112,17 +112,18 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             session.setAffectedRows(res[0]);
                             session.setLastInsertId(res[1]);
                             session.writeOk(moreResultSet);
-                            break;
+                            return;
                         }
                         case UPDATE: {
                             long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
                             session.setAffectedRows(res[0]);
                             session.setLastInsertId(res[1]);
                             session.writeOk(moreResultSet);
-                            break;
+                            return;
                         }
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + proxyResponse.getExecuteType());
                     }
-                    break;
                 }
                 case COMMIT: {
                     MycatDataContext dataContext = session.getDataContext();
@@ -149,7 +150,10 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             transactionSession.commit();
                             LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                             session.writeOk(moreResultSet);
+                            return;
                         }
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + transactionType);
                     }
                     //break;
                 }
@@ -180,8 +184,9 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             session.writeOk(moreResultSet);
                             return;
                         }
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + transactionType);
                     }
-                    break;
                 }
                 case BEGIN: {
                     MycatDataContext dataContext = session.getDataContext();
@@ -200,8 +205,9 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             session.writeOk(moreResultSet);
                             return;
                         }
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + transactionType);
                     }
-                    break;
                 }
                 default:
                     throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());

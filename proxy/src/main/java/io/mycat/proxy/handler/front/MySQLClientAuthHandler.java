@@ -29,6 +29,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
+import io.mycat.proxy.session.ProcessState;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
@@ -73,33 +74,32 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             if (!mycat.readFromChannel()) {
                 return;
             }
+            this.mycat.setResponseFinished(ProcessState.READY);
 //            MycatSecurityConfig securityManager = runtime.getSecurityManager();
             byte[] password = new byte[]{};
             if (!isChangeAuthPlugin) {
                 //密码读取与验证
                 this.auth = readResponseAuthPacket(mycat);
-                if (true) {
-                    String authPluginName = auth.getAuthPluginName();
-                    int capabilities = auth.getCapabilities();
-                    //切换auth_plugin
-                    if (MySQLServerCapabilityFlags.isPluginAuth(capabilities)
-                            && !authPluginName.equals(clientAuthPluginName)) {
-                        //发送切换包的auth_response
-                        isChangeAuthPlugin = true;
-                        AuthSwitchRequestPacket authSwitchRequestPacket = new AuthSwitchRequestPacket();
-                        clientAuthPluginName = StringUtil.isEmpty(authPluginName) ? MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME : authPluginName;
-                        authSwitchRequestPacket.setAuthPluginName(clientAuthPluginName);
-                        authSwitchRequestPacket.setStatus((byte) 0xfe);
-                        authSwitchRequestPacket.setAuthPluginData(new String(seed));
+                String authPluginName = auth.getAuthPluginName();
+                int capabilities = auth.getCapabilities();
+                //切换auth_plugin
+                if (MySQLServerCapabilityFlags.isPluginAuth(capabilities)
+                        && !authPluginName.equals(clientAuthPluginName)) {
+                    //发送切换包的auth_response
+                    isChangeAuthPlugin = true;
+                    AuthSwitchRequestPacket authSwitchRequestPacket = new AuthSwitchRequestPacket();
+                    clientAuthPluginName = StringUtil.isEmpty(authPluginName) ? MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME : authPluginName;
+                    authSwitchRequestPacket.setAuthPluginName(clientAuthPluginName);
+                    authSwitchRequestPacket.setStatus((byte) 0xfe);
+                    authSwitchRequestPacket.setAuthPluginData(new String(seed));
 
-                        MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(1024);
-                        authSwitchRequestPacket.writePayload(mySQLPayloadWriter);
-                        mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
-                        return;
-                    }
-                    //握手包中的加密密码
-                    password = auth.getPassword();
+                    MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(1024);
+                    authSwitchRequestPacket.writePayload(mySQLPayloadWriter);
+                    mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
+                    return;
                 }
+                //握手包中的加密密码
+                password = auth.getPassword();
             } else {
                 MySQLPacket mySQLPacket = mycat.currentProxyPayload();
                 password = mySQLPacket.readEOFStringBytes();

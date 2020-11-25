@@ -25,7 +25,6 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
@@ -34,7 +33,6 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.CharsetUtil;
 import org.slf4j.Logger;
@@ -46,8 +44,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 //tcp.port in {8066} or tcp.port in  {3066}
@@ -65,7 +62,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
      */
     private final ProxyBuffer proxyBuffer;//clearQueue
     private final ByteBuffer header = ByteBuffer.allocate(4);//gc
-    private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
+    private final ConcurrentLinkedQueue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();//buffer recycle
     //  private final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);//clearQueue
     private final BufferPool crossSwapThreadBufferPool;
 
@@ -215,7 +212,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     @Override
-    public LinkedTransferQueue<ByteBuffer> writeQueue() {
+    public ConcurrentLinkedQueue<ByteBuffer> writeQueue() {
         return writeQueue;
     }
 
@@ -332,6 +329,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public void setResponseFinished(ProcessState b) {
+        if(this.processState == ProcessState.DONE && b ==  ProcessState.DONE){
+            throw new IllegalArgumentException("The response has ended, but there are still writes ...");
+        }
         this.processState = b;
     }
 

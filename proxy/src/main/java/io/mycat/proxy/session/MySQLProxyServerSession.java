@@ -5,12 +5,9 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.MySQLPacketUtil;
-import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
-import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author jamie12221 date 2019-05-08 00:06
@@ -33,8 +30,9 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     /**
      * 前端写入队列
+     * @return
      */
-    LinkedTransferQueue<ByteBuffer> writeQueue();
+    ConcurrentLinkedQueue<ByteBuffer> writeQueue();
 
     /**
      * mysql 报文头 辅助buffer
@@ -54,25 +52,21 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     MycatReactorThread getIOThread();
 
-    default void writeBytes(ByteBuffer buffer, boolean end) {
-        //@ ServerTransactionSessionRunner
+    /**
+     * 写入payload
+     */
+    default void writeBytes(byte[] payload, boolean end) {
         try {
             switchMySQLServerWriteHandler();
-            Queue<ByteBuffer> byteBuffers = writeQueue();
-            byteBuffers.offer(buffer);
+            ConcurrentLinkedQueue<ByteBuffer> byteBuffers = writeQueue();
+            byte[] bytes = MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload);
+            byteBuffers.offer(ByteBuffer.wrap(bytes));
             change2WriteOpts();
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             getIOThread().wakeup();
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
         }
-    }
-
-    /**
-     * 写入payload
-     */
-    default void writeBytes(byte[] payload, boolean end) {
-        writeBytes(writeBufferPool().allocate(payload), end);
     }
 
     default void writeErrorEndPacketBySyncInProcessError() {
@@ -136,6 +130,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 if (byteBuffers.isEmpty() && session.getProcessState() == ProcessState.DONE) {
                     session.writeFinished(session);
                     session.change2ReadOpts();
+                    return;
                 } else {
                     session.change2WriteOpts();
                     return;
@@ -172,61 +167,26 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     /**
      * @param session
      * @param byteBuffers
-     * @return 有剩余的数据, 没有写入完整
      * @throws IOException
      */
-    static boolean writeMySQLPacket(MySQLProxyServerSession session, Queue<ByteBuffer> byteBuffers) throws IOException {
-        ByteBuffer[] packetContainer = session.packetContainer();
-        MySQLPacketSplitter packetSplitter = session.packetSplitter();
-        long writed;
+    static void writeMySQLPacket(MySQLProxyServerSession session, Queue<ByteBuffer> byteBuffers) throws IOException {
+        long writed = 0;
         session.updateLastActiveTime();
         do {
-            writed = 0;
-            if (byteBuffers.isEmpty()) {
+            ByteBuffer buffer = byteBuffers.peek();
+            if (buffer!=null){
+                writed = session.channel().write(buffer);
+                if (!buffer.hasRemaining()){
+                    session.writeBufferPool().recycle(buffer);
+                    byteBuffers.remove();
+                }
+            }else{
                 break;
             }
-            ByteBuffer first = byteBuffers.peek();
-
-            if (first.position() == 0) {//一个全新的payload
-                MycatMonitor.onFrontWrite(
-                        session, first, 0, first.limit());
-                packetSplitter.init(first.limit());
-                packetSplitter.nextPacketInPacketSplitter();
-                splitPacket(session, packetContainer, packetSplitter, first);
-                assert packetContainer[0] != null;
-                assert packetContainer[1] != null;
-                writed = session.channel().write(packetContainer);
-                if (first.hasRemaining()) {
-                    return true;
-                } else {
-                    continue;
-                }
-            } else {
-                assert packetContainer[0] != null;
-                assert packetContainer[1] != null;
-                writed = session.channel().write(packetContainer);
-                if (first.hasRemaining()) {
-                    return true;
-                } else {
-                    if (packetSplitter.nextPacketInPacketSplitter()) {
-                        splitPacket(session, packetContainer, packetSplitter, first);
-                        writed = session.channel().write(packetContainer);
-                        if (first.hasRemaining()) {
-                            return true;
-                        } else {
-                            continue;
-                        }
-                    } else {
-                        byteBuffers.remove();
-                        session.writeBufferPool().recycle(first);
-                    }
-                }
-            }
-        } while (writed > 0);
+        }while (writed>0);
         if (writed == -1) {
             throw new ClosedChannelException();
         }
-        return false;
     }
 
     /**
