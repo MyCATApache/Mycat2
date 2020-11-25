@@ -22,6 +22,7 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.HeapBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
@@ -85,11 +86,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
                         Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
                                 MycatContextThreadPool mycatContextThreadPool) {
         super(sessionId, nioHandler, sessionManager);
-        this.proxyBuffer = new ProxyBufferImpl(bufferPool);
+        HeapBufferPool heapBufferPool = new HeapBufferPool();
+        this.proxyBuffer = new ProxyBufferImpl(heapBufferPool);
         this.crossSwapThreadBufferPool = bufferPool;
 
         this.processState = ProcessState.READY;
-        this.frontResolver = new FrontMySQLPacketResolver(bufferPool, this);
+        this.frontResolver = new FrontMySQLPacketResolver(heapBufferPool, this);
         this.packetId = 0;
         this.dataContext = new MycatDataContextImpl(new ServerTransactionSessionRunner(transcationFactoryMap,mycatContextThreadPool,this));
     }

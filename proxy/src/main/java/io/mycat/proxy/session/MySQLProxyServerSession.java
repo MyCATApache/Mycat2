@@ -60,7 +60,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             switchMySQLServerWriteHandler();
             ConcurrentLinkedQueue<ByteBuffer> byteBuffers = writeQueue();
             byte[] bytes = MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload);
-            byteBuffers.offer(ByteBuffer.wrap(bytes));
+            byteBuffers.offer(writeBufferPool().allocate(bytes));
             change2WriteOpts();
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             getIOThread().wakeup();
@@ -150,7 +150,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
         @Override
         public void onClear(MycatSession session) {
-            BufferPool bufPool = session.getIOThread().getBufPool();
+            BufferPool bufPool = session.writeBufferPool();
             for (ByteBuffer byteBuffer : session.writeQueue()) {
                 bufPool.recycle(byteBuffer);
             }
