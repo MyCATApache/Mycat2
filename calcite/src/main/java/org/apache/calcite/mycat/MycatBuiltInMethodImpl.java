@@ -972,7 +972,7 @@ public class MycatBuiltInMethodImpl {
         return b.toString();
     }
 
-    public static String integerToString(Long b) {
+    public static String integerToString(Integer b) {
         if (b == null) return null;
         return b.toString();
     }

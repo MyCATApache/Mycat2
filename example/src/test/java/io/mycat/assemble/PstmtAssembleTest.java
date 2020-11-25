@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class PstmtAssembleExample extends AssembleExample {
+public class PstmtAssembleTest extends AssembleTest {
 
     @Override
     Connection getMySQLConnection(int port) throws SQLException {

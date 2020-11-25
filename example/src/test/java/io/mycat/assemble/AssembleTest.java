@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class AssembleExample {
+public class AssembleTest {
 
 
     Connection getMySQLConnection(int port) throws SQLException {
@@ -42,7 +42,7 @@ public class AssembleExample {
             @SneakyThrows
             @Override
             public void accept(Connection mycatConnection) {
-                AssembleExample.this.execute(mycatConnection, "set transaction_policy  = proxy");
+                AssembleTest.this.execute(mycatConnection, "set transaction_policy  = proxy");
             }
         };
         testTranscation(connectionFunction);
@@ -55,7 +55,7 @@ public class AssembleExample {
             @SneakyThrows
             @Override
             public void accept(Connection mycatConnection) {
-                AssembleExample.this.execute(mycatConnection, "set transaction_policy  = xa");
+                AssembleTest.this.execute(mycatConnection, "set transaction_policy  = xa");
             }
         };
         testTranscation(connectionFunction);

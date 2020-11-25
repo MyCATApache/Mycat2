@@ -10,7 +10,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-public class TestAddSequence {
+public class AddSequenceTest {
     Connection getMySQLConnection(int port) throws SQLException {
         String username = "root";
         String password = "123456";
@@ -27,7 +27,7 @@ public class TestAddSequence {
     public void testAddSequence() throws SQLException {
 
         try (Connection connection = getMySQLConnection(8066)) {
-            AssembleExample.execute(connection, "CREATE DATABASE db1");
+            AssembleTest.execute(connection, "CREATE DATABASE db1");
 
 
             try (Connection mySQLConnection = getMySQLConnection(3306)) {
@@ -62,7 +62,7 @@ public class TestAddSequence {
             }
 
 
-            AssembleExample.execute(connection, "CREATE TABLE db1.`travelrecord` (\n" +
+            AssembleTest.execute(connection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `user_id` varchar(100) DEFAULT NULL,\n" +
                     "  `traveldate` date DEFAULT NULL,\n" +
@@ -73,11 +73,11 @@ public class TestAddSequence {
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                     + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
-            AssembleExample.execute(connection, "delete from  db1.travelrecord");
-            AssembleExample.execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
-            List<Map<String, Object>> maps1 = AssembleExample.executeQuery(connection, "select last_insert_id()");
+            AssembleTest.execute(connection, "delete from  db1.travelrecord");
+            AssembleTest.execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
+            List<Map<String, Object>> maps1 = AssembleTest.executeQuery(connection, "select last_insert_id()");
 
-            AssembleExample.execute(connection, "/*+ mycat:setSequence{\n" +
+            AssembleTest.execute(connection, "/*+ mycat:setSequence{\n" +
                     "\t\"name\":\"db1_travelrecord\",\n" +
                     "\t\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\n" +
                     "} */");
@@ -87,9 +87,9 @@ public class TestAddSequence {
                     statement.execute("update `db1`.`mycat_sequence` set `current_value` = '0' where name = 'db1_travelrecord';");
                 }
             }
-            AssembleExample.execute(connection, "delete from  db1.travelrecord");
-            AssembleExample.execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
-            List<Map<String, Object>> maps2 = AssembleExample.executeQuery(connection, "select last_insert_id()");
+            AssembleTest.execute(connection, "delete from  db1.travelrecord");
+            AssembleTest.execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
+            List<Map<String, Object>> maps2 = AssembleTest.executeQuery(connection, "select last_insert_id()");
             Assert.assertTrue(maps2.toString().contains("1"));
         }
     }

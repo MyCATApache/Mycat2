@@ -11,7 +11,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-public class ManagerHintExample {
+public class ManagerHintTest {
 
     Connection getMySQLConnection(int port) throws SQLException {
         String username = "root";
@@ -40,7 +40,7 @@ public class ManagerHintExample {
     @Test
     public void testShowUsers() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            List<Map<String, Object>> maps = AssembleExample.executeQuery(mycatConnection,
+            List<Map<String, Object>> maps = AssembleTest.executeQuery(mycatConnection,
                     "/*+ mycat:showUsers{}*/");
             Assert.assertTrue(!maps.isEmpty());
         }
@@ -49,10 +49,10 @@ public class ManagerHintExample {
     @Test
     public void testShowSchemas() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showSchemas{}*/").size() > 2);
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showSchemas{\"schemaName\":\"mysql\"}*/").size() == 1);
         }
@@ -61,7 +61,7 @@ public class ManagerHintExample {
     @Test
     public void testShowSchedules() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            AssembleExample
+            AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showSchedules{}*/");
         }
@@ -70,7 +70,7 @@ public class ManagerHintExample {
     @Test
     public void testShowClusters() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showClusters{}*/").size() > 0);
         }
@@ -79,7 +79,7 @@ public class ManagerHintExample {
     @Test
     public void testShowDatasources() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showDatasources{}*/").size() > 0);
         }
@@ -88,7 +88,7 @@ public class ManagerHintExample {
     @Test
     public void testShowHeartbeats() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showHeartbeats{}*/").size() > 0);
         }
@@ -97,7 +97,7 @@ public class ManagerHintExample {
     @Test
     public void testShowHeartbeatStatus() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showHeartbeatStatus{}*/").size() > 0);
         }
@@ -106,7 +106,7 @@ public class ManagerHintExample {
     @Test
     public void testShowInstances() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showInstances{}*/").size() > 0);
         }
@@ -115,7 +115,7 @@ public class ManagerHintExample {
     @Test
     public void testShowReactors() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showReactors{}*/").size() > 0);
         }
@@ -124,7 +124,7 @@ public class ManagerHintExample {
     @Test
     public void testShowThreadPools() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showThreadPools{}*/").size() > 0);
         }
@@ -133,10 +133,10 @@ public class ManagerHintExample {
     @Test
     public void testShowTables() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            Assert.assertTrue(AssembleExample
+            Assert.assertTrue(AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showTables{}*/").size() > 2);
-            Assert.assertTrue(!AssembleExample
+            Assert.assertTrue(!AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showTables{\"schemaName\":\"mysql\"}*/").isEmpty());
         }
@@ -145,7 +145,7 @@ public class ManagerHintExample {
     @Test
     public void testShowConnections() throws SQLException {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            AssembleExample
+            AssembleTest
                     .executeQuery(mycatConnection,
                             "/*+ mycat:showConnections{}*/");
         }

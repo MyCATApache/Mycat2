@@ -27,7 +27,7 @@ public class BitOrFunction extends MycatSqlDefinedFunction {
     public static final BitOrFunction INSTANCE = new BitOrFunction();
 
     public BitOrFunction() {
-        super("|", ReturnTypes.BIGINT, InferTypes.FIRST_KNOWN, OperandTypes.family(
+        super("|", ReturnTypes.ARG0, InferTypes.FIRST_KNOWN, OperandTypes.family(
                 SqlTypeFamily.NUMERIC,
                 SqlTypeFamily.NUMERIC
                 ), null, SqlFunctionCategory.NUMERIC);
@@ -36,12 +36,24 @@ public class BitOrFunction extends MycatSqlDefinedFunction {
 
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
-        Method makeSet = Types.lookupMethod(BitOrFunction.class,
-                "bitOr", Long.class, Long.class);
-        return Expressions.call(makeSet,translator.translateList(call.getOperands(),nullAs));
+        List<Expression> expressions = translator.translateList(call.getOperands(), nullAs);
+        if(expressions.get(0).getType() == Long.class){
+            Method bitOr = Types.lookupMethod(BitOrFunction.class,
+                    "bitOr", Long.class, Long.class);
+            return Expressions.call(bitOr,expressions);
+        }
+        Method bitOr = Types.lookupMethod(BitOrFunction.class,
+                "bitOr", Integer.class, Integer.class);
+        return Expressions.call(bitOr,expressions);
     }
 
     public static Long bitOr(Long left,Long right) {
+        if (left == null || right == null) {
+            return null;
+        }
+        return left|right;
+    }
+    public static Integer bitOr(Integer left,Integer right) {
         if (left == null || right == null) {
             return null;
         }

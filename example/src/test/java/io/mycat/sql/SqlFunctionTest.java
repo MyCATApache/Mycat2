@@ -12,7 +12,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mycat.assemble.AssembleExample.execute;
+import static io.mycat.assemble.AssembleTest.execute;
 
 public class SqlFunctionTest {
 

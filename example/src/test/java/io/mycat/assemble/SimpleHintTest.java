@@ -3,7 +3,7 @@ package io.mycat.assemble;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class SimpleHintExample extends AssembleExample {
+public class SimpleHintTest extends AssembleTest {
     @Override
     protected void initCluster(Connection mycatConnection) throws SQLException {
         execute(mycatConnection,

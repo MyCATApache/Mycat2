@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class RwExample extends AssembleExample {
+public class RwTest extends AssembleTest {
 
 
     @Test

@@ -22,7 +22,7 @@ public enum  MycatBuiltInMethod {
     TIMESTAMP_TO_DOUBLE(MycatBuiltInMethodImpl.class, "timestampToDouble", LocalDateTime.class),
     BOOLEAN_TO_TINYINT(MycatBuiltInMethodImpl.class, "booleanToTinyint", Boolean.class),
     SMALLINT_TO_TINYINT(MycatBuiltInMethodImpl.class, "smallintToTinyint", Short.class),
-    INTEGER_TO_TINYINT(MycatBuiltInMethodImpl.class, "integerToTinyint", Long.class),
+    INTEGER_TO_TINYINT(MycatBuiltInMethodImpl.class, "integerToTinyint", Integer.class),
     BIGINT_TO_TINYINT(MycatBuiltInMethodImpl.class, "bigintToTinyint", Long.class),
 //////////////////////////////////////////////////////////////
 DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.class),

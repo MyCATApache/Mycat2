@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class DDLHintExample extends AssembleExample {
+public class DDLHintTest extends AssembleTest {
 
 
     @Test
