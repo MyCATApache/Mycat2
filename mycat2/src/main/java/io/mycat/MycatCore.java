@@ -6,6 +6,7 @@ import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import lombok.SneakyThrows;
+import org.apache.calcite.mycat.MycatBuiltInMethod;
 import org.apache.calcite.util.BuiltInMethod;
 import sun.util.calendar.ZoneInfo;
 
@@ -33,7 +34,8 @@ public class MycatCore {
 
     @SneakyThrows
     public MycatCore(String path) {
-       // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
+        MycatBuiltInMethod booleanToBigint = MycatBuiltInMethod.BOOLEAN_TO_BIGINT;
+        // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         if (path == null) {
             String configResourceKeyName = "MYCAT_HOME";
             path = System.getProperty(configResourceKeyName);

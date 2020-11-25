@@ -47,7 +47,7 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
     this.ranges = ranges;
 
     String startBeginDate = Objects.toString(prot.get("beginDate"));
-    String startEndDate = Objects.toString(prot.get("endDate"));
+    String startEndDate = (String) (prot.get("endDate"));
     String startPartionDay = Objects.toString(prot.get("partionDay"));
     String dateFormat = Objects.toString(prot.get("dateFormat"));
     formatter = DateTimeFormatter.ofPattern(dateFormat);

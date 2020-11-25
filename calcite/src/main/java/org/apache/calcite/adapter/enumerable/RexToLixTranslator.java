@@ -459,7 +459,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_BIGINT.method, operand);
             break;
           case SMALLINT:
-            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_BIGINT.method, operand);
+            convert = Expressions.call(MycatBuiltInMethod.SMALLINT_TO_BIGINT.method, operand);
             break;
           case INTEGER:
             convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_BIGINT.method, operand);
@@ -569,7 +569,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_DECIMAL.method, operand);
             break;
           case SMALLINT:
-            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_DECIMAL.method, operand);
+            convert = Expressions.call(MycatBuiltInMethod.SMALLINT_TO_DECIMAL.method, operand);
             break;
           case INTEGER:
             convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_DECIMAL.method, operand);

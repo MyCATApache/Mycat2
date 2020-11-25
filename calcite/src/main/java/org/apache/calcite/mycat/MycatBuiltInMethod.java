@@ -2,6 +2,7 @@ package org.apache.calcite.mycat;
 
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
+import org.eclipse.jetty.server.handler.ScopedHandler;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -54,9 +55,10 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     BYTESTRING_TO_SMALLINT(MycatBuiltInMethodImpl.class, "byteStringToSmallint", ByteString.class),
     DURATION_TO_SMALLINT(MycatBuiltInMethodImpl.class, "durationToSmallint", Duration.class),
 
+    SMALLINT_TO_BIGINT(MycatBuiltInMethodImpl.class, "smallintToBigint", Short.class),
     BOOLEAN_TO_BIGINT(MycatBuiltInMethodImpl.class, "booleanToBigint", Boolean.class),
     TINYINT_TO_BIGINT(MycatBuiltInMethodImpl.class, "tinyToBigint", Byte.class),
-    INTEGER_TO_BIGINT(MycatBuiltInMethodImpl.class, "integerToBigint", Long.class),
+    INTEGER_TO_BIGINT(MycatBuiltInMethodImpl.class, "integerToBigint", Integer.class),
     BIGINT_TO_BIGINT(MycatBuiltInMethodImpl.class, "bigintToBigint", Long.class),
     DECIMAL_TO_BIGINT(MycatBuiltInMethodImpl.class, "decimalToBigint", BigDecimal.class),
     FLOAT_TO_BIGINT(MycatBuiltInMethodImpl.class, "floatToBigint", Double.class),
@@ -69,6 +71,7 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     STRING_TO_BIGINT(MycatBuiltInMethodImpl.class, "stringToBigint", String.class),
     BYTESTRING_TO_BIGINT(MycatBuiltInMethodImpl.class, "byteStringToBigint", ByteString.class),
 
+    SMALLINT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "smallintToDecimal", Short.class),
     BOOLEAN_TO_DECIMAL(MycatBuiltInMethodImpl.class, "booleanToDecimal", Boolean.class),
     TINYINT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "tinyintToDecimal", Byte.class),
     INTEGER_TO_DECIMAL(MycatBuiltInMethodImpl.class, "integerToDecimal", Long.class),
@@ -84,6 +87,7 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     STRING_TO_DECIMAL(MycatBuiltInMethodImpl.class, "stringToDecimal", String.class),
     BYTESTRING_TO_DECIMAL(MycatBuiltInMethodImpl.class, "bytestringToDecimal", ByteString.class),
 
+    SMALLINT_TO_FLOAT(MycatBuiltInMethodImpl.class, "smallintToFloat", Short.class),
     BOOLEAN_TO_FLOAT(MycatBuiltInMethodImpl.class, "booleanToFloat", Boolean.class),
     TINYINT_TO_FLOAT(MycatBuiltInMethodImpl.class, "tinyintToFloat", Byte.class),
     INTEGER_TO_FLOAT(MycatBuiltInMethodImpl.class, "integerToFloat", Long.class),
@@ -229,7 +233,7 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     BOOLEAN_TO_STRING(MycatBuiltInMethodImpl.class, "stringToString", String.class),
     TINYINT_TO_STRING(MycatBuiltInMethodImpl.class, "booleanToString", Boolean.class),
     SMALLINT_TO_STRING(MycatBuiltInMethodImpl.class, "smallintToString", Short.class),
-    INTEGER_TO_STRING(MycatBuiltInMethodImpl.class, "integerToString", Long.class),
+    INTEGER_TO_STRING(MycatBuiltInMethodImpl.class, "integerToString", Integer.class),
     BIGINT_TO_STRING(MycatBuiltInMethodImpl.class, "bigintToString", Long.class),
     DECIMAL_TO_STRING(MycatBuiltInMethodImpl.class, "decimalToString", BigDecimal.class),
     FLOAT_TO_STRING(MycatBuiltInMethodImpl.class, "floatToString", Double.class),

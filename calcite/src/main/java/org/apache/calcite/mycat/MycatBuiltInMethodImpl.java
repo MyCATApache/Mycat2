@@ -21,6 +21,18 @@ public class MycatBuiltInMethodImpl {
         LocalDate date1 = stringToDate(date);
        return dateToString(date1.minus(sub));
     }
+    public static BigDecimal smallintToDecimal(Short b) {
+        if (b == null) return null;
+        return  BigDecimal.valueOf(b);
+    }
+    public static Double smallintToFloat(Short b) {
+        if (b == null) return null;
+        return  b.doubleValue();
+    }
+    public static Long smallintToBigint(Short b) {
+        if (b == null) return null;
+        return  b.longValue();
+    }
     public static Byte booleanToTinyint(Boolean b) {
         if (b == null) return null;
         return (byte) (b ? 1 : 0);
@@ -31,7 +43,7 @@ public class MycatBuiltInMethodImpl {
         return b.byteValue();
     }
 
-    public static Byte integerToTinyint(Long b) {
+    public static Byte integerToTinyint(java.lang.Integer b) {
         if (b == null) return null;
         return b.byteValue();
     }

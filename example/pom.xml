@@ -13,47 +13,21 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>mycat2</artifactId>
-            <version>1.12-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.1</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.facebook.presto/testing-mysql-server-root -->
         <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>testing-mysql-server-root</artifactId>
-            <version>0.3</version>
-            <type>pom</type>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.22</version>
+            <scope>test</scope>
         </dependency>
-
-
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>router</artifactId>
+            <version>1.12-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
