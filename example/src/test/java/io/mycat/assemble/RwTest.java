@@ -5,10 +5,12 @@ import io.mycat.hint.CreateTableHint;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+@NotThreadSafe
 public class RwTest implements MycatTest {
 
 

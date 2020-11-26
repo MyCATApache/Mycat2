@@ -6,12 +6,14 @@ import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@NotThreadSafe
 public class AssembleTest implements MycatTest {
 
     @Test

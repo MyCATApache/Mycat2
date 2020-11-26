@@ -3,12 +3,14 @@ package io.mycat.assemble;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
+@NotThreadSafe
 public class ManagerHintTest implements MycatTest {
 
     @Test

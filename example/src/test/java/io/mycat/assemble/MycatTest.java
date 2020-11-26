@@ -7,6 +7,7 @@ import io.mycat.MycatCore;
 import io.mycat.example.MycatRunner;
 import lombok.SneakyThrows;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+@NotThreadSafe
 public interface MycatTest {
 
 

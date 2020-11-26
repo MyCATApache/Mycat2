@@ -9,12 +9,14 @@ import org.apache.groovy.util.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@NotThreadSafe
 public class DDLHintTest implements MycatTest {
 
 

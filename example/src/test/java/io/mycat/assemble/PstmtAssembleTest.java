@@ -5,9 +5,11 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import lombok.SneakyThrows;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.function.Function;
 
+@NotThreadSafe
 public class PstmtAssembleTest extends AssembleTest  {
 
     @Override

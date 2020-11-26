@@ -4,10 +4,12 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
+@NotThreadSafe
 public class UserTest implements MycatTest{
 
 
