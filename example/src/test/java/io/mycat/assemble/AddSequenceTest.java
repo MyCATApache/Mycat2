@@ -1,11 +1,15 @@
 package io.mycat.assemble;
 
+import io.mycat.hint.CreateClusterHint;
+import io.mycat.hint.CreateDataSourceHint;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +55,10 @@ public class AddSequenceTest implements MycatTest {
                     statement.execute("INSERT INTO `db1`.`mycat_sequence` (`name`, `current_value`) VALUES ('db1_travelrecord', '0');");
                 }
             }
-
+            execute(connection,CreateDataSourceHint
+                    .create("newDs",
+                            "jdbc:mysql://127.0.0.1:3306"));
+            execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
 
             execute(connection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +

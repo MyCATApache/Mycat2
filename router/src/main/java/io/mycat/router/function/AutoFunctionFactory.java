@@ -71,7 +71,9 @@ public class AutoFunctionFactory {
                 .map(i -> Integer.parseInt(i.toString()))
                 .orElseGet(() -> Optional.ofNullable(tableHandler.dataNodes()).filter(i -> !i.isEmpty()).map(i -> i.size())
                         .orElseThrow(() -> new IllegalArgumentException("can not get storeNum")));
-
+        if (groupNum == 0){
+            throw new UnsupportedOperationException("groupNum is zero");
+        }
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
@@ -92,7 +94,7 @@ public class AutoFunctionFactory {
 
         Map<Key, DataNode> cache = new ConcurrentHashMap<>();
         for (int i = 0; i < seq.size(); i++) {
-            int seqIndex = i / groupNum;
+            int seqIndex = i % groupNum;
             int[] ints = seq.get(i);
             int dbIndex = ints[0];
             int tableIndex = ints[1];
