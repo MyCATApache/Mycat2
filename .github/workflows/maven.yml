@@ -32,7 +32,6 @@ jobs:
     - name: test
       run: |
             mvn -B package install -Dmaven.test.skip=true
-            cd mycat2
             mvn -o  exec:exec &
             sleep 5s
             mvn -o test

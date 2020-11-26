@@ -109,20 +109,6 @@
 
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <configuration>
-                    <executable>java</executable> <!-- executable指的是要执行什么样的命令 -->
-                    <arguments>
-                        <argument>-jar</argument> <!-- 这是classpath属性，其值就是下面的<classpath/> -->
-<!--                        <classpath/> &lt;!&ndash; 这是exec插件最有价值的地方，关于工程的classpath并不需要手动指定，它将由exec自动计算得出 &ndash;&gt;-->
-                        <argument>${project.build.directory}/mycat2-${project.version}-jar-with-dependencies.jar</argument> <!-- 程序入口，主类名称 -->
-                        <argument>io.mycat.MycatCore</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
-            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <finalName>mycat2-${project.version}</finalName>
