@@ -34,13 +34,13 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     default int serverStatus() {
         MySQLServerStatusFlags.Builder builder = MySQLServerStatusFlags.builder();
-        if (getVariable(MycatDataContextEnum.IS_AUTOCOMMIT)) {
+        if (isAutocommit()) {
             builder.setAutoCommit();
         }
-        if (getVariable(MycatDataContextEnum.IS_IN_TRANSCATION)) {
+        if (isInTransaction()) {
             builder.setInTransaction();
         }
-        if (getVariable(MycatDataContextEnum.IS_READ_ONLY)) {
+        if (isReadOnly()) {
             builder.setInTransReadonly();
         }
         return builder.build();

@@ -29,5 +29,10 @@
             <version>1.12-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>mycat2</artifactId>
+            <version>1.12-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>

@@ -10,17 +10,16 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class DDLHintTest extends AssembleTest {
+public class DDLHintTest implements MycatTest {
 
 
     @Test
-    public void testCreateTable() throws SQLException {
+    public void testCreateTable() throws Exception {
         try (   Connection mycat= getMySQLConnection(8066)) {
             String db = "testSchema";
             execute(mycat, "drop database "+db);
@@ -59,7 +58,7 @@ public class DDLHintTest extends AssembleTest {
 
 
     @Test
-    public void testAddDatasource() throws SQLException {
+    public void testAddDatasource() throws Exception {
         try (Connection mycat = getMySQLConnection(8066)) {
             String dsName = "newDs";
             execute(mycat, DropDataSourceHint.create(dsName));
@@ -81,7 +80,7 @@ public class DDLHintTest extends AssembleTest {
 
 
     @Test
-    public void testAddCluster() throws SQLException {
+    public void testAddCluster() throws Exception {
         String clusterName = "testAddCluster";
         try (Connection mycat = getMySQLConnection(8066)) {
             execute(mycat, DropClusterHint.create(clusterName));
@@ -107,7 +106,7 @@ public class DDLHintTest extends AssembleTest {
     }
 
     @Test
-    public void testAddSchema() throws SQLException {
+    public void testAddSchema() throws Exception {
         try (Connection mycat = getMySQLConnection(8066);
              Connection mysql = getMySQLConnection(3306);
         ) {

@@ -399,12 +399,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public boolean shouldHandleContentOfFilename() {
-        return this.dataContext.getVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE);
+        Object variable = this.dataContext.getVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE);
+        return variable.equals(1);
     }
 
     @Override
     public void setHandleContentOfFilename(boolean need) {
-        this.dataContext.setVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE, need);
+        this.dataContext.setVariable(MycatDataContextEnum.IS_LOCAL_IN_FILE_REQUEST_STATE, need?1:0);
     }
 
 

@@ -37,14 +37,14 @@ public class MycatDataContextImpl implements MycatDataContext {
     private int charsetIndex;
 
 
-    private boolean autoCommit = true;
+    private int autoCommit = 1;
     private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
-    protected boolean localInFileRequestState = false;
+    protected int localInFileRequestState = 0;
     private long selectLimit = -1;
     private long netWriteTimeout = -1;
     private boolean readOnly = false;
 
-    public boolean multiStatementSupport = false;
+    public int multiStatementSupport = 0;
     private String charsetSetResult;
     private volatile boolean inTransaction = false;
 
@@ -123,10 +123,10 @@ public class MycatDataContextImpl implements MycatDataContext {
                 setDefaultSchema((String) value);
                 break;
             case IS_MULTI_STATEMENT_SUPPORT:
-                setMultiStatementSupport((Boolean) value);
+                setMultiStatementSupport(((Number)value).intValue());
                 break;
             case IS_LOCAL_IN_FILE_REQUEST_STATE:
-                setLocalInFileRequestState((Boolean) value);
+                setLocalInFileRequestState(((Number)value).intValue());
                 break;
             case AFFECTED_ROWS:
                 setAffectedRows((Integer) value);
@@ -188,9 +188,9 @@ public class MycatDataContextImpl implements MycatDataContext {
             case DEFAULT_SCHEMA:
                 return getDefaultSchema();
             case IS_MULTI_STATEMENT_SUPPORT:
-                return isMultiStatementSupport();
+                return multiStatementSupport;
             case IS_LOCAL_IN_FILE_REQUEST_STATE:
-                return isLocalInFileRequestState();
+                return  localInFileRequestState;
             case AFFECTED_ROWS:
                 return getAffectedRows();
             case WARNING_COUNT:
@@ -219,10 +219,10 @@ public class MycatDataContextImpl implements MycatDataContext {
             case NET_WRITE_TIMEOUT:
                 return getNetWriteTimeout();
             case IS_READ_ONLY: {
-                return isReadOnly();
+                return isReadOnly()?1:0;
             }
             case IS_IN_TRANSCATION: {
-                return isInTransaction();
+                return isInTransaction()?1:0;
             }
             case USER_INFO:
                 return user;
@@ -241,11 +241,11 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     public boolean isAutocommit() {
-        return autoCommit;
+        return autoCommit==1;
     }
 
     public void setAutoCommit(boolean autoCommit) {
-        this.autoCommit = autoCommit;
+        this.autoCommit = autoCommit?1:0;
     }
 
     public MySQLIsolation getIsolation() {

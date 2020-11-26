@@ -19,7 +19,7 @@ public class BufferPoolConfig {
         long pageSize = 1024 * 1024 * 2;
         defaultConfig.put("pageSize", pageSize);
         defaultConfig.put("chunkSize", 8192);
-        defaultConfig.put("pageCount", (int)(Runtime.getRuntime().maxMemory() * 0.6 / pageSize));
+        defaultConfig.put("pageCount", 1);
         return defaultConfig;
     }
 }

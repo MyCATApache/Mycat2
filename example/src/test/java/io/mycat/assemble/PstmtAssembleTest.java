@@ -1,27 +1,34 @@
 package io.mycat.assemble;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.SQLException;
+import java.util.function.Function;
 
-public class PstmtAssembleTest extends AssembleTest {
+public class PstmtAssembleTest extends AssembleTest  {
 
     @Override
-    Connection getMySQLConnection(int port) throws SQLException {
-        String username = "root";
-        String password = "123456";
-        String url = "jdbc:mysql://127.0.0.1:" +
-                port ;
-        MysqlDataSource mysqlDataSource = new MysqlDataSource();
-        mysqlDataSource.setUrl(url);
-        mysqlDataSource.setUser(username);
-        mysqlDataSource.setPassword(password);
-        mysqlDataSource.setUseServerPrepStmts(true);
-        mysqlDataSource.setServerTimezone("UTC");
-        return mysqlDataSource.getConnection();
+    public Connection getMySQLConnection(int port) throws Exception {
+        return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
+            @Override
+            @SneakyThrows
+            public DruidDataSource apply(Integer integer) {
+                String username = "root";
+                String password = "123456";
+                DruidDataSource dataSource = new DruidDataSource();
+                dataSource.setUrl("jdbc:mysql://127.0.0.1:" +
+                        port + "/?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
+                dataSource.setUsername(username);
+                dataSource.setPassword(password);
+                return dataSource;
+            }
+        }).getConnection();
+
     }
+
     @Test
     @Override
     public void testTranscationFail2() throws Exception {
@@ -39,7 +46,7 @@ public class PstmtAssembleTest extends AssembleTest {
     }
     @Test
     @Override
-    public void testInfoFunction() throws SQLException {
+    public void testInfoFunction() throws Exception {
         super.testInfoFunction();
     }
 }

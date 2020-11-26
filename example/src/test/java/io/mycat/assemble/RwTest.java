@@ -6,15 +6,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class RwTest extends AssembleTest {
+public class RwTest implements MycatTest {
 
 
     @Test
-    public void testRw() throws SQLException {
+    public void testRw() throws Exception {
         try (Connection mycat = getMySQLConnection(8066);
              Connection readMysql = getMySQLConnection(3306);) {
             String db = "testSchema";

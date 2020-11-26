@@ -2,6 +2,7 @@ package io.mycat.sql;
 
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import org.jetbrains.annotations.NotNull;
@@ -12,28 +13,13 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mycat.assemble.AssembleTest.execute;
 
-public class SqlFunctionTest {
 
-    Connection getMySQLConnection(int port) throws SQLException {
-        String username = "root";
-        String password = "123456";
-//        properties.put("useBatchMultiSend", "false");
-//        properties.put("usePipelineAuth", "false");
-        String url = "jdbc:mysql://127.0.0.1:" +
-                port +
-                "/?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
-        MysqlDataSource mysqlDataSource = new MysqlDataSource();
-        mysqlDataSource.setUrl(url);
-        mysqlDataSource.setUser(username);
-        mysqlDataSource.setPassword(password);
+public class SqlFunctionTest implements MycatTest {
 
-        return mysqlDataSource.getConnection();
-    }
 
     @Test
-    public void testCharFunction() throws SQLException {
+    public void testCharFunction() throws Exception {
         check("SELECT ASCII('a')");
         check("SELECT BIN('12')");
         check("SELECT BIT_LENGTH('text')");
@@ -95,11 +81,11 @@ public class SqlFunctionTest {
 
     }
 
-    private void checkValue(String s, String s1) throws SQLException {
+    private void checkValue(String s, String s1) throws Exception {
         checkValue(s);
     }
 
-    private void check(String s) throws SQLException {
+    private void check(String s) throws Exception {
         try (Connection mySQLConnection = getMySQLConnection(3306);
              Connection mycatConnection = getMySQLConnection(8066);
         ) {
@@ -109,7 +95,7 @@ public class SqlFunctionTest {
         }
     }
 
-    private void uncheckValue(String s) throws SQLException {
+    private void uncheckValue(String s) throws Exception {
         try (
                 Connection mycatConnection = getMySQLConnection(8066);
         ) {
@@ -117,7 +103,7 @@ public class SqlFunctionTest {
         }
     }
 
-    private void checkValue(String s) throws SQLException {
+    private void checkValue(String s) throws Exception {
         try (Connection mySQLConnection = getMySQLConnection(3306);
              Connection mycatConnection = getMySQLConnection(8066);
         ) {
@@ -131,7 +117,7 @@ public class SqlFunctionTest {
     }
 
 
-    private <T> String executeQueryAsString(Connection conn, String s) throws SQLException {
+    private <T> String executeQueryAsString(Connection conn, String s) throws Exception {
 
         List<Map<String, Object>> rows = executeQuery(conn, s);
 
@@ -139,7 +125,8 @@ public class SqlFunctionTest {
     }
 
     @NotNull
-    private List<Map<String, Object>> executeQuery(Connection conn, String s) throws SQLException {
+    @Override
+    public List<Map<String, Object>> executeQuery(Connection conn, String s) throws Exception {
         List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
 
         Statement stmt = null;
@@ -174,7 +161,7 @@ public class SqlFunctionTest {
     }
 
     @Test
-    public void testMathFunction() throws SQLException {
+    public void testMathFunction() throws Exception {
         checkValue("SELECT abs(-1)", "1");//
         checkValue("SELECT ACOS(-1)", "3.141592653589793");//
         checkValue("SELECT ASIN(-1)", "-1.5707963267948966");//
@@ -209,7 +196,7 @@ public class SqlFunctionTest {
     }
 
     @Test
-    public void testTimeFunction() throws SQLException {
+    public void testTimeFunction() throws Exception {
         checkValue("SELECT ADDDATE(\"2017-06-15\", INTERVAL 10 DAY);");//
         checkValue("SELECT ADDTIME(\"2017-06-15 09:34:21\", \"2\");");//
         checkValue("SELECT CURDATE();");//
@@ -266,7 +253,7 @@ public class SqlFunctionTest {
     }
 
     @Test
-    public void testAggFunction() throws SQLException {
+    public void testAggFunction() throws Exception {
         initShardingTable();
 
         checkValue("select id from db1.travelrecord GROUP BY id", "(1)(999999999)");
@@ -289,7 +276,7 @@ public class SqlFunctionTest {
     }
 
 
-    private void initShardingTable() throws SQLException {
+    private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(8066);
 
         Connection mysql3306 = getMySQLConnection(3306);
@@ -356,7 +343,7 @@ public class SqlFunctionTest {
 
 
     @Test
-    public void testComplexQuery() throws SQLException {
+    public void testComplexQuery() throws Exception {
         initShardingTable();
         checkValue("select * from db1.travelrecord as t,db1.company as c  where t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
         checkValue("select * from db1.travelrecord as t INNER JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");

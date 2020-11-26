@@ -4,6 +4,8 @@ import io.mycat.util.YamlUtil;
 import lombok.SneakyThrows;
 
 import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ServerConfigurationImpl extends ServerConfiguration {
@@ -13,7 +15,12 @@ public class ServerConfigurationImpl extends ServerConfiguration {
     @SneakyThrows
     public ServerConfigurationImpl(Class rootClass, String path) {
         super(rootClass);
-        this.mycatServerConfig = YamlUtil.load(MycatServerConfig.class, new FileReader(Paths.get(path).resolve("server.json").toString()));
+        Path serverPath = Paths.get(path).resolve("server.json").toAbsolutePath();
+        if (Files.exists(serverPath)) {
+            this.mycatServerConfig = YamlUtil.load(MycatServerConfig.class, new FileReader(serverPath.toString()));
+        } else {
+            this.mycatServerConfig = new MycatServerConfig();
+        }
     }
 
     @Override
