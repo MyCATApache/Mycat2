@@ -9,12 +9,13 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
-
+@NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class SqlFunctionTest implements MycatTest {
 
 
