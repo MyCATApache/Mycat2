@@ -172,6 +172,7 @@
         <version>3.0.0-M5</version>
         <configuration>
            <forkMode>once</forkMode>
+           <parallel>false</parallel>
         </configuration>
         <dependencies>
           <dependency>
