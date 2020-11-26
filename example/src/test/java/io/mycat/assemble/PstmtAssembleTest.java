@@ -2,6 +2,7 @@ package io.mycat.assemble;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import io.mycat.example.MycatRunner;
 import lombok.SneakyThrows;
 import org.junit.Test;
 
@@ -15,6 +16,7 @@ public class PstmtAssembleTest extends AssembleTest  {
 
     @Override
     public Connection getMySQLConnection(int port) throws Exception {
+        MycatRunner.checkRunMycat();
         return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
             @Override
             @SneakyThrows
