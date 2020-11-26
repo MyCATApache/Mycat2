@@ -69,6 +69,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("resetCOnfig".equalsIgnoreCase(cmd)) {
+                    MycatRouterConfigOps ops = ConfigUpdater.getOps();
+                    ops.reset();
+                    ops.commit();
+                    response.sendOk();
+                    return;
+                }
                 if ("showBufferUsage".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
                     builder.addColumnInfo("bufferUsage", JDBCType.BIGINT);

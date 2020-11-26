@@ -98,6 +98,11 @@
             <artifactId>apache-log4j-extras</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>hbt</artifactId>
+            <version>1.12-SNAPSHOT</version>
+        </dependency>
 
     </dependencies>
     <build>
@@ -112,41 +117,31 @@
                     <arguments>
                         <argument>-jar</argument> <!-- 这是classpath属性，其值就是下面的<classpath/> -->
 <!--                        <classpath/> &lt;!&ndash; 这是exec插件最有价值的地方，关于工程的classpath并不需要手动指定，它将由exec自动计算得出 &ndash;&gt;-->
-                        <argument>${project.build.directory}/mycat2-${project.version}.jar</argument> <!-- 程序入口，主类名称 -->
+                        <argument>${project.build.directory}/mycat2-${project.version}-jar-with-dependencies.jar</argument> <!-- 程序入口，主类名称 -->
+                        <argument>io.mycat.MycatCore</argument>
                     </arguments>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.2.0</version>
                 <configuration>
                     <finalName>mycat2-${project.version}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>io.mycat.MycatCore</mainClass>
+                            <mainClass>io.mycat.MycatCore</mainClass><!--这里改成自己的主类位置-->
                         </manifest>
                     </archive>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <!--   <phase>package</phase>  指定在打包节点执行jar包合并操作 -->
+                        <id>make-assembly</id>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration>
-                            <descriptors>　　　　　　　　　　　
-                                <descriptor>src/main/assembly/assembly-linux.xml</descriptor>　　　　
-                                <descriptor>src/main/assembly/assembly-mac.xml</descriptor>　　　　　　　　　　
-                                <descriptor>src/main/assembly/assembly-solaris.xml</descriptor>　　　　　　　　　　
-                                <descriptor>src/main/assembly/assembly-unix.xml</descriptor>　　　　　　　　　　
-                                <descriptor>src/main/assembly/assembly-win.xml</descriptor>　　　　　　　　　　　　　　　　　　　　
-                            </descriptors>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -292,6 +287,7 @@
                                      includes="**">
                                 </tar>
                             </target>
+
                         </configuration>
                     </execution>
                 </executions>

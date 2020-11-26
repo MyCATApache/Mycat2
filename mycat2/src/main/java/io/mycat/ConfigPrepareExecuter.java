@@ -107,6 +107,9 @@ public class ConfigPrepareExecuter {
                 break;
             }
 
+            case RESET:
+                initBy(new MycatRouterConfig());
+                break;
         }
     }
 

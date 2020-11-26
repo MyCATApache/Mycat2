@@ -412,4 +412,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         putHashTable(schemaName, tableName, createTableSql, properties);
     }
 
+    public void reset() {
+        updateType = UpdateType.RESET;
+    }
 }

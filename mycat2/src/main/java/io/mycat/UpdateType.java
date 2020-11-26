@@ -6,5 +6,6 @@ public enum UpdateType {
         ROUTER,
         CREATE_TABLE,
         DROP_TABLE,
-        FULL
+        FULL,
+        RESET
     }

@@ -41,7 +41,7 @@ public class MycatCore {
             path = System.getProperty(configResourceKeyName);
         }
         if (path == null) {
-            path = Paths.get(Thread.currentThread().getClass().getResource("/").toURI()).toAbsolutePath().toString();
+            path =  Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).toString();;
         }
         this.baseDirectory = Paths.get(path).toAbsolutePath();
         System.out.println("path:" + this.baseDirectory);
