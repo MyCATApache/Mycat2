@@ -34,5 +34,11 @@
             <artifactId>mycat2</artifactId>
             <version>1.12-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.stephenc.jcip</groupId>
+            <artifactId>jcip-annotations</artifactId>
+            <version>1.0-1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

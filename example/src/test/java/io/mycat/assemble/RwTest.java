@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class RwTest implements MycatTest {
 
 

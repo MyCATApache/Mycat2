@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class AssembleTest implements MycatTest {
 
     @Test

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class ManagerHintTest implements MycatTest {
 
     @Test

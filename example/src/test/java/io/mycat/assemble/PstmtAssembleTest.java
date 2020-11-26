@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.util.function.Function;
 
 @NotThreadSafe
+@net.jcip.annotations.NotThreadSafe
 public class PstmtAssembleTest extends AssembleTest  {
 
     @Override
