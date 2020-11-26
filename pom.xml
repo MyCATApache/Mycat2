@@ -208,6 +208,10 @@
       <url>https://artifacts.alfresco.com/nexus/content/groups/public</url>
     </pluginRepository>
     <pluginRepository>
+      <id>mvnrepository</id>
+      <url>http://mvnrepository.com</url>
+    </pluginRepository>
+    <pluginRepository>
       <id>alfresco-public-snapshots</id>
       <url>https://artifacts.alfresco.com/nexus/content/groups/public-snapshots</url>
       <snapshots>
