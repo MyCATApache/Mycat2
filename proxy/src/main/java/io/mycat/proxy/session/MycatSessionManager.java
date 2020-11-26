@@ -80,6 +80,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
         try {
             MycatMonitor.onCloseMycatSession(mycat, normal, reason);
             mycatSessions.remove(mycat);
+            LOGGER.debug("mycat session is closing reason:{}", reason);
             mycat.channel().close();
         } catch (Exception e) {
             LOGGER.error("{}", e);
