@@ -24,6 +24,7 @@ public class DDLHintTest implements MycatTest {
     @Test
     public void testCreateTable() throws Exception {
         try (   Connection mycat= getMySQLConnection(8066)) {
+            execute(mycat,RESET_CONFIG);
             String db = "testSchema";
             execute(mycat, "drop database "+db);
             execute(mycat, "create database "+db);
@@ -63,6 +64,7 @@ public class DDLHintTest implements MycatTest {
     @Test
     public void testAddDatasource() throws Exception {
         try (Connection mycat = getMySQLConnection(8066)) {
+            execute(mycat,RESET_CONFIG);
             String dsName = "newDs";
             execute(mycat, DropDataSourceHint.create(dsName));
             Assert.assertTrue(
@@ -86,6 +88,7 @@ public class DDLHintTest implements MycatTest {
     public void testAddCluster() throws Exception {
         String clusterName = "testAddCluster";
         try (Connection mycat = getMySQLConnection(8066)) {
+            execute(mycat,RESET_CONFIG);
             execute(mycat, DropClusterHint.create(clusterName));
             Assert.assertTrue(
                     !executeQuery(mycat, "/*+ mycat:showClusters{} */")
@@ -113,6 +116,7 @@ public class DDLHintTest implements MycatTest {
         try (Connection mycat = getMySQLConnection(8066);
              Connection mysql = getMySQLConnection(3306);
         ) {
+            execute(mycat,RESET_CONFIG);
             String schemaName = "test_add_Schema";
             String tableName = "test_table";
             execute(mysql, "create database  if not exists " + schemaName);

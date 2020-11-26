@@ -27,6 +27,7 @@ public class AssembleTest implements MycatTest {
                 execute(mycatConnection, "set transaction_policy  = proxy");
             }
         };
+
         testTranscation(connectionFunction);
     }
 
@@ -45,6 +46,7 @@ public class AssembleTest implements MycatTest {
 
     private void testTranscation(Consumer<Connection> connectionFunction) throws Exception {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
+            execute(mycatConnection,RESET_CONFIG);
             initCluster(mycatConnection);
             connectionFunction.accept(mycatConnection);
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -87,7 +89,7 @@ public class AssembleTest implements MycatTest {
         try(Connection mycatConnection = getMySQLConnection(8066);
             Connection mysql3306 = getMySQLConnection(3306);
             Connection mysql3307 = getMySQLConnection(3307);){
-
+            execute(mycatConnection,RESET_CONFIG);
             execute(mysql3306, "drop database if exists db1");
             execute(mysql3307, "drop database if exists db1");
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
@@ -291,6 +293,7 @@ public class AssembleTest implements MycatTest {
     }
 
     private void testInfoFunction(Connection mycatConnection) throws Exception {
+        execute(mycatConnection,RESET_CONFIG);
         // show databases
         executeQuery(mycatConnection, "select database()");
 
@@ -322,6 +325,8 @@ public class AssembleTest implements MycatTest {
     }
 
     private void testNormalTranscation(Connection mycatConnection) throws Exception {
+        execute(mycatConnection,RESET_CONFIG);
+        addC0(mycatConnection);
         execute(mycatConnection, "CREATE DATABASE db1");
         execute(mycatConnection, "use db1");
         execute(mycatConnection, "CREATE TABLE db1.`travelrecord` (\n" +

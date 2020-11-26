@@ -19,17 +19,18 @@ public class RwTest implements MycatTest {
     public void testRw() throws Exception {
         try (Connection mycat = getMySQLConnection(8066);
              Connection readMysql = getMySQLConnection(3306);) {
+            execute(mycat,RESET_CONFIG);
             String db = "testSchema";
             execute(mycat, "drop database " + db);
             execute(mycat, "create database " + db);
             execute(mycat, "use " + db);
 
             execute(mycat,
-                    "/*+ mycat:addDatasource{\"name\":\"dw0\",\"url\":\"jdbc:mysql://127.0.0.1:3306\",\"user\":\"root\",\"password\":\"123456\"} */;");
+                    "/*+ mycat:createDatasource{\"name\":\"dw0\",\"url\":\"jdbc:mysql://127.0.0.1:3306\",\"user\":\"root\",\"password\":\"123456\"} */;");
             execute(mycat,
-                    "/*+ mycat:addDatasource{\"name\":\"dr0\",\"url\":\"jdbc:mysql://127.0.0.1:3307\",\"user\":\"root\",\"password\":\"123456\"} */;");
+                    "/*+ mycat:createDatasource{\"name\":\"dr0\",\"url\":\"jdbc:mysql://127.0.0.1:3307\",\"user\":\"root\",\"password\":\"123456\"} */;");
             execute(mycat,
-                    "/*! mycat:addCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
+                    "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
 
             execute(readMysql, "drop table if exists " + db + ".normal");
             execute(

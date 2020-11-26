@@ -5,10 +5,13 @@ import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.MycatCore;
 import io.mycat.example.MycatRunner;
+import io.mycat.hint.CreateClusterHint;
+import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,7 @@ import java.util.function.Function;
 
 public interface MycatTest {
 
+    String RESET_CONFIG ="/*+ mycat:resetConfig{} */";
 
     final Map<Integer, DruidDataSource> dsMap = new ConcurrentHashMap<>();
 
@@ -64,5 +68,10 @@ public interface MycatTest {
         System.out.println(sql);
         return JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
     }
-
+    public default void addC0(Connection connection) throws Exception {
+        execute(connection, CreateDataSourceHint
+                .create("newDs",
+                        "jdbc:mysql://127.0.0.1:3306"));
+        execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+    }
 }

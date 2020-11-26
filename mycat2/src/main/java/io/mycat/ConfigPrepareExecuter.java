@@ -108,7 +108,9 @@ public class ConfigPrepareExecuter {
             }
 
             case RESET:
-                initBy(new MycatRouterConfig());
+                MycatRouterConfig routerConfig = new MycatRouterConfig();
+                FileMetadataStorageManager.defaultConfig(routerConfig);
+                initBy(routerConfig);
                 break;
         }
     }

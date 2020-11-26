@@ -22,6 +22,7 @@ public class AddSequenceTest implements MycatTest {
     public void testAddSequence() throws Exception {
 
         try (Connection connection = getMySQLConnection(8066)) {
+            execute(connection,RESET_CONFIG);
             execute(connection, "CREATE DATABASE db1");
 
 
@@ -55,10 +56,7 @@ public class AddSequenceTest implements MycatTest {
                     statement.execute("INSERT INTO `db1`.`mycat_sequence` (`name`, `current_value`) VALUES ('db1_travelrecord', '0');");
                 }
             }
-            execute(connection,CreateDataSourceHint
-                    .create("newDs",
-                            "jdbc:mysql://127.0.0.1:3306"));
-            execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+            addC0(connection);
 
             execute(connection, "CREATE TABLE db1.`travelrecord` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
@@ -91,4 +89,6 @@ public class AddSequenceTest implements MycatTest {
             Assert.assertTrue(maps2.toString().contains("1"));
         }
     }
+
+
 }

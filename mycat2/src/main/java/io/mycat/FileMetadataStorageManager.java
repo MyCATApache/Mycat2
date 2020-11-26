@@ -132,6 +132,18 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         routerConfig.getUsers().addAll(userConfigs);
         routerConfig.getSequences().addAll(sequenceConfigs);
 
+        defaultConfig(routerConfig);
+
+        routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setClusters(routerConfig.getClusters().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setDatasources(routerConfig.getDatasources().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setUsers(routerConfig.getUsers().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setSequences(routerConfig.getSequences().stream().distinct().collect(Collectors.toList()));
+
+        return routerConfig;
+    }
+
+    public static void defaultConfig(MycatRouterConfig routerConfig) {
         if (routerConfig.getUsers().isEmpty()) {
             UserConfig userConfig = new UserConfig();
             userConfig.setIp("127.0.0.1");
@@ -158,14 +170,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
             routerConfig.getClusters().add(clusterConfig);
         }
-
-        routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));
-        routerConfig.setClusters(routerConfig.getClusters().stream().distinct().collect(Collectors.toList()));
-        routerConfig.setDatasources(routerConfig.getDatasources().stream().distinct().collect(Collectors.toList()));
-        routerConfig.setUsers(routerConfig.getUsers().stream().distinct().collect(Collectors.toList()));
-        routerConfig.setSequences(routerConfig.getSequences().stream().distinct().collect(Collectors.toList()));
-
-        return routerConfig;
     }
 
     @Override
