@@ -50,6 +50,8 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     datasource.setKeepAlive(true);
     datasource.setTestOnReturn(true);
     datasource.setTestOnBorrow(true);
+    datasource.setValidationQuery("select 'x'");
+    datasource.setTestWhileIdle(true);
 
     if (maxRetryCount > 0) {
       datasource.setConnectionErrorRetryAttempts(maxRetryCount);
