@@ -70,10 +70,4 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
        return builder.run();
     }
 
-    @Override
-    public void close() throws Exception {
-        if (factory!=null){
-            factory.close();
-        }
-    }
 }

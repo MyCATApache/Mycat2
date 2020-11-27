@@ -175,8 +175,8 @@ public class SelectSQLHandler extends ShardingSQLHandler {
             return;
         }
         try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
-             ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, receiver, datasourceFactory);
         ) {
+            ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, receiver, datasourceFactory);
             DrdsRunners.runOnDrds(dataContext, request.getAst(),responseExecutorImplementor );
         }
         return;

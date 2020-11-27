@@ -414,6 +414,7 @@ public class SqlFunctionTest implements MycatTest {
         //like
         checkValue("select id,user_id from db1.travelrecord where user_id LIKE '99%' order by id");
 
+        checkValue("select 1");
     }
 }
 

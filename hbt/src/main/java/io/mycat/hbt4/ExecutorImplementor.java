@@ -24,7 +24,7 @@ import io.mycat.metadata.QueryBuilder;
 
 import java.util.List;
 
-public interface ExecutorImplementor extends AutoCloseable{
+public interface ExecutorImplementor {
 
     void implementRoot(MycatRel rel, List<String> aliasList);
 
