@@ -215,7 +215,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
             for (String jdbcDataSource : needAdd) {
                 Deque<MycatConnection> mycatConnections = res.computeIfAbsent(jdbcDataSource, s -> new LinkedList<>());
                 DefaultConnection connection = getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
-                addCloseResource(connection);
+//                addCloseResource(connection);
                 mycatConnections.add(connection);
             }
             return res;
