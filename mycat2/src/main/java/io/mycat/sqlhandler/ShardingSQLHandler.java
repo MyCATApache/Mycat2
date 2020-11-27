@@ -12,8 +12,9 @@ import io.mycat.util.Response;
 public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
     protected void onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-            DrdsRunners.runOnDrds(dataContext, request.getAst(), ResponseExecutorImplementor.create(dataContext, response, datasourceFactory));
+        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
+             ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, response, datasourceFactory);) {
+            DrdsRunners.runOnDrds(dataContext, request.getAst(), responseExecutorImplementor);
         }
     }
 }

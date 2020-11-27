@@ -69,4 +69,11 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
     public Executor implement(QueryBuilder  builder){
        return builder.run();
     }
+
+    @Override
+    public void close() throws Exception {
+        if (factory!=null){
+            factory.close();
+        }
+    }
 }

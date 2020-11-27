@@ -32,7 +32,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
     @SneakyThrows
     public static void updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
-                .map(i-> SQLUtils.normalize(i)).orElse(null);
+                .map(i -> SQLUtils.normalize(i)).orElse(null);
         String tableName = SQLUtils.normalize(tableSource.getTableName());
         SchemaHandler schemaHandler;
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
@@ -51,7 +51,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             schemaHandler = Optional.ofNullable(handlerMap.get(schemaName))
                     .orElseGet(() -> {
                         if (dataContext.getDefaultSchema() == null) {
-                            throw new MycatException("unknown schema:"+schemaName);//可能schemaName有值,但是值名不是配置的名字
+                            throw new MycatException("unknown schema:" + schemaName);//可能schemaName有值,但是值名不是配置的名字
                         }
                         return handlerMap.get(dataContext.getDefaultSchema());
                     });
@@ -69,7 +69,8 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             return;
         }
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-        DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
-        DrdsRunners.runOnDrds(dataContext, sqlStatement,new ResponseExecutorImplementor(datasourceFactory,tempResultSetFactory,receiver));
+        try (DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+            DrdsRunners.runOnDrds(dataContext, sqlStatement, new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver));
+        }
     }
 }

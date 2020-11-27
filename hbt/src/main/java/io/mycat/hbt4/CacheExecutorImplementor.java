@@ -15,26 +15,21 @@ import org.apache.calcite.rel.type.RelDataType;
 import java.util.List;
 import java.util.Objects;
 
-public class CacheExecutorImplementor  extends ExecutorImplementorImpl {
+public class CacheExecutorImplementor extends ExecutorImplementorImpl {
     private final Object key;
 
-    public static CacheExecutorImplementor create(Object key, MycatDataContext context){
-        TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-        DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
-        return new CacheExecutorImplementor(key,datasourceFactory,tempResultSetFactory);
-    }
 
-    public CacheExecutorImplementor(Object key,  DatasourceFactory factory, TempResultSetFactory tempResultSetFactory) {
+    public CacheExecutorImplementor(Object key, DatasourceFactory factory, TempResultSetFactory tempResultSetFactory) {
         super(factory, tempResultSetFactory);
         this.key = Objects.requireNonNull(key);
     }
 
     @Override
     public void implementRoot(MycatRel rel, List<String> aliasList) {
-        if (rel instanceof MycatInsertRel){
+        if (rel instanceof MycatInsertRel) {
             return;
         }
-        if (rel instanceof MycatUpdateRel){
+        if (rel instanceof MycatUpdateRel) {
             return;
         }
         Executor executor = rel.implement(this);
@@ -42,6 +37,6 @@ public class CacheExecutorImplementor  extends ExecutorImplementorImpl {
         EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
                 Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
         });
-        RowBaseIteratorCacher.put(this.key,rowIterator);
+        RowBaseIteratorCacher.put(this.key, rowIterator);
     }
 }

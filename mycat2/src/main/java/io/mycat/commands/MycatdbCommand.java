@@ -159,10 +159,11 @@ public enum MycatdbCommand {
 
     @SneakyThrows
     private static void executeHbt(MycatDataContext dataContext, String substring, Response receiver) {
-        DefaultDatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
-        TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-        ExecutorImplementor executorImplementor = new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver);
-        DrdsRunners.runHbtOnDrds(dataContext, substring, executorImplementor);
+        try(DefaultDatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+            TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
+            ExecutorImplementor executorImplementor = new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver);
+            DrdsRunners.runHbtOnDrds(dataContext, substring, executorImplementor);
+        }
     }
 
     @NotNull
