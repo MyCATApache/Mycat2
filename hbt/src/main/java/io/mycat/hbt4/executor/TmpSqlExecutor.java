@@ -57,7 +57,7 @@ public class TmpSqlExecutor implements Executor {
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
         LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
-        Connection mycatConnection = factory.getConnection(target);
+        Connection mycatConnection = factory.getConnection(target).unwrap(Connection.class);
         SqlString sqlString = new SqlString(MycatSqlDialect.DEFAULT,sql);
         futureArrayList.add(mycatWorker.submit(() -> executeQuery(mycatConnection, calciteRowMetaData, sqlString, ImmutableList.of())));
         AtomicBoolean flag = new AtomicBoolean();

@@ -40,11 +40,11 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
 
 
     @Override
-    public Map<String, Connection> getConnections(List<String> targets) {
-        HashMap<String,Connection> connectionHashMap = new HashMap<>();
+    public Map<String, MycatConnection> getConnections(List<String> targets) {
+        HashMap<String,MycatConnection> connectionHashMap = new HashMap<>();
         Map<String, Deque<MycatConnection>> connection = context.getTransactionSession().getConnection(targets);
         for (Map.Entry<String, Deque<MycatConnection>> stringDequeEntry : connection.entrySet()) {
-            connectionHashMap.put(stringDequeEntry.getKey(),stringDequeEntry.getValue().getFirst().unwrap(Connection.class));
+            connectionHashMap.put(stringDequeEntry.getKey(),stringDequeEntry.getValue().getFirst());
         }
 
         return connectionHashMap;
@@ -56,11 +56,11 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     }
 
     @Override
-    public Connection getConnection(String key) {
+    public MycatConnection getConnection(String key) {
         Deque<MycatConnection> mycatConnections = connectionMap.get(key);
         MycatConnection pop = mycatConnections.pop();
         autoCloseables.add(pop);
-        return pop.unwrap(Connection.class);
+        return pop;
     }
 
     /**

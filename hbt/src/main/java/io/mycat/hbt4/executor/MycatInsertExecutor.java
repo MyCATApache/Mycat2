@@ -13,6 +13,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.DataNode;
+import io.mycat.MycatConnection;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
 import io.mycat.hbt4.DatasourceFactory;
@@ -194,14 +195,14 @@ public class MycatInsertExecutor implements Executor {
     @SneakyThrows
     public void execute(Map<GroupKey, Group> group) {
         List<String> targets = group.keySet().stream().map(j -> j.getTarget()).distinct().collect(Collectors.toList());
-        Map<String, Connection> connections = factory.getConnections(targets);
+        Map<String, MycatConnection> connections = factory.getConnections(targets);
         long lastInsertId = 0;
         long affected = 0;
         if (group.size() == 1) {
             Map.Entry<GroupKey, Group> keyGroupEntry = group.entrySet().iterator().next();
             String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
             LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
-            Connection connection = connections.values().iterator().next();
+            Connection connection = connections.values().iterator().next().unwrap(Connection.class);
             try (PreparedStatement preparedStatement = connection.
                     prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
                 List<Object> objects = args.get(0);
@@ -224,7 +225,7 @@ public class MycatInsertExecutor implements Executor {
                 String targetName = key.getTarget();
                 String sql = key.getParameterizedSql();
                 Group value = e.getValue();
-                Connection connection = connections.get(targetName);
+                Connection connection = connections.get(targetName).unwrap(Connection.class);
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
                 lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
 

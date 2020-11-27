@@ -15,6 +15,7 @@
 package io.mycat.hbt4;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.MycatConnection;
 import lombok.Data;
 
 import java.sql.Connection;
@@ -27,11 +28,11 @@ public interface DatasourceFactory extends AutoCloseable {
 
     public void createTableIfNotExisted(String targetName, String createTableSql);
 
-    Map<String, Connection> getConnections(List<String> targets);
+    Map<String, MycatConnection> getConnections(List<String> targets);
 
     void regist(ImmutableList<String> asList);
 
-    Connection getConnection(String key);
+    MycatConnection getConnection(String key);
 
     List<Connection> getTmpConnections(List<String> targets);
 
