@@ -128,6 +128,9 @@ public class MycatUpdateExecutor implements Executor {
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys != null) {
                 if (generatedKeys.next()) {
+                    if(LOGGER.isDebugEnabled()){
+                        LOGGER.debug("preparedStatement:{} insertId:{}",preparedStatement,insertId);
+                    }
                     long aLong = generatedKeys.getLong(1);
                     lastInsertId = Math.max(lastInsertId,aLong);
                 }

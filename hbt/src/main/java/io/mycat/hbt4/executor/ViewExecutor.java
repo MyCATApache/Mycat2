@@ -16,6 +16,7 @@ import io.mycat.mpp.Row;
 import io.mycat.util.Pair;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.LinkedList;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.apply;
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
@@ -32,7 +34,7 @@ public class ViewExecutor implements Executor {
     private List<Object> params;
     final DatasourceFactory factory;
     private final ImmutableMultimap<String, SqlString> expandToSql;
-
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ViewExecutor.class);
     public static ViewExecutor create(View view, boolean forUpdate, List<Object> params, DatasourceFactory factory) {
         return new ViewExecutor(view, forUpdate, params, factory);
     }
@@ -60,7 +62,16 @@ public class ViewExecutor implements Executor {
 
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {
             Connection mycatConnection = factory.getConnection(entry.getKey());
-            futureArrayList.add(mycatWorker.submit(() -> executeQuery(mycatConnection, calciteRowMetaData, entry.getValue(), params)));
+            if (mycatConnection.isClosed()){
+                LOGGER.error("mycatConnection:{} has closed", mycatConnection);
+            }
+            futureArrayList.add(mycatWorker.submit(() -> {
+                if(LOGGER.isDebugEnabled()){
+                    LOGGER.debug("mycatConnection:{} sql:{} params:{}",
+                            mycatConnection,entry.getValue(),params);
+                }
+                return executeQuery(mycatConnection, calciteRowMetaData, entry.getValue(), params);
+            }));
         }
         AtomicBoolean flag = new AtomicBoolean();
         ComposeFutureRowBaseIterator composeFutureRowBaseIterator = new ComposeFutureRowBaseIterator(calciteRowMetaData, futureArrayList);

@@ -36,7 +36,6 @@ public class DefaultConnection implements MycatConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultConnection.class);
     final Connection connection;
     private final JdbcDataSource jdbcDataSource;
-    private volatile boolean isClosed = false;
     protected final ConnectionManager connectionManager;
 
     @SneakyThrows
@@ -105,8 +104,7 @@ public class DefaultConnection implements MycatConnection {
 
     public void close() {
         try {
-            if (!isClosed) {
-                isClosed = true;
+            if (!isClosed()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("close {}", connection);
                 }
@@ -139,7 +137,7 @@ public class DefaultConnection implements MycatConnection {
 
     public boolean isClosed() {
         try {
-            return isClosed || connection.isClosed();
+            return connection.isClosed();
         } catch (SQLException e) {
             LOGGER.error("", e);
             return true;

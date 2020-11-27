@@ -211,10 +211,11 @@ public class MycatInsertExecutor implements Executor {
                 if (generatedKeys != null) {
                     if (generatedKeys.next()) {
                         lastInsertId = generatedKeys.getLong(1);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
-                        }
+
                     }
+                }
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
                 }
             }
         } else {

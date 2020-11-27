@@ -91,7 +91,13 @@ public class AssembleTest implements MycatTest {
             Connection mysql3307 = getMySQLConnection(3307);){
             execute(mycatConnection,RESET_CONFIG);
             execute(mysql3306, "drop database if exists db1");
+            execute(mysql3306, "drop database if exists db1_0");
+            execute(mysql3306, "drop database if exists db1_1");
+
             execute(mysql3307, "drop database if exists db1");
+            execute(mysql3307, "drop database if exists db1_0");
+            execute(mysql3307, "drop database if exists db1_1");
+
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
 
