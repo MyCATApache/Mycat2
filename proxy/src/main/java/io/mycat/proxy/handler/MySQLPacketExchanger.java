@@ -421,7 +421,6 @@ public enum MySQLPacketExchanger {
 
         @Override
         public void writeToChannel(MycatSession mycat) throws IOException {
-            try {
                 MySQLClientSession mySQLSession = Objects.requireNonNull(mycat.getMySQLSession());
                 mySQLSession.clearReadWriteOpts();
                 ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
@@ -455,9 +454,6 @@ public enum MySQLPacketExchanger {
                         }
                     }
                 }
-            } catch (Exception e) {
-                onExceptionClearCloseInResponse(mycat, e);
-            }
         }
 
         @Override

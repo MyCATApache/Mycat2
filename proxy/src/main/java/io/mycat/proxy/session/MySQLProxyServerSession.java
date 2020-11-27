@@ -88,7 +88,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             byte[] bytes = MySQLPacketUtil
                     .generateError(errorCode, getLastMessage(),
                             this.getCapabilities());
-            writeBytes(MySQLPacketUtil.generateMySQLPacket(packetId, bytes), true);
+            writeBytes( bytes, true);
         }
     }
 
@@ -105,7 +105,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
         @Override
         public void writeToChannel(MycatSession session) throws IOException {
-            try {
                 if (session.getIOThread() != Thread.currentThread()) {
                     throw new AssertionError();
                 }
@@ -119,10 +118,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                     session.change2WriteOpts();
                     return;
                 }
-            } catch (Exception e) {
-                onException(session, e);
-                throw e;
-            }
         }
 
 
@@ -159,7 +154,12 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         do {
             ByteBuffer buffer = byteBuffers.peek();
             if (buffer != null) {
-                writed = session.channel().write(buffer);
+                try {
+                    writed = session.channel().write(buffer);
+                }catch (Throwable throwable){
+                    LOGGER.error("",throwable);
+                    throw new ClosedChannelException();
+                }
                 if (!buffer.hasRemaining()) {
                     session.writeBufferPool().recycle(buffer);
                     byteBuffers.remove();

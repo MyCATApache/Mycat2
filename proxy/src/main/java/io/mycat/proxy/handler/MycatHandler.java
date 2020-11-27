@@ -61,7 +61,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
             }
         } catch (ClosedChannelException e) {
             MycatMonitor.onMycatHandlerCloseException(mycat, e);
-            onException(mycat, e);
+            mycat.close(true,e);
             return;
         } catch (Exception e) {
             MycatMonitor.onMycatHandlerReadException(mycat, e);
@@ -77,7 +77,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
             }
         } catch (Exception e) {
             MycatMonitor.onMycatHandlerWriteException(mycat, e);
-            onException(mycat, e);
+            mycat.close(false,e);
         }
     }
 
@@ -91,7 +91,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
             }
         } catch (Exception e) {
             MycatMonitor.onMycatHandlerWriteException(mycat, e);
-            onException(mycat, e);
+            mycat.close(false,e);
         }
     }
 

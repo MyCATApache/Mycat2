@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 
 public class MycatRouterConfigOps implements AutoCloseable {
-    private final MycatRouterConfig mycatRouterConfig;
+    private  MycatRouterConfig mycatRouterConfig;
     private final ConfigOps configOps;
     List<LogicSchemaConfig> schemas = null;
     List<ClusterConfig> clusters = null;
@@ -290,7 +290,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putSequence(SequenceConfig sequenceConfig) {
         this.sequences = mycatRouterConfig.getSequences();
         sequences.stream().filter(i -> i.getName().equals(sequenceConfig.getName()))
-                .findFirst().ifPresent(s->sequences.remove(s));
+                .findFirst().ifPresent(s -> sequences.remove(s));
         sequences.add(sequenceConfig);
         updateType = UpdateType.SEQUENCE;
     }
@@ -413,6 +413,13 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
     public void reset() {
-        updateType = UpdateType.RESET;
+        this.updateType = UpdateType.RESET;
+        this.schemas = Collections.emptyList();
+        this.clusters = Collections.emptyList();
+        this.users = Collections.emptyList();
+        this.sequences = Collections.emptyList();
+        this.datasources = Collections.emptyList();
+        this.mycatRouterConfig = new MycatRouterConfig();
+        FileMetadataStorageManager.defaultConfig(this.mycatRouterConfig);
     }
 }
