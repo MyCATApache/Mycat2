@@ -134,7 +134,7 @@ public class AssembleTest implements MycatTest {
             );
 
             execute(mycatConnection,
-                    "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
+                    "insert  into `travelrecord`(`id`,`user_id`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL);"
             );
             List<Map<String, Object>> maps2 = executeQuery(mycatConnection, "select LAST_INSERT_ID()");
             Assert.assertTrue(maps2
@@ -189,7 +189,7 @@ public class AssembleTest implements MycatTest {
             execute(mycatConnection, "delete from db1.travelrecord");
             Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection,
-                    "insert  into db1.`travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
+                    "insert  into db1.`travelrecord`(`id`,`user_id`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL);"
             );
 
             {
@@ -221,7 +221,7 @@ public class AssembleTest implements MycatTest {
             execute(mycatConnection, "delete from db1.travelrecord");
             Assert.assertFalse(hasData(mycatConnection, "db1", "travelrecord"));
             execute(mycatConnection,
-                    "insert  into db1.`travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL,NULL);"
+                    "insert  into db1.`travelrecord`(`id`,`user_id`,`fee`,`days`,`blob`) values (12,'999',NULL,NULL,NULL);"
             );
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("12")
@@ -347,7 +347,7 @@ public class AssembleTest implements MycatTest {
                 executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("0")
         );
         execute(mycatConnection,
-                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
+                "insert  into `travelrecord`(`id`,`user_id`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL);");
         mycatConnection.rollback();
 
         mycatConnection.setAutoCommit(true);
@@ -363,7 +363,7 @@ public class AssembleTest implements MycatTest {
                 executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("0")
         );
         execute(mycatConnection,
-                "insert  into `travelrecord`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL,NULL);");
+                "insert  into `travelrecord`(`id`,`user_id`,`fee`,`days`,`blob`) values (1,'999',NULL,NULL,NULL),(999999999,'999',NULL,NULL,NULL);");
         mycatConnection.commit();
 
         mycatConnection.setAutoCommit(true);
