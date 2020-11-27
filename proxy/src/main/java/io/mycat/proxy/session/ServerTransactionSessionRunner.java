@@ -92,7 +92,6 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
 
             @Override
             public void finallyAccept(BindThreadKey key, BindThread context) {
-                mycatDataContext.getTransactionSession().check();
                 session.runDelayedNioJob();
             }
 
