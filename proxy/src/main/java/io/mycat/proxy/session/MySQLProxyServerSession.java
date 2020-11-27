@@ -30,6 +30,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     /**
      * 前端写入队列
+     *
      * @return
      */
     ConcurrentLinkedQueue<ByteBuffer> writeQueue();
@@ -81,13 +82,14 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
      */
     default void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode) {
+        if (channel().isConnected()){
             setLastErrorCode(errorCode);
             switchMySQLServerWriteHandler();
-            this.setResponseFinished(ProcessState.DONE);
             byte[] bytes = MySQLPacketUtil
                     .generateError(errorCode, getLastMessage(),
                             this.getCapabilities());
-            writeBytes( MySQLPacketUtil.generateMySQLPacket(packetId, bytes),true);
+            writeBytes(MySQLPacketUtil.generateMySQLPacket(packetId, bytes), true);
+        }
     }
 
     MySQLPacketSplitter packetSplitter();
@@ -156,16 +158,16 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         session.updateLastActiveTime();
         do {
             ByteBuffer buffer = byteBuffers.peek();
-            if (buffer!=null){
+            if (buffer != null) {
                 writed = session.channel().write(buffer);
-                if (!buffer.hasRemaining()){
+                if (!buffer.hasRemaining()) {
                     session.writeBufferPool().recycle(buffer);
                     byteBuffers.remove();
                 }
-            }else{
+            } else {
                 break;
             }
-        }while (writed>0);
+        } while (writed > 0);
         if (writed == -1) {
             throw new ClosedChannelException();
         }

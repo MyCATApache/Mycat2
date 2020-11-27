@@ -332,7 +332,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     @Override
     public void setResponseFinished(ProcessState b) {
         if(this.processState == ProcessState.DONE && b ==  ProcessState.DONE){
-            throw new IllegalArgumentException("The response has ended, but there are still writes ...");
+            String error = "The response has ended, but there are still writes ...";
+            LOGGER.error(error);
+            throw new IllegalArgumentException(error);
         }
         this.processState = b;
     }

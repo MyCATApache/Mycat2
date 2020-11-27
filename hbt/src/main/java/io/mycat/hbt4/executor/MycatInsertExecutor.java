@@ -28,10 +28,12 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
+import java.sql.*;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.setParams;
 
 @Getter
 public class MycatInsertExecutor implements Executor {
@@ -186,21 +188,42 @@ public class MycatInsertExecutor implements Executor {
         return group;
     }
 
+    @SneakyThrows
     public void execute(Map<GroupKey, Group> group) {
         List<String> targets = group.keySet().stream().map(j -> j.getTarget()).distinct().collect(Collectors.toList());
         Map<String, Connection> connections = factory.getConnections(targets);
         long lastInsertId = 0;
         long affected = 0;
-        for (Map.Entry<GroupKey, Group> e : group.entrySet()) {
-            GroupKey key = e.getKey();
-            String targetName = key.getTarget();
-            String sql = key.getParameterizedSql();
-            Group value = e.getValue();
-            Connection connection = connections.get(targetName);
-            MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection,targetName);
-            lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
-            affected += res.getAffected();
+        if (group.size() == 1) {
+            Map.Entry<GroupKey, Group> keyGroupEntry = group.entrySet().iterator().next();
+            String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
+            LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
+            Connection connection = connections.values().iterator().next();
+            try (PreparedStatement preparedStatement = connection.
+                    prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
+                List<Object> objects = args.get(0);
+                setParams(preparedStatement, objects);
+                affected = preparedStatement.executeUpdate();
+                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                if (generatedKeys != null) {
+                    if (generatedKeys.next()) {
+                        lastInsertId  = generatedKeys.getLong(1);
+                    }
+                }
+            }
+        } else {
+            for (Map.Entry<GroupKey, Group> e : group.entrySet()) {
+                GroupKey key = e.getKey();
+                String targetName = key.getTarget();
+                String sql = key.getParameterizedSql();
+                Group value = e.getValue();
+                Connection connection = connections.get(targetName);
+                MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
+                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
+                affected += res.getAffected();
+            }
         }
+
         this.lastInsertId = lastInsertId;
         this.affectedRow = affected;
     }
