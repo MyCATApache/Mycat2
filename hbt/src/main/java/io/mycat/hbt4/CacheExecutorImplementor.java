@@ -18,7 +18,7 @@ import java.util.Objects;
 public class CacheExecutorImplementor  extends ExecutorImplementorImpl {
     private final Object key;
 
-    public static CacheExecutorImplementor create(Object key,MycatDataContext context, Response response){
+    public static CacheExecutorImplementor create(Object key, MycatDataContext context){
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
         DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
         return new CacheExecutorImplementor(key,datasourceFactory,tempResultSetFactory);
