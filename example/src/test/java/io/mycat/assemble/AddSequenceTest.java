@@ -53,7 +53,7 @@ public class AddSequenceTest implements MycatTest {
                             "    SELECT CONCAT(CAST((val - inc + 1) AS CHAR),\",\",CAST(inc AS CHAR)) INTO retval;\n" +
                             "    RETURN retval;\n" +
                             "END");
-                    statement.execute("INSERT INTO `db1`.`mycat_sequence` (`name`, `current_value`) VALUES ('db1_travelrecord', '0');");
+                    statement.execute("INSERT INTO `db1`.`MYCAT_SEQUENCE` (`name`, `current_value`) VALUES ('db1_travelrecord', '0');");
                 }
             }
             addC0(connection);
