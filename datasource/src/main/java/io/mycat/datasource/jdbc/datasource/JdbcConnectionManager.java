@@ -164,7 +164,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             }
             return --operand;
         });
-        LOGGER.debug("关闭连接:{}", connection);
+        LOGGER.debug("关闭连接:{} {}", connection,connection.connection);
         try {
             connection.connection.close();
         } catch (SQLException e) {
