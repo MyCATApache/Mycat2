@@ -4,10 +4,13 @@ import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.MycatCore;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.example.MycatRunner;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
@@ -24,7 +27,7 @@ public interface MycatTest {
     String RESET_CONFIG ="/*+ mycat:resetConfig{} */";
 
     final Map<Integer, DruidDataSource> dsMap = new ConcurrentHashMap<>();
-
+     static final Logger LOGGER = LoggerFactory.getLogger(MycatTest.class);
 
 
     default Connection getMySQLConnection(int port) throws Exception {
@@ -60,12 +63,12 @@ public interface MycatTest {
     }
 
     public default void execute(Connection mySQLConnection, String sql) throws Exception {
-        System.out.println(sql);
+        LOGGER.info(sql);
         JdbcUtils.execute(mySQLConnection, sql);
     }
 
     public default List<Map<String, Object>> executeQuery(Connection mySQLConnection, String sql) throws Exception {
-        System.out.println(sql);
+        LOGGER.info(sql);
         return JdbcUtils.executeQuery(mySQLConnection, sql, Collections.emptyList());
     }
     public default void addC0(Connection connection) throws Exception {
