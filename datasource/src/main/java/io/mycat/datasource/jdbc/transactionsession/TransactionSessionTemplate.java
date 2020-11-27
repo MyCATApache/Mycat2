@@ -104,7 +104,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public synchronized void close() {
-        check();
+        clearJdbcConnection();
         for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
             DefaultConnection value = stringDefaultConnectionEntry.getValue();
             if (value != null) {
@@ -126,7 +126,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     @SneakyThrows
-    public void check() {
+    public void clearJdbcConnection() {
         if (!isInTransaction()) {
             Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
             for (Map.Entry<String, DefaultConnection> entry : entries) {

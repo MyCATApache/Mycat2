@@ -20,17 +20,14 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.bindthread.BindThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.util.ByteUtil;
 import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 
 public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     final int total;
@@ -69,7 +66,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         boolean moreResultSet = !(this.count == 1);
         TransactionSession transactionSession = session.getDataContext().getTransactionSession();
         if (explain) {
-            transactionSession.check();
+            transactionSession.clearJdbcConnection();
             sendResultSet(moreResultSet, response.explain());
             return;
         }
@@ -82,12 +79,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                     return;
                 }
                 case UPDATEOK: {
-                    transactionSession.check();
+                    transactionSession.clearJdbcConnection();
                     session.writeOk(moreResultSet);
                     return;
                 }
                 case ERROR: {
-                    transactionSession.check();
+                    transactionSession.clearJdbcConnection();
                     session.writeErrorEndPacketBySyncInProcessError();
                     return;
                 }
@@ -97,7 +94,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                     if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
                         MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
                         if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
-                            transactionSession.check();
+                            transactionSession.clearJdbcConnection();
                             MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
                                     MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                     session.getIsolation());
@@ -116,7 +113,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
                             session.setAffectedRows(res[0]);
                             session.setLastInsertId(res[1]);
-                            transactionSession.check();
+                            transactionSession.clearJdbcConnection();
                             session.writeOk(moreResultSet);
                             return;
                         }
@@ -124,7 +121,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
                             session.setAffectedRows(res[0]);
                             session.setLastInsertId(res[1]);
-                            transactionSession.check();
+                            transactionSession.clearJdbcConnection();
                             session.writeOk(moreResultSet);
                             return;
                         }

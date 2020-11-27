@@ -64,7 +64,7 @@ public interface TransactionSession extends Dumpable {
 
     ThreadUsageEnum getThreadUsageEnum();
 
-    void check();
+    void clearJdbcConnection();
 
     void close();
 

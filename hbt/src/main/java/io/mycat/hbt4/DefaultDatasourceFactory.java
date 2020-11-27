@@ -21,11 +21,7 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
 
     @Override
     public void close() throws Exception {
-        for (MycatConnection autoCloseable : autoCloseables) {
-            if(!autoCloseable.isClosed()){
-                autoCloseable.close();
-            }
-        }
+        context.getTransactionSession().clearJdbcConnection();
     }
 
     @Override

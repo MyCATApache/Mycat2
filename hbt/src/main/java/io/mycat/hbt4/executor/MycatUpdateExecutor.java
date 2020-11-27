@@ -78,7 +78,10 @@ public class MycatUpdateExecutor implements Executor {
             MycatConnection mycatConnection = connections.get(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
             if(LOGGER.isDebugEnabled()){
-                LOGGER.debug("targetName:{} sql:{} parameters:{}",target,sql,parameters);
+                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ",mycatConnection,target,sql,parameters);
+            }
+            if(LOGGER.isDebugEnabled() && connection.isClosed()){
+                LOGGER.debug("{} has closed ",mycatConnection);
             }
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
