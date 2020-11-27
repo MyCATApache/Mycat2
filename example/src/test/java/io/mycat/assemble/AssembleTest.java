@@ -370,7 +370,7 @@ public class AssembleTest implements MycatTest {
         Assert.assertTrue(
                 executeQuery(mycatConnection, "SELECT @@autocommit;").toString().contains("1")
         );
-        Assert.assertEquals(2, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
+        Assert.assertEquals(1, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
     }
 
 }
