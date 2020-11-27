@@ -228,7 +228,7 @@ public class MySQLSessionManager implements
             idleList.add(session);
             MycatMonitor.onAddIdleMysqlSession(session);
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
             session.close(false, e);
         }
     }
@@ -289,7 +289,7 @@ public class MySQLSessionManager implements
                 mySQLSessions.remove(session);
             }
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
         }
     }
 
@@ -568,13 +568,13 @@ public class MySQLSessionManager implements
                             @Override
                             public void onFinishedSendException(Exception exception, Object sender,
                                                                 Object attr) {
-                                LOGGER.error("{}", exception);
+                                LOGGER.error("", exception);
                                 callBack.onException(exception, sender, attr);
                             }
 
                             @Override
                             public void onFinishedException(Exception exception, Object sender, Object attr) {
-                                LOGGER.error("{}", exception);
+                                LOGGER.error("", exception);
                                 callBack.onException(exception, sender, attr);
                             }
 
@@ -632,7 +632,7 @@ public class MySQLSessionManager implements
             removeIdleSession(session);
             NIOUtil.close(session.channel());
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
         }
     }
 

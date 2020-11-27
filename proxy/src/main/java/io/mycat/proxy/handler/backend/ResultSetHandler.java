@@ -363,7 +363,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
   @Override
   default void onException(MySQLClientSession session, Exception e) {
     MycatMonitor.onResultSetException(session, e);
-    LOGGER.error("{}", e);
+    LOGGER.error("", e);
     onClear(session);
     session.close(false, e);
   }

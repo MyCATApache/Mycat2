@@ -179,7 +179,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         try {
             getSessionManager().removeSession(this, normal, hint);
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
         }
     }
 
@@ -491,5 +491,4 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
             ioThread.addNIOJob(delayedNioJobs.pollFirst());
         }
     }
-
 }

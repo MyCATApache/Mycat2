@@ -209,7 +209,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
                             this.processWriteKey(key);
                         }
                     } catch (Exception e) {//如果设置为IOException方便调试,避免吞没其他类型异常
-                        LOGGER.error("{}", e);
+                        LOGGER.error("", e);
                         Session curSession = getCurSession();
                         if (curSession != null) {
                             NIOHandler curNIOHandler = curSession.getCurNIOHandler();
@@ -263,7 +263,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
                     try {
                         frontManager.removeSession(s, true, message);
                     } catch (Exception e) {
-                        LOGGER.error("{}", e);
+                        LOGGER.error("", e);
                     }
                 }
             }

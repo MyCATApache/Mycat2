@@ -45,7 +45,7 @@ public enum IdleHandler implements NIOHandler<MySQLClientSession> {
 
   @Override
   public void onException(MySQLClientSession session, Exception e) {
-    LOGGER.error("{}", e);
+    LOGGER.error("", e);
     session.close(false, e);
   }
 

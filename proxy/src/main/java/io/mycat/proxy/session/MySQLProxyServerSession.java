@@ -81,31 +81,13 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
      */
     default void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode) {
-        try {
             setLastErrorCode(errorCode);
             switchMySQLServerWriteHandler();
             this.setResponseFinished(ProcessState.DONE);
             byte[] bytes = MySQLPacketUtil
                     .generateError(errorCode, getLastMessage(),
                             this.getCapabilities());
-            byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(packetId, bytes);
-            ByteBuffer message = ByteBuffer.wrap(bytes1);
-            int counter = 0;
-            SocketChannel channel = channel();
-            if (channel.isOpen()) {
-                while (message.hasRemaining() && counter < 4) {
-                    channel().write(message);
-                    counter++;
-                }
-            }
-            if (counter >= 4) {
-                this.close(false, "can not response data");
-            }
-        } catch (IOException e) {
-            LOGGER.error("", e);
-        } finally {
-            close(false, "writeErrorEndPacketBySyncInProcessError");
-        }
+            writeBytes( MySQLPacketUtil.generateMySQLPacket(packetId, bytes),true);
     }
 
     MySQLPacketSplitter packetSplitter();

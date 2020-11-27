@@ -293,7 +293,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     @Override
     public void onException(MySQLClientSession session, Exception e) {
         MycatMonitor.onBackendConCreateException(session, e);
-        LOGGER.error("{}", e);
+        LOGGER.error("", e);
         onClear(session);
         session.close(false, e);
     }

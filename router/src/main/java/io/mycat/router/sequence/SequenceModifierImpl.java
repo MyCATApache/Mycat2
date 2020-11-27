@@ -73,7 +73,7 @@ public class SequenceModifierImpl implements SequenceModifier<MySQLAPIRuntime> {
       o.init(mySQLAPIRuntime, properties);
       this.sequenceHandler = o;
     } catch (Exception e) {
-      LOGGER.error("{}", e);
+      LOGGER.error("", e);
     }
   }
 

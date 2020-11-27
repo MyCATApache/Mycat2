@@ -82,7 +82,7 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
   @Override
   public void onException(MySQLClientSession session, Exception e) {
     MycatMonitor.onRequestException(session,e);
-    LOGGER.error("{}", e);
+    LOGGER.error("", e);
     onClear(session);
     session.setCallBack(null);
     session.close(false, e);

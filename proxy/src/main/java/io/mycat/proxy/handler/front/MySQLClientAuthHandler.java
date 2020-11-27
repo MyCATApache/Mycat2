@@ -182,7 +182,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         try {
             mycat.writeToChannel();
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
             onClear(mycat);
             mycat.close(false, e);
         }
@@ -202,7 +202,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     @Override
     public void onException(MycatSession session, Exception e) {
         MycatMonitor.onAuthHandlerException(session, e);
-        LOGGER.error("{}", e);
+        LOGGER.error("", e);
         onClear(session);
         session.close(false, e);
     }

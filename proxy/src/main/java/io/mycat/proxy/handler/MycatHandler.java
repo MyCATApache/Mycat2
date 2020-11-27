@@ -98,13 +98,13 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     @Override
     public void onException(MycatSession mycat, Exception e) {
         MycatMonitor.onMycatHandlerException(mycat, e);
-        LOGGER.error("{}", e);
+        LOGGER.error("", e);
         MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
         if (writeHandler != null) {
             writeHandler.onException(mycat, e);
         }
         onClear(mycat);
-        mycat.close(false, e.toString());
+        mycat.writeErrorEndPacketBySyncInProcessError();
     }
 
     /**

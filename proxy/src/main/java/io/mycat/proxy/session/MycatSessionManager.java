@@ -83,7 +83,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
             LOGGER.debug("mycat session is closing reason:{}", reason);
             mycat.channel().close();
         } catch (Exception e) {
-            LOGGER.error("{}", e);
+            LOGGER.error("", e);
         }
     }
 
@@ -112,22 +112,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     @Override
     public void check() {
-        Iterator<MycatSession> iterator = mycatSessions.iterator();
-        while (iterator.hasNext()) {
-            MycatSession next = iterator.next();
-            if (next == null) {
-                iterator.remove();
-            } else {
-                try {
-                    if (!next.checkOpen()) {
-                        next.close(false, "MycatSessionManager check");
-                        LOGGER.warn("未关闭连接:{}", next);
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("{}", e);
-                }
-            }
-        }
+
     }
 
 

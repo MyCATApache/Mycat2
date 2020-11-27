@@ -55,7 +55,7 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         mySQLSessionManager.removeSession(s,true,"close");
       }
     }catch (Exception e){
-      LOGGER.error("{}",e);
+      LOGGER.error("",e);
     }
   }
 }

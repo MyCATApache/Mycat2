@@ -113,7 +113,7 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
     try {
       integer = app2Partition.get(key);
     } catch (Exception e) {
-      LOGGER.error("{}", e);
+      LOGGER.error("", e);
     }
     if (integer != null) {
       return integer;
