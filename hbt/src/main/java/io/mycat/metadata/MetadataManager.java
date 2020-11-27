@@ -27,9 +27,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
-import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
@@ -55,12 +53,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 
 /**
  * @author Junwen Chen
@@ -182,13 +177,11 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
-                    Map<String, NormalTableConfig> adds = getDefaultNormalTable(connection, schemaName);
+                    Map<String, NormalTableConfig> adds = getDefaultNormalTable(schemaName);
                     Map<String, NormalTableConfig> normalTables = value.getNormalTables();
                     for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
                         normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
                     }
-                }
             }
 
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
@@ -290,11 +283,15 @@ public class MetadataManager implements MysqlVariableService {
 //        });
     }
 
-    private Map<String, NormalTableConfig> getDefaultNormalTable(DefaultConnection connection, String schemaName) {
+
+
+    private Map<String, NormalTableConfig> getDefaultNormalTable(String schemaName) {
         Set<String> tables = new HashSet<>();
-        RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
-        while (tableIterator.next()) {
-            tables.add(tableIterator.getString(1));
+        try(DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)){
+            RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
+            while (tableIterator.next()) {
+                tables.add(tableIterator.getString(1));
+            }
         }
         Map<String, NormalTableConfig> res = new HashMap<>();
         for (String tableName : tables) {
