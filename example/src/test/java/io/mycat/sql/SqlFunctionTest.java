@@ -258,7 +258,7 @@ public class SqlFunctionTest implements MycatTest {
     public void testAggFunction() throws Exception {
         initShardingTable();
 
-        checkValue("select id from db1.travelrecord GROUP BY id", "(1)(999999999)");
+        checkValue("select id from db1.travelrecord GROUP BY id  order by id ", "(1)(999999999)");
         checkValue("select id from db1.travelrecord GROUP BY id,user_id order by id ", "(999999999)(1)");
         checkValue("select id from db1.travelrecord GROUP BY id,user_id having id != 1 order by id", "(999999999)");
         checkValue("select id from db1.travelrecord GROUP BY id,user_id having max(id) > 1 order by id", "(999999999)");
