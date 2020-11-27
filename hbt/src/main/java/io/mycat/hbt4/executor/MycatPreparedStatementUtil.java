@@ -135,7 +135,11 @@ public class MycatPreparedStatementUtil {
                 }
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 while (generatedKeys.next()) {
-                    lastInsertId = Math.max(lastInsertId, generatedKeys.getLong(1));
+                    long aLong = generatedKeys.getLong(1);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("batch parameterizedSql:{} args:{} lastInsertId:{}", sql, value.args, aLong);
+                    }
+                    lastInsertId = Math.max(lastInsertId, aLong);
                 }
             }
             return this;

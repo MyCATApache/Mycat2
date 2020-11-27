@@ -27,6 +27,8 @@ import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
@@ -45,6 +47,7 @@ public class MycatInsertExecutor implements Executor {
     public long lastInsertId = 0;
     public long affectedRow = 0;
     public String sequence;
+    static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
     public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DatasourceFactory factory, List<Object> params) {
         this.mycatInsertRel = mycatInsertRel;
@@ -207,7 +210,10 @@ public class MycatInsertExecutor implements Executor {
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 if (generatedKeys != null) {
                     if (generatedKeys.next()) {
-                        lastInsertId  = generatedKeys.getLong(1);
+                        lastInsertId = generatedKeys.getLong(1);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                        }
                     }
                 }
             }
@@ -220,7 +226,9 @@ public class MycatInsertExecutor implements Executor {
                 Connection connection = connections.get(targetName);
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
                 lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
+
                 affected += res.getAffected();
+
             }
         }
 

@@ -71,7 +71,7 @@ public class AddSequenceTest implements MycatTest {
                     + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
             execute(connection, "delete from  db1.travelrecord");
             execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
-            List<Map<String, Object>> maps1 = executeQuery(connection, "select last_insert_id()");
+            List<Map<String, Object>> maps1 = executeQuery(connection, "select LAST_INSERT_ID()");
 
             execute(connection, "/*+ mycat:setSequence{\n" +
                     "\t\"name\":\"db1_travelrecord\",\n" +
@@ -80,12 +80,12 @@ public class AddSequenceTest implements MycatTest {
             try (Connection mySQLConnection = getMySQLConnection(3306)) {
                 try (Statement statement = mySQLConnection.createStatement()) {
                     statement.execute("use db1");
-                    statement.execute("update `db1`.`mycat_sequence` set `current_value` = '0' where name = 'db1_travelrecord';");
+                    statement.execute("update `db1`.`MYCAT_SEQUENCE` set `current_value` = '0' where name = 'db1_travelrecord';");
                 }
             }
             execute(connection, "delete from  db1.travelrecord");
             execute(connection, "INSERT INTO `db1`.`travelrecord` (`user_id`) VALUES ('9999999999');");
-            List<Map<String, Object>> maps2 = executeQuery(connection, "select last_insert_id()");
+            List<Map<String, Object>> maps2 = executeQuery(connection, "select LAST_INSERT_ID()");
             Assert.assertTrue(maps2.toString().contains("1"));
         }
     }
