@@ -39,7 +39,7 @@ public class MycatRexCompiler {
     final static RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
     final static SqlConformance conformance = MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig().conformance();
 
-    final static boolean debug = true;
+    final static boolean debug = false;
     final static RelDataType EmptyInputRowType = MycatCalciteSupport.INSTANCE.TypeFactory.builder().build();
     private static final Cache<Object, Object> cache =   CacheBuilder.newBuilder().expireAfterAccess(30, TimeUnit.MINUTES)
             .maximumSize(1_024*3).build();

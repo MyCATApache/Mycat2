@@ -172,15 +172,15 @@ public class MycatPreparedStatementUtil {
                                                SqlString value,
                                                List<Object> params) {
         String sql = value.getSql();
-        PreparedStatement preparedStatement = mycatConnection.prepareStatement(sql);
-        ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
-        if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
-            MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
-        }
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("sql:{} {}", sql, (params).toString());
-        }
         try {
+            if (LOGGER.isDebugEnabled()){
+                LOGGER.debug("sql:{} {}", sql, (params).toString());
+            }
+            PreparedStatement preparedStatement = mycatConnection.prepareStatement(sql);
+            ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
+            if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
+                MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
+            }
             ResultSet resultSet = preparedStatement.executeQuery();
             return new JdbcRowBaseIterator(calciteRowMetaData, preparedStatement, resultSet, null, sql);
         } catch (Throwable throwable) {

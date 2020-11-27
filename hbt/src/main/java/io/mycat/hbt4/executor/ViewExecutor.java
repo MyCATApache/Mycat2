@@ -63,7 +63,7 @@ public class ViewExecutor implements Executor {
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {
             MycatConnection mycatConnection = factory.getConnection(entry.getKey());
             Connection connection = mycatConnection.unwrap(Connection.class);
-            if (mycatConnection.isClosed()){
+            if (connection.isClosed()){
                 LOGGER.error("mycatConnection:{} has closed", mycatConnection);
             }
             futureArrayList.add(mycatWorker.submit(() -> {
