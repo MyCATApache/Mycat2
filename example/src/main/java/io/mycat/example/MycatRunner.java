@@ -12,8 +12,8 @@ public class MycatRunner {
 
     public synchronized static void checkRunMycat() throws Exception {
         if (!run) {
-//            MycatCore mycatCore = new MycatCore();
-//            mycatCore.start();
+            MycatCore mycatCore = new MycatCore();
+            mycatCore.start();
             run = true;
         }
     }
