@@ -166,7 +166,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         });
         if (LOGGER.isDebugEnabled()){
             LOGGER.debug("close :{} {}", connection,connection.connection);
-            LOGGER.debug("",new Throwable());
         }
 
         try {
