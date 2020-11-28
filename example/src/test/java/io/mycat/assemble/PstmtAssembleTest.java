@@ -16,7 +16,6 @@ public class PstmtAssembleTest extends AssembleTest  {
 
     @Override
     public Connection getMySQLConnection(int port) throws Exception {
-        MycatRunner.checkRunMycat();
         return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
             @Override
             @SneakyThrows

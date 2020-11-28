@@ -31,7 +31,6 @@ public interface MycatTest {
 
 
     default Connection getMySQLConnection(int port) throws Exception {
-        MycatRunner.checkRunMycat();
         return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
             @Override
             @SneakyThrows
