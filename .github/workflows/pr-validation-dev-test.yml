@@ -1,0 +1,38 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI - Mycat2 Dev
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup MySQL 3306
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql root password: 123456
+      - name: Setup MySQL 3307
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          host port: 3307
+          mysql root password: 123456
+      - name: test
+        run: |
+          mvn -B package -Dmaven.test.skip=true
+          java -jar mycat2/target/mycat2-1.12-SNAPSHOT-jar-with-dependencies.jar &
+          sleep 5s
+          mvn test
+
