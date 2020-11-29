@@ -7,7 +7,7 @@
 
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
 
-[优化器文档](https://github.com/MyCATApache/Mycat2/blob/master/doc/104-optimizer.md)
+
 
 ### 入门Mycat2
 
@@ -47,7 +47,7 @@
 
 前提:
 
-准备一个MySQL服务器(prototype服务器)，端口`3306` ，用户名：`root` 密码：`123456`
+准备两个MySQL服务器(prototype服务器)，端口`3306`,`3307` ，用户名：`root` 密码：`123456`
 
 Mycat2的jar包
 
@@ -163,28 +163,28 @@ CREATE TABLE db1.`travelrecord` (
 ###### 添加存储数据源
 
 ```json
-/*+ mycat:addDatasource{
+/*+ mycat:createDataSource{
 "name":"dw0",
 "url":"jdbc:mysql://127.0.0.1:3306",
 "user":"root",
 "password":"123456"
 } */;
 
-/*+ mycat:addDatasource{
+/*+ mycat:createDataSource{
 "name":"dr0",
 "url":"jdbc:mysql://127.0.0.1:3306",
 "user":"root",
 "password":"123456"
 } */;
 
-/*+ mycat:addDatasource{
+/*+ mycat:createDataSource{
 "name":"dw1",
 "url":"jdbc:mysql://127.0.0.1:3307",
 "user":"root",
 "password":"123456"
 } */;
 
-/*+ mycat:addDatasource{
+/*+ mycat:createDataSource{
 "name":"dr1",
 "url":"jdbc:mysql://127.0.0.1:3307",
 "user":"root",
@@ -197,9 +197,9 @@ CREATE TABLE db1.`travelrecord` (
 ###### 添加集群配置
 
 ```json
-/*! mycat:addCluster{"name":"c0","masters":["dw0"],"replicas":["dr0"]} */;
+/*! mycat:createCluster{"name":"c0","masters":["dw0"],"replicas":["dr0"]} */;
 
-/*! mycat:addCluster{"name":"c1","masters":["dw1"],"replicas":["dr1"]} */;
+/*! mycat:createCluster{"name":"c1","masters":["dw1"],"replicas":["dr1"]} */;
 ```
 
 
@@ -276,5 +276,16 @@ CREATE TABLE db1.`travelrecord` (
 
 
 
+## 核心团队
+
+[junwen12221](https://github.com/junwen12221)
+
+[wangzihaogithub](https://github.com/wangzihaogithub)
+
+[zwyqz](https://github.com/zwyqz)
 
 
+
+## License
+
+GNU GENERAL PUBLIC LICENSE
