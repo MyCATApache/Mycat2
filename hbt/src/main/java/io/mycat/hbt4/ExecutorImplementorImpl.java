@@ -17,12 +17,15 @@ package io.mycat.hbt4;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.hbt3.IndexScan;
 import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.metadata.QueryBuilder;
+
+import java.util.Collections;
 
 public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
     protected final DatasourceFactory factory;
@@ -70,4 +73,9 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
        return builder.run();
     }
 
+    @Override
+    public Executor implement(IndexScan indexScan) {
+        indexScan.setParams(params);
+        return new IndexScanExecutor(indexScan,params);//todo
+    }
 }

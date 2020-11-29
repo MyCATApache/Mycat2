@@ -16,6 +16,7 @@ package io.mycat.hbt4;
 
 
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.hbt3.IndexScan;
 import io.mycat.hbt3.MycatLookUpView;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.executor.MycatBatchNestedLoopJoin;
@@ -89,6 +90,8 @@ public interface ExecutorImplementor {
     void setParams(List<Object> params);
 
     Executor implement(QueryBuilder  mycatCustomTable);
+
+    Executor implement(IndexScan indexScan);
 
 //    Executor implement(BottomView bottomView);
 }

@@ -482,6 +482,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {
         Distribution dataNodeInfo = null;
+
         if (input instanceof View) {
             dataNodeInfo = ((View) input).getDistribution();
             input = ((View) input).getRelNode();
@@ -492,6 +493,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelOptTable table = input.getTable();
             AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
             Distribution distribution = nodes.computeDataNode(ImmutableList.of(condition));
+            if (table.getQualifiedName().contains("travelrecord")){
+                return new IndexScan(input.getCluster(),filter);
+            }
             if (optimizationContext != null && distribution.isPartial()) {
                 optimizationContext.setPredicateOnView(true);
             }
