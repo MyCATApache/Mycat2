@@ -83,9 +83,12 @@ public class AutoFunctionFactory {
                         tableHandler.getTableName() + "_${tableIndex}"));
         List<IndexDataNode> datanodes = new ArrayList<>();
         List<int[]> seq = new ArrayList<>();
-        for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-            for (int tableIndex = 0; tableIndex < tableNum; tableIndex++) {
-                seq.add(new int[]{dbIndex, tableIndex});
+        {
+            int tableIndex = 0;
+            for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
+                for (int i = 0; i < tableNum;i++, tableIndex++) {
+                    seq.add(new int[]{dbIndex, tableIndex});
+                }
             }
         }
         SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
@@ -374,9 +377,11 @@ public class AutoFunctionFactory {
                     tableShardingKeys.add(tableShardingKey);
                     dbShardingKeys.add(dbShardingKey);
 
+                    dbFunction = specilizeSingleModHash(dbNum, dbColumn);
+
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
-                        final ToIntFunction<Object> function = (o) -> {
+                        tableFunction = (o) -> {
                             o = dbColumn.normalizeValue(o);
                             if (o == null) return 0;
                             if (o instanceof Number) {
@@ -392,13 +397,8 @@ public class AutoFunctionFactory {
                             }
                             throw new UnsupportedOperationException();
                         };
-                        Set<String> shardingKeys = new HashSet<>();
-                        shardingKeys.addAll(tableShardingKeys);
-                        shardingKeys.addAll(dbShardingKeys);
-                        return createDoubleFunction(datanodes, dbShardingKey, shardingKeys, function);
                     } else {
                         tableFunction = specilizeSingleModHash(tableNum, tableColumn);
-                        dbFunction = specilizeSingleModHash(dbNum, dbColumn);
                     }
 
                 }
@@ -409,12 +409,13 @@ public class AutoFunctionFactory {
                     String dbShardingKey = getShardingKey(dbMethod);
                     SimpleColumnInfo tableColumn = tableHandler.getColumnByName(tableShardingKey);
                     SimpleColumnInfo dbColumn = tableHandler.getColumnByName(dbShardingKey);
-                    if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
-                        Set<String> shardingKeys = new HashSet<>();
-                        shardingKeys.addAll(tableShardingKeys);
-                        shardingKeys.addAll(dbShardingKeys);
+                    dbShardingKeys.add(dbShardingKey);
+                    tableShardingKeys.add(tableShardingKey);
 
-                        ToIntFunction<Object> function = (o) -> {
+                    dbFunction = specilizeSingleModHash(dbNum, dbColumn);
+
+                    if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
+                        tableFunction = (o) -> {
                             o = tableColumn.normalizeValue(o);
                             int total = dbNum * tableNum;
                             if (o instanceof Number) {
@@ -430,10 +431,8 @@ public class AutoFunctionFactory {
                             }
                             throw new UnsupportedOperationException();
                         };
-                        return createDoubleFunction((List<IndexDataNode>) datanodes, dbShardingKey, shardingKeys, function);
                     } else {
                         tableFunction = specilizeSingleModHash(tableNum, tableColumn);
-                        dbFunction = specilizeSingleModHash(dbNum, dbColumn);
                     }
                 }
 
@@ -452,49 +451,54 @@ public class AutoFunctionFactory {
                 boolean getTIndex = false;
                 int tIndex = 0;
 
-                for (String dbShardingKey : dbShardingKeys) {
-                    Collection<RangeVariable> rangeVariables = stringCollectionMap.get(dbShardingKey);
-                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                        for (RangeVariable rangeVariable : rangeVariables) {
-                            switch (rangeVariable.getOperator()) {
-                                case EQUAL:
-                                    Object value = rangeVariable.getValue();
-                                    dIndex = finalDbFunction.applyAsInt(value);
-                                    getDbIndex = true;
-                                    if (dIndex < 0) {
-                                        finalDbFunction.applyAsInt(value);
-                                        throw new IllegalArgumentException();
+                Set<Map.Entry<String, Collection<RangeVariable>>> entries = stringCollectionMap.entrySet();
+                for (Map.Entry<String, Collection<RangeVariable>> e : entries) {
+                    for (String dbShardingKey : dbShardingKeys) {
+                        if(SQLUtils.nameEquals(dbShardingKey,e.getKey())){
+                            Collection<RangeVariable> rangeVariables = e.getValue();
+                            if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                                for (RangeVariable rangeVariable : rangeVariables) {
+                                    switch (rangeVariable.getOperator()) {
+                                        case EQUAL:
+                                            Object value = rangeVariable.getValue();
+                                            dIndex = finalDbFunction.applyAsInt(value);
+                                            getDbIndex = true;
+                                            if (dIndex < 0) {
+                                                finalDbFunction.applyAsInt(value);
+                                                throw new IllegalArgumentException();
+                                            }
+                                            break;
+                                        case RANGE:
+                                        default:
+                                            continue;
                                     }
-                                    break;
-                                case RANGE:
-                                default:
-                                    continue;
+                                }
                             }
                         }
                     }
-                }
-                for (String tableShardingKey : tableShardingKeys) {
-                    Collection<RangeVariable> rangeVariables = stringCollectionMap.get(tableShardingKey);
-                    if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                        for (RangeVariable rangeVariable : rangeVariables) {
-                            switch (rangeVariable.getOperator()) {
-                                case EQUAL:
-                                    Object value = rangeVariable.getValue();
-                                    tIndex = finalTableFunction.applyAsInt(value);
-                                    getTIndex = true;
-                                    break;
-                                case RANGE:
-                                default:
-                                    continue;
+                    for (String tableShardingKey : tableShardingKeys) {
+                        if(SQLUtils.nameEquals(tableShardingKey,e.getKey())){
+                            Collection<RangeVariable> rangeVariables = e.getValue();
+                            if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                                for (RangeVariable rangeVariable : rangeVariables) {
+                                    switch (rangeVariable.getOperator()) {
+                                        case EQUAL:
+                                            Object value = rangeVariable.getValue();
+                                            tIndex = finalTableFunction.applyAsInt(value);
+                                            getTIndex = true;
+                                            break;
+                                        case RANGE:
+                                        default:
+                                            continue;
+                                    }
+                                }
                             }
                         }
                     }
                 }
                 if (getDbIndex && getTIndex) {
                     for (IndexDataNode datanode : datanodes) {
-                        if (tIndex == datanode.getTableIndex()
-                                &&
-                                dIndex == datanode.getDbIndex()) {
+                        if (dIndex == datanode.getDbIndex()&&tIndex == datanode.getTableIndex()) {
                             return Collections.singletonList(datanode);
                         }
                     }
@@ -558,14 +562,18 @@ public class AutoFunctionFactory {
 
             @Override
             public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-                Collection<RangeVariable> rangeVariables = values.get(dbShardingKey);
-                if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                    for (RangeVariable rangeVariable : rangeVariables) {
-                        switch (rangeVariable.getOperator()) {
-                            case EQUAL:
-                                Object value = rangeVariable.getValue();
-                                int i = function.applyAsInt(value);
-                                return Collections.singletonList(datanodes.get(i));
+                for (Map.Entry<String, Collection<RangeVariable>> e : values.entrySet()) {
+                    if(SQLUtils.nameEquals(e.getKey(),dbShardingKey)){
+                        Collection<RangeVariable> rangeVariables = e.getValue();
+                        if (rangeVariables != null && !rangeVariables.isEmpty()) {
+                            for (RangeVariable rangeVariable : rangeVariables) {
+                                switch (rangeVariable.getOperator()) {
+                                    case EQUAL:
+                                        Object value = rangeVariable.getValue();
+                                        int i = function.applyAsInt(value);
+                                        return Collections.singletonList(datanodes.get(i));
+                                }
+                            }
                         }
                     }
                 }

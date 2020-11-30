@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 @Getter
 public class LogicTable {
@@ -76,7 +75,7 @@ public class LogicTable {
                                                  List<SimpleColumnInfo> columns,
                                                  String createTableSQL) {
         LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
-        return new GlobalTable(logicTable, backendTableInfos, loadBalance);
+        return new GlobalTable(logicTable, backendTableInfos);
     }
 
     public static TableHandler createNormalTable(String schemaName,

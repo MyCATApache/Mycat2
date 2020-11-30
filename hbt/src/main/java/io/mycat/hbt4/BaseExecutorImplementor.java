@@ -260,7 +260,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 Distribution distribution = input1.getDistribution();
                 if (!distribution.isSingle()){
                     ArrayList<Executor> executors = new  ArrayList<>();
-                    for (DataNode dataNode : distribution.getDataNodes()) {
+                    for (DataNode dataNode : distribution.getDataNodes(params)) {
                         RelNode relNode = input1.applyDataNode(dataNode);
                         View of = View.of(relNode, Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY));
                         executors.add(implement(of));

@@ -16,6 +16,7 @@ package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatConnection;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
 import io.mycat.api.collector.ComposeFutureRowBaseIterator;
@@ -55,7 +56,7 @@ public class MycatLookupExecutor implements Executor {
     private DatasourceFactory factory;
     private List<Object> params;
     private MyCatResultSetEnumerator myCatResultSetEnumerator = null;
-    private List<Connection> tmpConnections;
+    private List<MycatConnection> tmpConnections;
 
     public MycatLookupExecutor(View view, DatasourceFactory factory, List<Object> params) {
         this.view = view;
@@ -102,10 +103,10 @@ public class MycatLookupExecutor implements Executor {
         this.tmpConnections = factory.getTmpConnections(expandToSqls.keys().asList());
         int i = 0;
         for (Map.Entry<String, SqlString> entry : expandToSqls.entries()) {
-            Connection connection = tmpConnections.get(i);
+            MycatConnection connection = tmpConnections.get(i);
             String target = entry.getKey();
             SqlString sql = entry.getValue();
-            futureArrayList.add(mycatWorker.submit(() -> executeQuery(connection, metaData, sql, params)));
+            futureArrayList.add(mycatWorker.submit(() -> executeQuery(connection.unwrap(Connection.class), metaData, sql, params)));
             i++;
         }
         AtomicBoolean flag = new AtomicBoolean();

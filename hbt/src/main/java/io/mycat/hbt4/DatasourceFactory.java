@@ -34,7 +34,7 @@ public interface DatasourceFactory extends AutoCloseable {
 
     MycatConnection getConnection(String key);
 
-    List<Connection> getTmpConnections(List<String> targets);
+    List<MycatConnection> getTmpConnections(List<String> targets);
 
-    void recycleTmpConnections(List<Connection> connections);
+    void recycleTmpConnections(List<MycatConnection> connections);
 }
