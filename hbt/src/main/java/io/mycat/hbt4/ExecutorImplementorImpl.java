@@ -25,10 +25,10 @@ import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.metadata.QueryBuilder;
 
 public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
-    protected final DatasourceFactory factory;
+    protected final DataSourceFactory factory;
 
 
-    public ExecutorImplementorImpl(DatasourceFactory factory,
+    public ExecutorImplementorImpl(DataSourceFactory factory,
                                    TempResultSetFactory tempResultSetFactory) {
         super(tempResultSetFactory);
         this.factory = factory;

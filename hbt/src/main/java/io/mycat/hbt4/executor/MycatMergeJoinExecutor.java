@@ -100,7 +100,7 @@ public class MycatMergeJoinExecutor implements Executor {
         if (rows == null) {
             outer.open();
             inner.open();
-            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
+            MycatContext o = new MycatContext();
             Enumerable<Row> outerEnumerate = Linq4j.asEnumerable(outer);
             Enumerable<Row> innerEnumerate = Linq4j.asEnumerable(inner);
             final Function1<Row, Row> outerKeySelector = a0 -> {
