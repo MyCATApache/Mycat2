@@ -13,11 +13,10 @@ import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
-import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
-import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
-import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
+import io.mycat.calcite.sqlfunction.CRC32Function;
+import io.mycat.calcite.sqlfunction.mathfunction.*;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
+import org.apache.calcite.adapter.mycat.*;
 import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
@@ -1549,7 +1548,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         long nameHashCode64 = x.methodNameHashCode64();
         SqlOperator functionOperator = func(nameHashCode64);
-        String methodName = x.getMethodName().toUpperCase();
+        String methodName = SQLUtils.normalize(x.getMethodName()).toUpperCase();
         for (SQLExpr exp : arguments) {
             argNodes.add(Objects.requireNonNull(convertToSqlNode(exp)));
         }
@@ -1854,6 +1853,91 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
+            case "ABS":{
+                this.sqlNode = SqlStdOperatorTable.ABS.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "TAN":{
+                this.sqlNode = SqlStdOperatorTable.TAN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SQRT":{
+                this.sqlNode = SqlStdOperatorTable.SQRT.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SIN":{
+                this.sqlNode = SqlStdOperatorTable.SIN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SIGN":{
+                this.sqlNode = SqlStdOperatorTable.SIGN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ROUND":{
+                this.sqlNode = SqlStdOperatorTable.ROUND.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "POWER":
+            case "POW":{
+                this.sqlNode = SqlStdOperatorTable.POWER.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MOD":{
+                this.sqlNode = SqlStdOperatorTable.MOD.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LOG10":{
+                this.sqlNode = SqlStdOperatorTable.LOG10.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "FLOOR":{
+                this.sqlNode = SqlStdOperatorTable.FLOOR.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "EXP":{
+                this.sqlNode = SqlStdOperatorTable.EXP.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "DEGREES":{
+                this.sqlNode = SqlStdOperatorTable.DEGREES.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "CRC32":{
+                this.sqlNode = CRC32Function.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "CEIL":{
+                this.sqlNode = SqlStdOperatorTable.ATAN2.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ATAN2":{
+                this.sqlNode = SqlStdOperatorTable.ATAN2.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ATAN":{
+                this.sqlNode = SqlStdOperatorTable.ATAN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ASIN":{
+                this.sqlNode = SqlStdOperatorTable.ASIN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ACOS":{
+                this.sqlNode = SqlStdOperatorTable.ACOS.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "COS":{
+                this.sqlNode = SqlStdOperatorTable.COS.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "COT":{
+                this.sqlNode = SqlStdOperatorTable.COT.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LN":{
+                this.sqlNode = SqlStdOperatorTable.LN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
             case "TRIM": {
                 if ("both".equalsIgnoreCase(x.getTrimOption())) {
                     functionOperator = new SqlUnresolvedFunction(
@@ -1925,7 +2009,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                             null,
                             SqlFunctionCategory.USER_DEFINED_FUNCTION);
                 }
+                System.out.println("-----------------SqlUnresolvedFunction----------------------");
                 sqlNode = functionOperator.createCall(SqlParserPos.ZERO, argNodes);
+                System.out.println(sqlNode);
                 return false;
         }
 //        return false;

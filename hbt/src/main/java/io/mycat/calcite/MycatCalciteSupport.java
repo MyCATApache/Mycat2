@@ -26,6 +26,7 @@ import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
 import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
+import org.apache.calcite.adapter.mycat.*;
 import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -361,7 +362,28 @@ public enum MycatCalciteSupport implements Context {
                             RandFunction.INSTANCE,
                             TruncateFunction.INSTANCE,
                             DaynameFunction.INSTANCE,
-                            DayOfYearFunction.INSTANCE
+                            DayOfYearFunction.INSTANCE,
+                            AbsFunction.INSTANCE,
+                            AcosFunction.INSTANCE,
+                            AsinFunction.INSTANCE,
+                            ATan2Function.INSTANCE,
+                            ATanFunction.INSTANCE,
+                            CeilFunction.INSTANCE,
+                            CosFunction.INSTANCE,
+                            COTFunction.INSTANCE,
+                            DegreesFunction.INSTANCE,
+                            ExpFunction.INSTANCE,
+                            FloorFunction.INSTANCE,
+                            LnFunction.INSTANCE,
+                            Log10Function.INSTANCE,
+                            ModFunction.INSTANCE,
+                            PowerFunction.INSTANCE,
+                            PowFunction.INSTANCE,
+                            RoundFunction.INSTANCE,
+                            SignFunction.INSTANCE,
+                            SinFunction.INSTANCE,
+                            SqrtFunction.INSTANCE,
+                            TanFunction.INSTANCE
                     ).forEach(i -> build.put(i.getName(), i));
                     build.put("CHARACTER_LENGTH", CharLengthFunction.INSTANCE);
                     build.put("LCASE", LowerFunction.INSTANCE);

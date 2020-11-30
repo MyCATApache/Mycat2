@@ -17,6 +17,7 @@
 package org.apache.calcite.adapter.enumerable;
 
 import org.apache.calcite.MycatContext;
+import org.apache.calcite.adapter.mycat.*;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.mycat.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -76,18 +77,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Divide;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Equal;
-import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThan;
-import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThanOrEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.LessThan;
-import static org.apache.calcite.linq4j.tree.ExpressionType.LessThanOrEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Multiply;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Negate;
-import static org.apache.calcite.linq4j.tree.ExpressionType.NotEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
-import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
+import static org.apache.calcite.linq4j.tree.ExpressionType.*;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.CHR;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.COMPRESS;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT2;
@@ -770,6 +760,69 @@ public class RexImpTable {
     }
     if (operator == RexImpTable.AddTimeFunction .INSTANCE){
       return  RexImpTable.AddTimeFunction .INSTANCE.getRexCallImplementor();
+    }
+    if (operator == AbsFunction.INSTANCE){
+      return  map.get(ABS);
+    }
+    if (operator == AcosFunction.INSTANCE){
+      return  map.get(ACOS);
+    }
+    if (operator == AsinFunction.INSTANCE){
+      return  map.get(ASIN);
+    }
+    if (operator == ATan2Function.INSTANCE){
+      return  map.get(ATAN2);
+    }
+    if (operator == ATanFunction.INSTANCE){
+      return  map.get(ATAN);
+    }
+    if (operator == CeilFunction.INSTANCE){
+      return  map.get(CEIL);
+    }
+    if (operator == CosFunction.INSTANCE){
+      return  map.get(COS);
+    }
+    if (operator == COTFunction.INSTANCE){
+      return  map.get(COT);
+    }
+    if (operator == DegreesFunction.INSTANCE){
+      return  map.get(DEGREES);
+    }
+    if (operator == ExpFunction.INSTANCE){
+      return  map.get(EXP);
+    }
+    if (operator == FloorFunction.INSTANCE){
+      return  map.get(FLOOR);
+    }
+    if (operator == LnFunction.INSTANCE){
+      return  map.get(LN);
+    }
+    if (operator == Log10Function.INSTANCE){
+      return  map.get(LOG10);
+    }
+    if (operator == ModFunction.INSTANCE){
+      return  map.get(MOD);
+    }
+    if (operator == PowerFunction.INSTANCE){
+      return  map.get(POWER);
+    }
+    if (operator == PowFunction.INSTANCE){
+      return  map.get(POWER);
+    }
+    if (operator == RoundFunction.INSTANCE){
+      return  map.get(ROUND);
+    }
+    if (operator == SignFunction.INSTANCE){
+      return  map.get(SIGN);
+    }
+    if (operator == SinFunction.INSTANCE){
+      return  map.get(SIN);
+    }
+    if (operator == SqrtFunction.INSTANCE){
+      return  map.get(SqlStdOperatorTable.SQRT);
+    }
+    if (operator == TanFunction.INSTANCE){
+      return  map.get(TAN);
     }
     if (operator instanceof MycatSqlDefinedFunction ){
       CallImplementor implementor = ((MycatSqlDefinedFunction) operator);
