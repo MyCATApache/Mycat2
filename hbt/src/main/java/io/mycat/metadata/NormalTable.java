@@ -1,6 +1,9 @@
 package io.mycat.metadata;
 
-import io.mycat.*;
+import io.mycat.DataNode;
+import io.mycat.LogicTableType;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 
@@ -10,14 +13,12 @@ import java.util.function.Supplier;
 
 import static io.mycat.metadata.CreateTableUtils.createPhysicalTable;
 import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
-import static io.mycat.metadata.DDLHelper.createDatabaseIfNotExist;
-import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 public class NormalTable implements NormalTableHandler {
     private final GlobalTable table;
 
     public NormalTable(LogicTable logicTable, DataNode backendTable) {
-        this.table = new GlobalTable(logicTable, Collections.singletonList(backendTable), null);
+        this.table = new GlobalTable(logicTable, Collections.singletonList(backendTable));
     }
 
     @Override
