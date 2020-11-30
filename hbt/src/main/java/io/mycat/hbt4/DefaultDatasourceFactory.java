@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 
 import java.util.*;
 
-public class DefaultDatasourceFactory implements DatasourceFactory {
+public class DefaultDatasourceFactory implements DataSourceFactory {
     final MycatDataContext context;
     final List<String> targets = new ArrayList<>();
     private Map<String, Deque<MycatConnection>> connectionMap;
@@ -28,11 +28,6 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
         this.connectionMap = context.getTransactionSession().getConnection(targets);
     }
 
-    @Override
-    public void createTableIfNotExisted(String targetName, String createTableSql) {
-
-    }
-
 
     @Override
     public Map<String, MycatConnection> getConnections(List<String> targets) {
@@ -46,7 +41,7 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     }
 
     @Override
-    public void regist(ImmutableList<String> asList) {
+    public void registered(ImmutableList<String> asList) {
         targets.addAll(asList);
     }
 

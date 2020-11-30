@@ -8,11 +8,10 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.DataNode;
 import io.mycat.MycatConnection;
 import io.mycat.hbt3.Distribution;
-import io.mycat.hbt4.DatasourceFactory;
+import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
-import io.mycat.router.custom.MergeSubTablesFunction;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -33,14 +32,14 @@ public class MycatUpdateExecutor implements Executor {
     private final SQLStatement sqlStatement;
     private  List<Object> parameters;
     private final HashSet<GroupKey> groupKeys;
-    private DatasourceFactory factory;
+    private DataSourceFactory factory;
     public long lastInsertId = 0;
     public long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
     public MycatUpdateExecutor(Distribution values,
                                SQLStatement sqlStatement,
                                List<Object> parameters,
-                               DatasourceFactory factory) {
+                               DataSourceFactory factory) {
         this.values = values;
         this.sqlStatement = sqlStatement;
         this.parameters = parameters;
@@ -50,7 +49,7 @@ public class MycatUpdateExecutor implements Executor {
 
     public static MycatUpdateExecutor create(Distribution values,
                                              SQLStatement sqlStatement,
-                                             DatasourceFactory factory,
+                                             DataSourceFactory factory,
                                              List<Object> parameters) {
         return new MycatUpdateExecutor(values, sqlStatement, parameters, factory);
     }

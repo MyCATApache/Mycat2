@@ -125,12 +125,9 @@ public class AutoFunctionFactory {
             SQLMethodInvokeExpr methodInvokeExpr = dbMethod;
 
             if (SQLUtils.nameEquals("HASH", methodInvokeExpr.getMethodName())) {
-                String shardingKey = getShardingKey(methodInvokeExpr);
-                dbShardingKeys.add(shardingKey);
-                SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
-                dbFunction = specilizeSingleModHash(num, columnInfo);
+                methodInvokeExpr.setMethodName("MOD_HASH");
             }
-            if (SQLUtils.nameEquals("MODE_HASH", methodInvokeExpr.getMethodName())) {
+            if (SQLUtils.nameEquals("MOD_HASH", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
                 dbShardingKeys.add(shardingKey);
                 SimpleColumnInfo columnInfo = tableHandler.getColumnByName(shardingKey);
@@ -231,12 +228,7 @@ public class AutoFunctionFactory {
             int num = tableNum;
             SQLMethodInvokeExpr methodInvokeExpr = tableMethod;
             if (SQLUtils.nameEquals("HASH", methodInvokeExpr.getMethodName())) {
-                String shardingKey = getShardingKey(methodInvokeExpr);
-                tableShardingKeys.add(shardingKey);
-                SimpleColumnInfo column1 = Objects.requireNonNull(
-                        tableHandler.getColumnByName(shardingKey)
-                );
-                tableFunction = specilizeSingleModHash(num, column1);
+                methodInvokeExpr.setMethodName("MOD_HASH");
             }
             if (SQLUtils.nameEquals("MOD_HASH", methodInvokeExpr.getMethodName())) {
                 String shardingKey = getShardingKey(methodInvokeExpr);
@@ -382,21 +374,22 @@ public class AutoFunctionFactory {
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
                         tableFunction = (o) -> {
-                            o = dbColumn.normalizeValue(o);
-                            if (o == null) return 0;
+                            o = tableColumn.normalizeValue(o);
+                            if (o == null) o = 0;
                             if (o instanceof Number) {
                                 long l = ((Number) o).longValue();
-                                long i = l % total / tableNum;
+                                long i = l % total;
                                 if (i < 0) {
                                     throw new IllegalArgumentException();
                                 }
                                 return (int) i;
                             }
                             if (o instanceof String) {
-                                return hashCode((String) o) % total / tableNum;
+                                return hashCode((String) o) % total;
                             }
                             throw new UnsupportedOperationException();
                         };
+                        dbShardingKeys.clear();
                     } else {
                         tableFunction = specilizeSingleModHash(tableNum, tableColumn);
                     }
@@ -456,6 +449,9 @@ public class AutoFunctionFactory {
                     for (String dbShardingKey : dbShardingKeys) {
                         if(SQLUtils.nameEquals(dbShardingKey,e.getKey())){
                             Collection<RangeVariable> rangeVariables = e.getValue();
+                            if (rangeVariables.size()!=1){
+                                break;
+                            }
                             if (rangeVariables != null && !rangeVariables.isEmpty()) {
                                 for (RangeVariable rangeVariable : rangeVariables) {
                                     switch (rangeVariable.getOperator()) {
@@ -479,6 +475,9 @@ public class AutoFunctionFactory {
                     for (String tableShardingKey : tableShardingKeys) {
                         if(SQLUtils.nameEquals(tableShardingKey,e.getKey())){
                             Collection<RangeVariable> rangeVariables = e.getValue();
+                            if (rangeVariables.size()!=1){
+                                break;
+                            }
                             if (rangeVariables != null && !rangeVariables.isEmpty()) {
                                 for (RangeVariable rangeVariable : rangeVariables) {
                                     switch (rangeVariable.getOperator()) {

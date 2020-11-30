@@ -25,7 +25,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt3.View;
-import io.mycat.hbt4.DatasourceFactory;
+import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.mpp.Row;
 import org.apache.calcite.rel.RelNode;
@@ -53,19 +53,19 @@ public class MycatLookupExecutor implements Executor {
 
     private final View view;
     private final CalciteRowMetaData metaData;
-    private DatasourceFactory factory;
+    private DataSourceFactory factory;
     private List<Object> params;
     private MyCatResultSetEnumerator myCatResultSetEnumerator = null;
     private List<MycatConnection> tmpConnections;
 
-    public MycatLookupExecutor(View view, DatasourceFactory factory, List<Object> params) {
+    public MycatLookupExecutor(View view, DataSourceFactory factory, List<Object> params) {
         this.view = view;
         this.factory = factory;
         this.params = params;
         this.metaData = new CalciteRowMetaData(this.view.getRowType().getFieldList());
     }
 
-    public static MycatLookupExecutor create(View view, DatasourceFactory factory, List<Object> params) {
+    public static MycatLookupExecutor create(View view, DataSourceFactory factory, List<Object> params) {
         return new MycatLookupExecutor(view, factory, params);
     }
 
