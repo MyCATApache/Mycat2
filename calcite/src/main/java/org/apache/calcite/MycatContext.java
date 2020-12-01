@@ -37,4 +37,8 @@ public class MycatContext {
         MycatUser user = CONTEXT.get().getUser();
         return user.getUserName()+"@"+user.getHost();
     }
+
+    public Object getDynamicParam(int index) {
+        return null;
+    }
 }
