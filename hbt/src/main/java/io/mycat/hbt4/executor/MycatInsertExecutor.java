@@ -16,7 +16,7 @@ import io.mycat.DataNode;
 import io.mycat.MycatConnection;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
-import io.mycat.hbt4.DatasourceFactory;
+import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.Group;
 import io.mycat.hbt4.GroupKey;
@@ -42,7 +42,7 @@ import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.setParams;
 public class MycatInsertExecutor implements Executor {
 
     private final MycatInsertRel mycatInsertRel;
-    private final DatasourceFactory factory;
+    private final DataSourceFactory factory;
     private final Map<GroupKey, Group> groupMap;
     private List<Object> params;
     public long lastInsertId = 0;
@@ -50,7 +50,7 @@ public class MycatInsertExecutor implements Executor {
     public String sequence;
     static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
-    public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DatasourceFactory factory, List<Object> params) {
+    public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
         this.mycatInsertRel = mycatInsertRel;
         this.factory = factory;
         this.params = params;
@@ -100,7 +100,7 @@ public class MycatInsertExecutor implements Executor {
         return null;
     }
 
-    public static MycatInsertExecutor create(MycatInsertRel mycatInsertRel, DatasourceFactory factory, List<Object> params) {
+    public static MycatInsertExecutor create(MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
         return new MycatInsertExecutor(mycatInsertRel, factory, params);
     }
 

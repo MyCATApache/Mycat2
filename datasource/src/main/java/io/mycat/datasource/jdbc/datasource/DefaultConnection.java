@@ -74,6 +74,7 @@ public class DefaultConnection implements MycatConnection {
     public RowBaseIterator executeQuery(String sql) {
         try {
             Statement statement = connection.createStatement();
+            statement.setFetchSize(1);
             ResultSet resultSet = statement.executeQuery(sql);
             return new JdbcRowBaseIterator(null, statement, resultSet, new Closeable() {
                 @Override

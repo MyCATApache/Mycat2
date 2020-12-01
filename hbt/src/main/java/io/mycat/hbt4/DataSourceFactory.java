@@ -22,19 +22,17 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
-public interface DatasourceFactory extends AutoCloseable {
+public interface DataSourceFactory extends AutoCloseable {
 
     public void open();
 
-    public void createTableIfNotExisted(String targetName, String createTableSql);
-
     Map<String, MycatConnection> getConnections(List<String> targets);
 
-    void regist(ImmutableList<String> asList);
+    void registered(ImmutableList<String> asList);
 
     MycatConnection getConnection(String key);
 
-    List<Connection> getTmpConnections(List<String> targets);
+    List<MycatConnection> getTmpConnections(List<String> targets);
 
-    void recycleTmpConnections(List<Connection> connections);
+    void recycleTmpConnections(List<MycatConnection> connections);
 }

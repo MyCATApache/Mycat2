@@ -1,20 +1,19 @@
 package io.mycat.hbt4;
 
-import com.alibaba.fastsql.util.JdbcUtils;
 import com.google.common.collect.ImmutableList;
-import io.mycat.*;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatConnection;
+import io.mycat.MycatDataContext;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import lombok.SneakyThrows;
 
-import java.sql.*;
 import java.util.*;
 
-public class DefaultDatasourceFactory implements DatasourceFactory {
+public class DefaultDatasourceFactory implements DataSourceFactory {
     final MycatDataContext context;
     final List<String> targets = new ArrayList<>();
     private Map<String, Deque<MycatConnection>> connectionMap;
-    private LinkedList<MycatConnection> autoCloseables = new LinkedList<>();
+
     public DefaultDatasourceFactory(MycatDataContext context) {
         this.context = context;
     }
@@ -27,11 +26,6 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     @Override
     public void open() {
         this.connectionMap = context.getTransactionSession().getConnection(targets);
-    }
-
-    @Override
-    public void createTableIfNotExisted(String targetName, String createTableSql) {
-
     }
 
 
@@ -47,7 +41,7 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     }
 
     @Override
-    public void regist(ImmutableList<String> asList) {
+    public void registered(ImmutableList<String> asList) {
         targets.addAll(asList);
     }
 
@@ -55,7 +49,6 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
     public MycatConnection getConnection(String key) {
         Deque<MycatConnection> mycatConnections = connectionMap.get(key);
         MycatConnection pop = mycatConnections.pop();
-        autoCloseables.add(pop);
         return pop;
     }
 
@@ -66,14 +59,12 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
      */
     @Override
     @SneakyThrows
-    public List<Connection> getTmpConnections(List<String> targets) {
-        List<Connection> res = new ArrayList<>();
+    public List<MycatConnection> getTmpConnections(List<String> targets) {
+        List<MycatConnection> res = new ArrayList<>();
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        Map<String, JdbcDataSource> datasourceInfo = connectionManager.getDatasourceInfo();
         synchronized (connectionManager) {
             for (String jdbcDataSource : targets) {
-                JdbcDataSource dataSource = datasourceInfo.get(jdbcDataSource);
-                res.add(  dataSource.getDataSource().getConnection());
+                res.add(connectionManager.getConnection(jdbcDataSource));
             }
             return res;
         }
@@ -81,9 +72,9 @@ public class DefaultDatasourceFactory implements DatasourceFactory {
 
     @Override
     @SneakyThrows
-    public void recycleTmpConnections(List<Connection> connections) {
-        for (Connection connection : connections) {
-            JdbcUtils.close(connection);
+    public void recycleTmpConnections(List<MycatConnection> connections) {
+        for (MycatConnection connection : connections) {
+            connection.close();
         }
 
     }

@@ -1,31 +1,27 @@
 package io.mycat.metadata;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import io.mycat.*;
+import io.mycat.DataNode;
+import io.mycat.LogicTableType;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 
-import java.util.*;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static io.mycat.metadata.CreateTableUtils.createPhysicalTable;
 import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
-import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 public class GlobalTable implements GlobalTableHandler {
     private final LogicTable logicTable;
     private final List<DataNode> backendTableInfos;
-    private final LoadBalanceStrategy balance;
 
 
     public GlobalTable(LogicTable logicTable,
-                       List<DataNode> backendTableInfos,
-                       LoadBalanceStrategy balance) {
+                       List<DataNode> backendTableInfos) {
         this.logicTable = logicTable;
         this.backendTableInfos = backendTableInfos;
-        this.balance = balance;
     }
 
 //    @Override
