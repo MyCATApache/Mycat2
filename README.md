@@ -3,9 +3,9 @@
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-该readme显示的版本尚未发布,是master仓库,已经发布的旧版本(配置完全不一样)在release里
 
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
+[测试版本](https://github.com/MyCATApache/Mycat2/releases/tag/v1.13-alpha)
 
 
 
