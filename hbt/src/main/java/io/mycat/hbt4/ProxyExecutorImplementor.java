@@ -14,11 +14,11 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
 
     public static ProxyExecutorImplementor create(MycatDataContext context, Response response){
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-        DatasourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
+        DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(context);
         return new ProxyExecutorImplementor(datasourceFactory,tempResultSetFactory,response);
     }
 
-    public ProxyExecutorImplementor(DatasourceFactory factory,
+    public ProxyExecutorImplementor(DataSourceFactory factory,
                                     TempResultSetFactory tempResultSetFactory,
                                     Response response) {
         super(factory, tempResultSetFactory, response);

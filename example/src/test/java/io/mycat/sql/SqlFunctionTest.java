@@ -202,7 +202,7 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("SELECT ADDTIME(\"2017-06-15 09:34:21\", \"2\");");//
         checkValue("SELECT CURDATE();");//
         checkValue("SELECT CURRENT_DATE();");//
-        checkValue("SELECT CURRENT_TIME();");//
+        uncheckValue("SELECT CURRENT_TIME();");//
         checkValue("SELECT DATE('2003-12-31 01:02:03');");//
         uncheckValue("SELECT CURTIME() + 0;");//
         checkValue("SELECT DATEDIFF('2007-12-31 23:59:59','2007-12-30')");//

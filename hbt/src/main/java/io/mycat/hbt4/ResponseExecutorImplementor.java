@@ -25,7 +25,7 @@ import java.util.Objects;
 public class ResponseExecutorImplementor extends ExecutorImplementorImpl implements ExecutorImplementor {
     protected final Response response;
 
-    public static ResponseExecutorImplementor create(MycatDataContext context, Response response,DatasourceFactory datasourceFactory) {
+    public static ResponseExecutorImplementor create(MycatDataContext context, Response response, DataSourceFactory datasourceFactory) {
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
         TransactionType transactionType = context.getTransactionSession().transactionType();
         switch (transactionType) {
@@ -39,7 +39,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
     }
 
     public ResponseExecutorImplementor(
-            DatasourceFactory factory,
+            DataSourceFactory factory,
             TempResultSetFactory tempResultSetFactory,
             Response response) {
         super(factory, tempResultSetFactory);

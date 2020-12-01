@@ -6,14 +6,11 @@ import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.hbt3.DrdsConfig;
-import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt3.DrdsSql;
-import io.mycat.hbt4.DatasourceFactory;
+import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.MycatRel;
-import io.mycat.hbt4.PlanCache;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Explains;
@@ -36,7 +33,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             response.tryBroadcastShow(ast.toString());
             return;
         }
-        try (DatasourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
+        try (DataSourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
             DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
             Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(ast.getStatement()), Collections.emptyList());
             Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls,dataContext);

@@ -277,7 +277,7 @@ public class CalciteUtls {
     }
 
     public static RexNode unCastWrapper(RexNode left) {
-        if (left.isA(SqlKind.CAST)) {
+        while (left.isA(SqlKind.CAST)) {
             left = ((RexCall) left).operands.get(0);
         }
         return left;
