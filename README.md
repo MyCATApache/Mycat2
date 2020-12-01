@@ -5,7 +5,7 @@
 
 
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
-[测试](https://github.com/MyCATApache/Mycat2/releases/tag/v1.13-alpha)
+[测试版本](https://github.com/MyCATApache/Mycat2/releases/tag/v1.13-alpha)
 
 
 
