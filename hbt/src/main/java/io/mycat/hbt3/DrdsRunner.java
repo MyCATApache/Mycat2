@@ -63,6 +63,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
@@ -565,6 +566,9 @@ public class DrdsRunner {
     private MycatRel planUpdate(LogicalTableModify tableModify,
                                 DrdsSql drdsSql, OptimizationContext optimizationContext) {
         RelNode input = tableModify.getInput();
+        if (input instanceof LogicalProject){
+            input = ((LogicalProject) input).getInput();
+        }
         if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
             AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
             RexNode condition = ((Filter) input).getCondition();

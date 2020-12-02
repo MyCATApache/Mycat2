@@ -15,6 +15,7 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
@@ -127,5 +128,15 @@ public class MycatBatchNestedLoopJoinExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return this.leftInput.isRewindSupported();
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        explainWriter.item("joinType",joinType);
+        leftInput.explain(explainWriter);
+        rightInput.explain(explainWriter);
+        return explainWriter.ret();
     }
 }

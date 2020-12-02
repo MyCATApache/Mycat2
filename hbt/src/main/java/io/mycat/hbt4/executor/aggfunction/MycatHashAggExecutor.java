@@ -31,6 +31,7 @@
 package io.mycat.hbt4.executor.aggfunction;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.rel.core.Aggregate;
 
@@ -78,6 +79,14 @@ public class MycatHashAggExecutor extends MycatAbstractAggExecutor implements Ex
     @Override
     public boolean isRewindSupported() {
         return true;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        this.input.explain(writer);
+        return explainWriter.ret();
     }
 
 

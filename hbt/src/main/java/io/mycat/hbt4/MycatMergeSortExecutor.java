@@ -50,4 +50,14 @@ public class MycatMergeSortExecutor implements Executor {
     public boolean isRewindSupported() {
         return false;
     }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (Executor executor : executors) {
+            executor.explain(writer);
+        }
+        return explainWriter.ret();
+    }
 }

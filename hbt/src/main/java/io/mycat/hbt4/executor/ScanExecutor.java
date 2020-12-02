@@ -15,7 +15,9 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
+import org.apache.calcite.linq4j.Linq4j;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -61,5 +63,13 @@ public class ScanExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return false;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        writer.item("row", Linq4j.asEnumerable(()->iter).toList());
+        return explainWriter.ret();
     }
 }
