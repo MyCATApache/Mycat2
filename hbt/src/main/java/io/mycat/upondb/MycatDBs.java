@@ -50,7 +50,12 @@ public class MycatDBs {
                 } else if (target.contains("net_write_timeout")) {
                     dataContext.setVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT, Long.parseLong(value));
                 } else if ("SQL_SELECT_LIMIT".equalsIgnoreCase(target)) {
-                    dataContext.setVariable(MycatDataContextEnum.SELECT_LIMIT, Long.parseLong(value));
+                    if ("DEFAULT".equalsIgnoreCase(value)){
+                        dataContext.setVariable(MycatDataContextEnum.SELECT_LIMIT, Long.MAX_VALUE);
+                    }else {
+                        dataContext.setVariable(MycatDataContextEnum.SELECT_LIMIT, Long.parseLong(value));
+                    }
+
                 } else if ("character_set_results".equalsIgnoreCase(target)) {
                     dataContext.setVariable(MycatDataContextEnum.CHARSET_SET_RESULT, value);
                 } else if (target.contains("read_only")) {
