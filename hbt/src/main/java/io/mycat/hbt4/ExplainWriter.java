@@ -28,18 +28,21 @@ public class ExplainWriter {
         return this;
     }
     public ExplainWriter item(String key, Object value) {
-        stringBuilder.append('\"').append(key).append('\"').append(" = ");
+        stringBuilder.append("\n");
+        for (int i = 0; i < column; i++) {
+            stringBuilder.append(" ");
+        }
+        stringBuilder.append('\"').append(key).append('\"').append(" : ");
         if (value instanceof String) {
             stringBuilder.append('\"').append(value).append('\"');
         } else {
             stringBuilder.append(value);
         }
-        stringBuilder.append("\n");
-        stringBuilder.append(",");
         return this;
     }
 
     public ExplainWriter name(String name) {
+        stringBuilder.append("\n");
         for (int i = 0; i < column; i++) {
             stringBuilder.append(" ");
         }
@@ -49,6 +52,10 @@ public class ExplainWriter {
     }
 
     public ExplainWriter ret() {
+        stringBuilder.append("\n");
+        for (int i = 0; i < column; i++) {
+            stringBuilder.append(" ");
+        }
         column--;
         text.append(stringBuilder.toString());
         stringBuilder.setLength(0);
@@ -56,13 +63,16 @@ public class ExplainWriter {
     }
 
     public ExplainWriter into() {
+        for (int i = 0; i < column; i++) {
+            stringBuilder.append(" ");
+        }
         String s = stringBuilder.toString().trim();
         stringBuilder.setLength(0);
         if (s.endsWith(",")){
             s = s.substring(0,s.length()-1);
         }
         s = s+")";
-        text.append(s).append("\n");
+        text.append("\n").append(s);
         return this;
     }
 }
