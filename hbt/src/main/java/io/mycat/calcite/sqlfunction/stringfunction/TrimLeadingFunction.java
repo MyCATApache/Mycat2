@@ -10,11 +10,14 @@ import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.List;
 
 public class TrimLeadingFunction extends MycatSqlDefinedFunction {
 
@@ -39,9 +42,13 @@ public class TrimLeadingFunction extends MycatSqlDefinedFunction {
         }
         return StringUtils.stripStart(needTrim, needRemove);
     }
-
     @Override
     public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        super.unparse(writer, call, leftPrec, rightPrec);
+        writer.print("trim(leading,");
+        List<SqlNode> operandList = call.getOperandList();
+        operandList.get(0).unparse(writer, 0, 0);
+        writer.print(" from ");
+        operandList.get(1).unparse(writer, 0, 0);
+        writer.print(")");
     }
 }

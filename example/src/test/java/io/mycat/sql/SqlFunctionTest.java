@@ -47,8 +47,8 @@ public class SqlFunctionTest implements MycatTest {
         check("SELECT LEFT('foobarbar', 5) ");
         check("SELECT LENGTH('text') ");
         check("SELECT LOCATE('bar', 'foobarbar') ");
-//        check("SELECT LPAD('hi',4,'??') ");todo
-////        check("SELECT LPAD('hi',1,'??') ");
+        check("SELECT LPAD('hi',4,'??') ");
+        check("SELECT LPAD('hi',1,'??') ");
         check("SELECT LTRIM('  barbar') ");
         check("SELECT MAKE_SET(1,'a','b','c') ");
         check("SELECT MAKE_SET(1|4,'hello','nice','world') ");
