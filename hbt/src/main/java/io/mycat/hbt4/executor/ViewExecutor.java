@@ -12,6 +12,7 @@ import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import io.mycat.util.Pair;
 import lombok.SneakyThrows;
@@ -107,5 +108,16 @@ public class ViewExecutor implements Executor {
         String psql = value.getSql();
         String sql = apply(psql, params);
         return Pair.of(key, sql);
+    }
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (Map.Entry<String, SqlString> entry : this.expandToSql.entries()) {
+            String key = entry.getKey();
+            SqlString value = entry.getValue();
+            writer.item(key+" "+value,params);
+        }
+        return explainWriter.ret();
     }
 }

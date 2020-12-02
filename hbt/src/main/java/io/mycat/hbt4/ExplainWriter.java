@@ -34,7 +34,8 @@ public class ExplainWriter {
         } else {
             stringBuilder.append(value);
         }
-        stringBuilder.append(", ");
+        stringBuilder.append("\n");
+        stringBuilder.append(",");
         return this;
     }
 
@@ -49,6 +50,8 @@ public class ExplainWriter {
 
     public ExplainWriter ret() {
         column--;
+        text.append(stringBuilder.toString());
+        stringBuilder.setLength(0);
         return this;
     }
 

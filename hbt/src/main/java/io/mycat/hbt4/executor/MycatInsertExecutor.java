@@ -16,10 +16,7 @@ import io.mycat.DataNode;
 import io.mycat.MycatConnection;
 import io.mycat.RangeVariable;
 import io.mycat.RangeVariableType;
-import io.mycat.hbt4.DataSourceFactory;
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.Group;
-import io.mycat.hbt4.GroupKey;
+import io.mycat.hbt4.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
@@ -275,5 +272,17 @@ public class MycatInsertExecutor implements Executor {
         return false;
     }
 
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        groupMap.forEach((k,v)->{
+            String target = k.getTarget();
+            String parameterizedSql = k.getParameterizedSql();
+            LinkedList<List<Object>> args = v.getArgs();
+            writer.item("target:"+target+" parameterizedSql:"+parameterizedSql,args);
+        });
+        return explainWriter.ret();
+    }
 
 }

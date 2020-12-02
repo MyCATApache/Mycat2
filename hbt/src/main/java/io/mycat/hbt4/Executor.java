@@ -15,9 +15,11 @@
 package io.mycat.hbt4;
 
 import io.mycat.mpp.Row;
+import org.apache.calcite.rel.RelWriter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
+import java.util.List;
 
 public interface Executor extends Iterable<Row>{
     public void open();
@@ -64,10 +66,13 @@ public interface Executor extends Iterable<Row>{
                 }
             }
 
+
             @Override
             public Object[] next() {
                 return row;
             }
         };
     }
+
+    ExplainWriter explain(ExplainWriter writer);
 }

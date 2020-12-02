@@ -16,6 +16,7 @@ package io.mycat.hbt4.executor;
 
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 
 public class MycatUnionAllExecutor implements Executor {
@@ -67,5 +68,15 @@ public class MycatUnionAllExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return false;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (Executor executor : executors) {
+            executor.explain(writer);
+        }
+        return explainWriter.ret();
     }
 }
