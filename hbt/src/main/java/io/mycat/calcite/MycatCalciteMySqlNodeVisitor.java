@@ -1555,6 +1555,51 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
+            case "ASCII":{
+                this.sqlNode = AsciiFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "IN":{
+                this.sqlNode = SqlStdOperatorTable.IN.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "BIT_LENGTH":{
+                this.sqlNode = BitLengthFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "BIN":{
+                this.sqlNode = BinFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "EXPORT_SET":{
+                this.sqlNode = ExportSetFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "UNHEX":{
+                this.sqlNode = UnhexFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LCASE":
+            case "LOWER":{
+                this.sqlNode = SqlStdOperatorTable.LOWER.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "SUBSTRING":{
+                this.sqlNode = SubStringFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LPAD":{
+                this.sqlNode = LpadFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "LTRIM":{
+                this.sqlNode = LtrimFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "MAKE_SET":{
+                this.sqlNode = MakeSetFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
             case "DAYNAME": {
                 this.sqlNode = DaynameFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
@@ -1854,63 +1899,23 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatSessionValueFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
+            case "CHAR": {
+                this.sqlNode = CharFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "CHAR_LENGTH": {
+                this.sqlNode = SqlStdOperatorTable.CHARACTER_LENGTH.createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
             case "TRIM": {
                 if ("both".equalsIgnoreCase(x.getTrimOption())) {
-                    functionOperator = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_both", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(both,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer, 0, 0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer, 0, 0);
-                            writer.print(")");
-                        }
-                    };
+                    functionOperator = TrimBothFunction.INSTANCE;
                 } else if ("TRAILING".equalsIgnoreCase(x.getTrimOption())) {
-                    functionOperator = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_trailing", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(trailing,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer, 0, 0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer, 0, 0);
-                            writer.print(")");
-                        }
-                    };
+                    functionOperator = TrimTrailingFunction.INSTANCE;
                 } else if ("LEADING".equalsIgnoreCase(x.getTrimOption())) {
-                    functionOperator = new SqlUnresolvedFunction(
-                            new SqlIdentifier("trim_leading", SqlParserPos.ZERO),
-                            null,
-                            null,
-                            null,
-                            null,
-                            SqlFunctionCategory.USER_DEFINED_FUNCTION) {
-                        @Override
-                        public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-                            writer.print("trim(leading,");
-                            List<SqlNode> operandList = call.getOperandList();
-                            operandList.get(0).unparse(writer, 0, 0);
-                            writer.print(" from ");
-                            operandList.get(1).unparse(writer, 0, 0);
-                            writer.print(")");
-                        }
-                    };
+                    functionOperator = TrimLeadingFunction.INSTANCE;
                 } else {
-                    functionOperator = SqlStdOperatorTable.TRIM;
+                    functionOperator = TrimBothFunction.INSTANCE;
                 }
                 sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
                 return false;

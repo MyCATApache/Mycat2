@@ -2,20 +2,43 @@ package io.mycat.calcite.sqlfunction.stringfunction;
 
 import com.google.common.collect.ImmutableList;
 
+import org.apache.calcite.adapter.enumerable.RexImpTable;
+import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.*;
 
-public class LpadFunction extends MycatStringFunction {
-    public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(LpadFunction.class,
-            "lpad");
+public class LpadFunction extends MycatSqlDefinedFunction {
 
     public static final LpadFunction INSTANCE = new LpadFunction();
 
     public LpadFunction() {
-        super("lpad", scalarFunction);
+        super("lpad", ReturnTypes.VARCHAR_2000,
+                InferTypes.FIRST_KNOWN,
+                OperandTypes.VARIADIC,
+                null,
+                SqlFunctionCategory.STRING);
+    }
+
+    @Override
+    public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
+        if(call.getOperands().size()==3){
+            return Expressions.call(
+                    Types.lookupMethod(LpadFunction.class,"lpad",String.class,Integer.class,String.class),
+                    translator.translateList(call.getOperands(),nullAs));
+        }
+        return Expressions.call(
+                Types.lookupMethod(LpadFunction.class,"lpad",String.class,Integer.class,String.class),
+                translator.translateList(call.getOperands(),nullAs));
+
     }
 
     public static String lpad(String str, Integer len, String padstr) {

@@ -1,6 +1,7 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 
 public class RefExecutor implements Executor {
@@ -31,5 +32,10 @@ public class RefExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return input.isRewindSupported();
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        return null;
     }
 }

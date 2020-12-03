@@ -11,6 +11,7 @@ import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
@@ -75,5 +76,14 @@ public class TmpSqlExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return false;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        writer.item("sql",sql);
+        writer.item("target",target);
+        return explainWriter.ret();
     }
 }

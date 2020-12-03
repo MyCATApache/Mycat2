@@ -17,6 +17,7 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
@@ -209,4 +210,13 @@ public class MycatHashJoinExecutor implements Executor {
     }
 
 
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        writer.item("joinType",joinType);
+        originOuter.explain(writer);
+        originInner.explain(writer);
+        return explainWriter.ret();
+    }
 }

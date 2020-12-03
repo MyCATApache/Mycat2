@@ -10,6 +10,7 @@ import io.mycat.MycatConnection;
 import io.mycat.hbt3.Distribution;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
 import io.mycat.util.Pair;
@@ -30,12 +31,13 @@ import static java.sql.Statement.NO_GENERATED_KEYS;
 public class MycatUpdateExecutor implements Executor {
     private final Distribution values;
     private final SQLStatement sqlStatement;
-    private  List<Object> parameters;
+    private List<Object> parameters;
     private final HashSet<GroupKey> groupKeys;
     private DataSourceFactory factory;
     public long lastInsertId = 0;
     public long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
+
     public MycatUpdateExecutor(Distribution values,
                                SQLStatement sqlStatement,
                                List<Object> parameters,
@@ -62,7 +64,7 @@ public class MycatUpdateExecutor implements Executor {
         GroupKey groupKey = groupKeys.iterator().next();
         GroupKey key = groupKey;
         String parameterizedSql = key.getParameterizedSql();
-        String sql = apply(parameterizedSql,parameters);
+        String sql = apply(parameterizedSql, parameters);
         return Pair.of(key.getTarget(), sql);
     }
 
@@ -76,11 +78,11 @@ public class MycatUpdateExecutor implements Executor {
             String target = key.getTarget();
             MycatConnection mycatConnection = connections.get(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
-            if(LOGGER.isDebugEnabled()){
-                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ",mycatConnection,target,sql,parameters);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, sql, parameters);
             }
-            if(LOGGER.isDebugEnabled() && connection.isClosed()){
-                LOGGER.debug("{} has closed ",mycatConnection);
+            if (LOGGER.isDebugEnabled() && connection.isClosed()) {
+                LOGGER.debug("{} has closed ", mycatConnection);
             }
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
@@ -109,8 +111,8 @@ public class MycatUpdateExecutor implements Executor {
             tableSource.setSchema(dataNode.getSchema());
             StringBuilder sb = new StringBuilder();
             List<Object> outparameters = new ArrayList<>();
-             MycatPreparedStatementUtil.collect(sqlStatement,sb,parameters,outparameters);
-            String sql =sb.toString();
+            MycatPreparedStatementUtil.collect(sqlStatement, sb, parameters, outparameters);
+            String sql = sb.toString();
             this.parameters = outparameters;
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             groupHashMap.add(key);
@@ -119,8 +121,9 @@ public class MycatUpdateExecutor implements Executor {
     }
 
     /**
-     *  ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-     *  会生成多个值,其中第一个是真正的值
+     * ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+     * 会生成多个值,其中第一个是真正的值
+     *
      * @param insertId
      * @param preparedStatement
      * @return
@@ -132,11 +135,11 @@ public class MycatUpdateExecutor implements Executor {
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys != null) {
                 if (generatedKeys.next()) {
-                    if(LOGGER.isDebugEnabled()){
-                        LOGGER.debug("preparedStatement:{} insertId:{}",preparedStatement,insertId);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("preparedStatement:{} insertId:{}", preparedStatement, insertId);
                     }
                     long aLong = generatedKeys.getLong(1);
-                    lastInsertId = Math.max(lastInsertId,aLong);
+                    lastInsertId = Math.max(lastInsertId, aLong);
                 }
             }
         }
@@ -156,5 +159,17 @@ public class MycatUpdateExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return false;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (GroupKey groupKey : groupKeys) {
+            String target = groupKey.getTarget();
+            String parameterizedSql = groupKey.getParameterizedSql();
+            explainWriter.item("target:" + target + " " + parameterizedSql, parameters);
+        }
+        return explainWriter.ret();
     }
 }

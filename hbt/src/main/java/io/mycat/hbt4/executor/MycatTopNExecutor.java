@@ -15,6 +15,7 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 
 import java.util.Comparator;
@@ -87,5 +88,15 @@ public class MycatTopNExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return true;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        executor.explain(writer);
+        writer.item("offset",offset);
+        writer.item("fetch",fetch);
+        return explainWriter.ret();
     }
 }

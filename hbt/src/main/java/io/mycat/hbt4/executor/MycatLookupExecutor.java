@@ -27,6 +27,7 @@ import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt3.View;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
@@ -141,5 +142,14 @@ public class MycatLookupExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        view.explain(writer);
+        explainWriter.item("params",params);
+        return explainWriter.ret();
     }
 }
