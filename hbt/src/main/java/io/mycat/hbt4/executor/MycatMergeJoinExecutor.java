@@ -17,6 +17,7 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import org.apache.calcite.MycatContext;
 import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.mpp.Row;
@@ -100,7 +101,7 @@ public class MycatMergeJoinExecutor implements Executor {
         if (rows == null) {
             outer.open();
             inner.open();
-            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
+            MycatContext o = new MycatContext();
             Enumerable<Row> outerEnumerate = Linq4j.asEnumerable(outer);
             Enumerable<Row> innerEnumerate = Linq4j.asEnumerable(inner);
             final Function1<Row, Row> outerKeySelector = a0 -> {
@@ -163,5 +164,13 @@ public class MycatMergeJoinExecutor implements Executor {
         return false;
     }
 
-
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        explainWriter.item("joinType",joinType);
+        outer.explain(explainWriter);
+        inner.explain(explainWriter);
+        return explainWriter.ret();
+    }
 }

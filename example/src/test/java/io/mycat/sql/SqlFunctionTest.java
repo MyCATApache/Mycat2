@@ -47,8 +47,8 @@ public class SqlFunctionTest implements MycatTest {
         check("SELECT LEFT('foobarbar', 5) ");
         check("SELECT LENGTH('text') ");
         check("SELECT LOCATE('bar', 'foobarbar') ");
-//        check("SELECT LPAD('hi',4,'??') ");todo
-////        check("SELECT LPAD('hi',1,'??') ");
+        check("SELECT LPAD('hi',4,'??') ");
+        check("SELECT LPAD('hi',1,'??') ");
         check("SELECT LTRIM('  barbar') ");
         check("SELECT MAKE_SET(1,'a','b','c') ");
         check("SELECT MAKE_SET(1|4,'hello','nice','world') ");
@@ -202,7 +202,7 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("SELECT ADDTIME(\"2017-06-15 09:34:21\", \"2\");");//
         checkValue("SELECT CURDATE();");//
         checkValue("SELECT CURRENT_DATE();");//
-        checkValue("SELECT CURRENT_TIME();");//
+        uncheckValue("SELECT CURRENT_TIME();");//
         checkValue("SELECT DATE('2003-12-31 01:02:03');");//
         uncheckValue("SELECT CURTIME() + 0;");//
         checkValue("SELECT DATEDIFF('2007-12-31 23:59:59','2007-12-30')");//

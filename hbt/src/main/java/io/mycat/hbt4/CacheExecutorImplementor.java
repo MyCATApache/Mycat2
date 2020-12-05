@@ -1,14 +1,11 @@
 package io.mycat.hbt4;
 
-import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIteratorCacher;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.hbt4.executor.TempResultSetFactory;
-import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
-import io.mycat.util.Response;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 
@@ -19,7 +16,7 @@ public class CacheExecutorImplementor extends ExecutorImplementorImpl {
     private final Object key;
 
 
-    public CacheExecutorImplementor(Object key, DatasourceFactory factory, TempResultSetFactory tempResultSetFactory) {
+    public CacheExecutorImplementor(Object key, DataSourceFactory factory, TempResultSetFactory tempResultSetFactory) {
         super(factory, tempResultSetFactory);
         this.key = Objects.requireNonNull(key);
     }

@@ -17,10 +17,11 @@ package io.mycat.hbt4.executor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.hbt4.Executor;
-import org.apache.calcite.MycatContext;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.MycatRexCompiler;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
+import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Linq4j;
@@ -32,7 +33,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.objenesis.instantiator.util.UnsafeUtils;
 
 import java.util.Iterator;
 import java.util.List;
@@ -116,7 +116,7 @@ public class MycatHashJoinExecutor implements Executor {
         if (rows == null) {
             originOuter.open();
             originInner.open();
-            MycatContext o = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
+            MycatContext o = new MycatContext();
 ////////////////////////////////////check////////////////////////////////////////////////
 //            if (!outer.isRewindSupported()) {
 //                outer = tempResultSetFactory.makeRewind(outer);
@@ -210,4 +210,13 @@ public class MycatHashJoinExecutor implements Executor {
     }
 
 
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        writer.item("joinType",joinType);
+        originOuter.explain(writer);
+        originInner.explain(writer);
+        return explainWriter.ret();
+    }
 }

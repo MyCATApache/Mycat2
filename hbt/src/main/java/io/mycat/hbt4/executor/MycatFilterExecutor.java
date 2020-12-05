@@ -16,6 +16,7 @@ package io.mycat.hbt4.executor;
 
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 
 import java.util.function.Predicate;
@@ -25,7 +26,7 @@ public class MycatFilterExecutor implements Executor {
     private final Executor input;
 
     public static MycatFilterExecutor create(Predicate<Row> predicate, Executor input) {
-        return new MycatFilterExecutor(predicate,input);
+        return new MycatFilterExecutor(predicate, input);
     }
 
     protected MycatFilterExecutor(Predicate<Row> predicate, Executor input) {
@@ -59,5 +60,14 @@ public class MycatFilterExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return input.isRewindSupported();
+    }
+
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        input.explain(explainWriter);
+        return explainWriter.ret();
     }
 }

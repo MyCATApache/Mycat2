@@ -28,10 +28,10 @@ import io.mycat.metadata.QueryBuilder;
 import java.util.Collections;
 
 public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
-    protected final DatasourceFactory factory;
+    protected final DataSourceFactory factory;
 
 
-    public ExecutorImplementorImpl(DatasourceFactory factory,
+    public ExecutorImplementorImpl(DataSourceFactory factory,
                                    TempResultSetFactory tempResultSetFactory) {
         super(tempResultSetFactory);
         this.factory = factory;

@@ -25,9 +25,9 @@ public class ScalarAccumulatorDef implements AccumulatorFactory {
         this.endScalar = endScalar;
         this.accumulatorLength = accumulatorLength;
         this.rowLength = rowLength;
-        this.sendContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
+        this.sendContext = new MycatContext();
         this.sendContext.values = new Object[rowLength + accumulatorLength];
-        this.endContext = (MycatContext) UnsafeUtils.getUnsafe().allocateInstance(MycatContext.class);
+        this.endContext = new MycatContext();
         this.endContext.values = new Object[accumulatorLength];
     }
 

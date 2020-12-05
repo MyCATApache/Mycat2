@@ -18,8 +18,8 @@ public class BufferPoolConfig {
         HashMap defaultConfig = new HashMap<>();
         long pageSize = 1024 * 1024 * 2;
         defaultConfig.put("pageSize", pageSize);
-        defaultConfig.put("chunkSize", 8192);
-        defaultConfig.put("pageCount", 1);
+        defaultConfig.put("chunkSize", 8192/2);
+        defaultConfig.put("pageCount", 8);
         return defaultConfig;
     }
 }

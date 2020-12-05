@@ -16,6 +16,7 @@ package io.mycat.hbt4.executor.aggfunction;
 
 import io.mycat.hbt4.BaseExecutorImplementor;
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -124,6 +125,14 @@ public class MycatSortAggExecutor extends MycatAbstractAggExecutor implements Ex
     @Override
     public boolean isRewindSupported() {
         return input.isRewindSupported();
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        input.explain(writer);
+        return explainWriter.ret();
     }
 
 }

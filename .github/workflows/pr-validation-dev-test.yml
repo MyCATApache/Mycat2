@@ -1,13 +1,13 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Java CI with Maven
+name: Java CI - Mycat2 Dev
 
 on:
   push:
-    branches: [ master ]
+    branches: [ dev ]
   pull_request:
-    branches: [ master ]
+    branches: [ dev ]
 
 jobs:
   build:
@@ -32,7 +32,7 @@ jobs:
       - name: test
         run: |
           mvn -B package -Dmaven.test.skip=true
-          java -jar mycat2/target/mycat2-1.12-SNAPSHOT-jar-with-dependencies.jar &
+          java -jar mycat2/target/mycat2-1.13-alpha-jar-with-dependencies.jar &
           sleep 5s
           mvn test
 

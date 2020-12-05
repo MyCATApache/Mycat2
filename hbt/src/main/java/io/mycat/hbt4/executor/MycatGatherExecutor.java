@@ -1,6 +1,7 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -46,5 +47,15 @@ public class MycatGatherExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return executors.stream().allMatch(Executor::isRewindSupported);
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (Executor executor : executors) {
+            executor.explain(explainWriter);
+        }
+        return explainWriter.ret();
     }
 }

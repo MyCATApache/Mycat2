@@ -1,6 +1,8 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
+import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
 
 import java.util.Iterator;
@@ -39,5 +41,13 @@ public class MycatValuesExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return true;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        writer.item("row",rows);
+        return explainWriter.ret();
     }
 }

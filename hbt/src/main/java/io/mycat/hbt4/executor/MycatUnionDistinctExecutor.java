@@ -16,6 +16,7 @@ package io.mycat.hbt4.executor;
 
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 
 import java.util.HashSet;
@@ -71,5 +72,15 @@ public class MycatUnionDistinctExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return true;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        for (Executor executor : executors) {
+            executor.explain(writer);
+        }
+        return explainWriter.ret();
     }
 }

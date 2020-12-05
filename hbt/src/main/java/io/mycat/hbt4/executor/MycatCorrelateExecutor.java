@@ -15,6 +15,7 @@
 package io.mycat.hbt4.executor;
 
 import io.mycat.hbt4.Executor;
+import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
 import org.apache.calcite.linq4j.Enumerable;
 
@@ -55,5 +56,10 @@ public class MycatCorrelateExecutor implements Executor {
     @Override
     public boolean isRewindSupported() {
         return false;
+    }
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        return writer.ret();
     }
 }
