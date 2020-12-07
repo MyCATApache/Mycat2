@@ -2,6 +2,8 @@ package io.mycat;
 
 import com.google.common.collect.Lists;
 import io.mycat.config.*;
+import io.mycat.configRaft.MycatLeaderStateListener;
+import io.mycat.configRaft.RaftLog;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import lombok.EqualsAndHashCode;
@@ -16,6 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -35,6 +38,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         this.serverConfig = serverConfig;
         this.datasourceProvider = datasourceProvider;
         this.baseDirectory = baseDirectory;
+
+
     }
 
     @NotNull
@@ -72,8 +77,17 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @NotNull
     @SneakyThrows
     private MycatRouterConfig getRouterConfig(Path baseDirectory) {
-//        Path mycatPath = resolveFileName("mycat");
-//        String suffix = getSuffix(mycatPath.toString());
+
+        ServerInfo serverInfo1 = Files.list(baseDirectory)
+                .filter(i -> !Files.isDirectory(i)
+                        &&"serverList".equalsIgnoreCase(i.getFileName().toString())
+                        && isSuffix(i, getSuffix(i.getFileName().toString())))
+                .findFirst().map(path -> {
+                    ConfigReaderWriter configReaderWriter = getConfigReaderWriter(path);
+                    String s = readString(path);
+                    return configReaderWriter.transformation(s, ServerInfo.class);
+                }).orElseGet(ServerInfo::new);
+
         Path schemasPath = baseDirectory.resolve("schemas");
         Path clustersPath = baseDirectory.resolve("clusters");
         Path datasources = baseDirectory.resolve("datasources");
@@ -132,18 +146,27 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         routerConfig.getUsers().addAll(userConfigs);
         routerConfig.getSequences().addAll(sequenceConfigs);
 
-        defaultConfig(routerConfig);
+        defaultRouteConfig(routerConfig);
 
         routerConfig.setSchemas(routerConfig.getSchemas().stream().distinct().collect(Collectors.toList()));
         routerConfig.setClusters(routerConfig.getClusters().stream().distinct().collect(Collectors.toList()));
         routerConfig.setDatasources(routerConfig.getDatasources().stream().distinct().collect(Collectors.toList()));
         routerConfig.setUsers(routerConfig.getUsers().stream().distinct().collect(Collectors.toList()));
         routerConfig.setSequences(routerConfig.getSequences().stream().distinct().collect(Collectors.toList()));
+        routerConfig.setServerInfo(serverInfo1);
 
+        final String dataPath =
+                Paths.get(serverConfig.getServer().getTempDirectory()).resolve("configRaft").toString();
+        final String groupId = "mycat";
+        ServerInfo serverInfo = routerConfig.getServerInfo();
+        final String serverIdStr =serverInfo.getServer();
+        final String initialConfStr = String.join(",",serverInfo.getServerList());
+        final MycatLeaderStateListener listener;
+        RaftLog raftLog = new RaftLog(dataPath, groupId, serverIdStr, initialConfStr);
         return routerConfig;
     }
 
-    public static void defaultConfig(MycatRouterConfig routerConfig) {
+    public static void defaultRouteConfig(MycatRouterConfig routerConfig) {
         if (routerConfig.getUsers().isEmpty()) {
             UserConfig userConfig = new UserConfig();
             userConfig.setIp("127.0.0.1");
@@ -191,6 +214,26 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     }
 
+    @Override
+    public void addLearners(List<String> addressList) {
+
+    }
+
+    @Override
+    public void removeLearners(List<String> addressList) {
+
+    }
+
+    @Override
+    public String getLeaderAddress() {
+        return null;
+    }
+
+    @Override
+    public boolean transferLeader(String address) {
+        return false;
+    }
+
     @EqualsAndHashCode
     public static class State {
         final Map<String, Set<String>> replica = new HashMap<>();
@@ -214,26 +257,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops)throws Exception  {
-                   //Path mycatPath = resolveFileName("mycat");
                     String suffix = "json";
-                    ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                     MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
                     ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
                     prepare.prepareRuntimeObject();
                     prepare.prepareStoreDDL();
-                    //还没有初始化
-//                    if (state.configTimestamp != null) {
-//                        String s = readString(mycatPath);
-//                        if (s.equals(text)) {
-//                            return;
-//                        }
-//                        //Files.write(mycatPath, text.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-//                    }
-
-                    ///////////////////////////////////////////
-
-
-                    ///////////////////////////////////////////
 
                     Path schemasPath = baseDirectory.resolve("schemas");
                     Path clustersPath = baseDirectory.resolve("clusters");
@@ -256,17 +284,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     if (routerConfig.isUpdateSequences()) {
                         cleanDirectory(sequences);
                     }
-//
+                    if (routerConfig.isUpdateSequences()) {
+                        cleanDirectory(sequences);
+                    }
 
 
-//                    if (Files.notExists(schemasPath)) Files.createDirectory(schemasPath);
-//                    if (Files.notExists(clustersPath)) Files.createDirectory(clustersPath);
-//                    if (Files.notExists(datasources)) Files.createDirectory(datasources);
-//                    if (Files.notExists(users)) Files.createDirectory(users);
-//                    if (Files.notExists(sequences)) Files.createDirectory(sequences);
-//
-
-                    ////////////////////////////////////////////
                     for (LogicSchemaConfig schemaConfig : Optional.ofNullable(routerConfig.getSchemas()).orElse(Collections.emptyList())) {
                         String fileName = schemaConfig.getSchemaName() + ".schema." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);

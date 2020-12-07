@@ -15,5 +15,5 @@ public class MycatRouterConfig {
     public List<UserConfig> users = new ArrayList<>();// users/xxx.user.yml
     public List<SequenceConfig> sequences = new ArrayList<>();// sequences/xxx.sequence.yml
     public String prototype = "prototype";// mycat.yml
-    public List<String> serverList = new ArrayList<>();
+    public ServerInfo serverInfo = new ServerInfo();
 }

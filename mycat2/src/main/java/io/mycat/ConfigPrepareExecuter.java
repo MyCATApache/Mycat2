@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
@@ -109,7 +108,7 @@ public class ConfigPrepareExecuter {
 
             case RESET:
                 MycatRouterConfig routerConfig = new MycatRouterConfig();
-                FileMetadataStorageManager.defaultConfig(routerConfig);
+                FileMetadataStorageManager.defaultRouteConfig(routerConfig);
                 initBy(routerConfig);
                 break;
         }

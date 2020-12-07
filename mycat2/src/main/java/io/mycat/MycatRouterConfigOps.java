@@ -420,6 +420,6 @@ public class MycatRouterConfigOps implements AutoCloseable {
         this.sequences = Collections.emptyList();
         this.datasources = Collections.emptyList();
         this.mycatRouterConfig = new MycatRouterConfig();
-        FileMetadataStorageManager.defaultConfig(this.mycatRouterConfig);
+        FileMetadataStorageManager.defaultRouteConfig(this.mycatRouterConfig);
     }
 }
