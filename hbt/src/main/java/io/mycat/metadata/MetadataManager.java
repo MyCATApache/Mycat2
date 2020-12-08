@@ -74,6 +74,7 @@ public class MetadataManager implements MysqlVariableService {
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
+    private final NameMap<DataNode> normalTables;
 
 
     public void removeSchema(String schemaName) {
@@ -177,11 +178,11 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                    Map<String, NormalTableConfig> adds = getDefaultNormalTable(schemaName);
-                    Map<String, NormalTableConfig> normalTables = value.getNormalTables();
-                    for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
-                        normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
-                    }
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(schemaName);
+                Map<String, NormalTableConfig> normalTables = value.getNormalTables();
+                for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
+                    normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
+                }
             }
 
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
@@ -223,6 +224,17 @@ public class MetadataManager implements MysqlVariableService {
                 );
             }
         }
+        this.normalTables = new NameMap<>();
+        for (SchemaHandler value : this.schemaMap.values()) {
+            Map<String, TableHandler> stringTableHandlerMap = value.logicTables();
+            for (Map.Entry<String, TableHandler> stringTableHandlerEntry : stringTableHandlerMap.entrySet()) {
+                if (stringTableHandlerEntry.getValue().getType() == LogicTableType.NORMAL) {
+                    NormalTableHandler handlerEntryValue = (NormalTableHandler) stringTableHandlerEntry.getValue();
+                    normalTables.put(stringTableHandlerEntry.getKey(), handlerEntryValue.getDataNode());
+                }
+            }
+        }
+
     }
 
     private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {
@@ -284,10 +296,9 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-
     private Map<String, NormalTableConfig> getDefaultNormalTable(String schemaName) {
         Set<String> tables = new HashSet<>();
-        try(DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)){
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(1));
@@ -811,7 +822,18 @@ public class MetadataManager implements MysqlVariableService {
                 .distinct()
                 .filter(i -> i.startsWith("c"))
                 .count();
-        return (int)c;
+        return (int) c;
+    }
+
+    public boolean checkVaildNormalRoute(Set<String> tableNames) {
+        Set<String> targets = new HashSet<>();
+        for (String tableName : tableNames) {
+            targets.add(normalTables.get(tableName, false).getTargetName());
+            if (targets.size() > 1) {
+                return false;
+            }
+        }
+        return targets.size() == 1;
     }
 
 
@@ -867,4 +889,7 @@ public class MetadataManager implements MysqlVariableService {
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
+    public NameMap<DataNode> getNormalTables() {
+        return normalTables;
+    }
 }

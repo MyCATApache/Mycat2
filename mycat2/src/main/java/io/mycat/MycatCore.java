@@ -7,14 +7,12 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
-import org.apache.calcite.util.BuiltInMethod;
-import sun.util.calendar.ZoneInfo;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.TimeZone;
 
 /**
  * @author cjw
@@ -42,9 +40,10 @@ public class MycatCore {
         }
         if (path == null) {
             Path bottom = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            while (Files.isDirectory(bottom) && Files.isWritable(bottom)){
-                path = bottom.toAbsolutePath().toString();
+            while (!(Files.isDirectory(bottom) && Files.isWritable(bottom))){
+                bottom = bottom.getParent();
             }
+            path = bottom.toString();
         }
         if (path == null){
             throw new MycatException("can not find MYCAT_HOME");
