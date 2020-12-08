@@ -12,6 +12,7 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.util.NameMap;
 import io.mycat.util.Response;
 import lombok.SneakyThrows;
 
@@ -31,7 +32,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         String tableName = SQLUtils.normalize(tableSource.getTableName());
         SchemaHandler schemaHandler;
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        Optional<Map<String, SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());
+        Optional<NameMap<SchemaHandler>> handlerMapOptional = Optional.ofNullable(metadataManager.getSchemaMap());
         Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
         if (!handlerMapOptional.isPresent()) {
             if (targetNameOptional.isPresent()) {
@@ -42,7 +43,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                 return;
             }
         } else {
-            Map<String, SchemaHandler> handlerMap = handlerMapOptional.get();
+            NameMap< SchemaHandler> handlerMap = handlerMapOptional.get();
             schemaHandler = Optional.ofNullable(handlerMap.get(schemaName))
                     .orElseGet(() -> {
                         if (dataContext.getDefaultSchema() == null) {
@@ -56,7 +57,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             }
         }
         String defaultTargetName = schemaHandler.defaultTargetName();
-        Map<String, TableHandler> tableMap = schemaHandler.logicTables();
+        NameMap< TableHandler> tableMap = schemaHandler.logicTables();
         TableHandler tableHandler = tableMap.get(tableName);
         ///////////////////////////////common///////////////////////////////
         if (tableHandler == null) {

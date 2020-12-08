@@ -1,12 +1,13 @@
 package io.mycat.metadata;
 
 import io.mycat.TableHandler;
+import io.mycat.util.NameMap;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class SchemaHandlerImpl implements SchemaHandler {
-    final Map<String, TableHandler> tableMap = new HashMap<>();
+    final NameMap<TableHandler> tableMap = new NameMap<>();
     private String name;
     final String defaultTargetName;
 
@@ -21,7 +22,7 @@ public class SchemaHandlerImpl implements SchemaHandler {
     }
 
     @Override
-    public Map<String, TableHandler> logicTables() {
+    public NameMap< TableHandler> logicTables() {
         return tableMap;
     }
 

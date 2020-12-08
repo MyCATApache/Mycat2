@@ -17,6 +17,7 @@ package io.mycat.hbt3;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
+import io.mycat.util.NameMap;
 import lombok.Data;
 
 import java.util.Map;
@@ -26,9 +27,9 @@ public class DrdsConfig implements DrdsConst {
 
 
     @Override
-    public Map<String, SchemaHandler> schemas() {
+    public NameMap<SchemaHandler> schemas() {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        Map<String, SchemaHandler> schemaMap = metadataManager.getSchemaMap();
+        NameMap< SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         return schemaMap;
     }
 

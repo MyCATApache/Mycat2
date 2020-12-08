@@ -116,7 +116,7 @@ public class ViewExecutor implements Executor {
         for (Map.Entry<String, SqlString> entry : this.expandToSql.entries()) {
             String key = entry.getKey();
             SqlString value = entry.getValue();
-            writer.item("targetName:"+key+"->"+value.getSql().replaceAll("\n",""),"");
+            writer.item("targetName:"+key+"->"+value.getSql().replaceAll("\n"," "),"");
             writer.item("params",params);
         }
         return explainWriter.ret();
