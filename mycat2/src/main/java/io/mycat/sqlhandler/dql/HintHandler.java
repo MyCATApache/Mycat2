@@ -28,6 +28,7 @@ import io.mycat.replica.heartbeat.HeartbeatFlow;
 import io.mycat.sqlhandler.*;
 import io.mycat.sqlhandler.ddl.CreateTableSQLHandler;
 import io.mycat.util.JsonUtil;
+import io.mycat.util.NameMap;
 import io.mycat.util.Response;
 import oshi.demo.Json;
 
@@ -140,7 +141,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         SchemaHandler schemaHandler = Objects.requireNonNull(
                                 metadataManager.getSchemaMap().get(schemaName)
                         );
-                        Map<String, TableHandler> logicTables = schemaHandler.logicTables();
+                        NameMap<TableHandler> logicTables = schemaHandler.logicTables();
                         tableHandlerStream = logicTables.values().stream();
                     }
                     if ("global".equalsIgnoreCase(type)) {

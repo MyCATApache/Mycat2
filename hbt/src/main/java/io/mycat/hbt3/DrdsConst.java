@@ -15,10 +15,11 @@
 package io.mycat.hbt3;
 
 import io.mycat.metadata.SchemaHandler;
+import io.mycat.util.NameMap;
 
 import java.util.List;
 import java.util.Map;
 
 public interface DrdsConst {
-    public  Map<String, SchemaHandler>  schemas();
+    public NameMap< SchemaHandler> schemas();
 }

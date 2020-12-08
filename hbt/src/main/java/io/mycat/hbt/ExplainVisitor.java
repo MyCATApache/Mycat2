@@ -379,7 +379,7 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(ModifyFromSql modifyTable) {
         String targetName = modifyTable.getTargetName();
-        String sql = modifyTable.getSql().replaceAll("\n", "");
+        String sql = modifyTable.getSql().replaceAll("\n", " ");
         append(modifyTable.getOp().getFun());
         append("(");
         append(targetName);

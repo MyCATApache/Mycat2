@@ -1,9 +1,8 @@
 package io.mycat.config;
 
-import io.mycat.util.YamlUtil;
+import io.mycat.ConfigReaderWriter;
 import lombok.SneakyThrows;
 
-import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,7 +16,8 @@ public class ServerConfigurationImpl extends ServerConfiguration {
         super(rootClass);
         Path serverPath = Paths.get(path).resolve("server.json").toAbsolutePath();
         if (Files.exists(serverPath)) {
-            this.mycatServerConfig = YamlUtil.load(MycatServerConfig.class, new FileReader(serverPath.toString()));
+            ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix("json");
+            this.mycatServerConfig = configReaderWriter.transformation(new String(Files.readAllBytes(Paths.get(serverPath.toString()))),MycatServerConfig.class);
         } else {
             this.mycatServerConfig = new MycatServerConfig();
         }
