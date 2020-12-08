@@ -41,9 +41,16 @@ public class MycatCore {
             path = System.getProperty(configResourceKeyName);
         }
         if (path == null) {
-            path =  Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).toString();;
+            Path bottom = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            while (Files.isDirectory(bottom) && Files.isWritable(bottom)){
+                path = bottom.toAbsolutePath().toString();
+            }
         }
-        this.baseDirectory = Paths.get(path).getParent().getParent().toAbsolutePath();
+        if (path == null){
+            throw new MycatException("can not find MYCAT_HOME");
+        }
+
+        this.baseDirectory = Paths.get(path).toAbsolutePath();
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
