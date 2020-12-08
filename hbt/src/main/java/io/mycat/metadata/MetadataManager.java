@@ -828,9 +828,11 @@ public class MetadataManager implements MysqlVariableService {
     public boolean checkVaildNormalRoute(Set<String> tableNames) {
         Set<String> targets = new HashSet<>();
         for (String tableName : tableNames) {
-            targets.add(normalTables.get(tableName, false).getTargetName());
-            if (targets.size() > 1) {
-                return false;
+            DataNode dataNode = normalTables.get(tableName, false);
+            if (dataNode != null) {
+                if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
+                    return false;
+                }
             }
         }
         return targets.size() == 1;
