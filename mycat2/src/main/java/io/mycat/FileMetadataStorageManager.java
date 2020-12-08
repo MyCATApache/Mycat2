@@ -154,11 +154,11 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
         if (routerConfig.getDatasources().isEmpty()) {
             DatasourceConfig datasourceConfig = new DatasourceConfig();
-            datasourceConfig.setDbType("jdbc");
+            datasourceConfig.setDbType("mysql");
             datasourceConfig.setUser("root");
             datasourceConfig.setPassword("123456");
             datasourceConfig.setName("prototypeDs");
-            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC");
+            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306");
             routerConfig.getDatasources().add(datasourceConfig);
         }
         if (routerConfig.getClusters().isEmpty()) {

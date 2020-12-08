@@ -44,6 +44,7 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.NameMap;
+import io.mycat.util.Pair;
 import io.mycat.util.SplitUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -62,7 +63,7 @@ import java.util.stream.StreamSupport;
  **/
 public class MetadataManager implements MysqlVariableService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
-    final ConcurrentHashMap<String, SchemaHandler> schemaMap = new ConcurrentHashMap<>();
+    final NameMap<SchemaHandler> schemaMap = new NameMap<>();
     final LoadBalanceManager loadBalanceManager;
     final SequenceGenerator sequenceGenerator;
     final ReplicaSelectorRuntime replicaSelectorRuntime;
@@ -74,7 +75,6 @@ public class MetadataManager implements MysqlVariableService {
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
-    private final NameMap<DataNode> normalTables;
 
 
     public void removeSchema(String schemaName) {
@@ -93,7 +93,7 @@ public class MetadataManager implements MysqlVariableService {
     public void removeTable(String schemaName, String tableName) {
         SchemaHandler schemaHandler = schemaMap.get(schemaName);
         if (schemaHandler != null) {
-            Map<String, TableHandler> stringLogicTableConcurrentHashMap = schemaMap.get(schemaName).logicTables();
+            NameMap<TableHandler> stringLogicTableConcurrentHashMap = schemaMap.get(schemaName).logicTables();
             if (stringLogicTableConcurrentHashMap != null) {
                 stringLogicTableConcurrentHashMap.remove(tableName);
             }
@@ -224,17 +224,6 @@ public class MetadataManager implements MysqlVariableService {
                 );
             }
         }
-        this.normalTables = new NameMap<>();
-        for (SchemaHandler value : this.schemaMap.values()) {
-            Map<String, TableHandler> stringTableHandlerMap = value.logicTables();
-            for (Map.Entry<String, TableHandler> stringTableHandlerEntry : stringTableHandlerMap.entrySet()) {
-                if (stringTableHandlerEntry.getValue().getType() == LogicTableType.NORMAL) {
-                    NormalTableHandler handlerEntryValue = (NormalTableHandler) stringTableHandlerEntry.getValue();
-                    normalTables.put(stringTableHandlerEntry.getKey(), handlerEntryValue.getDataNode());
-                }
-            }
-        }
-
     }
 
     private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {
@@ -419,8 +408,7 @@ public class MetadataManager implements MysqlVariableService {
         String schemaName = logicTable.getSchemaName();
         String tableName = logicTable.getTableName();
         String createTableSQL = logicTable.getCreateTableSQL();
-        Map<String, TableHandler> tableMap;
-        tableMap = schemaMap.get(schemaName).logicTables();
+        NameMap<TableHandler> tableMap = schemaMap.get(schemaName).logicTables();
         tableMap.put(tableName, logicTable);
         try {
             accrptDDL(schemaName, createTableSQL);
@@ -801,7 +789,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public boolean containsSchema(String name) {
-        return schemaMap.containsKey(Objects.requireNonNull(name));
+        return schemaMap.containsKey(Objects.requireNonNull(name), false);
     }
 
     @Override
@@ -825,13 +813,25 @@ public class MetadataManager implements MysqlVariableService {
         return (int) c;
     }
 
-    public boolean checkVaildNormalRoute(Set<String> tableNames) {
+    public boolean checkVaildNormalRoute(Set<Pair<String, String>> tableNames, NameMap<NormalTable> tables) {
+        NameMap<SchemaHandler> schemaMap1 = getSchemaMap();
         Set<String> targets = new HashSet<>();
-        for (String tableName : tableNames) {
-            DataNode dataNode = normalTables.get(tableName, false);
-            if (dataNode != null) {
-                if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
-                    return false;
+        for (Pair<String, String> tableName : tableNames) {
+            SchemaHandler schemaHandler = schemaMap1.get(tableName.getKey(), false);
+            if (schemaHandler != null) {
+                NameMap<TableHandler> logicTables = schemaHandler.logicTables();
+                if (logicTables != null) {
+                    TableHandler tableHandler = logicTables.get(tableName.getValue(), false);
+                    if (tableHandler != null && tableHandler.getType() == LogicTableType.NORMAL) {
+                        NormalTable tableHandler1 = (NormalTable) tableHandler;
+                        tables.put(tableHandler.getTableName(),tableHandler1);
+                        DataNode dataNode = tableHandler1.getDataNode();
+                        if (dataNode != null) {
+                            if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
+                                return false;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -861,8 +861,8 @@ public class MetadataManager implements MysqlVariableService {
         return Optional.ofNullable(schemaMap).map(i -> i.get(schemaName)).map(i -> i.logicTables().get(tableName)).orElse(null);
     }
 
-    public Map<String, SchemaHandler> getSchemaMap() {
-        return (Map) schemaMap;
+    public NameMap<SchemaHandler> getSchemaMap() {
+        return (NameMap) schemaMap;
     }
 
     public List<String> showDatabases() {
@@ -891,7 +891,4 @@ public class MetadataManager implements MysqlVariableService {
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
-    public NameMap<DataNode> getNormalTables() {
-        return normalTables;
-    }
 }

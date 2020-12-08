@@ -13,12 +13,13 @@ import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.NormalTable;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.NameMap;
+import io.mycat.util.Pair;
 import io.mycat.util.Response;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
@@ -26,20 +27,21 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
         try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
             ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, response, datasourceFactory);
             SQLSelectStatement selectStatement = request.getAst();
-            Set<String> tableNames = new HashSet<>();
+            Set<Pair<String, String>> tableNames = new HashSet<>();
             selectStatement.accept(new MySqlASTVisitorAdapter() {
                 @Override
                 public boolean visit(SQLExprTableSource x) {
                     String tableName = x.getTableName();
                     if (tableName != null) {
-                        tableNames.add(SQLUtils.normalize(tableName));
+                        String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
+                        tableNames.add(Pair.of(schema, SQLUtils.normalize(tableName)));
                     }
                     return super.visit(x);
                 }
             });
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-            if (metadataManager.checkVaildNormalRoute(tableNames)) {
-                NameMap<DataNode> normalTables = metadataManager.getNormalTables();
+            NameMap<NormalTable> normalTables = new NameMap<>();
+            if (metadataManager.checkVaildNormalRoute(tableNames, normalTables)) {
                 String[] targetName = new String[1];
                 selectStatement.accept(new MySqlASTVisitorAdapter() {
                     @Override
@@ -47,15 +49,21 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                         String tableName = x.getTableName();
                         if (tableName != null) {
                             tableName = SQLUtils.normalize(tableName);
-                            DataNode dataNode = normalTables.get(tableName, false);
-                            x.setSimpleName(dataNode.getTable());
-                            x.setSchema(dataNode.getSchema());
-                            targetName[0] = dataNode.getTargetName();
+                            NormalTable normalTable = normalTables.get(tableName);
+                            if (normalTable != null) {
+                                String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
+                                if(normalTable.getSchemaName().equalsIgnoreCase(schema)){
+                                    DataNode dataNode = normalTable.getDataNode();
+                                    x.setSimpleName(dataNode.getTable());
+                                    x.setSchema(dataNode.getSchema());
+                                    targetName[0] = dataNode.getTargetName();
+                                }
+                            }
                         }
                         return super.visit(x);
                     }
                 });
-                response.proxySelect(targetName[0],selectStatement.toString());
+                response.proxySelect(targetName[0], selectStatement.toString());
             } else {
                 DrdsRunners.runOnDrds(dataContext, selectStatement, responseExecutorImplementor);
             }
