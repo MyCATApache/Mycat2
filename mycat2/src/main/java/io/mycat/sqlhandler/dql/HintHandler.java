@@ -106,10 +106,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
                        sqlResultSetService.snapshot().toStringList()
                                .forEach(c->resultSetBuilder.addObjectRowPayload(Arrays.asList(c)));
-                        response.sendResultSet(resultSetBuilder.build());
-                    }else {
-                        response.sendResultSet(resultSetBuilder.build());
                     }
+                    response.sendResultSet(resultSetBuilder.build());
                     return;
                 }
                 if ("dropSqlCache".equalsIgnoreCase(cmd)) {

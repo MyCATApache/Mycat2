@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import io.mycat.config.*;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -199,6 +200,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     }
 
     @EqualsAndHashCode
+    @Data
     public static class State {
         final Map<String, Set<String>> replica = new HashMap<>();
         String configTimestamp = null;
@@ -319,7 +321,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         String fileName = i.getName() + ".sqlcache." + suffix;
                         ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
                         String t = readerWriterBySuffix.transformation(i);
-                        Path filePath = clustersPath.resolve(fileName);
+                        Path filePath = sqlcaches.resolve(fileName);
                         writeFile(t, filePath);
                     }
                     State state = FileMetadataStorageManager.this.state;
