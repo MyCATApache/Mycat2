@@ -26,6 +26,7 @@ import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.slf4j.Logger;
@@ -33,12 +34,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
 public class SqlResultSetService implements Closeable, Dumpable {
-    final ConcurrentHashMap<String, SqlCacheTask> cacheConfigMap = new ConcurrentHashMap<>();
+    final HashMap<String, SqlCacheTask> cacheConfigMap = new HashMap<>();
     final Cache<SQLSelectStatement, Object[]> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     final static Logger log = LoggerFactory.getLogger(SqlResultSetService.class);
 
@@ -85,7 +87,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 mycatWorker.execute(() -> {
                     try {
                         cache.invalidate(sqlSelectStatement);
-                        get(sqlSelectStatement);
+                        loadResultSet(sqlSelectStatement);
                     } catch (Throwable throwable) {
                         log.error("", throwable);
                     }
@@ -93,14 +95,14 @@ public class SqlResultSetService implements Closeable, Dumpable {
             } catch (Throwable throwable) {
                 log.error("", throwable);
             }
-        }, sqlCache.getInitialDelay(),sqlCache.getRefreshInterval(), timeUnit);
+        }, sqlCache.getInitialDelay(), sqlCache.getRefreshInterval(), timeUnit);
         cacheConfigMap.put(sqlCache.getName(),
                 new SqlCacheTask(sqlSelectStatement, sqlCache, scheduledFuture)
         );
     }
 
     @Override
-    public Dumper snapshot() {
+    public synchronized Dumper snapshot() {
         Dumper dumper = Dumper.create();
         cacheConfigMap.values().stream().map(i -> {
             String baseInfo = i.sqlCache.toString();
@@ -127,63 +129,78 @@ public class SqlResultSetService implements Closeable, Dumpable {
     }
 
     public Optional<RowBaseIterator> get(SQLSelectStatement sqlSelectStatement) {
-        try {
-            Object[] objects = cache.get(sqlSelectStatement, new Callable<Object[]>() {
-                @Override
-                public Object[] call() throws Exception {
-                    Object[] pair = new Object[2];
-                    MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
-                    try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
-                        TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-                        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
-                            @Override
-                            public void implementRoot(MycatRel rel, List<String> aliasList) {
-                                if (rel instanceof MycatInsertRel) {
-                                    return;
-                                }
-                                if (rel instanceof MycatUpdateRel) {
-                                    return;
-                                }
-                                Executor executor = rel.implement(this);
-                                RelDataType rowType = rel.getRowType();
-                                EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
-                                        Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
-                                });
-                                executor.open();
-                                try {
-                                    MycatRowMetaData metaData = rowIterator.getMetaData();
-                                    CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
-                                    int columnCount = metaData.getColumnCount();
-                                    ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
-                                    while (rowIterator.next()) {
-                                        Object[] row = new Object[columnCount];
-                                        for (int i = 0; i < columnCount; i++) {
-                                            row[i] = rowIterator.getObject(i + 1);
-                                            builder.add(row);
-                                        }
-                                    }
-                                    ImmutableList<Object[]> objects = builder.build();
-                                    pair[0] = mycatRowMetaData;
-                                    pair[1] = objects;
-                                }finally {
-                                    executor.close();
-                                }
-                            }
-                        };
-                        DrdsRunners.runOnDrds(context, sqlSelectStatement, executorImplementor);
-                    } finally {
-                        context.close();
-                    }
-                    return pair;
-                }
-            });
+        if (cacheConfigMap.isEmpty()){
+            return Optional.empty();
+        }
+        ConcurrentMap<SQLSelectStatement, Object[]> map = cache.asMap();
+        Object[] objects;
+        if (!map.containsKey(sqlSelectStatement)) {
+            return Optional.empty();
+        }
+        objects = cache.getIfPresent(sqlSelectStatement);
+        if (objects == null) {
+            objects = loadResultSet(sqlSelectStatement);
+        }
+        if (objects != null) {
             ResultSetBuilder.DefObjectRowIteratorImpl rowIterator =
                     new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], ((List<Object[]>) objects[1]).iterator());
             return Optional.of(rowIterator);
-        } catch (ExecutionException e) {
-            log.error("can not get cache sql:{}", sqlSelectStatement, e);
+        } else {
             return Optional.empty();
         }
+    }
+
+    @SneakyThrows
+    private Object[] loadResultSet(SQLSelectStatement sqlSelectStatement) {
+        return cache.get(sqlSelectStatement, new Callable<Object[]>() {
+            @Override
+            public Object[] call() throws Exception {
+                Object[] pair = new Object[2];
+                MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+                try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
+                    TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
+                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
+                        @Override
+                        public void implementRoot(MycatRel rel, List<String> aliasList) {
+                            if (rel instanceof MycatInsertRel) {
+                                return;
+                            }
+                            if (rel instanceof MycatUpdateRel) {
+                                return;
+                            }
+                            Executor executor = rel.implement(this);
+                            RelDataType rowType = rel.getRowType();
+                            EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
+                                    Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
+                            });
+                            executor.open();
+                            try {
+                                MycatRowMetaData metaData = rowIterator.getMetaData();
+                                CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
+                                int columnCount = metaData.getColumnCount();
+                                ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
+                                while (rowIterator.next()) {
+                                    Object[] row = new Object[columnCount];
+                                    for (int i = 0; i < columnCount; i++) {
+                                        row[i] = rowIterator.getObject(i + 1);
+                                        builder.add(row);
+                                    }
+                                }
+                                ImmutableList<Object[]> objects1 = builder.build();
+                                pair[0] = mycatRowMetaData;
+                                pair[1] = objects1;
+                            } finally {
+                                executor.close();
+                            }
+                        }
+                    };
+                    DrdsRunners.runOnDrds(context, sqlSelectStatement, executorImplementor);
+                } finally {
+                    context.close();
+                }
+                return pair;
+            }
+        });
     }
 
     @Override
