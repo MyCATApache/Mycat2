@@ -79,13 +79,13 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         Path datasources = baseDirectory.resolve("datasources");
         Path users = baseDirectory.resolve("users");
         Path sequences = baseDirectory.resolve("sequences");
-
+        Path sqlcaches = baseDirectory.resolve("sqlcaches");
         if (Files.notExists(schemasPath)) Files.createDirectory(schemasPath);
         if (Files.notExists(clustersPath)) Files.createDirectory(clustersPath);
         if (Files.notExists(datasources)) Files.createDirectory(datasources);
         if (Files.notExists(users)) Files.createDirectory(users);
         if (Files.notExists(sequences)) Files.createDirectory(sequences);
-
+        if (Files.notExists(sqlcaches)) Files.createDirectory(sqlcaches);
 //        if (Files.notExists(mycatPath)) {
 //            writeFile(getConfigReaderWriter(mycatPath).transformation(new MycatRouterConfig()),mycatPath);
 //        }
@@ -95,6 +95,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         Stream<Path> datasourcePaths = Files.list(baseDirectory.resolve("datasources")).filter(i -> isSuffix(i, "datasource"));
         Stream<Path> userPaths = Files.list(baseDirectory.resolve("users")).filter(i -> isSuffix(i, "user"));
         Stream<Path> sequencePaths = Files.list(baseDirectory.resolve("sequences")).filter(i -> isSuffix(i, "sequence"));
+        Stream<Path> sqlcachePaths = Files.list(baseDirectory.resolve("sqlcaches")).filter(i -> isSuffix(i, "sqlcache"));
 
         MycatRouterConfig routerConfig = new MycatRouterConfig();
 
@@ -126,11 +127,17 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             return configReaderWriter.transformation(readString(i), SequenceConfig.class);
         }).distinct().collect(Collectors.toList());
 
+        List<SqlCacheConfig> cacheConfigs = sqlcachePaths.map(i -> {
+            ConfigReaderWriter configReaderWriter = getConfigReaderWriter(i);
+            return configReaderWriter.transformation(readString(i), SqlCacheConfig.class);
+        }).distinct().collect(Collectors.toList());
+
         routerConfig.getSchemas().addAll(logicSchemaConfigs);
         routerConfig.getClusters().addAll(clusterConfigs);
         routerConfig.getDatasources().addAll(datasourceConfigs);
         routerConfig.getUsers().addAll(userConfigs);
         routerConfig.getSequences().addAll(sequenceConfigs);
+        routerConfig.getSqlCacheConfigs().addAll(cacheConfigs);
 
         defaultConfig(routerConfig);
 
@@ -240,6 +247,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     Path datasources = baseDirectory.resolve("datasources");
                     Path users = baseDirectory.resolve("users");
                     Path sequences = baseDirectory.resolve("sequences");
+                    Path sqlcaches = baseDirectory.resolve("sqlcaches");
 
                     if (routerConfig.isUpdateSchemas()) {
                         cleanDirectory(schemasPath);
@@ -256,6 +264,10 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                     if (routerConfig.isUpdateSequences()) {
                         cleanDirectory(sequences);
                     }
+                    if (routerConfig.isUpdateSqlCaches()) {
+                        cleanDirectory(sqlcaches);
+                    }
+
 //
 
 
@@ -303,7 +315,13 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         Path filePath = clustersPath.resolve(fileName);
                         writeFile(t, filePath);
                     }
-
+                    for (SqlCacheConfig i : Optional.ofNullable(routerConfig.getSqlCaches()).orElse(Collections.emptyList())) {
+                        String fileName = i.getName() + ".sqlcache." + suffix;
+                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+                        String t = readerWriterBySuffix.transformation(i);
+                        Path filePath = clustersPath.resolve(fileName);
+                        writeFile(t, filePath);
+                    }
                     State state = FileMetadataStorageManager.this.state;
                     state.configTimestamp = LocalDateTime.now().toString();
 

@@ -27,6 +27,7 @@ public class ConfigPrepareExecuter {
     private MetadataStorageManager metadataStorageManager;
     private SequenceGenerator sequenceGenerator;
 
+
     private String datasourceProvider;
 //    UpdateType updateType = UpdateType.FULL;
 
@@ -107,6 +108,8 @@ public class ConfigPrepareExecuter {
                 break;
             }
 
+            case SQL_CACHE:
+                break;
             case RESET:
                 MycatRouterConfig routerConfig = new MycatRouterConfig();
                 FileMetadataStorageManager.defaultConfig(routerConfig);

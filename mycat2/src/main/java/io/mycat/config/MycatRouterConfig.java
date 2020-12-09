@@ -15,5 +15,6 @@ public class MycatRouterConfig {
     public List<DatasourceConfig> datasources = new ArrayList<>();// datasources/xxx.datasource.yml
     public List<UserConfig> users =  new ArrayList<>();// users/xxx.user.yml
     public List<SequenceConfig> sequences =  new ArrayList<>();// sequences/xxx.sequence.yml
+    public List<SqlCacheConfig> sqlCacheConfigs = new ArrayList<>();
     public String prototype ="prototype";// mycat.yml
 }

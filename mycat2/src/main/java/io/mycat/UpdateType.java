@@ -7,5 +7,6 @@ public enum UpdateType {
         CREATE_TABLE,
         DROP_TABLE,
         FULL,
+        SQL_CACHE,
         RESET
     }

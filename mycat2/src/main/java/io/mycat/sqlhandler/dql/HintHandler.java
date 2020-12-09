@@ -77,6 +77,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendOk();
                     return;
                 }
+                if ("cache".equalsIgnoreCase(cmd)) {
+                    MycatRouterConfigOps ops = ConfigUpdater.getOps();
+                    ops.reset();
+                    ops.commit();
+                    response.sendOk();
+                    return;
+                }
                 if ("showBufferUsage".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
                     builder.addColumnInfo("bufferUsage", JDBCType.BIGINT);

@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 
 public class MycatRouterConfigOps implements AutoCloseable {
-    private  MycatRouterConfig mycatRouterConfig;
+    private MycatRouterConfig mycatRouterConfig;
     private final ConfigOps configOps;
     List<LogicSchemaConfig> schemas = null;
     List<ClusterConfig> clusters = null;
@@ -21,6 +21,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     List<DatasourceConfig> datasources = null;
     //    String prototype = null;
     UpdateType updateType = UpdateType.FULL;
+    List<SqlCacheConfig> sqlCaches = null;
 
     String tableName;
     String schemaName;
@@ -40,6 +41,10 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public boolean isUpdateSequences() {
         return sequences != null;
+    }
+
+    public boolean isUpdateSqlCaches() {
+        return sqlCaches != null;
     }
 
     public boolean isUpdateDatasources() {
@@ -336,7 +341,20 @@ public class MycatRouterConfigOps implements AutoCloseable {
         updateType = UpdateType.FULL;
     }
 
+    public void putSqlCache(SqlCacheConfig sqlCacheConfig) {
+        this.sqlCaches = mycatRouterConfig.getSqlCacheConfigs();
+        Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> sqlCacheConfig.getName().equals(i.getName())).findFirst();
+        first.ifPresent(sqlCaches::remove);
+        this.sqlCaches.add(sqlCacheConfig);
+        updateType = UpdateType.SQL_CACHE;
+    }
 
+    public void removeSqlCache(String cacheName) {
+        this.sqlCaches =  mycatRouterConfig.getSqlCacheConfigs();
+        Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> cacheName.equals(i.getName())).findFirst();
+        first.ifPresent(sqlCaches::remove);
+        updateType = UpdateType.SQL_CACHE;
+    }
     public List<ClusterConfig> getClusters() {
         return clusters;
     }
@@ -360,7 +378,12 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public List<LogicSchemaConfig> getSchemas() {
         return schemas;
     }
-//
+
+    public List<SqlCacheConfig> getSqlCaches() {
+        return sqlCaches;
+    }
+
+    //
 //    public String getPrototype() {
 //        return prototype;
 //    }
@@ -419,6 +442,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
         this.users = Collections.emptyList();
         this.sequences = Collections.emptyList();
         this.datasources = Collections.emptyList();
+        this.sqlCaches = Collections.emptyList();
         this.mycatRouterConfig = new MycatRouterConfig();
         FileMetadataStorageManager.defaultConfig(this.mycatRouterConfig);
     }
