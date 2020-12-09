@@ -1,7 +1,7 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.fastsql.sql.ast.SQLCommentHint;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlHintStatement;
 import io.mycat.*;
 import io.mycat.beans.MySQLDatasource;
@@ -25,19 +25,17 @@ import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.sqlhandler.*;
-import io.mycat.sqlhandler.ddl.CreateTableSQLHandler;
+import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.ConfigUpdater;
+import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.SqlHints;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Response;
-import oshi.demo.Json;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
@@ -77,9 +75,22 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendOk();
                     return;
                 }
-                if ("cache".equalsIgnoreCase(cmd)) {
+                if ("createCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
-                    ops.reset();
+                    SQLStatement sqlStatement = ast.getHintStatements().get(0);
+                    SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
+                    if (sqlCacheConfig.getSql() == null && sqlStatement != null) {
+                        sqlCacheConfig.setSql(sqlStatement.toString());
+                    }
+                    ops.putSqlCache(sqlCacheConfig);
+                    ops.commit();
+                    response.sendOk();
+                    return;
+                }
+                if ("dropCache".equalsIgnoreCase(cmd)) {
+                    MycatRouterConfigOps ops = ConfigUpdater.getOps();
+                    SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
+                    ops.removeSqlCache(sqlCacheConfig.getName());
                     ops.commit();
                     response.sendOk();
                     return;
@@ -703,7 +714,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendResultSet(() -> builder.build());
                     return;
                 }
-                mycatDmlHandler(cmd, body,ast);
+                mycatDmlHandler(cmd, body, ast);
                 response.sendOk();
                 return;
             }

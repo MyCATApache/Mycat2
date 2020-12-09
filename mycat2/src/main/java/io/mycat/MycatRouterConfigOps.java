@@ -21,7 +21,9 @@ public class MycatRouterConfigOps implements AutoCloseable {
     List<DatasourceConfig> datasources = null;
     //    String prototype = null;
     UpdateType updateType = UpdateType.FULL;
+
     List<SqlCacheConfig> sqlCaches = null;
+    SqlCacheConfig sqlCache = null;
 
     String tableName;
     String schemaName;
@@ -344,16 +346,22 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putSqlCache(SqlCacheConfig sqlCacheConfig) {
         this.sqlCaches = mycatRouterConfig.getSqlCacheConfigs();
         Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> sqlCacheConfig.getName().equals(i.getName())).findFirst();
-        first.ifPresent(sqlCaches::remove);
+        first.ifPresent(o -> {
+            sqlCaches.remove(o);
+            this.sqlCache = o;
+        });
         this.sqlCaches.add(sqlCacheConfig);
-        updateType = UpdateType.SQL_CACHE;
+        updateType = UpdateType.CREATE_SQL_CACHE;
     }
 
     public void removeSqlCache(String cacheName) {
         this.sqlCaches =  mycatRouterConfig.getSqlCacheConfigs();
         Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> cacheName.equals(i.getName())).findFirst();
-        first.ifPresent(sqlCaches::remove);
-        updateType = UpdateType.SQL_CACHE;
+        first.ifPresent(o -> {
+            sqlCaches.remove(o);
+            this.sqlCache = o;
+        });
+        updateType = UpdateType.DROP_SQL_CACHE;
     }
     public List<ClusterConfig> getClusters() {
         return clusters;
