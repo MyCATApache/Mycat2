@@ -31,10 +31,6 @@ public class CommandResolver {
     public static void handle(MycatSession mycat, MySQLPacket curPacket,
                               CommandDispatcher commandHandler) {
         MycatMonitor.onCommandStart(mycat);
-        //////////////////////////////////apply transaction///////////////////////////////////
-        TransactionSession transactionSession = mycat.getDataContext().getTransactionSession();
-        transactionSession.doAction();
-        //////////////////////////////////////////////////////////////////////////////////////
         try {
             boolean isEmptyPayload = curPacket.readFinished();
             if (isEmptyPayload) {

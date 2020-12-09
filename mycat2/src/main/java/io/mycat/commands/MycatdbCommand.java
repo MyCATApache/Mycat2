@@ -9,6 +9,7 @@ import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.MycatDataContext;
 import io.mycat.ReceiverImpl;
+import io.mycat.TransactionSession;
 import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.ExecutorImplementor;
 import io.mycat.hbt4.ResponseExecutorImplementor;
@@ -127,6 +128,11 @@ public enum MycatdbCommand {
                 receiver = new ReceiverImpl(session, statements.size(), false, false);
             }
             for (SQLStatement sqlStatement : statements) {
+                //////////////////////////////////apply transaction///////////////////////////////////
+                TransactionSession transactionSession = dataContext.getTransactionSession();
+                transactionSession.doAction();
+                //////////////////////////////////////////////////////////////////////////////////////
+
                 execute(dataContext, receiver, sqlStatement);
             }
         } catch (Throwable e) {
