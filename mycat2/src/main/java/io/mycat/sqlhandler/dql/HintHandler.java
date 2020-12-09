@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLCommentHint;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlHintStatement;
@@ -7,6 +8,7 @@ import io.mycat.*;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
@@ -78,16 +80,23 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     SQLStatement sqlStatement =null;
-                    if (ast.getHintStatements().size() == 1){
+                    if (ast.getHintStatements()!=null&&ast.getHintStatements().size() == 1){
                         sqlStatement = ast.getHintStatements().get(0);
                     }
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
                     if (sqlCacheConfig.getSql() == null && sqlStatement != null) {
                         sqlCacheConfig.setSql(sqlStatement.toString());
                     }
+
                     ops.putSqlCache(sqlCacheConfig);
                     ops.commit();
-                    response.sendOk();
+
+                    if (sqlStatement==null){
+                        String sql = sqlCacheConfig.getSql();
+                        sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+                    }
+
+                    MycatdbCommand.execute(dataContext,response,sqlStatement);
                     return;
                 }
                 if ("showSqlCaches".equalsIgnoreCase(cmd)) {

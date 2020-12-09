@@ -343,20 +343,25 @@ public class MycatRouterConfigOps implements AutoCloseable {
         updateType = UpdateType.FULL;
     }
 
-    public void putSqlCache(SqlCacheConfig sqlCacheConfig) {
+    public void putSqlCache(SqlCacheConfig currentSqlCacheConfig) {
         this.sqlCaches = mycatRouterConfig.getSqlCacheConfigs();
-        Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> sqlCacheConfig.getName().equals(i.getName())).findFirst();
+        Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> currentSqlCacheConfig.getName().equals(i.getName())).findFirst();
         first.ifPresent(o -> {
             sqlCaches.remove(o);
-            this.sqlCache = o;
+            this.sqlCache = currentSqlCacheConfig;
         });
-        this.sqlCaches.add(sqlCacheConfig);
+        this.sqlCaches.add(currentSqlCacheConfig);
+        this.sqlCache = currentSqlCacheConfig;
         updateType = UpdateType.CREATE_SQL_CACHE;
     }
 
     public void removeSqlCache(String cacheName) {
+        Optional<SqlCacheConfig> first = mycatRouterConfig.getSqlCacheConfigs()
+                .stream().filter(i -> cacheName.equals(i.getName())).findFirst();
+        if (!first.isPresent()){
+            return;
+        }
         this.sqlCaches =  mycatRouterConfig.getSqlCacheConfigs();
-        Optional<SqlCacheConfig> first = this.sqlCaches.stream().filter(i -> cacheName.equals(i.getName())).findFirst();
         first.ifPresent(o -> {
             sqlCaches.remove(o);
             this.sqlCache = o;

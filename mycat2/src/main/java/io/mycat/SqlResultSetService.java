@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-public class SqlResultSetService implements Closeable,Dumpable {
+public class SqlResultSetService implements Closeable, Dumpable {
     final ConcurrentHashMap<String, SqlCacheTask> cacheConfigMap = new ConcurrentHashMap<>();
     final Cache<SQLSelectStatement, Object[]> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     final static Logger log = LoggerFactory.getLogger(SqlResultSetService.class);
@@ -74,7 +74,7 @@ public class SqlResultSetService implements Closeable,Dumpable {
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
         String sql = sqlCache.getSql();
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        if (sqlStatement instanceof SQLSelectStatement) {
+        if (!(sqlStatement instanceof SQLSelectStatement)) {
             throw new MycatException("sql:{} not query statement", sql);
         }
         SQLSelectStatement sqlSelectStatement = (SQLSelectStatement) sqlStatement;
@@ -83,13 +83,17 @@ public class SqlResultSetService implements Closeable,Dumpable {
                 MycatWorkerProcessor processor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 NameableExecutor mycatWorker = processor.getMycatWorker();
                 mycatWorker.execute(() -> {
-                    cache.invalidate(sqlSelectStatement);
-                    get(sqlSelectStatement);
+                    try {
+                        cache.invalidate(sqlSelectStatement);
+                        get(sqlSelectStatement);
+                    } catch (Throwable throwable) {
+                        log.error("", throwable);
+                    }
                 });
             } catch (Throwable throwable) {
                 log.error("", throwable);
             }
-        }, sqlCache.getRefreshInterval(), sqlCache.getInitialDelay(), timeUnit);
+        }, sqlCache.getInitialDelay(),sqlCache.getRefreshInterval(), timeUnit);
         cacheConfigMap.put(sqlCache.getName(),
                 new SqlCacheTask(sqlSelectStatement, sqlCache, scheduledFuture)
         );
@@ -98,8 +102,12 @@ public class SqlResultSetService implements Closeable,Dumpable {
     @Override
     public Dumper snapshot() {
         Dumper dumper = Dumper.create();
-        cacheConfigMap.values().stream().map(i->i.sqlCache.toString())
-                .forEach(c->dumper.addText(c));
+        cacheConfigMap.values().stream().map(i -> {
+            String baseInfo = i.sqlCache.toString();
+            boolean hasCache = null != cache.getIfPresent(i.getSqlSelectStatement());
+            return baseInfo + " hasCache:" + hasCache;
+        })
+                .forEach(dumper::addText);
         return dumper;
     }
 
@@ -119,30 +127,30 @@ public class SqlResultSetService implements Closeable,Dumpable {
     }
 
     public Optional<RowBaseIterator> get(SQLSelectStatement sqlSelectStatement) {
-        Object[] rowBaseIterator = cache.getIfPresent(sqlSelectStatement);
-        if (rowBaseIterator != null) {
-            try {
-                Object[] objects = cache.get(sqlSelectStatement, new Callable<Object[]>() {
-                    @Override
-                    public Object[] call() throws Exception {
-                        Object[] pair = new Object[2];
-                        MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
-                        try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
-                            TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-                            ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
-                                @Override
-                                public void implementRoot(MycatRel rel, List<String> aliasList) {
-                                    if (rel instanceof MycatInsertRel) {
-                                        return;
-                                    }
-                                    if (rel instanceof MycatUpdateRel) {
-                                        return;
-                                    }
-                                    Executor executor = rel.implement(this);
-                                    RelDataType rowType = rel.getRowType();
-                                    EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
-                                            Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
-                                    });
+        try {
+            Object[] objects = cache.get(sqlSelectStatement, new Callable<Object[]>() {
+                @Override
+                public Object[] call() throws Exception {
+                    Object[] pair = new Object[2];
+                    MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+                    try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
+                        TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
+                        ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
+                            @Override
+                            public void implementRoot(MycatRel rel, List<String> aliasList) {
+                                if (rel instanceof MycatInsertRel) {
+                                    return;
+                                }
+                                if (rel instanceof MycatUpdateRel) {
+                                    return;
+                                }
+                                Executor executor = rel.implement(this);
+                                RelDataType rowType = rel.getRowType();
+                                EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
+                                        Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
+                                });
+                                executor.open();
+                                try {
                                     MycatRowMetaData metaData = rowIterator.getMetaData();
                                     CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
                                     int columnCount = metaData.getColumnCount();
@@ -157,23 +165,23 @@ public class SqlResultSetService implements Closeable,Dumpable {
                                     ImmutableList<Object[]> objects = builder.build();
                                     pair[0] = mycatRowMetaData;
                                     pair[1] = objects;
+                                }finally {
+                                    executor.close();
                                 }
-                            };
-                            DrdsRunners.runOnDrds(context, sqlSelectStatement, executorImplementor);
-                        } finally {
-                            context.close();
-                        }
-                        return pair;
+                            }
+                        };
+                        DrdsRunners.runOnDrds(context, sqlSelectStatement, executorImplementor);
+                    } finally {
+                        context.close();
                     }
-                });
-                ResultSetBuilder.DefObjectRowIteratorImpl rowIterator =
-                        new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], ((List<Object[]>) objects[1]).iterator());
-                return Optional.ofNullable(rowIterator);
-            } catch (ExecutionException e) {
-                log.error("can not get cache sql:{}", sqlSelectStatement, e);
-                return Optional.empty();
-            }
-        } else {
+                    return pair;
+                }
+            });
+            ResultSetBuilder.DefObjectRowIteratorImpl rowIterator =
+                    new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], ((List<Object[]>) objects[1]).iterator());
+            return Optional.of(rowIterator);
+        } catch (ExecutionException e) {
+            log.error("can not get cache sql:{}", sqlSelectStatement, e);
             return Optional.empty();
         }
     }
