@@ -77,7 +77,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 }
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
-                    SQLStatement sqlStatement = ast.getHintStatements().get(0);
+                    SQLStatement sqlStatement =null;
+                    if (ast.getHintStatements().size() == 1){
+                        sqlStatement = ast.getHintStatements().get(0);
+                    }
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
                     if (sqlCacheConfig.getSql() == null && sqlStatement != null) {
                         sqlCacheConfig.setSql(sqlStatement.toString());
