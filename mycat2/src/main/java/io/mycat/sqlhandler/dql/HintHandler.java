@@ -90,7 +90,6 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 if ("showSqlCaches".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                     resultSetBuilder.addColumnInfo("info",JDBCType.VARCHAR);
-                    resultSetBuilder.addObjectRowPayload(Arrays.asList());
                     if(MetaClusterCurrent.exist(SqlResultSetService.class)){
                         SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
                        sqlResultSetService.snapshot().toStringList()
