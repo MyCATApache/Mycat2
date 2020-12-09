@@ -23,6 +23,7 @@ import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.sqlhandler.dml.DrdsRunners;
+import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Linq4j;
@@ -36,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-public class SqlResultSetService implements Closeable {
+public class SqlResultSetService implements Closeable,Dumpable {
     final ConcurrentHashMap<String, SqlCacheTask> cacheConfigMap = new ConcurrentHashMap<>();
     final Cache<SQLSelectStatement, Object[]> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     final static Logger log = LoggerFactory.getLogger(SqlResultSetService.class);
@@ -92,6 +93,14 @@ public class SqlResultSetService implements Closeable {
         cacheConfigMap.put(sqlCache.getName(),
                 new SqlCacheTask(sqlSelectStatement, sqlCache, scheduledFuture)
         );
+    }
+
+    @Override
+    public Dumper snapshot() {
+        Dumper dumper = Dumper.create();
+        cacheConfigMap.values().stream().map(i->i.sqlCache.toString())
+                .forEach(c->dumper.addText(c));
+        return dumper;
     }
 
     @Getter

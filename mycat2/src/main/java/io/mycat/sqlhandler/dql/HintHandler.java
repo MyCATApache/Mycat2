@@ -75,7 +75,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendOk();
                     return;
                 }
-                if ("createCache".equalsIgnoreCase(cmd)) {
+                if ("createSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     SQLStatement sqlStatement = ast.getHintStatements().get(0);
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
@@ -87,7 +87,21 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     response.sendOk();
                     return;
                 }
-                if ("dropCache".equalsIgnoreCase(cmd)) {
+                if ("showSqlCaches".equalsIgnoreCase(cmd)) {
+                    ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                    resultSetBuilder.addColumnInfo("info",JDBCType.VARCHAR);
+                    resultSetBuilder.addObjectRowPayload(Arrays.asList());
+                    if(MetaClusterCurrent.exist(SqlResultSetService.class)){
+                        SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+                       sqlResultSetService.snapshot().toStringList()
+                               .forEach(c->resultSetBuilder.addObjectRowPayload(Arrays.asList(c)));
+                        response.sendResultSet(resultSetBuilder.build());
+                    }else {
+                        response.sendResultSet(resultSetBuilder.build());
+                    }
+                    return;
+                }
+                if ("dropSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
                     ops.removeSqlCache(sqlCacheConfig.getName());
