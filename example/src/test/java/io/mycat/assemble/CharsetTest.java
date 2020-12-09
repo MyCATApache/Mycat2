@@ -17,7 +17,7 @@ import java.util.Map;
 @net.jcip.annotations.NotThreadSafe
 public class CharsetTest implements MycatTest {
     @Test
-    public void testShowBufferUsage() throws Exception {
+    public void testChineseCharset() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(8066);
         ) {
             execute(mycatConnection, RESET_CONFIG);
