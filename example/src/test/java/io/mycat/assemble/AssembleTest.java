@@ -46,7 +46,7 @@ public class AssembleTest implements MycatTest {
 
     private void testTranscation(Consumer<Connection> connectionFunction) throws Exception {
         try (Connection mycatConnection = getMySQLConnection(8066)) {
-            execute(mycatConnection,RESET_CONFIG);
+            execute(mycatConnection, RESET_CONFIG);
             initCluster(mycatConnection);
             connectionFunction.accept(mycatConnection);
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -86,10 +86,10 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBase() throws Exception {
-        try(Connection mycatConnection = getMySQLConnection(8066);
-            Connection mysql3306 = getMySQLConnection(3306);
-            Connection mysql3307 = getMySQLConnection(3307);){
-            execute(mycatConnection,RESET_CONFIG);
+        try (Connection mycatConnection = getMySQLConnection(8066);
+             Connection mysql3306 = getMySQLConnection(3306);
+             Connection mysql3307 = getMySQLConnection(3307);) {
+            execute(mycatConnection, RESET_CONFIG);
             execute(mysql3306, "drop database if exists db1");
             execute(mysql3306, "drop database if exists db1_0");
             execute(mysql3306, "drop database if exists db1_1");
@@ -97,6 +97,9 @@ public class AssembleTest implements MycatTest {
             execute(mysql3307, "drop database if exists db1");
             execute(mysql3307, "drop database if exists db1_0");
             execute(mysql3307, "drop database if exists db1_1");
+
+        }
+        try (Connection mycatConnection = getMySQLConnection(8066);) {
 
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
@@ -134,6 +137,10 @@ public class AssembleTest implements MycatTest {
                     executeQuery(mycatConnection,
                             "SHOW FULL TABLES FROM `db1` WHERE table_type = 'BASE TABLE';").toString().contains("travelrecord")
             );
+        }
+        try (Connection mycatConnection = getMySQLConnection(8066);
+             Connection mysql3306 = getMySQLConnection(3306);
+             Connection mysql3307 = getMySQLConnection(3307);) {
 
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select * from travelrecord limit 1").isEmpty()
@@ -245,18 +252,30 @@ public class AssembleTest implements MycatTest {
             List<Map<String, Object>> maps1 = executeQuery(mycatConnection, "select id from db1.travelrecord");
             execute(mycatConnection, "drop table db1.travelrecord");
             Assert.assertFalse(existTable(mycatConnection, "db1", "travelrecord"));
-            //////////////////////////////////////transcation/////////////////////////////////////////////
 
-            execute(mycatConnection, "set transaction_policy = proxy");
-            Assert.assertTrue(executeQuery(mycatConnection, "select @@transaction_policy").toString().contains("proxy"));
-
-            testNormalTranscation(mycatConnection);
-
-            execute(mycatConnection, "set transaction_policy = xa");
-            Assert.assertTrue(executeQuery(mycatConnection, "select @@transaction_policy").toString().contains("xa"));
-
-            testNormalTranscation(mycatConnection);
+            testNormalTranscationWrapper(mycatConnection, "set transaction_policy = xa", "xa");
         }
+    }
+    @Test
+    public void testProxyNormalTranscation() throws Exception {
+        try(Connection mySQLConnection = getMySQLConnection(8066)   ){
+            testNormalTranscationWrapper(mySQLConnection, "set transaction_policy = proxy", "proxy");
+        }
+    }
+    @Test
+    public void testXANormalTranscation() throws Exception {
+        try(Connection mySQLConnection = getMySQLConnection(8066)   ){
+            testNormalTranscationWrapper(mySQLConnection, "set transaction_policy = xa", "xa");
+
+        }
+    }
+    private void testNormalTranscationWrapper(Connection mycatConnection, String s, String proxy) throws Exception {
+        //////////////////////////////////////transcation/////////////////////////////////////////////
+
+        execute(mycatConnection, s);
+        Assert.assertTrue(executeQuery(mycatConnection, "select @@transaction_policy").toString().contains(proxy));
+
+        testProxyNormalTranscation(mycatConnection);
     }
 
     protected void initCluster(Connection mycatConnection) throws Exception {
@@ -299,7 +318,7 @@ public class AssembleTest implements MycatTest {
     }
 
     private void testInfoFunction(Connection mycatConnection) throws Exception {
-        execute(mycatConnection,RESET_CONFIG);
+        execute(mycatConnection, RESET_CONFIG);
         // show databases
         executeQuery(mycatConnection, "select database()");
 
@@ -330,8 +349,8 @@ public class AssembleTest implements MycatTest {
         executeQuery(mycatConnection, "select SESSION_USER()");
     }
 
-    private void testNormalTranscation(Connection mycatConnection) throws Exception {
-        execute(mycatConnection,RESET_CONFIG);
+    private void testProxyNormalTranscation(Connection mycatConnection) throws Exception {
+        execute(mycatConnection, RESET_CONFIG);
         addC0(mycatConnection);
         execute(mycatConnection, "CREATE DATABASE db1");
         execute(mycatConnection, "use db1");

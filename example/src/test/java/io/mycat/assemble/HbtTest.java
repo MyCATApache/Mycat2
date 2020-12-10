@@ -135,7 +135,7 @@ public class HbtTest implements MycatTest {
 
             //EXPLAIN SELECT COUNT(1) FROM db1.travelrecord;
              Assert.assertEquals("[{$f0=2}]",runHBT(
-                     "unionAll( fromSql(c1,'SELECT COUNT(*)  FROM `db1`.`travelrecord`'), fromSql(c0,'SELECT COUNT(*)  FROM (SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`) AS `t2`')).groupBy(keys(groupKey()),aggregating(count()))"
+                     "unionAll( fromSql(c0,'SELECT COUNT(*)  FROM `db1`.`travelrecord`'), fromSql(c0,'SELECT COUNT(*)  FROM (SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`) AS `t2`')).groupBy(keys(groupKey()),aggregating(count()))"
              ));
 
 

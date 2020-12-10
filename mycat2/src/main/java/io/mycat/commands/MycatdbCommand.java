@@ -1,6 +1,8 @@
 package io.mycat.commands;
 
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
@@ -120,8 +122,7 @@ public enum MycatdbCommand {
                 executeHbt(dataContext, text.substring(12), new ReceiverImpl(session, 1, false, false));
                 return;
             }
-            boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
-            if (logger.isDebugEnabled()) {
+             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
@@ -132,18 +133,6 @@ public enum MycatdbCommand {
                 receiver = new ReceiverImpl(session, statements.size(), false, false);
             }
             for (SQLStatement sqlStatement : statements) {
-                //////////////////////////////////apply transaction///////////////////////////////////
-                TransactionSession transactionSession = dataContext.getTransactionSession();
-                transactionSession.doAction();
-                //////////////////////////////////////////////////////////////////////////////////////
-                if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
-                    SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-                    Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
-                    if (baseIteratorOptional.isPresent()){
-                        receiver.sendResultSet(baseIteratorOptional.get());
-                        continue;
-                    }
-                }
                 execute(dataContext, receiver, sqlStatement);
             }
         } catch (Throwable e) {
@@ -155,7 +144,20 @@ public enum MycatdbCommand {
     }
 
     public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
-        SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+        boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
+
+        //////////////////////////////////apply transaction///////////////////////////////////
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        transactionSession.doAction();
+        //////////////////////////////////////////////////////////////////////////////////////
+        if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
+            SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+            Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+            if (baseIteratorOptional.isPresent()){
+                receiver.sendResultSet(baseIteratorOptional.get());
+                return;
+            }
+        } SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
         Class aClass = sqlStatement.getClass();
         SQLHandler instance = sqlHandlerMap.getInstance(aClass);
         if (instance != null) {
