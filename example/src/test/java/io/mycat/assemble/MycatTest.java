@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 
@@ -43,6 +44,8 @@ public interface MycatTest {
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
                 dataSource.setLoginTimeout(5);
+                dataSource.setCheckExecuteTime(true);
+                dataSource.setMaxWait(TimeUnit.SECONDS.toMillis(10));
                 return dataSource;
             }
         }).getConnection();

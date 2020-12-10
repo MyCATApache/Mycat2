@@ -1,6 +1,8 @@
 package io.mycat.commands;
 
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
@@ -155,6 +157,11 @@ public enum MycatdbCommand {
     }
 
     public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
+        //////////////////////////////////apply transaction///////////////////////////////////
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        transactionSession.doAction();
+        //////////////////////////////////////////////////////////////////////////////////////
+
         SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
         Class aClass = sqlStatement.getClass();
         SQLHandler instance = sqlHandlerMap.getInstance(aClass);

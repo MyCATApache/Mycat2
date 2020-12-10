@@ -33,4 +33,34 @@ public class PstmtAssembleTest extends AssembleTest  {
         }).getConnection();
 
     }
+
+    @Override
+    public void testTranscationFail2() throws Exception {
+        super.testTranscationFail2();
+    }
+
+    @Override
+    public void testTranscationFail() throws Exception {
+        super.testTranscationFail();
+    }
+
+    @Override
+    public void testBase() throws Exception {
+        super.testBase();
+    }
+
+    @Override
+    public void testProxyNormalTranscation() throws Exception {
+        super.testProxyNormalTranscation();
+    }
+
+    @Override
+    public void testXANormalTranscation() throws Exception {
+        super.testXANormalTranscation();
+    }
+
+    @Override
+    public void testInfoFunction() throws Exception {
+        super.testInfoFunction();
+    }
 }
