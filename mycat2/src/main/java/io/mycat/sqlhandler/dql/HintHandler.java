@@ -12,6 +12,11 @@ import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.hbt4.DataSourceFactory;
+import io.mycat.hbt4.DefaultDatasourceFactory;
+import io.mycat.hbt4.ResponseExecutorImplementor;
+import io.mycat.hbt4.executor.TempResultSetFactory;
+import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.metadata.MetadataManager;
 import io.mycat.metadata.SchemaHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -31,6 +36,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
+import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Response;
@@ -75,6 +81,16 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     ops.reset();
                     ops.commit();
                     response.sendOk();
+                    return;
+                }
+                if ("run".equalsIgnoreCase(cmd)) {
+                    Map<String,Object> map = JsonUtil.from(body, Map.class);
+                    String hbt = Objects.toString(map.get("hbt"));
+                    TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
+                    try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+                        DrdsRunners.runHbtOnDrds(dataContext, hbt,
+                                new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, response));
+                    }
                     return;
                 }
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {

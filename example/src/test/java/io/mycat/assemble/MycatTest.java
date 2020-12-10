@@ -42,6 +42,7 @@ public interface MycatTest {
                         port + "/?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
+                dataSource.setLoginTimeout(5);
                 return dataSource;
             }
         }).getConnection();
