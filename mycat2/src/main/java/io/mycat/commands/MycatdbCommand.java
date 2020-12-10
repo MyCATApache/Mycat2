@@ -1,8 +1,6 @@
 package io.mycat.commands;
 
-import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
