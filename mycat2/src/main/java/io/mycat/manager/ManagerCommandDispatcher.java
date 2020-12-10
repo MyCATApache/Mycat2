@@ -47,7 +47,7 @@ public class ManagerCommandDispatcher extends DefaultCommandHandler {
             original = original.endsWith(";") ? original.substring(0, original.length() - 1) : original;
 
             /////////////////////////////////////////////////////////////////////////////////
-            MycatRequest mycatRequest = new MycatRequest(session.sessionId(), original, new HashMap<>(), null);
+            MycatRequest mycatRequest = new MycatRequest(session.sessionId(), original, new HashMap<>());
 
             ReceiverImpl receiver = new ReceiverImpl(session, 1, false, false);
 

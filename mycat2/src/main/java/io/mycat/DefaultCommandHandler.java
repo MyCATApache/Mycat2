@@ -25,7 +25,6 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
-import io.mycat.client.InterceptorRuntime;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.UserConfig;
@@ -80,12 +79,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            Boolean hasRun = Optional.ofNullable(
-                    MetaClusterCurrent.exist(InterceptorRuntime.class)?
-                            MetaClusterCurrent.wrapper(InterceptorRuntime.class):null)
-                    .map(i -> i.getUserSpace(session.getUser().getUserName()))
-                    .map(i -> i.execute(ByteBuffer.wrap(bytes), session))
-                    .orElse(false);
+            Boolean hasRun = false;
             if (!hasRun) {
                 MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session, session.getDataContext());
                 return;
