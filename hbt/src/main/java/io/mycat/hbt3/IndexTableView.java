@@ -19,6 +19,7 @@ public class IndexTableView extends AbstractRelNode implements MycatRel {
         super(input.getCluster(), input.getCluster().traitSetOf(MycatConvention.INSTANCE));
         this.input = input;
         this.rows = rows;
+        this.rowType = input.getRowType();
     }
 
     @Override
