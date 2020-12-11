@@ -24,11 +24,22 @@ public class SqlResultSetTest implements MycatTest {
 
             List<Map<String, Object>> res;
             List<Map<String, Object>> maps = executeQuery(connection, CreateSqlCacheHint.create(sqlCacheConfig));
-            Assert.assertEquals(1,maps.size());
+            Assert.assertEquals(1, maps.size());
             res = executeQuery(connection, ShowSqlCacheHint.create());
             Assert.assertEquals(1, res.size());
-            Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-            Assert.assertTrue(res.iterator().next().toString().contains("hasCache:true"));
+            long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+            boolean hit = false;
+            while (true) {
+                if (System.currentTimeMillis() > end) {
+                    break;
+                }
+                res = executeQuery(connection, ShowSqlCacheHint.create());
+                hit = res.iterator().next().toString().contains("hasCache:true");
+                if (hit){
+                    break;
+                }
+            }
+            Assert.assertTrue(hit);
             execute(connection, DropSqlCacheHint.create(sqlCacheConfig.getName()));
 
             Assert.assertEquals(0, executeQuery(connection, ShowSqlCacheHint.create()).size());
