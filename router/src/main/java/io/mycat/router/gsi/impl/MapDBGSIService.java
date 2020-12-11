@@ -10,9 +10,8 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.statement.*;
+import io.mycat.DataNode;
 import io.mycat.router.gsi.GSIService;
-import io.mycat.util.ClassUtil;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -274,6 +273,11 @@ public class MapDBGSIService implements GSIService {
 
     @Override
     public Optional<Iterable<Object[]>> scanProjectFilter(int[] projects, int[] filterIndexes, Object[] values) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<DataNode> queryDataNode(int index, Object value) {
         return Optional.empty();
     }
 
