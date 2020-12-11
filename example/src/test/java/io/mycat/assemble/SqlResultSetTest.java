@@ -11,6 +11,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -26,6 +27,7 @@ public class SqlResultSetTest implements MycatTest {
             Assert.assertEquals(1,maps.size());
             res = executeQuery(connection, ShowSqlCacheHint.create());
             Assert.assertEquals(1, res.size());
+            Thread.sleep(TimeUnit.SECONDS.toMillis(5));
             Assert.assertTrue(res.iterator().next().toString().contains("hasCache:true"));
             execute(connection, DropSqlCacheHint.create(sqlCacheConfig.getName()));
 

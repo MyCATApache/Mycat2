@@ -17,7 +17,7 @@ public class ProxyTransactionSession extends LocalTransactionSession {
 
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
-        return ThreadUsageEnum.THIS_THREADING;
+        return ThreadUsageEnum.MULTI_THREADING;
     }
 
     @Override

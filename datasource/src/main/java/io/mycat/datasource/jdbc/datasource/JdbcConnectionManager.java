@@ -173,8 +173,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
          * it is implemented in some databases.
          */
         try {
-            if(!connection.connection.getAutoCommit()){
-                connection.connection.rollback();
+            if(!connection.getDataSource().isMySQLType()){
+                if(!connection.connection.getAutoCommit()){
+                    connection.connection.rollback();
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("", e);
