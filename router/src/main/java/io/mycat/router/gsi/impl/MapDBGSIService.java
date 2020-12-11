@@ -257,27 +257,28 @@ public class MapDBGSIService implements GSIService {
     }
 
     @Override
-    public Optional<Iterable<Object[]>> scanProject(int[] projects) {
+    public Optional<Iterable<Object[]>> scanProject(String schemaName, String tableName, int[] projects) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Iterable<Object[]>> scan() {
+    public Optional<Iterable<Object[]>> scan(String schemaName, String tableName) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Iterable<Object[]>> scanProjectFilter(int index, Object value) {
+    public Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int index, Object value) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<Iterable<Object[]>> scanProjectFilter(int[] projects, int[] filterIndexes, Object[] values) {
+    public Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int[] projects, int[] filterIndexes, Object[] values) {
         return Optional.empty();
     }
 
+
     @Override
-    public Optional<DataNode> queryDataNode(int index, Object value) {
+    public Optional<DataNode> queryDataNode(String schemaName, String tableName, int index, Object value) {
         return Optional.empty();
     }
 

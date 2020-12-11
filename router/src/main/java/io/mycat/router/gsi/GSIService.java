@@ -66,15 +66,15 @@ public interface GSIService {
 
     List<IndexRowData> select(SQLStatement statement);
 
-    Optional<Iterable<Object[]>> scanProject(int[] projects);
+    Optional<Iterable<Object[]>> scanProject(String schemaName, String tableName, int[] projects);
 
-    Optional<Iterable<Object[]>> scan();
+    Optional<Iterable<Object[]>> scan(String schemaName, String tableName);
 
-    Optional<Iterable<Object[]>> scanProjectFilter(int index, Object value);
+    Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName,int index, Object value);
 
-    Optional<Iterable<Object[]>> scanProjectFilter(int[] projects, int[] filterIndexes, Object[] values);
+    Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int[] projects, int[] filterIndexes, Object[] values);
 
-    Optional<DataNode> queryDataNode(int index, Object value);
+    Optional<DataNode> queryDataNode(String schemaName, String tableName, int index, Object value);
 
     boolean isIndexTable(String schemaName, String tableName);
 

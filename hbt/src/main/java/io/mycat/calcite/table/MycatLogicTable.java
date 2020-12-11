@@ -114,7 +114,11 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                                 right = unCastWrapper(right);
                                 int index = ((RexInputRef) left).getIndex();
                                 Object value = ((RexLiteral) right).getValue2();
-                                Optional<DataNode> dataNodeOptional = gsiService.queryDataNode(index, value);
+                                TableHandler table = getTable();
+                                Optional<DataNode> dataNodeOptional = gsiService.queryDataNode(
+                                        table.getSchemaName(),
+                                        table.getTableName(),
+                                        index, value);
                                 if (dataNodeOptional.isPresent()) {
                                     return Collections.singletonList(dataNodeOptional.get());
                                 }
