@@ -64,7 +64,7 @@ public class ViewExecutor implements Executor {
             MycatConnection mycatConnection = factory.getConnection(entry.getKey());
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (connection.isClosed()){
-                LOGGER.error("mycatConnection:{} has closed", mycatConnection);
+                LOGGER.error("mycatConnection:{} has closed but still using", mycatConnection);
             }
             futureArrayList.add(mycatWorker.submit(() -> {
                 if(LOGGER.isDebugEnabled()){

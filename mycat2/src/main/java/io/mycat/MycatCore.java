@@ -74,8 +74,8 @@ public class MycatCore {
             }
             return String.class;
         };
-        MapDBGSIService gsiService = new MapDBGSIService("gsi", metaDataService);
-        context.put(GSIService.class,gsiService);
+       // MapDBGSIService gsiService = new MapDBGSIService("gsi", metaDataService);
+//        context.put(GSIService.class,null);
         MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();

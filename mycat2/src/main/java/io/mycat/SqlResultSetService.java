@@ -13,6 +13,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.config.SqlCacheConfig;
+import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExecutorImplementorImpl;
@@ -129,7 +130,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
     }
 
     public Optional<RowBaseIterator> get(SQLSelectStatement sqlSelectStatement) {
-        if (cacheConfigMap.isEmpty()){
+        if (cacheConfigMap.isEmpty()) {
             return Optional.empty();
         }
         ConcurrentMap<SQLSelectStatement, Object[]> map = cache.asMap();
@@ -141,7 +142,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
         if (objects == null) {
             objects = loadResultSet(sqlSelectStatement);
         }
-        if (objects != null) {
+        if (objects != null &&objects.length==2&& objects[0] != null && objects[1] != null) {
             ResultSetBuilder.DefObjectRowIteratorImpl rowIterator =
                     new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], ((List<Object[]>) objects[1]).iterator());
             return Optional.of(rowIterator);
@@ -155,6 +156,9 @@ public class SqlResultSetService implements Closeable, Dumpable {
         return cache.get(sqlSelectStatement, new Callable<Object[]>() {
             @Override
             public Object[] call() throws Exception {
+                if (!MetaClusterCurrent.exist(DrdsRunner.class)){
+                    return new Object[2];
+                }
                 Object[] pair = new Object[2];
                 MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
                 try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
@@ -198,7 +202,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 } finally {
                     context.close();
                 }
-                return pair;
+                return (pair);
             }
         });
     }

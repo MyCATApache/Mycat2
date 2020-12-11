@@ -60,11 +60,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 Project.class, Union.class, Filter.class, Sort.class);
     }
 
-    private OptimizationContext optimizationContext;
+    protected OptimizationContext optimizationContext;
+    protected List<Object> params;
 
 
-    public SQLRBORewriter(OptimizationContext optimizationContext) {
+    public SQLRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
         this.optimizationContext = optimizationContext;
+        this.params = params;
     }
 
     @Override

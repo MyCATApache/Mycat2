@@ -20,8 +20,8 @@ import java.util.Optional;
 import static io.mycat.calcite.CalciteUtls.unCastWrapper;
 
 public class IndexRBORewriter<T> extends SQLRBORewriter {
-    public IndexRBORewriter(OptimizationContext optimizationContext) {
-        super(optimizationContext);
+    public IndexRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
+        super(optimizationContext,params);
     }
 
     @Override
@@ -106,7 +106,15 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
                     RexNode right = operands.get(1);
                     right = unCastWrapper(right);
                     int index = ((RexInputRef) left).getIndex();
-                    Object value = ((RexLiteral) right).getValue2();
+                    Object value = null;
+                    if (right instanceof RexLiteral){
+                        value = ((RexLiteral) right).getValue2();
+                    }else if (right instanceof RexDynamicParam){
+                        value = super.params.get (((RexDynamicParam)right).getIndex());
+                    }else {
+                        return Optional.empty();
+                    }
+
                     return (Optional<T>) shardingTableHandler.canIndexTableScan(map2IntArray(project),
                             new int[]{index}, new Object[]{value});
                 }

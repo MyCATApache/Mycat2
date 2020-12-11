@@ -82,7 +82,7 @@ public class MycatUpdateExecutor implements Executor {
                 LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, sql, parameters);
             }
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
-                LOGGER.debug("{} has closed ", mycatConnection);
+                LOGGER.debug("{} has closed but still using", mycatConnection);
             }
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
