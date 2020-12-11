@@ -696,7 +696,7 @@ public class DrdsRunner {
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext));
+        RelNode accept = bestExp.accept(new IndexRBORewriter(optimizationContext));
         return accept;
     }
 

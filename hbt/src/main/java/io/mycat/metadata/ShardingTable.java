@@ -1,20 +1,24 @@
 package io.mycat.metadata;
 
-import io.mycat.*;
+import io.mycat.DataNode;
+import io.mycat.LogicTableType;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.sequence.SequenceGenerator;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.gsi.GSIService;
 import lombok.Getter;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.mycat.metadata.CreateTableUtils.normalizeCreateTableSQLToMySQL;
 import static io.mycat.metadata.DDLHelper.createDatabaseIfNotExist;
-import static io.mycat.metadata.LogicTable.rewriteCreateTableSql;
 
 @Getter
 public class ShardingTable implements ShardingTableHandler {
@@ -43,6 +47,62 @@ public class ShardingTable implements ShardingTableHandler {
     @Override
     public List<SimpleColumnInfo> getColumns() {
         return logicTable.getRawColumns();
+    }
+
+    @Override
+    public Optional canIndexTableScan(int[] projects) {
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+            return gsiService.scanProject(projects);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndexes, Object[] values) {
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+            return gsiService.scanProjectFilter(projects, filterIndexes, values);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+//
+//    @Override
+//    public <T> Optional canIndexTableScan(int[] projects, List<T> nodes) {
+//        if (MetaClusterCurrent.exist(GSIService.class)) {
+//            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+//            List<RexNode> rexNodes = (List<RexNode>) nodes;
+//            if (rexNodes.size() == 1) {
+//                RexNode rexNode = rexNodes.get(0);
+//                if (rexNode.getKind() == SqlKind.EQUALS) {
+//                    RexCall rexNode1 = (RexCall) rexNode;
+//                    List<RexNode> operands = rexNode1.getOperands();
+//                    RexNode left = operands.get(0);
+//                    left = unCastWrapper(left);
+//                    RexNode right = operands.get(1);
+//                    right = unCastWrapper(right);
+//                    int index = ((RexInputRef) left).getIndex();
+//                    Object value = ((RexLiteral) right).getValue2();
+//                    return gsiService.scanProjectFilter(index, value);
+//                }
+//            }
+//            return Optional.empty();
+//        } else {
+//            return Optional.empty();
+//        }
+//    }
+
+    @Override
+    public Optional<Iterable<Object[]>> canIndexTableScan() {
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+            return gsiService.scan();
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
