@@ -10,7 +10,7 @@ public  abstract class HintBuilder {
         final Map<String, Object> map = new HashMap<>();
 
         public String build() {
-            return MessageFormat.format("/* ! mycat:{0}{1} */;",
+            return MessageFormat.format("/*+ mycat:{0}{1} */;",
                     getCmd(),
                     JsonUtil.toJson(map));
         }

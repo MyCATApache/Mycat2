@@ -2,13 +2,14 @@ package io.mycat.commands;
 
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import io.mycat.MycatDataContext;
-import io.mycat.ReceiverImpl;
+import io.mycat.*;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.ExecutorImplementor;
 import io.mycat.hbt4.ResponseExecutorImplementor;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author Junwen Chen
@@ -118,7 +120,9 @@ public enum MycatdbCommand {
                 executeHbt(dataContext, text.substring(12), new ReceiverImpl(session, 1, false, false));
                 return;
             }
-            logger.info(text);
+             if (logger.isDebugEnabled()) {
+                logger.debug(text);
+            }
             LinkedList<SQLStatement> statements = parse(text);
             Response receiver;
             if (statements.size() == 1 && statements.get(0) instanceof MySqlExplainStatement) {
@@ -138,12 +142,25 @@ public enum MycatdbCommand {
     }
 
     public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
-        SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+        boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
+
+        //////////////////////////////////apply transaction///////////////////////////////////
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        transactionSession.doAction();
+        //////////////////////////////////////////////////////////////////////////////////////
+        if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
+            SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+            Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+            if (baseIteratorOptional.isPresent()){
+                receiver.sendResultSet(baseIteratorOptional.get());
+                return;
+            }
+        } SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
         Class aClass = sqlStatement.getClass();
-        SQLHandler instance =   sqlHandlerMap.getInstance(aClass);
-        if (instance!=null) {
+        SQLHandler instance = sqlHandlerMap.getInstance(aClass);
+        if (instance != null) {
             instance.execute(request, dataContext, receiver);
-        }else {
+        } else {
             receiver.tryBroadcastShow(sqlStatement.toString());
         }
     }
@@ -159,7 +176,7 @@ public enum MycatdbCommand {
 
     @SneakyThrows
     private static void executeHbt(MycatDataContext dataContext, String substring, Response receiver) {
-        try(DefaultDatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
+        try (DefaultDatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
             TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
             ExecutorImplementor executorImplementor = new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver);
             DrdsRunners.runHbtOnDrds(dataContext, substring, executorImplementor);

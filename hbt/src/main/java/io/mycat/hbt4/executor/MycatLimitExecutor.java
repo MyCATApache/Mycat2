@@ -68,6 +68,7 @@ public class MycatLimitExecutor implements Executor {
                 .into();
         explainWriter.item("offset",offset);
         explainWriter.item("fetch",fetch);
+        input.explain(writer);
         return explainWriter.ret();
     }
 }

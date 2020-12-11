@@ -45,5 +45,7 @@ public class Dumper {
     public String toString(CharSequence delimiter) {
         return textList.stream().distinct().collect(Collectors.joining(delimiter));
     }
-
+    public List<String> toStringList() {
+        return new ArrayList<>(textList);
+    }
 }

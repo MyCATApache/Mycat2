@@ -167,7 +167,20 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         if (LOGGER.isDebugEnabled()){
             LOGGER.debug("close :{} {}", connection,connection.connection);
         }
-
+        /**
+         *
+         * To prevent the transaction from being committed at close time,
+         * it is implemented in some databases.
+         */
+        try {
+            if(!connection.getDataSource().isMySQLType()){
+                if(!connection.connection.getAutoCommit()){
+                    connection.connection.rollback();
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("", e);
+        }
         try {
             connection.connection.close();
         } catch (SQLException e) {

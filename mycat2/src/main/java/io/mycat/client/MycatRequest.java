@@ -17,12 +17,10 @@ public class MycatRequest {
     final int sessionId;
     final String text;
     final Map<String,Object> context;
-    final UserSpace userSpace;
-    public MycatRequest(int sessionId, String text, Map<String, Object> context, UserSpace userSpace) {
+    public MycatRequest(int sessionId, String text, Map<String, Object> context) {
         this.sessionId = sessionId;
         this.text = text;
         this.context = context;
-        this.userSpace = userSpace;
     }
     public <T> T get(String key) {
         return (T)context.get(key);
@@ -31,7 +29,4 @@ public class MycatRequest {
         return (T)context.getOrDefault(key,defaultValue);
     }
 
-    public UserSpace getUserSpace() {
-        return userSpace;
-    }
 }
