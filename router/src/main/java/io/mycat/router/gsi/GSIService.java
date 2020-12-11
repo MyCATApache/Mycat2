@@ -1,6 +1,7 @@
 package io.mycat.router.gsi;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import io.mycat.DataNode;
 import lombok.Data;
 
 import java.util.List;
@@ -72,6 +73,8 @@ public interface GSIService {
     Optional<Iterable<Object[]>> scanProjectFilter(int index, Object value);
 
     Optional<Iterable<Object[]>> scanProjectFilter(int[] projects, int[] filterIndexes, Object[] values);
+
+    Optional<DataNode> queryDataNode(int index, Object value);
 
     @Data
     class Transaction {

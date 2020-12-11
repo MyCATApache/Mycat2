@@ -5,6 +5,8 @@ import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
+import io.mycat.router.gsi.GSIService;
+import io.mycat.router.gsi.impl.MapDBGSIService;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 
@@ -13,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * @author cjw
@@ -64,6 +67,15 @@ public class MycatCore {
         context.put(loadBalanceManager.getClass(), loadBalanceManager);
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(mycatServer.getClass(), mycatServer);
+        ////////////////////////////////////////////tmp///////////////////////////////////
+        BiFunction<String,String,Class> metaDataService = (tableName, columnName)->{
+            if("id".equals(columnName)){
+                return Integer.class;
+            }
+            return String.class;
+        };
+        MapDBGSIService gsiService = new MapDBGSIService("gsi", metaDataService);
+        context.put(GSIService.class,gsiService);
         MetaClusterCurrent.register(context);
 
         String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
