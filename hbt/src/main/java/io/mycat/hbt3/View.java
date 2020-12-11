@@ -97,28 +97,6 @@ public class View extends AbstractRelNode implements MycatRel {
         RelWriter writer = super.explainTerms(pw);
         writer.item("relNode",relNode);
         writer.item("distribution",distribution);
-
-//        RelNode relNode = expandToPhyRelNode();
-//        if (relNode instanceof Union) {
-//            int index = 0;
-//            for (RelNode input : relNode.getInputs()) {
-//                writer.item("\t\n" + index + "", MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, false));
-//                index++;
-//            }
-//        } else {
-//            writer.item("sql", MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false));
-//        }
-//        for (DataNode slice : distribution.getDataNodes()) {
-//            RelNode newRelNode = relNode.accept(new RelShuttleImpl() {
-//                @Override
-//                public RelNode visit(TableScan scan) {
-//                    return slice.rewrite(scan);
-//                }
-//            });
-//            String sql = MycatCalciteSupport.INSTANCE.convertToSql(newRelNode, MycatSqlDialect.DEFAULT, false);
-//            writer.item(slice.toString(), sql);
-//        }
-
         return writer;
     }
 
