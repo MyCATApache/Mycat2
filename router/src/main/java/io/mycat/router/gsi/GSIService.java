@@ -76,6 +76,10 @@ public interface GSIService {
 
     Optional<DataNode> queryDataNode(int index, Object value);
 
+    boolean isIndexTable(String schemaName, String tableName);
+
+    void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects);
+
     @Data
     class Transaction {
         private Long id;

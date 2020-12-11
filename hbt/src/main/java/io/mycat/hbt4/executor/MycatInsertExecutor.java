@@ -5,6 +5,7 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
+import com.alibaba.fastsql.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
@@ -12,23 +13,23 @@ import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
-import io.mycat.DataNode;
-import io.mycat.MycatConnection;
-import io.mycat.RangeVariable;
-import io.mycat.RangeVariableType;
+import io.mycat.*;
 import io.mycat.hbt4.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.gsi.GSIService;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.calcite.MycatContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,10 +42,12 @@ public class MycatInsertExecutor implements Executor {
     private final MycatInsertRel mycatInsertRel;
     private final DataSourceFactory factory;
     private final Map<GroupKey, Group> groupMap;
+    private final boolean multi;
     private List<Object> params;
     public long lastInsertId = 0;
     public long affectedRow = 0;
     public String sequence;
+    private boolean done = false;
     static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
     public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
@@ -52,7 +55,7 @@ public class MycatInsertExecutor implements Executor {
         this.factory = factory;
         this.params = params;
 
-        boolean multi = !params.isEmpty() && (params.get(0) instanceof List);
+        this.multi = !params.isEmpty() && (params.get(0) instanceof List);
         if (multi) {
             this.groupMap = runMultiParams();
         } else {
@@ -104,6 +107,7 @@ public class MycatInsertExecutor implements Executor {
     @Override
     public void open() {
         execute(groupMap);
+        onInsertSuccess();
     }
 
     @SneakyThrows
@@ -276,13 +280,62 @@ public class MycatInsertExecutor implements Executor {
     public ExplainWriter explain(ExplainWriter writer) {
         ExplainWriter explainWriter = writer.name(this.getClass().getName())
                 .into();
-        groupMap.forEach((k,v)->{
+        groupMap.forEach((k, v) -> {
             String target = k.getTarget();
             String parameterizedSql = k.getParameterizedSql();
             LinkedList<List<Object>> args = v.getArgs();
-            writer.item("target:"+target+" parameterizedSql:"+parameterizedSql,args);
+            writer.item("target:" + target + " parameterizedSql:" + parameterizedSql, args);
         });
         return explainWriter.ret();
     }
 
+    public void onInsertSuccess() {
+        if (!done) {
+            done = true;
+            ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
+            if (logicTable.canIndex()) {
+                if (MetaClusterCurrent.exist(GSIService.class)) {
+                    GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+
+                    MySqlInsertStatement mySqlInsertStatement = mycatInsertRel.getMySqlInsertStatement();
+                    List<SQLExpr> values = mySqlInsertStatement.getValues().getValues();
+                    //check
+                    for (SQLExpr value : values) {
+                        if (!(value instanceof SQLLiteralExpr)) {
+                            throw new MycatException("unsupport " + value);
+                        }
+                    }
+                    String[] columnNames = mycatInsertRel.getColumnNames();
+                    int[] projects = new int[columnNames.length];
+                    int index = 0;
+                    for (String columnName : columnNames) {
+                        projects[index] = logicTable.getIndexBColumnName(columnName);
+                        ++index;
+                    }
+
+                    MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
+                    TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+                    String txId = transactionSession.getTxId();
+                    if (this.multi) {
+                        List<List<Object>> paramList = (List) params;
+                        for (List<Object> objects : paramList) {
+                            gsiService.insert(txId,logicTable.getSchemaName(),
+                                    logicTable.getTableName(),
+                                    projects
+                                    , objects);
+                        }
+                    }else {
+                        gsiService.insert(txId,logicTable.getSchemaName(),
+                                logicTable.getTableName(),
+                                projects
+                                , params);
+                    }
+
+                }
+            }
+
+
+        }
+
+    }
 }

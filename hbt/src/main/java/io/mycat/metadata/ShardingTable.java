@@ -106,6 +106,21 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
+    public boolean canIndex() {
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+            return gsiService.isIndexTable(getSchemaName(),getTableName());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int getIndexBColumnName(String name) {
+        return this.logicTable.getIndexBColumnName(name);
+    }
+
+    @Override
     public SimpleColumnInfo getColumnByName(String name) {
         return logicTable.getColumnByName(name);
     }

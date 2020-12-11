@@ -223,4 +223,9 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     abstract public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly);
+
+    @Override
+    public String getTxId() {
+        return null;
+    }
 }

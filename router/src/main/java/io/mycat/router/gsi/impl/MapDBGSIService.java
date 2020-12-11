@@ -281,6 +281,16 @@ public class MapDBGSIService implements GSIService {
         return Optional.empty();
     }
 
+    @Override
+    public boolean isIndexTable(String schemaName, String tableName) {
+        return false;
+    }
+
+    @Override
+    public void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects) {
+
+    }
+
     private List<IndexRowData> handleBinaryOpExpr(String tableName,SQLBinaryOpExpr where){
         Map<String, IndexData> indexDataMap = tableIndexDataMap.get(tableName);
         List<IndexRowData> result = null;

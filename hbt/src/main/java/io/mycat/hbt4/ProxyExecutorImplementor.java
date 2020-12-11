@@ -31,6 +31,7 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
             MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
             if (insertExecutor.isProxy()) {
                 Pair<String, String> pair = insertExecutor.getSingleSql();
+                insertExecutor.onInsertSuccess();
                 response.proxyUpdate(pair.getKey(), pair.getValue());
             } else {
                 runInsert(insertExecutor);
