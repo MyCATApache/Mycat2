@@ -257,6 +257,26 @@ public class MapDBGSIService implements GSIService {
         return rowDataList;
     }
 
+    @Override
+    public Optional<Iterable<Object[]>> scanProject(int[] projects) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Iterable<Object[]>> scan() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Iterable<Object[]>> scanProjectFilter(int index, Object value) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Iterable<Object[]>> scanProjectFilter(int[] projects, int[] filterIndexes, Object[] values) {
+        return Optional.empty();
+    }
+
     private List<IndexRowData> handleBinaryOpExpr(String tableName,SQLBinaryOpExpr where){
         Map<String, IndexData> indexDataMap = tableIndexDataMap.get(tableName);
         List<IndexRowData> result = null;
