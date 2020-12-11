@@ -279,15 +279,6 @@ public class ConfigPrepareExecuter {
         }
         PlanCache.INSTANCE.clear();
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
-        ////////////////////////////////////////////tmp///////////////////////////////////
-        BiFunction<String,String,Class> metaDataService = (tableName, columnName)->{
-            if("id".equals(columnName)){
-                return Integer.class;
-            }
-            return String.class;
-        };
-        MapDBGSIService gsiService = new MapDBGSIService("gsi", metaDataService);
-        context.put(GSIService.class,gsiService);
         MetaClusterCurrent.register(context);
     }
 }
