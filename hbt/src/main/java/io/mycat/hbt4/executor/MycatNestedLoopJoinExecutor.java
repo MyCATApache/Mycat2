@@ -24,6 +24,8 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
@@ -36,6 +38,7 @@ public class MycatNestedLoopJoinExecutor implements Executor {
     private final Predicate2<Row, Row> predicate;
     private TempResultSetFactory tempResultSetFactory;
     private Iterator<Row> iterator;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatNestedLoopJoinExecutor.class);
 
     protected MycatNestedLoopJoinExecutor(
             JoinRelType joinType,
@@ -50,6 +53,10 @@ public class MycatNestedLoopJoinExecutor implements Executor {
         this.resultSelector = resultSelector;
         this.predicate = predicate;
         this.tempResultSetFactory = tempResultSetFactory;
+
+        if(LOGGER.isDebugEnabled()){
+            LOGGER.debug("create MycatNestedLoopJoinExecutor ");
+        }
     }
 
     public static MycatNestedLoopJoinExecutor create(

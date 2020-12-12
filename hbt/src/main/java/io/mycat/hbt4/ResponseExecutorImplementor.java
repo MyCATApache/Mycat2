@@ -14,6 +14,7 @@ import io.mycat.hbt4.executor.TempResultSetFactory;
 import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
 import io.mycat.util.Explains;
 import io.mycat.util.Response;
+import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 
@@ -46,6 +47,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         this.response = response;
     }
 
+    @SneakyThrows
     @Override
     public void implementRoot(MycatRel rel, List<String> aliasList) {
         Objects.requireNonNull(rel);
@@ -55,11 +57,13 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         try {
             if (executor instanceof MycatInsertExecutor) {
                 MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
+                factory.open();
                 runInsert(insertExecutor);
                 return;
             }
             if (executor instanceof MycatUpdateExecutor) {
                 MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
+                factory.open();
                 runUpdate(updateExecutor);
                 return;
             }
@@ -69,6 +73,8 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 executor.close();
             }
             response.sendError(e);
+        }finally {
+            factory.close();
         }
         return;
     }

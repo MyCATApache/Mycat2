@@ -16,6 +16,7 @@ package io.mycat.calcite.table;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 import io.mycat.calcite.CalciteUtls;
@@ -27,6 +28,7 @@ import io.mycat.hbt4.ShardingInfo;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.gsi.GSIService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.rel.type.RelDataType;
@@ -39,8 +41,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static io.mycat.calcite.CalciteUtls.unCastWrapper;
 
 /**
  * @author Junwen Chen
@@ -93,7 +99,29 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                             }
                         }));
                     }
-                    return CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
+                    List<DataNode> backendTableInfos = CalciteUtls.getBackendTableInfos(shardingTableHandler, rexNodes);
+
+                    if (backendTableInfos.size() > 1 && MetaClusterCurrent.exist(GSIService.class)) {
+                        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+                        if (rexNodes.size() == 1) {
+                            RexNode rexNode = rexNodes.get(0);
+                            if (rexNode.getKind() == SqlKind.EQUALS) {
+                                RexCall rexNode1 = (RexCall) rexNode;
+                                List<RexNode> operands = rexNode1.getOperands();
+                                RexNode left = operands.get(0);
+                                left = unCastWrapper(left);
+                                RexNode right = operands.get(1);
+                                right = unCastWrapper(right);
+                                int index = ((RexInputRef) left).getIndex();
+                                Object value = ((RexLiteral) right).getValue2();
+                                Optional<DataNode> dataNodeOptional = gsiService.queryDataNode(index, value);
+                                if (dataNodeOptional.isPresent()) {
+                                    return Collections.singletonList(dataNodeOptional.get());
+                                }
+                            }
+                        }
+                    }
+                    return backendTableInfos;
                 });
             case GLOBAL:
                 return computeDataNode();
@@ -117,8 +145,8 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
             if (rexNode.getKind() == SqlKind.EQUALS) {
                 RexCall node = (RexCall) rexNode;
                 List<RexNode> operands = node.getOperands();
-                RexNode rexNode1 = CalciteUtls.unCastWrapper(operands.get(0));
-                RexNode rexNode2 = CalciteUtls.unCastWrapper(operands.get(1));
+                RexNode rexNode1 = unCastWrapper(operands.get(0));
+                RexNode rexNode2 = unCastWrapper(operands.get(1));
                 if (rexNode1 instanceof RexInputRef && (rexNode2 instanceof RexLiteral || rexNode2 instanceof RexDynamicParam)) {
                     int index = ((RexInputRef) rexNode1).getIndex();
                     @NonNull String columnName = columns.get(index).getColumnName();

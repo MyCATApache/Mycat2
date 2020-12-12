@@ -63,162 +63,166 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     }
 
     public void writeToMycatSession(MycatResponse response) {
-        boolean moreResultSet = !(this.count == 1);
         TransactionSession transactionSession = session.getDataContext().getTransactionSession();
-        if (explain) {
-            transactionSession.clearJdbcConnection();
-            sendResultSet(moreResultSet, response.explain());
-            return;
-        }
-
-        try (MycatResponse mycatResponse = response) {
-            switch (mycatResponse.getType()) {
-                case RRESULTSET: {
-                    RowIterable rowIterable = (RowIterable) mycatResponse;
-                    sendResultSet(moreResultSet, rowIterable.get());
-                    return;
-                }
-                case UPDATEOK: {
-                    transactionSession.clearJdbcConnection();
-                    session.writeOk(moreResultSet);
-                    return;
-                }
-                case ERROR: {
-                    transactionSession.clearJdbcConnection();
-                    session.writeErrorEndPacketBySyncInProcessError();
-                    return;
-                }
-                case PROXY: {
-                    MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
-
-                    if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
-                        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
-                        if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
-                            transactionSession.clearJdbcConnection();
-                            MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
-                                    MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
-                                    session.getIsolation());
-                            return;
-                        }
-                    }
-
-                    MycatConnection connection = transactionSession.getConnection(proxyResponse.getTargetName());
-                    switch (proxyResponse.getExecuteType()) {
-                        case QUERY:
-                        case QUERY_MASTER:
-                            RowBaseIterator rowBaseIterator = connection.executeQuery(null, proxyResponse.getSql());
-                            sendResultSet(moreResultSet, rowBaseIterator);
-                            return;
-                        case INSERT: {
-                            long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
-                            session.setAffectedRows(res[0]);
-                            session.setLastInsertId(res[1]);
-                            transactionSession.clearJdbcConnection();
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        case UPDATE: {
-                            long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
-                            session.setAffectedRows(res[0]);
-                            session.setLastInsertId(res[1]);
-                            transactionSession.clearJdbcConnection();
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        default:
-                            throw new IllegalStateException("Unexpected value: " + proxyResponse.getExecuteType());
-                    }
-                }
-                case COMMIT: {
-                    MycatDataContext dataContext = session.getDataContext();
-                    TransactionType transactionType = dataContext.transactionType();
-                    switch (transactionType) {
-                        case PROXY_TRANSACTION_TYPE:
-                            if (moreResultSet) {
-                                session.setLastMessage("unsupported mixed rollback");
-                                session.writeErrorEndPacketBySyncInProcessError();
-                                return;
-                            }
-                            transactionSession.commit();
-                            if (!session.isBindMySQLSession()) {
-                                LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
-                                session.writeOk(false);
-                                return;
-                            } else {
-                                receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
-                                LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
-                                return;
-                            }
-                        case JDBC_TRANSACTION_TYPE: {
-                            transactionSession.commit();
-                            LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        default:
-                            throw new IllegalStateException("Unexpected value: " + transactionType);
-                    }
-                    //break;
-                }
-                case ROLLBACK: {
-                    MycatDataContext dataContext = session.getDataContext();
-                    TransactionType transactionType = dataContext.transactionType();
-                    switch (transactionType) {
-                        case PROXY_TRANSACTION_TYPE:
-                            if (moreResultSet) {
-                                session.setLastMessage("unsupported mixed rollback");
-                                session.writeErrorEndPacketBySyncInProcessError();
-                                return;
-                            }
-                            transactionSession.rollback();
-                            if (session.isBindMySQLSession()) {
-                                receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
-                                LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
-                                return;
-                            } else {
-                                session.writeOk(false);
-                                LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
-                                return;
-                            }
-                        case JDBC_TRANSACTION_TYPE: {
-                            transactionSession.rollback();
-                            LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        default:
-                            throw new IllegalStateException("Unexpected value: " + transactionType);
-                    }
-                }
-                case BEGIN: {
-                    MycatDataContext dataContext = session.getDataContext();
-                    TransactionType transactionType = dataContext.transactionType();
-                    switch (transactionType) {
-                        case PROXY_TRANSACTION_TYPE: {
-                            transactionSession.begin();
-                            LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        case JDBC_TRANSACTION_TYPE: {
-                            transactionSession.begin();
-                            LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
-                            session.writeOk(moreResultSet);
-                            return;
-                        }
-                        default:
-                            throw new IllegalStateException("Unexpected value: " + transactionType);
-                    }
-                }
-                default:
-                    throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());
+        boolean moreResultSet = !(this.count == 1);
+        try{
+            if (explain) {
+                sendResultSet(moreResultSet, response.explain());
+                return;
             }
-        } catch (Exception e) {
-            session.setLastMessage(e);
-            session.writeErrorEndPacketBySyncInProcessError();
-        } finally {
-            this.count--;
+
+            try (MycatResponse mycatResponse = response) {
+                switch (mycatResponse.getType()) {
+                    case RRESULTSET: {
+                        RowIterable rowIterable = (RowIterable) mycatResponse;
+                        sendResultSet(moreResultSet, rowIterable.get());
+                        return;
+                    }
+                    case UPDATEOK: {
+                        transactionSession.clearJdbcConnection();
+                        session.writeOk(moreResultSet);
+                        return;
+                    }
+                    case ERROR: {
+                        transactionSession.clearJdbcConnection();
+                        session.writeErrorEndPacketBySyncInProcessError();
+                        return;
+                    }
+                    case PROXY: {
+                        MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
+
+                        if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
+                            MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                            if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
+                                transactionSession.clearJdbcConnection();
+                                MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
+                                        MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
+                                        session.getIsolation());
+                                return;
+                            }
+                        }
+
+                        MycatConnection connection = transactionSession.getConnection(proxyResponse.getTargetName());
+                        switch (proxyResponse.getExecuteType()) {
+                            case QUERY:
+                            case QUERY_MASTER:
+                                RowBaseIterator rowBaseIterator = connection.executeQuery(null, proxyResponse.getSql());
+                                sendResultSet(moreResultSet, rowBaseIterator);
+                                return;
+                            case INSERT: {
+                                long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
+                                session.setAffectedRows(res[0]);
+                                session.setLastInsertId(res[1]);
+                                transactionSession.clearJdbcConnection();
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            case UPDATE: {
+                                long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
+                                session.setAffectedRows(res[0]);
+                                session.setLastInsertId(res[1]);
+                                transactionSession.clearJdbcConnection();
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + proxyResponse.getExecuteType());
+                        }
+                    }
+                    case COMMIT: {
+                        MycatDataContext dataContext = session.getDataContext();
+                        TransactionType transactionType = dataContext.transactionType();
+                        switch (transactionType) {
+                            case PROXY_TRANSACTION_TYPE:
+                                if (moreResultSet) {
+                                    session.setLastMessage("unsupported mixed rollback");
+                                    session.writeErrorEndPacketBySyncInProcessError();
+                                    return;
+                                }
+                                transactionSession.commit();
+                                if (!session.isBindMySQLSession()) {
+                                    LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
+                                    session.writeOk(false);
+                                    return;
+                                } else {
+                                    receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
+                                    LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
+                                    return;
+                                }
+                            case JDBC_TRANSACTION_TYPE: {
+                                transactionSession.commit();
+                                LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + transactionType);
+                        }
+                        //break;
+                    }
+                    case ROLLBACK: {
+                        MycatDataContext dataContext = session.getDataContext();
+                        TransactionType transactionType = dataContext.transactionType();
+                        switch (transactionType) {
+                            case PROXY_TRANSACTION_TYPE:
+                                if (moreResultSet) {
+                                    session.setLastMessage("unsupported mixed rollback");
+                                    session.writeErrorEndPacketBySyncInProcessError();
+                                    return;
+                                }
+                                transactionSession.rollback();
+                                if (session.isBindMySQLSession()) {
+                                    receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
+                                    LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
+                                    return;
+                                } else {
+                                    session.writeOk(false);
+                                    LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
+                                    return;
+                                }
+                            case JDBC_TRANSACTION_TYPE: {
+                                transactionSession.rollback();
+                                LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + transactionType);
+                        }
+                    }
+                    case BEGIN: {
+                        MycatDataContext dataContext = session.getDataContext();
+                        TransactionType transactionType = dataContext.transactionType();
+                        switch (transactionType) {
+                            case PROXY_TRANSACTION_TYPE: {
+                                transactionSession.begin();
+                                LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            case JDBC_TRANSACTION_TYPE: {
+                                transactionSession.begin();
+                                LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
+                                session.writeOk(moreResultSet);
+                                return;
+                            }
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + transactionType);
+                        }
+                    }
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());
+                }
+            } catch (Exception e) {
+                session.setLastMessage(e);
+                session.writeErrorEndPacketBySyncInProcessError();
+            } finally {
+                this.count--;
+            }
+        }finally {
+
         }
+
     }
 
     private void sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
@@ -241,6 +245,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
             session.writeBytes(row, false);
         }
         currentResultSet.close();
+        session.getDataContext().getTransactionSession().clearJdbcConnection();
         session.writeRowEndPacket(moreResultSet, false);
     }
 

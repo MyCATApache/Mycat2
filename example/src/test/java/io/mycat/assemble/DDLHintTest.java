@@ -20,22 +20,22 @@ import java.util.Map;
 @net.jcip.annotations.NotThreadSafe
 public class DDLHintTest implements MycatTest {
 
-
     @Test
-    public void testCreateTable() throws Exception {
-        try (   Connection mycat= getMySQLConnection(8066)) {
-            execute(mycat,RESET_CONFIG);
-            String db = "testSchema";
-            execute(mycat, "drop database "+db);
-            execute(mycat, "create database "+db);
-            execute(mycat, "use "+ db);
+    public void testShowDataNodes() throws Exception {
+        try (Connection mycat = getMySQLConnection(8066)) {
+            String db = "db1";
+            execute(mycat, RESET_CONFIG);
+            execute(mycat, "create database " + db);
+            execute(mycat, "use " + db);
 
             execute(
                     mycat,
                     CreateTableHint
-                            .createNormal(db, "normal", "create table normal(id int)", "prototype")
+                            .createNormal("db1", "normal", "create table normal(id int)", "prototype")
             );
-            hasData(mycat,db,"normal");
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "normal"));
+            Assert.assertTrue(maps.size() > 0);
+
 
             execute(
                     mycat,
@@ -43,7 +43,10 @@ public class DDLHintTest implements MycatTest {
                             .createGlobal(db, "global", "create table global(id int)", Arrays.asList(
                                     GlobalBackEndTableInfoConfig.builder().targetName("prototype").build()))
             );
-            hasData(mycat,db,"global");
+
+            maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "global"));
+            Assert.assertTrue(maps.size() > 0);
+
             execute(
                     mycat,
                     CreateTableHint
@@ -53,10 +56,50 @@ public class DDLHintTest implements MycatTest {
                                             .tableNames("sharding")
                                             .targetNames("prototype").build(),
                                     ShardingFuntion.builder().clazz(PartitionConstant.class.getCanonicalName())
-                                            .properties(Maps.of("defaultNode","0","columnName","id")).build())
+                                            .properties(Maps.of("defaultNode", "0", "columnName", "id")).build())
             );
-            hasData(mycat,db,"sharding");
-            execute(mycat, "drop database "+db);
+
+            maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "sharding"));
+            Assert.assertTrue(maps.size() > 0);
+        }
+    }
+
+    @Test
+    public void testCreateTable() throws Exception {
+        try (Connection mycat = getMySQLConnection(8066)) {
+            execute(mycat, RESET_CONFIG);
+            String db = "testSchema";
+            execute(mycat, "drop database " + db);
+            execute(mycat, "create database " + db);
+            execute(mycat, "use " + db);
+
+            execute(
+                    mycat,
+                    CreateTableHint
+                            .createNormal(db, "normal", "create table normal(id int)", "prototype")
+            );
+            hasData(mycat, db, "normal");
+
+            execute(
+                    mycat,
+                    CreateTableHint
+                            .createGlobal(db, "global", "create table global(id int)", Arrays.asList(
+                                    GlobalBackEndTableInfoConfig.builder().targetName("prototype").build()))
+            );
+            hasData(mycat, db, "global");
+            execute(
+                    mycat,
+                    CreateTableHint
+                            .createSharding(db, "sharding", "create table sharding(id int)",
+                                    ShardingBackEndTableInfoConfig.builder()
+                                            .schemaNames(db)
+                                            .tableNames("sharding")
+                                            .targetNames("prototype").build(),
+                                    ShardingFuntion.builder().clazz(PartitionConstant.class.getCanonicalName())
+                                            .properties(Maps.of("defaultNode", "0", "columnName", "id")).build())
+            );
+            hasData(mycat, db, "sharding");
+            execute(mycat, "drop database " + db);
         }
     }
 
@@ -64,7 +107,7 @@ public class DDLHintTest implements MycatTest {
     @Test
     public void testAddDatasource() throws Exception {
         try (Connection mycat = getMySQLConnection(8066)) {
-            execute(mycat,RESET_CONFIG);
+            execute(mycat, RESET_CONFIG);
             String dsName = "newDs";
             execute(mycat, DropDataSourceHint.create(dsName));
             Assert.assertTrue(
@@ -88,7 +131,7 @@ public class DDLHintTest implements MycatTest {
     public void testAddCluster() throws Exception {
         String clusterName = "testAddCluster";
         try (Connection mycat = getMySQLConnection(8066)) {
-            execute(mycat,RESET_CONFIG);
+            execute(mycat, RESET_CONFIG);
             execute(mycat, DropClusterHint.create(clusterName));
             Assert.assertTrue(
                     !executeQuery(mycat, "/*+ mycat:showClusters{} */")
@@ -116,7 +159,7 @@ public class DDLHintTest implements MycatTest {
         try (Connection mycat = getMySQLConnection(8066);
              Connection mysql = getMySQLConnection(3306);
         ) {
-            execute(mycat,RESET_CONFIG);
+            execute(mycat, RESET_CONFIG);
             String schemaName = "test_add_Schema";
             String tableName = "test_table";
             execute(mysql, "create database  if not exists " + schemaName);

@@ -12,26 +12,30 @@ import java.util.function.Function;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class PstmtAssembleTest extends AssembleTest  {
+public class PstmtAssembleTest extends AssembleTest {
 
     @Override
     public Connection getMySQLConnection(int port) throws Exception {
-        return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
-            @Override
-            @SneakyThrows
-            public DruidDataSource apply(Integer integer) {
-                String username = "root";
-                String password = "123456";
-                DruidDataSource dataSource = new DruidDataSource();
-                dataSource.setUrl("jdbc:mysql://127.0.0.1:" +
-                        port + "/?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
-                dataSource.setUsername(username);
-                dataSource.setPassword(password);
-                dataSource.setLoginTimeout(5);
-                return dataSource;
-            }
-        }).getConnection();
+        if (port == 8066) {
+            return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
+                @Override
+                @SneakyThrows
+                public DruidDataSource apply(Integer integer) {
+                    String username = "root";
+                    String password = "123456";
+                    DruidDataSource dataSource = new DruidDataSource();
+                    dataSource.setUrl("jdbc:mysql://127.0.0.1:" +
+                            port + "/?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
+                    dataSource.setUsername(username);
+                    dataSource.setPassword(password);
+                    dataSource.setLoginTimeout(5);
+                    return dataSource;
+                }
+            }).getConnection();
 
+        } else {
+            return super.getMySQLConnection(port);//3306执行预处理DDL会卡死
+        }
     }
 
     @Override

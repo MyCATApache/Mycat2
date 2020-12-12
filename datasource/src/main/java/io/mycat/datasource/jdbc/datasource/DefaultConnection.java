@@ -37,6 +37,7 @@ public class DefaultConnection implements MycatConnection {
     final Connection connection;
     private final JdbcDataSource jdbcDataSource;
     protected final ConnectionManager connectionManager;
+    private boolean closed = false;
 
     @SneakyThrows
     public DefaultConnection(Connection connection, JdbcDataSource dataSource,
@@ -76,7 +77,7 @@ public class DefaultConnection implements MycatConnection {
             Statement statement = connection.createStatement();
             statement.setFetchSize(1);
             ResultSet resultSet = statement.executeQuery(sql);
-            return new JdbcRowBaseIterator(null, statement, resultSet, new Closeable() {
+            return new JdbcRowBaseIterator(null,this, statement, resultSet, new Closeable() {
                 @Override
                 public void close() throws IOException {
                     try {
@@ -103,12 +104,13 @@ public class DefaultConnection implements MycatConnection {
     }
 
 
-    public void close() {
+    public synchronized void close() {
         try {
             if (!isClosed()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("close {}", connection);
                 }
+                closed = true;
                 connectionManager.closeConnection(this);
             }
         } catch (Exception e) {
@@ -137,12 +139,7 @@ public class DefaultConnection implements MycatConnection {
     }
 
     public boolean isClosed() {
-        try {
-            return connection.isClosed();
-        } catch (SQLException e) {
-            LOGGER.error("", e);
-            return true;
-        }
+        return closed;
     }
 
     public Connection getRawConnection() {
@@ -152,7 +149,7 @@ public class DefaultConnection implements MycatConnection {
     public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(mycatRowMetaData, statement, statement.executeQuery(sql), null, sql);
+            return new JdbcRowBaseIterator(mycatRowMetaData, this, statement, statement.executeQuery(sql), null, sql);
         } catch (Exception e) {
             throw new MycatException(e);
         }

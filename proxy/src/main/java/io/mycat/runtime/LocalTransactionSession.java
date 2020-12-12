@@ -17,6 +17,7 @@ import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalTransactionSession.class);
+
     public LocalTransactionSession(MycatDataContext dataContext) {
         super(dataContext);
     }
@@ -26,6 +27,17 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
         return "xa";
     }
 
+    @Override
+    public MycatConnection getConnection(String targetName) {
+        DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
+        if (defaultConnection != null) {
+            return defaultConnection;
+        }
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        DefaultConnection connection = jdbcConnectionManager.getConnection(targetName, isAutocommit(), getTransactionIsolation(), false);
+        updateConnectionMap.put(targetName,connection);
+        return connection;
+    }
 
 
     @Override
@@ -48,8 +60,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
                 exceptions.add(e);
             }
         }
-        if (!exceptions.isEmpty()){
-            throw new MycatException("本地事务开启失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        if (!exceptions.isEmpty()) {
+            throw new MycatException("本地事务开启失败\n" + exceptions.stream().map(i -> i.getMessage()).collect(Collectors.joining("\n")));
         }
     }
 
@@ -60,12 +72,12 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
             try {
                 value.getRawConnection().commit();
             } catch (SQLException e) {
-                LOGGER.error("本地事务提交失败",e);
+                LOGGER.error("本地事务提交失败", e);
                 exceptions.add(e);
             }
         }
-        if (!exceptions.isEmpty()){
-            throw new MycatException("本地事务提交失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        if (!exceptions.isEmpty()) {
+            throw new MycatException("本地事务提交失败\n" + exceptions.stream().map(i -> i.getMessage()).collect(Collectors.joining("\n")));
         }
     }
 
@@ -76,28 +88,21 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
             try {
                 value.getRawConnection().rollback();
             } catch (SQLException e) {
-                LOGGER.error("本地事务回滚失败",e);
+                LOGGER.error("本地事务回滚失败", e);
                 exceptions.add(e);
             }
         }
-        if (!exceptions.isEmpty()){
-            throw new MycatException("本地事务回滚失败\n"+exceptions.stream().map(i->i.getMessage()).collect(Collectors.joining("\n")));
+        if (!exceptions.isEmpty()) {
+            throw new MycatException("本地事务回滚失败\n" + exceptions.stream().map(i -> i.getMessage()).collect(Collectors.joining("\n")));
         }
     }
 
     @Override
     public Dumper snapshot() {
         return super.snapshot()
-                .addText("name",name())
-                .addText("threadUsage",getThreadUsageEnum())
-                .addText("transactionType",this.transactionType());
+                .addText("name", name())
+                .addText("threadUsage", getThreadUsageEnum())
+                .addText("transactionType", this.transactionType());
     }
 
-    @Override
-    public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        return jdbcConnectionManager
-                .getConnection(name, isAutocommit() && !isInTransaction(), TRANSACTION_REPEATABLE_READ, false);
-
-    }
 }

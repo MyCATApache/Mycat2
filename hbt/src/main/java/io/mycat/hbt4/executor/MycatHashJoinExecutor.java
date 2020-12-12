@@ -33,6 +33,8 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +56,7 @@ public class MycatHashJoinExecutor implements Executor {
     private List<Object> params;
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatHashJoinExecutor.class);
 
     public MycatHashJoinExecutor(JoinRelType joinType,
                                  Executor outer,
@@ -78,6 +81,10 @@ public class MycatHashJoinExecutor implements Executor {
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
         this.params = params;
+
+        if(LOGGER.isDebugEnabled()){
+            LOGGER.debug("create MycatMergeJoinExecutor ");
+        }
     }
 
     public MycatHashJoinExecutor create(

@@ -18,6 +18,6 @@ public class MetaClusterCurrent {
     }
 
     public static boolean exist(Class interceptorRuntimeClass) {
-        return context.get().containsKey(interceptorRuntimeClass);
+        return context.get().get(interceptorRuntimeClass)!=null;
     }
 }

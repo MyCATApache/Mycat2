@@ -18,8 +18,7 @@ import io.mycat.hbt4.DefaultDatasourceFactory;
 import io.mycat.hbt4.ResponseExecutorImplementor;
 import io.mycat.hbt4.executor.TempResultSetFactory;
 import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
+import io.mycat.metadata.*;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.ReactorThreadManager;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -42,6 +41,7 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Response;
 
+import java.rmi.MarshalledObject;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -77,6 +77,42 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("showDataNodes".equalsIgnoreCase(cmd)) {
+                    Map map = JsonUtil.from(body, Map.class);
+                    TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
+                            (String) map.get("tableName"));
+                    LogicTableType type = table.getType();
+                    List<DataNode> backends = null;
+                    switch (type) {
+                        case SHARDING:
+                            backends  = ((ShardingTable) table).getBackends();
+                            break;
+                        case GLOBAL:
+                            backends  = ((GlobalTable) table).getGlobalDataNode();
+                            break;
+                        case NORMAL:
+                            backends  = Collections.singletonList(
+                                    ((NormalTable) table).getDataNode());
+                            break;
+                        case CUSTOM:
+                            throw new UnsupportedOperationException("unsupport custom table");
+                    }
+                    ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                    resultSetBuilder.addColumnInfo("targetName",JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("schemaName",JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("tableName",JDBCType.VARCHAR);
+
+                    for (DataNode dataNode : backends) {
+                        String targetName = dataNode.getTargetName();
+                        String schemaName = dataNode.getSchema();
+                        String tableName = dataNode.getTable();
+
+                        resultSetBuilder.addObjectRowPayload(
+                                Arrays.asList(targetName,schemaName,tableName));
+                    }
+                    response.sendResultSet(resultSetBuilder.build());
+                    return;
+                }
                 if ("resetConfig".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     ops.reset();
