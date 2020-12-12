@@ -7,6 +7,7 @@ import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.util.Pair;
 import io.mycat.util.Response;
+import lombok.SneakyThrows;
 
 import java.util.List;
 
@@ -24,40 +25,48 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
         super(factory, tempResultSetFactory, response);
     }
 
+    @SneakyThrows
     @Override
     public void implementRoot(MycatRel rel, List<String> aliasList) {
-        if (rel instanceof MycatInsertRel) {
-            Executor executor = super.implement((MycatInsertRel) rel);
-            MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
-            if (insertExecutor.isProxy()) {
-                Pair<String, String> pair = insertExecutor.getSingleSql();
-                response.proxyUpdate(pair.getKey(), pair.getValue());
-            } else {
-                runInsert(insertExecutor);
+        try {
+            if (rel instanceof MycatInsertRel) {
+                Executor executor = super.implement((MycatInsertRel) rel);
+                MycatInsertExecutor insertExecutor = (MycatInsertExecutor) executor;
+                if (insertExecutor.isProxy()) {
+                    Pair<String, String> pair = insertExecutor.getSingleSql();
+                    response.proxyUpdate(pair.getKey(), pair.getValue());
+                } else {
+                    factory.open();
+                    runInsert(insertExecutor);
+                }
+                return;
             }
-            return;
-        }
-        if (rel instanceof MycatUpdateRel) {
-            Executor executor = super.implement((MycatUpdateRel) rel);
-            MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
-            if (updateExecutor.isProxy()) {
-                response.sendOk(updateExecutor.getLastInsertId(), updateExecutor.getAffectedRow());
-            } else {
-                runUpdate(updateExecutor);
+            if (rel instanceof MycatUpdateRel) {
+                Executor executor = super.implement((MycatUpdateRel) rel);
+                MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
+                if (updateExecutor.isProxy()) {
+                    response.sendOk(updateExecutor.getLastInsertId(), updateExecutor.getAffectedRow());
+                } else {
+                    factory.open();
+                    runUpdate(updateExecutor);
+                }
+                return;
             }
-            return;
-        }
-        if (rel instanceof View) {
-            Executor executor = super.implement((View) rel);
-            ViewExecutor viewExecutor = (ViewExecutor) executor;
-            if (viewExecutor.isProxy()) {
-                Pair<String, String> singleSql = viewExecutor.getSingleSql();
-                response.proxySelect(singleSql.getKey(), singleSql.getValue());
-            } else {
-                runQuery(rel,viewExecutor,aliasList);
+            if (rel instanceof View) {
+                Executor executor = super.implement((View) rel);
+                ViewExecutor viewExecutor = (ViewExecutor) executor;
+                if (viewExecutor.isProxy()) {
+                    Pair<String, String> singleSql = viewExecutor.getSingleSql();
+                    response.proxySelect(singleSql.getKey(), singleSql.getValue());
+                } else {
+                    factory.open();
+                    runQuery(rel, viewExecutor, aliasList);
+                }
+                return;
             }
-            return;
+            super.implementRoot(rel, aliasList);
+        }finally {
+            factory.close();
         }
-        super.implementRoot(rel, aliasList);
     }
 }

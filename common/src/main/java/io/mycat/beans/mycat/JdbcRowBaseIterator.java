@@ -14,6 +14,7 @@
  */
 package io.mycat.beans.mycat;
 
+import io.mycat.MycatConnection;
 import io.mycat.MycatTimeUtil;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
@@ -40,12 +41,14 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
+    private MycatConnection connection;
     private final String sql;
     private final AutoCloseable closeCallback;
     private boolean hasNext = true;
 
     @SneakyThrows
-    public JdbcRowBaseIterator(MycatRowMetaData metaData, Statement statement, ResultSet resultSet, AutoCloseable closeCallback,String sql) {
+    public JdbcRowBaseIterator(MycatRowMetaData metaData, MycatConnection connection, Statement statement, ResultSet resultSet, AutoCloseable closeCallback, String sql) {
+        this.connection = connection;
         this.sql = sql;
         this.metaData = metaData == null?new JdbcRowMetaData(resultSet.getMetaData()):metaData;;
         this.statement = statement;
