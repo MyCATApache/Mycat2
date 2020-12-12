@@ -167,6 +167,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         if (LOGGER.isDebugEnabled()){
             LOGGER.debug("close :{} {}", connection,connection.connection);
         }
+        LOGGER.error("{} {}",connection,connection.connection, new Throwable());
         /**
          *
          * To prevent the transaction from being committed at close time,
