@@ -42,12 +42,12 @@ public class HbtTest implements MycatTest {
 
             execute(mycatConnection,
                     CreateClusterHint
-                            .create("c0",
+                            .create("prototype",
                                     Arrays.asList("dw0"), Arrays.asList("dr0")));
 
             execute(mycatConnection,
                     CreateClusterHint
-                            .create("c1",
+                            .create("prototype",
                                     Arrays.asList("dw1"), Arrays.asList("dr1")));
 
             execute(mycatConnection, "CREATE DATABASE db1");
@@ -61,8 +61,7 @@ public class HbtTest implements MycatTest {
                     "  `blob` longblob,\n" +
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
-                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
-                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
 
             deleteData(mycatConnection, "db1", "travelrecord");
 
@@ -107,10 +106,10 @@ public class HbtTest implements MycatTest {
 
 
             //集合操作测试
-            Assert.assertEquals("[{1=1}, {1=2}]",runHBT("unionAll(fromSql('c0','select 1'),fromSql('c1','select 2'))"));
+            Assert.assertEquals("[{1=1}, {1=2}]",runHBT("unionAll(fromSql('prototype','select 1'),fromSql('prototype','select 2'))"));
 
             //distinct
-            Assert.assertEquals("[{1=1}]",runHBT("unionAll(fromSql('c0','select 1'),fromSql('c1','select 1')).distinct()"));
+            Assert.assertEquals("[{1=1}]",runHBT("unionAll(fromSql('prototype','select 1'),fromSql('prototype','select 1')).distinct()"));
 
             //groupBy
             Assert.assertEquals("[{id=1, $f1=1.0}, {id=999999999, $f1=9.99999999E8}]",runHBT("fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`)),aggregating(avg(`id`))))"));
@@ -119,11 +118,11 @@ public class HbtTest implements MycatTest {
 
             Assert.assertEquals("[{$f0=1000000000}]",runHBT("fromTable(db1,travelrecord).groupBy(keys(groupKey()),aggregating(sum(`id`)))"));
 
-            Assert.assertEquals("[{1=1}]",runHBT("unionDistinct(fromSql('c0','select 1'),fromSql('c1','select 1'))"));
-            Assert.assertEquals("[]",runHBT("exceptDistinct(fromSql('c0','select 1'),fromSql('c1','select 1'))"));
-             Assert.assertEquals("[]",runHBT("exceptAll(fromSql('c0','select 2'),fromSql('c0','select 2'))"));
-             Assert.assertEquals("[]",runHBT("intersectAll(fromSql('c0','select 1'),fromSql('c0','select 2'))"));
-             Assert.assertEquals("[{2=2}]",runHBT("intersectDistinct(fromSql('c0','select 2'),fromSql('c0','select 2'))"));
+            Assert.assertEquals("[{1=1}]",runHBT("unionDistinct(fromSql('prototype','select 1'),fromSql('prototype','select 1'))"));
+            Assert.assertEquals("[]",runHBT("exceptDistinct(fromSql('prototype','select 1'),fromSql('prototype','select 1'))"));
+             Assert.assertEquals("[]",runHBT("exceptAll(fromSql('prototype','select 2'),fromSql('prototype','select 2'))"));
+             Assert.assertEquals("[]",runHBT("intersectAll(fromSql('prototype','select 1'),fromSql('prototype','select 2'))"));
+             Assert.assertEquals("[{2=2}]",runHBT("intersectDistinct(fromSql('prototype','select 2'),fromSql('prototype','select 2'))"));
 
             //EXPLAIN SELECT MAX(id) FROM db1.travelrecord;
              Assert.assertEquals("[{$f0=999999999}]",runHBT(
@@ -135,7 +134,7 @@ public class HbtTest implements MycatTest {
 
             //EXPLAIN SELECT COUNT(1) FROM db1.travelrecord;
              Assert.assertEquals("[{$f0=2}]",runHBT(
-                     "unionAll( fromSql(c0,'SELECT COUNT(*)  FROM `db1`.`travelrecord`'), fromSql(c0,'SELECT COUNT(*)  FROM (SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`) AS `t2`')).groupBy(keys(groupKey()),aggregating(count()))"
+                     "unionAll( fromSql(prototype,'SELECT COUNT(*)  FROM `db1`.`travelrecord`'), fromSql(prototype,'SELECT COUNT(*)  FROM (SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`  UNION ALL  SELECT NULL  FROM `db1`.`travelrecord`) AS `t2`')).groupBy(keys(groupKey()),aggregating(count()))"
              ));
 
 
@@ -153,31 +152,34 @@ public class HbtTest implements MycatTest {
 
 
              Assert.assertEquals("[{id0=1, id=1, companyname=Intel, addressid=1}, {id0=999999999, id=null, companyname=null, addressid=null}]",
-                     runHBT("leftJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company))"));
+                     runHBT("leftJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company)).orderBy(order(id,ASC))"));
              Assert.assertEquals("[{id0=1, id=1, companyname=Intel, addressid=1}, {id0=null, id=2, companyname=IBM, addressid=2}, {id0=null, id=3, companyname=Dell, addressid=3}]",
-                     runHBT("rightJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company))"));
+                     runHBT("rightJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company)).orderBy(order(id,ASC))"));
              Assert.assertEquals("[{id0=1}]",
-                     runHBT("semiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company))"));
+                     runHBT("semiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company)).orderBy(order(id0,ASC))"));
              Assert.assertEquals("[{id0=999999999}]",
-                     runHBT("antiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company))"));
-             Assert.assertEquals("[{id0=999999999}]",runHBT("antiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company))"));
+                     runHBT("antiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company)).orderBy(order(id0,ASC))"));
+             Assert.assertEquals("[{id0=999999999}]",runHBT("antiJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,company)).orderBy(order(id0,ASC))"));
 
             //三表
-             Assert.assertEquals("[{id=12, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null, id1=null, companyname0=null, addressid0=null}]",
-                     runHBT("leftJoin(`$0` eq `$$3`," +
+            Assert.assertEquals("[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, companyname=Intel, addressid=1, id1=1, companyname0=Intel, addressid0=1}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null, id1=null, companyname0=null, addressid0=null}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null, id1=null, companyname0=null, addressid0=null}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null, id1=null, companyname0=null, addressid0=null}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=null, companyname=null, addressid=null, id1=null, companyname0=null, addressid0=null}]",
+                    runHBT("leftJoin(`$0` eq `$$3`," +
                             "leftJoin(`$0` eq `$$3`," +
-                            "unionAll( fromSql(c1,'SELECT *  FROM `db1`.`travelrecord`'), " +
-                            "fromSql(c0,'SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord`'))," +
-                            "fromSql(c0,'SELECT `id`, `companyname`, `addressid`, CAST(`id` AS SIGNED) AS `id0`  FROM `db1`.`company`'))" +
+                            "unionAll( fromSql(prototype,'SELECT *  FROM `db1`.`travelrecord`'), " +
+                            "fromSql(prototype,'SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord`  UNION ALL  SELECT *  FROM `db1`.`travelrecord`'))," +
+                            "fromSql(prototype,'SELECT `id`, `companyname`, `addressid`, CAST(`id` AS SIGNED) AS `id0`  FROM `db1`.`company`'))" +
                             ".map(`$0` as `id`,`$1` as `user_id`,`$2` as `traveldate`,`$3` as `fee`,`$4` as `days`,`$5` as `blob`,`$6` as `id0`,`$7` as `companyname`,`$8` as `addressid`)" +
-                            ",fromSql(c0,'SELECT `id`, `companyname`, `addressid`, CAST(`id` AS SIGNED) AS `id0`  FROM `db1`.`company`'))" +
-                            ".map(`$0` as `id`,`$1` as `user_id`,`$2` as `traveldate`,`$3` as `fee`,`$4` as `days`,`$5` as `blob`,`$6` as `id0`,`$7` as `companyname`,`$8` as `addressid`,`$9` as `id1`,`$10` as `companyname0`,`$11` as `addressid0`)"));
+                            ",fromSql(prototype,'SELECT `id`, `companyname`, `addressid`, CAST(`id` AS SIGNED) AS `id0`  FROM `db1`.`company`'))" +
+                            ".map(`$0` as `id`,`$1` as `user_id`,`$2` as `traveldate`,`$3` as `fee`,`$4` as `days`,`$5` as `blob`,`$6` as `id0`,`$7` as `companyname`,`$8` as `addressid`,`$9` as `id1`,`$10` as `companyname0`,`$11` as `addressid0`).orderBy(order(id,ASC))"));
 
-             Assert.assertEquals("[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, user_id0=999, traveldate0=null, fee0=null, days0=null, blob0=null, id1=1, companyname=Intel, addressid=1}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=999999999, user_id0=999, traveldate0=null, fee0=null, days0=null, blob0=null, id1=null, companyname=null, addressid=null}]",runHBT("leftJoin(`$0` eq `$$0`," +
+            Assert.assertEquals(
+
+                    "[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=1, user_id0=999, traveldate0=null, fee0=null, days0=null, blob0=null, id1=1, companyname=Intel, addressid=1}, {id=999999999, user_id=999, traveldate=null, fee=null, days=null, blob=null, id0=999999999, user_id0=999, traveldate0=null, fee0=null, days0=null, blob0=null, id1=null, companyname=null, addressid=null}]",
+                    runHBT("leftJoin(`$0` eq `$$0`," +
                             "leftJoin(`$0` eq `$$0`,fromTable(db1,travelrecord), fromTable(db1,travelrecord))" +
-                            ",fromTable(db1,company))"));
-             Assert.assertEquals("[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null}]",runHBT("filterFromTable(`id` = 1,db1,travelrecord)"));
-             Assert.assertEquals("[{id=1}]",runHBT("fromRelToSql(c0,fromTable('db1','travelrecord').filter(`id` = 1).map(`id`))"));
+                            ",fromTable(db1,company)).orderBy(order(id,ASC))"));
+             Assert.assertEquals("[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null}]",runHBT("filterFromTable(`id` = 1,db1,travelrecord).orderBy(order(id,ASC))"));
+             Assert.assertEquals("[{id=1}]",runHBT("fromRelToSql(prototype,fromTable('db1','travelrecord').filter(`id` = 1).map(`id`)).orderBy(order(id,ASC))"));
 
             System.out.println();
         }

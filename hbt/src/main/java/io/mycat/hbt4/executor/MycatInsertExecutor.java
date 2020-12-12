@@ -58,6 +58,7 @@ public class MycatInsertExecutor implements Executor {
         } else {
             this.groupMap = runNormalParams();
         }
+        this.factory.registered( this.groupMap.keySet().stream().map(i->i.getTarget()).distinct().collect(Collectors.toList()));
     }
 
     public boolean isProxy() {

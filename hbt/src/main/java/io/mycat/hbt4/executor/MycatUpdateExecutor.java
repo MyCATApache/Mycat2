@@ -47,6 +47,7 @@ public class MycatUpdateExecutor implements Executor {
         this.parameters = parameters;
         this.factory = factory;
         this.groupKeys = getGroup();
+        factory.registered(this.groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
     }
 
     public static MycatUpdateExecutor create(Distribution values,

@@ -34,6 +34,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.objenesis.instantiator.util.UnsafeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +53,7 @@ public class MycatMergeJoinExecutor implements Executor {
     private List<Object> params;
     private Enumerable<Row> rows;
     private Iterator<Row> iterator;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatMergeJoinExecutor.class);
 
     protected MycatMergeJoinExecutor(JoinRelType joinType,
                                      Executor outer,
@@ -72,6 +75,10 @@ public class MycatMergeJoinExecutor implements Executor {
         this.rightFieldCount = rightFieldCount;
         this.resultRelDataType = resultRelDataType;
         this.params = params;
+
+        if(LOGGER.isDebugEnabled()){
+            LOGGER.debug("create MycatMergeJoinExecutor ");
+        }
     }
     public static MycatMergeJoinExecutor create(
             JoinRelType joinType,
