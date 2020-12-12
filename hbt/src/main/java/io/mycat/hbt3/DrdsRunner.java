@@ -50,6 +50,7 @@ import io.mycat.hbt4.logical.rules.MycatViewToIndexViewRule;
 import io.mycat.metadata.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.gsi.GSIService;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -436,8 +437,15 @@ public class DrdsRunner {
             }
         }
         RelNode rboLogPlan = optimizeWithRBO(logPlan, drdsSql, optimizationContext);
-        MycatViewToIndexViewRule mycatViewToIndexViewRule = new MycatViewToIndexViewRule(optimizationContext, drdsSql.getParams());
-        MycatRel cboLogPlan = optimizeWithCBO(rboLogPlan, Collections.singletonList(mycatViewToIndexViewRule));
+        Collection<RelOptRule> rboInCbo;
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            rboInCbo = Collections.singletonList(
+                    new MycatViewToIndexViewRule(optimizationContext, drdsSql.getParams())
+            );
+        }else {
+            rboInCbo = Collections.emptyList();
+        }
+        MycatRel cboLogPlan = optimizeWithCBO(rboLogPlan, rboInCbo);
         if (!optimizationContext.predicateOnPhyView && !optimizationContext.predicateOnView) {
             //全表扫描
             optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
