@@ -132,8 +132,9 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             } else {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
-                    if (!checkPassword(rightPassword, password)) {
+                    if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
                         failture(mycat, "password is wrong");
+                        LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
                     }
                 }
