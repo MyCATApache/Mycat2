@@ -1,6 +1,5 @@
 package io.mycat.hbt4.executor;
 
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLLimit;
 import com.alibaba.fastsql.sql.ast.SQLOrderBy;
@@ -9,11 +8,11 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.clause.MySqlDeclareStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.fastsql.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
+import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -24,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -168,7 +166,7 @@ public class MycatPreparedStatementUtil {
 
     @SneakyThrows
     public static RowBaseIterator executeQuery(Connection mycatConnection,
-                                               MycatRowMetaData calciteRowMetaData,
+                                               MycatConnection connection, MycatRowMetaData calciteRowMetaData,
                                                SqlString value,
                                                List<Object> params) {
         String sql = value.getSql();
@@ -182,7 +180,7 @@ public class MycatPreparedStatementUtil {
                 MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
             }
             ResultSet resultSet = preparedStatement.executeQuery();
-            return new JdbcRowBaseIterator(calciteRowMetaData, preparedStatement, resultSet, null, sql);
+            return new JdbcRowBaseIterator(calciteRowMetaData, connection, preparedStatement, resultSet, null, sql);
         } catch (Throwable throwable) {
             LOGGER.error("sql:{} {}", sql, (params).toString(), throwable);
             throw throwable;

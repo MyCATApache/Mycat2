@@ -20,6 +20,7 @@ import java.util.Optional;
 import static io.mycat.calcite.CalciteUtls.unCastWrapper;
 
 public class IndexRBORewriter<T> extends SQLRBORewriter {
+    boolean apply = false;
     public IndexRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
         super(optimizationContext,params);
     }
@@ -29,6 +30,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
         Optional<T> indexTableView = checkIndex(scan);
         if (indexTableView.isPresent()) {
             T t = indexTableView.get();
+            apply = true;
             return new IndexTableView(scan, (Iterable<Object[]>) t);
         } else {
             return super.visit(scan);
@@ -39,6 +41,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
     public RelNode visit(LogicalFilter filter) {
         Optional<T> optional = checkIndex(filter);
         if (optional.isPresent()) {
+            apply = true;
             IndexTableView indexTableView = new IndexTableView(filter.getInput(), (Iterable<Object[]>) optional.get());
             return filter.copy(filter.getTraitSet(), indexTableView, filter.getCondition());
         } else {
@@ -50,6 +53,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
     public RelNode visit(LogicalProject project) {
         Optional<T> optional = checkIndex(project);
         if (optional.isPresent()) {
+            apply = true;
             IndexTableView indexTableView = new IndexTableView(project.getInput(), (Iterable<Object[]>) optional.get());
             return project.copy(project.getTraitSet(),
                     indexTableView, project.getProjects(),
@@ -159,5 +163,9 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
                 ((LogicalProject) input).getInput() instanceof LogicalFilter
                 &&
                 checkTable(((LogicalFilter) ((LogicalProject) input).getInput()).getInput());
+    }
+
+    public boolean isApply() {
+        return apply;
     }
 }

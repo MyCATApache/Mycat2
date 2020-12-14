@@ -28,7 +28,7 @@ public interface DataSourceFactory extends AutoCloseable {
 
     Map<String, MycatConnection> getConnections(List<String> targets);
 
-    void registered(ImmutableList<String> asList);
+    void registered(List<String> asList);
 
     MycatConnection getConnection(String key);
 

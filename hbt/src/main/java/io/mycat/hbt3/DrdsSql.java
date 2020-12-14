@@ -2,12 +2,11 @@ package io.mycat.hbt3;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Data
@@ -21,7 +20,7 @@ public class DrdsSql {
     public DrdsSql(SQLStatement sqlStatement, String parameterizedString, List<Object> params) {
         this.sqlStatement = sqlStatement;
         this.parameterizedString = parameterizedString;
-        this.params = params;
+        this.params = Objects.requireNonNull(params);
     }
 
     public static DrdsSql of(

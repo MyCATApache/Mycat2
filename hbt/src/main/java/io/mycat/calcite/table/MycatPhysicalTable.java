@@ -72,7 +72,7 @@ public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatT
 
     @Override
     public ShardingInfo getShardingInfo() {
-        return null;
+        return logicTable.getShardingInfo();
     }
 
     @Override

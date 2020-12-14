@@ -23,6 +23,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -53,7 +54,10 @@ public class CalciteUtls {
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         List<QueryBackendTask> list = new ArrayList<>();
         for (DataNode backendTableInfo : calculate) {
-            String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
+            String targetName = backendTableInfo.getTargetName();
+            SqlDialect dialect = MycatCalciteSupport.INSTANCE
+                    .getSqlDialectByTargetName(targetName);
+            String backendTaskSQL = getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, backendTableInfo);
             QueryBackendTask queryBackendTask = new QueryBackendTask(backendTableInfo.getTargetName(), backendTaskSQL);
             list.add(queryBackendTask);
         }
@@ -87,20 +91,26 @@ public class CalciteUtls {
     }
 
     @NotNull
-    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, DataNode backendTableInfo) {
+    public static String getBackendTaskSQL(SqlDialect dialect,
+                                           List<RexNode> filters,
+                                           List<SimpleColumnInfo> rawColumnList,
+                                           List<SimpleColumnInfo> projectColumnList,
+                                           DataNode backendTableInfo) {
         String targetSchema = backendTableInfo.getSchema();
         String targetTable = backendTableInfo.getTable();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-        return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
+        return getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL(ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+    public static String getBackendTaskSQL( SqlDialect dialect,ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
         List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
-        return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
+        return getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, backendTableInfo);
     }
 
-    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList,
+    public static String getBackendTaskSQL(
+            SqlDialect dialect,
+            List<RexNode> filters, List<SimpleColumnInfo> rawColumnList,
                                            List<SimpleColumnInfo> projectColumnList,
                                            String targetSchema,
                                            String targetTable,
@@ -108,7 +118,7 @@ public class CalciteUtls {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
         sqlBuilder.append(MessageFormat.format("select {0} from {1} ", selectItems, targetSchemaTable));
-        sqlBuilder.append(getFilterSQLText(rawColumnList, targetSchema, targetTable, filters));
+        sqlBuilder.append(getFilterSQLText(dialect,rawColumnList, targetSchema, targetTable, filters));
         return sqlBuilder.toString();
     }
 
@@ -121,12 +131,16 @@ public class CalciteUtls {
         }
     }
 
-    public static String getFilterSQLText(List<SimpleColumnInfo> rawColumns, String schemaName, String tableName, List<RexNode> filters) {
+    public static String getFilterSQLText(SqlDialect dialect,
+                                          List<SimpleColumnInfo> rawColumns,
+                                          String schemaName,
+                                          String tableName,
+                                          List<RexNode> filters) {
         if (filters == null || filters.isEmpty()) {
             return "";
         }
         RexNode rexNode = RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, filters);
-        SqlImplementor.Context context = new SqlImplementor.Context(MycatSqlDialect.DEFAULT, rawColumns.size()) {
+        SqlImplementor.Context context = new SqlImplementor.Context(dialect, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {
                 String fieldName = rawColumns.get(ordinal).getColumnName();
@@ -140,7 +154,7 @@ public class CalciteUtls {
             }
         };
         try {
-            return " where " + context.toSql(null, rexNode).toSqlString(MycatSqlDialect.DEFAULT).getSql();
+            return " where " + context.toSql(null, rexNode).toSqlString(dialect).getSql();
         } catch (Exception e) {
             LOGGER.warn("不能生成对应的sql", e);
         }

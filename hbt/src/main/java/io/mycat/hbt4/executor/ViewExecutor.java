@@ -1,11 +1,12 @@
 package io.mycat.hbt4.executor;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatConnection;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
-import io.mycat.api.collector.ComposeFutureRowBaseIterator;
+import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
@@ -23,8 +24,8 @@ import java.sql.Connection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.apply;
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
@@ -58,7 +59,7 @@ public class ViewExecutor implements Executor {
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(view.getRelNode().getRowType().getFieldList());
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
-        LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
+        LinkedList<RowBaseIterator> futureArrayList = new LinkedList<>();
 
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {
             MycatConnection mycatConnection = factory.getConnection(entry.getKey());
@@ -66,16 +67,12 @@ public class ViewExecutor implements Executor {
             if (connection.isClosed()){
                 LOGGER.error("mycatConnection:{} has closed but still using", mycatConnection);
             }
-            futureArrayList.add(mycatWorker.submit(() -> {
-                if(LOGGER.isDebugEnabled()){
-                    LOGGER.debug("mycatConnection:{} {} sql:{} params:{}",
-                            mycatConnection,connection,entry.getValue(),params);
-                }
-                return executeQuery(connection, calciteRowMetaData, entry.getValue(), params);
-            }));
+            futureArrayList.add(
+                 executeQuery(connection,mycatConnection, calciteRowMetaData, entry.getValue(), params)
+            );
         }
         AtomicBoolean flag = new AtomicBoolean();
-        ComposeFutureRowBaseIterator composeFutureRowBaseIterator = new ComposeFutureRowBaseIterator(calciteRowMetaData, futureArrayList);
+        ComposeRowBaseIterator composeFutureRowBaseIterator = new ComposeRowBaseIterator(calciteRowMetaData, futureArrayList);
         this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(flag, composeFutureRowBaseIterator);
     }
 
@@ -117,7 +114,11 @@ public class ViewExecutor implements Executor {
             String key = entry.getKey();
             SqlString value = entry.getValue();
             writer.item("targetName:"+key+"->"+value.getSql().replaceAll("\n"," "),"");
-            writer.item("params",params);
+            ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
+            if (dynamicParameters!=null){
+                writer.item("params",  dynamicParameters.stream().map(i->params.get(i)).collect(Collectors.toList()));
+            }
+
         }
         return explainWriter.ret();
     }

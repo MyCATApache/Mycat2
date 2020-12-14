@@ -16,14 +16,12 @@ package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.hbt4.*;
-import io.mycat.util.Pair;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
@@ -33,18 +31,16 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
@@ -103,7 +99,7 @@ public class View extends AbstractRelNode implements MycatRel {
     @NotNull
     private RelWriter innerExplainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("\nrelNode",getSql());
+        writer.item("\nrelNode",getSql(MycatSqlDialect.DEFAULT));
         String msg = StreamSupport
                 .stream(distribution.getDataNodes().spliterator(), false)
                 .map(i -> i.toString()).collect(Collectors.joining(",\n"));
@@ -113,11 +109,11 @@ public class View extends AbstractRelNode implements MycatRel {
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-        return writer.name("View").into().item("sql", getSql()).ret();
+        return writer.name("View").into().item("sql", getSql(MycatSqlDialect.DEFAULT)).ret();
     }
 
-    public String getSql() {
-        return MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT, false).getSql();
+    public String getSql(SqlDialect dialect) {
+        return MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, false).getSql();
     }
 
     @Override
@@ -166,12 +162,14 @@ public class View extends AbstractRelNode implements MycatRel {
     public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params) {
         if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
-            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update,params);
+            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
+            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update,params);
             return ImmutableMultimap.of(dataNode.getTargetName(), sql);
         } else {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             for (DataNode dataNode : this.distribution.getDataNodes(params)) {
-                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), MycatSqlDialect.DEFAULT, update,params);
+                SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
+                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update,params);
                 builder.put(dataNode.getTargetName(), sql);
             }
             return builder.build();
