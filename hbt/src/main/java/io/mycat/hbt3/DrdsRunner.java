@@ -49,6 +49,7 @@ import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.metadata.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.util.LazyTransformCollection;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -58,7 +59,6 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -131,10 +131,10 @@ public class DrdsRunner {
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 ImmutableList.of(),
-                MycatCalciteSupport.INSTANCE.TypeFactory,
+                MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         RelOptCluster cluster = newCluster();
-        RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         HBTQueryConvertor hbtQueryConvertor = new HBTQueryConvertor(Collections.emptyList(), relBuilder);
         RelNode relNode = hbtQueryConvertor.complie(originSchema);
         relNode = relNode.accept(new RelShuttleImpl() {
@@ -158,25 +158,14 @@ public class DrdsRunner {
 
 
     public Iterable<DrdsSql> preParse(List<SQLStatement> sqlStatements, List<Object> inputParameters) {
-        Iterator<SQLStatement> iterator = sqlStatements.iterator();
-        return () -> new Iterator<DrdsSql>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public DrdsSql next() {
-
-                List<Object> params = new ArrayList<>();
-                SQLStatement sqlStatement = iterator.next();
-                StringBuilder sb = new StringBuilder();
-                MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
-                String string = sb.toString();
-                sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                return DrdsSql.of(sqlStatement, string, params);
-            }
-        };
+        return LazyTransformCollection.transform(sqlStatements, sqlStatement -> {
+            List<Object> params = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
+            MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
+            String string = sb.toString();
+            sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+            return DrdsSql.of(sqlStatement, string, params);
+        });
     }
 
 
@@ -221,40 +210,30 @@ public class DrdsRunner {
                                                Iterable<DrdsSql> stmtList,
                                                SchemaPlus plus,
                                                MycatDataContext dataContext) {
-        Iterator<DrdsSql> iterator = stmtList.iterator();
-        return () -> new Iterator<DrdsSql>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public DrdsSql next() {
-                RelOptCluster cluster = newCluster();
-                DrdsSql drdsSql = iterator.next();
-                MycatRel rel;
-                Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
-                if (minCostPlan != null) {
-                    switch (minCostPlan.getType()) {
-                        case PARSE:
-                            drdsSql.setRelNode(minCostPlan.getRelNode());
-                            OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                            rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
-                            break;
-                        case FINAL:
-                            rel = (MycatRel) minCostPlan.getRelNode();
-                            break;
-                        default:
-                            throw new UnsupportedOperationException();
-                    }
-                } else {
-                    OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                    rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
+        return LazyTransformCollection.transform(stmtList, drdsSql->{
+            RelOptCluster cluster = newCluster();
+            MycatRel rel;
+            Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
+            if (minCostPlan != null) {
+                switch (minCostPlan.getType()) {
+                    case PARSE:
+                        drdsSql.setRelNode(minCostPlan.getRelNode());
+                        OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
+                        rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
+                        break;
+                    case FINAL:
+                        rel = (MycatRel) minCostPlan.getRelNode();
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
                 }
-                drdsSql.setRelNode(rel);
-                return drdsSql;
+            } else {
+                OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
+                rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
             }
-        };
+            drdsSql.setRelNode(rel);
+            return drdsSql;
+        });
     }
 
     public MycatRel dispatch(OptimizationContext optimizationContext,
@@ -460,11 +439,11 @@ public class DrdsRunner {
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
-                MycatCalciteSupport.INSTANCE.TypeFactory,
+                MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         SqlValidator validator =
 
-                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.config.getOperatorTable()), catalogReader, MycatCalciteSupport.TypeFactory,
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
@@ -543,14 +522,14 @@ public class DrdsRunner {
         validated = validator.validate(sqlNode);
 
         RelOptCluster cluster = newCluster();
-        RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
                 NOOP_EXPANDER,
                 validator,
                 catalogReader,
                 cluster,
-                MycatCalciteSupport.INSTANCE.config.getConvertletTable(),
-                MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
+                MycatCalciteSupport.config.getConvertletTable(),
+                MycatCalciteSupport.sqlToRelConverterConfig);
 
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
         drdsSql.setAliasList(
@@ -707,7 +686,7 @@ public class DrdsRunner {
             planner.addRelTraitDef(i);
         }
         FILTER.forEach(f -> planner.addRule(f));
-        return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
+        return RelOptCluster.create(planner, MycatCalciteSupport.RexBuilder);
     }
 
     private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;

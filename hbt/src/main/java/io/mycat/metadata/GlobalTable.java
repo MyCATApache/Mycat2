@@ -117,6 +117,8 @@ public class GlobalTable implements GlobalTableHandler {
         try (DefaultConnection connection = jdbcConnectionManager.getConnection("prototype")) {
             DDLHelper.createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
+        }catch (Exception e){
+            e.printStackTrace();
         }
         for (DataNode node : getGlobalDataNode()) {
             createPhysicalTable(jdbcConnectionManager,node,getCreateTableSQL());

@@ -400,7 +400,7 @@ public class MetadataManager implements MysqlVariableService {
         String s = schemaName + "_" + orignalTableName;
         Supplier<Number> sequence = sequenceGenerator.getSequence(s);
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, createTableSQL);
-        shardingTable.setShardingFuntion(PartitionRuleFunctionManager.INSTANCE.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
+        shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
     }
 

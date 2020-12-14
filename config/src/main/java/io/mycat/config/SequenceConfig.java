@@ -10,6 +10,8 @@ import java.util.Map;
 public class SequenceConfig {
     private String name;
 
+    // ---------给用户自行扩展预留字段------------
+
     private String startWith;
     private String incrementBy;
     private String minValue;
@@ -30,6 +32,8 @@ public class SequenceConfig {
     private Long unitIndex;
 
     private Long step;
+
+    // ---------给用户自定义预留------------
 
     private String clazz;
 
