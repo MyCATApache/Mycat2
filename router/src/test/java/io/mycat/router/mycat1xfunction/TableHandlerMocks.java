@@ -67,6 +67,16 @@ public class TableHandlerMocks {
                 return Optional.empty();
             }
 
+            @Override
+            public boolean canIndex() {
+                return false;
+            }
+
+            @Override
+            public int getIndexBColumnName(String name) {
+                return 0;
+            }
+
 
             @Override
             public LogicTableType getType() {

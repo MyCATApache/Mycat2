@@ -35,6 +35,7 @@ import java.util.*;
  * @author Junwen Chen
  **/
 public enum MycatdbCommand {
+    /**/
     INSTANCE;
     final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
     static final ImmutableClassToInstanceMap<SQLHandler> sqlHandlerMap;
@@ -133,11 +134,24 @@ public enum MycatdbCommand {
                 execute(dataContext, receiver, sqlStatement);
             }
         } catch (Throwable e) {
+            if(isNavicatClientStatusQuery(text)){
+                session.writeOkEndPacket();
+                return;
+            }
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
             return;
         }
 
+    }
+
+    private static boolean isNavicatClientStatusQuery(String text){
+        if(Objects.equals(
+                "SELECT STATE AS `状态`, ROUND(SUM(DURATION),7) AS `期间`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `百分比` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ",
+                text)){
+            return true;
+        }
+        return false;
     }
 
     public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {

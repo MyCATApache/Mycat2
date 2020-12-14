@@ -44,15 +44,15 @@ public class LogicTable {
         this.tableName = tableName;
         this.rawColumns = rawColumns;
         SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
-        if (createTableAst instanceof SQLCreateTableStatement ){
+        if (createTableAst instanceof SQLCreateTableStatement) {
             ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
-            ((SQLCreateTableStatement ) createTableAst).setSchema(schemaName);
+            ((SQLCreateTableStatement) createTableAst).setSchema(schemaName);
         }
-        if (createTableAst instanceof MySqlCreateTableStatement){
+        if (createTableAst instanceof MySqlCreateTableStatement) {
             ((MySqlCreateTableStatement) createTableAst).setIfNotExiists(true);
             ((MySqlCreateTableStatement) createTableAst).setSchema(schemaName);
         }
-        if (createTableAst instanceof SQLCreateViewStatement){
+        if (createTableAst instanceof SQLCreateViewStatement) {
             ((SQLCreateViewStatement) createTableAst).setIfNotExists(true);
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
             tableSource.setSchema(schemaName);
@@ -111,23 +111,28 @@ public class LogicTable {
         }
     }
 
+    public int getIndexBColumnName(String name) {
+        SimpleColumnInfo columnByName = getColumnByName(name);
+        return this.rawColumns.indexOf(columnByName);
+    }
+
     public String getUniqueName() {
         return uniqueName;
     }
 
-    public static String rewriteCreateTableSql(String sql,String schemaName, String tableName) {
+    public static String rewriteCreateTableSql(String sql, String schemaName, String tableName) {
         SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(sql);
-        if (createTableAst instanceof SQLCreateTableStatement){
+        if (createTableAst instanceof SQLCreateTableStatement) {
             SQLCreateTableStatement tableStatement = (SQLCreateTableStatement) createTableAst;
             tableStatement.setTableName(tableName);
             tableStatement.setSchema(schemaName);
         }
-        if (createTableAst instanceof MySqlCreateTableStatement){
+        if (createTableAst instanceof MySqlCreateTableStatement) {
             MySqlCreateTableStatement tableStatement = (MySqlCreateTableStatement) createTableAst;
             tableStatement.setTableName(tableName);
             tableStatement.setSchema(schemaName);
         }
-        if (createTableAst instanceof SQLCreateViewStatement){
+        if (createTableAst instanceof SQLCreateViewStatement) {
             SQLExprTableSource tableSource = ((SQLCreateViewStatement) createTableAst).getTableSource();
             tableSource.setSimpleName(tableName);
             tableSource.setSchema(schemaName);
