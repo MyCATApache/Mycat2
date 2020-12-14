@@ -14,9 +14,11 @@
  */
 package io.mycat.calcite;
 
+import com.alibaba.druid.DbType;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -34,6 +36,7 @@ import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Explains;
 import io.mycat.util.NameMap;
 import lombok.SneakyThrows;
@@ -56,6 +59,8 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.dialect.MssqlSqlDialect;
+import org.apache.calcite.sql.dialect.OracleSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -120,7 +125,7 @@ public enum MycatCalciteSupport implements Context {
 
     }
 
-//    public static final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+    //    public static final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
 //            .setConformance(SqlConformanceEnum.MYSQL_5)
 //            .setCaseSensitive(false).build();
     public static final MycatTypeSystem TypeSystem = new MycatTypeSystem();
@@ -618,7 +623,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate, List<Object> params) {
-        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT, params);
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         if (forUpdate) {
@@ -677,5 +682,24 @@ public enum MycatCalciteSupport implements Context {
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
     }
 
+    public SqlDialect getSqlDialectByTargetName(String name) {
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
+        DbType dbType = DbType.valueOf(dbTypeText);
+        switch (dbType) {
+            case sqlserver:
+                return MssqlSqlDialect.DEFAULT;
+            case oracle:
+                return OracleSqlDialect.DEFAULT;
+            case other:
+            case postgresql:
+            case polardb:
+            case mysql:
+            case mariadb:
+            default:
+                return MycatSqlDialect.DEFAULT;
+
+        }
+    }
 
 }

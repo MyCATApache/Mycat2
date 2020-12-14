@@ -8,7 +8,7 @@ import io.mycat.NameableExecutor;
 import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.MycatSqlDialect;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
@@ -51,11 +51,14 @@ public class TmpSqlExecutor implements Executor {
         }
         MycatRowMetaData calciteRowMetaData =mycatRowMetaData;
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+
         NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
         LinkedList<RowBaseIterator> futureArrayList = new LinkedList<>();
         MycatConnection mycatConnection1 = factory.getConnection(target);
         Connection mycatConnection = mycatConnection1.unwrap(Connection.class);
-        SqlString sqlString = new SqlString(MycatSqlDialect.DEFAULT,sql);
+        SqlString sqlString = new SqlString(
+                MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(target),
+                sql);
         futureArrayList.add( executeQuery(mycatConnection, mycatConnection1, calciteRowMetaData, sqlString, ImmutableList.of()));
         AtomicBoolean flag = new AtomicBoolean();
         ComposeRowBaseIterator composeFutureRowBaseIterator = new ComposeRowBaseIterator(calciteRowMetaData, futureArrayList);

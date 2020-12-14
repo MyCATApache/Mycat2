@@ -54,6 +54,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RelBuilder;
@@ -696,7 +697,8 @@ public class HBTQueryConvertor {
 
     public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
         RelDataType rowType = input.getRowType();
-        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
+        SqlDialect sqlDialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, sqlDialect, forUpdate).getSql()
         );
     }
 
