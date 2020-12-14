@@ -39,6 +39,7 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableIntList;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -199,7 +200,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode left = inputs.get(0).accept(this);
         RelNode right = inputs.get(1).accept(this);
         if (RelMdSqlViews.join(left) && (RelMdSqlViews.join(right))) {
-            return join(left, right, join);
+            return join(params,left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         }
@@ -424,84 +425,128 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
         return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
     }
-
-    public static RelNode join(RelNode left, RelNode right, LogicalJoin join) {
+    public static RelNode join(List<Object> params,
+                               RelNode left,
+                               RelNode right,
+                               LogicalJoin join) {
         if (left instanceof View && right instanceof View) {
             View leftView = (View) left;
             View rightView = (View) right;
 
-            RelNode leftNode = leftView.getRelNode();
-            RelNode rightNode = rightView.getRelNode();
+            RelNode res = pushDownJoinByNormalTableOrGlobalTable(join, leftView, rightView);
+            if (res != null) return res;
 
-            Distribution ldistribution = leftView.getDistribution();
-            Distribution rdistribution = rightView.getDistribution();
-            if (ldistribution.isBroadCast() || rdistribution.isBroadCast()) {
-                if (!ldistribution.isBroadCast()) {
-                    return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-                }
-                if (!rdistribution.isBroadCast()) {
-                    return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), rdistribution);
-                }
-                if (ldistribution.isBroadCast() && rdistribution.isBroadCast()) {
-                    return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-                }
+            if (params != null) {
+                return pushDownJoinByDataNode(join,
+                        leftView,
+                        rightView,
+                        leftView.getDistribution().getDataNodes(params),
+                        rightView.getDistribution().getDataNodes(params));
             }
-            if (ldistribution.isPhy() && rdistribution.isPhy() && ldistribution.getDataNodes().equals(rdistribution.getDataNodes())) {
-                return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-            }
-
-            {
-                Map<String, List<RelNode>> views = new HashMap<>();
-                for (DataNode dataNode : ldistribution.getDataNodes()) {
-                    for (DataNode node : rdistribution.getDataNodes()) {
-                        RelNode leftN = leftView.applyDataNode(dataNode);
-                        RelNode rightN = rightView.applyDataNode(node);
-                        if (dataNode.getTargetName().equals(node.getTargetName())) {
-                            List<RelNode> relNodes = views.computeIfAbsent(dataNode.getTargetName(), (k) -> new ArrayList<>());
-                            relNodes.add(join.copy(join.getTraitSet(),
-                                    ImmutableList.of(
-                                            leftN,
-                                            rightN)));
-                        } else {
-                            Join copy = join.copy(join.getTraitSet(), ImmutableList.of(
-                                    View.of(leftN,
-                                            Distribution.of(dataNode)),
-                                    View.of(rightN,
-                                            Distribution.of(node))));
-                            List<RelNode> relNodes = views.computeIfAbsent(dataNode.getTargetName(), (k) -> new ArrayList<>());
-                            relNodes.add(copy);
-                        }
-                    }
-
-                }
-                ArrayList<RelNode> list = new ArrayList<>();
-
-                int unionLimit = 4;
-                for (Map.Entry<String, List<RelNode>> e : views.entrySet()) {
-                    String key = e.getKey();
-                    List<RelNode> value =new ArrayList<>( e.getValue());
-                    if (value.size() == 1) {
-                        list.add(value.get(0));
-                    } else {
-                        while (true) {
-                            List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
-                            list.add(View.of(LogicalUnion.create(relNodes, true),
-                                    Distribution.of(new BackendTableInfo(key, "", ""))));
-                            if (unionLimit < value.size()) {
-                                value = value.subList(relNodes.size(), value.size());
-                            }else {
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (list.size() == 1) {
-                    return list.get(0);
-                }
-                return LogicalUnion.create(list, true);
-            }
+            return pushDownJoinByDataNode(join,
+                    leftView,
+                    rightView,
+                    leftView.getDistribution().getDataNodes(),
+                    rightView.getDistribution().getDataNodes());
         }
         return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+    }
+
+    public static RelNode join(RelNode left,
+                               RelNode right,
+                               LogicalJoin join) {
+        if (left instanceof View && right instanceof View) {
+            View leftView = (View) left;
+            View rightView = (View) right;
+
+            RelNode res = pushDownJoinByNormalTableOrGlobalTable(join, leftView, rightView);
+
+            if (res != null) return res;
+
+            return pushDownJoinByDataNode(join,
+                    leftView,
+                    rightView,
+                    leftView.getDistribution().getDataNodes(),
+                    rightView.getDistribution().getDataNodes());
+        }
+        return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
+    }
+
+    @Nullable
+    private static RelNode pushDownJoinByNormalTableOrGlobalTable(LogicalJoin join, View leftView, View rightView) {
+        Distribution ldistribution = leftView.getDistribution();
+        Distribution rdistribution = rightView.getDistribution();
+        if (ldistribution.isBroadCast() || rdistribution.isBroadCast()) {
+            if (!ldistribution.isBroadCast()) {
+                return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+            }
+            if (!rdistribution.isBroadCast()) {
+                return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), rdistribution);
+            }
+            if (ldistribution.isBroadCast() && rdistribution.isBroadCast()) {
+                return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+            }
+        }
+        if (ldistribution.isPhy() && rdistribution.isPhy() && ldistribution.getDataNodes().equals(rdistribution.getDataNodes())) {
+            return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+        }
+        return null;
+    }
+
+
+    private static RelNode pushDownJoinByDataNode(LogicalJoin join,
+                                                  View leftView,
+                                                  View rightView,
+                                                  Iterable<DataNode> leftDataNodes,
+                                                  Iterable<DataNode> rightDataNodes) {
+        Map<String, List<RelNode>> views = new HashMap<>();
+        for (DataNode leftDataNode : leftDataNodes) {
+            for (DataNode rightDataNode : rightDataNodes) {
+                RelNode leftN = leftView.applyDataNode(leftDataNode);
+                RelNode rightN = rightView.applyDataNode(rightDataNode);
+                if (leftDataNode.getTargetName().equals(rightDataNode.getTargetName())) {
+                    List<RelNode> relNodes = views.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
+                    relNodes.add(join.copy(join.getTraitSet(),
+                            ImmutableList.of(
+                                    leftN,
+                                    rightN)));
+                } else {
+                    Join copy = join.copy(join.getTraitSet(), ImmutableList.of(
+                            View.of(leftN,
+                                    Distribution.of(leftDataNode)),
+                            View.of(rightN,
+                                    Distribution.of(rightDataNode))));
+                    List<RelNode> relNodes = views.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
+                    relNodes.add(copy);
+                }
+            }
+
+        }
+        ArrayList<RelNode> list = new ArrayList<>();
+
+        int unionLimit = 4;
+        for (Map.Entry<String, List<RelNode>> e : views.entrySet()) {
+            String key = e.getKey();
+            List<RelNode> value = new ArrayList<>(e.getValue());
+            if (value.size() == 1) {
+                list.add(value.get(0));
+            } else {
+                while (true) {
+                    List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
+                    list.add(View.of(LogicalUnion.create(relNodes, true),
+                            Distribution.of(new BackendTableInfo(key, "", ""))));
+                    if (unionLimit < value.size()) {
+                        value = value.subList(relNodes.size(), value.size());
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        if (list.size() == 1) {
+            return list.get(0);
+        }
+        return LogicalUnion.create(list, true);
     }
 
     public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {
