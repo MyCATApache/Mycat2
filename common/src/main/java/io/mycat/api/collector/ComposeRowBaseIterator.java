@@ -39,7 +39,11 @@ public class ComposeRowBaseIterator implements RowBaseIterator {
         this.current = Objects.requireNonNull(this.seq.get(0));
         this.metaData = current.getMetaData();
     }
-
+    public ComposeRowBaseIterator(MycatRowMetaData metaData,LinkedList<RowBaseIterator> seq) {
+        this.seq = seq;
+        this.current = Objects.requireNonNull(this.seq.get(0));
+        this.metaData = metaData;
+    }
     @Override
     public MycatRowMetaData getMetaData() {
         return metaData;

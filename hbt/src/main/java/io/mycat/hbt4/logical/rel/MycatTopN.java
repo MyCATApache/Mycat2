@@ -45,6 +45,15 @@ public class MycatTopN extends Sort implements MycatRel {
     public ExplainWriter explain(ExplainWriter writer) {
         writer.name("MycatTopN").into();
         MycatRel input = (MycatRel) this.getInput();
+
+        if (fetch != null) {
+            writer.item("fetch", fetch);
+        }
+
+        if (offset != null) {
+            writer.item("offset", offset);
+        }
+
         input.explain(writer);
         return writer.ret();
     }

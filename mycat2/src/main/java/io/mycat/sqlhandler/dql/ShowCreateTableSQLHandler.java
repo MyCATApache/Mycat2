@@ -1,6 +1,7 @@
 package io.mycat.sqlhandler.dql;
 
 import com.alibaba.fastsql.sql.ast.SQLName;
+import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLShowCreateTableStatement;
 import io.mycat.MycatDataContext;
@@ -13,17 +14,14 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
 
     @Override
     protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        // 如果没有schema, 自动补上schema.
-        // 例： SHOW CREATE TABLE `mycat_sequence` -> SHOW CREATE TABLE db1`mycat_sequence`
         SQLShowCreateTableStatement ast = request.getAst();
-        if(ast.getName() != null){
-            SQLName name = ast.getName();
-            String simpleName = name.getSimpleName();
-            if(!simpleName.contains(".")){
-                ast.setName(new SQLPropertyExpr(dataContext.getDefaultSchema(),simpleName));
-            }
+        SQLName name = ast.getName();
+        if (name instanceof SQLIdentifierExpr){
+            SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
+            sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
+            sqlPropertyExpr.setName(name.toString());
+            ast.setName(sqlPropertyExpr);
         }
-
         response.tryBroadcastShow(ast.toString());
         return ;
 //

@@ -15,6 +15,7 @@ import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
@@ -150,17 +151,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.updateConnectionMap.forEach((key, value) -> value.setTransactionIsolation(transactionIsolation));
     }
 
-    public void reset() {
-        for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
-            DefaultConnection value = stringDefaultConnectionEntry.getValue();
-            if (value != null) {
-                value.close();
-            }
-        }
-        this.updateConnectionMap.clear();
-        this.dataSourceNearness.clear();
-    }
-
     @Override
     public void addCloseResource(AutoCloseable closeable) {
         closeResourceQueue.add(closeable);
@@ -173,59 +163,32 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                 .addText("closeQueueSize", String.valueOf(closeResourceQueue.size()));
     }
 
-    public Map<String, Deque<MycatConnection>> getConnection(List<String> targetNames) {
-        return callBackConnections(targetNames, false, Connection.TRANSACTION_REPEATABLE_READ, false);
-    }
 
-    protected Map<String, Deque<MycatConnection>> callBackConnections(List<String> jdbcDataSources,
+    protected Map<String,MycatConnection> callBackConnections(Set<String> jdbcDataSources,
                                                                       boolean autocommit,
                                                                       int transactionIsolation,
                                                                       boolean readOnly) {
-        if (jdbcDataSources.size() == 1) {
-            String jdbcDataSource = jdbcDataSources.get(0);
-            MycatConnection defaultConnection = updateConnectionMap.compute(jdbcDataSource,
-                    (dataSource, absractConnection) -> {
-                        if (absractConnection != null && !absractConnection.isClosed()) {
-                            return absractConnection;
-                        } else {
-                            return getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
-                        }
-                    });
-            LinkedList<MycatConnection> linkedList = new LinkedList<>();
-            linkedList.add(defaultConnection);
-            return ImmutableMap.of(jdbcDataSource, linkedList);
-        }
-        Map<String, Deque<MycatConnection>> res = new HashMap<>();
-        List<String> needAdd = new ArrayList<>();
-        for (String key : jdbcDataSources) {
-            Deque<MycatConnection> mycatConnections = res.computeIfAbsent(key, s -> new LinkedList<>());
-            if (mycatConnections.isEmpty()) {
-                MycatConnection connection = updateConnectionMap.get(key);
-                if (connection != null) {
-                    mycatConnections.add(connection);
-                } else {
-                    needAdd.add(key);
-                }
-            } else {
-                needAdd.add(key);
-            }
-        }
+        if (jdbcDataSources.isEmpty()) return Collections.emptyMap();
+        HashMap<String, MycatConnection> res = new HashMap<>();
+
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         synchronized (jdbcConnectionManager) {
-            for (String jdbcDataSource : needAdd) {
-                Deque<MycatConnection> mycatConnections = res.computeIfAbsent(jdbcDataSource, s -> new LinkedList<>());
-                DefaultConnection connection = getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
-//                addCloseResource(connection);
-                mycatConnections.add(connection);
+            for (String jdbcDataSource : jdbcDataSources) {
+                DefaultConnection defaultConnection1 = updateConnectionMap.computeIfAbsent(jdbcDataSource,
+                        s -> jdbcConnectionManager.getConnection(
+                                jdbcDataSource,
+                                autocommit,
+                                transactionIsolation,
+                                readOnly));
+                res.put(jdbcDataSource,defaultConnection1);
             }
-            return res;
         }
+        return res;
     }
-
-    abstract public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly);
 
     @Override
     public String getTxId() {
         return null;
     }
+
 }

@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy.handler.front;
 
+import io.mycat.Authenticator;
 import io.mycat.MycatUser;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -23,10 +24,10 @@ import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.config.UserConfig;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.proxy.session.ProcessState;
@@ -123,6 +124,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
             Authenticator authenticator = mycatSessionManager.getAuthenticator();
             String ip = SocketAddressUtil.simplySocketAddress(remoteSocketAddress);
+
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username, ip);
             if (!authInfo.isOk()) {
                 failture(mycat, authInfo.getException());
@@ -130,15 +132,15 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             } else {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
-                    if (!checkPassword(rightPassword, password)) {
+                    if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
                         failture(mycat, "password is wrong");
+                        LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
-                    } else {
-                        user = new MycatUser(username, null, null, ip);
                     }
-                } else {
-                    user = new MycatUser(username, null, null, ip);
                 }
+                UserConfig userInfo = authenticator.getUserInfo(username);
+                user = new MycatUser(username, null, null, ip,
+                        userInfo.getDbType());
             }
 
             mycat.setUser(user);
