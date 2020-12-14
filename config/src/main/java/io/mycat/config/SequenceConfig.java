@@ -38,6 +38,8 @@ public class SequenceConfig {
     private String clazz;
 
     private String targetName;
+    private String schemaName;
+
 
     public SequenceConfig() {
     }

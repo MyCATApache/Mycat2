@@ -391,7 +391,7 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
     public boolean isDatasource(String targetName) {
-        return this.physicsInstanceMap.containsKey(targetName);
+        return this.physicsInstanceMap.containsKey(targetName)||this.datasources.containsKey(targetName);
     }
 
 
