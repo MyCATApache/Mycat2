@@ -14,8 +14,10 @@
  */
 package io.mycat.metadata;
 
+import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.*;
@@ -32,6 +34,7 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -559,7 +562,27 @@ public class MetadataManager implements MysqlVariableService {
                                     return string;
                                 }
                             }
+
                         }
+                    }
+                    try (RowBaseIterator rowBaseIterator = connection.executeQuery("select * from " + targetSchemaTable + " limit 0")) {
+                        MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                        MySqlCreateTableStatement mySqlCreateTableStatement = new MySqlCreateTableStatement();
+                        mySqlCreateTableStatement.setTableName(tableName);
+                        mySqlCreateTableStatement.setSchema(schemaName);
+                        int columnCount = metaData.getColumnCount();
+                        for (int i = 1; i <= columnCount; i++) {
+                            int columnType = metaData.getColumnType(i);
+                            String type = SQLDataType.Constants.VARCHAR;
+                            for (MySQLType value : MySQLType.values()) {
+                                if (value.getJdbcType() == columnType) {
+                                    type =value.getName();
+                                }
+                            }
+                            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i),type);
+                        }
+                       return mySqlCreateTableStatement.toString();
+
                     }
                 }
             } catch (Throwable e) {
@@ -824,7 +847,7 @@ public class MetadataManager implements MysqlVariableService {
                     TableHandler tableHandler = logicTables.get(tableName.getValue(), false);
                     if (tableHandler != null && tableHandler.getType() == LogicTableType.NORMAL) {
                         NormalTable tableHandler1 = (NormalTable) tableHandler;
-                        tables.put(tableHandler.getTableName(),tableHandler1);
+                        tables.put(tableHandler.getTableName(), tableHandler1);
                         DataNode dataNode = tableHandler1.getDataNode();
                         if (dataNode != null) {
                             if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
