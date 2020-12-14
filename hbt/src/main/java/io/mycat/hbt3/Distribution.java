@@ -15,8 +15,8 @@
 package io.mycat.hbt3;
 
 import io.mycat.DataNode;
-import org.apache.calcite.rex.RexNode;
 
+import java.util.Collections;
 import java.util.List;
 
 public abstract class Distribution {
@@ -30,6 +30,10 @@ public abstract class Distribution {
     public abstract boolean isSharding();
 
     public abstract boolean isPartial();
+
+    public static Distribution of(DataNode dataNode) {
+        return new DistributionImpl(Collections.singletonList(dataNode), false, Distribution.Type.PHY);
+    }
 
     public static Distribution of(List<DataNode> dataNodeList, boolean partial ,DistributionImpl.Type type) {
         return new DistributionImpl(dataNodeList, partial, type);

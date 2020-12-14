@@ -1,5 +1,6 @@
 package io.mycat.hbt4.executor;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatConnection;
@@ -24,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.apply;
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
@@ -112,7 +114,11 @@ public class ViewExecutor implements Executor {
             String key = entry.getKey();
             SqlString value = entry.getValue();
             writer.item("targetName:"+key+"->"+value.getSql().replaceAll("\n"," "),"");
-            writer.item("params",params);
+            ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
+            if (dynamicParameters!=null){
+                writer.item("params",  dynamicParameters.stream().map(i->params.get(i)).collect(Collectors.toList()));
+            }
+
         }
         return explainWriter.ret();
     }

@@ -15,6 +15,8 @@
 package io.mycat.hbt3;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.BackendTableInfo;
+import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt4.MycatConvention;
@@ -39,9 +41,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableIntList;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -449,35 +449,57 @@ public class SQLRBORewriter extends RelShuttleImpl {
             if (ldistribution.isPhy() && rdistribution.isPhy() && ldistribution.getDataNodes().equals(rdistribution.getDataNodes())) {
                 return View.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
             }
-//            left = ((View) left).expandToPhyRelNode();
-//            right = ((View) right).expandToPhyRelNode();
-//            List<DataNode> one = ldistribution.getDataNodes();
-//            List<DataNode> two = rdistribution.getDataNodes();
-//            LogicalJoin copy = (LogicalJoin) join.copy(join.getTraitSet(), ImmutableList.of(left, right));
-//            HepProgramBuilder builder = new HepProgramBuilder();
-//            builder.addRuleInstance(CoreRules.JOIN_LEFT_UNION_TRANSPOSE);
-//            builder.addRuleInstance(CoreRules.JOIN_RIGHT_UNION_TRANSPOSE);
-//            HepPlanner planner = new HepPlanner(builder.build());
-//            planner.setRoot(copy);
-//            RelNode bestExp = planner.findBestExp();
-//            if (bestExp instanceof LogicalUnion) {
-//                SQLRBORewriter sqlrboRewriter = new SQLRBORewriter();
-//                List<RelNode> inputs = bestExp.getInputs().stream().flatMap(i -> {
-//                    if (i instanceof LogicalUnion) {
-//                        return i.getInputs().stream();
-//                    } else {
-//                        return Stream.of(i);
-//                    }
-//                }).collect(Collectors.toList());
-//                List<RelNode> res = new ArrayList<>();
-//                for (RelNode input : inputs) {
-//                    RelNode accept = input.accept(sqlrboRewriter);
-//                    res.add(accept);
-//                }
-//                ArrayList<DataNode> dataNodes2 = new ArrayList<>(one);
-//                dataNodes2.addAll(two);
-//                return LogicalUnion.create(res, true);
-//            }
+
+            {
+                Map<String, List<RelNode>> views = new HashMap<>();
+                for (DataNode dataNode : ldistribution.getDataNodes()) {
+                    for (DataNode node : rdistribution.getDataNodes()) {
+                        RelNode leftN = leftView.applyDataNode(dataNode);
+                        RelNode rightN = rightView.applyDataNode(node);
+                        if (dataNode.getTargetName().equals(node.getTargetName())) {
+                            List<RelNode> relNodes = views.computeIfAbsent(dataNode.getTargetName(), (k) -> new ArrayList<>());
+                            relNodes.add(join.copy(join.getTraitSet(),
+                                    ImmutableList.of(
+                                            leftN,
+                                            rightN)));
+                        } else {
+                            Join copy = join.copy(join.getTraitSet(), ImmutableList.of(
+                                    View.of(leftN,
+                                            Distribution.of(dataNode)),
+                                    View.of(rightN,
+                                            Distribution.of(node))));
+                            List<RelNode> relNodes = views.computeIfAbsent(dataNode.getTargetName(), (k) -> new ArrayList<>());
+                            relNodes.add(copy);
+                        }
+                    }
+
+                }
+                ArrayList<RelNode> list = new ArrayList<>();
+
+                int unionLimit = 4;
+                for (Map.Entry<String, List<RelNode>> e : views.entrySet()) {
+                    String key = e.getKey();
+                    List<RelNode> value =new ArrayList<>( e.getValue());
+                    if (value.size() == 1) {
+                        list.add(value.get(0));
+                    } else {
+                        while (true) {
+                            List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
+                            list.add(View.of(LogicalUnion.create(relNodes, true),
+                                    Distribution.of(new BackendTableInfo(key, "", ""))));
+                            if (unionLimit < value.size()) {
+                                value = value.subList(relNodes.size(), value.size());
+                            }else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (list.size() == 1) {
+                    return list.get(0);
+                }
+                return LogicalUnion.create(list, true);
+            }
         }
         return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
     }
