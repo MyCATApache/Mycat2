@@ -827,7 +827,11 @@ public abstract class SqlImplementor {
                                 assert nodeList.size() == 1;
                                 return nodeList.get(0);
                             } else {
-                                nodeList.add(dialect.getCastSpec(call.getType()));
+                                if (call.getOperands().size() ==1 && call.getOperands().get(0) instanceof RexDynamicParam){
+                                    return nodeList.get(0);
+                                }else {
+                                    nodeList.add(dialect.getCastSpec(call.getType()));
+                                }
                             }
                     }
                     if (op instanceof SqlBinaryOperator && nodeList.size() > 2) {

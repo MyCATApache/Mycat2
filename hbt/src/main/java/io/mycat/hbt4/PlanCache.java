@@ -14,58 +14,61 @@
  */
 package io.mycat.hbt4;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.PriorityQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
+import java.util.concurrent.TimeUnit;
 
 public enum PlanCache {
     INSTANCE;
 
-    private Cache<String, PriorityQueue<Plan>> cache;
+    private LoadingCache<String, PriorityQueue<Plan>> cache;
 
     PlanCache() {
         this.cache = newCache();
     }
 
     @NotNull
-    private Cache<String, PriorityQueue<Plan>> newCache() {
-        return CacheBuilder.newBuilder().maximumSize(65535)
-                .build();
+    private LoadingCache<String, PriorityQueue<Plan>> newCache() {
+        LoadingCache<String, PriorityQueue<Plan>> cache = CacheBuilder.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .build(
+                        new CacheLoader<String, PriorityQueue<Plan>>() {
+                            public PriorityQueue<Plan> load(String key) {
+                                return new PriorityQueue<Plan>(Comparable::compareTo);
+                            }
+                        });
+        return cache;
     }
 
 
     public Plan getMinCostPlan(String sql) {
-        PriorityQueue<Plan> plans = computeIfAbsent(sql, () -> new PriorityQueue<>(Comparable::compareTo));
-        if (plans.isEmpty()) {
-            return null;
-        } else {
-            return plans.poll();
+        PriorityQueue<Plan> plans = computeIfAbsent(sql);
+        if (plans == null) return null;
+        synchronized (plans) {
+            if (plans.isEmpty()) {
+                return null;
+            } else {
+                return plans.peek();
+            }
         }
     }
 
     @SneakyThrows
-    private PriorityQueue<Plan> computeIfAbsent(String sql, Supplier<PriorityQueue<Plan>> o) {
-        return this.cache.get(sql, new Callable<PriorityQueue<Plan>>() {
-            @Override
-            public PriorityQueue<Plan> call() throws Exception {
-                return o.get();
-            }
-        });
-
+    private PriorityQueue<Plan> computeIfAbsent(String sql) {
+        return this.cache.get(sql, () -> new PriorityQueue<Plan>(Comparable::compareTo));
     }
 
     public void put(String sql, Plan plan) {
-        PriorityQueue<Plan> plans = computeIfAbsent(sql, () -> new PriorityQueue<>(Comparable::compareTo));
-        plans.add(plan);
+        PriorityQueue<Plan> plans = computeIfAbsent(sql);
+        synchronized (plans) {
+            plans.add(plan);
+        }
     }
 
     public void clear() {

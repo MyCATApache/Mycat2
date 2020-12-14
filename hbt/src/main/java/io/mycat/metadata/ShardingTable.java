@@ -53,7 +53,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional canIndexTableScan(int[] projects) {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scanProject(projects);
+            return gsiService.scanProject(getSchemaName(),getTableName(),projects);
         } else {
             return Optional.empty();
         }
@@ -63,7 +63,7 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndexes, Object[] values) {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scanProjectFilter(projects, filterIndexes, values);
+            return gsiService.scanProjectFilter(getSchemaName(),getTableName(),projects, filterIndexes, values);
         } else {
             return Optional.empty();
         }
@@ -99,10 +99,25 @@ public class ShardingTable implements ShardingTableHandler {
     public Optional<Iterable<Object[]>> canIndexTableScan() {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-            return gsiService.scan();
+            return gsiService.scan(getSchemaName(),getTableName());
         } else {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public boolean canIndex() {
+        if (MetaClusterCurrent.exist(GSIService.class)) {
+            GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+            return gsiService.isIndexTable(getSchemaName(),getTableName());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int getIndexBColumnName(String name) {
+        return this.logicTable.getIndexBColumnName(name);
     }
 
     @Override

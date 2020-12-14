@@ -94,9 +94,9 @@ public class MycatTopNExecutor implements Executor {
     public ExplainWriter explain(ExplainWriter writer) {
         ExplainWriter explainWriter = writer.name(this.getClass().getName())
                 .into();
-        executor.explain(writer);
         writer.item("offset",offset);
         writer.item("fetch",fetch);
+        executor.explain(writer);
         return explainWriter.ret();
     }
 }

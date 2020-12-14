@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatSqlDialect;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 
@@ -40,7 +40,7 @@ public interface MycatRel extends RelNode {
         writer.name(name);
         List<String> fieldList = join.getRowType().getFieldNames();
         writer.item("columns", String.join(",", fieldList));
-        SqlImplementor.Context context = explainRex(fieldList);
+        SqlImplementor.Context context = explainRex(MycatSqlDialect.DEFAULT,fieldList);
         SqlNode sqlNode = context.toSql(null, join.getCondition());
         writer.item("condition", sqlNode);
         writer.into();
@@ -49,8 +49,8 @@ public interface MycatRel extends RelNode {
         return writer.ret();
     }
 
-    public static SqlImplementor.Context explainRex(List<String> fieldList) {
-        return new SqlImplementor.Context(MycatSqlDialect.DEFAULT, fieldList.size()) {
+    public static SqlImplementor.Context explainRex(SqlDialect dialect, List<String> fieldList) {
+        return new SqlImplementor.Context(dialect, fieldList.size()) {
                 @Override
                 public SqlNode field(int ordinal) {
                     String fieldName = fieldList.get(ordinal);

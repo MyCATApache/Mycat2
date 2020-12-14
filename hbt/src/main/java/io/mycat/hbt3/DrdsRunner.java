@@ -446,7 +446,10 @@ public class DrdsRunner {
             rboInCbo = Collections.emptyList();
         }
         MycatRel cboLogPlan = optimizeWithCBO(rboLogPlan, rboInCbo);
-        if (!optimizationContext.predicateOnPhyView && !optimizationContext.predicateOnView) {
+        List<Object> params = drdsSql.getParams();
+        if (params.isEmpty()){
+            optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
+        }else if (!optimizationContext.predicateOnPhyView && !optimizationContext.predicateOnView) {
             //全表扫描
             optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
         } else if (!optimizationContext.predicateOnPhyView && optimizationContext.predicateOnView) {

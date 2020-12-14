@@ -56,13 +56,15 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
     private final static boolean DEFAULT_SELECT_AS_READ = true;
     private final static boolean DEFAULT_ALIVE = false;
     private final ScheduledFuture<?> scheduled;
+    private String dbType;
 
 
-    public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type, int maxRequestCount,
+    public ReplicaDataSourceSelector(String name, String dbType, BalanceType balanceType, ReplicaType type, int maxRequestCount,
                                      ReplicaSwitchType switchType, LoadBalanceStrategy defaultReadLoadBalanceStrategy,
                                      LoadBalanceStrategy defaultWriteLoadBalanceStrategy,
                                      TimerConfig timer, ReplicaSelectorRuntime replicaSelectorRuntime) {
         this.name = name;
+        this.dbType = dbType;
         this.balanceType = balanceType;
         this.maxRequestCount = maxRequestCount;
         this.switchType = switchType;
@@ -71,6 +73,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
         this.defaultWriteLoadBalanceStrategy = defaultWriteLoadBalanceStrategy;
         this.replicaSelectorRuntime = replicaSelectorRuntime;
         Objects.requireNonNull(balanceType, "balanceType is null");
+
         if (timer!=null) {
             this.scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
                 String replicaName = name;
@@ -309,5 +312,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
 
     public Collection<String> getAllDataSources() {
       return   this.datasourceMap.keySet();
+    }
+
+    public String getDbType() {
+        return dbType;
     }
 }

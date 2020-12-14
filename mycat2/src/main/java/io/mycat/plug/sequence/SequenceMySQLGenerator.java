@@ -73,7 +73,7 @@ public class SequenceMySQLGenerator implements SequenceHandler {
     @Override
     public void init(SequenceConfig args, long workerId) {
         String[] split = args.getName().split("_");
-        String db = split[0];
+        String db = Optional.ofNullable(args.getSchemaName()).orElse(split[0]);
         String targetName = Optional.ofNullable(args.getTargetName()).orElse("prototype");
         init(String.format("select %s.mycat_seq_nextval('%s')",db, args.getName()),targetName);
     }

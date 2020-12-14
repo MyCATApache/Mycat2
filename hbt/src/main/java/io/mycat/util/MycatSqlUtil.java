@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory;
 public class MycatSqlUtil {
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatSqlUtil.class);
 
-    public static String getCalciteSQL(SQLStatement sqlStatement) {
-        SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
-        MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
-        sqlStatement.accept(calciteMySqlNodeVisitor);
-        SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
-        return sqlNode.toSqlString(MycatSqlDialect.DEFAULT).getSql();
-    }
+//    public static String getCalciteSQL(SQLStatement sqlStatement) {
+//        SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
+//        MycatCalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
+//        sqlStatement.accept(calciteMySqlNodeVisitor);
+//        SqlNode sqlNode = calciteMySqlNodeVisitor.getSqlNode();
+//        return sqlNode.toSqlString(MycatSqlDialect.DEFAULT).getSql();
+//    }
 
 
 //    public RowBaseIterator fetchResultSet(MycatRowMetaData mycatMetaData, String targetName, String sql) {

@@ -379,9 +379,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
     @Override
     public Executor implement(MycatQuery mycatQuery) {
         View view = mycatQuery.getView();
-        Distribution dataNode = view.getDistribution();
-        String sql = view.getSql();
-        return ScanExecutor.createDemo();
+        return view.implement(this);
     }
 
     @Override
