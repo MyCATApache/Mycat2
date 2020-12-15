@@ -15,10 +15,16 @@ public interface Authenticator {
     List<UserConfig> allUsers();
 
     @Data
-    @AllArgsConstructor
     public static class AuthInfo {
-        Exception exception;
+        String exception;
         String rightPassword;
+        int errorCode;
+
+        public AuthInfo(String exception, String rightPassword, int errorCode) {
+            this.exception = exception;
+            this.rightPassword = rightPassword;
+            this.errorCode = errorCode;
+        }
 
         public boolean isOk() {
             return exception == null;
