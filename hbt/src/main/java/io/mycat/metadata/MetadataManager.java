@@ -836,19 +836,33 @@ public class MetadataManager implements MysqlVariableService {
         return (int) c;
     }
 
-    public boolean checkVaildNormalRoute(Set<Pair<String, String>> tableNames, NameMap<NormalTable> tables) {
+    @Getter
+    public static class SimpleRoute{
+        String schemaName;
+        String tableName;
+        String targetName;
+
+        public SimpleRoute(String schemaName, String tableName, String targetName) {
+            this.schemaName = schemaName;
+            this.tableName = tableName;
+            this.targetName = targetName;
+        }
+    }
+    public boolean checkVaildNormalRoute(Set<Pair<String, String>> tableNames, NameMap<SimpleRoute> tables) {
         NameMap<SchemaHandler> schemaMap1 = getSchemaMap();
         Set<String> targets = new HashSet<>();
+        TableHandler tableHandler =null;
         for (Pair<String, String> tableName : tableNames) {
             SchemaHandler schemaHandler = schemaMap1.get(tableName.getKey(), false);
             if (schemaHandler != null) {
                 NameMap<TableHandler> logicTables = schemaHandler.logicTables();
                 if (logicTables != null) {
-                    TableHandler tableHandler = logicTables.get(tableName.getValue(), false);
+                     tableHandler = logicTables.get(tableName.getValue(), false);
                     if (tableHandler != null && tableHandler.getType() == LogicTableType.NORMAL) {
                         NormalTable tableHandler1 = (NormalTable) tableHandler;
-                        tables.put(tableHandler.getTableName(), tableHandler1);
                         DataNode dataNode = tableHandler1.getDataNode();
+                        tables.put(tableHandler.getTableName(),
+                                new SimpleRoute(tableName.getKey(),tableName.getValue(),dataNode.getTargetName()));
                         if (dataNode != null) {
                             if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
                                 return false;
@@ -857,6 +871,10 @@ public class MetadataManager implements MysqlVariableService {
                     }
                 }
             }
+        }
+        if (tables.values().isEmpty()&&tableNames.size()==1){
+            Pair<String, String> next = tableNames.iterator().next();
+            tables.put(next.getValue(),new SimpleRoute(next.getKey(),next.getValue(),prototype));
         }
         return targets.size() == 1;
     }
