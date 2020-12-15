@@ -34,8 +34,8 @@ public class MycatUpdateExecutor implements Executor {
     private List<Object> parameters;
     private final HashSet<GroupKey> groupKeys;
     private DataSourceFactory factory;
-    public long lastInsertId = 0;
-    public long affectedRow = 0;
+    private long lastInsertId = 0;
+    private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
     public MycatUpdateExecutor(Distribution values,

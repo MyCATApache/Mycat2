@@ -576,12 +576,12 @@ public class MetadataManager implements MysqlVariableService {
                             String type = SQLDataType.Constants.VARCHAR;
                             for (MySQLType value : MySQLType.values()) {
                                 if (value.getJdbcType() == columnType) {
-                                    type =value.getName();
+                                    type = value.getName();
                                 }
                             }
-                            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i),type);
+                            mySqlCreateTableStatement.addColumn(metaData.getColumnName(i), type);
                         }
-                       return mySqlCreateTableStatement.toString();
+                        return mySqlCreateTableStatement.toString();
 
                     }
                 }
@@ -837,7 +837,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @Getter
-    public static class SimpleRoute{
+    public static class SimpleRoute {
         String schemaName;
         String tableName;
         String targetName;
@@ -848,33 +848,39 @@ public class MetadataManager implements MysqlVariableService {
             this.targetName = targetName;
         }
     }
+
     public boolean checkVaildNormalRoute(Set<Pair<String, String>> tableNames, NameMap<SimpleRoute> tables) {
         NameMap<SchemaHandler> schemaMap1 = getSchemaMap();
         Set<String> targets = new HashSet<>();
-        TableHandler tableHandler =null;
+        TableHandler tableHandler = null;
         for (Pair<String, String> tableName : tableNames) {
             SchemaHandler schemaHandler = schemaMap1.get(tableName.getKey(), false);
             if (schemaHandler != null) {
                 NameMap<TableHandler> logicTables = schemaHandler.logicTables();
                 if (logicTables != null) {
-                     tableHandler = logicTables.get(tableName.getValue(), false);
-                    if (tableHandler != null && tableHandler.getType() == LogicTableType.NORMAL) {
-                        NormalTable tableHandler1 = (NormalTable) tableHandler;
-                        DataNode dataNode = tableHandler1.getDataNode();
-                        tables.put(tableHandler.getTableName(),
-                                new SimpleRoute(tableName.getKey(),tableName.getValue(),dataNode.getTargetName()));
-                        if (dataNode != null) {
-                            if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
-                                return false;
+                    tableHandler = logicTables.get(tableName.getValue(), false);
+                    if (tableHandler != null) {
+                        if (tableHandler.getType() == LogicTableType.NORMAL) {
+                            NormalTable tableHandler1 = (NormalTable) tableHandler;
+                            DataNode dataNode = tableHandler1.getDataNode();
+                            tables.put(tableHandler.getTableName(),
+                                    new SimpleRoute(tableName.getKey(), tableName.getValue(), dataNode.getTargetName()));
+                            if (dataNode != null) {
+                                if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
+                                    return false;
+                                }
                             }
+                            return false;
+                        }else {
+                            return false;
                         }
                     }
                 }
             }
         }
-        if (tables.values().isEmpty()&&tableNames.size()==1){
+        if (tables.values().isEmpty() && tableNames.size() == 1) {
             Pair<String, String> next = tableNames.iterator().next();
-            tables.put(next.getValue(),new SimpleRoute(next.getKey(),next.getValue(),prototype));
+            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
         }
         return targets.size() == 1;
     }

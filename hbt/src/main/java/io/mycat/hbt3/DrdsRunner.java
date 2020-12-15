@@ -326,7 +326,7 @@ public class DrdsRunner {
     private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTableHandler logicTable) {
         GlobalTableHandler globalTableHandler = logicTable;
         Distribution distribution = Distribution.of(globalTableHandler.getGlobalDataNode(), false, Distribution.Type.BroadCast);
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement,true);
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }
@@ -335,7 +335,7 @@ public class DrdsRunner {
     private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTableHandler logicTable) {
         NormalTableHandler normalTableHandler = logicTable;
         Distribution distribution = Distribution.of(ImmutableList.of(normalTableHandler.getDataNode()), false, Distribution.Type.PHY);
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement,false);
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }
@@ -587,7 +587,7 @@ public class DrdsRunner {
             Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(condition));
             MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                     distribution,
-                    drdsSql.getSqlStatement());
+                    drdsSql.getSqlStatement(),mycatTable.isBroadCast());
             optimizationContext.saveParameterized(drdsSql.getParameterizedString(), mycatUpdateRel);
             return mycatUpdateRel;
         }
@@ -595,7 +595,7 @@ public class DrdsRunner {
         Distribution distribution = mycatTable.computeDataNode();
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                 distribution,
-                drdsSql.getSqlStatement());
+                drdsSql.getSqlStatement(),mycatTable.isBroadCast());
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }

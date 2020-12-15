@@ -94,7 +94,7 @@ public abstract class TableJPATemplateTest implements MycatTest {
 
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs2",
-                                    "jdbc:mysql://127.0.0.1:3306"));
+                                    "jdbc:mysql://127.0.0.1:3307"));
                     execute(mySQLConnection, CreateClusterHint.create("c1", Arrays.asList("newDs2"), Collections.emptyList()));
                     break;
 

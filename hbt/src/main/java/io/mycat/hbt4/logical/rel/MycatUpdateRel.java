@@ -16,24 +16,26 @@ import org.apache.calcite.sql.SqlKind;
 public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
     Distribution values;
     SQLStatement sqlStatement;
+    private final boolean global;
     private static RelOptCluster cluster = DrdsRunner.newCluster();
 
-    public static MycatUpdateRel create(Distribution values, SQLStatement sqlStatement) {
-        return new MycatUpdateRel(values, sqlStatement);
+    public static MycatUpdateRel create(Distribution values, SQLStatement sqlStatement,boolean global) {
+        return new MycatUpdateRel(values, sqlStatement,global);
     }
 
-    public static MycatUpdateRel create(RelOptCluster cluster, Distribution values, SQLStatement sqlStatement) {
-        return new MycatUpdateRel(cluster, values, sqlStatement);
+    public static MycatUpdateRel create(RelOptCluster cluster, Distribution values, SQLStatement sqlStatement,boolean global) {
+        return new MycatUpdateRel(cluster, values, sqlStatement,global);
     }
 
-    public MycatUpdateRel(Distribution values, SQLStatement sqlStatement) {
-        this(cluster, values, sqlStatement);
+    public MycatUpdateRel(Distribution values, SQLStatement sqlStatement,boolean global) {
+        this(cluster, values, sqlStatement,global);
     }
 
-    public MycatUpdateRel(RelOptCluster cluster, Distribution values, SQLStatement sqlStatement) {
+    public MycatUpdateRel(RelOptCluster cluster, Distribution values, SQLStatement sqlStatement,boolean global) {
         super(cluster, cluster.traitSetOf(MycatConvention.INSTANCE));
         this.values = values;
         this.sqlStatement = sqlStatement;
+        this.global = global;
         this.rowType = RelOptUtil.createDmlRowType(
                 SqlKind.INSERT, getCluster().getTypeFactory());
     }

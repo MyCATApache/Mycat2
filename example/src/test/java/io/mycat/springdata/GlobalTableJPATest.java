@@ -15,10 +15,8 @@ public class GlobalTableJPATest extends TableJPATemplateTest {
     @Before
     public void before() throws Exception {
         try (Connection mySQLConnection = getMySQLConnection(8066)) {
-            execute(mySQLConnection, "drop database IF EXISTS db1");
             execute(mySQLConnection, "create database IF NOT EXISTS db1");
         }
-
         SpringApplication springApplication = new SpringApplication(GlobalTableJPATest.class);
         this.applicationContext = springApplication.run();
         runInitSQL(GlobalTableJPATest.class,CreateTableSQLType.GLOBAL);
