@@ -16,6 +16,7 @@ package io.mycat.proxy.handler.front;
 
 import io.mycat.Authenticator;
 import io.mycat.MycatUser;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
@@ -54,7 +55,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 //    public MycatSession mycat;
     private boolean finished = false;
     private AuthPacket auth;
-    public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
+    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
     private MycatSessionManager mycatSessionManager;
 
@@ -90,7 +91,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                     isChangeAuthPlugin = true;
                     AuthSwitchRequestPacket authSwitchRequestPacket = new AuthSwitchRequestPacket();
                     clientAuthPluginName = StringUtil.isEmpty(authPluginName) ? MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME : authPluginName;
-                    authSwitchRequestPacket.setAuthPluginName(clientAuthPluginName);
+                    authSwitchRequestPacket.setAuthPluginName( MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
                     authSwitchRequestPacket.setStatus((byte) 0xfe);
                     authSwitchRequestPacket.setAuthPluginData(new String(seed));
 
@@ -109,7 +110,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
-                failture(mycat, message);
+                failture(mycat, MySQLErrorCode.ER_UNKNOWN_ERROR,message);
                 mycat.lazyClose(true, message);
                 return;
             }
@@ -127,13 +128,13 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username, ip);
             if (!authInfo.isOk()) {
-                failture(mycat, authInfo.getException());
+                failture(mycat,authInfo.getErrorCode() ,authInfo.getException());
                 return;
             } else {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
                     if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
-                        failture(mycat, "password is wrong");
+                        failture(mycat, MySQLErrorCode.ER_PASSWORD_NO_MATCH, "password is wrong");
                         LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
                     }
@@ -168,14 +169,22 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         mycat.resetCurrentProxyPayload();
         return auth;
     }
-
-    public void failture(MycatSession mycat, String message) {
-        mycat.setLastMessage(message);
+    public void failture(MycatSession mycat,Authenticator.AuthInfo authInfo) {
+        mycat.setLastMessage(authInfo.getException());
+        LOGGER.error("login fail: {}",authInfo.getException());
         mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
+    }
+
+    public void failture(MycatSession mycat,int errorCode, String message) {
+        mycat.setLastMessage(message);
+        mycat.setLastErrorCode(errorCode);
+        LOGGER.error("login fail: {}",message);
+        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(),errorCode);
     }
 
     public void failture(MycatSession mycat, Exception e) {
         mycat.setLastMessage(e);
+        LOGGER.error("login fail: {}",e.getMessage(),e);
         mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
     }
 

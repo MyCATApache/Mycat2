@@ -5,15 +5,14 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.transactionsession.TransactionSessionTemplate;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
-
-import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalTransactionSession.class);
@@ -29,6 +28,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     public MycatConnection getConnection(String targetName) {
+        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        targetName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName,isInTransaction(),null);
         DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
         if (defaultConnection != null) {
             return defaultConnection;

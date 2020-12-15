@@ -31,10 +31,13 @@ public class RwTest implements MycatTest {
             execute(mycat, "create database " + db);
             execute(mycat, "use " + db);
 
-            execute(mycat,
-                    "/*+ mycat:createDatasource{\"name\":\"dw0\",\"url\":\"jdbc:mysql://127.0.0.1:3306\",\"user\":\"root\",\"password\":\"123456\"} */;");
-            execute(mycat,
-                    "/*+ mycat:createDatasource{\"name\":\"dr0\",\"url\":\"jdbc:mysql://127.0.0.1:3307\",\"user\":\"root\",\"password\":\"123456\"} */;");
+            execute(mycat, CreateDataSourceHint
+                    .create("dw0",
+                            "jdbc:mysql://127.0.0.1:3306"));
+            execute(mycat, CreateDataSourceHint
+                    .create("dr0",
+                            "jdbc:mysql://127.0.0.1:3307"));
+
             execute(mycat,
                     "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
 
