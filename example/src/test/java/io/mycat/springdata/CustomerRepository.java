@@ -1,5 +1,6 @@
 package io.mycat.springdata;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.scheduling.annotation.Async;
@@ -15,7 +16,7 @@ import java.util.stream.Stream;
  * @author Oliver Gierke
  * @author Thomas Darimont
  */
-public interface CustomerRepository extends Repository<Customer, Long> {
+public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 	/**
 	 * Special customization of {@link CrudRepository#findOne(java.io.Serializable)} to return a JDK 8 {@link Optional}.
