@@ -281,7 +281,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putUser(UserConfig userConfig) {
         this.users = mycatRouterConfig.getUsers();
         this.users.stream().filter(u -> u.getUsername().equals(userConfig.getUsername()))
-                .findFirst().ifPresent(find -> this.users.remove(userConfig));
+                .findFirst().ifPresent(find -> this.users.remove(find));
         users.add(userConfig);
         updateType = UpdateType.USER;
     }

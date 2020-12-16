@@ -59,6 +59,11 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(MycatUpdateRel mycatUpdateRel) {
+        if (mycatUpdateRel.isGlobal()){
+            return new MycatGlobalUpdateExecutor(mycatUpdateRel.getValues(),
+                    mycatUpdateRel.getSqlStatement(),
+                    params,factory);
+        }
         return MycatUpdateExecutor.create(mycatUpdateRel.getValues(),
                 mycatUpdateRel.getSqlStatement(),
                 factory,

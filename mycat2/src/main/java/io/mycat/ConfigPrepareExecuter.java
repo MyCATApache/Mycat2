@@ -70,7 +70,7 @@ public class ConfigPrepareExecuter {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
 
-                this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
+                this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().distinct().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
                 break;
             }
             case SEQUENCE: {

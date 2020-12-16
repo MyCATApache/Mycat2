@@ -111,8 +111,8 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
 
     protected void runUpdate(MycatUpdateExecutor updateExecutor) {
         updateExecutor.open();
-        long affectedRow = updateExecutor.affectedRow;
-        long lastInsertId = updateExecutor.lastInsertId;
+        long affectedRow = updateExecutor.getAffectedRow();
+        long lastInsertId = updateExecutor.getLastInsertId();
         response.sendOk(lastInsertId, affectedRow);
     }
 

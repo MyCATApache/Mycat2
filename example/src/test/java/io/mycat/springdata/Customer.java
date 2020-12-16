@@ -1,9 +1,6 @@
 package io.mycat.springdata;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -12,7 +9,8 @@ import javax.persistence.Table;
 @Getter
 @ToString
 @AllArgsConstructor
-@Table( catalog="db1",name = "sys_user")
+@Table( catalog="db1",name = "customer")
+@EqualsAndHashCode
 public class Customer extends AbstractEntity {
 
 	String firstname, lastname;

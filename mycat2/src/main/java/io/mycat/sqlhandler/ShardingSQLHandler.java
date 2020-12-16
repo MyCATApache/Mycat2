@@ -41,7 +41,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 }
             });
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-            NameMap<NormalTable> normalTables = new NameMap<>();
+            NameMap<MetadataManager.SimpleRoute> normalTables = new NameMap<>();
             if (metadataManager.checkVaildNormalRoute(tableNames, normalTables)) {
                 String[] targetName = new String[1];
                 selectStatement.accept(new MySqlASTVisitorAdapter() {
@@ -50,14 +50,13 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                         String tableName = x.getTableName();
                         if (tableName != null) {
                             tableName = SQLUtils.normalize(tableName);
-                            NormalTable normalTable = normalTables.get(tableName);
+                            MetadataManager.SimpleRoute normalTable = normalTables.get(tableName);
                             if (normalTable != null) {
                                 String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
                                 if(normalTable.getSchemaName().equalsIgnoreCase(schema)){
-                                    DataNode dataNode = normalTable.getDataNode();
-                                    x.setSimpleName(dataNode.getTable());
-                                    x.setSchema(dataNode.getSchema());
-                                    targetName[0] = dataNode.getTargetName();
+                                    x.setSimpleName(normalTable.getTableName());
+                                    x.setSchema(normalTable.getSchemaName());
+                                    targetName[0] = normalTable.getTargetName();
                                 }
                             }
                         }
