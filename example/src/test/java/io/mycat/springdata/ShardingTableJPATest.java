@@ -7,14 +7,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 
-@NotThreadSafe
-@net.jcip.annotations.NotThreadSafe
-@SpringBootApplication
-public class ShardingTableJPATest extends TableJPATemplateTest {
+
+public abstract class ShardingTableJPATest extends TableJPATemplateTest {
+    public ShardingTableJPATest(String dbtype, Class clazz) {
+        super(dbtype, clazz);
+    }
+
     @Before
     public void before() throws Exception {
         initDb();
-        this.applicationContext = new SpringApplication(ShardingTableJPATest.class).run();
+        this.applicationContext = new SpringApplication(clazz).run();
         this.repository = applicationContext.getBean(CustomerRepository.class);
         runTable(ShardingTableJPATest.class,CreateTableSQLType.SHARDING);
     }

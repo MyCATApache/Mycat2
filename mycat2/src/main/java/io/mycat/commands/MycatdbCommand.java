@@ -6,8 +6,10 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
+import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
+import com.alibaba.fastsql.sql.parser.SQLType;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
@@ -95,6 +97,7 @@ public enum MycatdbCommand {
             sqlHandlers.add(new ShowCreateFunctionHanlder());
             sqlHandlers.add(new CreateTableSQLHandler());
             sqlHandlers.add(new CreateSequenceHandler());
+            sqlHandlers.add(new DropSequenceSQLHandler());
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
 
@@ -116,10 +119,6 @@ public enum MycatdbCommand {
 
     public void executeQuery(String text, MycatSession session, MycatDataContext dataContext) {
         try {
-            if (isHbt(text)) {
-                executeHbt(dataContext, text.substring(12), new ReceiverImpl(session, 1, false, false));
-                return;
-            }
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
@@ -134,7 +133,7 @@ public enum MycatdbCommand {
                 execute(dataContext, receiver, sqlStatement);
             }
         } catch (Throwable e) {
-            if(isNavicatClientStatusQuery(text)){
+            if (isNavicatClientStatusQuery(text)) {
                 session.writeOkEndPacket();
                 return;
             }
@@ -145,10 +144,10 @@ public enum MycatdbCommand {
 
     }
 
-    private static boolean isNavicatClientStatusQuery(String text){
-        if(Objects.equals(
+    private static boolean isNavicatClientStatusQuery(String text) {
+        if (Objects.equals(
                 "SELECT STATE AS `状态`, ROUND(SUM(DURATION),7) AS `期间`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `百分比` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ",
-                text)){
+                text)) {
             return true;
         }
         return false;
@@ -211,22 +210,21 @@ public enum MycatdbCommand {
             }
         }
         MycatUser user = dataContext.getUser();
-        String dbTypeText = user.getDbType();
-        if (dbTypeText == null || "mysql".equalsIgnoreCase(dbTypeText)) {
-            return parseMySQLString(text, resStatementList);
-        } else {
-            DbType dbType = DbType.valueOf(dbTypeText);
-            SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, dbType, true);
-            List<SQLStatement> sqlStatements = parser.parseStatementList();
-            StringBuilder out = new StringBuilder();
-            SQLASTOutputVisitor outputVisitor = SQLUtils.createOutputVisitor(out, dbType);
-            for (SQLStatement sqlStatement : sqlStatements) {
-                sqlStatement.accept(outputVisitor);
-            }
-            String mysqlSql = out.toString();
-            return parseMySQLString(mysqlSql, resStatementList);
-        }
+        return parseMySQLString(text, resStatementList);
     }
+
+    @NotNull
+    private String convertSql(String text,DbType type) {
+        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, type, true);
+        List<SQLStatement> sqlStatements = parser.parseStatementList();
+        StringBuilder out = new StringBuilder();
+        SQLASTOutputVisitor outputVisitor = SQLUtils.createOutputVisitor(out, type);
+        for (SQLStatement sqlStatement : sqlStatements) {
+            sqlStatement.accept(outputVisitor);
+        }
+        return out.toString();
+    }
+
 
     private LinkedList<SQLStatement> parseMySQLString(String text, LinkedList<SQLStatement> statementList) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, DbType.mysql, true);

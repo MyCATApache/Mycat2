@@ -9,6 +9,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableState
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.SetUserDialectHint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +34,8 @@ public abstract class TableJPATemplateTest implements MycatTest {
      CustomerRepository repository;
      String sql;
      CreateTableSQLType createTableSQLType;
+     String dialect;
+    private String dbtype;
 
     public static enum CreateTableSQLType {
         GLOBAL,
@@ -40,7 +43,21 @@ public abstract class TableJPATemplateTest implements MycatTest {
         NORMAL
     }
 
+    public TableJPATemplateTest(String dbtype,Class clazz) {
+        this.dbtype = dbtype;
+        this.clazz = clazz;
+    }
+
     public void initDb() throws Exception {
+        if ("mysql".equalsIgnoreCase(dbtype)) {
+            dialect = "org.hibernate.dialect.MySQL8Dialect";
+        } else if ("oracle".equalsIgnoreCase(dbtype)) {
+            dialect = "org.hibernate.dialect.OracleDialect";
+        } else if ("sqlserver".equalsIgnoreCase(dbtype)) {
+            dialect = "org.hibernate.dialect.SQLServerDialect";
+        } else if ("PostgreSQL".equalsIgnoreCase(dbtype)) {
+            dialect = "org.hibernate.dialect.PostgreSQL82Dialect";
+        }
         try (Connection mySQLConnection = getMySQLConnection(8066)) {
             execute(mySQLConnection, RESET_CONFIG);
             execute(mySQLConnection, "drop database IF EXISTS db1");

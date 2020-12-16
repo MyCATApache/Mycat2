@@ -2,22 +2,27 @@ package io.mycat.springdata;
 
 import org.junit.Before;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import javax.annotation.concurrent.NotThreadSafe;
+import java.util.Collections;
 
-@NotThreadSafe
-@net.jcip.annotations.NotThreadSafe
-@SpringBootApplication
-public class GlobalTableJPATest extends TableJPATemplateTest {
 
+public abstract class GlobalTableJPATest extends TableJPATemplateTest {
+
+
+    public GlobalTableJPATest(String dbtype,Class clazz) {
+        super(dbtype,clazz);
+    }
 
     @Before
     public void before() throws Exception {
         initDb();
-        this.applicationContext = new SpringApplication(GlobalTableJPATest.class).run();
+        SpringApplication springApplication = new SpringApplication(clazz);
+        springApplication.setDefaultProperties(Collections.singletonMap(
+                "spring.jpa.properties.hibernate.dialect", dialect));
+        this.applicationContext = springApplication.run();
+
         this.repository = applicationContext.getBean(CustomerRepository.class);
-        runTable(GlobalTableJPATest.class, CreateTableSQLType.GLOBAL);
+        runTable(clazz, CreateTableSQLType.GLOBAL);
     }
 
 

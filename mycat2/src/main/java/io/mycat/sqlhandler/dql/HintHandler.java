@@ -4,11 +4,11 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLCommentHint;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlHintStatement;
-import groovy.util.GroovyScriptEngine;
 import io.mycat.*;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -41,7 +41,6 @@ import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Response;
 
-import java.rmi.MarshalledObject;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -77,6 +76,23 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("setUserDialect".equalsIgnoreCase(cmd)) {
+                    MycatRouterConfigOps ops = ConfigUpdater.getOps();
+                    Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+                    Map map = JsonUtil.from(body, Map.class);
+                    String username = (String)map.get("username");
+                    String dbType = (String)map.get("dialect");
+                    UserConfig userInfo = authenticator.getUserInfo(username);
+                    if (userInfo == null){
+                        response.sendError("unknown username:"+username, MySQLErrorCode.ER_UNKNOWN_ERROR);
+                        return;
+                    }
+                    userInfo.setDialect(dbType);
+                    ops.putUser(userInfo);
+                    ops.commit();
+                    response.sendOk();
+                    return;
+                }
                 if ("showDataNodes".equalsIgnoreCase(cmd)) {
                     Map map = JsonUtil.from(body, Map.class);
                     TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
@@ -184,13 +200,15 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     builder.addColumnInfo("username", JDBCType.VARCHAR);
                     builder.addColumnInfo("ip", JDBCType.VARCHAR);
                     builder.addColumnInfo("transactionType", JDBCType.VARCHAR);
+                    builder.addColumnInfo("dbType", JDBCType.VARCHAR);
                     Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
                     List<UserConfig> userConfigs = authenticator.allUsers();
                     for (UserConfig userConfig : userConfigs) {
                         builder.addObjectRowPayload(Arrays.asList(
                                 userConfig.getUsername(),
                                 userConfig.getPassword(),
-                                userConfig.getTransactionType()
+                                userConfig.getTransactionType(),
+                                userConfig.getDialect()
                         ));
                     }
                     response.sendResultSet(() -> builder.build());
