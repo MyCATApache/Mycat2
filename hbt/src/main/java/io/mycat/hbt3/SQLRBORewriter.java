@@ -499,47 +499,42 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                                   View rightView,
                                                   Iterable<DataNode> leftDataNodes,
                                                   Iterable<DataNode> rightDataNodes) {
-        Map<String, List<RelNode>> views = new HashMap<>();
+        Map<String, List<RelNode>> phyViews = new HashMap<>();
+        ArrayList<RelNode> list = new ArrayList<>();
         for (DataNode leftDataNode : leftDataNodes) {
             for (DataNode rightDataNode : rightDataNodes) {
                 RelNode leftN = leftView.applyDataNode(leftDataNode);
                 RelNode rightN = rightView.applyDataNode(rightDataNode);
                 if (leftDataNode.getTargetName().equals(rightDataNode.getTargetName())) {
-                    List<RelNode> relNodes = views.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
+                    List<RelNode> relNodes = phyViews.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
                     relNodes.add(join.copy(join.getTraitSet(),
                             ImmutableList.of(
                                     leftN,
                                     rightN)));
                 } else {
-                    Join copy = join.copy(join.getTraitSet(), ImmutableList.of(
+                    list.add(join.copy(join.getTraitSet(), ImmutableList.of(
                             View.of(leftN,
                                     Distribution.of(leftDataNode)),
                             View.of(rightN,
-                                    Distribution.of(rightDataNode))));
-                    List<RelNode> relNodes = views.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
-                    relNodes.add(copy);
+                                    Distribution.of(rightDataNode)))));
                 }
             }
 
         }
-        ArrayList<RelNode> list = new ArrayList<>();
+
 
         int unionLimit = 4;
-        for (Map.Entry<String, List<RelNode>> e : views.entrySet()) {
+        for (Map.Entry<String, List<RelNode>> e : phyViews.entrySet()) {
             String key = e.getKey();
             List<RelNode> value = new ArrayList<>(e.getValue());
-            if (value.size() == 1) {
-                list.add(value.get(0));
-            } else {
-                while (true) {
-                    List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
-                    list.add(View.of(LogicalUnion.create(relNodes, true),
-                            Distribution.of(new BackendTableInfo(key, "", ""))));
-                    if (unionLimit < value.size()) {
-                        value = value.subList(relNodes.size(), value.size());
-                    } else {
-                        break;
-                    }
+            while (true) {
+                List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
+                list.add(View.of(LogicalUnion.create(relNodes, true),
+                        Distribution.of(new BackendTableInfo(key, "", ""))));
+                if (unionLimit < value.size()) {
+                    value = value.subList(relNodes.size(), value.size());
+                } else {
+                    break;
                 }
             }
         }
