@@ -40,8 +40,14 @@ public abstract class TableJPATemplateTest implements MycatTest {
         NORMAL
     }
 
-
-    public void runInitSQL(Class clazz, CreateTableSQLType createTableSQLType) throws Exception {
+    public void initDb() throws Exception {
+        try (Connection mySQLConnection = getMySQLConnection(8066)) {
+            execute(mySQLConnection, RESET_CONFIG);
+            execute(mySQLConnection, "drop database IF EXISTS db1");
+            execute(mySQLConnection, "create database IF NOT EXISTS db1");
+        }
+    }
+    public void runTable(Class clazz, CreateTableSQLType createTableSQLType) throws Exception {
         sql = "CREATE TABLE db1.`customer` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                 "  `firstname` varchar(100) DEFAULT NULL,\n" +

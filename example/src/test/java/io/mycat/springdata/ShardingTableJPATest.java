@@ -13,12 +13,9 @@ import java.sql.Connection;
 public class ShardingTableJPATest extends TableJPATemplateTest {
     @Before
     public void before() throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(8066)) {
-            execute(mySQLConnection, "create database IF NOT EXISTS db1");
-        }
-        SpringApplication springApplication = new SpringApplication(ShardingTableJPATest.class);
-        this.applicationContext = springApplication.run();
-        runInitSQL(ShardingTableJPATest.class,CreateTableSQLType.SHARDING);
+        initDb();
+        this.applicationContext = new SpringApplication(ShardingTableJPATest.class).run();
         this.repository = applicationContext.getBean(CustomerRepository.class);
+        runTable(ShardingTableJPATest.class,CreateTableSQLType.SHARDING);
     }
 }

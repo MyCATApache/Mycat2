@@ -14,12 +14,10 @@ public class NormalTableJPATest extends TableJPATemplateTest  {
 
     @Before
     public void before() throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(8066)) {
-            execute(mySQLConnection, "create database IF NOT EXISTS db1");
-        }
-        SpringApplication springApplication = new SpringApplication(NormalTableJPATest.class);
-        this.applicationContext = springApplication.run();
-        runInitSQL(NormalTableJPATest.class,CreateTableSQLType.NORMAL);
+        initDb();
+        this.applicationContext = new SpringApplication(GlobalTableJPATest.class).run();
         this.repository = applicationContext.getBean(CustomerRepository.class);
+        runTable(NormalTableJPATest.class,CreateTableSQLType.NORMAL);
+
     }
 }
