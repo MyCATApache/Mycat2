@@ -203,7 +203,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @Data
     public static class State {
         final Map<String, Set<String>> replica = new HashMap<>();
-        String configTimestamp = null;
     }
 
     @Override
@@ -325,8 +324,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                         writeFile(t, filePath);
                     }
                     State state = FileMetadataStorageManager.this.state;
-                    state.configTimestamp = LocalDateTime.now().toString();
-
 
                     prepare.commit();
                     Path statePath = baseDirectory.resolve("state.json");

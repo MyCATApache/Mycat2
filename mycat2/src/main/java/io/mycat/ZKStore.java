@@ -1,97 +1,150 @@
 package io.mycat;
 
+import io.mycat.util.NameMap;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.transaction.CuratorOp;
-import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.retry.RetryNTimes;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.data.Stat;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
+import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 public class ZKStore implements CoordinatorMetadataStorageManager.Store {
-    private final Map<String, CoordinatorMetadataStorageManager.ChangedCallback> changedCallbackMap
-            = new ConcurrentHashMap<>();
-    private final CuratorFramework client;
-    private final String CONFIG_PREFIX;
-    private volatile List<CuratorOp> transactionOps = null;
+    private final ZooMap root;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZKStore.class);
+    private final NameMap<Entry> map = new NameMap<>();
+
+    @Data
+
+    static class Entry {
+        private final TreeCache nodeCache;
+        ZooMap zk;
+        CoordinatorMetadataStorageManager.ChangedValueCallback callback;
+
+        public Entry(ZooMap zk) throws Exception {
+            this.zk = zk;
+            this.callback = null;
+
+            String root = zk.getRoot();
+            this.nodeCache = new TreeCache(ZooMap.getClient(), root);
+            Listenable<TreeCacheListener> listenable1 = nodeCache.getListenable();
+            listenable1.addListener(new TreeCacheListener() {
+                @Override
+                public void childEvent(CuratorFramework curatorFramework, TreeCacheEvent treeCacheEvent) throws Exception {
+                    TreeCacheEvent.Type type = treeCacheEvent.getType();
+                    switch (type) {
+                        case NODE_ADDED:
+                        case NODE_UPDATED:
+                        case NODE_REMOVED:
+                            break;
+                        case CONNECTION_SUSPENDED:
+                        case CONNECTION_RECONNECTED:
+                        case CONNECTION_LOST:
+                        case INITIALIZED:
+                            return;
+                    }
+                    ChildData currentData = treeCacheEvent.getData();
+                    String path = currentData.getPath();
+                    String data = new String(treeCacheEvent.getData().getData());
+                    if ("".equalsIgnoreCase(data)) {
+                        return;
+                    }
+                    int end = path.lastIndexOf("/") + 1;
+                    String name = path.substring(end);
+                    path = path.substring(0, end);
+                    if (callback != null) {
+                        switch (treeCacheEvent.getType()) {
+                            case NODE_ADDED:
+                            case NODE_UPDATED:
+                                callback.onPut(name, data);
+                                break;
+                            case NODE_REMOVED:
+                                callback.onRemove(name);
+                                break;
+                            case CONNECTION_SUSPENDED:
+                                break;
+                            case CONNECTION_RECONNECTED:
+                                break;
+                            case CONNECTION_LOST:
+                                break;
+                            case INITIALIZED:
+                                break;
+                        }
+                    }
+
+                    LOGGER.debug("path: " + path + " data:{}" + data);
+                }
+            });
+        }
+
+        public void start() throws Exception {
+            nodeCache.start();
+        }
+    }
+
 
     // 初始化zk连接
-    public ZKStore(String configPrefix,
-                   String address)throws Exception  {
+    public ZKStore(
+            String address) throws Exception {
+        ZooMap.connectionString = address;
+        this.root = ZooMap.newMap("/mycat");
 
-        if (!configPrefix.startsWith("/")) {
-            configPrefix = "/" + configPrefix;
+        map.put("schemas", new Entry(ZooMap.newMap("/mycat/schemas")));
+        map.put("datasources", new Entry(ZooMap.newMap("/mycat/datasources")));
+        map.put("clusters", new Entry(ZooMap.newMap("/mycat/clusters")));
+        map.put("users", new Entry(ZooMap.newMap("/mycat/users")));
+        map.put("sequences", new Entry(ZooMap.newMap("/mycat/sequences")));
+        map.put("sqlcaches", new Entry(ZooMap.newMap("/mycat/sqlcaches")));
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (root != null) {
+                    root.close();
+                }
+            }
+        }));
+        for (Entry entry : map.values()) {
+            entry.start();
         }
-        if (configPrefix.endsWith("/")) {
-            configPrefix = configPrefix.substring(0, configPrefix.length() - 1);
-        }
-        this.CONFIG_PREFIX = configPrefix;
-        this.client = CuratorFrameworkFactory.newClient(address, new RetryNTimes(3, 1000));
-        this.client.start();
         this.init();
+
+
     }
 
     @Override
-    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedCallback changedCallback) {
-        changedCallbackMap.put(changedCallback.getInterestedPath(),changedCallback);
+    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedValueCallback changedCallback) {
+        Entry entry = this.map.get(changedCallback.getKey());
+        if (entry != null) {
+            entry.callback = changedCallback;
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     @Override
     public synchronized void begin() {
-        if (this.transactionOps != null) {
-            throw new UnsupportedOperationException();
-        }
-        this.transactionOps = new ArrayList<>();
+
     }
 
     @SneakyThrows
     public String get(String schema) {
-        String point = String.join("/", CONFIG_PREFIX, schema);
-        return new String(client.getData().forPath(point));
+        return this.root.get(schema);
     }
 
     @SneakyThrows
     @Override
     public void set(String name, String value) {
-        String configFullName = String.join("/", CONFIG_PREFIX, name);
-        InterProcessMutex interProcessMutex = new InterProcessMutex(client, configFullName);
-        try {
-            interProcessMutex.acquire();
-            ///////////////////////////////////////////////////////////////////////
-            Stat stat = client.checkExists().forPath(configFullName);
-            if (stat == null) {
-                if (this.transactionOps != null) {
-                    this.transactionOps.add(
-                            this.client.transactionOp().create().withMode(CreateMode.PERSISTENT)
-                                    .forPath(configFullName, value.getBytes())
-                    );
-                } else {
-                    client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT)
-                            .forPath(configFullName, value.getBytes());
-                }
-            } else {
-                if (this.transactionOps != null) {
-                    this.transactionOps.add(
-                            this.client.transactionOp().setData().forPath(configFullName, value.getBytes()
-                            )
-                    );
-                } else {
-                    client.setData().forPath(configFullName, value.getBytes());
-                }
-            }
-            ///////////////////////////////////////////////////////////////////////
-        } finally {
-            if (interProcessMutex.isAcquiredInThisProcess()) {
-                interProcessMutex.release();
-            }
+        String s = this.root.get(name);
+        if (!Objects.equals(s, (value))) {
+            this.root.put(name, value);
         }
 
     }
@@ -99,108 +152,42 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
     @SneakyThrows
     @Override
     public void set(String name, Map<String, String> map) {
-        String configFullName = String.join("/", CONFIG_PREFIX, name);
-        InterProcessMutex interProcessMutex = new InterProcessMutex(client, configFullName);
-        try {
-            interProcessMutex.acquire();
-            ///////////////////////////////////////////////////////////////////////
+        Entry entry = this.map.get(name, false);
+        if (entry != null) {
             for (Map.Entry<String, String> e : map.entrySet()) {
-                String key = e.getKey();
-                String value = e.getValue();
-                String path = String.join(configFullName, key);
-
-                Stat stat = client.checkExists().forPath(path);
-                if (stat == null) {
-                    if (this.transactionOps != null) {
-                        transactionOps.add(
-                                client.transactionOp()
-                                        .create()
-                                        .withMode(CreateMode.PERSISTENT).forPath(configFullName)
-
-                        );
-                        transactionOps.add(
-                                client.transactionOp()
-                                        .create()
-                                        .withMode(CreateMode.PERSISTENT).forPath(path, value.getBytes())
-                        );
-
-                    } else {
-                        client.create().creatingParentsIfNeeded()
-                                .withMode(CreateMode.PERSISTENT).forPath(configFullName, value.getBytes());
-                    }
-                } else {
-                    client.setData().forPath(configFullName, value.getBytes());
+                ZooMap zk = entry.getZk();
+                if (!Objects.equals(zk.get(e.getKey()), (e.getValue()))) {
+                    zk.put(e.getKey(), e.getValue());
                 }
             }
-            ///////////////////////////////////////////////////////////////////////
-        } finally {
-            if (interProcessMutex.isAcquiredInThisProcess()) {
-                interProcessMutex.release();
-            }
+        } else {
+            throw new UnsupportedOperationException();
         }
+
     }
 
     @SneakyThrows
     public Map<String, String> getMap(String name) {
-        String point = String.join("/", CONFIG_PREFIX, name);
-        List<String> childrenNames = client.getChildren().forPath(point);
-        Map<String, String> res = new HashMap<>();
-        for (String childrenName : childrenNames) {
-            res.put(childrenName,
-                    new String(
-                            client.getData().forPath(String.join(CONFIG_PREFIX, name, childrenName))
-                    ));
+        Entry entry = map.get(name, false);
+        if (entry != null) {
+            return Collections.unmodifiableMap(entry.getZk());
         }
-        return res;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     @SneakyThrows
     public synchronized void commit() {
-        try {
-            if (!transactionOps.isEmpty()) {
-                Collection<CuratorTransactionResult> results = client.transaction().forOperations(transactionOps);
-            }
-        } finally {
-            transactionOps = null;
-        }
+
     }
 
     @Override
     public void close() {
-        transactionOps = null;
-        client.close();
+
     }
 
     @SneakyThrows
-    public void init() throws Exception  {
-        PathChildrenCache watcher = new PathChildrenCache(client, this.CONFIG_PREFIX, true);
-        watcher.getListenable().addListener(new PathChildrenCacheListener() {
-            @Override
-            public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent event) throws Exception {
+    public void init() throws Exception {
 
-                String path = event.getData().getPath();
-                path = path.substring(ZKStore.this.CONFIG_PREFIX.length());
-                if (path.contains("/")) {
-                    path = path.substring(1);
-                }
-                if (PathChildrenCacheEvent.Type.CHILD_ADDED.equals(event.getType())
-                        ||
-                        PathChildrenCacheEvent.Type.CHILD_UPDATED.equals(event.getType())) {
-                    CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
-                    if (changedCallback != null) {
-                        changedCallback.onChanged(path, new String(event.getData().getData()), false);
-                    }
-                } else if (PathChildrenCacheEvent.Type.CHILD_REMOVED.equals(event.getType())) {
-                    /////////////////////////////////////////////////////////////
-                    CoordinatorMetadataStorageManager.ChangedCallback changedCallback = changedCallbackMap.get(path);
-                    if (changedCallback != null) {
-                        changedCallback.onChanged(path, new String(event.getData().getData()), true);
-                    }
-                    /////////////////////////////////////////////////////////////
-                }
-            }
-        });
-        watcher.start();
     }
 }
