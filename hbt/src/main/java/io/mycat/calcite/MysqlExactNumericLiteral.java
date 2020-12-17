@@ -24,6 +24,6 @@ public class MysqlExactNumericLiteral extends SqlNumericLiteral {
 
     @Override
     public RelDataType createSqlType(RelDataTypeFactory typeFactory) {
-        return typeFactory.createJavaType(BigDecimal.class);
+        return typeFactory.createSqlType(SqlTypeName.DECIMAL);
     }
 }
