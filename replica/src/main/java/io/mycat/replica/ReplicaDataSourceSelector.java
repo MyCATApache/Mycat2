@@ -256,7 +256,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
     private void updateFile(List<PhysicsInstanceImpl> newWriteDataSource) {
         MetadataStorageManager metadataStorageManager = MetaClusterCurrent.wrapper(MetadataStorageManager.class);
         Set<String> dsNames = newWriteDataSource.stream().map(i -> i.getName()).collect(Collectors.toSet());
-        metadataStorageManager.reportReplica(getName(), dsNames);
+        Map<String, Set<String>> state = replicaSelectorRuntime.getState();
+        state.putAll(Collections.singletonMap(getName(),dsNames));
+        metadataStorageManager.reportReplica(state);
     }
 
     @Override

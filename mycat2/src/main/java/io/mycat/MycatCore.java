@@ -5,8 +5,6 @@ import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
-import io.mycat.router.gsi.GSIService;
-import io.mycat.router.gsi.impl.MapDBGSIService;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 
@@ -14,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 /**
@@ -78,20 +75,21 @@ public class MycatCore {
 //        context.put(GSIService.class,null);
         MetaClusterCurrent.register(context);
 
-        String mode = Optional.ofNullable(serverConfig.getMode()).orElse(PROPERTY_MODE_LOCAL).toLowerCase();
+        String mode = PROPERTY_MODE_LOCAL;
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
                 metadataStorageManager = new FileMetadataStorageManager(serverConfig,datasourceProvider, this.baseDirectory);
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
-                String zkAddress = System.getProperty("zkAddress");
+                String zkAddress =System.getProperty("zk_address");
                 if (zkAddress != null) {
-                    ZKStore zkStore = new ZKStore("mycat", zkAddress);
                     metadataStorageManager =
-                            new CoordinatorMetadataStorageManager(serverConfig,zkStore,
-                                    ConfigReaderWriter.getReaderWriterBySuffix("json"),
-                                    datasourceProvider);
+                            new CoordinatorMetadataStorageManager(
+                                    new FileMetadataStorageManager(serverConfig,
+                                            datasourceProvider,
+                                            this.baseDirectory),
+                                    zkAddress);
                     break;
                 }
             default: {

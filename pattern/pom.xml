@@ -23,11 +23,6 @@
             <version>1.18.10</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.9</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
         <dependency>
             <groupId>com.alibaba.fastsql</groupId>
