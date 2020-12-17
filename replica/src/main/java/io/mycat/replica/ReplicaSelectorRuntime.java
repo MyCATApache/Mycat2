@@ -440,4 +440,13 @@ public class ReplicaSelectorRuntime implements Closeable {
         Objects.requireNonNull(datasourceConfig, "unknown dbType:" + name);
         return datasourceConfig.getDbType();
     }
+   public Map<String,Set<String>> getState(){
+        Map<String,Set<String>> map = new HashMap<>();
+        for (ReplicaDataSourceSelector value : replicaMap.values()) {
+            ArrayList<PhysicsInstance> objects = new ArrayList<>(  value.getWriteDataSource());
+            map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toSet()));
+        }
+        return map;
+
+    }
 }
