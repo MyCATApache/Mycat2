@@ -1,5 +1,8 @@
 package io.mycat;
 
+import io.mycat.config.*;
+import io.mycat.sqlhandler.ConfigUpdater;
+import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -13,13 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class ZKStore implements CoordinatorMetadataStorageManager.Store {
-    private final ZooMap root;
+    private ZooMap root;
     private static final Logger LOGGER = LoggerFactory.getLogger(ZKStore.class);
     private final NameMap<Entry> map = new NameMap<>();
+    private Map<String, CoordinatorMetadataStorageManager.ChangedValueCallback> callback = new HashMap<>();
+    private CoordinatorMetadataStorageManager storageManager;
 
     @Data
 
@@ -28,9 +34,9 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
         ZooMap zk;
         CoordinatorMetadataStorageManager.ChangedValueCallback callback;
 
-        public Entry(ZooMap zk) throws Exception {
+        public Entry(ZooMap zk, CoordinatorMetadataStorageManager.ChangedValueCallback callback) throws Exception {
             this.zk = zk;
-            this.callback = null;
+            this.callback = callback;
 
             String root = zk.getRoot();
             this.nodeCache = new TreeCache(ZooMap.getClient(), root);
@@ -39,19 +45,22 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
                 @Override
                 public void childEvent(CuratorFramework curatorFramework, TreeCacheEvent treeCacheEvent) throws Exception {
                     TreeCacheEvent.Type type = treeCacheEvent.getType();
+                    LOGGER.debug("zk event: "+ treeCacheEvent);
                     switch (type) {
+
                         case NODE_ADDED:
                         case NODE_UPDATED:
                         case NODE_REMOVED:
                             break;
+                        case INITIALIZED:
                         case CONNECTION_SUSPENDED:
                         case CONNECTION_RECONNECTED:
                         case CONNECTION_LOST:
-                        case INITIALIZED:
+
                             return;
                     }
-                    ChildData currentData = treeCacheEvent.getData();
-                    String path = currentData.getPath();
+                    ChildData currentData =  Objects.requireNonNull(treeCacheEvent.getData());
+                    String path = Objects.requireNonNull(currentData.getPath());
                     String data = new String(treeCacheEvent.getData().getData());
                     if ("".equalsIgnoreCase(data)) {
                         return;
@@ -92,30 +101,9 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
     // 初始化zk连接
     public ZKStore(
-            String address) throws Exception {
+            String address, CoordinatorMetadataStorageManager storageManager) throws Exception {
+        this.storageManager = storageManager;
         ZooMap.connectionString = address;
-        this.root = ZooMap.newMap("/mycat");
-
-        map.put("schemas", new Entry(ZooMap.newMap("/mycat/schemas")));
-        map.put("datasources", new Entry(ZooMap.newMap("/mycat/datasources")));
-        map.put("clusters", new Entry(ZooMap.newMap("/mycat/clusters")));
-        map.put("users", new Entry(ZooMap.newMap("/mycat/users")));
-        map.put("sequences", new Entry(ZooMap.newMap("/mycat/sequences")));
-        map.put("sqlcaches", new Entry(ZooMap.newMap("/mycat/sqlcaches")));
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if (root != null) {
-                    root.close();
-                }
-            }
-        }));
-        for (Entry entry : map.values()) {
-            entry.start();
-        }
-        this.init();
-
-
     }
 
     @Override
@@ -172,7 +160,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
         if (entry != null) {
             return Collections.unmodifiableMap(entry.getZk());
         }
-        throw new UnsupportedOperationException();
+        return Collections.emptyMap();
     }
 
     @Override
@@ -188,6 +176,162 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
     @SneakyThrows
     public void init() throws Exception {
+        this.root = ZooMap.newMap("/mycat");
+        map.put("schemas",
+                new Entry(ZooMap.newMap("/mycat/schemas"),
+                        new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+                            @Override
+                            public String getKey() {
+                                return "schemas";
+                            }
+
+                            @Override
+                            public void onRemove(String path) throws Exception {
+                                String schemaName = path;
+                                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                                    ops.dropSchema(schemaName);
+                                    ops.commit();
+                                }
+                            }
+
+                            @Override
+                            public void onPut(String path, String text) throws Exception {
+                                String schemaName = path;
+                                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                                    ops.putSchema(JsonUtil.from(text, LogicSchemaConfig.class));
+                                    ops.commit();
+                                }
+                            }
+                        }));
+        map.put("datasources", new Entry(ZooMap.newMap("/mycat/datasources"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+            @Override
+            public String getKey() {
+                return "datasources";
+            }
+
+            @Override
+            public void onRemove(String path) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.removeDatasource(path);
+                    ops.commit();
+                }
+            }
+
+            @Override
+            public void onPut(String path, String text) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.putDatasource(JsonUtil.from(text, DatasourceConfig.class));
+                    ops.commit();
+                }
+            }
+
+
+        }));
+        map.put("clusters", new Entry(ZooMap.newMap("/mycat/clusters"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+            @Override
+            public String getKey() {
+                return "clusters";
+            }
+
+            @Override
+            public void onRemove(String path) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.removeReplica(path);
+                    ops.commit();
+                }
+            }
+
+            @Override
+            public void onPut(String path, String text) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.putReplica(JsonUtil.from(text, ClusterConfig.class));
+                    ops.commit();
+                }
+            }
+
+        }));
+        map.put("users", new Entry(ZooMap.newMap("/mycat/users"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+            @Override
+            public String getKey() {
+                return "users";
+            }
+
+            @Override
+            public void onRemove(String path) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.deleteUser(path);
+                    ops.commit();
+                }
+            }
+
+            @Override
+            public void onPut(String path, String text) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.putUser(JsonUtil.from(text, UserConfig.class));
+                    ops.commit();
+                }
+            }
+
+        }));
+        map.put("sequences", new Entry(ZooMap.newMap("/mycat/sequences"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+            @Override
+            public String getKey() {
+                return "sequences";
+            }
+
+            @Override
+            public void onRemove(String path) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.removeSequenceByName(path);
+                    ops.commit();
+                }
+            }
+
+            @Override
+            public void onPut(String path, String text) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.putSequence(JsonUtil.from(text, SequenceConfig.class));
+                    ops.commit();
+                }
+            }
+        }));
+        map.put("sqlcaches", new Entry(ZooMap.newMap("/mycat/sqlcaches"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+            @Override
+            public String getKey() {
+                return "sqlcaches";
+            }
+
+            @Override
+            public void onRemove(String path) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.removeSqlCache(path);
+                    ops.commit();
+                }
+            }
+
+            @Override
+            public void onPut(String path, String text) throws Exception {
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(storageManager)) {
+                    ops.putSqlCache(JsonUtil.from(text, SqlCacheConfig.class));
+                    ops.commit();
+                }
+            }
+        }));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (root != null) {
+                    root.close();
+                }
+            }
+        }));
+    }
+
+    public void listen() throws Exception {
+        for (Entry value : map.values()) {
+            value.start();
+        }
 
     }
 }

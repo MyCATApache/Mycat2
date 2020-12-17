@@ -2,6 +2,7 @@ package io.mycat;
 
 import com.google.common.collect.Lists;
 import io.mycat.config.*;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import lombok.Data;
@@ -18,7 +19,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,7 +28,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     private MycatServerConfig serverConfig;
     private final String datasourceProvider;
     private final Path baseDirectory;
-    private final State state = new State();
 
 
     @SneakyThrows
@@ -190,12 +189,13 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     @SneakyThrows
-    public void reportReplica(String name, Set<String> dsNames) {
+    public void reportReplica(Map<String, Set<String>> setMap) {
         Path statePath = baseDirectory.resolve("state.json");
-        state.replica.put(name, dsNames);
+        final State state = new State();
+        state.replica.putAll(setMap);
         writeFile(
                 ConfigReaderWriter.getReaderWriterBySuffix("json")
-                        .transformation(state),statePath);
+                        .transformation(state), statePath);
 
     }
 
@@ -221,119 +221,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
-            public void commit(Object ops)throws Exception  {
-                   //Path mycatPath = resolveFileName("mycat");
-                    String suffix = "json";
-                    ConfigReaderWriter configReaderWriter = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                    MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
-                    ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
-                    prepare.prepareRuntimeObject();
-                    prepare.prepareStoreDDL();
-                    //还没有初始化
-//                    if (state.configTimestamp != null) {
-//                        String s = readString(mycatPath);
-//                        if (s.equals(text)) {
-//                            return;
-//                        }
-//                        //Files.write(mycatPath, text.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-//                    }
-
-                    ///////////////////////////////////////////
-
-
-                    ///////////////////////////////////////////
-
-                    Path schemasPath = baseDirectory.resolve("schemas");
-                    Path clustersPath = baseDirectory.resolve("clusters");
-                    Path datasources = baseDirectory.resolve("datasources");
-                    Path users = baseDirectory.resolve("users");
-                    Path sequences = baseDirectory.resolve("sequences");
-                    Path sqlcaches = baseDirectory.resolve("sqlcaches");
-
-                    if (routerConfig.isUpdateSchemas()) {
-                        cleanDirectory(schemasPath);
-                    }
-                    if (routerConfig.isUpdateClusters()) {
-                        cleanDirectory(clustersPath);
-                    }
-                    if (routerConfig.isUpdateDatasources()) {
-                        cleanDirectory(datasources);
-                    }
-                    if (routerConfig.isUpdateUsers()) {
-                        cleanDirectory(users);
-                    }
-                    if (routerConfig.isUpdateSequences()) {
-                        cleanDirectory(sequences);
-                    }
-                    if (routerConfig.isUpdateSqlCaches()) {
-                        cleanDirectory(sqlcaches);
-                    }
-
-//
-
-
-//                    if (Files.notExists(schemasPath)) Files.createDirectory(schemasPath);
-//                    if (Files.notExists(clustersPath)) Files.createDirectory(clustersPath);
-//                    if (Files.notExists(datasources)) Files.createDirectory(datasources);
-//                    if (Files.notExists(users)) Files.createDirectory(users);
-//                    if (Files.notExists(sequences)) Files.createDirectory(sequences);
-//
-
-                    ////////////////////////////////////////////
-                    for (LogicSchemaConfig schemaConfig : Optional.ofNullable(routerConfig.getSchemas()).orElse(Collections.emptyList())) {
-                        String fileName = schemaConfig.getSchemaName() + ".schema." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(schemaConfig);
-                        Path filePath = schemasPath.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-
-                    for (DatasourceConfig datasourceConfig : Optional.ofNullable(routerConfig.getDatasources()).orElse(Collections.emptyList())) {
-                        String fileName = datasourceConfig.getName() + ".datasource." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(datasourceConfig);
-                        Path filePath = datasources.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-                    for (UserConfig userConfig : Optional.ofNullable(routerConfig.getUsers()).orElse(Collections.emptyList())) {
-                        String fileName = userConfig.getUsername() + ".user." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(userConfig);
-                        Path filePath = users.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-                    for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
-                        String fileName = sequenceConfig.getName() + ".sequence." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(sequenceConfig);
-                        Path filePath = sequences.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-                    for (ClusterConfig i : Optional.ofNullable(routerConfig.getClusters()).orElse(Collections.emptyList())) {
-                        String fileName = i.getName() + ".cluster." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(i);
-                        Path filePath = clustersPath.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-                    for (SqlCacheConfig i : Optional.ofNullable(routerConfig.getSqlCaches()).orElse(Collections.emptyList())) {
-                        String fileName = i.getName() + ".sqlcache." + suffix;
-                        ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
-                        String t = readerWriterBySuffix.transformation(i);
-                        Path filePath = sqlcaches.resolve(fileName);
-                        writeFile(t, filePath);
-                    }
-                    State state = FileMetadataStorageManager.this.state;
-
-                    prepare.commit();
-                    Path statePath = baseDirectory.resolve("state.json");
-
-                    Files.deleteIfExists(statePath);
-                    if (Files.notExists(statePath)) Files.createFile(statePath);
-                    writeFile(
-                            ConfigReaderWriter.getReaderWriterBySuffix("json")
-                                    .transformation(state), statePath);
-
+            public void commit(Object ops) throws Exception {
+                commitAndSyncDisk((MycatRouterConfigOps) ops);
             }
 
             @Override
@@ -348,6 +237,97 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                 }
             }
         };
+    }
+
+    public State commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
+        String suffix = "json";
+        MycatRouterConfigOps routerConfig = ops;
+        ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
+        prepare.prepareRuntimeObject();
+        prepare.prepareStoreDDL();
+
+        Path schemasPath = baseDirectory.resolve("schemas");
+        Path clustersPath = baseDirectory.resolve("clusters");
+        Path datasources = baseDirectory.resolve("datasources");
+        Path users = baseDirectory.resolve("users");
+        Path sequences = baseDirectory.resolve("sequences");
+        Path sqlcaches = baseDirectory.resolve("sqlcaches");
+
+        if (routerConfig.isUpdateSchemas()) {
+            cleanDirectory(schemasPath);
+        }
+        if (routerConfig.isUpdateClusters()) {
+            cleanDirectory(clustersPath);
+        }
+        if (routerConfig.isUpdateDatasources()) {
+            cleanDirectory(datasources);
+        }
+        if (routerConfig.isUpdateUsers()) {
+            cleanDirectory(users);
+        }
+        if (routerConfig.isUpdateSequences()) {
+            cleanDirectory(sequences);
+        }
+        if (routerConfig.isUpdateSqlCaches()) {
+            cleanDirectory(sqlcaches);
+        }
+
+        for (LogicSchemaConfig schemaConfig : Optional.ofNullable(routerConfig.getSchemas()).orElse(Collections.emptyList())) {
+            String fileName = schemaConfig.getSchemaName() + ".schema." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(schemaConfig);
+            Path filePath = schemasPath.resolve(fileName);
+            writeFile(t, filePath);
+        }
+
+        for (DatasourceConfig datasourceConfig : Optional.ofNullable(routerConfig.getDatasources()).orElse(Collections.emptyList())) {
+            String fileName = datasourceConfig.getName() + ".datasource." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(datasourceConfig);
+            Path filePath = datasources.resolve(fileName);
+            writeFile(t, filePath);
+        }
+        for (UserConfig userConfig : Optional.ofNullable(routerConfig.getUsers()).orElse(Collections.emptyList())) {
+            String fileName = userConfig.getUsername() + ".user." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(userConfig);
+            Path filePath = users.resolve(fileName);
+            writeFile(t, filePath);
+        }
+        for (SequenceConfig sequenceConfig : Optional.ofNullable(routerConfig.getSequences()).orElse(Collections.emptyList())) {
+            String fileName = sequenceConfig.getName() + ".sequence." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(sequenceConfig);
+            Path filePath = sequences.resolve(fileName);
+            writeFile(t, filePath);
+        }
+        for (ClusterConfig i : Optional.ofNullable(routerConfig.getClusters()).orElse(Collections.emptyList())) {
+            String fileName = i.getName() + ".cluster." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(i);
+            Path filePath = clustersPath.resolve(fileName);
+            writeFile(t, filePath);
+        }
+        for (SqlCacheConfig i : Optional.ofNullable(routerConfig.getSqlCaches()).orElse(Collections.emptyList())) {
+            String fileName = i.getName() + ".sqlcache." + suffix;
+            ConfigReaderWriter readerWriterBySuffix = ConfigReaderWriter.getReaderWriterBySuffix(suffix);
+            String t = readerWriterBySuffix.transformation(i);
+            Path filePath = sqlcaches.resolve(fileName);
+            writeFile(t, filePath);
+        }
+        State state =  new State();
+        ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(()->MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
+        state.replica.putAll(replicaSelector.getState());
+        prepare.commit();
+        Path statePath = baseDirectory.resolve("state.json");
+
+        Files.deleteIfExists(statePath);
+        if (Files.notExists(statePath)) Files.createFile(statePath);
+        writeFile(
+                ConfigReaderWriter.getReaderWriterBySuffix("json")
+                        .transformation(state), statePath);
+
+        return state;
     }
 
 

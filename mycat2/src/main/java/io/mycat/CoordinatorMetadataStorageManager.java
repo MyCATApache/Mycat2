@@ -3,6 +3,7 @@ package io.mycat;
 import io.mycat.config.*;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.util.JsonUtil;
+import lombok.SneakyThrows;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -10,144 +11,32 @@ import java.util.stream.Collectors;
 
 public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
 
-    public CoordinatorMetadataStorageManager(MycatServerConfig serverConfig, Store store,
-                                             ConfigReaderWriter readerWriter,
-                                             String datasourceProvider) {
-        this.serverConfig = serverConfig;
-        this.store = store;
-        this.readerWriter = readerWriter;
-        this.datasourceProvider = datasourceProvider;
+
+    private FileMetadataStorageManager storageManager;
+    private final ZKStore store;
+    final ConfigReaderWriter readerWriter = ConfigReaderWriter.getReaderWriterBySuffix("json");
+
+    public CoordinatorMetadataStorageManager(FileMetadataStorageManager storageManager,
+                                             String address) throws Exception {
+        this.storageManager = storageManager;
+        this.store = new ZKStore(address,this);
 
     }
 
-    private MycatServerConfig serverConfig;
-    final Store store;
-    final FileMetadataStorageManager.State state = new FileMetadataStorageManager.State();
-    final ConfigReaderWriter readerWriter;
-    final String datasourceProvider;
-
     @Override
     void start() throws Exception {
+
+        this.store.init();
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps(loadFromLocalConfigCenter(), configOps));
         }
+        this.store.listen();
 
-        store.addChangedCallback(new ChangedValueCallback() {
-            @Override
-            public String getKey() {
-                return "schemas";
-            }
+    }
 
-            @Override
-            public void onRemove(String path) throws Exception {
-                String schemaName =path;
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                        ops.dropSchema(schemaName);
-                    ops.commit();
-                }
-            }
+    @Override
+    public void reportReplica(Map<String, Set<String>> dsNames) {
 
-            @Override
-            public void onPut(String path, String text) throws Exception {
-                String schemaName =path;
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.putSchema(JsonUtil.from(text, LogicSchemaConfig.class));
-                    ops.commit();
-                }
-            }
-        });
-        store.addChangedCallback(new ChangedValueCallback() {
-            @Override
-            public String getKey() {
-                return "datasources";
-            }
-
-            @Override
-            public void onRemove(String path) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.removeDatasource(path);
-                    ops.commit();
-                }
-            }
-
-            @Override
-            public void onPut(String path, String text) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.putDatasource(JsonUtil.from(text, DatasourceConfig.class));
-                    ops.commit();
-                }
-            }
-
-
-        });
-        store.addChangedCallback(new ChangedValueCallback() {
-            @Override
-            public String getKey() {
-                return "clusters";
-            }
-
-            @Override
-            public void onRemove(String path) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.removeReplica(path);
-                    ops.commit();
-                }
-            }
-
-            @Override
-            public void onPut(String path, String text) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.putReplica(JsonUtil.from(text, ClusterConfig.class));
-                    ops.commit();
-                }
-            }
-
-        });
-        store.addChangedCallback(new ChangedValueCallback() {
-            @Override
-            public String getKey() {
-                return "sequences";
-            }
-
-            @Override
-            public void onRemove(String path) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.removeSequenceByName(path);
-                    ops.commit();
-                }
-            }
-
-            @Override
-            public void onPut(String path, String text) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                    ops.putSequence(JsonUtil.from(text, SequenceConfig.class));
-                    ops.commit();
-                }
-            }
-        });
-        store.addChangedCallback(new ChangedValueCallback() {
-            @Override
-            public String getKey() {
-                return "users";
-            }
-
-            @Override
-            public void onRemove(String path) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                        ops.deleteUser(path);
-                    ops.commit();
-                }
-            }
-
-            @Override
-            public void onPut(String path, String text) throws Exception {
-                try (MycatRouterConfigOps ops = ConfigUpdater.getOps(CoordinatorMetadataStorageManager.this)) {
-                        ops.putUser(JsonUtil.from(text, UserConfig.class));
-                    ops.commit();
-                }
-            }
-
-        });
     }
 
     private MycatRouterConfig loadFromLocalConfigCenter() {
@@ -246,17 +135,11 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
         routerConfig.setUsers(userConfigs);
         routerConfig.setSequences(sequenceList);
         FileMetadataStorageManager.defaultConfig(routerConfig);
+        storageManager.start();
         store.commit();
         return routerConfig;
     }
 
-
-    @Override
-    public void reportReplica(String name, Set<String> dsNames) {
-        state.replica.put(name, dsNames);
-        store.set("state", ConfigReaderWriter.getReaderWriterBySuffix("json")
-                .transformation(state));
-    }
 
     @Override
     public ConfigOps startOps() {
@@ -268,14 +151,11 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
             }
 
             @Override
+            @SneakyThrows
             public void commit(Object ops) {
                 MycatRouterConfigOps routerConfig = (MycatRouterConfigOps) ops;
                 MycatRouterConfig mycatRouterConfig = routerConfig.getMycatRouterConfig();
-                ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, CoordinatorMetadataStorageManager.this, datasourceProvider);
-                prepare.prepareRuntimeObject();
-                prepare.prepareStoreDDL();
-
-//                if (routerConfig.isUpdateSchemas()) {
+                FileMetadataStorageManager.State state = storageManager.commitAndSyncDisk(routerConfig);
                 store.set("schemas",
                         mycatRouterConfig
                                 .getSchemas()
@@ -283,7 +163,6 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                 .collect(Collectors
                                         .toMap(k -> k.getSchemaName(), v -> readerWriter.transformation(v))));
 //                }
-//                if (routerConfig.isUpdateClusters()) {
                 store.set("clusters",
                         mycatRouterConfig
                                 .getClusters()
@@ -291,7 +170,6 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                 .collect(Collectors
                                         .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 //                }
-//                if (routerConfig.isUpdateDatasources()) {
                 store.set("datasources",
                         mycatRouterConfig
                                 .getDatasources()
@@ -299,7 +177,6 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                 .collect(Collectors
                                         .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 //                }
-//                if (routerConfig.isUpdateUsers()) {
                 store.set("users",
                         mycatRouterConfig
                                 .getUsers()
@@ -308,24 +185,23 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
                                         .toMap(k -> k.getUsername(), v -> readerWriter.transformation(v))));
 
 //                }
-//                if (routerConfig.isUpdateSequences()) {
                 store.set("sequences",
                         mycatRouterConfig
                                 .getSequences()
                                 .stream()
                                 .collect(Collectors
                                         .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
-//                }
-//                if (routerConfig.isUpdatePrototype()) {
-//                    store.set("prototype",
-//                            mycatRouterConfig.getPrototype()
-//                    );
-//                }
+
+                store.set("sqlcaches",
+                        mycatRouterConfig
+                                .getSqlCacheConfigs()
+                                .stream()
+                                .collect(Collectors
+                                        .toMap(k -> k.getName(), v -> readerWriter.transformation(v))));
 
 
                 store.set("state", readerWriter.transformation(state));
                 store.commit();
-                prepare.commit();
             }
 
             @Override
