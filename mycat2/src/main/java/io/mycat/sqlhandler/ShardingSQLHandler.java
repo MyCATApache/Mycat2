@@ -28,6 +28,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, response, datasourceFactory);
             SQLSelectStatement selectStatement = request.getAst();
             boolean forUpdate = selectStatement.getSelect().getFirstQueryBlock().isForUpdate();
+            responseExecutorImplementor.setForUpdate(forUpdate);
             Set<Pair<String, String>> tableNames = new HashSet<>();
             selectStatement.accept(new MySqlASTVisitorAdapter() {
                 @Override

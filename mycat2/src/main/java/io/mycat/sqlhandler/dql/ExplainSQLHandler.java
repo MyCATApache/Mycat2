@@ -1,5 +1,7 @@
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
@@ -34,6 +36,10 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             response.tryBroadcastShow(ast.toString());
             return;
         }
+        boolean forUpdate = false;
+        if (ast .getStatement() instanceof SQLSelectStatement){
+            forUpdate = ((SQLSelectStatement) ast .getStatement()).getSelect().getFirstQueryBlock().isForUpdate();
+        }
         ResultSetBuilder builder = ResultSetBuilder.create().addColumnInfo("plan", JDBCType.VARCHAR);
         try (DataSourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
             try{
@@ -51,6 +57,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                 ResponseExecutorImplementor responseExecutorImplementor =
                         new ResponseExecutorImplementor(ignored, new TempResultSetFactoryImpl(), response);
                 responseExecutorImplementor.setParams(drdsSql.getParams());
+                responseExecutorImplementor.setForUpdate(forUpdate);
                 Executor executor = relNode.implement(responseExecutorImplementor);
                 ExplainWriter explainWriter = new ExplainWriter();
                 executor.explain(explainWriter);

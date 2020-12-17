@@ -182,10 +182,6 @@
                     <groupId>javax.servlet</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>commons-compiler</artifactId>
-                    <groupId>org.codehaus.janino</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>commons-lang3</artifactId>
                     <groupId>org.apache.commons</groupId>
                 </exclusion>
@@ -196,10 +192,6 @@
                 <exclusion>
                     <artifactId>snakeyaml</artifactId>
                     <groupId>org.yaml</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>janino</artifactId>
-                    <groupId>org.codehaus.janino</groupId>
                 </exclusion>
                 <exclusion>
                     <artifactId>jsr305</artifactId>
