@@ -20,7 +20,7 @@ package io.mycat.beans.mysql.packet;
  *
  * 报文读视图
  **/
-public interface MySQLPayloadReadView<T extends MySQLPayloadReadView<T>> {
+public interface MySQLPayloadReadView {
 
   int length();
 
