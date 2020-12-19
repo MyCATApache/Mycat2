@@ -1,6 +1,5 @@
 package io.mycat.datasource.jdbc.transactionsession;
 
-import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -11,16 +10,14 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
     protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
-    final MycatDataContext dataContext;
+    protected MycatDataContext dataContext;
     protected final ConcurrentLinkedQueue<AutoCloseable> closeResourceQueue = new ConcurrentLinkedQueue<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
@@ -72,7 +69,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void doAction() {
+    public void ensureTranscation() {
         if (!isAutocommit()) {
             begin();
         }

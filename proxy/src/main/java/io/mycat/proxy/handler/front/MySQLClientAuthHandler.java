@@ -141,7 +141,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 }
                 UserConfig userInfo = authenticator.getUserInfo(username);
                 user = new MycatUser(username, null, null, ip,
-                        userInfo.getDialect());
+                        userInfo);
             }
 
             mycat.setUser(user);
