@@ -3,7 +3,6 @@ package io.mycat;
 import io.mycat.config.MycatServerConfig;
 import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ServerConfigurationImpl;
-import io.mycat.datasource.jdbc.datasourceprovider.SeataXADatasourceProvider;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import lombok.SneakyThrows;

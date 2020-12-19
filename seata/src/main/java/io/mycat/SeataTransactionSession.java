@@ -1,6 +1,5 @@
-package io.mycat.runtime;
+package io.mycat;
 
-import io.mycat.MycatDataContext;
 import io.mycat.datasource.jdbc.transactionsession.LocalTransactionSession;
 import io.seata.core.context.RootContext;
 import io.seata.tm.api.GlobalTransaction;

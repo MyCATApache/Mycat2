@@ -12,40 +12,21 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.datasourceprovider;
+package io.mycat.datasourceprovider;
 
-import io.mycat.MycatDataContext;
-import io.mycat.TransactionSession;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.runtime.SeataTransactionSession;
-import io.seata.rm.RMClient;
-import io.seata.rm.datasource.DataSourceProxy;
-import io.seata.tm.TMClient;
+import io.seata.rm.datasource.xa.DataSourceProxyXA;
 
 /**
  * @author Junwen Chen
  **/
-public class SeataATDatasourceProvider extends DruidDatasourceProvider {
+public class SeataXADatasourceProvider extends SeataATDatasourceProvider {
 
   @Override
   public JdbcDataSource createDataSource(DatasourceConfig config) {
     JdbcDataSource dataSource = super.createDataSource(config);
-    return new JdbcDataSource(config,new DataSourceProxy(dataSource.getDataSource()));
+    return new JdbcDataSource(config,new DataSourceProxyXA(dataSource.getDataSource()));
   }
 
-  @Override
-  public TransactionSession createSession(MycatDataContext context) {
-    return new SeataTransactionSession(context);
-  }
-
-  @Override
-  public void init(ServerConfig config) {
-    super.init(config);
-    String appId = "api";
-    String txGroup = "my_test_tx_group";
-    TMClient.init(appId, txGroup);
-    RMClient.init(appId, txGroup);
-  }
 }
