@@ -134,7 +134,15 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
                     if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
-                        failture(mycat, MySQLErrorCode.ER_PASSWORD_NO_MATCH, "password is wrong");
+                        String message ="Access denied for user '" +
+                                username +
+                                "'@'" +
+                                remoteSocketAddress.toString() +
+                                "' (using password: YES)";
+                        mycat.setLastMessage(message);
+                        mycat.setLastErrorCode(ER_ACCESS_DENIED_ERROR);
+                        LOGGER.error("login fail: {}",message);
+                        mycat.writeErrorEndPacketBySyncInProcessError(2,ER_ACCESS_DENIED_ERROR);
                         LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
                     }
