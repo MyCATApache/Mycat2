@@ -115,7 +115,7 @@ public class DDLHintTest implements MycatTest {
                             .toString().contains(dsName));
             execute(mycat, CreateDataSourceHint
                     .create(dsName,
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
             Assert.assertTrue(
                     executeQuery(mycat, "/*+ mycat:showDataSources{} */")
                             .toString().contains("newDs"));
@@ -138,7 +138,7 @@ public class DDLHintTest implements MycatTest {
                             .toString().contains(clusterName));
             execute(mycat, CreateDataSourceHint
                     .create("newDs",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
             execute(mycat, CreateClusterHint.create(clusterName, Arrays.asList("newDs"), Collections.emptyList()));
             Assert.assertTrue(
                     executeQuery(mycat, "/*+ mycat:showClusters{} */")

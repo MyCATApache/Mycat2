@@ -256,19 +256,22 @@ public class AssembleTest implements MycatTest {
             testNormalTranscationWrapper(mycatConnection, "set transaction_policy = xa", "xa");
         }
     }
+
     @Test
     public void testProxyNormalTranscation() throws Exception {
-        try(Connection mySQLConnection = getMySQLConnection(8066)   ){
+        try (Connection mySQLConnection = getMySQLConnection(8066)) {
             testNormalTranscationWrapper(mySQLConnection, "set transaction_policy = proxy", "proxy");
         }
     }
+
     @Test
     public void testXANormalTranscation() throws Exception {
-        try(Connection mySQLConnection = getMySQLConnection(8066)   ){
+        try (Connection mySQLConnection = getMySQLConnection(8066)) {
             testNormalTranscationWrapper(mySQLConnection, "set transaction_policy = xa", "xa");
 
         }
     }
+
     private void testNormalTranscationWrapper(Connection mycatConnection, String s, String proxy) throws Exception {
         //////////////////////////////////////transcation/////////////////////////////////////////////
 
@@ -282,22 +285,22 @@ public class AssembleTest implements MycatTest {
         execute(mycatConnection,
                 CreateDataSourceHint
                         .create("dw0",
-                                "jdbc:mysql://127.0.0.1:3306"));
+                                "jdbc:mysql://127.0.0.1:3306/mysql"));
 
         execute(mycatConnection,
                 CreateDataSourceHint
                         .create("dr0",
-                                "jdbc:mysql://127.0.0.1:3306"));
+                                "jdbc:mysql://127.0.0.1:3306/mysql"));
 
         execute(mycatConnection,
                 CreateDataSourceHint
                         .create("dw1",
-                                "jdbc:mysql://127.0.0.1:3307"));
+                                "jdbc:mysql://127.0.0.1:3307/mysql"));
 
         execute(mycatConnection,
                 CreateDataSourceHint
                         .create("dr1",
-                                "jdbc:mysql://127.0.0.1:3307"));
+                                "jdbc:mysql://127.0.0.1:3307/mysql"));
 
         execute(mycatConnection,
                 CreateClusterHint

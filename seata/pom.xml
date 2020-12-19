@@ -12,6 +12,13 @@
     <artifactId>seata</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.4</version>
+        </dependency>
+
         <dependency>
             <groupId>io.seata</groupId>
             <artifactId>seata-all</artifactId>

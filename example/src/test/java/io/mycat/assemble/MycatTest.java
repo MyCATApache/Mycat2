@@ -77,7 +77,7 @@ public interface MycatTest {
     public default void addC0(Connection connection) throws Exception {
         execute(connection, CreateDataSourceHint
                 .create("newDs",
-                        "jdbc:mysql://127.0.0.1:3306"));
+                        "jdbc:mysql://127.0.0.1:3306/mysql"));
         execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
     }
 }

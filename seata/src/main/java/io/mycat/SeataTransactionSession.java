@@ -1,68 +1,118 @@
 package io.mycat;
 
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionsession.LocalTransactionSession;
 import io.seata.core.context.RootContext;
+import io.seata.core.model.GlobalStatus;
 import io.seata.tm.api.GlobalTransaction;
 import io.seata.tm.api.GlobalTransactionContext;
+import io.seata.tm.api.transaction.SuspendedResourcesHolder;
 import lombok.SneakyThrows;
+
+import java.util.Map;
 
 public class SeataTransactionSession extends LocalTransactionSession {
     GlobalTransaction tx;
+    private SuspendedResourcesHolder holder = null;
 
     public SeataTransactionSession(MycatDataContext dataContext) {
         super(dataContext);
     }
 
     @Override
+    @SneakyThrows
     public void ensureTranscation() {
-        super.ensureTranscation();
-        if (mycatXid != null) {
-            RootContext.bind(mycatXid);
+        if (holder != null && tx != null) {
+            tx.resume(holder);
         }
+        super.ensureTranscation();
     }
 
     @Override
     @SneakyThrows
     public void begin() {
-        if (tx != null) {
+        if (tx == null) {
             tx = GlobalTransactionContext.createNew();
-            tx.begin();
-            mycatXid = tx.getXid();
-            dataContext.setInTransaction(true);
         }
+        String xid = RootContext.getXID();
+        if (xid == null){
+            GlobalStatus localStatus = tx.getLocalStatus();
+                switch (localStatus) {
+                    case Rollbacked:
+                    case Committed:
+                    case Finished:
+                    case UnKnown:
+                        for (Map.Entry<String, DefaultConnection> e : updateConnectionMap.entrySet()) {
+                            e.getValue().close();
+                        }
+                        updateConnectionMap.clear();
+                        tx.begin();
+                        mycatXid = tx.getXid();
+
+                        break;
+                    case Begin:
+                    case Committing:
+                    case CommitRetrying:
+                    case Rollbacking:
+                    case RollbackRetrying:
+                    case TimeoutRollbacking:
+                    case TimeoutRollbackRetrying:
+                    case AsyncCommitting:
+                    case CommitFailed:
+                    case RollbackFailed:
+                    case TimeoutRollbacked:
+                    case TimeoutRollbackFailed:
+                    default:
+                }
+        }
+        dataContext.setInTransaction(true);
     }
 
 
     @Override
     @SneakyThrows
     public void commit() {
-        if (tx != null) {
-            tx.commit();
-            dataContext.setInTransaction(false);
+        for (Map.Entry<String, DefaultConnection> e : updateConnectionMap.entrySet()) {
+            DefaultConnection value = e.getValue();
+            value.getRawConnection().commit();
         }
-        super.commit();
-        mycatXid = null;
+        tx.commit();
+        for (Map.Entry<String, DefaultConnection> e : updateConnectionMap.entrySet()) {
+            DefaultConnection value = e.getValue();
+            value.close();
+        }
+        updateConnectionMap.clear();
+        tx = null;
+        dataContext.setInTransaction(false);
     }
 
     @Override
     @SneakyThrows
     public void rollback() {
-        if (tx != null) {
-            tx.rollback();
-            dataContext.setInTransaction(false);
+        for (Map.Entry<String, DefaultConnection> e : updateConnectionMap.entrySet()) {
+            e.getValue().getRawConnection().rollback();
         }
-        super.rollback();
-        mycatXid = null;
+        tx.rollback();
+        for (Map.Entry<String, DefaultConnection> e : updateConnectionMap.entrySet()) {
+            e.getValue().close();
+        }
+        updateConnectionMap.clear();
+        tx = null;
+        dataContext.setInTransaction(false);
     }
 
     @Override
     public String getTxId() {
-        return mycatXid;
+        return tx.getXid();
     }
 
     @Override
+    @SneakyThrows
     public void clearJdbcConnection() {
         super.clearJdbcConnection();
-        RootContext.unbind();
+        if (tx != null) {
+            this.holder = tx.suspend();
+        }
+
     }
 }

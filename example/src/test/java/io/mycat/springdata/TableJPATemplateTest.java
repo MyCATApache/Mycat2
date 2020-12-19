@@ -105,14 +105,14 @@ public abstract class TableJPATemplateTest implements MycatTest {
                 case GLOBAL:
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs",
-                                    "jdbc:mysql://127.0.0.1:3306"));
+                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
                     execute(mySQLConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
                     break;
 
                 case SHARDING:
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs",
-                                    "jdbc:mysql://127.0.0.1:3306"));
+                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
                     execute(mySQLConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
 
                     execute(mySQLConnection, CreateDataSourceHint

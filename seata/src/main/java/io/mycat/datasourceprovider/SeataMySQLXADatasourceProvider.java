@@ -16,8 +16,10 @@ package io.mycat.datasourceprovider;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.pool.xa.DruidXADataSource;
+import com.mysql.cj.jdbc.MysqlXADataSource;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.seata.rm.datasource.DataSourceProxy;
 import io.seata.rm.datasource.xa.DataSourceProxyXA;
 
 import java.util.List;
@@ -27,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Junwen Chen
  **/
-public class SeataXADatasourceProvider extends SeataATDatasourceProvider {
+public class SeataMySQLXADatasourceProvider extends SeataATDatasourceProvider {
 
   @Override
   public JdbcDataSource createDataSource(DatasourceConfig config) {
@@ -41,31 +43,12 @@ public class SeataXADatasourceProvider extends SeataATDatasourceProvider {
     int maxCon = config.getMaxCon();
     int minCon = config.getMinCon();
 
-    DruidXADataSource datasource = new DruidXADataSource();
+    MysqlXADataSource datasource = new MysqlXADataSource();
     datasource.setPassword(password);
-    datasource.setUsername(username);
+    datasource.setUser(username);
     datasource.setUrl(url);
-    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(60));
-    datasource.setMaxActive(maxCon);
-    datasource.setMinIdle(minCon);
-    datasource.setKeepAlive(true);
-    datasource.setTestOnReturn(true);
-    datasource.setTestOnBorrow(true);
-    datasource.setValidationQuery("select 'x'");
-    datasource.setTestWhileIdle(true);
 
-    if (maxRetryCount > 0) {
-      datasource.setConnectionErrorRetryAttempts(maxRetryCount);
-    }
-    if (dbType != null) {
-      datasource.setDbType(dbType);
-    }
-    if (initSQLs != null) {
-      datasource.setConnectionInitSqls(initSQLs);
-    }
-
-    return new JdbcDataSource(config, new DataSourceProxyXA(datasource));
-
+    return new JdbcDataSource(config,new DataSourceProxyXA(datasource));
   }
 
 }

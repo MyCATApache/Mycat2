@@ -165,7 +165,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             datasourceConfig.setUser("root");
             datasourceConfig.setPassword("123456");
             datasourceConfig.setName("prototypeDs");
-            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306");
+            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306/mysql");
             routerConfig.getDatasources().add(datasourceConfig);
         }
         if (routerConfig.getClusters().isEmpty()) {
@@ -173,7 +173,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             clusterConfig.setName("prototype");
             clusterConfig.setMasters(Lists.newArrayList("prototypeDs"));
             clusterConfig.setMaxCon(200);
-            clusterConfig.setClusterType(ReplicaType.SINGLE_NODE.name());
+            clusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
             clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
             routerConfig.getClusters().add(clusterConfig);
         }
