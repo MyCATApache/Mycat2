@@ -18,15 +18,17 @@ import io.mycat.ConnectionManager;
 import io.mycat.MycatConnection;
 import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIteratorCloseCallback;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * @author Junwen Chen
@@ -77,20 +79,11 @@ public class DefaultConnection implements MycatConnection {
             Statement statement = connection.createStatement();
             statement.setFetchSize(1);
             ResultSet resultSet = statement.executeQuery(sql);
-            return new JdbcRowBaseIterator(null,this, statement, resultSet, new Closeable() {
-                @Override
-                public void close() throws IOException {
-                    try {
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        LOGGER.error("", e);
-                    }
+            return new JdbcRowBaseIterator(null,this, statement, resultSet, new RowIteratorCloseCallback() {
 
-                    try {
-                        statement.close();
-                    } catch (SQLException e) {
-                        LOGGER.error("", e);
-                    }
+                @Override
+                public void onClose(long rowCount) {
+
                 }
             }, sql);
         } catch (Exception e) {

@@ -2,12 +2,11 @@ package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatConnection;
-import io.mycat.MycatWorkerProcessor;
-import io.mycat.NameableExecutor;
+import io.mycat.*;
+import io.mycat.api.collector.ComposeFutureRowBaseIterator;
 import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIteratorCloseCallback;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
 import io.mycat.hbt3.View;
@@ -15,6 +14,7 @@ import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -31,16 +32,18 @@ import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.apply;
 import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
 
 public class ViewExecutor implements Executor {
+    private MycatDataContext context;
     final View view;
     private List<Object> params;
     final DataSourceFactory factory;
     private final ImmutableMultimap<String, SqlString> expandToSql;
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ViewExecutor.class);
-    public static ViewExecutor create(View view, boolean forUpdate, List<Object> params, DataSourceFactory factory) {
-        return new ViewExecutor(view, forUpdate, params, factory);
+    public static ViewExecutor create(MycatDataContext context, View view, boolean forUpdate, List<Object> params, DataSourceFactory factory) {
+        return new ViewExecutor(context,view, forUpdate, params, factory);
     }
 
-    protected ViewExecutor(View view, boolean forUpdate, List<Object> params, DataSourceFactory factory) {
+    protected ViewExecutor(MycatDataContext context, View view, boolean forUpdate, List<Object> params, DataSourceFactory factory) {
+        this.context = context;
         this.view = view;
         this.params = params;
         this.factory = factory;
@@ -59,20 +62,31 @@ public class ViewExecutor implements Executor {
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(view.getRelNode().getRowType().getFieldList());
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         NameableExecutor mycatWorker = mycatWorkerProcessor.getMycatWorker();
-        LinkedList<RowBaseIterator> futureArrayList = new LinkedList<>();
+        LinkedList<Future<RowBaseIterator>> futureArrayList = new LinkedList<>();
 
+        SqlRecord sqlRecord = context.currentSqlRecord();
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {
-            MycatConnection mycatConnection = factory.getConnection(entry.getKey());
+            String target = entry.getKey();
+            MycatConnection mycatConnection = factory.getConnection(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (connection.isClosed()){
                 LOGGER.error("mycatConnection:{} has closed but still using", mycatConnection);
             }
+            long start = SqlRecord.now();
+            SqlString sqlString = entry.getValue();
             futureArrayList.add(
-                 executeQuery(connection,mycatConnection, calciteRowMetaData, entry.getValue(), params)
-            );
+                    mycatWorker.submit(()->{
+                      return   executeQuery(connection, mycatConnection, calciteRowMetaData, sqlString, params, new RowIteratorCloseCallback () {
+                            @Override
+                            public void onClose(long rowCount) {
+                                sqlRecord.addSubRecord(sqlString,start,SqlRecord.now(),target,rowCount );
+                            }
+                        });
+                    })
+                );
         }
         AtomicBoolean flag = new AtomicBoolean();
-        ComposeRowBaseIterator composeFutureRowBaseIterator = new ComposeRowBaseIterator(calciteRowMetaData, futureArrayList);
+        ComposeFutureRowBaseIterator composeFutureRowBaseIterator = new ComposeFutureRowBaseIterator(calciteRowMetaData, futureArrayList);
         this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(flag, composeFutureRowBaseIterator);
     }
 

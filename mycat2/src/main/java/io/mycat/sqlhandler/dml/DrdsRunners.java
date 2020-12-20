@@ -8,6 +8,7 @@ import io.mycat.hbt3.DrdsConst;
 import io.mycat.hbt3.DrdsRunner;
 import io.mycat.hbt3.DrdsSql;
 import io.mycat.hbt4.*;
+import io.mycat.sqlrecorder.SqlRecord;
 import lombok.SneakyThrows;
 import org.apache.calcite.MycatContext;
 
@@ -22,13 +23,13 @@ public class DrdsRunners {
     public static void runOnDrds(MycatDataContext dataContext,
                                  SQLStatement statement,
                                  ExecutorImplementor executorImplementor) {
-            MycatContext.CONTEXT.set(dataContext);
-            DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-            Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(statement), Collections.emptyList());
-            Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls, dataContext);
-            DrdsSql drdsSql = iterable.iterator().next();
-            executorImplementor.setParams(drdsSql.getParams());
-            executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode(),drdsSql.getAliasList());
+        MycatContext.CONTEXT.set(dataContext);
+        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+        Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(statement), Collections.emptyList());
+        Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls, dataContext);
+        DrdsSql drdsSql = iterable.iterator().next();
+        executorImplementor.setParams(drdsSql.getParams());
+        executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode(), drdsSql.getAliasList());
     }
 
     public static void runHbtOnDrds(MycatDataContext dataContext, String statement, ExecutorImplementor executorImplementor) throws Exception {

@@ -23,6 +23,7 @@ import io.mycat.sqlhandler.dcl.*;
 import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Response;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -128,7 +129,13 @@ public enum MycatdbCommand {
                 receiver = new ReceiverImpl(session, statements.size(), false, false);
             }
             for (SQLStatement sqlStatement : statements) {
+
+                SqlRecord sqlRecord = dataContext.startSqlRecord();
+                sqlRecord.setTarget(dataContext.getUser().getHost());
+                sqlRecord.setSql(sqlStatement);
+
                 execute(dataContext, receiver, sqlStatement);
+
             }
         } catch (Throwable e) {
             if (isNavicatClientStatusQuery(text)) {
@@ -189,7 +196,7 @@ public enum MycatdbCommand {
     private static void executeHbt(MycatDataContext dataContext, String substring, Response receiver) {
         try (DefaultDatasourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
             TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-            ExecutorImplementor executorImplementor = new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver);
+            ExecutorImplementor executorImplementor = new ResponseExecutorImplementor(dataContext,datasourceFactory, tempResultSetFactory, receiver);
             DrdsRunners.runHbtOnDrds(dataContext, substring, executorImplementor);
         }
     }

@@ -14,6 +14,7 @@ import com.alibaba.fastsql.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIteratorCloseCallback;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hbt4.Group;
@@ -88,9 +89,9 @@ public class MycatPreparedStatementUtil {
     }
 
     public static ExecuteBatchInsert batchInsert(String sql, Group value, Connection connection, String targetName) {
-        if(LOGGER.isDebugEnabled()){
+        if (LOGGER.isDebugEnabled()) {
             for (List<Object> arg : value.getArgs()) {
-                LOGGER.debug("batchInsert targetName:{} sql:{} parameters:{}",targetName,sql,arg);
+                LOGGER.debug("batchInsert targetName:{} sql:{} parameters:{}", targetName, sql, arg);
             }
         }
         ExecuteBatchInsert executeBatchInsert = new ExecuteBatchInsert(sql, value, connection);
@@ -168,10 +169,11 @@ public class MycatPreparedStatementUtil {
     public static RowBaseIterator executeQuery(Connection mycatConnection,
                                                MycatConnection connection, MycatRowMetaData calciteRowMetaData,
                                                SqlString value,
-                                               List<Object> params) {
+                                               List<Object> params,
+                                            RowIteratorCloseCallback closeCallback) {
         String sql = value.getSql();
         try {
-            if (LOGGER.isDebugEnabled()){
+            if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("sql:{} {}", sql, (params).toString());
             }
             PreparedStatement preparedStatement = mycatConnection.prepareStatement(sql);
@@ -180,7 +182,7 @@ public class MycatPreparedStatementUtil {
                 MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
             }
             ResultSet resultSet = preparedStatement.executeQuery();
-            return new JdbcRowBaseIterator(calciteRowMetaData, connection, preparedStatement, resultSet, null, sql);
+            return new JdbcRowBaseIterator(calciteRowMetaData, connection, preparedStatement, resultSet, closeCallback, sql);
         } catch (Throwable throwable) {
             LOGGER.error("sql:{} {}", sql, (params).toString(), throwable);
             throw throwable;

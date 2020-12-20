@@ -163,7 +163,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
                 try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
                     TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
+                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, defaultDatasourceFactory, tempResultSetFactory) {
                         @Override
                         public void implementRoot(MycatRel rel, List<String> aliasList) {
                             if (rel instanceof MycatInsertRel) {

@@ -12,18 +12,21 @@ import io.mycat.hbt4.executor.MycatInsertExecutor;
 import io.mycat.hbt4.executor.MycatUpdateExecutor;
 import io.mycat.hbt4.executor.TempResultSetFactory;
 import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Explains;
 import io.mycat.util.Response;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 
+import java.io.IOException;
 import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public class ResponseExecutorImplementor extends ExecutorImplementorImpl implements ExecutorImplementor {
+    private final MycatDataContext context;
     protected final Response response;
 
     public static ResponseExecutorImplementor create(MycatDataContext context, Response response, DataSourceFactory datasourceFactory) {
@@ -34,16 +37,18 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 return ProxyExecutorImplementor.create(context, response);
             default:
             case JDBC_TRANSACTION_TYPE:
-                return new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, response);
+                return new ResponseExecutorImplementor(context,datasourceFactory, tempResultSetFactory, response);
         }
 
     }
 
     public ResponseExecutorImplementor(
+            MycatDataContext context,
             DataSourceFactory factory,
             TempResultSetFactory tempResultSetFactory,
             Response response) {
-        super(factory, tempResultSetFactory);
+        super(context,factory, tempResultSetFactory);
+        this.context = context;
         this.response = response;
     }
 
@@ -106,6 +111,14 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 explain.forEach(i -> builder.addObjectRowPayload(Arrays.asList(i)));
                 return builder.build();
             }
+
+            @Override
+            public void close() throws IOException {
+                long rowCount = rowIterator.getRowCount();
+                SqlRecord sqlRecord = context.currentSqlRecord();
+                sqlRecord.setSqlRows(rowCount);
+                super.close();
+            }
         });
     }
 
@@ -113,6 +126,8 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         updateExecutor.open();
         long affectedRow = updateExecutor.getAffectedRow();
         long lastInsertId = updateExecutor.getLastInsertId();
+        SqlRecord sqlRecord = context.currentSqlRecord();
+        sqlRecord.setSqlRows(affectedRow);
         response.sendOk(lastInsertId, affectedRow);
     }
 
@@ -120,6 +135,8 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         insertExecutor.open();
         long affectedRow = insertExecutor.affectedRow;
         long lastInsertId = insertExecutor.lastInsertId;
+        SqlRecord sqlRecord = context.currentSqlRecord();
+        sqlRecord.setSqlRows(affectedRow);
         response.sendOk(lastInsertId, affectedRow);
     }
 }

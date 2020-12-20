@@ -66,7 +66,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         }
         TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
         try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-            DrdsRunners.runOnDrds(dataContext, sqlStatement, new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, receiver));
+            DrdsRunners.runOnDrds(dataContext, sqlStatement, new ResponseExecutorImplementor(dataContext,datasourceFactory, tempResultSetFactory, receiver));
         }
     }
 }

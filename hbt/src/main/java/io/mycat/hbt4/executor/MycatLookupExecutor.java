@@ -15,12 +15,10 @@
 package io.mycat.hbt4.executor;
 
 import com.google.common.collect.ImmutableMultimap;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatConnection;
-import io.mycat.MycatWorkerProcessor;
-import io.mycat.NameableExecutor;
+import io.mycat.*;
 import io.mycat.api.collector.ComposeRowBaseIterator;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIteratorCloseCallback;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerator;
@@ -29,6 +27,7 @@ import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExplainWriter;
 import io.mycat.mpp.Row;
+import io.mycat.sqlrecorder.SqlRecord;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -51,6 +50,7 @@ import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.executeQuery;
  */
 public class MycatLookupExecutor implements Executor {
 
+    private MycatDataContext context;
     private final View view;
     private final CalciteRowMetaData metaData;
     private DataSourceFactory factory;
@@ -58,15 +58,16 @@ public class MycatLookupExecutor implements Executor {
     private MyCatResultSetEnumerator myCatResultSetEnumerator = null;
     private List<MycatConnection> tmpConnections;
 
-    public MycatLookupExecutor(View view, DataSourceFactory factory, List<Object> params) {
+    public MycatLookupExecutor(MycatDataContext context, View view, DataSourceFactory factory, List<Object> params) {
+        this.context = context;
         this.view = view;
         this.factory = factory;
         this.params = params;
         this.metaData = new CalciteRowMetaData(this.view.getRowType().getFieldList());
     }
 
-    public static MycatLookupExecutor create(View view, DataSourceFactory factory, List<Object> params) {
-        return new MycatLookupExecutor(view, factory, params);
+    public static MycatLookupExecutor create(MycatDataContext context, View view, DataSourceFactory factory, List<Object> params) {
+        return new MycatLookupExecutor(context,view, factory, params);
     }
 
     void setIn(List<Row> args) {
@@ -102,11 +103,19 @@ public class MycatLookupExecutor implements Executor {
         LinkedList<RowBaseIterator> futureArrayList = new LinkedList<>();
         this.tmpConnections = factory.getTmpConnections(expandToSqls.keys().asList());
         int i = 0;
+
+        SqlRecord sqlRecord = context.currentSqlRecord();
         for (Map.Entry<String, SqlString> entry : expandToSqls.entries()) {
             MycatConnection connection = tmpConnections.get(i);
             String target = entry.getKey();
             SqlString sql = entry.getValue();
-            futureArrayList.add(executeQuery(connection.unwrap(Connection.class), connection, metaData, sql, params));
+            long startTime = SqlRecord.now();
+            futureArrayList.add(executeQuery(connection.unwrap(Connection.class), connection, metaData, sql, params, new RowIteratorCloseCallback() {
+                @Override
+                public void onClose(long rowCount) {
+                    sqlRecord.addSubRecord(sql,startTime,SqlRecord.now(),target,rowCount);
+                }
+            }));
             i++;
         }
         AtomicBoolean flag = new AtomicBoolean();

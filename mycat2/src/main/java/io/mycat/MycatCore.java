@@ -5,6 +5,7 @@ import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
+import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 
@@ -62,15 +63,8 @@ public class MycatCore {
         context.put(loadBalanceManager.getClass(), loadBalanceManager);
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(mycatServer.getClass(), mycatServer);
+        context.put(SqlRecorderRuntime.class,SqlRecorderRuntime.INSTANCE);
         ////////////////////////////////////////////tmp///////////////////////////////////
-        BiFunction<String,String,Class> metaDataService = (tableName, columnName)->{
-            if("id".equals(columnName)){
-                return Integer.class;
-            }
-            return String.class;
-        };
-       // MapDBGSIService gsiService = new MapDBGSIService("gsi", metaDataService);
-//        context.put(GSIService.class,null);
         MetaClusterCurrent.register(context);
 
         String mode = PROPERTY_MODE_LOCAL;

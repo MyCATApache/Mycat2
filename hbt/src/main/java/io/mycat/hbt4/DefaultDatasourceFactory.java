@@ -7,6 +7,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.sqlrecorder.SqlRecord;
 import lombok.SneakyThrows;
 
 import java.util.*;
@@ -36,6 +37,7 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
     @Override
     public void open() {
         if (connectionMap.isEmpty()){
+            SqlRecord sqlRecord = context.currentSqlRecord();
             TransactionSession transactionSession = context.getTransactionSession();
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             List<String> all = new ArrayList<>(targets);
