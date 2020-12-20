@@ -14,6 +14,7 @@
  */
 package io.mycat.hbt4;
 
+import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
@@ -25,12 +26,14 @@ import io.mycat.hbt4.logical.rel.MycatUpdateRel;
 import io.mycat.metadata.QueryBuilder;
 
 public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
+    private final MycatDataContext context;
     protected final DataSourceFactory factory;
 
 
-    public ExecutorImplementorImpl(DataSourceFactory factory,
+    public ExecutorImplementorImpl(MycatDataContext context, DataSourceFactory factory,
                                    TempResultSetFactory tempResultSetFactory) {
         super(tempResultSetFactory);
+        this.context = context;
         this.factory = factory;
     }
 
@@ -38,33 +41,33 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(View view) {
-        return ViewExecutor.create(view, forUpdate, params, factory);
+        return ViewExecutor.create(context,view, forUpdate, params, factory);
     }
 
     @Override
     public Executor implement(MycatTransientSQLTableScan tableScan) {
         MycatRowMetaData calciteRowMetaData = new CalciteRowMetaData(tableScan.getRowType().getFieldList());
-        return TmpSqlExecutor.create(calciteRowMetaData, tableScan.getTargetName(), tableScan.getSql(), factory);
+        return TmpSqlExecutor.create(context,calciteRowMetaData, tableScan.getTargetName(), tableScan.getSql(), factory,params);
     }
 
     @Override
     public Executor implement(MycatLookUpView mycatLookUpView) {
-        return MycatLookupExecutor.create(mycatLookUpView.getRelNode(), factory, params);
+        return MycatLookupExecutor.create(context,mycatLookUpView.getRelNode(), factory, params);
     }
 
     @Override
     public Executor implement(MycatInsertRel mycatInsertRel) {
-        return MycatInsertExecutor.create(mycatInsertRel, factory, params);
+        return MycatInsertExecutor.create(context,mycatInsertRel, factory, params);
     }
 
     @Override
     public Executor implement(MycatUpdateRel mycatUpdateRel) {
         if (mycatUpdateRel.isGlobal()){
-            return new MycatGlobalUpdateExecutor(mycatUpdateRel.getValues(),
+            return new MycatGlobalUpdateExecutor(context,mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
                     params,factory);
         }
-        return MycatUpdateExecutor.create(mycatUpdateRel.getValues(),
+        return MycatUpdateExecutor.create(context,mycatUpdateRel.getValues(),
                 mycatUpdateRel.getSqlStatement(),
                 factory,
                 params

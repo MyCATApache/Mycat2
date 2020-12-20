@@ -20,6 +20,7 @@ import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.gsi.GSIService;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -39,6 +40,7 @@ import static io.mycat.hbt4.executor.MycatPreparedStatementUtil.setParams;
 @Getter
 public class MycatInsertExecutor implements Executor {
 
+    private MycatDataContext context;
     private final MycatInsertRel mycatInsertRel;
     private final DataSourceFactory factory;
     private final Map<GroupKey, Group> groupMap;
@@ -50,7 +52,8 @@ public class MycatInsertExecutor implements Executor {
     private boolean done = false;
     static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
-    public MycatInsertExecutor(MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
+    public MycatInsertExecutor(MycatDataContext context, MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
+        this.context = context;
         this.mycatInsertRel = mycatInsertRel;
         this.factory = factory;
         this.params = params;
@@ -101,8 +104,8 @@ public class MycatInsertExecutor implements Executor {
         return null;
     }
 
-    public static MycatInsertExecutor create(MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
-        return new MycatInsertExecutor(mycatInsertRel, factory, params);
+    public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
+        return new MycatInsertExecutor(context,mycatInsertRel, factory, params);
     }
 
     @Override
@@ -200,6 +203,7 @@ public class MycatInsertExecutor implements Executor {
         Map<String, MycatConnection> connections = factory.getConnections(targets);
         long lastInsertId = 0;
         long affected = 0;
+        SqlRecord sqlRecord = context.currentSqlRecord();
         if (group.size() == 1) {
             Map.Entry<GroupKey, Group> keyGroupEntry = group.entrySet().iterator().next();
             String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
@@ -209,6 +213,9 @@ public class MycatInsertExecutor implements Executor {
                     prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
                 List<Object> objects = args.get(0);
                 setParams(preparedStatement, objects);
+
+                long startTime = SqlRecord.now();
+
                 affected = preparedStatement.executeUpdate();
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 if (generatedKeys != null) {
@@ -217,6 +224,7 @@ public class MycatInsertExecutor implements Executor {
 
                     }
                 }
+                sqlRecord.addSubRecord(parameterizedSql,startTime,targets.get(0),affected);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
                 }
@@ -228,11 +236,15 @@ public class MycatInsertExecutor implements Executor {
                 String sql = key.getParameterizedSql();
                 Group value = e.getValue();
                 Connection connection = connections.get(targetName).unwrap(Connection.class);
+
+                long startTime = SqlRecord.now();
+
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
                 lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
 
                 affected += res.getAffected();
 
+                sqlRecord.addSubRecord(sql,startTime,targetName,affected);
             }
         }
 

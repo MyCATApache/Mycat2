@@ -19,6 +19,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Enumerator<Object[]> iterator;
     protected final Runnable closeRunnable;
+    protected long rowCount;
 
     public EnumeratorRowIterator(MycatRowMetaData mycatRowMetaData, Enumerator<Object[]> iterator) {
         this(mycatRowMetaData, iterator, null);
@@ -60,6 +61,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     @Override
     public boolean next() {
         if (this.iterator.moveNext()) {
+            rowCount++;
             this.currentRow = this.iterator.current();
             return true;
         } else {
@@ -107,5 +109,9 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
             return (byte[]) o;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public long getRowCount() {
+        return rowCount;
     }
 }

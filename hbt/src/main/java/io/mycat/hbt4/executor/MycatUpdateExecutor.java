@@ -7,12 +7,14 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.DataNode;
 import io.mycat.MycatConnection;
+import io.mycat.MycatDataContext;
 import io.mycat.hbt3.Distribution;
 import io.mycat.hbt4.DataSourceFactory;
 import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -29,6 +31,7 @@ import static java.sql.Statement.NO_GENERATED_KEYS;
 
 @Getter
 public class MycatUpdateExecutor implements Executor {
+    private MycatDataContext context;
     private final Distribution values;
     private final SQLStatement sqlStatement;
     private List<Object> parameters;
@@ -38,10 +41,11 @@ public class MycatUpdateExecutor implements Executor {
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
-    public MycatUpdateExecutor(Distribution values,
+    public MycatUpdateExecutor(MycatDataContext context, Distribution values,
                                SQLStatement sqlStatement,
                                List<Object> parameters,
                                DataSourceFactory factory) {
+        this.context = context;
         this.values = values;
         this.sqlStatement = sqlStatement;
         this.parameters = parameters;
@@ -50,11 +54,11 @@ public class MycatUpdateExecutor implements Executor {
         factory.registered(this.groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
     }
 
-    public static MycatUpdateExecutor create(Distribution values,
+    public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
                                              SQLStatement sqlStatement,
                                              DataSourceFactory factory,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(values, sqlStatement, parameters, factory);
+        return new MycatUpdateExecutor(context,values, sqlStatement, parameters, factory);
     }
 
     public boolean isProxy() {
@@ -74,6 +78,7 @@ public class MycatUpdateExecutor implements Executor {
     public void open() {
         Map<String, MycatConnection> connections = factory.getConnections(groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
         boolean insertId = sqlStatement instanceof MySqlInsertStatement;
+        SqlRecord sqlRecord = context.currentSqlRecord();
         for (GroupKey key : groupKeys) {
             String sql = key.getParameterizedSql();
             String target = key.getTarget();
@@ -85,9 +90,12 @@ public class MycatUpdateExecutor implements Executor {
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
                 LOGGER.debug("{} has closed but still using", mycatConnection);
             }
+            long start = SqlRecord.now();
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
-            this.affectedRow += preparedStatement.executeUpdate();
+            int subAffectedRow = preparedStatement.executeUpdate();
+            sqlRecord.addSubRecord(sql,start,SqlRecord.now(),target,subAffectedRow);
+            this.affectedRow += subAffectedRow;
             this.lastInsertId = Math.max(this.lastInsertId, getInSingleSqlLastInsertId(insertId, preparedStatement));
         }
     }

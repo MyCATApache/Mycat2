@@ -37,9 +37,12 @@ import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
 import io.mycat.sqlhandler.dml.DrdsRunners;
+import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
 import io.mycat.util.Response;
+import org.apache.calcite.adapter.java.Array;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
@@ -80,17 +83,48 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
                     Map map = JsonUtil.from(body, Map.class);
-                    String username = (String)map.get("username");
-                    String dbType = (String)map.get("dialect");
+                    String username = (String) map.get("username");
+                    String dbType = (String) map.get("dialect");
                     UserConfig userInfo = authenticator.getUserInfo(username);
-                    if (userInfo == null){
-                        response.sendError("unknown username:"+username, MySQLErrorCode.ER_UNKNOWN_ERROR);
+                    if (userInfo == null) {
+                        response.sendError("unknown username:" + username, MySQLErrorCode.ER_UNKNOWN_ERROR);
                         return;
                     }
                     userInfo.setDialect(dbType);
                     ops.putUser(userInfo);
                     ops.commit();
                     response.sendOk();
+                    return;
+                }
+                if ("showSlowSql".equalsIgnoreCase(cmd)) {
+                    ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                    resultSetBuilder.addColumnInfo("trace_id", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("sql", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("sql_rows", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("start_time", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("end_time", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("execute_time", JDBCType.VARCHAR);
+
+                    Stream<SqlRecord> sqlRecords = SqlRecorderRuntime.INSTANCE.getRecords().stream()
+                            .sorted(Comparator.comparingLong(SqlRecord::getExecuteTime).reversed());
+                    Map map = JsonUtil.from(body, Map.class);
+                    Object idText = map.get("trace_id");
+
+                    if (idText != null) {
+                        long id = Long.parseLong(Objects.toString(idText));
+                        sqlRecords = sqlRecords.filter(i->id == i.getId());
+                    }
+                    sqlRecords.forEach(r -> {
+                        resultSetBuilder.addObjectRowPayload(Arrays.asList(
+                                Objects.toString(r.getId()),
+                                Objects.toString(r.getSql()),
+                                Objects.toString(r.getSqlRows()),
+                                Objects.toString(r.getStartTime()),
+                                Objects.toString(r.getEndTime()),
+                                Objects.toString(r.getExecuteTime())
+                        ));
+                    });
+                    response.sendResultSet(resultSetBuilder.build());
                     return;
                 }
                 if ("showDataNodes".equalsIgnoreCase(cmd)) {
@@ -101,22 +135,22 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     List<DataNode> backends = null;
                     switch (type) {
                         case SHARDING:
-                            backends  = ((ShardingTable) table).getBackends();
+                            backends = ((ShardingTable) table).getBackends();
                             break;
                         case GLOBAL:
-                            backends  = ((GlobalTable) table).getGlobalDataNode();
+                            backends = ((GlobalTable) table).getGlobalDataNode();
                             break;
                         case NORMAL:
-                            backends  = Collections.singletonList(
+                            backends = Collections.singletonList(
                                     ((NormalTable) table).getDataNode());
                             break;
                         case CUSTOM:
                             throw new UnsupportedOperationException("unsupport custom table");
                     }
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                    resultSetBuilder.addColumnInfo("targetName",JDBCType.VARCHAR);
-                    resultSetBuilder.addColumnInfo("schemaName",JDBCType.VARCHAR);
-                    resultSetBuilder.addColumnInfo("tableName",JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("targetName", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
 
                     for (DataNode dataNode : backends) {
                         String targetName = dataNode.getTargetName();
@@ -124,7 +158,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String tableName = dataNode.getTable();
 
                         resultSetBuilder.addObjectRowPayload(
-                                Arrays.asList(targetName,schemaName,tableName));
+                                Arrays.asList(targetName, schemaName, tableName));
                     }
                     response.sendResultSet(resultSetBuilder.build());
                     return;
@@ -137,19 +171,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     return;
                 }
                 if ("run".equalsIgnoreCase(cmd)) {
-                    Map<String,Object> map = JsonUtil.from(body, Map.class);
+                    Map<String, Object> map = JsonUtil.from(body, Map.class);
                     String hbt = Objects.toString(map.get("hbt"));
                     TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
                     try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
                         DrdsRunners.runHbtOnDrds(dataContext, hbt,
-                                new ResponseExecutorImplementor(datasourceFactory, tempResultSetFactory, response));
+                                new ResponseExecutorImplementor(dataContext, datasourceFactory, tempResultSetFactory, response));
                     }
                     return;
                 }
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
-                    SQLStatement sqlStatement =null;
-                    if (ast.getHintStatements()!=null&&ast.getHintStatements().size() == 1){
+                    SQLStatement sqlStatement = null;
+                    if (ast.getHintStatements() != null && ast.getHintStatements().size() == 1) {
                         sqlStatement = ast.getHintStatements().get(0);
                     }
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
@@ -160,21 +194,21 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     ops.putSqlCache(sqlCacheConfig);
                     ops.commit();
 
-                    if (sqlStatement==null){
+                    if (sqlStatement == null) {
                         String sql = sqlCacheConfig.getSql();
                         sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
                     }
 
-                    MycatdbCommand.execute(dataContext,response,sqlStatement);
+                    MycatdbCommand.execute(dataContext, response, sqlStatement);
                     return;
                 }
                 if ("showSqlCaches".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                    resultSetBuilder.addColumnInfo("info",JDBCType.VARCHAR);
-                    if(MetaClusterCurrent.exist(SqlResultSetService.class)){
+                    resultSetBuilder.addColumnInfo("info", JDBCType.VARCHAR);
+                    if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
                         SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-                       sqlResultSetService.snapshot().toStringList()
-                               .forEach(c->resultSetBuilder.addObjectRowPayload(Arrays.asList(c)));
+                        sqlResultSetService.snapshot().toStringList()
+                                .forEach(c -> resultSetBuilder.addObjectRowPayload(Arrays.asList(c)));
                     }
                     response.sendResultSet(resultSetBuilder.build());
                     return;

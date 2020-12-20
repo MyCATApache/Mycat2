@@ -3,6 +3,7 @@ package io.mycat;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.sqlrecorder.SqlRecord;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -115,4 +116,10 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     public String resolveDatasourceTargetName(String targetName);
 
     Map<Long, PreparedStatement> getPrepareInfo();
+
+    SqlRecord startSqlRecord();
+
+    SqlRecord currentSqlRecord();
+
+    void endSqlRecord();
 }

@@ -51,6 +51,7 @@ import io.mycat.metadata.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.gsi.GSIService;
+import io.mycat.sqlrecorder.SqlRecord;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;

@@ -55,7 +55,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                 }
 
                 ResponseExecutorImplementor responseExecutorImplementor =
-                        new ResponseExecutorImplementor(ignored, new TempResultSetFactoryImpl(), response);
+                        new ResponseExecutorImplementor(dataContext,ignored, new TempResultSetFactoryImpl(), response);
                 responseExecutorImplementor.setParams(drdsSql.getParams());
                 responseExecutorImplementor.setForUpdate(forUpdate);
                 Executor executor = relNode.implement(responseExecutorImplementor);
