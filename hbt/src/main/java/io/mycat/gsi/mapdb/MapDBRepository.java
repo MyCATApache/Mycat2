@@ -47,10 +47,6 @@ public class MapDBRepository {
      */
     private final Map<SimpleColumnInfo.Type,Class> typeClassMap = new HashMap<>();
 
-    public MapDBRepository(DB db) {
-        this(db,null);
-    }
-
     public MapDBRepository(DB db, MetadataManager metadataManager) {
         this.db = db;
         this.metadataManager = metadataManager;
