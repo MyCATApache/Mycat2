@@ -366,7 +366,6 @@ public class MycatDataContextImpl implements MycatDataContext {
         if (record!=null){
             record.setEndTime();
             SqlRecorderRuntime.INSTANCE.addSqlRecord(record);
-            record = null;
         }
     }
 

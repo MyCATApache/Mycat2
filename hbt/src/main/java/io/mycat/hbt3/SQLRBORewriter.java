@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt4.MycatConvention;
 import io.mycat.hbt4.logical.rel.MycatMergeSort;
+import io.mycat.hbt4.logical.rel.MycatQuery;
 import io.mycat.metadata.CustomTableHandlerWrapper;
 import io.mycat.metadata.QueryBuilder;
 import io.mycat.util.NameMap;
@@ -78,6 +79,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 MycatLogicTable mycatLogicTable = (MycatLogicTable) abstractMycatTable;
                 CustomTableHandlerWrapper customTableHandler = (CustomTableHandlerWrapper) mycatLogicTable.getTable();
                 QueryBuilder queryBuilder = customTableHandler.createQueryBuilder(scan.getCluster());
+                queryBuilder.setRowType(scan.getRowType());
                 return queryBuilder;
             }
             return View.of(scan, abstractMycatTable.computeDataNode());

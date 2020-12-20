@@ -6,6 +6,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 
 import java.util.Optional;
@@ -14,6 +15,9 @@ import java.util.stream.StreamSupport;
 
 public abstract class QueryBuilder extends AbstractRelNode implements MycatRel {
 
+    public void setRowType(RelDataType rowType){
+        this.rowType = rowType;
+    }
     public QueryBuilder(RelOptCluster cluster, RelTraitSet traitSet) {
         super(cluster, traitSet);
     }

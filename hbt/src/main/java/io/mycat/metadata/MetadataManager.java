@@ -277,14 +277,17 @@ public class MetadataManager implements MysqlVariableService {
                 .findFirst().orElseGet(() -> {
                     LogicSchemaConfig schemaConfig = new LogicSchemaConfig();
                     schemaConfig.setSchemaName("mycat");
+                    schemaConfigs.add(schemaConfig);
                     return schemaConfig;
                 });
         Map<String, CustomTableConfig> customTables = mycat.getCustomTables();
-//        customTables.computeIfAbsent("datasource",(n)->{
-//            CustomTableConfig tableConfig = CustomTableConfig.builder().build();
-//            tableConfig.setClazz("");
-//            tableConfig.setClazz();
-//        });
+
+        customTables.computeIfAbsent("dual",(n)->{
+            CustomTableConfig tableConfig = CustomTableConfig.builder().build();
+            tableConfig.setClazz(DualCustomTableHandler.class.getCanonicalName());
+            tableConfig.setCreateTableSQL("create table mycat.dual(id int)");
+            return tableConfig;
+        });
     }
 
 

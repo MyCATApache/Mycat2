@@ -4,6 +4,7 @@ import io.mycat.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.rel.type.RelDataType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -96,7 +97,8 @@ public class CustomTableHandlerWrapper implements TableHandler {
 
     @SneakyThrows
     public QueryBuilder createQueryBuilder(RelOptCluster cluster) {
-        return  this.inner.createQueryBuilder(cluster);
+        QueryBuilder queryBuilder = this.inner.createQueryBuilder(cluster);
+        return queryBuilder;
     }
 
 
