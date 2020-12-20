@@ -140,6 +140,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                     return;
                                 }
                                 transactionSession.commit();
+                                transactionSession.clearJdbcConnection();
                                 if (!session.isBindMySQLSession()) {
                                     LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
                                     session.writeOk(false);
@@ -151,6 +152,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.commit();
+                                transactionSession.clearJdbcConnection();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;
@@ -171,6 +173,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                     return;
                                 }
                                 transactionSession.rollback();
+                                transactionSession.clearJdbcConnection();
                                 if (session.isBindMySQLSession()) {
                                     receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
                                     LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
@@ -182,6 +185,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.rollback();
+                                transactionSession.clearJdbcConnection();
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;
@@ -196,12 +200,14 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         switch (transactionType) {
                             case PROXY_TRANSACTION_TYPE: {
                                 transactionSession.begin();
+                                transactionSession.clearJdbcConnection();
                                 LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
                                 session.writeOk(moreResultSet);
                                 return;
                             }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.begin();
+                                transactionSession.clearJdbcConnection();
                                 LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;

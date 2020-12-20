@@ -135,7 +135,7 @@ public enum MycatdbCommand {
                 sqlRecord.setSql(sqlStatement);
 
                 execute(dataContext, receiver, sqlStatement);
-                dataContext.endSqlRecord();
+
             }
         } catch (Throwable e) {
             if (isNavicatClientStatusQuery(text)) {

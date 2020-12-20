@@ -125,6 +125,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     @Override
     @SneakyThrows
     public void clearJdbcConnection() {
+        dataContext.endSqlRecord();
         if (!isInTransaction()) {
             Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
             for (Map.Entry<String, DefaultConnection> entry : entries) {
