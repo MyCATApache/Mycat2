@@ -18,9 +18,12 @@ import java.util.concurrent.ConcurrentNavigableMap;
 @Getter
 @Setter
 public class IndexStorage {
+    /**
+     * 索引定义元信息
+     */
     private IndexInfo indexInfo;
     /**
-     * 存储
+     * 索引存储数据
      * key = 索引键
      * value = [0]数据节点信息 [1]~[N]覆盖字段
      */
