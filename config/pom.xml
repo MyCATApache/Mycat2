@@ -18,6 +18,12 @@
           <artifactId>okhttp</artifactId>
           <version>4.7.2</version>
       </dependency>
+      <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+      <dependency>
+          <groupId>com.alibaba</groupId>
+          <artifactId>druid</artifactId>
+          <version>1.2.1</version>
+      </dependency>
 
       <dependency>
       <groupId>org.yaml</groupId>

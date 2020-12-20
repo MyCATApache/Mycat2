@@ -12,21 +12,24 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.datasourceprovider;
+package io.mycat.datasourceprovider;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.pool.xa.DruidXADataSource;
+import com.mysql.cj.jdbc.MysqlXADataSource;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.config.DatasourceRootConfig;
-import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.seata.rm.datasource.DataSourceProxy;
+import io.seata.rm.datasource.xa.DataSourceProxyXA;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
 /**
  * @author Junwen Chen
  **/
-public class DruidDatasourceProvider implements DatasourceProvider {
+public class SeataMySQLXADatasourceProvider extends SeataATDatasourceProvider {
 
   @Override
   public JdbcDataSource createDataSource(DatasourceConfig config) {
@@ -40,34 +43,12 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     int maxCon = config.getMaxCon();
     int minCon = config.getMinCon();
 
-    DruidDataSource datasource = new DruidDataSource();
+    MysqlXADataSource datasource = new MysqlXADataSource();
     datasource.setPassword(password);
-    datasource.setUsername(username);
+    datasource.setUser(username);
     datasource.setUrl(url);
-    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(60));
-    datasource.setMaxActive(maxCon);
-    datasource.setMinIdle(minCon);
-    datasource.setKeepAlive(true);
-    datasource.setTestOnReturn(true);
-    datasource.setTestOnBorrow(true);
-    datasource.setValidationQuery("select 'x'");
-    datasource.setTestWhileIdle(true);
 
-    if (maxRetryCount > 0) {
-      datasource.setConnectionErrorRetryAttempts(maxRetryCount);
-    }
-    if (dbType != null) {
-      datasource.setDbType(dbType);
-    }
-    if (initSQLs != null) {
-      datasource.setConnectionInitSqls(initSQLs);
-    }
-
-    return new JdbcDataSource(config,datasource);
+    return new JdbcDataSource(config,new DataSourceProxyXA(datasource));
   }
 
-  @Override
-  public void closeDataSource(JdbcDataSource dataSource) {
-
-  }
 }

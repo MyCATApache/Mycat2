@@ -292,10 +292,10 @@ public class SqlFunctionTest implements MycatTest {
 
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds0",
-                        "jdbc:mysql://127.0.0.1:3306"));
+                        "jdbc:mysql://127.0.0.1:3306/mysql"));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        "jdbc:mysql://127.0.0.1:3306"));
+                        "jdbc:mysql://127.0.0.1:3306/mysql"));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",

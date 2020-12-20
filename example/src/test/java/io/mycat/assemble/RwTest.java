@@ -33,7 +33,7 @@ public class RwTest implements MycatTest {
 
             execute(mycat, CreateDataSourceHint
                     .create("dw0",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
             execute(mycat, CreateDataSourceHint
                     .create("dr0",
                             "jdbc:mysql://127.0.0.1:3307"));
@@ -82,10 +82,10 @@ public class RwTest implements MycatTest {
 
             execute(mycat, CreateDataSourceHint
                     .create("dw0",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
             execute(mycat, CreateDataSourceHint
                     .create("dw1",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
 
             execute(prototypeMysql,"use mysql");
             execute(prototypeMysql,"DROP TABLE IF EXISTS MYCAT_SEQUENCE;");

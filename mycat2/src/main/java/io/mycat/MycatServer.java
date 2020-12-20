@@ -5,11 +5,11 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.manager.ManagerCommandDispatcher;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.*;
-import io.mycat.runtime.LocalTransactionSession;
 import io.mycat.runtime.ProxyTransactionSession;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -60,8 +60,16 @@ public class MycatServer {
         ThreadPoolExecutorConfig workerPool = serverConfigServer.getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfigServer.getTimeWorkerPool());
         this.transcationFactoryMap = new HashMap<>();
-        this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
-        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+        this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE,
+                mycatDataContext -> {
+                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    return new ProxyTransactionSession(connection.getDatasourceProvider().createSession(mycatDataContext));
+                });
+        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE,
+                mycatDataContext -> {
+                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    return connection.getDatasourceProvider().createSession(mycatDataContext);
+                });
         this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
                 mycatWorkerProcessor.getMycatWorker(),
                 workerPool.getTaskTimeout(),

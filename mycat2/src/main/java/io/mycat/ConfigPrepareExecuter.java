@@ -161,7 +161,12 @@ public class ConfigPrepareExecuter {
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager, metadataStorageManager);
-        jdbcConnectionManager = new JdbcConnectionManager(datasourceProvider, datasourceConfigMap, clusters, mycatWorkerProcessor, replicaSelector);
+        jdbcConnectionManager = new JdbcConnectionManager(
+                datasourceProvider,
+                datasourceConfigMap,
+                clusters,
+                mycatWorkerProcessor,
+                replicaSelector);
         datasourceConfigProvider = new DatasourceConfigProvider() {
             @Override
             public Map<String, DatasourceConfig> get() {

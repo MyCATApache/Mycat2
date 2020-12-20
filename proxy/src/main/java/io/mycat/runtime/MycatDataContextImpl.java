@@ -49,7 +49,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private volatile boolean inTransaction = false;
 
     private MycatUser user;
-    private TransactionSession transactionSession = new ProxyTransactionSession(this);
+    private TransactionSession transactionSession;
     private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();

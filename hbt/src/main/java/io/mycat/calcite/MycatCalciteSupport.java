@@ -14,7 +14,6 @@
  */
 package io.mycat.calcite;
 
-import com.alibaba.druid.DbType;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -691,17 +690,15 @@ public enum MycatCalciteSupport implements Context {
     public SqlDialect getSqlDialectByTargetName(String name) {
         ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
-        DbType dbType = DbType.valueOf(dbTypeText);
-        switch (dbType) {
-            case sqlserver:
+        switch (dbTypeText) {
+            case "sqlserver":
                 return MssqlSqlDialect.DEFAULT;
-            case oracle:
+            case "oracle":
                 return OracleSqlDialect.DEFAULT;
-            case other:
-            case postgresql:
-            case polardb:
-            case mysql:
-            case mariadb:
+            case "postgresql":
+            case "polardb":
+            case  "mysql":
+            case "mariadb":
             default:
                 return MycatSqlDialect.DEFAULT;
 

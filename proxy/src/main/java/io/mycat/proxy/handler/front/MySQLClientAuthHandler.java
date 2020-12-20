@@ -134,14 +134,22 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
                     if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
-                        failture(mycat, MySQLErrorCode.ER_PASSWORD_NO_MATCH, "password is wrong");
+                        String message ="Access denied for user '" +
+                                username +
+                                "'@'" +
+                                remoteSocketAddress.toString() +
+                                "' (using password: YES)";
+                        mycat.setLastMessage(message);
+                        mycat.setLastErrorCode(ER_ACCESS_DENIED_ERROR);
+                        LOGGER.error("login fail: {}",message);
+                        mycat.writeErrorEndPacketBySyncInProcessError(2,ER_ACCESS_DENIED_ERROR);
                         LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
                     }
                 }
                 UserConfig userInfo = authenticator.getUserInfo(username);
                 user = new MycatUser(username, null, null, ip,
-                        userInfo.getDialect());
+                        userInfo);
             }
 
             mycat.setUser(user);
@@ -224,15 +232,25 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     }
 
     public void sendAuthPackge(MycatSession mycat) {
+
+        int sessionId = mycat.sessionId();
+        int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
+
         byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
+        byte[] bytes = createHandshakePayload(sessionId, serverCapabilities, seedParts);
+
         this.seed = seedParts[2];
+        mycat.setServerCapabilities(serverCapabilities);
+        mycat.setPacketId(-1);//使用获取的packetId变为0
+        mycat.writeBytes(bytes, true);
+    }
+
+    public static byte[] createHandshakePayload(int sessionId, int serverCapabilities, byte[][] seedParts) {
         HandshakePacket hs = new HandshakePacket();
         hs.setProtocolVersion(MySQLVersion.PROTOCOL_VERSION);
         hs.setServerVersion(new String(MySQLVersion.SERVER_VERSION));
-        hs.setConnectionId(mycat.sessionId());
+        hs.setConnectionId(sessionId);
         hs.setAuthPluginDataPartOne(new String(seedParts[0]));
-        int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
-        mycat.setServerCapabilities(serverCapabilities);
         hs.setCapabilities(new MySQLServerCapabilityFlags(serverCapabilities));
         hs.setHasPartTwo(true);
         hs.setCharacterSet(8);
@@ -242,8 +260,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         hs.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
-        mycat.setPacketId(-1);//使用获取的packetId变为0
-        mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
+        return mySQLPayloadWriter.toByteArray();
     }
 
 

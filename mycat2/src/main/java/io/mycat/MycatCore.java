@@ -26,12 +26,9 @@ public class MycatCore {
     private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
 
-    public MycatCore() {
-        this(null);
-    }
-
     @SneakyThrows
-    public MycatCore(String path) {
+    public MycatCore() {
+        String path = null;
         MycatBuiltInMethod booleanToBigint = MycatBuiltInMethod.BOOLEAN_TO_BIGINT;
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         if (path == null) {
@@ -59,6 +56,7 @@ public class MycatCore {
         MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
 
         HashMap<Class, Object> context = new HashMap<>();
+        context.put(serverConfig.getServer().getClass(),serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(loadBalanceManager.getClass(), loadBalanceManager);

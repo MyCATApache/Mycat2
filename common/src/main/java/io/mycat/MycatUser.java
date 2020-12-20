@@ -14,11 +14,10 @@
  */
 package io.mycat;
 
+import io.mycat.config.UserConfig;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
-
-import java.util.Map;
 
 /**
  * @author jamie12221 date 2020-01-08 13:21
@@ -31,17 +30,17 @@ public class MycatUser {
     byte[] password;
     byte[] seed;
     String host;
-    String dbType;
+    UserConfig userConfig;
 
     public MycatUser(String userName,
                      byte[] password,
                      byte[] seed,
                      String host,
-                     String dbType) {
+                     UserConfig userConfig) {
         this.userName = userName;
         this.password = password;
         this.seed = seed;
         this.host = host;
-        this.dbType = dbType == null ? "mysql" :dbType;
+        this.userConfig = userConfig;
     }
 }

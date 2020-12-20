@@ -69,7 +69,7 @@ public interface TransactionSession extends Dumpable {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void doAction();
+    public void ensureTranscation();
 
     public void addCloseResource(AutoCloseable closeable);
 

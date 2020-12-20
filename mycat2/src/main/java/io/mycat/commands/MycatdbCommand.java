@@ -6,10 +6,8 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
-import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import com.alibaba.fastsql.sql.parser.SQLType;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
@@ -158,7 +156,7 @@ public enum MycatdbCommand {
 
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.doAction();
+        transactionSession.ensureTranscation();
         //////////////////////////////////////////////////////////////////////////////////////
         if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
@@ -203,10 +201,14 @@ public enum MycatdbCommand {
         if (text.startsWith("begin") || text.startsWith("BEGIN")) {
             SQLStartTransactionStatement sqlStartTransactionStatement = new SQLStartTransactionStatement();
             resStatementList.add(sqlStartTransactionStatement);
-            text = text.substring(0, "begin".length());
+            text = text.substring("begin".length());
             text = text.trim();
             if (text.startsWith(";")) {
                 text = text.substring(1);
+            }
+            text = text.trim();
+            if (text.isEmpty()){
+                return resStatementList;
             }
         }
         MycatUser user = dataContext.getUser();

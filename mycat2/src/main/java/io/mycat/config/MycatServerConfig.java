@@ -1,6 +1,6 @@
 package io.mycat.config;
 
-import io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider;
+import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.util.JsonUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -4,7 +4,6 @@ import io.mycat.*;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.client.MycatRequest;
 import io.mycat.proxy.session.MycatContextThreadPool;
-import io.mycat.thread.SimpleMycatContextBindingThreadPool;
 import io.mycat.util.Response;
 import org.jetbrains.annotations.NotNull;
 
