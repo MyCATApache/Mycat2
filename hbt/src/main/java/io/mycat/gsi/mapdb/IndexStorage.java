@@ -52,7 +52,9 @@ public class IndexStorage {
 
         // values第一位存放数据节点信息
         String dataNodeKeys = (String) values[0];
-        rowIndexValues.getDataNodeKeyList().addAll(Arrays.asList(dataNodeKeys.split(",")));
+        if(dataNodeKeys != null && dataNodeKeys.length() > 0) {
+            rowIndexValues.getDataNodeKeyList().addAll(Arrays.asList(dataNodeKeys.split(",")));
+        }
 
         // values后续存放覆盖字段
         for (int i = 1; i < values.length; i++) {
