@@ -50,7 +50,7 @@ import io.mycat.hbt4.logical.rules.MycatViewToIndexViewRule;
 import io.mycat.metadata.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
+import io.mycat.gsi.GSIService;
 import io.mycat.util.LazyTransformCollection;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;

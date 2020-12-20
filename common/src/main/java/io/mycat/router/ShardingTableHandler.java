@@ -13,6 +13,7 @@ public interface ShardingTableHandler extends TableHandler {
 
     List<DataNode> dataNodes();
 
+    @Override
     List<SimpleColumnInfo> getColumns();
 
 

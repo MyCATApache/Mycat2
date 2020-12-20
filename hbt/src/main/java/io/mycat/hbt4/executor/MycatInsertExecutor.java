@@ -19,7 +19,7 @@ import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
+import io.mycat.gsi.GSIService;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -317,19 +317,20 @@ public class MycatInsertExecutor implements Executor {
                     MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
                     TransactionSession transactionSession = mycatDataContext.getTransactionSession();
                     String txId = transactionSession.getTxId();
+                    List<String> dataNodeKeyList = groupMap.keySet().stream().map(GroupKey::getTarget).collect(Collectors.toList());
                     if (this.multi) {
                         List<List<Object>> paramList = (List) params;
                         for (List<Object> objects : paramList) {
                             gsiService.insert(txId,logicTable.getSchemaName(),
                                     logicTable.getTableName(),
                                     projects
-                                    , objects);
+                                    , objects,dataNodeKeyList);
                         }
                     }else {
                         gsiService.insert(txId,logicTable.getSchemaName(),
                                 logicTable.getTableName(),
                                 projects
-                                , params);
+                                , params,dataNodeKeyList);
                     }
 
                 }

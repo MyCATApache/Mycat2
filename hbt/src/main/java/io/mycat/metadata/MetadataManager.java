@@ -17,13 +17,16 @@ package io.mycat.metadata;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
@@ -53,7 +56,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -313,8 +315,10 @@ public class MetadataManager implements MysqlVariableService {
                                 CustomTableConfig tableConfigEntry) {
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         String clazz = tableConfigEntry.getClazz();
+        List<SimpleColumnInfo> columns = getColumnInfo(createTableSQL);
+        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL,schemaName, columns);
         LogicTable logicTable = new LogicTable(LogicTableType.CUSTOM,
-                schemaName, tableName, getColumnInfo(createTableSQL), createTableSQL);
+                schemaName, tableName, columns,indexInfos, createTableSQL);
         CustomTableHandlerWrapper customTableHandler = new CustomTableHandlerWrapper(logicTable, clazz, tableConfigEntry.getKvOptions(),
                 tableConfigEntry.getListOptions());
         addLogicTable(customTableHandler);
@@ -333,7 +337,8 @@ public class MetadataManager implements MysqlVariableService {
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
         if (createTableSQL != null) {
             List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, createTableSQL));
+            Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, indexInfos,createTableSQL));
             return true;
         }
         return false;
@@ -349,11 +354,13 @@ public class MetadataManager implements MysqlVariableService {
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backendTableInfos));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backendTableInfos);
+        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
+
         //////////////////////////////////////////////
 
         LoadBalanceStrategy loadBalance = loadBalanceManager.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, createTableSQL));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos,createTableSQL));
     }
 
 
@@ -396,10 +403,13 @@ public class MetadataManager implements MysqlVariableService {
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
+        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
+
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<Number> sequence = sequenceGenerator.getSequence(s);
-        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName, backends, columns, null, createTableSQL);
+        ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
+                backends, columns, null,indexInfos, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
     }
@@ -878,6 +888,15 @@ public class MetadataManager implements MysqlVariableService {
         return getColumnInfo(null, sql);
     }
 
+    public static List<SimpleColumnInfo> getColumnInfoByMysql(String sql) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        if (sqlStatement instanceof MySqlCreateTableStatement) {
+            MycatRowMetaData mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData((MySqlCreateTableStatement) sqlStatement);
+            return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
+        }
+        return null;
+    }
+
     public List<SimpleColumnInfo> getColumnInfo(String prototypeServer, String sql) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         MycatRowMetaData mycatRowMetaData = null;
@@ -889,6 +908,76 @@ public class MetadataManager implements MysqlVariableService {
             mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(jdbcConnectionManager, prototypeServer, (SQLCreateViewStatement) sqlStatement);
         }
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
+    }
+
+    public static Map<String,IndexInfo> getIndexInfo(String sql,String schemaName,List<SimpleColumnInfo> columnInfoList) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
+            return null;
+        }
+        String tableName = ((MySqlCreateTableStatement) sqlStatement).getTableName();
+        List<MySqlTableIndex> mysqlIndexes = ((MySqlCreateTableStatement) sqlStatement).getMysqlIndexes();
+        Map<String,IndexInfo> indexInfoMap = new LinkedHashMap<>();
+        for (MySqlTableIndex astIndex : mysqlIndexes) {
+            // 索引名
+            String indexName = SQLUtils.normalize(astIndex.getName().getSimpleName());
+            try {
+                // 索引列
+                List<SimpleColumnInfo> mycatIndexes = new ArrayList<>(columnInfoList);
+                Set<String> astIndexSet = astIndex.getColumns().stream()
+                        .map(SQLSelectOrderByItem::getExpr)
+                        .map(SQLName.class::cast)
+                        .map(SQLName::getSimpleName)
+                        .map(SQLUtils::normalize)
+                        .collect(Collectors.toSet());
+                for (int i = 0; i < mycatIndexes.size(); i++) {
+                    if (!astIndexSet.contains(mycatIndexes.get(i).getColumnName())) {
+                        mycatIndexes.set(i, null);
+                    }
+                }
+
+                // 覆盖列
+                List<SimpleColumnInfo> mycatCoverings = new ArrayList<>(columnInfoList);
+                Set<String> astCoveringSet = astIndex.getCovering().stream()
+                        .map(SQLName::getSimpleName)
+                        .map(SQLUtils::normalize)
+                        .collect(Collectors.toSet());
+                for (int i = 0; i < mycatCoverings.size(); i++) {
+                    if (!astCoveringSet.contains(mycatCoverings.get(i).getColumnName())) {
+                        mycatCoverings.set(i, null);
+                    }
+                }
+
+                // DB分区
+                SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) astIndex.getDbPartitionBy();
+                String dbPartitionByMethodName = null;
+                List<SimpleColumnInfo> dbPartitionByColumms = new ArrayList<>();
+                if (dbPartitionBy != null) {
+                    dbPartitionByMethodName = dbPartitionBy.getMethodName();
+                    List<SQLExpr> arguments = dbPartitionBy.getArguments();
+                    for (SQLExpr argument : arguments) {
+                        SQLName sqlName = (SQLName) argument;
+                        SimpleColumnInfo columnInfo = columnInfoList.stream()
+                                .filter(e -> SQLUtils.nameEquals(e.getColumnName(), sqlName.getSimpleName()))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalStateException("解析 " + dbPartitionBy + "时, 发现字段[" + sqlName + "]在列中不存在"));
+                        dbPartitionByColumms.add(columnInfo);
+                    }
+                }
+
+                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName,tableName, indexName,
+                        mycatIndexes.toArray(new SimpleColumnInfo[0]),
+                        mycatCoverings.toArray(new SimpleColumnInfo[0]),
+                        new IndexInfo.DBPartitionBy(dbPartitionByMethodName,
+                                dbPartitionByColumms.toArray(new SimpleColumnInfo[0]))));
+                if(old != null){
+                    throw new IllegalStateException("存在重复的索引名称 "+ indexName);
+                }
+            }catch (ClassCastException e){
+                throw new IllegalStateException("暂时不支持该索引语法"+ astIndex);
+            }
+        }
+        return indexInfoMap;
     }
 
 }

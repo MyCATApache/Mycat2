@@ -6,10 +6,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateViewStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import io.mycat.DataNode;
-import io.mycat.LogicTableType;
-import io.mycat.SimpleColumnInfo;
-import io.mycat.TableHandler;
+import io.mycat.*;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.router.CustomRuleFunction;
 import lombok.Getter;
@@ -28,6 +25,7 @@ public class LogicTable {
     private final List<SimpleColumnInfo> rawColumns;
     private final String createTableSQL;
     private final SimpleColumnInfo autoIncrementColumn;
+    private final Map<String,IndexInfo> indexes;
 
     //优化,非必须
     private final Map<String, SimpleColumnInfo> map;
@@ -36,6 +34,7 @@ public class LogicTable {
     public LogicTable(LogicTableType type, String schemaName,
                       String tableName,
                       List<SimpleColumnInfo> rawColumns,
+                      Map<String,IndexInfo> indexInfos,
                       String createTableSQL) {
         /////////////////////////////////////////
         this.uniqueName = schemaName + "_" + tableName;
@@ -43,6 +42,7 @@ public class LogicTable {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.rawColumns = rawColumns;
+        this.indexes = indexInfos;
         SQLStatement createTableAst = SQLUtils.parseSingleMysqlStatement(createTableSQL);
         if (createTableAst instanceof SQLCreateTableStatement) {
             ((SQLCreateTableStatement) createTableAst).setIfNotExiists(true);
@@ -73,8 +73,9 @@ public class LogicTable {
                                                  List<DataNode> backendTableInfos,
                                                  LoadBalanceStrategy loadBalance,
                                                  List<SimpleColumnInfo> columns,
+                                                 Map<String,IndexInfo> indexInfos,
                                                  String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, indexInfos,createTableSQL);
         return new GlobalTable(logicTable, backendTableInfos);
     }
 
@@ -82,8 +83,9 @@ public class LogicTable {
                                                  String tableName,
                                                  DataNode dataNode,
                                                  List<SimpleColumnInfo> columns,
+                                                 Map<String,IndexInfo> indexInfos,
                                                  String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns, createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.NORMAL, schemaName, tableName, columns,indexInfos, createTableSQL);
         return new NormalTable(logicTable, dataNode);
     }
 
@@ -92,8 +94,9 @@ public class LogicTable {
                                                     List<DataNode> backendTableInfos,
                                                     List<SimpleColumnInfo> columns,
                                                     CustomRuleFunction function,
+                                                    Map<String,IndexInfo> indexInfos,
                                                     String createTableSQL) {
-        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, createTableSQL);
+        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, tableName, columns, indexInfos,createTableSQL);
         return new ShardingTable(logicTable, backendTableInfos, function);
     }
 

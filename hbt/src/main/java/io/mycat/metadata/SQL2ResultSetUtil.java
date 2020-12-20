@@ -20,7 +20,7 @@ public class SQL2ResultSetUtil {
 
     public static MycatRowMetaData getMycatRowMetaData(MySqlCreateTableStatement mySqlCreateTableStatement) {
         String tableName = mySqlCreateTableStatement.getTableSource().computeAlias();
-        return new MycatRowMetaDataImpl(mySqlCreateTableStatement.getColumnDefinitions(), "", tableName);
+        return new MycatRowMetaDataImpl(mySqlCreateTableStatement.getColumnDefinitions(), mySqlCreateTableStatement.getMysqlIndexes(),"", tableName);
     }
     @SneakyThrows
     public static MycatRowMetaData getMycatRowMetaData(JdbcConnectionManager jdbcConnectionManager,

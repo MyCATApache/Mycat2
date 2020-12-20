@@ -1,14 +1,12 @@
 package io.mycat.metadata;
 
-import io.mycat.DataNode;
-import io.mycat.LogicTableType;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.SimpleColumnInfo;
+import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static io.mycat.metadata.CreateTableUtils.createPhysicalTable;
@@ -64,6 +62,11 @@ public class NormalTable implements NormalTableHandler {
     @Override
     public List<SimpleColumnInfo> getColumns() {
         return this.table.getColumns();
+    }
+
+    @Override
+    public Map<String,IndexInfo> getIndexes() {
+        return table.getIndexes();
     }
 
     @Override

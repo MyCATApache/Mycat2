@@ -32,9 +32,13 @@ public class SimpleColumnInfo {
     final boolean autoIncrement;
     final boolean primaryKey;
     final boolean index;
+    /**
+     * 在当前表中的下标 table(name,pwd,phone) 对应ID (0,1,2)
+     */
+    final int id;
 
 
-    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index) {
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index,int id) {
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
@@ -43,6 +47,7 @@ public class SimpleColumnInfo {
         this.autoIncrement = autoIncrement;
         this.primaryKey = primaryKey;
         this.index = index || primaryKey;
+        this.id = id;
     }
 
     /**

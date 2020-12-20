@@ -27,9 +27,9 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
 
     @Override
     public RelNode visit(TableScan scan) {
-        Optional<T> indexTableView = checkIndex(scan);
+        Optional<Iterable<Object[]>> indexTableView = checkIndex(scan);
         if (indexTableView.isPresent()) {
-            T t = indexTableView.get();
+            Iterable<Object[]> t = indexTableView.get();
             apply = true;
             return new IndexTableView(scan, (Iterable<Object[]>) t);
         } else {
@@ -39,7 +39,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
 
     @Override
     public RelNode visit(LogicalFilter filter) {
-        Optional<T> optional = checkIndex(filter);
+        Optional<Iterable<Object[]>> optional = checkIndex(filter);
         if (optional.isPresent()) {
             apply = true;
             IndexTableView indexTableView = new IndexTableView(filter.getInput(), (Iterable<Object[]>) optional.get());
@@ -51,7 +51,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
 
     @Override
     public RelNode visit(LogicalProject project) {
-        Optional<T> optional = checkIndex(project);
+        Optional<Iterable<Object[]>> optional = checkIndex(project);
         if (optional.isPresent()) {
             apply = true;
             IndexTableView indexTableView = new IndexTableView(project.getInput(), (Iterable<Object[]>) optional.get());
@@ -64,7 +64,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
     }
 
 
-    public Optional<T> checkIndex(RelNode input) {
+    public Optional<Iterable<Object[]>> checkIndex(RelNode input) {
         if (checkTable(input)) {
             LogicalTableScan logicalTableScan = (LogicalTableScan) input;
             if (!isSharding(logicalTableScan)) {
@@ -73,7 +73,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
             RelOptTable table = logicalTableScan.getTable();
             MycatLogicTable mycatLogicTable = table.unwrap(MycatLogicTable.class);
             ShardingTableHandler shardingTableHandler = (ShardingTableHandler) mycatLogicTable.getTable();
-            return (Optional<T>) shardingTableHandler.canIndexTableScan();
+            return (Optional<Iterable<Object[]>>) shardingTableHandler.canIndexTableScan();
         }
         if (checkProjectTable(input)) {
             assert input instanceof LogicalProject;
@@ -85,7 +85,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
             RelOptTable table = tableScan.getTable();
             MycatLogicTable mycatLogicTable = table.unwrap(MycatLogicTable.class);
             ShardingTableHandler shardingTableHandler = (ShardingTableHandler) mycatLogicTable.getTable();
-            return (Optional<T>) shardingTableHandler.canIndexTableScan(map2IntArray(project));
+            return (Optional<Iterable<Object[]>>) shardingTableHandler.canIndexTableScan(map2IntArray(project));
         }
         if (checkProjectFilterTable(input)) {
             assert input instanceof LogicalProject;
@@ -119,7 +119,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
                         return Optional.empty();
                     }
 
-                    return (Optional<T>) shardingTableHandler.canIndexTableScan(map2IntArray(project),
+                    return (Optional<Iterable<Object[]>>) shardingTableHandler.canIndexTableScan(map2IntArray(project),
                             new int[]{index}, new Object[]{value});
                 }
             }

@@ -16,10 +16,7 @@
 package io.mycat.beans.mycat;
 
 import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author jamie12221

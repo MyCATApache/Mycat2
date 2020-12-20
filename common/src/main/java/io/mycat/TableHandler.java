@@ -1,10 +1,7 @@
 package io.mycat;
 
-
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public interface TableHandler {
@@ -24,6 +21,8 @@ public interface TableHandler {
     String getCreateTableSQL();
 
     List<SimpleColumnInfo> getColumns();
+
+    Map<String,IndexInfo> getIndexes();
 
     SimpleColumnInfo getColumnByName(String name);
 

@@ -1,11 +1,14 @@
-package io.mycat.router.gsi;
+package io.mycat.gsi;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.DataNode;
+import io.mycat.IndexInfo;
+import io.mycat.SimpleColumnInfo;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -44,27 +47,6 @@ import java.util.Optional;
  * @author wangzihaogithub 2020年11月8日17:53:57
  */
 public interface GSIService {
-    int drop(String tableName, String indexName);
-
-    int create(String tableName, String indexName, String[] pkColumnNames, String[] indexColumnNames);
-
-    Transaction insert(String tableName, IndexRowData rowData);
-
-    Transaction updateByIndex(String tableName, IndexRowData rowData, Map<String, Object> index);
-
-    Transaction updateByPk(String tableName, IndexRowData rowData, Map<String, Object> pk);
-
-    Transaction deleteByIndex(String tableName, Map<String, Object> index);
-
-    Transaction deleteByPk(String tableName, Map<String, Object> pk);
-
-    boolean preCommit(Long txId);
-
-    boolean commit(Long txId);
-
-    boolean rollback(Long txId);
-
-    List<IndexRowData> select(SQLStatement statement);
 
     Optional<Iterable<Object[]>> scanProject(String schemaName, String tableName, int[] projects);
 
@@ -78,18 +60,26 @@ public interface GSIService {
 
     boolean isIndexTable(String schemaName, String tableName);
 
-    void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects);
+    void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects,List<String> dataNodeKeyList);
 
     @Data
     class Transaction {
         private Long id;
     }
 
-    @Data
-    class IndexRowData {
-        private String datasourceKey;
-        private Map<String, Object> pkColumnValues;
-        private Map<String, Object> indexColumnValues;
+    @Getter
+    @AllArgsConstructor
+    class RowIndexValues{
+        private IndexInfo indexInfo;
+        private final List<IndexValue> indexes = new ArrayList<>();
+        private final List<IndexValue> coverings = new ArrayList<>();
+        private final List<String> dataNodeKeyList = new ArrayList<>();
     }
 
+    @Getter
+    @AllArgsConstructor
+    class IndexValue{
+        private final SimpleColumnInfo column;
+        private final Object value;
+    }
 }

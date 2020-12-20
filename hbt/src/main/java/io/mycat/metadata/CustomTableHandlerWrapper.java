@@ -52,6 +52,11 @@ public class CustomTableHandlerWrapper implements TableHandler {
     }
 
     @Override
+    public Map<String,IndexInfo> getIndexes() {
+        return logicTable.getIndexes();
+    }
+
+    @Override
     public SimpleColumnInfo getColumnByName(String name) {
         return logicTable.getColumnByName(name);
     }

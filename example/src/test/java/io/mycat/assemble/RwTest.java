@@ -100,7 +100,8 @@ public class RwTest implements MycatTest {
                                             "id int(11) NOT NULL AUTO_INCREMENT,\n" +
                                             "user_id int(11) ,\n" +
                                             "user_name varchar(128), \n" +
-                                            "PRIMARY KEY (`id`) \n" +
+                                            "PRIMARY KEY (`id`), \n" +
+                                            " GLOBAL INDEX `g_i_user_id`(`user_id`) COVERING (`user_name`) dbpartition by btree(`user_id`) \n" +
                                             ")ENGINE=InnoDB DEFAULT CHARSET=utf8 ",
                                     ShardingBackEndTableInfoConfig.builder()
                                             .schemaNames(db)

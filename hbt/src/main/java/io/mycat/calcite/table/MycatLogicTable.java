@@ -28,7 +28,7 @@ import io.mycat.hbt4.ShardingInfo;
 import io.mycat.metadata.GlobalTableHandler;
 import io.mycat.metadata.NormalTableHandler;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
+import io.mycat.gsi.GSIService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.rel.type.RelDataType;
