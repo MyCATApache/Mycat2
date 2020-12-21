@@ -187,8 +187,8 @@ public class SqlResultSetService implements Closeable, Dumpable {
                                     Object[] row = new Object[columnCount];
                                     for (int i = 0; i < columnCount; i++) {
                                         row[i] = rowIterator.getObject(i + 1);
-                                        builder.add(row);
                                     }
+                                    builder.add(row);
                                 }
                                 ImmutableList<Object[]> objects1 = builder.build();
                                 pair[0] = mycatRowMetaData;

@@ -86,17 +86,10 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     protected void callBackBegin() {
-        ArrayList<SQLException> exceptions = new ArrayList<>();
-        for (DefaultConnection i : this.updateConnectionMap.values()) {
-            try {
-                i.getRawConnection().setAutoCommit(false);
-            } catch (SQLException e) {
-                exceptions.add(e);
-            }
+        for (DefaultConnection value : this.updateConnectionMap.values()) {
+            value.close();
         }
-        if (!exceptions.isEmpty()) {
-            throw new MycatException("本地事务开启失败\n" + exceptions.stream().map(i -> i.getMessage()).collect(Collectors.joining("\n")));
-        }
+        this.updateConnectionMap.clear();
     }
 
     @Override

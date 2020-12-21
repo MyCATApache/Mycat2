@@ -17,13 +17,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MyCatResultSetEnumerator implements Enumerator<Object[]> {
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerator.class);
 
-    final AtomicBoolean CANCEL_FLAG;
     final RowBaseIterator rowBaseIterator;
     final int columnCount;
     boolean result = true;
 
-    public MyCatResultSetEnumerator(AtomicBoolean CANCEL_FLAG, RowBaseIterator rowBaseIterator) {
-        this.CANCEL_FLAG = CANCEL_FLAG;
+    public MyCatResultSetEnumerator(RowBaseIterator rowBaseIterator) {
         this.rowBaseIterator = rowBaseIterator;
         this.columnCount = rowBaseIterator.getMetaData().getColumnCount();
     }
@@ -41,9 +39,6 @@ public class MyCatResultSetEnumerator implements Enumerator<Object[]> {
 
     @Override
     public boolean moveNext() {
-        if (CANCEL_FLAG.get()) {
-            return false;
-        }
         if (result) {
             result = rowBaseIterator.next();
             return result;

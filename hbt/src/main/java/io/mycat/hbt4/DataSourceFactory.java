@@ -19,6 +19,7 @@ import io.mycat.MycatConnection;
 import lombok.Data;
 
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -26,13 +27,14 @@ public interface DataSourceFactory extends AutoCloseable {
 
     public void open();
 
-    Map<String, MycatConnection> getConnections(List<String> targets);
-
-    void registered(List<String> asList);
+    void registered(Collection<String> asList);
 
     MycatConnection getConnection(String key);
 
     List<MycatConnection> getTmpConnections(List<String> targets);
 
     void recycleTmpConnections(List<MycatConnection> connections);
+
+
+
 }
