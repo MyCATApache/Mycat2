@@ -6,6 +6,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatConnection;
 import io.mycat.MycatDataContext;
 import io.mycat.hbt3.Distribution;
@@ -14,6 +15,7 @@ import io.mycat.hbt4.Executor;
 import io.mycat.hbt4.ExplainWriter;
 import io.mycat.hbt4.GroupKey;
 import io.mycat.mpp.Row;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
 import lombok.Getter;
@@ -76,12 +78,15 @@ public class MycatUpdateExecutor implements Executor {
     @Override
     @SneakyThrows
     public void open() {
+        ReplicaSelectorRuntime replicaSelector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         Map<String, MycatConnection> connections = factory.getConnections(groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
         boolean insertId = sqlStatement instanceof MySqlInsertStatement;
         SqlRecord sqlRecord = context.currentSqlRecord();
         for (GroupKey key : groupKeys) {
             String sql = key.getParameterizedSql();
-            String target = key.getTarget();
+            String target = replicaSelector.getDatasourceNameByReplicaName(key.getTarget(),
+                    context.isInTransaction(),null);
+
             MycatConnection mycatConnection = connections.get(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (LOGGER.isDebugEnabled()) {

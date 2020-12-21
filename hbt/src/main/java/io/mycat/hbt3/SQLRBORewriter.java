@@ -201,7 +201,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
         List<RelNode> inputs = join.getInputs();
         RelNode left = inputs.get(0).accept(this);
         RelNode right = inputs.get(1).accept(this);
-        if (RelMdSqlViews.join(left) && (RelMdSqlViews.join(right))) {
+        boolean lr = RelMdSqlViews.join(left);
+        boolean rr = RelMdSqlViews.join(right);
+        if (lr&& rr) {
             return join(params,left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));

@@ -6,6 +6,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +37,17 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     }
 
     @Override
+    @SneakyThrows
     public MycatConnection getConnection(String targetName) {
         ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         targetName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, isInTransaction(), null);
         DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
         if (defaultConnection != null) {
+            if(defaultConnection.getRawConnection().getAutoCommit()){
+                if (isInTransaction()){
+                    defaultConnection.getRawConnection().setAutoCommit(false);
+                }
+            }
             return defaultConnection;
         }
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);

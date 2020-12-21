@@ -17,6 +17,7 @@ import io.mycat.*;
 import io.mycat.hbt4.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.mpp.Row;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.gsi.GSIService;
@@ -199,6 +200,7 @@ public class MycatInsertExecutor implements Executor {
 
     @SneakyThrows
     public void execute(Map<GroupKey, Group> group) {
+        ReplicaSelectorRuntime replicaSelector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         List<String> targets = group.keySet().stream().map(j -> j.getTarget()).distinct().collect(Collectors.toList());
         Map<String, MycatConnection> connections = factory.getConnections(targets);
         long lastInsertId = 0;
@@ -232,7 +234,8 @@ public class MycatInsertExecutor implements Executor {
         } else {
             for (Map.Entry<GroupKey, Group> e : group.entrySet()) {
                 GroupKey key = e.getKey();
-                String targetName = key.getTarget();
+                String targetName = replicaSelector.getDatasourceNameByReplicaName(key.getTarget(),
+                        context.isInTransaction(),null);
                 String sql = key.getParameterizedSql();
                 Group value = e.getValue();
                 Connection connection = connections.get(targetName).unwrap(Connection.class);

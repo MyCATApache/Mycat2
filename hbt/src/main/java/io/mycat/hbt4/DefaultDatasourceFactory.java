@@ -7,10 +7,12 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlrecorder.SqlRecord;
 import lombok.SneakyThrows;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DefaultDatasourceFactory implements DataSourceFactory {
     final MycatDataContext context;
@@ -75,7 +77,8 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
 
     @Override
     public void registered(List<String> asList) {
-        targets.addAll(asList);
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        targets.addAll(asList.stream().map(n->selectorRuntime.getDatasourceNameByReplicaName(n,context.isInTransaction(),null)).collect(Collectors.toList()));
     }
 
     @Override
