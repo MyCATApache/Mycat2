@@ -133,7 +133,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             } else {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
-                    if (!checkPassword(rightPassword, password) && password.length != 0) {//may be bug
+                    if (!checkPassword(rightPassword, password)) {//may be bug
                         String message ="Access denied for user '" +
                                 username +
                                 "'@'" +
@@ -142,7 +142,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                         mycat.setLastMessage(message);
                         mycat.setLastErrorCode(ER_ACCESS_DENIED_ERROR);
                         LOGGER.error("login fail: {}",message);
-                        mycat.writeErrorEndPacketBySyncInProcessError(2,ER_ACCESS_DENIED_ERROR);
+                        mycat.writeErrorEndPacketBySyncInProcessError(ER_ACCESS_DENIED_ERROR);
                         LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
                     }
@@ -177,23 +177,23 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         mycat.resetCurrentProxyPayload();
         return auth;
     }
-    public void failture(MycatSession mycat,Authenticator.AuthInfo authInfo) {
+    public void failture(MycatSession mycat, Authenticator.AuthInfo authInfo) {
         mycat.setLastMessage(authInfo.getException());
         LOGGER.error("login fail: {}",authInfo.getException());
-        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
+        mycat.writeErrorEndPacketBySyncInProcessError( ER_ACCESS_DENIED_ERROR);
     }
 
-    public void failture(MycatSession mycat,int errorCode, String message) {
+    public void failture(MycatSession mycat, int errorCode, String message) {
         mycat.setLastMessage(message);
         mycat.setLastErrorCode(errorCode);
         LOGGER.error("login fail: {}",message);
-        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(),errorCode);
+        mycat.writeErrorEndPacketBySyncInProcessError(errorCode);
     }
 
     public void failture(MycatSession mycat, Exception e) {
         mycat.setLastMessage(e);
         LOGGER.error("login fail: {}",e.getMessage(),e);
-        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
+        mycat.writeErrorEndPacketBySyncInProcessError(ER_ACCESS_DENIED_ERROR);
     }
 
     @Override
