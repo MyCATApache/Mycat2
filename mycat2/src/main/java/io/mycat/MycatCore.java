@@ -68,7 +68,7 @@ public class MycatCore {
         ////////////////////////////////////////////tmp///////////////////////////////////
         MetaClusterCurrent.register(context);
 
-        String mode = PROPERTY_MODE_LOCAL;
+        String mode = serverConfig.getMode();
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
                 metadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);

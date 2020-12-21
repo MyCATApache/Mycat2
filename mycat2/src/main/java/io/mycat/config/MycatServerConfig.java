@@ -15,7 +15,7 @@ public class MycatServerConfig {
     ServerConfig server = new io.mycat.config.ServerConfig ();
     ManagerConfig manager = new ManagerConfig();
     String mode = "local";
-    String datasourceProvider = DruidDatasourceProvider.class.getName();
+    String datasourceProvider = "io.mycat.datasourceprovider.SeataATDatasourceProvider";
     Map<String, Object> properties = new HashMap<>();
 
     public static void main(String[] args) {

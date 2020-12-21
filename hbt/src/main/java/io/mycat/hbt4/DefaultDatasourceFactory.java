@@ -38,12 +38,12 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
 
     @Override
     public void open() {
-        if (connectionMap.isEmpty()){
-            SqlRecord sqlRecord = context.currentSqlRecord();
+        if (connectionMap.isEmpty()) {
             TransactionSession transactionSession = context.getTransactionSession();
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             List<String> all = new ArrayList<>(targets);
             HashSet<String> keys = new HashSet<>(targets);
+
             synchronized (jdbcConnectionManager) {
                 for (String key : keys) {
                     Deque<MycatConnection> mycatConnections = connectionMap.computeIfAbsent(key, (k) -> new LinkedList<>());
@@ -61,29 +61,16 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
 
     }
 
-
     @Override
-    public Map<String, MycatConnection> getConnections(List<String> targets) {
-        HashMap<String, MycatConnection> connectionHashMap = new HashMap<>();
-        for (Map.Entry<String, Deque<MycatConnection>> stringDequeEntry : connectionMap.entrySet()) {
-            if (stringDequeEntry.getValue().size() == 1) {
-                connectionHashMap.put(stringDequeEntry.getKey(), stringDequeEntry.getValue().getFirst());
-            } else {
-                throw new IllegalArgumentException();
-            }
+    public void registered(Collection<String> asList) {
+        for (String s : asList) {
+            targets.add(context.resolveDatasourceTargetName(s));
         }
-        return connectionHashMap;
-    }
-
-    @Override
-    public void registered(List<String> asList) {
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        targets.addAll(asList.stream().map(n->selectorRuntime.getDatasourceNameByReplicaName(n,context.isInTransaction(),null)).collect(Collectors.toList()));
     }
 
     @Override
     public MycatConnection getConnection(String key) {
-        Deque<MycatConnection> mycatConnections = connectionMap.get(key);
+        Deque<MycatConnection> mycatConnections = connectionMap.get(context.resolveDatasourceTargetName(key));
         MycatConnection pop = mycatConnections.pop();
         return pop;
     }
@@ -100,7 +87,7 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         synchronized (connectionManager) {
             for (String jdbcDataSource : targets) {
-                res.add(connectionManager.getConnection(jdbcDataSource));
+                res.add(connectionManager.getConnection(context.resolveDatasourceTargetName(jdbcDataSource)));
             }
             return res;
         }

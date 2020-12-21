@@ -5,6 +5,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -115,7 +116,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     public String resolveFinalTargetName(String targetName) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName);
+         return dataSourceNearness.getDataSourceByTargetName(targetName);
     }
 
     public int getTransactionIsolation() {
@@ -161,10 +162,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
 
-    protected Map<String,MycatConnection> callBackConnections(Set<String> jdbcDataSources,
-                                                                      boolean autocommit,
-                                                                      int transactionIsolation,
-                                                                      boolean readOnly) {
+    protected Map<String, MycatConnection> callBackConnections(Set<String> jdbcDataSources,
+                                                               boolean autocommit,
+                                                               int transactionIsolation,
+                                                               boolean readOnly) {
         if (jdbcDataSources.isEmpty()) return Collections.emptyMap();
         HashMap<String, MycatConnection> res = new HashMap<>();
 
@@ -177,7 +178,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                                 autocommit,
                                 transactionIsolation,
                                 readOnly));
-                res.put(jdbcDataSource,defaultConnection1);
+                res.put(jdbcDataSource, defaultConnection1);
             }
         }
         return res;

@@ -157,6 +157,7 @@ public abstract class TableJPATemplateTest implements MycatTest {
 
     @Test
     public void testDeleteAllInBatch() {
+        repository.deleteAllInBatch();
         List<Customer> customerList = IntStream.range(0, 10)
                 .mapToObj(i -> String.valueOf(i))
                 .map(i -> {
