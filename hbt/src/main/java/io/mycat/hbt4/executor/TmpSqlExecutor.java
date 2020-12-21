@@ -72,7 +72,7 @@ public class TmpSqlExecutor implements Executor {
         }));
         AtomicBoolean flag = new AtomicBoolean();
         ComposeRowBaseIterator composeFutureRowBaseIterator = new ComposeRowBaseIterator(calciteRowMetaData, futureArrayList);
-        this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(flag, composeFutureRowBaseIterator);
+        this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(composeFutureRowBaseIterator);
     }
 
     @Override

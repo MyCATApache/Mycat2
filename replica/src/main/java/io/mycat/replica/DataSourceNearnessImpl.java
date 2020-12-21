@@ -32,7 +32,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         String res;
         if (replicaMode) {
             res  =  map.computeIfAbsent(targetName, (s) -> {
-                String datasourceNameByReplicaName = instance.getDatasourceNameByReplicaName(targetName, !transactionSession.isAutocommit()||transactionSession.isInTransaction(), loadBalanceStrategy);
+                String datasourceNameByReplicaName = instance.getDatasourceNameByReplicaName(targetName, transactionSession.isInTransaction(), loadBalanceStrategy);
                 return Objects.requireNonNull(datasourceNameByReplicaName);
             });
         }else {

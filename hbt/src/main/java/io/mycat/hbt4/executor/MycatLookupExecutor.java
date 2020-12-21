@@ -120,7 +120,7 @@ public class MycatLookupExecutor implements Executor {
         }
         AtomicBoolean flag = new AtomicBoolean();
         ComposeRowBaseIterator composeFutureRowBaseIterator = new ComposeRowBaseIterator(metaData, futureArrayList);
-        this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(flag, composeFutureRowBaseIterator);
+        this.myCatResultSetEnumerator = new MyCatResultSetEnumerator(composeFutureRowBaseIterator);
     }
 
     @Override

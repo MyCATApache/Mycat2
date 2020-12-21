@@ -872,6 +872,7 @@ public class MetadataManager implements MysqlVariableService {
                                 if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
                                     return false;
                                 }
+                              continue;
                             }
                             return false;
                         }else {

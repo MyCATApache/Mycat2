@@ -17,6 +17,7 @@ import io.mycat.*;
 import io.mycat.hbt4.*;
 import io.mycat.hbt4.logical.rel.MycatInsertRel;
 import io.mycat.mpp.Row;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.gsi.GSIService;
@@ -64,7 +65,7 @@ public class MycatInsertExecutor implements Executor {
         } else {
             this.groupMap = runNormalParams();
         }
-        this.factory.registered( this.groupMap.keySet().stream().map(i->i.getTarget()).distinct().collect(Collectors.toList()));
+        this.factory.registered(this.groupMap.keySet().stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
     }
 
     public boolean isProxy() {
@@ -105,7 +106,7 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
-        return new MycatInsertExecutor(context,mycatInsertRel, factory, params);
+        return new MycatInsertExecutor(context, mycatInsertRel, factory, params);
     }
 
     @Override
@@ -199,8 +200,20 @@ public class MycatInsertExecutor implements Executor {
 
     @SneakyThrows
     public void execute(Map<GroupKey, Group> group) {
-        List<String> targets = group.keySet().stream().map(j -> j.getTarget()).distinct().collect(Collectors.toList());
-        Map<String, MycatConnection> connections = factory.getConnections(targets);
+        TransactionSession transactionSession = context.getTransactionSession();
+
+        //建立targetName与连接的映射
+        Map<String, MycatConnection> connections = new HashMap<>();
+        Set<String> uniqueValues = new HashSet<>();
+        for (GroupKey target : group.keySet()) {
+            String k = transactionSession.resolveFinalTargetName(target.getTarget());
+            if (uniqueValues.add(k)) {
+                if (connections.put(target.getTarget(), transactionSession.getConnection(k)) != null) {
+                    throw new IllegalStateException("Duplicate key");
+                }
+            }
+        }
+
         long lastInsertId = 0;
         long affected = 0;
         SqlRecord sqlRecord = context.currentSqlRecord();
@@ -224,7 +237,8 @@ public class MycatInsertExecutor implements Executor {
 
                     }
                 }
-                sqlRecord.addSubRecord(parameterizedSql,startTime,targets.get(0),affected);
+                String targetName = connections.keySet().iterator().next();
+                sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
                 }
@@ -232,7 +246,7 @@ public class MycatInsertExecutor implements Executor {
         } else {
             for (Map.Entry<GroupKey, Group> e : group.entrySet()) {
                 GroupKey key = e.getKey();
-                String targetName = key.getTarget();
+                String targetName = (key.getTarget());
                 String sql = key.getParameterizedSql();
                 Group value = e.getValue();
                 Connection connection = connections.get(targetName).unwrap(Connection.class);
@@ -244,7 +258,7 @@ public class MycatInsertExecutor implements Executor {
 
                 affected += res.getAffected();
 
-                sqlRecord.addSubRecord(sql,startTime,targetName,affected);
+                sqlRecord.addSubRecord(sql, startTime, targetName, affected);
             }
         }
 
@@ -332,13 +346,13 @@ public class MycatInsertExecutor implements Executor {
                     if (this.multi) {
                         List<List<Object>> paramList = (List) params;
                         for (List<Object> objects : paramList) {
-                            gsiService.insert(txId,logicTable.getSchemaName(),
+                            gsiService.insert(txId, logicTable.getSchemaName(),
                                     logicTable.getTableName(),
                                     projects
                                     , objects);
                         }
-                    }else {
-                        gsiService.insert(txId,logicTable.getSchemaName(),
+                    } else {
+                        gsiService.insert(txId, logicTable.getSchemaName(),
                                 logicTable.getTableName(),
                                 projects
                                 , params);
