@@ -99,6 +99,11 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
+    public String resolveFinalTargetName(String targetName, boolean master) {
+        return parent.resolveFinalTargetName(targetName, master);
+    }
+
+    @Override
     public TransactionType transactionType() {
         return TransactionType.PROXY_TRANSACTION_TYPE;
     }
