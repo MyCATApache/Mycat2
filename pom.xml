@@ -24,7 +24,6 @@
       <module>statistic</module>
       <module>calcite</module>
       <module>linq4j</module>
-    <module>seata</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
