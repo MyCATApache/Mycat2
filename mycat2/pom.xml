@@ -91,12 +91,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>pattern</artifactId>
-            <version>1.13-alpha</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/au.com.bytecode/opencsv -->
         <dependency>
             <groupId>au.com.bytecode</groupId>

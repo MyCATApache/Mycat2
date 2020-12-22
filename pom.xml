@@ -18,7 +18,6 @@
     <module>replica</module>
       <module>hbt</module>
       <module>example</module>
-      <module>testsuite</module>
       <module>statistic</module>
       <module>calcite</module>
       <module>linq4j</module>
