@@ -109,18 +109,6 @@
             <artifactId>guava</artifactId>
             <version>28.1-jre</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>booster</artifactId>
-            <version>1.13-alpha</version>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/log4j/log4j -->
 <!--        <dependency>-->
 <!--            <groupId>log4j</groupId>-->

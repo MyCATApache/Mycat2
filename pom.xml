@@ -18,7 +18,6 @@
     <module>replica</module>
       <module>pattern</module>
       <module>hbt</module>
-      <module>booster</module>
       <module>example</module>
       <module>testsuite</module>
       <module>statistic</module>
