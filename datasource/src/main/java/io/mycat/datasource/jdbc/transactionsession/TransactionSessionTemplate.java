@@ -186,6 +186,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     public String resolveFinalTargetName(String targetName, boolean master) {
-        return null;
+        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
     }
 }

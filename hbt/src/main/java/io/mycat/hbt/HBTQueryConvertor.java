@@ -29,6 +29,7 @@ import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
@@ -96,20 +97,20 @@ public class HBTQueryConvertor {
         metaDataFetcher = (targetName, sql) -> {
             try {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
-                try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
-                    try (Statement statement = connection1.createStatement()) {
-                        statement.setMaxRows(0);
-                        try (ResultSet resultSet = statement.executeQuery(sql)) {
-                            ResultSetMetaData metaData = resultSet.getMetaData();
-                            JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
-                            return FieldTypes.getFieldTypes(jdbcRowMetaData);
-                        }
+                try(DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)){
+                    Connection rawConnection = mycatConnection.getRawConnection();
+                    try (Statement statement = rawConnection.createStatement()) {
+                            statement.setMaxRows(0);
+                            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                                ResultSetMetaData metaData = resultSet.getMetaData();
+                                JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                                return FieldTypes.getFieldTypes(jdbcRowMetaData);
+                            }
+                    } catch (SQLException e) {
+                        log.warn("{}", e);
                     }
-                } catch (SQLException e) {
-                    log.warn("{}", e);
+                    return null;
                 }
-                return null;
             } catch (Throwable e) {
                 log.warn("{0}", e);
             }

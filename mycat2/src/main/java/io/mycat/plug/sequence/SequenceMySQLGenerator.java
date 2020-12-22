@@ -2,6 +2,7 @@ package io.mycat.plug.sequence;
 
 import io.mycat.MetaClusterCurrent;
 import io.mycat.config.SequenceConfig;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -30,19 +31,19 @@ public class SequenceMySQLGenerator implements SequenceHandler {
     public void init(String sql, String targetName) {
         init(sql, targetName, (s, s2) -> {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
-            try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
-                try (Statement statement = connection1.createStatement()) {
-                    try (ResultSet resultSet = statement.executeQuery(s2)) {
-                        while (resultSet.next()) {
-                            return resultSet.getString(1);
+            try(DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)){
+                Connection rawConnection = mycatConnection.getRawConnection();
+                    try (Statement statement = rawConnection.createStatement()) {
+                        try (ResultSet resultSet = statement.executeQuery(s2)) {
+                            while (resultSet.next()) {
+                                return resultSet.getString(1);
+                            }
                         }
                     }
+                } catch (SQLException e) {
+                    throw new RuntimeException("can not get queryTargetName:" + s + ",sql:" + s2 + " e");
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException("can not get queryTargetName:" + s + ",sql:" + s2 + " e");
-            }
-            return null;
+                return null;
         });
     }
 

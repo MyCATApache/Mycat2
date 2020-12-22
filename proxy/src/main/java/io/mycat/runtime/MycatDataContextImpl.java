@@ -346,7 +346,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public String resolveDatasourceTargetName(String targetName, boolean master) {
-        return null;
+        return transactionSession.resolveFinalTargetName(targetName,master);
     }
 
     @Override

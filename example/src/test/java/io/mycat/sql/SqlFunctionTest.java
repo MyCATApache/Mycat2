@@ -220,8 +220,8 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("SELECT FROM_DAYS(685467);");
         checkValue("SELECT HOUR(\"2017-06-20 09:34:00\");");
         checkValue("SELECT LAST_DAY(\"2017-06-20\");");
-        checkValue("SELECT LOCALTIME();");
-        checkValue("SELECT LOCALTIMESTAMP();");
+        uncheckValue("SELECT LOCALTIME();");
+        uncheckValue("SELECT LOCALTIMESTAMP();");
         checkValue("SELECT MAKEDATE(2017, 3);");
         checkValue("SELECT MAKETIME(11, 35, 4);");
         checkValue("SELECT MICROSECOND(\"2017-06-20 09:34:00.000023\");");
