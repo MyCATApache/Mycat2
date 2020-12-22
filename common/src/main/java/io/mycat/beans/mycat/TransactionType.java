@@ -27,21 +27,20 @@ public enum TransactionType {
     JDBC_TRANSACTION_TYPE("xa"),
     ;
 
+    public static final TransactionType DEFAULT = TransactionType.JDBC_TRANSACTION_TYPE;
     private String name;
 
     TransactionType(String name) {
         this.name = name;
     }
 
-    public static final TransactionType DEFAULT = TransactionType.JDBC_TRANSACTION_TYPE;
-
     public static TransactionType parse(String name) {
-        if(TransactionType.JDBC_TRANSACTION_TYPE.name.equalsIgnoreCase(name)){
+        if (TransactionType.JDBC_TRANSACTION_TYPE.name.equalsIgnoreCase(name)) {
             return TransactionType.JDBC_TRANSACTION_TYPE;
         }
-        if(TransactionType.PROXY_TRANSACTION_TYPE.name.equalsIgnoreCase(name)){
+        if (TransactionType.PROXY_TRANSACTION_TYPE.name.equalsIgnoreCase(name)) {
             return TransactionType.PROXY_TRANSACTION_TYPE;
         }
-        throw new IllegalArgumentException("unsupported:"+name);
+        throw new IllegalArgumentException("unsupported:" + name);
     }
 }

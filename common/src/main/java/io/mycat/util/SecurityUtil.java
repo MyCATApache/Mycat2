@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,7 +22,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * 加密解密工具类
- * 
+ *
  * @author mycat
  */
 public class SecurityUtil {
@@ -78,14 +78,14 @@ public class SecurityUtil {
         long tmp;
         for (int i = 0; i < src.length(); ++i) {
             switch (src.charAt(i)) {
-            case ' ':
-            case '\t':
-                continue;
-            default:
-                tmp = (0xff & src.charAt(i));
-                nr ^= ((((nr & 63) + add) * tmp) + (nr << 8));
-                nr2 += ((nr2 << 8) ^ nr);
-                add += tmp;
+                case ' ':
+                case '\t':
+                    continue;
+                default:
+                    tmp = (0xff & src.charAt(i));
+                    nr ^= ((((nr & 63) + add) * tmp) + (nr << 8));
+                    nr2 += ((nr2 << 8) ^ nr);
+                    add += tmp;
             }
         }
         long[] result = new long[2];
@@ -152,6 +152,7 @@ public class SecurityUtil {
 
         return mysqlScrambleBuff;
     }
+
     /**
      * Encrypt/Decrypt function used for password encryption in authentication
      *
@@ -177,8 +178,8 @@ public class SecurityUtil {
     }
 
     public static void main(String[] args) throws DigestException, NoSuchAlgorithmException {
-        String source ="123";
-        String seed ="m\u0012R\u0004x\u0007\u001A{\u001C'\"V0GE\u0015^\u0011s\t";
+        String source = "123";
+        String seed = "m\u0012R\u0004x\u0007\u001A{\u001C'\"V0GE\u0015^\u0011s\t";
 
         CachingSha2PasswordPlugin.scrambleCachingSha2(source, seed);
 //        String  rnd = "eF!@34gH%^78";
@@ -188,16 +189,16 @@ public class SecurityUtil {
 //                0x3b, 0x02, 0x69, 0x4c, 0x85, 0x02, 0xf5, 0x5b, 0xc8, 0xdc};
 
         byte[] ans = scramble411(source.getBytes(), seed.getBytes());
-        for(byte b : ans){
-            System.out.printf("十六进制输出"+"%x\n",b);
+        for (byte b : ans) {
+            System.out.printf("十六进制输出" + "%x\n", b);
         }
         //
 //        for(byte b : seed.getBytes()){
 //            System.out.printf("十六进制输出"+"%x\n",b);
 //        }
-         ans = scrambleCachingSha2(source.getBytes(), seed.getBytes());
-        for(byte b : ans){
-            System.out.printf("%x ",b);
+        ans = scrambleCachingSha2(source.getBytes(), seed.getBytes());
+        for (byte b : ans) {
+            System.out.printf("%x ", b);
         }
         System.out.printf("=======================\n");
 

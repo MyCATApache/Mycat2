@@ -56,9 +56,9 @@ public abstract class CustomRuleFunction {
     }
 
 
-
     public boolean isSameRule(CustomRuleFunction other) {
         return false;
     }
- public abstract    boolean isShardingKey(String name);
+
+    public abstract boolean isShardingKey(String name);
 }

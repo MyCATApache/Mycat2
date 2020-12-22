@@ -9,6 +9,15 @@ public class ShowDataNodeHint extends HintBuilder {
     private String schemaName;
     private String tableName;
 
+    public static String create(
+            String schemaName,
+            String tableName) {
+        ShowDataNodeHint showDataNodeHint = new ShowDataNodeHint();
+        showDataNodeHint.setSchemaName(schemaName);
+        showDataNodeHint.setTableName(tableName);
+        return showDataNodeHint.build();
+    }
+
     @Override
     public String getCmd() {
         return "showDataNodes";
@@ -22,15 +31,6 @@ public class ShowDataNodeHint extends HintBuilder {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(map));
-    }
-
-    public static String create(
-            String schemaName,
-            String tableName) {
-        ShowDataNodeHint showDataNodeHint = new ShowDataNodeHint();
-        showDataNodeHint.setSchemaName(schemaName);
-        showDataNodeHint.setTableName(tableName);
-        return showDataNodeHint.build();
     }
 
     public void setSchemaName(String schemaName) {

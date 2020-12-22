@@ -14,12 +14,7 @@
  */
 package io.mycat;
 
-import com.google.common.collect.ImmutableList;
 import io.mycat.beans.mycat.TransactionType;
-
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Junwen Chen
@@ -32,8 +27,6 @@ public interface TransactionSession extends Dumpable {
 
     String name();
 
-    void setTransactionIsolation(int transactionIsolation);
-
     void begin();
 
     void commit();
@@ -42,9 +35,9 @@ public interface TransactionSession extends Dumpable {
 
     boolean isInTransaction();
 
-    void setAutocommit(boolean autocommit);
-
     boolean isAutocommit();
+
+    void setAutocommit(boolean autocommit);
 
     MycatConnection getConnection(String targetName);
 
@@ -56,6 +49,8 @@ public interface TransactionSession extends Dumpable {
 
     int getTransactionIsolation();
 
+    void setTransactionIsolation(int transactionIsolation);
+
     ThreadUsageEnum getThreadUsageEnum();
 
     void clearJdbcConnection();
@@ -64,7 +59,7 @@ public interface TransactionSession extends Dumpable {
 
     String resolveFinalTargetName(String targetName);
 
-    String resolveFinalTargetName(String targetName,boolean master);
+    String resolveFinalTargetName(String targetName, boolean master);
 
     TransactionType transactionType();
 

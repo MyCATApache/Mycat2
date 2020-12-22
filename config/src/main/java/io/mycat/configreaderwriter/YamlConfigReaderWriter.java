@@ -17,7 +17,7 @@ public class YamlConfigReaderWriter implements ConfigReaderWriter {
     @Override
     @SneakyThrows
     public <T> T transformation(String text, Class<T> clazz) {
-        return YamlUtil.load(text,clazz);
+        return YamlUtil.load(text, clazz);
     }
 
     @Override

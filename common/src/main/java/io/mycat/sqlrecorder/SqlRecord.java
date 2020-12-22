@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Data
 public class SqlRecord implements Comparable<SqlRecord> {
+    private static final AtomicLong IDS = new AtomicLong();
+    public List<SqlRecord> phySqlRecords = new ArrayList<>();
     private long id;
     private Object sql;            //SQL
     private long sqlRows;        //结果集行数或者影响的行数
     private long startTime;        //开始时间
-    private long endTime;        //结束时间
-    private String target;
     //    private long parseStartTime; //解析sql开始时间
 //    private long parseEndTime; //解析sql结束时间
 //    private long compileSqlStartTime; //编译sql开始时间
@@ -23,20 +23,19 @@ public class SqlRecord implements Comparable<SqlRecord> {
 //    private long rboEndTime; //RBO结束时间
 //    private long connectionStartTime; //获得连接开始时间
 //    private long connectionEndTime; //获得连接结束时间
-
-
-    public List<SqlRecord> phySqlRecords = new ArrayList<>();
-
-    private static final AtomicLong IDS = new AtomicLong();
+    private long endTime;        //结束时间
+    private String target;
 
     public SqlRecord() {
         id = IDS.getAndIncrement();
     }
+
     public SqlRecord(long id) {
         this.id = id;
     }
-    public void setEndTime() {
-        endTime = SqlRecorderRuntime.INSTANCE.now();
+
+    public static long now() {
+        return SqlRecorderRuntime.INSTANCE.now();
     }
 //
 //    public void setConnectionEndTime() {
@@ -50,6 +49,14 @@ public class SqlRecord implements Comparable<SqlRecord> {
 //    public void setConnectionStartTime() {
 //        connectionStartTime = SqlRecorderRuntime.INSTANCE.now();
 //    }
+
+    public static SqlRecord create() {
+        return new SqlRecord();
+    }
+
+    public void setEndTime() {
+        endTime = SqlRecorderRuntime.INSTANCE.now();
+    }
 
     public void addSubRecord(Object sql,
                              long startTime,
@@ -72,14 +79,6 @@ public class SqlRecord implements Comparable<SqlRecord> {
 //        sqlRecord.setConnectionEndTime(connectionEndTime);
         sqlRecord.setSqlRows(rowCount);
         phySqlRecords.add(sqlRecord);
-    }
-
-    public static long now() {
-        return SqlRecorderRuntime.INSTANCE.now();
-    }
-
-    public static SqlRecord create() {
-        return new SqlRecord();
     }
 
     @Override

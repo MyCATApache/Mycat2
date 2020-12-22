@@ -1,8 +1,6 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatResponse;
-import io.mycat.beans.resultset.MycatResultSetType;
 
 import java.io.Closeable;
 import java.math.BigDecimal;

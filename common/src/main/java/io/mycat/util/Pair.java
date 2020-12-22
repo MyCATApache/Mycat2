@@ -33,30 +33,32 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode
 public final class Pair<K, V> {
 
-  private static final int HASH_CONST = 37;
-  private final K key;
-  private final V value;
+    private static final int HASH_CONST = 37;
+    private final K key;
+    private final V value;
 
-  public Pair(K key, V value) {
-    this.key = key;
-    this.value = value;
-  }
-  public static <K,V> Pair of(K key, V value) {
-return   new Pair<>(key,value);
-  }
-  public K getKey() {
-    return key;
-  }
+    public Pair(K key, V value) {
+        this.key = key;
+        this.value = value;
+    }
 
-  public V getValue() {
-    return value;
-  }
+    public static <K, V> Pair of(K key, V value) {
+        return new Pair<>(key, value);
+    }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("(").append(key).append(", ").append(value).append(")");
-    return sb.toString();
-  }
+    public K getKey() {
+        return key;
+    }
+
+    public V getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("(").append(key).append(", ").append(value).append(")");
+        return sb.toString();
+    }
 
 }

@@ -31,7 +31,7 @@ import java.text.MessageFormat;
 
 /**
  * Desc: yml文件的工具类
- *
+ * <p>
  * date: 09/09/2017
  *
  * @author: gaozhiwen
@@ -65,11 +65,13 @@ public class YamlUtil {
             }
         }
     }
+
     public static <T> T load(Class<T> clazz, Reader fis) {
-        return   getYaml().loadAs(fis, clazz);
+        return getYaml().loadAs(fis, clazz);
     }
-    public static <T> T loadText(String text,Class<T> clazz) {
-        return   getYaml().loadAs(text, clazz);
+
+    public static <T> T loadText(String text, Class<T> clazz) {
+        return getYaml().loadAs(text, clazz);
     }
 
     @NotNull

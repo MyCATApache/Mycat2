@@ -4,7 +4,6 @@ import io.mycat.config.ClusterConfig;
 import io.mycat.util.JsonUtil;
 
 import java.text.MessageFormat;
-import java.util.List;
 
 public class DropClusterHint extends HintBuilder {
     private ClusterConfig config;
@@ -18,6 +17,11 @@ public class DropClusterHint extends HintBuilder {
         return dropClusterHint.build();
     }
 
+    public static DropClusterHint create(ClusterConfig clusterConfig) {
+        DropClusterHint dropClusterHint = new DropClusterHint();
+        dropClusterHint.setConfig(clusterConfig);
+        return dropClusterHint;
+    }
 
     public void setConfig(ClusterConfig config) {
         this.config = config;
@@ -33,11 +37,5 @@ public class DropClusterHint extends HintBuilder {
         return MessageFormat.format("/*! mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(config));
-    }
-
-    public static DropClusterHint create(ClusterConfig clusterConfig) {
-        DropClusterHint dropClusterHint = new DropClusterHint();
-        dropClusterHint.setConfig(clusterConfig);
-        return dropClusterHint;
     }
 }

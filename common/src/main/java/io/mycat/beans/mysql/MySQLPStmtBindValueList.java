@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,16 +23,16 @@ package io.mycat.beans.mysql;
  * 预处理语句 参数与值得绑定类
  **/
 public class MySQLPStmtBindValueList {
+    private final MySQLPreparedStatement preparedStatement;
     Object[] valueList;
     int[] parameterTypeList;
-    private final MySQLPreparedStatement preparedStatement;
     private byte[] nullBitMap;
 
     public MySQLPStmtBindValueList(MySQLPreparedStatement preparedStatement) {
         this.preparedStatement = preparedStatement;
         this.parameterTypeList = preparedStatement.getParameterTypeList();
         this.valueList = new Object[parameterTypeList.length];
-        this. nullBitMap  = new byte[(parameterTypeList.length + 7) / 8];
+        this.nullBitMap = new byte[(parameterTypeList.length + 7) / 8];
     }
 
     public Object[] getValueList() {
@@ -64,7 +64,7 @@ public class MySQLPStmtBindValueList {
         } else if (aClass == Float.class) {
             actuallyType = MySQLFieldsType.FIELD_TYPE_FLOAT;
         } else if (aClass == byte[].class) {
-            preparedStatement.putLongDataForBuildLongData(index,(byte[]) value);
+            preparedStatement.putLongDataForBuildLongData(index, (byte[]) value);
             actuallyType = MySQLFieldsType.FIELD_TYPE_BLOB;
         } else {
             throw new IllegalArgumentException("unsupport!");
@@ -73,7 +73,7 @@ public class MySQLPStmtBindValueList {
             preparedStatement.setNewParameterBoundFlag(true);
             this.parameterTypeList[index] = actuallyType;
         }
-        if (aClass != byte[].class){
+        if (aClass != byte[].class) {
             valueList[index] = value;
         }
     }

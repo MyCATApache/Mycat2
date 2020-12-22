@@ -17,9 +17,6 @@ package io.mycat.api.collector;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,9 +24,8 @@ import java.util.Objects;
 
 
 /**
- *
  * chen junwen
- *
+ * <p>
  * a iterator,like jdbc result set
  */
 public abstract class AbstractObjectRowIterator implements RowBaseIterator {
@@ -111,7 +107,7 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     public LocalDate getDate(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return (LocalDate ) o;
+        return (LocalDate) o;
     }
 
     @Override

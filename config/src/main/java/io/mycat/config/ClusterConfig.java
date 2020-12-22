@@ -33,6 +33,11 @@ public class ClusterConfig {
     public ClusterConfig() {
     }
 
+    public static void main(String[] args) {
+        ClusterConfig clusterConfig = new ClusterConfig();
+        System.out.println(JsonUtil.toJson(clusterConfig));
+    }
+
     public List<String> allDatasources() {
         if (masters == null) {
             masters = Collections.emptyList();
@@ -44,11 +49,6 @@ public class ClusterConfig {
         nodes.addAll(masters);
         nodes.addAll(replicas);
         return nodes;
-    }
-
-    public static void main(String[] args) {
-        ClusterConfig clusterConfig = new ClusterConfig();
-        System.out.println(JsonUtil.toJson(clusterConfig));
     }
 
 }

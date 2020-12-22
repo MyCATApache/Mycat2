@@ -74,6 +74,38 @@ public class PreparedStatement {
         this.longDataMap = new HashMap<>();
     }
 
+    public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
+        if (o == null) {
+            return new SQLNullExpr();
+        }
+
+        if (o instanceof String) {
+            return new SQLCharExpr((String) o);
+        }
+
+        if (o instanceof BigDecimal) {
+            return new SQLDecimalExpr((BigDecimal) o);
+        }
+
+        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
+            return new SQLIntegerExpr((Number) o);
+        }
+
+        if (o instanceof Number) {
+            return new SQLNumberExpr((Number) o);
+        }
+
+        if (o instanceof Date) {
+            return new SQLTimestampExpr((Date) o, timeZone);
+        }
+
+        throw new ParserException("not support class : " + o.getClass());
+    }
+
+    public static SQLExpr fromJavaObject(Object o) {
+        return fromJavaObject(o, null);
+    }
+
     public long getId() {
         return id;
     }
@@ -145,8 +177,8 @@ public class PreparedStatement {
                 statement instanceof SQLInsertStatement ||
                 statement instanceof SQLUpdateStatement ||
                 statement instanceof SQLDeleteStatement) {
-            sqlStatement= statement.clone();
-        }else {
+            sqlStatement = statement.clone();
+        } else {
             sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
         }
 
@@ -170,38 +202,6 @@ public class PreparedStatement {
             }
         });
         return sqlStatement;
-    }
-
-    public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
-        if (o == null) {
-            return new SQLNullExpr();
-        }
-
-        if (o instanceof String) {
-            return new SQLCharExpr((String) o);
-        }
-
-        if (o instanceof BigDecimal) {
-            return new SQLDecimalExpr((BigDecimal) o);
-        }
-
-        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
-            return new SQLIntegerExpr((Number) o);
-        }
-
-        if (o instanceof Number) {
-            return new SQLNumberExpr((Number) o);
-        }
-
-        if (o instanceof Date) {
-            return new SQLTimestampExpr((Date) o, timeZone);
-        }
-
-        throw new ParserException("not support class : " + o.getClass());
-    }
-
-    public static SQLExpr fromJavaObject(Object o) {
-        return fromJavaObject(o, null);
     }
 
     public BindValue[] getBindValues() {

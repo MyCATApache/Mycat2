@@ -2,7 +2,6 @@ package io.mycat.sqlrecorder;
 
 import io.mycat.ScheduleUtil;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -13,6 +12,7 @@ import java.util.stream.Collectors;
 public enum SqlRecorderRuntime implements SimpleAnalyzer {
     INSTANCE;
 
+    public static long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
     private final ConcurrentLinkedDeque<SqlRecord> context = new ConcurrentLinkedDeque<>();
     private long now;
 
@@ -30,14 +30,12 @@ public enum SqlRecorderRuntime implements SimpleAnalyzer {
         return sqlRecords;
     }
 
-    public static long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
-
     @Override
     public void addSqlRecord(SqlRecord record) {
         if (record != null) {
             boolean anyAllow = true;
             boolean condition = (record.getEndTime() - record.getStartTime()) > ONE_SECOND;
-            if (anyAllow||condition) {
+            if (anyAllow || condition) {
                 if (context.size() > 5000) {
                     context.removeFirst();
                 }

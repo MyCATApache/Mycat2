@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <mycat>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -262,9 +262,8 @@ public class SplitUtil {
     }
 
     public static String[] splitByByteSize(String string, int size) {
-        if (size < 2)
-        {
-         return    new String[]{string};
+        if (size < 2) {
+            return new String[]{string};
         }
         byte[] bytes = string.getBytes();
         if (bytes.length <= size) {
@@ -284,7 +283,7 @@ public class SplitUtil {
                 break;
             }
             if (bytes[position - 1] > 0
-                    || (bytes[position - 1] < 0 && bytes[position - 2] < 0)){
+                    || (bytes[position - 1] < 0 && bytes[position - 2] < 0)) {
                 // 截断点是字母,或者是汉字
                 length = size;
             } else {

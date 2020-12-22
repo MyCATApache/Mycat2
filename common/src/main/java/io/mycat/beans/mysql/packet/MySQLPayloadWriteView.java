@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,44 +22,45 @@ package io.mycat.beans.mysql.packet;
  **/
 public interface MySQLPayloadWriteView<T extends MySQLPayloadWriteView<T>> {
 
-  T writeLong(long l);
+    T writeLong(long l);
 
-  T writeFixInt(int length, long val);
+    T writeFixInt(int length, long val);
 
-  T writeLenencInt(long val);
+    T writeLenencInt(long val);
 
-  T writeFixString(String val);
+    T writeFixString(String val);
 
-  T writeFixString(byte[] val);
+    T writeFixString(byte[] val);
 
-  T writeLenencBytesWithNullable(byte[] bytes);
+    T writeLenencBytesWithNullable(byte[] bytes);
 
-  T writeLenencString(byte[] bytes);
+    T writeLenencString(byte[] bytes);
 
-  T writeLenencString(String val);
+    T writeLenencString(String val);
 
-  T writeBytes(byte[] bytes);
-  T writeBytes(byte[] bytes, int offset, int length);
+    T writeBytes(byte[] bytes);
 
-  T writeNULString(String val);
+    T writeBytes(byte[] bytes, int offset, int length);
 
-  T writeNULString(byte[] vals);
+    T writeNULString(String val);
 
-  T writeEOFString(String val);
+    T writeNULString(byte[] vals);
 
-  T writeEOFStringBytes(byte[] bytes);
+    T writeEOFString(String val);
 
-  T writeLenencBytes(byte[] bytes);
+    T writeEOFStringBytes(byte[] bytes);
 
-  T writeLenencBytes(byte[] bytes, byte[] nullValue);
+    T writeLenencBytes(byte[] bytes);
 
-  T writeByte(byte val);
+    T writeLenencBytes(byte[] bytes, byte[] nullValue);
 
-  default T writeByte(int val) {
-    return writeByte((byte) val);
-  }
+    T writeByte(byte val);
 
-  T writeReserved(int length);
+    default T writeByte(int val) {
+        return writeByte((byte) val);
+    }
 
-  T writeDouble(double d);
+    T writeReserved(int length);
+
+    T writeDouble(double d);
 }

@@ -22,8 +22,8 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- *  date 2019-05-05 16:22
- *
+ * date 2019-05-05 16:22
+ * <p>
  * mysql 状态 字符集 INDEX_TO_CHARSET
  **/
 public class MySQLCollationIndex {

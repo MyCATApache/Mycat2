@@ -29,84 +29,6 @@ public class DatasourceConfig {
     private String jdbcDriverClass;//保留属性
     private String type = DatasourceType.JDBC.name();
 
-    public List<String> getInitSqls() {
-        if (initSqls == null) initSqls = Collections.emptyList();
-        return initSqls;
-    }
-//
-//        public boolean isMySQLType() {
-//            return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
-//        }
-//
-//        public boolean isJdbcType() {
-//            return getUrl() != null;
-//        }
-
-    public DatasourceType computeType() {
-        return DatasourceType.valueOf(type);
-    }
-
-    public static enum DatasourceType {
-        NATIVE(true, true),
-        JDBC(false, true),
-        NATIVE_JDBC(true, true);
-        boolean isJdbc;
-        boolean isNative;
-
-        DatasourceType(boolean isNative, boolean isJdbc) {
-            this.isNative = isNative;
-            this.isJdbc = isJdbc;
-
-        }
-
-        public boolean isNative() {
-            return this.isNative;
-        }
-
-        public boolean isJdbc() {
-            return this.isJdbc;
-        }
-    }
-
-    public void setUrl(String url) {
-        if ("mysql".equalsIgnoreCase(getDbType())) {
-            ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(url);
-            Map<String, String> properties = new HashMap<>(connectionUrlParser.getProperties());
-            if (!properties.containsKey("useUnicode")) {
-                properties.put("useUnicode", "true");
-            }
-            if (!properties.containsKey("characterEncoding")) {
-                properties.put("characterEncoding", "UTF-8");
-            }
-            if (!properties.containsKey("serverTimezone")) {
-                properties.put("serverTimezone", "UTC");
-            }
-            int i = url.indexOf('?');
-            if (i == -1) {
-                url += "?";
-            } else {
-                url = url.substring(0, i + 1);
-            }
-            url += properties.entrySet().stream().map(j -> j.getKey() + "=" + j.getValue())
-                    .collect(Collectors.joining("&"));
-        }
-        this.url = url;
-    }
-
-    public String getDbType() {
-        if (dbType == null) {
-            String dbTypeRaw = getDbTypeRaw(getUrl());
-            if (dbTypeRaw != null) {
-                dbType = dbTypeRaw;
-            }
-        }
-        return dbType;
-    }
-
-    public void setDbType(String dbType) {
-        this.dbType = Objects.requireNonNull(dbType, "dbType is null");
-    }
-
     public static String getDbTypeRaw(String rawUrl) {
         if (rawUrl == null) {
             return null;
@@ -209,6 +131,84 @@ public class DatasourceConfig {
             return "polardb";
         } else {
             return null;
+        }
+    }
+//
+//        public boolean isMySQLType() {
+//            return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
+//        }
+//
+//        public boolean isJdbcType() {
+//            return getUrl() != null;
+//        }
+
+    public List<String> getInitSqls() {
+        if (initSqls == null) initSqls = Collections.emptyList();
+        return initSqls;
+    }
+
+    public DatasourceType computeType() {
+        return DatasourceType.valueOf(type);
+    }
+
+    public void setUrl(String url) {
+        if ("mysql".equalsIgnoreCase(getDbType())) {
+            ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(url);
+            Map<String, String> properties = new HashMap<>(connectionUrlParser.getProperties());
+            if (!properties.containsKey("useUnicode")) {
+                properties.put("useUnicode", "true");
+            }
+            if (!properties.containsKey("characterEncoding")) {
+                properties.put("characterEncoding", "UTF-8");
+            }
+            if (!properties.containsKey("serverTimezone")) {
+                properties.put("serverTimezone", "UTC");
+            }
+            int i = url.indexOf('?');
+            if (i == -1) {
+                url += "?";
+            } else {
+                url = url.substring(0, i + 1);
+            }
+            url += properties.entrySet().stream().map(j -> j.getKey() + "=" + j.getValue())
+                    .collect(Collectors.joining("&"));
+        }
+        this.url = url;
+    }
+
+    public String getDbType() {
+        if (dbType == null) {
+            String dbTypeRaw = getDbTypeRaw(getUrl());
+            if (dbTypeRaw != null) {
+                dbType = dbTypeRaw;
+            }
+        }
+        return dbType;
+    }
+
+    public void setDbType(String dbType) {
+        this.dbType = Objects.requireNonNull(dbType, "dbType is null");
+    }
+
+    public static enum DatasourceType {
+        NATIVE(true, true),
+        JDBC(false, true),
+        NATIVE_JDBC(true, true);
+        boolean isJdbc;
+        boolean isNative;
+
+        DatasourceType(boolean isNative, boolean isJdbc) {
+            this.isNative = isNative;
+            this.isJdbc = isJdbc;
+
+        }
+
+        public boolean isNative() {
+            return this.isNative;
+        }
+
+        public boolean isJdbc() {
+            return this.isJdbc;
         }
     }
 }

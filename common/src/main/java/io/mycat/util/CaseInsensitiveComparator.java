@@ -35,6 +35,35 @@ import java.util.Comparator;
 class CaseInsensitiveComparator implements Comparator {
     static final CaseInsensitiveComparator COMPARATOR = new CaseInsensitiveComparator();
 
+    public static int innerCompare(Object o1, Object o2) {
+        String s1 = o1.toString();
+        String s2 = o2.toString();
+        int c = s1.compareToIgnoreCase(s2);
+        if (c != 0) {
+            return c;
+        }
+        if (o1 instanceof Key) {
+            return ((Key) o1).compareResult;
+        }
+        if (o2 instanceof Key) {
+            return -((Key) o2).compareResult;
+        }
+        return s1.compareTo(s2);
+    }
+
+    Object floorKey(String key) {
+        return new Key(key, -1);
+    }
+
+    Object ceilingKey(String key) {
+        return new Key(key, 1);
+    }
+
+    @Override
+    public int compare(Object o1, Object o2) {
+        return innerCompare(o1, o2);
+    }
+
     /**
      * Enables to create floor and ceiling keys for given string.
      */
@@ -56,34 +85,5 @@ class CaseInsensitiveComparator implements Comparator {
         public int compareTo(@NotNull Object o) {
             return innerCompare(this, o);
         }
-    }
-
-    Object floorKey(String key) {
-        return new Key(key, -1);
-    }
-
-    Object ceilingKey(String key) {
-        return new Key(key, 1);
-    }
-
-    @Override
-    public int compare(Object o1, Object o2) {
-        return innerCompare(o1, o2);
-    }
-
-    public static int innerCompare(Object o1, Object o2) {
-        String s1 = o1.toString();
-        String s2 = o2.toString();
-        int c = s1.compareToIgnoreCase(s2);
-        if (c != 0) {
-            return c;
-        }
-        if (o1 instanceof Key) {
-            return ((Key) o1).compareResult;
-        }
-        if (o2 instanceof Key) {
-            return -((Key) o2).compareResult;
-        }
-        return s1.compareTo(s2);
     }
 }

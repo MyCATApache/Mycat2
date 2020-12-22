@@ -111,16 +111,6 @@ public class DrdsRunner {
         this.schemas = convertRoSchemaPlus(config);
     }
 
-//    public List<String> explainSql(String originalSql) {
-//        List<String> lines = new ArrayList<>(1);
-//        Iterable<RowBaseIterator> objects = (Iterable) preParse(originalSql, Collections.emptyList());
-//        RowBaseIterator rowBaseIterator = objects.iterator().next();
-//        while (rowBaseIterator.next()) {
-//            lines.add(rowBaseIterator.getString(1));
-//        }
-//        return lines;
-//    }
-
     @SneakyThrows
     public MycatRel doHbt(String hbtText, MycatDataContext dataContext) {
         log.debug("reveice hbt");
@@ -678,8 +668,6 @@ public class DrdsRunner {
     );
 
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {
-        boolean complex = (isComplex(logPlan));
-        optimizationContext.setComplex(complex);
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(128);
         builder.addRuleCollection(FILTER);

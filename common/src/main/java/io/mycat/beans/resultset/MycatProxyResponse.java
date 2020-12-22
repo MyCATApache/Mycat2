@@ -2,7 +2,6 @@ package io.mycat.beans.resultset;
 
 import io.mycat.ExecuteType;
 import lombok.Getter;
-import lombok.ToString;
 
 import java.io.IOException;
 
@@ -13,16 +12,16 @@ public class MycatProxyResponse implements MycatResponse {
     final String targetName;
     final String sql;
 
-    public static MycatProxyResponse create(ExecuteType executeType, String targetName, String sql) {
-        return new MycatProxyResponse(executeType, targetName, sql);
-    }
-
     public MycatProxyResponse(ExecuteType executeType,
                               String targetName,
                               String sql) {
         this.executeType = executeType;
         this.targetName = targetName;
         this.sql = sql;
+    }
+
+    public static MycatProxyResponse create(ExecuteType executeType, String targetName, String sql) {
+        return new MycatProxyResponse(executeType, targetName, sql);
     }
 
     @Override
