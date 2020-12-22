@@ -198,17 +198,6 @@
 <!--            <version>1.7.25</version>-->
 
 <!--        </dependency>-->
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
             <groupId>junit</groupId>
@@ -265,12 +254,6 @@
         <dependency>
             <groupId>org.apache.calcite.avatica</groupId>
             <artifactId>avatica-core</artifactId>
-            <version>1.17.0</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.calcite.avatica/avatica-server -->
-        <dependency>
-            <groupId>org.apache.calcite.avatica</groupId>
-            <artifactId>avatica-server</artifactId>
             <version>1.17.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/net.hydromatic/foodmart-data-hsqldb -->
@@ -437,11 +420,6 @@
 <!--            <version>1.7.25</version>-->
 
 <!--        </dependency>-->
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit</artifactId>
