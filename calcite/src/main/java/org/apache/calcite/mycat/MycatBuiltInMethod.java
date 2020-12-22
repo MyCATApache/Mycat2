@@ -2,7 +2,6 @@ package org.apache.calcite.mycat;
 
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
-import org.eclipse.jetty.server.handler.ScopedHandler;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
