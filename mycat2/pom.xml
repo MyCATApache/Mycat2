@@ -354,10 +354,6 @@
                                         <include name="mycat/logs"/>
                                         <include name="mycat/lib/**"/>
                                     </tarfileset>
-                                    <tarfileset dir="${project.basedir}/../example/src/main/resources/io"
-                                                filemode="755">
-                                        <include name="**"/>
-                                    </tarfileset>
                                     <tarfileset dir="${project.basedir}/..">
                                         <include name="README.md"/>
                                     </tarfileset>
