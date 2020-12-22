@@ -94,7 +94,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
 
     public void setReadOnly(boolean readOnly) {
-        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
+//        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
     }
 
 
