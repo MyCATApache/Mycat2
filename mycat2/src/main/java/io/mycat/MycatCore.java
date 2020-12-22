@@ -75,7 +75,7 @@ public class MycatCore {
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
-                String zkAddress = System.getProperty("zk_address");
+                String zkAddress = System.getProperty("zk_address",(String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
                     metadataStorageManager =
                             new CoordinatorMetadataStorageManager(
