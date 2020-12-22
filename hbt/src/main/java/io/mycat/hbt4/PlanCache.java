@@ -20,27 +20,27 @@ import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.PriorityQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public enum PlanCache {
     INSTANCE;
 
-    private LoadingCache<String, PriorityQueue<Plan>> cache;
+    private LoadingCache<String, AtomicReference<Plan>> cache;
 
     PlanCache() {
         this.cache = newCache();
     }
 
     @NotNull
-    private LoadingCache<String, PriorityQueue<Plan>> newCache() {
-        LoadingCache<String, PriorityQueue<Plan>> cache = CacheBuilder.newBuilder()
+    private LoadingCache<String, AtomicReference<Plan>> newCache() {
+        LoadingCache<String, AtomicReference<Plan>> cache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
                 .expireAfterWrite(10, TimeUnit.MINUTES)
                 .build(
-                        new CacheLoader<String, PriorityQueue<Plan>>() {
-                            public PriorityQueue<Plan> load(String key) {
-                                return new PriorityQueue<Plan>(Comparable::compareTo);
+                        new CacheLoader<String, AtomicReference<Plan>>() {
+                            public AtomicReference<Plan> load(String key) {
+                                return new AtomicReference<Plan>();
                             }
                         });
         return cache;
@@ -48,27 +48,26 @@ public enum PlanCache {
 
 
     public Plan getMinCostPlan(String sql) {
-        PriorityQueue<Plan> plans = computeIfAbsent(sql);
-        if (plans == null) return null;
-        synchronized (plans) {
-            if (plans.isEmpty()) {
-                return null;
-            } else {
-                return plans.peek();
-            }
-        }
+        AtomicReference<Plan> plans = computeIfAbsent(sql);
+        return plans.get();
     }
 
     @SneakyThrows
-    private PriorityQueue<Plan> computeIfAbsent(String sql) {
-        return this.cache.get(sql, () -> new PriorityQueue<Plan>(Comparable::compareTo));
+    private AtomicReference<Plan> computeIfAbsent(String sql) {
+        return this.cache.get(sql, () -> new AtomicReference<Plan>());
     }
 
-    public void put(String sql, Plan plan) {
-        PriorityQueue<Plan> plans = computeIfAbsent(sql);
-        synchronized (plans) {
-            plans.add(plan);
-        }
+    public void put(String sql, Plan update) {
+        AtomicReference<Plan> plans = computeIfAbsent(sql);
+        plans.updateAndGet(plan -> {
+            if (plan == null) {
+                return update;
+            }
+            if (plan.compareTo(update) <= 0) {
+                return plan;
+            }
+            return update;
+        });
     }
 
     public void clear() {
