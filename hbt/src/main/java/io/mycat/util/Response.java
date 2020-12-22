@@ -10,6 +10,8 @@ public interface Response {
 
     void sendError(Throwable e);
 
+    void proxySelectToPrototype(String statement);
+
     void proxySelect(String defaultTargetName, String statement);
 
     void proxyUpdate(String defaultTargetName, String proxyUpdate);

@@ -54,7 +54,6 @@ public class ViewExecutor implements Executor {
         this.factory = factory;
         this.expandToSql = this.view.expandToSql(forUpdate, params);
 
-        ReplicaSelectorRuntime selector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         this.inTransaction = context.isInTransaction();
         List<String> targets = this.expandToSql.keys().asList();
         if (inTransaction) {

@@ -185,8 +185,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     @Override
-    public String getTxId() {
+    public String resolveFinalTargetName(String targetName, boolean master) {
         return null;
     }
-
 }

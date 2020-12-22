@@ -681,12 +681,6 @@ public enum MycatCalciteSupport implements Context {
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
     }
 
-    public String getDbTypeByTargetName(String name) {
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
-        return dbTypeText;
-    }
-
     public SqlDialect getSqlDialectByTargetName(String name) {
         ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);

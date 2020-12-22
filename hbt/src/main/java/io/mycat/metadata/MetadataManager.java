@@ -463,7 +463,6 @@ public class MetadataManager implements MysqlVariableService {
                 String targetName = backendTableInfo.getTargetName();
                 String schema = backendTableInfo.getSchema();
                 String table = backendTableInfo.getTable();
-                targetName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
                 try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
                     DatabaseMetaData metaData = connection.getRawConnection().getMetaData();
                     return CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema, table);
@@ -480,8 +479,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String targetName) {
-        String dataSourceName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(dataSourceName)) {
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             Connection rawConnection = connection.getRawConnection();
             DatabaseMetaData metaData = rawConnection.getMetaData();
             return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);

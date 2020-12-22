@@ -41,9 +41,8 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
             return ;
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
-        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> selectorRuntime.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> dataContext.resolveDatasourceTargetName(name)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {

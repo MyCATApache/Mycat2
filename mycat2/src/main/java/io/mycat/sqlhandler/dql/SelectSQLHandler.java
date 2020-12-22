@@ -136,7 +136,6 @@ public class SelectSQLHandler extends ShardingSQLHandler {
 
         ///////////////////////////////common///////////////////////////////
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
         String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
         if (schemaName == null) {
@@ -155,11 +154,11 @@ public class SelectSQLHandler extends ShardingSQLHandler {
                     receiver.proxySelect(targetNameOptional.get(), statement.toString());
                     return;
                 } else {
-                    receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
+                    receiver.proxySelectToPrototype(statement.toString());
                     return;
                 }
             } else {
-                receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
+                receiver.proxySelectToPrototype(statement.toString());
                 return;
             }
         }
@@ -180,13 +179,6 @@ public class SelectSQLHandler extends ShardingSQLHandler {
         return;
     }
 
-
-    public String getPrototypeOrRandomReplicaDataSource() {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        Optional<String> prototype = Optional.ofNullable(metadataManager.getPrototype());
-        return prototype.orElseGet(selectorRuntime::getDatasourceNameByRandom);
-    }
 
     private TableHandler chooseTableHandler(NameMap<TableHandler> tableMap, Set<String> tables) {
         for (String table : tables) {

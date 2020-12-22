@@ -37,6 +37,11 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
+    public void proxySelectToPrototype(String statement) {
+        proxySelect("prototype",statement);
+    }
+
+    @Override
     public void proxySelect(String defaultTargetName, String statement) {
         execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
     }
@@ -100,8 +105,7 @@ public class ReceiverImpl implements Response {
     @Override
     public void execute(ExplainDetail detail) {
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        String datasource = selectorRuntime.getDatasourceNameByReplicaName(Objects.requireNonNull(detail.getTarget()), master, detail.getBalance());
+        String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(),master);
         sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(detail.getExecuteType(), datasource, detail.getSql()));
     }
 

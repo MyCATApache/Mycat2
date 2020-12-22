@@ -64,6 +64,8 @@ public interface TransactionSession extends Dumpable {
 
     String resolveFinalTargetName(String targetName);
 
+    String resolveFinalTargetName(String targetName,boolean master);
+
     TransactionType transactionType();
 
     /**

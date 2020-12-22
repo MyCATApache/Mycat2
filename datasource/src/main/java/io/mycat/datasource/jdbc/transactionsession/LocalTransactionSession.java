@@ -39,12 +39,11 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     @Override
     @SneakyThrows
     public MycatConnection getConnection(String targetName) {
-        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        targetName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, isInTransaction(), null);
+        targetName = resolveFinalTargetName(targetName);
         DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
         if (defaultConnection != null) {
-            if(defaultConnection.getRawConnection().getAutoCommit()){
-                if (isInTransaction()){
+            if (defaultConnection.getRawConnection().getAutoCommit()) {
+                if (isInTransaction()) {
                     defaultConnection.getRawConnection().setAutoCommit(false);
                 }
             }

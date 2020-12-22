@@ -29,10 +29,8 @@ public class SequenceMySQLGenerator implements SequenceHandler {
 
     public void init(String sql, String targetName) {
         init(sql, targetName, (s, s2) -> {
-            ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            String datasourceName = selectorRuntime.getDatasourceNameByReplicaName(s, true, null);
-            JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(datasourceName);
+            JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
             try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
                 try (Statement statement = connection1.createStatement()) {
                     try (ResultSet resultSet = statement.executeQuery(s2)) {

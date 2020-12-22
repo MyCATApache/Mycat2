@@ -38,7 +38,7 @@ datasource:
                  maxRetryCount: 3, #连接重试次数
                  maxConnectTimeout: 10000, #连接超时时间 毫秒
                  dbType: mysql, #
-                 url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
+                 url: 'jdbc:mysql://127.0.0.1:3306/mysql?useUnicode=true&serverTimezone=UTC',
                  weight: 1, #负载均衡权重
                  initSqls: []
                   , #建立连接后执行的sql,在此可以写上use xxx初始化默认database

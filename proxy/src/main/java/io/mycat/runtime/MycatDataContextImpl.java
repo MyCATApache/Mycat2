@@ -345,6 +345,11 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
+    public String resolveDatasourceTargetName(String targetName, boolean master) {
+        return null;
+    }
+
+    @Override
     public Map<Long, PreparedStatement> getPrepareInfo() {
         return preparedStatementMap;
     }

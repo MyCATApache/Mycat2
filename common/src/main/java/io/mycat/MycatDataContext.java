@@ -114,7 +114,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     void block(Runnable runnable);
 
     public String resolveDatasourceTargetName(String targetName);
-
+    public String resolveDatasourceTargetName(String targetName,boolean master);
     Map<Long, PreparedStatement> getPrepareInfo();
 
     SqlRecord startSqlRecord();

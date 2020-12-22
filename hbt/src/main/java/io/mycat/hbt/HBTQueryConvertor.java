@@ -95,8 +95,6 @@ public class HBTQueryConvertor {
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-                targetName = selectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
                 try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
