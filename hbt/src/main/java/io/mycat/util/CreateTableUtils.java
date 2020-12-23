@@ -1,7 +1,9 @@
 package io.mycat.util;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.statement.SQLTableElement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -9,6 +11,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static io.mycat.util.DDLHelper.createDatabaseIfNotExist;
@@ -43,6 +46,12 @@ public class CreateTableUtils {
         mySqlCreateTableStatement.setTableGroup("");
         mySqlCreateTableStatement.setTablePartitionBy(null);
         mySqlCreateTableStatement.setTablePartitions(null);
+
+        // 删掉阿里的 全局表语法 (不使用)
+        List<SQLTableElement> tableElementList = mySqlCreateTableStatement.getTableElementList();
+        if(tableElementList != null){
+            tableElementList.removeIf(e-> e instanceof MySqlTableIndex && ((MySqlTableIndex) e).isGlobal());
+        }
         return mySqlCreateTableStatement.toString();
     }
 

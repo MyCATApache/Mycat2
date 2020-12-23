@@ -1,14 +1,12 @@
 package io.mycat.calcite.table;
 
-import io.mycat.DataNode;
-import io.mycat.LogicTableType;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.SimpleColumnInfo;
+import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.DDLHelper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static io.mycat.util.CreateTableUtils.createPhysicalTable;
@@ -90,6 +88,11 @@ public class GlobalTable implements GlobalTableHandler {
     @Override
     public List<SimpleColumnInfo> getColumns() {
         return logicTable.getRawColumns();
+    }
+
+    @Override
+    public Map<String,IndexInfo> getIndexes() {
+        return logicTable.getIndexes();
     }
 
     @Override

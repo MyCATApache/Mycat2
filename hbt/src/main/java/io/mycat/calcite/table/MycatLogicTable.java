@@ -25,7 +25,7 @@ import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.LazyRexDistribution;
 import io.mycat.calcite.ShardingInfo;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
+import io.mycat.gsi.GSIService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.rel.type.RelDataType;

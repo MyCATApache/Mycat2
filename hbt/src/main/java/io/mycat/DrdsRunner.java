@@ -49,7 +49,8 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
+import io.mycat.gsi.GSIService;
+import io.mycat.util.LazyTransformCollection;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
@@ -148,25 +149,14 @@ public class DrdsRunner {
 
 
     public Iterable<DrdsSql> preParse(List<SQLStatement> sqlStatements, List<Object> inputParameters) {
-        Iterator<SQLStatement> iterator = sqlStatements.iterator();
-        return () -> new Iterator<DrdsSql>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public DrdsSql next() {
-
-                List<Object> params = new ArrayList<>();
-                SQLStatement sqlStatement = iterator.next();
-                StringBuilder sb = new StringBuilder();
-                MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
-                String string = sb.toString();
-                sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-                return DrdsSql.of(sqlStatement, string, params);
-            }
-        };
+        return LazyTransformCollection.transform(sqlStatements,sqlStatement ->{
+            List<Object> params = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
+            MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
+            String string = sb.toString();
+            sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+            return DrdsSql.of(sqlStatement, string, params);
+        });
     }
 
 
@@ -211,40 +201,30 @@ public class DrdsRunner {
                                                Iterable<DrdsSql> stmtList,
                                                SchemaPlus plus,
                                                MycatDataContext dataContext) {
-        Iterator<DrdsSql> iterator = stmtList.iterator();
-        return () -> new Iterator<DrdsSql>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public DrdsSql next() {
-                RelOptCluster cluster = newCluster();
-                DrdsSql drdsSql = iterator.next();
-                MycatRel rel;
-                Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
-                if (minCostPlan != null) {
-                    switch (minCostPlan.getType()) {
-                        case PARSE:
-                            drdsSql.setRelNode(minCostPlan.getRelNode());
-                            OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                            rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
-                            break;
-                        case FINAL:
-                            rel = (MycatRel) minCostPlan.getRelNode();
-                            break;
-                        default:
-                            throw new UnsupportedOperationException();
-                    }
-                } else {
-                    OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                    rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
+        return LazyTransformCollection.transform(stmtList, drdsSql ->{
+            RelOptCluster cluster = newCluster();
+            MycatRel rel;
+            Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
+            if (minCostPlan != null) {
+                switch (minCostPlan.getType()) {
+                    case PARSE:
+                        drdsSql.setRelNode(minCostPlan.getRelNode());
+                        OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
+                        rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
+                        break;
+                    case FINAL:
+                        rel = (MycatRel) minCostPlan.getRelNode();
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
                 }
-                drdsSql.setRelNode(rel);
-                return drdsSql;
+            } else {
+                OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
+                rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
             }
-        };
+            drdsSql.setRelNode(rel);
+            return drdsSql;
+        });
     }
 
     public MycatRel dispatch(OptimizationContext optimizationContext,

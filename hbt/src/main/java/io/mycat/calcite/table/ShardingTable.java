@@ -1,20 +1,18 @@
 package io.mycat.calcite.table;
 
-import io.mycat.DataNode;
-import io.mycat.LogicTableType;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.SimpleColumnInfo;
+import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.gsi.GSIService;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
 import io.mycat.util.CreateTableUtils;
 import lombok.Getter;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -51,7 +49,12 @@ public class ShardingTable implements ShardingTableHandler {
     }
 
     @Override
-    public Optional canIndexTableScan(int[] projects) {
+    public Map<String, IndexInfo> getIndexes() {
+        return logicTable.getIndexes();
+    }
+
+    @Override
+    public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects) {
         if (MetaClusterCurrent.exist(GSIService.class)) {
             GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
             return gsiService.scanProject(getSchemaName(),getTableName(),projects);

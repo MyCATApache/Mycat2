@@ -87,6 +87,7 @@ public class CalciteConvertors {
 
             }
 
+            int id = 0;
             ArrayList<SimpleColumnInfo> res = new ArrayList<>();
             while (resultSet.next()) {
 
@@ -144,7 +145,8 @@ public class CalciteConvertors {
                 //todo 添加索引 主键信息
 
 
-                res.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, nullable, IS_AUTOINCREMENT, false, false));
+                res.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, nullable,
+                        IS_AUTOINCREMENT, false, false,id++));
             }
             return res;
         } catch (Throwable e) {
@@ -233,7 +235,7 @@ public class CalciteConvertors {
     public static List<SimpleColumnInfo> getColumnInfo(MycatRowMetaData mycatRowMetaData) {
         int columnCount = mycatRowMetaData.getColumnCount();
         List<SimpleColumnInfo> list = new ArrayList<>();
-        for (int i = 1; i <= columnCount; i++) {
+        for (int i = 1,id=0; i <= columnCount; i++,id++) {
             String columnName = mycatRowMetaData.getColumnName(i);
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);
@@ -242,7 +244,8 @@ public class CalciteConvertors {
             boolean primaryKey = mycatRowMetaData.isPrimaryKey(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
             boolean index = mycatRowMetaData.isIndex(i);
-            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType, mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, index));
+            list.add(new SimpleColumnInfo(columnName, precision, scale, jdbcType,
+                    mycatRowMetaData.isNullable(i), autoIncrement, primaryKey, index,id));
         }
         return list;
     }

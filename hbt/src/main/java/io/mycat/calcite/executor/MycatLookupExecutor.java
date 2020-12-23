@@ -90,7 +90,7 @@ public class MycatLookupExecutor implements Executor {
                     RexCorrelVariable variable = (RexCorrelVariable) fieldAccess.getReferenceExpr();
                     int id = variable.id.getId();
                     Row row = args.get(id);
-                    return MycatCalciteSupport.INSTANCE.RexBuilder.makeLiteral(row.getObject(index), type, false);
+                    return MycatCalciteSupport.RexBuilder.makeLiteral(row.getObject(index), type, false);
                 }
                 return super.visitFieldAccess(fieldAccess);
             }
