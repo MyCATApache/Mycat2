@@ -18,10 +18,10 @@ import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.gsi.GSIService;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.router.gsi.GSIService;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
 import lombok.Getter;
@@ -31,8 +31,10 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -344,19 +346,21 @@ public class MycatInsertExecutor implements Executor {
                     MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
                     TransactionSession transactionSession = mycatDataContext.getTransactionSession();
                     String txId = transactionSession.getTxId();
+
+                    List<String> dataNodeKeyList = groupMap.keySet().stream().map(GroupKey::getTarget).collect(Collectors.toList());
                     if (this.multi) {
                         List<List<Object>> paramList = (List) params;
                         for (List<Object> objects : paramList) {
                             gsiService.insert(txId, logicTable.getSchemaName(),
                                     logicTable.getTableName(),
                                     projects
-                                    , objects);
+                                    , objects,dataNodeKeyList);
                         }
                     } else {
                         gsiService.insert(txId, logicTable.getSchemaName(),
                                 logicTable.getTableName(),
                                 projects
-                                , params);
+                                , params,dataNodeKeyList);
                     }
 
                 }

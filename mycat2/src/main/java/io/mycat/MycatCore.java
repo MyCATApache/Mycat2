@@ -4,12 +4,15 @@ import io.mycat.config.MycatServerConfig;
 import io.mycat.config.ServerConfiguration;
 import io.mycat.config.ServerConfigurationImpl;
 import io.mycat.exporter.PrometheusExporter;
+import io.mycat.gsi.GSIService;
+import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,6 +69,8 @@ public class MycatCore {
         context.put(mycatServer.getClass(), mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
         ////////////////////////////////////////////tmp///////////////////////////////////
+//        File gsiMapDBFile = baseDirectory.resolve("gsi.db").toFile();
+//        context.put(GSIService.class,new MapDBGSIService(gsiMapDBFile,null));
         MetaClusterCurrent.register(context);
 
         String mode = serverConfig.getMode();

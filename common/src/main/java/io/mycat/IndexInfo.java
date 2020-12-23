@@ -55,4 +55,9 @@ public class IndexInfo {
             this.columns = Stream.of(mapColumns).filter(Objects::nonNull).toArray(SimpleColumnInfo[]::new);
         }
     }
+
+    @Override
+    public String toString() {
+        return schemaName+"."+tableName+"."+indexName;
+    }
 }

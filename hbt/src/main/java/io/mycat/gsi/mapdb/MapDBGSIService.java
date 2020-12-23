@@ -1,13 +1,14 @@
 package io.mycat.gsi.mapdb;
 
 import io.mycat.DataNode;
+import io.mycat.MetadataManager;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 import io.mycat.gsi.GSIService;
-import io.mycat.metadata.MetadataManager;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.Optional;
 public class MapDBGSIService implements GSIService {
     private final MapDBRepository repository;
 
-    public MapDBGSIService(String file, MetadataManager metadataManager) {
+    public MapDBGSIService(File file, MetadataManager metadataManager) {
         DB db = DBMaker.fileDB(file).make();
         this.repository = new MapDBRepository(db, metadataManager);
     }

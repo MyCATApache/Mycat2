@@ -1,13 +1,9 @@
 package io.mycat.gsi.mapdb;
 
-import io.mycat.IndexInfo;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.SimpleColumnInfo;
-import io.mycat.TableHandler;
+import io.mycat.*;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.gsi.GSIService.IndexValue;
 import io.mycat.gsi.GSIService.RowIndexValues;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
 import io.mycat.util.NameMap;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;

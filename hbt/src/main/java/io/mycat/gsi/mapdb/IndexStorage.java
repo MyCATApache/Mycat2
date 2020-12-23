@@ -67,6 +67,6 @@ public class IndexStorage {
 
     @Override
     public String toString() {
-        return indexInfo.getSchemaName()+"."+indexInfo.getTableName()+"."+indexInfo.getIndexName();
+        return indexInfo.toString();
     }
 }
