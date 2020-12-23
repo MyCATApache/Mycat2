@@ -2559,11 +2559,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         RexImpTable.INSTANCE.get(operator);
 
     if (implementor == null) {
-      if (MycatSessionValueFunction.INSTANCE.getName().equalsIgnoreCase(operator.getName())){
-        implementor = RexImpTable.MycatSessionValueImplementor.INSTANCE;
-      }else {
         throw new RuntimeException("cannot translate call " + call);
-      }
     }
     final List<RexNode> operandList = call.getOperands();
     final List<Type> storageTypes = EnumUtils.internalTypes(operandList);
@@ -2853,7 +2849,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   }
 
   /** Returns the value of a literal. */
-  Object getLiteralValue(Expression expr) {
+  public Object getLiteralValue(Expression expr) {
     if (expr instanceof ParameterExpression) {
       final Expression constantExpr = literalMap.get(expr);
       return getLiteralValue(constantExpr);
