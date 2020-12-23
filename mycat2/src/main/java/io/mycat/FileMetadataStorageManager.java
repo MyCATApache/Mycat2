@@ -338,7 +338,9 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @SneakyThrows
     public void cleanDirectory(Path path) {
-        org.apache.commons.io.FileUtils.cleanDirectory(path.toFile());
+        if (Files.exists(path)){
+            org.apache.commons.io.FileUtils.cleanDirectory(path.toFile());
+        }
     }
 
     private void writeFile(String t, Path filePath) throws IOException {
