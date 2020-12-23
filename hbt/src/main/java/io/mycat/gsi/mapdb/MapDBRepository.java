@@ -36,7 +36,7 @@ public class MapDBRepository {
      *      => 索引名
      *          => 索引数据
      */
-    private Map<String,Map<String,Map<String, IndexStorage>>> schemaTableIndexStorageMap = new LinkedHashMap<>();
+    private Map<String,Map<String,Map<String, IndexStorage>>> schemaTableIndexStorageMap;
     private MetadataManager metadataManager;
     /**
      * 物理存储
@@ -121,8 +121,8 @@ public class MapDBRepository {
 
     public void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> values, List<String> dataNodeKeyList) {
         TableHandler table = getMetadataManager().getTable(schemaName, tableName);
-        Map<String,IndexInfo> indexeMap = table.getIndexes();
-        if(indexeMap == null){
+        Map<String,IndexInfo> indexMap = table.getIndexes();
+        if(indexMap == null){
             return;
         }
 
@@ -134,7 +134,7 @@ public class MapDBRepository {
         if(indexStorageMap == null){
             return;
         }
-        List<RowIndexValues> rowIndexValuesList = getRowIndexValuesList(indexeMap, columnNames, values);
+        List<RowIndexValues> rowIndexValuesList = getRowIndexValuesList(indexMap, columnNames, values);
         for (RowIndexValues rowIndexValues : rowIndexValuesList) {
             IndexInfo indexInfo = rowIndexValues.getIndexInfo();
             IndexStorage indexStorage = indexStorageMap.get(indexInfo.getIndexName());
@@ -196,8 +196,8 @@ public class MapDBRepository {
     }
 
     public Map<String, Map<String, Map<String, IndexStorage>>> getSchemaTableIndexStorageMap() {
-        if(schemaTableIndexStorageMap.isEmpty()){
-            this.schemaTableIndexStorageMap = definitionIndex(metadataManager);
+        if(schemaTableIndexStorageMap == null || schemaTableIndexStorageMap.isEmpty()){
+            this.schemaTableIndexStorageMap = definitionIndex(getMetadataManager());
         }
         return schemaTableIndexStorageMap;
     }
