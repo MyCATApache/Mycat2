@@ -19,14 +19,11 @@ import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
-import io.mycat.calcite.CalciteUtls;
+import io.mycat.util.CalciteUtls;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.hbt3.AbstractMycatTable;
-import io.mycat.hbt3.Distribution;
-import io.mycat.hbt3.LazyRexDistribution;
-import io.mycat.hbt4.ShardingInfo;
-import io.mycat.metadata.GlobalTableHandler;
-import io.mycat.metadata.NormalTableHandler;
+import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.LazyRexDistribution;
+import io.mycat.calcite.ShardingInfo;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.gsi.GSIService;
 import lombok.Getter;
@@ -46,7 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.mycat.calcite.CalciteUtls.unCastWrapper;
+import static io.mycat.util.CalciteUtls.unCastWrapper;
 
 /**
  * @author Junwen Chen

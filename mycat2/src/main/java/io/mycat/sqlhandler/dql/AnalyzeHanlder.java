@@ -7,13 +7,12 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.statistic.StatisticCenter;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 import java.sql.JDBCType;
 import java.util.Arrays;

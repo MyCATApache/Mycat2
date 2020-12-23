@@ -5,19 +5,16 @@ import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLExprComparor;
 import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSetStatement;
 import io.mycat.MySQLVariablesUtil;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 
 public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {

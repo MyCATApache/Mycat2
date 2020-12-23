@@ -8,10 +8,8 @@ import io.mycat.config.SequenceConfig;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 public class CreateSequenceHandler extends AbstractSQLHandler<SQLCreateSequenceStatement> {

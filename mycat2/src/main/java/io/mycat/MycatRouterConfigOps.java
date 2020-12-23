@@ -4,7 +4,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.config.*;
-import io.mycat.metadata.MetadataManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

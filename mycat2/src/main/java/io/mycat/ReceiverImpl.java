@@ -2,15 +2,10 @@ package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
-import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.util.Response;
-import org.apache.calcite.avatica.proto.Common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
