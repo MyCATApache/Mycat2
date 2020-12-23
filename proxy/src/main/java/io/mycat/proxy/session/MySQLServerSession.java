@@ -226,6 +226,5 @@ public interface MySQLServerSession<T> {
 
   void writeErrorEndPacketBySyncInProcessError(int errorCode);
 
-  void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode);
 
 }

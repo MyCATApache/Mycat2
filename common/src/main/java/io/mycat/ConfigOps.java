@@ -1,10 +1,10 @@
 package io.mycat;
 
-public interface ConfigOps extends AutoCloseable{
+public interface ConfigOps extends AutoCloseable {
 
-    Object  currentConfig();
+    Object currentConfig();
 
-    void commit(Object ops)throws Exception ;
+    void commit(Object ops) throws Exception;
 
     void close();
 }

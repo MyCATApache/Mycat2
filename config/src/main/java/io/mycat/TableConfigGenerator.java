@@ -1,6 +1,9 @@
 package io.mycat;
 
-import io.mycat.config.*;
+import io.mycat.config.GlobalTableConfig;
+import io.mycat.config.LogicSchemaConfig;
+import io.mycat.config.NormalTableConfig;
+import io.mycat.config.ShardingTableConfig;
 
 import java.util.List;
 import java.util.Map;

@@ -14,11 +14,9 @@ import java.util.ConcurrentModificationException;
  */
 public class SelectorUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SelectorUtil.class);
-
     public static final int REBUILD_COUNT_THRESHOLD = 512;
-
     public static final long MIN_SELECT_TIME_IN_NANO_SECONDS = 500000L;
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectorUtil.class);
 
     public static Selector rebuildSelector(final Selector oldSelector) throws IOException {
         final Selector newSelector;
@@ -30,9 +28,9 @@ public class SelectorUtil {
         }
 
         int nChannels = 0;
-        for (;;) {
+        for (; ; ) {
             try {
-                for (SelectionKey key: oldSelector.keys()) {
+                for (SelectionKey key : oldSelector.keys()) {
                     Object a = key.attachment();
                     try {
                         if (!key.isValid() || key.channel().keyFor(newSelector) != null) {
@@ -41,7 +39,7 @@ public class SelectorUtil {
                         int interestOps = key.interestOps();
                         key.cancel();
                         key.channel().register(newSelector, interestOps, a);
-                        nChannels ++;
+                        nChannels++;
                     } catch (Exception e) {
                         LOGGER.warn("Failed to re-register a Channel to the new Selector.", e);
                     }

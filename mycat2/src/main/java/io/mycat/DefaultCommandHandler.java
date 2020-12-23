@@ -28,21 +28,15 @@ import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.UserConfig;
-import io.mycat.hbt4.ResponseExecutorImplementor;
-import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.sqlhandler.dml.DrdsRunners;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.sql.JDBCType;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

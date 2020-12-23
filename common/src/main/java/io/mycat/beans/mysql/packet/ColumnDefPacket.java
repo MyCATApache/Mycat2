@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,87 +24,87 @@ package io.mycat.beans.mysql.packet;
  **/
 public interface ColumnDefPacket {
 
-  byte[] DEFAULT_CATALOG = "def".getBytes();
+    byte[] DEFAULT_CATALOG = "def".getBytes();
 
-  /**
-   * buffer.skipInReading(4);
-   * byte[] catalog = buffer.readLenencStringBytes();
-   * byte[] schema = buffer.readLenencStringBytes();
-   * byte[] table = buffer.readLenencStringBytes();
-   * byte[] orgTable = buffer.readLenencStringBytes();
-   * byte[] name = buffer.readLenencStringBytes();
-   * byte[] orgName = buffer.readLenencStringBytes();
-   * byte nextLength = buffer.readByte();
-   * int charsetSet = (int) buffer.readFixInt(2);
-   * int columnLength = (int) buffer.readFixInt(4);
-   * byte type = (byte) (buffer.readByte() &amp; 0xff);
-   * int flags = (int) buffer.readFixInt(2);
-   * byte decimals = buffer.readByte();
-   * <p>
-   * buffer.skipInReading(2);
-   * if (buffer.packetReadStartIndex() != endPos) {
-   * int i = buffer.readLenencInt();
-   * byte[] defaultValues = buffer.readFixStringBytes(i);
-   * }
-   *
-   * @return
-   */
-  byte[] getColumnCatalog();
+    /**
+     * buffer.skipInReading(4);
+     * byte[] catalog = buffer.readLenencStringBytes();
+     * byte[] schema = buffer.readLenencStringBytes();
+     * byte[] table = buffer.readLenencStringBytes();
+     * byte[] orgTable = buffer.readLenencStringBytes();
+     * byte[] name = buffer.readLenencStringBytes();
+     * byte[] orgName = buffer.readLenencStringBytes();
+     * byte nextLength = buffer.readByte();
+     * int charsetSet = (int) buffer.readFixInt(2);
+     * int columnLength = (int) buffer.readFixInt(4);
+     * byte type = (byte) (buffer.readByte() &amp; 0xff);
+     * int flags = (int) buffer.readFixInt(2);
+     * byte decimals = buffer.readByte();
+     * <p>
+     * buffer.skipInReading(2);
+     * if (buffer.packetReadStartIndex() != endPos) {
+     * int i = buffer.readLenencInt();
+     * byte[] defaultValues = buffer.readFixStringBytes(i);
+     * }
+     *
+     * @return
+     */
+    byte[] getColumnCatalog();
 
-  void setColumnCatalog(byte[] catalog);
+    void setColumnCatalog(byte[] catalog);
 
-  byte[] getColumnSchema();
+    byte[] getColumnSchema();
 
-  void setColumnSchema(byte[] schema);
+    void setColumnSchema(byte[] schema);
 
-  byte[] getColumnTable();
+    byte[] getColumnTable();
 
-  void setColumnTable(byte[] table);
+    void setColumnTable(byte[] table);
 
-  byte[] getColumnOrgTable();
+    byte[] getColumnOrgTable();
 
-  void setColumnOrgTable(byte[] orgTable);
+    void setColumnOrgTable(byte[] orgTable);
 
-  byte[] getColumnName();
+    byte[] getColumnName();
 
-  void setColumnName(byte[] name);
+    void setColumnName(byte[] name);
 
-  default String getColumnNameString() {
-    return new String(getColumnName());
-  }
+    default String getColumnNameString() {
+        return new String(getColumnName());
+    }
 
-  byte[] getColumnOrgName();
+    byte[] getColumnOrgName();
 
-  void setColumnOrgName(byte[] orgName);
+    void setColumnOrgName(byte[] orgName);
 
-  int getColumnNextLength();
+    int getColumnNextLength();
 
-  void setColumnNextLength(int nextLength);
+    void setColumnNextLength(int nextLength);
 
-  int getColumnCharsetSet();
+    int getColumnCharsetSet();
 
-  void setColumnCharsetSet(int charsetSet);
+    void setColumnCharsetSet(int charsetSet);
 
-  int getColumnLength();
+    int getColumnLength();
 
-  void setColumnLength(int columnLength);
+    void setColumnLength(int columnLength);
 
-  int getColumnType();
+    int getColumnType();
 
-  void setColumnType(int type);
+    void setColumnType(int type);
 
-  int getColumnFlags();
+    int getColumnFlags();
 
-  void setColumnFlags(int flags);
+    void setColumnFlags(int flags);
 
-  byte getColumnDecimals();
+    byte getColumnDecimals();
 
-  void setColumnDecimals(byte decimals);
+    void setColumnDecimals(byte decimals);
 
-  byte[] getColumnDefaultValues();
+    byte[] getColumnDefaultValues();
 
-  void setColumnDefaultValues(byte[] defaultValues);
+    void setColumnDefaultValues(byte[] defaultValues);
 
-  String toString();
+    String toString();
 
 }

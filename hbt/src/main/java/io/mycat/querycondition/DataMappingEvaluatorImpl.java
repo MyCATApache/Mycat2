@@ -16,7 +16,7 @@
 //
 //import io.mycat.BackendTableInfo;
 //import io.mycat.SchemaInfo;
-//import io.mycat.metadata.ShardingTable;
+//import io.mycat.calcite.table.ShardingTable;
 //import io.mycat.router.RuleFunction;
 //import lombok.NonNull;
 //

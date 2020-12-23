@@ -1,3 +1,0 @@
--- currentSchema: db1; tables: customer,orders,lineitem,nation
-SELECT * FROM TRAVELRECORD;
---

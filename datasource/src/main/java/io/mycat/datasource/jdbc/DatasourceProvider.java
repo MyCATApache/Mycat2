@@ -14,11 +14,11 @@
  */
 package io.mycat.datasource.jdbc;
 
+import io.mycat.MycatDataContext;
+import io.mycat.TransactionSession;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-
-import javax.transaction.*;
 
 /**
  * @author Junwen Chen
@@ -29,40 +29,7 @@ public interface DatasourceProvider {
 
     void closeDataSource(JdbcDataSource dataSource);
 
-    default UserTransaction createUserTransaction() {
-        return NONE;
-    }
+   void init(ServerConfig config);
 
-    static final UserTransaction NONE = new UserTransaction() {
-
-        @Override
-        public void begin() throws NotSupportedException, SystemException {
-
-        }
-
-        @Override
-        public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException, IllegalStateException, SystemException {
-
-        }
-
-        @Override
-        public void rollback() throws IllegalStateException, SecurityException, SystemException {
-
-        }
-
-        @Override
-        public void setRollbackOnly() throws IllegalStateException, SystemException {
-
-        }
-
-        @Override
-        public int getStatus() throws SystemException {
-            return 0;
-        }
-
-        @Override
-        public void setTransactionTimeout(int seconds) throws SystemException {
-
-        }
-    };
+    TransactionSession createSession(MycatDataContext context);
 }

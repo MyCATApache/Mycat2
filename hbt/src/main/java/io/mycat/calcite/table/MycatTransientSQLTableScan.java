@@ -1,9 +1,10 @@
 package io.mycat.calcite.table;
 
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.ExecutorImplementor;
-import io.mycat.hbt4.ExplainWriter;
-import io.mycat.hbt4.MycatRel;
+import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.Executor;
+import io.mycat.calcite.ExecutorImplementor;
+import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.MycatRel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -18,7 +19,7 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
     final String targetName;
 
     public MycatTransientSQLTableScan(RelOptCluster cluster, RelDataType relDataType, String targetName, String sql) {
-        super(cluster, cluster.traitSetOf(io.mycat.hbt4.MycatConvention.INSTANCE));
+        super(cluster, cluster.traitSetOf(MycatConvention.INSTANCE));
         this.targetName = targetName;
         this.sql = sql;
         this.rowType = relDataType;

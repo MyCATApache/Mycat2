@@ -14,12 +14,12 @@ public class ResultSetBuilder {
     final List<ColumnInfo> columnInfos = new ArrayList<>();
     final List<Object[]> objectList = new ArrayList<>();
 
-    public static ResultSetBuilder create() {
-        return new ResultSetBuilder();
-    }
-
     public ResultSetBuilder() {
         columnInfos.add(null);
+    }
+
+    public static ResultSetBuilder create() {
+        return new ResultSetBuilder();
     }
 
     public ResultSetBuilder addColumnInfo(String schemaName, String tableName, String columnName, int columnType, int precision, int scale, String columnLabel, boolean isAutoIncrement, boolean isCaseSensitive, boolean isNullable, boolean isSigned, int displaySize) {
@@ -67,9 +67,18 @@ public class ResultSetBuilder {
     }
 
     /**
+     * 跳过头部的null
+     *
+     * @return
+     */
+    public List<ColumnInfo> getColumnInfos() {
+        return columnInfos.subList(1, columnInfos.size());
+    }
+
+    /**
      * @author Junwen Chen
      **/
-    public static class SimpleDefMycatRowMetaData implements MycatRowMetaData , Serializable {
+    public static class SimpleDefMycatRowMetaData implements MycatRowMetaData, Serializable {
         final List<ColumnInfo> columnInfos;
 
         public SimpleDefMycatRowMetaData(List<ColumnInfo> columnInfos) {
@@ -147,7 +156,6 @@ public class ResultSetBuilder {
         }
     }
 
-
     static public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator implements Serializable {
         final MycatRowMetaData mycatRowMetaData;
         final Iterator<Object[]> iterator;
@@ -178,14 +186,5 @@ public class ResultSetBuilder {
             close = true;
         }
 
-    }
-
-    /**
-     * 跳过头部的null
-     *
-     * @return
-     */
-    public List<ColumnInfo> getColumnInfos() {
-        return columnInfos.subList(1, columnInfos.size());
     }
 }

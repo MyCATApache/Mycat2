@@ -3,7 +3,6 @@ package io.mycat.util;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,14 +46,14 @@ public class CollectionUtil {
     }
 
     public static void setOpAdd(List t, Object element) {
-        if (!t.contains(element)){
+        if (!t.contains(element)) {
             t.add(element);
         }
     }
 
     public static void setOpAdd(List t, List elements) {
         for (Object element : elements) {
-            setOpAdd(t,element);
+            setOpAdd(t, element);
         }
     }
 }

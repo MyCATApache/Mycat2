@@ -1,26 +1,24 @@
 package io.mycat.datasource.jdbc.transactionsession;
 
-import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
     protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
-    final MycatDataContext dataContext;
+    protected MycatDataContext dataContext;
     protected final ConcurrentLinkedQueue<AutoCloseable> closeResourceQueue = new ConcurrentLinkedQueue<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
@@ -72,7 +70,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void doAction() {
+    public void ensureTranscation() {
         if (!isAutocommit()) {
             begin();
         }
@@ -96,7 +94,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
 
     public void setReadOnly(boolean readOnly) {
-        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
+//        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
     }
 
 
@@ -118,7 +116,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     public String resolveFinalTargetName(String targetName) {
-        return dataSourceNearness.getDataSourceByTargetName(targetName);
+         return dataSourceNearness.getDataSourceByTargetName(targetName);
     }
 
     public int getTransactionIsolation() {
@@ -164,10 +162,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
 
-    protected Map<String,MycatConnection> callBackConnections(Set<String> jdbcDataSources,
-                                                                      boolean autocommit,
-                                                                      int transactionIsolation,
-                                                                      boolean readOnly) {
+    protected Map<String, MycatConnection> callBackConnections(Set<String> jdbcDataSources,
+                                                               boolean autocommit,
+                                                               int transactionIsolation,
+                                                               boolean readOnly) {
         if (jdbcDataSources.isEmpty()) return Collections.emptyMap();
         HashMap<String, MycatConnection> res = new HashMap<>();
 
@@ -180,15 +178,14 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                                 autocommit,
                                 transactionIsolation,
                                 readOnly));
-                res.put(jdbcDataSource,defaultConnection1);
+                res.put(jdbcDataSource, defaultConnection1);
             }
         }
         return res;
     }
 
     @Override
-    public String getTxId() {
-        return null;
+    public String resolveFinalTargetName(String targetName, boolean master) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
     }
-
 }

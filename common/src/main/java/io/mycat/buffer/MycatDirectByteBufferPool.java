@@ -1,4 +1,3 @@
-
 package io.mycat.buffer;
 
 import org.slf4j.Logger;
@@ -17,11 +16,11 @@ import java.util.concurrent.atomic.AtomicLong;
 @SuppressWarnings("restriction")
 public class MycatDirectByteBufferPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatDirectByteBufferPool.class);
-    private ByteBufferPage[] allPages;
     private final int chunkSize;
-    private AtomicLong prevAllocatedPage;
     private final int pageSize;
     private final short pageCount;
+    private ByteBufferPage[] allPages;
+    private AtomicLong prevAllocatedPage;
 
     public MycatDirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];

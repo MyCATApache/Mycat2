@@ -20,8 +20,9 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 
 /**
  * Desc:
- *
+ * <p>
  * date: 24/09/2017,10/4/2019
+ *
  * @author: gaozhiwen
  */
 public class GlobalConst {

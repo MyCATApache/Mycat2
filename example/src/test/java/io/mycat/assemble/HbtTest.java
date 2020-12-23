@@ -23,17 +23,17 @@ public class HbtTest implements MycatTest {
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dw0",
-                                    "jdbc:mysql://127.0.0.1:3306"));
+                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
 
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dr0",
-                                    "jdbc:mysql://127.0.0.1:3306"));
+                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
 
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dw1",
-                                    "jdbc:mysql://127.0.0.1:3307"));
+                                    "jdbc:mysql://127.0.0.1:3307/mysql"));
 
             execute(mycatConnection,
                     CreateDataSourceHint

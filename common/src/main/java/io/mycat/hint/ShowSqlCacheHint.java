@@ -4,6 +4,11 @@ import java.text.MessageFormat;
 
 public class ShowSqlCacheHint extends HintBuilder {
 
+    public static String create() {
+        ShowSqlCacheHint createSqlCacheHint = new ShowSqlCacheHint();
+        return createSqlCacheHint.build();
+    }
+
     @Override
     public String getCmd() {
         return "showSqlCaches";
@@ -14,10 +19,5 @@ public class ShowSqlCacheHint extends HintBuilder {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 "");
-    }
-
-    public static String create() {
-        ShowSqlCacheHint createSqlCacheHint = new ShowSqlCacheHint();
-        return createSqlCacheHint.build();
     }
 }

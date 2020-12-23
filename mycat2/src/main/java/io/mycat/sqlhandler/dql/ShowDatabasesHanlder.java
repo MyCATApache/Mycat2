@@ -4,11 +4,10 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 
 import java.sql.JDBCType;

@@ -10,7 +10,7 @@ public class SequenceSyntaxUtil {
         Matcher matcher = pattern.matcher(executeSql);
         while (matcher.find()) {
             String group = matcher.group(2);
-            executeSql = executeSql.replaceFirst(matcher.group(1), "next_value_for('"+group+"')");
+            executeSql = executeSql.replaceFirst(matcher.group(1), "next_value_for('" + group + "')");
         }
         return executeSql;
     }

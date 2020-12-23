@@ -50,7 +50,7 @@ public class DefaultPreparedOKPacket implements PreparedOKPacket {
 
     @Override
     public void setPreparedOkWarningCount(int warningCount) {
-        this.warningCount =warningCount;
+        this.warningCount = warningCount;
 
     }
 }

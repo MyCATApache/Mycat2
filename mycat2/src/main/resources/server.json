@@ -1,5 +1,4 @@
 {
-  "datasourceProvider":"io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider",
   "loadBalance":{
     "defaultLoadBalance":"BalanceRandom",
     "loadBalances":[]

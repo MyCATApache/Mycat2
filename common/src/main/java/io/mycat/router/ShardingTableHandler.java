@@ -19,7 +19,7 @@ public interface ShardingTableHandler extends TableHandler {
 
     Optional<Iterable<Object[]>> canIndexTableScan(int[] projects);
 
-    Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndex,Object[] value);
+    Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndex, Object[] value);
 
     Optional<Iterable<Object[]>> canIndexTableScan();
 

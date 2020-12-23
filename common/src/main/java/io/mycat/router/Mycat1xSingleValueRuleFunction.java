@@ -30,53 +30,7 @@ import java.util.stream.Collectors;
  */
 public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction {
 
-    public abstract String name();
-
     private String columnName;
-
-    @Override
-    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
-        super.callInit(tableHandler, properties, ranges);
-        this.columnName =Objects.requireNonNull(
-                properties.get("columnName"),"need columnName").toString();
-    }
-
-    @Override
-    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-        ArrayList<DataNode> res = new ArrayList<>();
-        for (RangeVariable rangeVariable : values.values().stream().flatMap(i->i.stream()).collect(Collectors.toList())) {
-            //匹配字段名
-            if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
-                ///////////////////////////////////////////////////////////////
-                String begin = Objects.toString(rangeVariable.getBegin());
-                String end = Objects.toString(rangeVariable.getEnd());
-                switch (rangeVariable.getOperator()) {
-                    case EQUAL: {
-                        DataNode dataNode = this.calculate(begin);
-                        if (dataNode != null) {
-                            CollectionUtil.setOpAdd(res, dataNode);
-                        } else {
-                            return getTable().dataNodes();
-                        }
-                        break;
-                    }
-                    case RANGE: {
-                        List<DataNode> dataNodes = this.calculateRange(begin, end);
-                        if (dataNodes == null || dataNodes.size() == 0) {
-                            return getTable().dataNodes();
-                        }
-                        CollectionUtil.setOpAdd(res, dataNodes);
-                        break;
-                    }
-                }
-            }
-        }
-        return res.isEmpty()?getTable().dataNodes():res;
-    }
-
-    public String getColumnName(){
-        return columnName;
-    }
 
     public static int[] toIntArray(String string) {
         String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
@@ -86,16 +40,6 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
         }
         return ints;
     }
-
-    /**
-     * return matadata nodes's id columnValue is column's value
-     *
-     * @return never null
-     */
-    public abstract int calculateIndex(String columnValue);
-
-    public abstract int[] calculateIndexRange(String beginValue, String endValue);
-
 
     /**
      * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
@@ -133,6 +77,60 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
         return ints;
     }
 
+    public abstract String name();
+
+    @Override
+    public synchronized void callInit(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
+        super.callInit(tableHandler, properties, ranges);
+        this.columnName = Objects.requireNonNull(
+                properties.get("columnName"), "need columnName").toString();
+    }
+
+    @Override
+    public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
+        ArrayList<DataNode> res = new ArrayList<>();
+        for (RangeVariable rangeVariable : values.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList())) {
+            //匹配字段名
+            if (getColumnName().equalsIgnoreCase(rangeVariable.getColumnName())) {
+                ///////////////////////////////////////////////////////////////
+                String begin = Objects.toString(rangeVariable.getBegin());
+                String end = Objects.toString(rangeVariable.getEnd());
+                switch (rangeVariable.getOperator()) {
+                    case EQUAL: {
+                        DataNode dataNode = this.calculate(begin);
+                        if (dataNode != null) {
+                            CollectionUtil.setOpAdd(res, dataNode);
+                        } else {
+                            return getTable().dataNodes();
+                        }
+                        break;
+                    }
+                    case RANGE: {
+                        List<DataNode> dataNodes = this.calculateRange(begin, end);
+                        if (dataNodes == null || dataNodes.size() == 0) {
+                            return getTable().dataNodes();
+                        }
+                        CollectionUtil.setOpAdd(res, dataNodes);
+                        break;
+                    }
+                }
+            }
+        }
+        return res.isEmpty() ? getTable().dataNodes() : res;
+    }
+
+    public String getColumnName() {
+        return columnName;
+    }
+
+    /**
+     * return matadata nodes's id columnValue is column's value
+     *
+     * @return never null
+     */
+    public abstract int calculateIndex(String columnValue);
+
+    public abstract int[] calculateIndexRange(String beginValue, String endValue);
 
     public DataNode calculate(String columnValue) {
         int i = calculateIndex(columnValue);
@@ -172,7 +170,7 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
     }
 
     @Override
-   public boolean isShardingKey(String name) {
+    public boolean isShardingKey(String name) {
         return this.columnName.equalsIgnoreCase(name);
     }
 }

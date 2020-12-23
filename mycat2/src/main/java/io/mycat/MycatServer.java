@@ -2,22 +2,14 @@ package io.mycat;
 
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.DefaultReactorBufferPool;
-import io.mycat.buffer.HeapBufferPool;
-import io.mycat.buffer.ReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
-import io.mycat.datasource.jdbc.datasourceprovider.AtomikosDatasourceProvider;
-import io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider;
-import io.mycat.manager.ManagerCommandDispatcher;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.*;
-import io.mycat.runtime.LocalTransactionSession;
 import io.mycat.runtime.ProxyTransactionSession;
-import io.mycat.thread.SimpleMycatContextBindingThreadPool;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -67,8 +59,16 @@ public class MycatServer {
         ThreadPoolExecutorConfig workerPool = serverConfigServer.getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfigServer.getTimeWorkerPool());
         this.transcationFactoryMap = new HashMap<>();
-        this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE, mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
-        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE, mycatDataContext -> new LocalTransactionSession(mycatDataContext));
+        this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE,
+                mycatDataContext -> {
+                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    return new ProxyTransactionSession(connection.getDatasourceProvider().createSession(mycatDataContext));
+                });
+        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE,
+                mycatDataContext -> {
+                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    return connection.getDatasourceProvider().createSession(mycatDataContext);
+                });
         this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
                 mycatWorkerProcessor.getMycatWorker(),
                 workerPool.getTaskTimeout(),
@@ -78,49 +78,8 @@ public class MycatServer {
     @SneakyThrows
     public void start() {
         startProxy(this.serverConfig.getServer());
-        startManager(this.serverConfig.getManager());
     }
 
-
-    private void startManager(ManagerConfig manager) throws IOException {
-        if (manager == null) {
-            return;
-        }
-        List<UserConfig> users = manager.getUsers();
-        if (users == null || users.isEmpty()) {
-            return;
-        }
-        List<MycatReactorThread> list = new ArrayList<>(1);
-        Function<MycatSession, CommandDispatcher> function = session -> {
-            try {
-                CommandDispatcher commandDispatcher = new ManagerCommandDispatcher();
-                commandDispatcher.initRuntime(session);
-                return commandDispatcher;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        };
-
-        int bufferPoolPageSize = 1024 * 1024 * 2;
-        short bufferPoolChunkSize = 8192;
-        short bufferPoolPageNumber = (short) (Runtime.getRuntime().maxMemory() * 0.8 / bufferPoolPageSize);
-        Map<String, UserConfig> userConfigMap = users.stream().collect((Collectors.toMap(k -> k.getUsername(), v -> v)));
-
-        Map<String, Object> bufferConfig = new HashMap<>();
-        bufferConfig.put("pageSize", bufferPoolPageSize);
-        bufferConfig.put("chunkSize", bufferPoolChunkSize);
-        bufferConfig.put("pageCount", bufferPoolPageNumber);
-
-        MycatReactorThread thread = new MycatReactorThread(new DefaultReactorBufferPool(bufferConfig), new MycatSessionManager(function,
-                new AuthenticatorImpl(userConfigMap),
-                this.transcationFactoryMap,
-                this.mycatContextThreadPool));
-        thread.start();
-        list.add(thread);
-        managerManager = new ReactorThreadManager(list);
-        NIOAcceptor acceptor = new NIOAcceptor(managerManager);
-        acceptor.startServerChannel(manager.getIp(), manager.getPort());
-    }
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
 

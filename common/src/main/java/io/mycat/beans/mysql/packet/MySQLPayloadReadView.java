@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,43 +20,43 @@ package io.mycat.beans.mysql.packet;
  *
  * 报文读视图
  **/
-public interface MySQLPayloadReadView<T extends MySQLPayloadReadView<T>> {
+public interface MySQLPayloadReadView {
 
-  int length();
+    int length();
 
-  long readFixInt(int length);
+    long readFixInt(int length);
 
-  int readLenencInt();
+    int readLenencInt();
 
-  String readFixString(int length);
+    String readFixString(int length);
 
-  String readLenencString();
+    String readLenencString();
 
-  byte[] readLenencStringBytes();
+    byte[] readLenencStringBytes();
 
-  byte[] readNULStringBytes();
+    byte[] readNULStringBytes();
 
-  String readNULString();
+    String readNULString();
 
-  byte[] readEOFStringBytes();
+    byte[] readEOFStringBytes();
 
-  String readEOFString();
+    String readEOFString();
 
-  byte[] readBytes(int length);
+    byte[] readBytes(int length);
 
-  byte[] readFixStringBytes(int length);
+    byte[] readFixStringBytes(int length);
 
-  byte readByte();
+    byte readByte();
 
-  byte[] readLenencBytes();
+    byte[] readLenencBytes();
 
-  long readLong();
+    long readLong();
 
-  double readDouble();
+    double readDouble();
 
-  void reset();
+    void reset();
 
-  void skipInReading(int i);
+    void skipInReading(int i);
 
-  boolean readFinished();
+    boolean readFinished();
 }

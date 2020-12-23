@@ -1,8 +1,6 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatResponse;
-import io.mycat.beans.resultset.MycatResultSetType;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
@@ -19,7 +17,7 @@ import java.util.Map;
  * date 2019-05-22 01:17
  * a simple proxy collector as map
  **/
-public interface RowBaseIterator extends Closeable,BaseIterator {
+public interface RowBaseIterator extends Closeable, BaseIterator {
 
     MycatRowMetaData getMetaData();
 
@@ -78,4 +76,5 @@ public interface RowBaseIterator extends Closeable,BaseIterator {
         }
         return resultList;
     }
+
 }

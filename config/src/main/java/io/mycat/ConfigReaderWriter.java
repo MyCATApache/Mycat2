@@ -9,12 +9,6 @@ import java.util.List;
 
 public interface ConfigReaderWriter {
 
-    Collection<String> getSuffixSet();
-
-    <T> T transformation(String text, Class<T> clazz);
-
-    String transformation(Object dump);
-
     static ConfigReaderWriter getReaderWriterBySuffix(String suffix) {
         List<ConfigReaderWriter> configReaderWriters = Arrays.asList(
                 new JsonConfigReaderWriter(),
@@ -31,4 +25,10 @@ public interface ConfigReaderWriter {
     static <T> T transformation(String suffix, String text, Class<T> clazz) {
         return getReaderWriterBySuffix(suffix).transformation(text, clazz);
     }
+
+    Collection<String> getSuffixSet();
+
+    <T> T transformation(String text, Class<T> clazz);
+
+    String transformation(Object dump);
 }

@@ -2,9 +2,7 @@ package io.mycat;
 
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.hbt3.DrdsRunner;
-import io.mycat.hbt4.PlanCache;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.calcite.spm.PlanCache;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
@@ -67,7 +65,7 @@ public class ConfigPrepareExecuter {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
 
-                this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
+                this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().distinct().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
                 break;
             }
             case SEQUENCE: {
@@ -158,7 +156,12 @@ public class ConfigPrepareExecuter {
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager, metadataStorageManager);
-        jdbcConnectionManager = new JdbcConnectionManager(datasourceProvider, datasourceConfigMap, clusters, mycatWorkerProcessor, replicaSelector);
+        jdbcConnectionManager = new JdbcConnectionManager(
+                datasourceProvider,
+                datasourceConfigMap,
+                clusters,
+                mycatWorkerProcessor,
+                replicaSelector);
         datasourceConfigProvider = new DatasourceConfigProvider() {
             @Override
             public Map<String, DatasourceConfig> get() {

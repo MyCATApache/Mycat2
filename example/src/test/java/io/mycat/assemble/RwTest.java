@@ -31,10 +31,13 @@ public class RwTest implements MycatTest {
             execute(mycat, "create database " + db);
             execute(mycat, "use " + db);
 
-            execute(mycat,
-                    "/*+ mycat:createDatasource{\"name\":\"dw0\",\"url\":\"jdbc:mysql://127.0.0.1:3306\",\"user\":\"root\",\"password\":\"123456\"} */;");
-            execute(mycat,
-                    "/*+ mycat:createDatasource{\"name\":\"dr0\",\"url\":\"jdbc:mysql://127.0.0.1:3307\",\"user\":\"root\",\"password\":\"123456\"} */;");
+            execute(mycat, CreateDataSourceHint
+                    .create("dw0",
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
+            execute(mycat, CreateDataSourceHint
+                    .create("dr0",
+                            "jdbc:mysql://127.0.0.1:3307"));
+
             execute(mycat,
                     "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
 
@@ -79,10 +82,10 @@ public class RwTest implements MycatTest {
 
             execute(mycat, CreateDataSourceHint
                     .create("dw0",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
             execute(mycat, CreateDataSourceHint
                     .create("dw1",
-                            "jdbc:mysql://127.0.0.1:3306"));
+                            "jdbc:mysql://127.0.0.1:3306/mysql"));
 
             execute(prototypeMysql,"use mysql");
             execute(prototypeMysql,"DROP TABLE IF EXISTS MYCAT_SEQUENCE;");

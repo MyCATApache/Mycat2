@@ -22,22 +22,22 @@ public class FileCopyUtils {
         //git diff xxx xxx --name-only > name_only.txt
         Files.lines(Paths.get("xxx/name_only.txt")).forEach(i -> {
             Path actFilePath = sourcePath.resolve(i);
-            if (!Files.exists(actFilePath)){
-                mapping.add(i+"\t\t<===========\t\t"+"delete");
+            if (!Files.exists(actFilePath)) {
+                mapping.add(i + "\t\t<===========\t\t" + "delete");
                 return;
             }
             try {
                 Path actTargetPath = targetPath.resolve(i);
                 File file = actTargetPath.getParent().toFile();
-                if(!file.exists() || !file.isDirectory()) {
+                if (!file.exists() || !file.isDirectory()) {
                     file.mkdirs();
                 }
-                mapping.add(i+"\t\t<===========\t\t"+actTargetPath.toString().replace(targetPath.toString(),""));
+                mapping.add(i + "\t\t<===========\t\t" + actTargetPath.toString().replace(targetPath.toString(), ""));
                 Files.copy(actFilePath, actTargetPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (Throwable e) {
                 e.printStackTrace();
             }
         });
-        Files.write(sourcePath.resolve("mapping.txt"),mapping);
+        Files.write(sourcePath.resolve("mapping.txt"), mapping);
     }
 }

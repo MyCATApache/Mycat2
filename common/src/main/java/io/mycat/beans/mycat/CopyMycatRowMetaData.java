@@ -3,7 +3,7 @@ package io.mycat.beans.mycat;
 import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 
-public class CopyMycatRowMetaData implements MycatRowMetaData , Serializable {
+public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
     final Column[] columns;
 
     public CopyMycatRowMetaData(MycatRowMetaData mycatRowMetaData) {

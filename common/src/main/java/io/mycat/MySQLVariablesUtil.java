@@ -1,9 +1,7 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.beans.mysql.MySQLVariablesEnum;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class MySQLVariablesUtil {
@@ -14,13 +12,13 @@ public class MySQLVariablesUtil {
         if (target.contains("autocommit")) {
             dataContext.setAutoCommit(toInt(value) == 1);
         } else if (target.equalsIgnoreCase("transaction_policy")) {
-           if ("proxy".equalsIgnoreCase(value)){
-               dataContext.switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
-           }else if ("xa".equalsIgnoreCase(value)){
-               dataContext.switchTransaction(TransactionType.JDBC_TRANSACTION_TYPE);
-           }else {
-               throw new IllegalArgumentException("transaction_policy for "+value);
-           }
+            if ("proxy".equalsIgnoreCase(value)) {
+                dataContext.switchTransaction(TransactionType.PROXY_TRANSACTION_TYPE);
+            } else if ("xa".equalsIgnoreCase(value)) {
+                dataContext.switchTransaction(TransactionType.JDBC_TRANSACTION_TYPE);
+            } else {
+                throw new IllegalArgumentException("transaction_policy for " + value);
+            }
         } else if (target.contains("net_write_timeout")) {
             dataContext.setVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT, Long.parseLong(value));
         } else if ("SQL_SELECT_LIMIT".equalsIgnoreCase(target)) {

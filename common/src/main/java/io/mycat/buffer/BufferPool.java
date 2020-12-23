@@ -3,7 +3,6 @@ package io.mycat.buffer;
 import io.mycat.Dumpable;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 public interface BufferPool extends Dumpable {
 

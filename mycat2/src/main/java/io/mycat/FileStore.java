@@ -9,7 +9,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -28,7 +27,7 @@ public class FileStore implements CoordinatorMetadataStorageManager.Store {
     }
 
     @Override
-    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedCallback changedCallback) {
+    public void addChangedCallback(CoordinatorMetadataStorageManager.ChangedValueCallback changedCallback) {
 
     }
 

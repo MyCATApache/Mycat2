@@ -4,9 +4,8 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSetTransactionSt
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

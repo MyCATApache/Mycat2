@@ -7,8 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,7 +39,7 @@ public class ComposeFutureRowBaseIterator implements RowBaseIterator {
         if (current == null && !seq.isEmpty()) {
             current = seq.removeFirst().get();
         }
-        if(current == null){
+        if (current == null) {
             return false;
         }
         boolean next = current.next();

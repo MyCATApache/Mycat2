@@ -25,19 +25,17 @@ import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.hbt3.Distribution;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.MetadataManager;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.plan.RelOptTable;
@@ -95,23 +93,21 @@ public class HBTQueryConvertor {
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-                targetName = selectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
-                try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
-                    try (Statement statement = connection1.createStatement()) {
-                        statement.setMaxRows(0);
-                        try (ResultSet resultSet = statement.executeQuery(sql)) {
-                            ResultSetMetaData metaData = resultSet.getMetaData();
-                            JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
-                            return FieldTypes.getFieldTypes(jdbcRowMetaData);
-                        }
+                try(DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)){
+                    Connection rawConnection = mycatConnection.getRawConnection();
+                    try (Statement statement = rawConnection.createStatement()) {
+                            statement.setMaxRows(0);
+                            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                                ResultSetMetaData metaData = resultSet.getMetaData();
+                                JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                                return FieldTypes.getFieldTypes(jdbcRowMetaData);
+                            }
+                    } catch (SQLException e) {
+                        log.warn("{}", e);
                     }
-                } catch (SQLException e) {
-                    log.warn("{}", e);
+                    return null;
                 }
-                return null;
             } catch (Throwable e) {
                 log.warn("{0}", e);
             }

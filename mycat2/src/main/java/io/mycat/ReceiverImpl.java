@@ -2,15 +2,10 @@ package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
-import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.util.Response;
-import org.apache.calcite.avatica.proto.Common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +29,11 @@ public class ReceiverImpl implements Response {
     public void sendError(Throwable e) {
         session.setLastMessage(e);
         sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
+    }
+
+    @Override
+    public void proxySelectToPrototype(String statement) {
+        proxySelect("prototype",statement);
     }
 
     @Override
@@ -100,8 +100,7 @@ public class ReceiverImpl implements Response {
     @Override
     public void execute(ExplainDetail detail) {
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        String datasource = selectorRuntime.getDatasourceNameByReplicaName(Objects.requireNonNull(detail.getTarget()), master, detail.getBalance());
+        String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(),master);
         sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(detail.getExecuteType(), datasource, detail.getSql()));
     }
 

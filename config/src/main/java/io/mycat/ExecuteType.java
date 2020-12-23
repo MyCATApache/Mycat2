@@ -9,9 +9,8 @@ public enum ExecuteType {
     INSERT(true),
     UPDATE(true),
     ;
-    private boolean master;
-
     public static ExecuteType DEFAULT = ExecuteType.QUERY_MASTER;
+    private boolean master;
 
     ExecuteType(boolean master) {
         this.master = master;

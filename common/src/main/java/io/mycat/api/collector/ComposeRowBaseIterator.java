@@ -6,9 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,23 +24,26 @@ public class ComposeRowBaseIterator implements RowBaseIterator {
     private RowBaseIterator current;
 
 
-    public static ComposeRowBaseIterator of(RowBaseIterator... iterators) {
-        return new ComposeRowBaseIterator(new LinkedList<>(Arrays.asList(iterators)));
-    }
-    public static ComposeRowBaseIterator of(LinkedList<RowBaseIterator> seq) {
-        return new ComposeRowBaseIterator(seq);
-    }
-
     public ComposeRowBaseIterator(LinkedList<RowBaseIterator> seq) {
         this.seq = seq;
         this.current = Objects.requireNonNull(this.seq.get(0));
         this.metaData = current.getMetaData();
     }
-    public ComposeRowBaseIterator(MycatRowMetaData metaData,LinkedList<RowBaseIterator> seq) {
+
+    public ComposeRowBaseIterator(MycatRowMetaData metaData, LinkedList<RowBaseIterator> seq) {
         this.seq = seq;
         this.current = Objects.requireNonNull(this.seq.get(0));
         this.metaData = metaData;
     }
+
+    public static ComposeRowBaseIterator of(RowBaseIterator... iterators) {
+        return new ComposeRowBaseIterator(new LinkedList<>(Arrays.asList(iterators)));
+    }
+
+    public static ComposeRowBaseIterator of(LinkedList<RowBaseIterator> seq) {
+        return new ComposeRowBaseIterator(seq);
+    }
+
     @Override
     public MycatRowMetaData getMetaData() {
         return metaData;

@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <zhu qiang>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -79,14 +79,36 @@ public class AuthPacket {
     private String authPluginName;
     private Map<String, String> clientConnectAttrs;
 
-  public void readPayload(MySQLPayloadReadView buffer) {
+    /**
+     * 计算 LengthEncodedInteger 的字节长度
+     *
+     * @param val
+     * @return
+     */
+    public static int calcLenencLength(int val) {
+        if (val < 251) {
+            return 1;
+        } else if (val >= 251 && val < (1 << 16)) {
+            return 3;
+        } else if (val >= (1 << 16) && val < (1 << 24)) {
+            return 4;
+        } else {
+            return 9;
+        }
+    }
+
+    public static byte[] getRESERVED() {
+        return RESERVED;
+    }
+
+    public void readPayload(MySQLPayloadReadView buffer) {
         capabilities = (int) buffer.readFixInt(4);
         maxPacketSize = (int) buffer.readFixInt(4);
         characterSet = buffer.readByte();
         buffer.readBytes(RESERVED.length);
         username = buffer.readNULString();
         if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
-          password = buffer.readFixStringBytes(buffer.readLenencInt());
+            password = buffer.readFixStringBytes(buffer.readLenencInt());
         } else if ((MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities))) {
             int passwordLength = buffer.readByte();
             password = buffer.readFixStringBytes(passwordLength);
@@ -120,17 +142,16 @@ public class AuthPacket {
         }
     }
 
-
-  public void writePayload(MySQLPayloadWriteView buffer) {
+    public void writePayload(MySQLPayloadWriteView buffer) {
         buffer.writeFixInt(4, capabilities);
         buffer.writeFixInt(4, maxPacketSize);
         buffer.writeByte(characterSet);
         buffer.writeBytes(RESERVED);
         buffer.writeNULString(username);
-        if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)){
+        if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
             buffer.writeLenencInt(password.length);
             buffer.writeFixString(password);
-        } else if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)){
+        } else if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)) {
             buffer.writeFixInt(1, password.length);
             buffer.writeFixString(password);
         } else {
@@ -157,28 +178,6 @@ public class AuthPacket {
             buffer.writeLenencInt(kvAllLength);
             clientConnectAttrs.forEach((k, v) -> buffer.writeLenencString(k).writeLenencString(v));
         }
-    }
-
-    /**
-     * 计算 LengthEncodedInteger 的字节长度
-     *
-     * @param val
-     * @return
-     */
-    public static int calcLenencLength(int val) {
-        if (val < 251) {
-            return 1;
-        } else if (val >= 251 && val < (1 << 16)) {
-            return 3;
-        } else if (val >= (1 << 16) && val < (1 << 24)) {
-            return 4;
-        } else {
-            return 9;
-        }
-    }
-
-    public static byte[] getRESERVED() {
-        return RESERVED;
     }
 
     public int getCapabilities() {

@@ -13,14 +13,13 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.config.SqlCacheConfig;
-import io.mycat.hbt3.DrdsRunner;
-import io.mycat.hbt4.DefaultDatasourceFactory;
-import io.mycat.hbt4.Executor;
-import io.mycat.hbt4.ExecutorImplementorImpl;
-import io.mycat.hbt4.MycatRel;
-import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
-import io.mycat.hbt4.logical.rel.MycatInsertRel;
-import io.mycat.hbt4.logical.rel.MycatUpdateRel;
+import io.mycat.calcite.DefaultDatasourceFactory;
+import io.mycat.calcite.Executor;
+import io.mycat.calcite.ExecutorImplementorImpl;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.executor.TempResultSetFactoryImpl;
+import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.sqlhandler.dml.DrdsRunners;
@@ -163,7 +162,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
                 try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
                     TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(defaultDatasourceFactory, tempResultSetFactory) {
+                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, defaultDatasourceFactory, tempResultSetFactory) {
                         @Override
                         public void implementRoot(MycatRel rel, List<String> aliasList) {
                             if (rel instanceof MycatInsertRel) {
@@ -187,8 +186,8 @@ public class SqlResultSetService implements Closeable, Dumpable {
                                     Object[] row = new Object[columnCount];
                                     for (int i = 0; i < columnCount; i++) {
                                         row[i] = rowIterator.getObject(i + 1);
-                                        builder.add(row);
                                     }
+                                    builder.add(row);
                                 }
                                 ImmutableList<Object[]> objects1 = builder.build();
                                 pair[0] = mycatRowMetaData;

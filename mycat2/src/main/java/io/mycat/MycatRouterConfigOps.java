@@ -4,7 +4,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.config.*;
-import io.mycat.metadata.MetadataManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -281,7 +280,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void putUser(UserConfig userConfig) {
         this.users = mycatRouterConfig.getUsers();
         this.users.stream().filter(u -> u.getUsername().equals(userConfig.getUsername()))
-                .findFirst().ifPresent(find -> this.users.remove(userConfig));
+                .findFirst().ifPresent(find -> this.users.remove(find));
         users.add(userConfig);
         updateType = UpdateType.USER;
     }
@@ -358,16 +357,17 @@ public class MycatRouterConfigOps implements AutoCloseable {
     public void removeSqlCache(String cacheName) {
         Optional<SqlCacheConfig> first = mycatRouterConfig.getSqlCacheConfigs()
                 .stream().filter(i -> cacheName.equals(i.getName())).findFirst();
-        if (!first.isPresent()){
+        if (!first.isPresent()) {
             return;
         }
-        this.sqlCaches =  mycatRouterConfig.getSqlCacheConfigs();
+        this.sqlCaches = mycatRouterConfig.getSqlCacheConfigs();
         first.ifPresent(o -> {
             sqlCaches.remove(o);
             this.sqlCache = o;
         });
         updateType = UpdateType.DROP_SQL_CACHE;
     }
+
     public List<ClusterConfig> getClusters() {
         return clusters;
     }
@@ -431,9 +431,11 @@ public class MycatRouterConfigOps implements AutoCloseable {
         SQLExpr dbPartitionBy = createTableSql.getDbPartitionBy();
         HashMap<String, Object> properties = new HashMap<>();
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        properties.put("storeNum", metadataManager.getDefaultStoreNodeNum());
+        int defaultStoreNodeNum = metadataManager.getDefaultStoreNodeNum();
+        properties.put("storeNum", defaultStoreNodeNum);
         if (dbPartitionBy != null) {
-            int dbPartitions = Integer.parseInt(SQLUtils.normalize(createTableSql.getDbPartitions().toString()));
+            int dbPartitions = (Optional.ofNullable(createTableSql.getDbPartitions())
+                    .map(i -> i.toString()).map(i -> Integer.parseInt(SQLUtils.normalize(i))).orElse(defaultStoreNodeNum));
             properties.put("dbNum", Objects.toString(dbPartitions));
             properties.put("dbMethod", Objects.toString(dbPartitionBy));
         }

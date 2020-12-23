@@ -164,6 +164,11 @@ public class InformationSchema implements Cloneable {
 
     public ROUTINES_TABLE_OBJECT[] ROUTINES = new ROUTINES_TABLE_OBJECT[]{};
 
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
     @Builder
     @Data
     @NoArgsConstructor
@@ -2252,10 +2257,5 @@ public class InformationSchema implements Cloneable {
         public String COLLATION_CONNECTION;
 
         public String DATABASE_COLLATION;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
     }
 }

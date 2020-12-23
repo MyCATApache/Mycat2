@@ -16,11 +16,8 @@
     <module>mycat2</module>
     <!--<module>grid</module>-->
     <module>replica</module>
-      <module>pattern</module>
       <module>hbt</module>
-      <module>booster</module>
       <module>example</module>
-      <module>testsuite</module>
       <module>statistic</module>
       <module>calcite</module>
       <module>linq4j</module>

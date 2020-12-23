@@ -3,7 +3,7 @@ package io.mycat.sqlhandler;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 /**
  * 数据库代理的执行器, 调用后端数据库接口.

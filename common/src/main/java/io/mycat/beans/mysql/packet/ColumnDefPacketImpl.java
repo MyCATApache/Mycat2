@@ -25,11 +25,12 @@ import java.util.Arrays;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58
- *
+ * <p>
  * 字段包实现
  **/
 public class ColumnDefPacketImpl implements ColumnDefPacket {
 
+    final static byte[] EMPTY = new byte[]{};
     byte[] columnCatalog;
     byte[] columnSchema;
     byte[] columnTable;
@@ -43,8 +44,6 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     int columnFlags;
     byte columnDecimals;
     byte[] columnDefaultValues;
-
-    final static byte[] EMPTY = new byte[]{};
 
     public ColumnDefPacketImpl() {
     }
@@ -64,16 +63,10 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         }
     }
 
-    byte[] getBytes(String text){
-        if(text==null||"".equals(text)){
-            return EMPTY;
-        }
-        return text.getBytes();
-    }
     public ColumnDefPacketImpl(final MycatRowMetaData resultSetMetaData, int columnIndex) {
         try {
             String schemaName = resultSetMetaData.getSchemaName(columnIndex);
-            if (StringUtil.isEmpty(schemaName )){
+            if (StringUtil.isEmpty(schemaName)) {
                 schemaName = "UNKNOWN";//mysql workbench 该字段不能为长度0
             }
             this.columnSchema = getBytes(schemaName);
@@ -91,6 +84,12 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         }
     }
 
+    byte[] getBytes(String text) {
+        if (text == null || "".equals(text)) {
+            return EMPTY;
+        }
+        return text.getBytes();
+    }
 
     public ColumnDefPacket toColumnDefPacket(MySQLFieldInfo def, String alias) {
         ColumnDefPacket columnDefPacket = new ColumnDefPacketImpl();

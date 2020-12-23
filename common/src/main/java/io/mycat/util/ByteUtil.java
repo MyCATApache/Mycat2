@@ -455,16 +455,16 @@ public class ByteUtil {
             date = date.substring(i).trim();
         }
         String[] split = date.split(":");
-		int hour = Integer.parseInt(split[0]);
+        int hour = Integer.parseInt(split[0]);
         int minutes = Integer.parseInt(split[1]);
 
-		i = split[2].indexOf('.');
-		int nanos = 0;
-		if (i!=-1) {
-			nanos = Integer.parseInt(split[2].substring(i+1));
-		}
-		int secs = Integer.parseInt(split[2].substring(0,i));
-		return getBytesFromTime(LocalTime.of(hour,minutes,secs,nanos));
+        i = split[2].indexOf('.');
+        int nanos = 0;
+        if (i != -1) {
+            nanos = Integer.parseInt(split[2].substring(i + 1));
+        }
+        int secs = Integer.parseInt(split[2].substring(0, i));
+        return getBytesFromTime(LocalTime.of(hour, minutes, secs, nanos));
     }
 
     public static byte[] getBytesFromDuration(Duration date) {

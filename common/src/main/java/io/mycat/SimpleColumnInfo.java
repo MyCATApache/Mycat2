@@ -4,7 +4,6 @@ import io.mycat.router.CustomRuleFunction;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.JDBCType;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -48,40 +47,6 @@ public class SimpleColumnInfo {
         this.primaryKey = primaryKey;
         this.index = index || primaryKey;
         this.id = id;
-    }
-
-    /**
-     * jamie 2019-12-11
-     */
-    public enum ShardingType {
-        MAP_TARGET,
-        MAP_SCHEMA,
-        MAP_TABLE,
-        NATURE_DATABASE_TABLE;
-
-        public static ShardingType parse(String name) {
-            if (name == null) {
-                return NATURE_DATABASE_TABLE;
-            }
-            return valueOf(name);
-        }
-    }
-
-    /**
-     * jamie 2019-12-11
-     */
-    @Data
-    @AllArgsConstructor
-    @ToString
-    public static class ShardingInfo {
-        @NonNull
-        final SimpleColumnInfo columnInfo;
-        @NonNull
-        final ShardingType shardingType;
-        @NonNull
-        final List<String> map;
-        @NonNull
-        final CustomRuleFunction function;
     }
 
     public Type getType() {
@@ -137,15 +102,6 @@ public class SimpleColumnInfo {
 
     }
 
-    public enum Type {
-        NUMBER,
-        STRING,
-        BLOB,
-        TIME,
-        DATE,
-        TIMESTAMP
-    }
-
     public Object normalizeValue(Object o) {
         switch (getType()) {
             case NUMBER:
@@ -199,5 +155,48 @@ public class SimpleColumnInfo {
                 throw new IllegalArgumentException();
         }
         throw new IllegalArgumentException();
+    }
+
+    /**
+     * jamie 2019-12-11
+     */
+    public enum ShardingType {
+        MAP_TARGET,
+        MAP_SCHEMA,
+        MAP_TABLE,
+        NATURE_DATABASE_TABLE;
+
+        public static ShardingType parse(String name) {
+            if (name == null) {
+                return NATURE_DATABASE_TABLE;
+            }
+            return valueOf(name);
+        }
+    }
+
+    public enum Type {
+        NUMBER,
+        STRING,
+        BLOB,
+        TIME,
+        DATE,
+        TIMESTAMP
+    }
+
+    /**
+     * jamie 2019-12-11
+     */
+    @Data
+    @AllArgsConstructor
+    @ToString
+    public static class ShardingInfo {
+        @NonNull
+        final SimpleColumnInfo columnInfo;
+        @NonNull
+        final ShardingType shardingType;
+        @NonNull
+        final List<String> map;
+        @NonNull
+        final CustomRuleFunction function;
     }
 }

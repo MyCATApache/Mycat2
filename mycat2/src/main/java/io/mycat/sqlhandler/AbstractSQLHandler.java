@@ -3,7 +3,7 @@ package io.mycat.sqlhandler;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.util.ClassUtil;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import lombok.EqualsAndHashCode;
 
 import java.util.Objects;
