@@ -1,7 +1,6 @@
 package io.mycat.replica;
 
 import io.mycat.DataSourceNearness;
-import io.mycat.MetaCluster;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.TransactionSession;
 
@@ -16,35 +15,33 @@ import java.util.Objects;
 public class DataSourceNearnessImpl implements DataSourceNearness {
     HashMap<String, String> map = new HashMap<>();
     String loadBalanceStrategy;
-    Boolean replicaMode;
+
     private TransactionSession transactionSession;
 
     public DataSourceNearnessImpl(TransactionSession transactionSession) {
         this.transactionSession = transactionSession;
     }
 
-    public String getDataSourceByTargetName(final String targetName,boolean masterArg) {
+    public String getDataSourceByTargetName(final String targetName, boolean masterArg) {
         Objects.requireNonNull(targetName);
-        boolean master =  masterArg||transactionSession.isInTransaction();
-        ReplicaSelectorRuntime instance = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        if (replicaMode == null) {
-            replicaMode = instance.isReplicaName(targetName);
-        }
-        String res;
+        boolean master = masterArg || transactionSession.isInTransaction();
+        ReplicaSelectorRuntime selector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        boolean replicaMode = selector.isReplicaName(targetName);
+        String datasource;
         if (replicaMode) {
-            res  =  map.computeIfAbsent(targetName, (s) -> {
-                String datasourceNameByReplicaName = instance.getDatasourceNameByReplicaName(targetName, master, loadBalanceStrategy);
+            datasource = map.computeIfAbsent(targetName, (s) -> {
+                String datasourceNameByReplicaName = selector.getDatasourceNameByReplicaName(targetName, master, loadBalanceStrategy);
                 return Objects.requireNonNull(datasourceNameByReplicaName);
             });
-        }else {
-            res = targetName;
+        } else {
+            datasource = targetName;
         }
-        return Objects.requireNonNull( res);
+        return Objects.requireNonNull(datasource);
     }
 
     @Override
     public String getDataSourceByTargetName(String targetName) {
-        return getDataSourceByTargetName(targetName,false);
+        return getDataSourceByTargetName(targetName, false);
     }
 
     public void setLoadBalanceStrategy(String loadBalanceStrategy) {
@@ -52,9 +49,8 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
     }
 
 
-    public void clear(){
+    public void clear() {
         map.clear();
-        replicaMode = null;
         loadBalanceStrategy = null;
     }
 }
