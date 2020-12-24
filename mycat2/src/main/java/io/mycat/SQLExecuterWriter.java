@@ -78,12 +78,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         return;
                     }
                     case UPDATEOK: {
-                        transactionSession.clearJdbcConnection();
+                        transactionSession.closeStatenmentState();
                         session.writeOk(moreResultSet);
                         return;
                     }
                     case ERROR: {
-                        transactionSession.clearJdbcConnection();
+                        transactionSession.closeStatenmentState();
                         session.writeErrorEndPacketBySyncInProcessError();
                         return;
                     }
@@ -93,7 +93,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
                             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
                             if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
                                         MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                         session.getIsolation());
@@ -112,7 +112,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
                                 session.setAffectedRows(res[0]);
                                 session.setLastInsertId(res[1]);
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 session.writeOk(moreResultSet);
                                 return;
                             }
@@ -120,7 +120,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
                                 session.setAffectedRows(res[0]);
                                 session.setLastInsertId(res[1]);
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 session.writeOk(moreResultSet);
                                 return;
                             }
@@ -139,7 +139,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                     return;
                                 }
                                 transactionSession.commit();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 if (!session.isBindMySQLSession()) {
                                     LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
                                     session.writeOk(false);
@@ -151,7 +151,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.commit();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;
@@ -172,7 +172,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                     return;
                                 }
                                 transactionSession.rollback();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 if (session.isBindMySQLSession()) {
                                     receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
                                     LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
@@ -184,7 +184,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.rollback();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;
@@ -199,14 +199,14 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         switch (transactionType) {
                             case PROXY_TRANSACTION_TYPE: {
                                 transactionSession.begin();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
                                 session.writeOk(moreResultSet);
                                 return;
                             }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.begin();
-                                transactionSession.clearJdbcConnection();
+                                transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
                                 session.writeOk(moreResultSet);
                                 return;
@@ -250,7 +250,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
             session.writeBytes(row, false);
         }
         currentResultSet.close();
-        session.getDataContext().getTransactionSession().clearJdbcConnection();
+        session.getDataContext().getTransactionSession().closeStatenmentState();
         session.writeRowEndPacket(moreResultSet, false);
     }
 

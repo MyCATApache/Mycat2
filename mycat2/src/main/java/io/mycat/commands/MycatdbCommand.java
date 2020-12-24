@@ -163,7 +163,7 @@ public enum MycatdbCommand {
 
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.ensureTranscation();
+        transactionSession.openStatementState();
         //////////////////////////////////////////////////////////////////////////////////////
         if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);

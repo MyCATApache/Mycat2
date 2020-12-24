@@ -5,7 +5,6 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void ensureTranscation() {
+    public void openStatementState() {
         if (!isAutocommit()) {
             begin();
         }
@@ -103,7 +102,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public synchronized void close() {
-        clearJdbcConnection();
+        closeStatenmentState();
         for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
             DefaultConnection value = stringDefaultConnectionEntry.getValue();
             if (value != null) {
@@ -125,7 +124,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     @SneakyThrows
-    public void clearJdbcConnection() {
+    public void closeStatenmentState() {
         if (!isInTransaction()) {
             Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
             for (Map.Entry<String, DefaultConnection> entry : entries) {
