@@ -184,7 +184,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     @SneakyThrows
-    void start() {
+   public void start() {
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
         }

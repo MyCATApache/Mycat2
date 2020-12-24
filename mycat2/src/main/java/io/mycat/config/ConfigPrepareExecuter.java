@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.mycat.config.UpdateType.*;
+
 public class ConfigPrepareExecuter {
     private final MycatRouterConfigOps ops;
     ////////////////////////////////////////////////////////////////////////////////////
@@ -62,26 +64,26 @@ public class ConfigPrepareExecuter {
     public void prepareRuntimeObject() {
 
         switch (ops.getUpdateType()) {
-            case io.mycat.config.UpdateType.USER: {
+            case USER: {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
 
                 this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().distinct().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
                 break;
             }
-            case io.mycat.config.UpdateType.SEQUENCE: {
+            case SEQUENCE: {
                 LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
                 MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
                 this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), ops.getSequences());
                 break;
             }
-            case io.mycat.config.UpdateType.ROUTER: {
+            case ROUTER: {
                 this.metadataManager = createMetaData();
                 clearSqlCache();
                 break;
             }
-            case io.mycat.config.UpdateType.CREATE_TABLE: {
+            case CREATE_TABLE: {
                 String schemaName = ops.getSchemaName();
                 String tableName = ops.getTableName();
                 this.metadataManager = createMetaData();
@@ -90,7 +92,7 @@ public class ConfigPrepareExecuter {
                 clearSqlCache();
                 break;
             }
-            case io.mycat.config.UpdateType.DROP_TABLE: {
+            case DROP_TABLE: {
                 MetadataManager oldMetadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
 
                 String schemaName = ops.getSchemaName();
@@ -104,14 +106,14 @@ public class ConfigPrepareExecuter {
                 clearSqlCache();
                 break;
             }
-            case io.mycat.config.UpdateType.FULL: {
+            case FULL: {
                 MycatRouterConfig mycatRouterConfig = ops.getMycatRouterConfig();
                 fullInitBy(mycatRouterConfig);
                 clearSqlCache();
                 break;
             }
 
-            case io.mycat.config.UpdateType.CREATE_SQL_CACHE: {
+            case CREATE_SQL_CACHE: {
                 if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
                     SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
                     if (sqlResultSetService != null) {
@@ -120,7 +122,7 @@ public class ConfigPrepareExecuter {
                 }
                 break;
             }
-            case io.mycat.config.UpdateType.DROP_SQL_CACHE: {
+            case DROP_SQL_CACHE: {
                 if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
                     SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
                     if (sqlResultSetService != null) {
@@ -129,7 +131,7 @@ public class ConfigPrepareExecuter {
                 }
                 break;
             }
-            case io.mycat.config.UpdateType.RESET:
+            case RESET:
                 MycatRouterConfig routerConfig = new MycatRouterConfig();
                 FileMetadataStorageManager.defaultConfig(routerConfig);
                 fullInitBy(routerConfig);

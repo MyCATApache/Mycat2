@@ -21,8 +21,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     }
 
     @Override
-    void start() throws Exception {
-
+   public void start() throws Exception {
         this.store.init();
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps(loadFromLocalConfigCenter(), configOps));
@@ -33,7 +32,9 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     public void reportReplica(Map<String, Set<String>> dsNames) {
-
+        storageManager.reportReplica(dsNames);
+        FileMetadataStorageManager.State state =  new FileMetadataStorageManager.State();
+        store.set("state", readerWriter.transformation(state));
     }
 
     private MycatRouterConfig loadFromLocalConfigCenter() {
