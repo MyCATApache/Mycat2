@@ -927,7 +927,7 @@ public class MetadataManager implements MysqlVariableService {
     public List<String> showDatabases() {
         return schemaMap.keySet().stream().map(i -> SQLUtils.normalize(i))
                 .distinct()
-                .filter(i->"mycat".equals(i))
+                .filter(i->!"mycat".equals(i))
                 .sorted(Comparator.comparing(s -> s)).collect(Collectors.toList());
     }
 
