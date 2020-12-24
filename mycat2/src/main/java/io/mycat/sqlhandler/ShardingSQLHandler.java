@@ -4,16 +4,13 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatDataContext;
+import io.mycat.*;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.DefaultDatasourceFactory;
 import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
-import io.mycat.Response;
 
 import java.util.*;
 
@@ -32,6 +29,9 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                     String tableName = x.getTableName();
                     if (tableName != null) {
                         String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
+                        if (schema == null){
+                            throw new MycatException("please use schema;");
+                        }
                         tableNames.add(Pair.of(schema, SQLUtils.normalize(tableName)));
                     }
                     return super.visit(x);
