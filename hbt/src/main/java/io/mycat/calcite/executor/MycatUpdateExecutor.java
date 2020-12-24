@@ -5,11 +5,14 @@ import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import io.mycat.*;
-import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.DataNode;
+import io.mycat.MycatConnection;
+import io.mycat.MycatDataContext;
+import io.mycat.TransactionSession;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.mpp.Row;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Pair;
@@ -20,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,7 +34,8 @@ public class MycatUpdateExecutor implements Executor {
     private MycatDataContext context;
     private final Distribution values;
     private final SQLStatement sqlStatement;
-    private List<Object> parameters;
+    private List<Object> inParameters;
+    private List<Object> outParameters;
     private final HashSet<GroupKey> groupKeys;
     private DataSourceFactory factory;
     private long lastInsertId = 0;
@@ -46,7 +49,7 @@ public class MycatUpdateExecutor implements Executor {
         this.context = context;
         this.values = values;
         this.sqlStatement = sqlStatement;
-        this.parameters = parameters;
+        this.inParameters = parameters;
         this.factory = factory;
         this.groupKeys = getGroup();
         factory.registered(this.groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
@@ -56,7 +59,7 @@ public class MycatUpdateExecutor implements Executor {
                                              SQLStatement sqlStatement,
                                              DataSourceFactory factory,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(context,values, sqlStatement, parameters, factory);
+        return new MycatUpdateExecutor(context, values, sqlStatement, parameters, factory);
     }
 
     public boolean isProxy() {
@@ -67,7 +70,7 @@ public class MycatUpdateExecutor implements Executor {
         GroupKey groupKey = groupKeys.iterator().next();
         GroupKey key = groupKey;
         String parameterizedSql = key.getParameterizedSql();
-        String sql = apply(parameterizedSql, parameters);
+        String sql = apply(parameterizedSql, inParameters);
         return Pair.of(key.getTarget(), sql);
     }
 
@@ -100,16 +103,24 @@ public class MycatUpdateExecutor implements Executor {
             MycatConnection mycatConnection = connections.get(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, sql, parameters);
+                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, sql, inParameters);
             }
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
                 LOGGER.debug("{} has closed but still using", mycatConnection);
             }
             long start = SqlRecord.now();
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
-            MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
-            int subAffectedRow = preparedStatement.executeUpdate();
-            sqlRecord.addSubRecord(sql,start,SqlRecord.now(),target,subAffectedRow);
+            ParameterMetaData parameterMetaData = preparedStatement.getParameterMetaData();
+            if (parameterMetaData.getParameterCount() > 0) {
+                MycatPreparedStatementUtil.setParams(preparedStatement, outParameters);
+            }
+            int subAffectedRow = 0;
+            try {
+                subAffectedRow = preparedStatement.executeUpdate();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+            sqlRecord.addSubRecord(sql, start, SqlRecord.now(), target, subAffectedRow);
             this.affectedRow += subAffectedRow;
             this.lastInsertId = Math.max(this.lastInsertId, getInSingleSqlLastInsertId(insertId, preparedStatement));
         }
@@ -117,7 +128,9 @@ public class MycatUpdateExecutor implements Executor {
 
     @NotNull
     private HashSet<GroupKey> getGroup() {
-        Iterable<DataNode> dataNodes = values.getDataNodes(parameters);
+
+
+        Iterable<DataNode> dataNodes = values.getDataNodes(inParameters);
         HashSet<GroupKey> groupHashMap = new HashSet<>();
         for (DataNode dataNode : dataNodes) {
             SQLExprTableSource tableSource = null;
@@ -133,11 +146,14 @@ public class MycatUpdateExecutor implements Executor {
             Objects.requireNonNull(tableSource);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
+
             StringBuilder sb = new StringBuilder();
             List<Object> outparameters = new ArrayList<>();
-            MycatPreparedStatementUtil.collect(sqlStatement, sb, parameters, outparameters);
+            MycatPreparedStatementUtil.collect(sqlStatement, sb, Collections.unmodifiableList(inParameters), outparameters);
+            if (outParameters == null) {
+                outParameters = outparameters;
+            }
             String sql = sb.toString();
-            this.parameters = outparameters;
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             groupHashMap.add(key);
         }
@@ -192,7 +208,7 @@ public class MycatUpdateExecutor implements Executor {
         for (GroupKey groupKey : groupKeys) {
             String target = groupKey.getTarget();
             String parameterizedSql = groupKey.getParameterizedSql();
-            explainWriter.item("target:" + target + " " + parameterizedSql, parameters);
+            explainWriter.item("target:" + target + " " + parameterizedSql, inParameters);
         }
         return explainWriter.ret();
     }
