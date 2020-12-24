@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.3-beta</version>
+    <version>1.13-beta</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,12 +15,12 @@
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>common</artifactId>
-      <version>1.3-beta</version>
+      <version>1.13-beta</version>
     </dependency>
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>plug</artifactId>
-      <version>1.3-beta</version>
+      <version>1.13-beta</version>
     </dependency>
   </dependencies>
 </project>
