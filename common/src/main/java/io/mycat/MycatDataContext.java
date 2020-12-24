@@ -22,7 +22,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     void switchTransaction(TransactionType transactionSessionType);
 
-    <T> T getVariable(boolean global,String target);
+    <T> T getVariable(boolean global, String target);
 
     <T> T getVariable(MycatDataContextEnum name);
 
@@ -61,35 +61,35 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     public MycatUser getUser();
 
-    void useShcema(String schema);
-
     void setUser(MycatUser user);
+
+    void useShcema(String schema);
 
     String getDefaultSchema();
 
     int getServerCapabilities();
 
+    void setServerCapabilities(int serverCapabilities);
+
     int getWarningCount();
 
     long getLastInsertId();
+
+    void setLastInsertId(long s);
 
     Charset getCharset();
 
     int getCharsetIndex();
 
-    void setLastInsertId(long s);
-
     int getLastErrorCode();
 
     long getAffectedRows();
 
-    void setLastMessage(String lastMessage);
+    void setAffectedRows(long affectedRows);
 
     String getLastMessage();
 
-    void setServerCapabilities(int serverCapabilities);
-
-    void setAffectedRows(long affectedRows);
+    void setLastMessage(String lastMessage);
 
     void setCharset(int index, String charsetName, Charset defaultCharset);
 
@@ -114,6 +114,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     void block(Runnable runnable);
 
     public String resolveDatasourceTargetName(String targetName);
+
+    public String resolveDatasourceTargetName(String targetName, boolean master);
 
     Map<Long, PreparedStatement> getPrepareInfo();
 

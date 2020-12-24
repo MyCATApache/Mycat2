@@ -94,7 +94,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
 
     public void setReadOnly(boolean readOnly) {
-        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
+//        this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
     }
 
 
@@ -185,8 +185,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     @Override
-    public String getTxId() {
-        return null;
+    public String resolveFinalTargetName(String targetName, boolean master) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName, master);
     }
-
 }

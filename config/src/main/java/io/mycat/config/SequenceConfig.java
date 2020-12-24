@@ -3,8 +3,6 @@ package io.mycat.config;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Map;
-
 @Data
 @EqualsAndHashCode
 public class SequenceConfig {

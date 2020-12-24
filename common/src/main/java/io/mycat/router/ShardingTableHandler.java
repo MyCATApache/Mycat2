@@ -13,12 +13,13 @@ public interface ShardingTableHandler extends TableHandler {
 
     List<DataNode> dataNodes();
 
+    @Override
     List<SimpleColumnInfo> getColumns();
 
 
     Optional<Iterable<Object[]>> canIndexTableScan(int[] projects);
 
-    Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndex,Object[] value);
+    Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndex, Object[] value);
 
     Optional<Iterable<Object[]>> canIndexTableScan();
 

@@ -19,10 +19,8 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ServerConfig;
-import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.transactionsession.LocalTransactionSession;
-
 
 import java.util.List;
 import java.util.Objects;

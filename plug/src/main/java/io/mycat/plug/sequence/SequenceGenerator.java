@@ -1,8 +1,6 @@
 package io.mycat.plug.sequence;
 
-import io.mycat.MetaClusterCurrent;
 import io.mycat.config.SequenceConfig;
-import io.mycat.config.ServerConfig;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -10,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,15 +55,15 @@ public class SequenceGenerator {
                             sequenceConfig.setName(uniqueName);
                             return sequenceConfig;
                         });
-                if (sequenceConfig1.isTime()&&sequenceConfig1.getClazz()==null) {
+                if (sequenceConfig1.isTime() && sequenceConfig1.getClazz() == null) {
                     TimeBasedSequence timeBasedSequence = new TimeBasedSequence();
                     timeBasedSequence.init(sequenceConfig1, workerId);
                     return timeBasedSequence;
-                }else {
+                } else {
                     String clazz = sequenceConfig1.getClazz();
                     Class<?> aClass = Class.forName(clazz);
-                    SequenceHandler o = (SequenceHandler)aClass.newInstance();
-                    o.init(sequenceConfig1,workerId);
+                    SequenceHandler o = (SequenceHandler) aClass.newInstance();
+                    o.init(sequenceConfig1, workerId);
                     return o;
                 }
             }

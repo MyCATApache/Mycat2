@@ -3,21 +3,17 @@ package io.mycat.sqlhandler;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowRelayLogEventsStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
-import io.mycat.hbt4.DataSourceFactory;
-import io.mycat.hbt4.DefaultDatasourceFactory;
-import io.mycat.hbt4.ResponseExecutorImplementor;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.NormalTable;
+import io.mycat.calcite.DataSourceFactory;
+import io.mycat.calcite.DefaultDatasourceFactory;
+import io.mycat.calcite.ResponseExecutorImplementor;
+import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 import java.util.*;
 

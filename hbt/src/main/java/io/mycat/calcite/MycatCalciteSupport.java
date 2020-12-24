@@ -22,7 +22,10 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.sqlfunction.CRC32Function;
+import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
+import io.mycat.calcite.sqlfunction.mathfunction.CRC32Function;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
@@ -199,6 +202,12 @@ public enum MycatCalciteSupport implements Context {
     }
 
     static {
+        Map<SqlOperator, RexImpTable.RexCallImplementor> rexImpTableMap = RexImpTable.INSTANCE.map;
+        rexImpTableMap.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(DateSubFunction.INSTANCE,DateSubFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(ExtractFunction.INSTANCE,ExtractFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(AddTimeFunction.INSTANCE,AddTimeFunction.INSTANCE.getRexCallImplementor());
+
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
 //        configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
@@ -277,18 +286,18 @@ public enum MycatCalciteSupport implements Context {
                             UpdateXMLFunction.INSTANCE,
                             WeightStringFunction.INSTANCE,
                             /////////////////////////////////////////
-                            AddDateFunction.INSTANCE,
 //                            DateAddFunction.INSTANCE,
-                            RexImpTable.AddTimeFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
                             ConvertTzFunction.INSTANCE,
                             CurDateFunction.INSTANCE,
                             DateDiffFunction.INSTANCE,
                             DateFormatFunction.INSTANCE,
                             DateFormat2Function.INSTANCE,
                             StringToTimestampFunction.INSTANCE,
-                            RexImpTable.DateAddFunction.INSTANCE,
-                            RexImpTable.DateSubFunction.INSTANCE,
-                            RexImpTable.ExtractFunction.INSTANCE,
+                            DateAddFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
+                            DateSubFunction.INSTANCE,
+                            ExtractFunction.INSTANCE,
                             DayOfWeekFunction.INSTANCE,
                             FromDaysFunction.INSTANCE,
                             HourFunction.INSTANCE,
@@ -679,12 +688,6 @@ public enum MycatCalciteSupport implements Context {
         return tables.stream()
                 .map(preComputationSQLTable ->
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
-    }
-
-    public String getDbTypeByTargetName(String name) {
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
-        return dbTypeText;
     }
 
     public SqlDialect getSqlDialectByTargetName(String name) {

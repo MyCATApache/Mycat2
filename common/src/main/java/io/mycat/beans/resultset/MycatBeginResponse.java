@@ -3,8 +3,8 @@ package io.mycat.beans.resultset;
 import java.io.IOException;
 
 public class MycatBeginResponse implements MycatResponse {
-    final MycatResultSetType type = MycatResultSetType.BEGIN;
     public static final MycatBeginResponse INSTANCE = new MycatBeginResponse();
+    final MycatResultSetType type = MycatResultSetType.BEGIN;
 
     @Override
     public MycatResultSetType getType() {

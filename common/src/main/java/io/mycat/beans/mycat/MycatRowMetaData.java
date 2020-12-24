@@ -16,10 +16,7 @@
 package io.mycat.beans.mycat;
 
 import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author jamie12221
@@ -97,12 +94,12 @@ public interface MycatRowMetaData {
         return isPrimaryKey(column);
     }
 
-   default List<String> getColumnList(){
-       int columnCount = getColumnCount();
-       ArrayList<String> fields = new ArrayList<>();
-       for (int i = 1; i <=columnCount ; i++) {
-           fields.add(getColumnName(i));
-       }
-       return fields;
+    default List<String> getColumnList() {
+        int columnCount = getColumnCount();
+        ArrayList<String> fields = new ArrayList<>();
+        for (int i = 1; i <= columnCount; i++) {
+            fields.add(getColumnName(i));
+        }
+        return fields;
     }
 }

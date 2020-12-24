@@ -8,13 +8,11 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.MetadataManager;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +39,8 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
             return ;
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
-        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> selectorRuntime.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> dataContext.resolveDatasourceTargetName(name)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {

@@ -18,7 +18,6 @@ package io.mycat.plug.sequence;
 
 import io.mycat.config.SequenceConfig;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**

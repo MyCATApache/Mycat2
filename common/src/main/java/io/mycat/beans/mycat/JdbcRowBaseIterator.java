@@ -15,8 +15,8 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.MycatConnection;
-import io.mycat.MycatTimeUtil;
 import io.mycat.MycatException;
+import io.mycat.MycatTimeUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorCloseCallback;
 import lombok.SneakyThrows;
@@ -39,12 +39,12 @@ import static java.sql.Types.*;
 public class JdbcRowBaseIterator implements RowBaseIterator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcRowBaseIterator.class);
-    private MycatRowMetaData metaData;
     private final Statement statement;
     private final ResultSet resultSet;
-    private MycatConnection connection;
     private final String sql;
     private final RowIteratorCloseCallback closeCallback;
+    private MycatRowMetaData metaData;
+    private MycatConnection connection;
     private long rowCount = 0;
     private boolean hasNext = true;
 
@@ -76,8 +76,8 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public boolean next() {
         try {
-            if (hasNext){
-                if (hasNext =resultSet.next()) {
+            if (hasNext) {
+                if (hasNext = resultSet.next()) {
                     rowCount += 1;
                     return true;
                 } else {

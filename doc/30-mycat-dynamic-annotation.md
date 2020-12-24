@@ -8,7 +8,6 @@ lib:
   - io.mycat.lib.FinalCacheExport
   - io.mycat.lib.SQLModifierExport
   - io.mycat.lib.JdbcExport
-  - io.mycat.lib.SessionMapExport
   - io.mycat.lib.CalciteExport
   - io.mycat.lib.CacheExport
   - io.mycat.lib.TransforFileExport

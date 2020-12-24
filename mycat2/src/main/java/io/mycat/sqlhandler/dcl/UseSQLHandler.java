@@ -3,9 +3,8 @@ package io.mycat.sqlhandler.dcl;
 import com.alibaba.fastsql.sql.ast.statement.SQLUseStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 public class UseSQLHandler extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLUseStatement> {
     @Override

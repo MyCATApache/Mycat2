@@ -1,12 +1,9 @@
 package io.mycat;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 
 @Getter
@@ -30,9 +27,9 @@ public class ExplainDetail {
                                        String target,
                                        String sql,
                                        String balance
-           ){
+    ) {
         return new ExplainDetail(executeType,
-                target,sql,
+                target, sql,
                 balance);
     }
 
@@ -40,7 +37,7 @@ public class ExplainDetail {
         ArrayList<String> list = new ArrayList<>();
         list.add("executeType:" + executeType);
         list.add("target: " + target);
-        list.add( "sql:" + sql);
+        list.add("sql:" + sql);
         list.add("balance:" + balance);
         return list;
     }

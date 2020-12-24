@@ -4,7 +4,6 @@ import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Dumper;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -26,7 +25,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     static final AtomicLong XID_SEQUENCE = new AtomicLong();
 
-    public String nextXid() {
+    private String nextXid() {
         MycatUser user = dataContext.getUser();
         return user.toString() + "_" + XID_SEQUENCE.getAndIncrement();
     }
@@ -39,12 +38,11 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     @Override
     @SneakyThrows
     public MycatConnection getConnection(String targetName) {
-        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        targetName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, isInTransaction(), null);
+        targetName = resolveFinalTargetName(targetName);
         DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
         if (defaultConnection != null) {
-            if(defaultConnection.getRawConnection().getAutoCommit()){
-                if (isInTransaction()){
+            if (defaultConnection.getRawConnection().getAutoCommit()) {
+                if (isInTransaction()) {
                     defaultConnection.getRawConnection().setAutoCommit(false);
                 }
             }
@@ -132,4 +130,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
                 .addText("transactionType", this.transactionType());
     }
 
+    @Override
+    public String getTxId() {
+        return mycatXid;
+    }
 }

@@ -141,28 +141,32 @@ public class SensitiveRemover {
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLJoinTableSource x) {
                 String alias = x.getAlias();
-                if (alias!=null){
-                    x.setAlias( "a_" + aliasAcc.getAndIncrement());
+                if (alias != null) {
+                    x.setAlias("a_" + aliasAcc.getAndIncrement());
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLPropertyExpr x) {
                 String newColumnName = "p_" + propertyAcc.getAndIncrement();
                 x.setName(newColumnName);
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLSelectItem x) {
                 String alias = x.getAlias();
-                if (alias!=null){
-                    x.setAlias( "a_" + aliasAcc.getAndIncrement());
+                if (alias != null) {
+                    x.setAlias("a_" + aliasAcc.getAndIncrement());
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLIdentifierExpr x) {
                 String newColumnName = "i_" + columnAcc.getAndIncrement();

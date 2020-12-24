@@ -5,7 +5,6 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @ToString
@@ -38,13 +37,16 @@ public class Dumper {
         textList.add(text);
         return this;
     }
+
     public Dumper addText(String key, Object value) {
-        textList.add(key+":"+value);
+        textList.add(key + ":" + value);
         return this;
     }
+
     public String toString(CharSequence delimiter) {
         return textList.stream().distinct().collect(Collectors.joining(delimiter));
     }
+
     public List<String> toStringList() {
         return new ArrayList<>(textList);
     }

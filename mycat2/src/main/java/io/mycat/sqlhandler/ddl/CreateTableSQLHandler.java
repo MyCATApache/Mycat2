@@ -9,7 +9,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

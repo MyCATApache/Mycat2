@@ -10,8 +10,8 @@
 //import io.mycat.commands.MycatCommand;
 //import io.mycat.commands.MycatdbCommand;
 //import io.mycat.hbt4.CacheExecutorImplementor;
-//import io.mycat.hbt4.DefaultDatasourceFactory;
-//import io.mycat.hbt4.executor.TempResultSetFactoryImpl;
+//import io.mycat.calcite.DefaultDatasourceFactory;
+//import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 //import io.mycat.matcher.Matcher;
 //import io.mycat.plug.command.MycatCommandLoader;
 //import io.mycat.plug.hint.HintLoader;
@@ -19,7 +19,7 @@
 //import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 //import io.mycat.runtime.MycatDataContextImpl;
 //import io.mycat.sqlhandler.dml.DrdsRunners;
-//import io.mycat.util.Response;
+//import io.mycat.Response;
 //import io.mycat.util.StringUtil;
 //import lombok.Getter;
 //import lombok.SneakyThrows;

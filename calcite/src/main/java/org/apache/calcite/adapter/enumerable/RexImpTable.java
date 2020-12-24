@@ -16,22 +16,19 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
-import org.apache.calcite.MycatContext;
-import org.apache.calcite.linq4j.tree.*;
-import org.apache.calcite.mycat.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.linq4j.tree.*;
+import org.apache.calcite.mycat.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexPatternFieldRef;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.ImplementableAggFunction;
 import org.apache.calcite.schema.ImplementableFunction;
@@ -49,242 +46,20 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import sun.reflect.generics.tree.ReturnType;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.temporal.Temporal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Divide;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Equal;
-import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThan;
-import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThanOrEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.LessThan;
-import static org.apache.calcite.linq4j.tree.ExpressionType.LessThanOrEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Multiply;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Negate;
-import static org.apache.calcite.linq4j.tree.ExpressionType.NotEqual;
-import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
-import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.CHR;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.COMPRESS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT2;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.CONCAT_FUNCTION;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.COSH;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.DATE_FROM_UNIX_DATE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.DAYNAME;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.DIFFERENCE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXISTS_NODE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXTRACT_VALUE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.EXTRACT_XML;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.FROM_BASE64;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_DEPTH;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_KEYS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_LENGTH;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_PRETTY;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_REMOVE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_STORAGE_SIZE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.JSON_TYPE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.LEFT;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.MD5;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.MONTHNAME;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.SHA1;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.SINH;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.SOUNDEX;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.SPACE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.STRCMP;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TANH;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MICROS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_MILLIS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TIMESTAMP_SECONDS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TO_BASE64;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_DATE;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MICROS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_MILLIS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.UNIX_SECONDS;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.XML_TRANSFORM;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ABS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ACOS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.AND;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ANY_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ASCII;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ASIN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ATAN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ATAN2;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_AND;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_OR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.BIT_XOR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CARDINALITY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CAST;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CBRT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CEIL;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CLASSIFIER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.COALESCE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.COLLECT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CONCAT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.COS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.COT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.COUNT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_CATALOG;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_DATE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_PATH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_ROLE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_TIME;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_TIMESTAMP;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_USER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CURRENT_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DATETIME_PLUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DEFAULT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DEGREES;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DENSE_RANK;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DIVIDE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DIVIDE_INTEGER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ELEMENT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EQUALS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EVERY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXP;
+import static org.apache.calcite.linq4j.tree.ExpressionType.*;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.*;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.*;
+
 //import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXTRACT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FIRST_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FLOOR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FUSION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GREATER_THAN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GROUPING;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GROUPING_ID;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.HOP;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.INITCAP;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.INTERSECTION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_A_SET;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_EMPTY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_FALSE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_ARRAY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_OBJECT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_SCALAR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_A_SET;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_EMPTY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_FALSE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_JSON_ARRAY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_JSON_OBJECT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_JSON_SCALAR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_JSON_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_NULL;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_TRUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NULL;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_TRUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ITEM;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_ARRAY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_ARRAYAGG;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_EXISTS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_OBJECT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_OBJECTAGG;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_QUERY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.JSON_VALUE_EXPRESSION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAG;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST;
 //import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST_DAY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LAST_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LEAD;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LESS_THAN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LIKE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LISTAGG;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOCALTIME;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOG10;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOWER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MAX;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MEMBER_OF;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MIN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS_DATE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MOD;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTIPLY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_EXCEPT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_INTERSECT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_UNION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_UNION_DISTINCT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NEXT_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_EQUALS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_LIKE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_SIMILAR_TO;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_SUBMULTISET_OF;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NTH_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NTILE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OR;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OVERLAY;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PI;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PLUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POSITION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.POWER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RADIANS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RAND;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RAND_INTEGER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.RANK;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.REGR_COUNT;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.REINTERPRET;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.REPLACE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ROUND;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ROW;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ROW_NUMBER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SESSION;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SESSION_USER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIGN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIMILAR_TO;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SINGLE_VALUE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SLICE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SOME;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.STRUCT_ACCESS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUBMULTISET_OF;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUBSTRING;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUM;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUM0;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SYSTEM_USER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TAN;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRIM;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TUMBLE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.USER;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -305,7 +80,7 @@ public class RexImpTable {
   public static final MemberExpression BOXED_TRUE_EXPR =
       Expressions.field(null, Boolean.class, "TRUE");
 
-  private final Map<SqlOperator, RexCallImplementor> map = new HashMap<>();
+  public final Map<SqlOperator, RexCallImplementor> map = new HashMap<>();
   private final Map<SqlAggFunction, Supplier<? extends AggImplementor>> aggMap =
       new HashMap<>();
   private final Map<SqlAggFunction, Supplier<? extends WinAggImplementor>> winAggMap =
@@ -650,9 +425,7 @@ public class RexImpTable {
     tvfImplementorMap.put(SESSION, SessionImplementor::new);
 
     /////////////////////////////////////////////////////mycat//////////////////////////////////
-    map.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
-    map.put(DateSubFunction.INSTANCE,DateSubFunction.INSTANCE.getRexCallImplementor());
-    map.put(ExtractFunction.INSTANCE,ExtractFunction.INSTANCE.getRexCallImplementor());
+
   }
 
   private <T> Supplier<T> constructorSupplier(Class<T> klass) {
@@ -744,33 +517,6 @@ public class RexImpTable {
   }
 
   public RexCallImplementor get(final SqlOperator operator) {
-    if (operator == MycatSessionValueFunction.INSTANCE){
-      return RexImpTable.MycatSessionValueImplementor.INSTANCE;
-    }
-    if (operator == MycatGlobalValueFunction.INSTANCE){
-      return RexImpTable.MycatGlobalValueImplementor.INSTANCE;
-    }
-    if (operator == MycatUserValueFunction.INSTANCE){
-      return MycatUserValueImplementor.INSTANCE;
-    }
-    if (operator == MycatDatabaseFunction.INSTANCE){
-      return RexImpTable.MycatDatabaseImplementor.INSTANCE;
-    }
-    if (operator == MycatLastInsertIdFunction.INSTANCE){
-      return MycatLastInsertIdImplementor.INSTANCE;
-    }
-    if (operator == MycatConnectionIdFunction .INSTANCE){
-      return MycatConnectionIdImplementor.INSTANCE;
-    }
-    if (operator == MycatCurrentUserFunction .INSTANCE){
-      return MycatCurrrentUserImplementor.INSTANCE;
-    }
-    if (operator == MycatUserFunction .INSTANCE){
-      return MycatUserImplementor.INSTANCE;
-    }
-    if (operator == RexImpTable.AddTimeFunction .INSTANCE){
-      return  RexImpTable.AddTimeFunction .INSTANCE.getRexCallImplementor();
-    }
     if (operator instanceof MycatSqlDefinedFunction ){
       CallImplementor implementor = ((MycatSqlDefinedFunction) operator);
       return wrapAsRexCallImplementor(implementor);
@@ -2400,9 +2146,9 @@ public class RexImpTable {
     case MILLISECOND:
       return TimeUnit.SECOND.multiplier.longValue();
     case MONTH:
-      return TimeUnit.YEAR.multiplier.longValue();
+      return TimeUnit.MONTH.multiplier.longValue();
     case QUARTER:
-      return TimeUnit.YEAR.multiplier.longValue();
+      return TimeUnit.QUARTER.multiplier.longValue();
     case YEAR:
     case DECADE:
     case CENTURY:
@@ -2440,144 +2186,8 @@ public class RexImpTable {
       }
     }
   }
- public static class MycatSessionValueImplementor extends AbstractRexCallImplementor{
-   public static final MycatSessionValueImplementor INSTANCE = new MycatSessionValueImplementor();
-   MycatSessionValueImplementor() {
-     super(NullPolicy.STRICT, false);
-   }
 
-   @Override
-   String getVariableName() {
-     return "mycatSessionValue";
-   }
 
-   @Override
-   Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-     return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getSessionVariable"
-     ,argValueList.get(0));
-   }
- }
-  public static class MycatUserValueImplementor extends AbstractRexCallImplementor{
-    public static final MycatUserValueImplementor INSTANCE = new MycatUserValueImplementor();
-    MycatUserValueImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatUserValue";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getUserVariable"
-              ,argValueList.get(0));
-    }
-  }
-  public static class MycatGlobalValueImplementor extends AbstractRexCallImplementor{
-    public static final MycatGlobalValueImplementor INSTANCE = new MycatGlobalValueImplementor();
-    MycatGlobalValueImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatGlobalValue";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getGlobalValue"
-              ,argValueList.get(0));
-    }
-  }
-  public static class MycatDatabaseImplementor extends AbstractRexCallImplementor{
-    public static final MycatDatabaseImplementor INSTANCE = new MycatDatabaseImplementor();
-    MycatDatabaseImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatDatabase";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getDatabase"
-      );
-    }
-  }
-
-  public static class MycatLastInsertIdImplementor extends AbstractRexCallImplementor{
-    public static final MycatLastInsertIdImplementor INSTANCE = new MycatLastInsertIdImplementor();
-    MycatLastInsertIdImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatLastInsertId";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getLastInsertId"
-      );
-    }
-  }
-
-  public static class MycatCurrrentUserImplementor extends AbstractRexCallImplementor{
-    public static final MycatCurrrentUserImplementor INSTANCE = new MycatCurrrentUserImplementor();
-    MycatCurrrentUserImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatCurrentUser";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getCurrentUser"
-      );
-    }
-  }
-  public static class MycatUserImplementor extends AbstractRexCallImplementor{
-    public static final MycatCurrrentUserImplementor INSTANCE = new MycatCurrrentUserImplementor();
-    MycatUserImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatCurrentUser";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getUser"
-      );
-    }
-  }
-  public static class MycatConnectionIdImplementor extends AbstractRexCallImplementor{
-    public static final MycatConnectionIdImplementor INSTANCE = new MycatConnectionIdImplementor();
-    MycatConnectionIdImplementor() {
-      super(NullPolicy.STRICT, false);
-    }
-
-    @Override
-    String getVariableName() {
-      return "mycatConnectionId";
-    }
-
-    @Override
-    Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-      return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getConnectionId"
-      );
-    }
-  }
   /** Implementor for the SQL {@code CAST} operator. */
   private static class CastImplementor extends AbstractRexCallImplementor {
     CastImplementor() {
@@ -2979,6 +2589,20 @@ public class RexImpTable {
         RexToLixTranslator translator,
         RexCall call,
         List<RexToLixTranslator.Result> arguments);
+  }
+
+  public static abstract class MycatAbstractRexCallImplementor extends AbstractRexCallImplementor{
+
+    public MycatAbstractRexCallImplementor(NullPolicy nullPolicy, boolean harmonize) {
+      super(nullPolicy, harmonize);
+    }
+
+    @Override
+    public abstract String getVariableName() ;
+
+    @Override
+    public abstract  Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) ;
+
   }
 
   /**
@@ -3653,269 +3277,7 @@ public class RexImpTable {
               gapInterval));
     }
   }
-  public static class DateAddFunction extends SqlFunction {
-    public static  final DateAddFunction INSTANCE =new DateAddFunction();
-    public static final SqlReturnTypeInference SCOPE = opBinding -> {
-      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
-      return callBinding.getValidator().getNamespace(
-              callBinding.getCall()).getRowType();
-    };
-    public DateAddFunction() {
-      super("DATE_ADD", SqlKind.OTHER_FUNCTION,
-//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
-//                      ,
-//                      ReturnTypes.explicit(SqlTypeName.DATE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
-//              )
-              ReturnTypes.VARCHAR_2000_NULLABLE
-              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
-    }
-    @Override
-    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
-      return super.checkOperandTypes(callBinding, throwOnFailure);
-    }
-   public RexCallImplementor getRexCallImplementor(){
-      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
-
-          @Override
-          protected String getVariableName() {
-            return "DATE_ADD";
-          }
-
-          @Override
-          public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-            Expression one = argValueList.get(0);
-            Expression second = argValueList.get(1);
-
-            if (one.getType() ==String.class&&second.getType() == Duration.class&&
-                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
-              Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateAddString", String.class, Duration.class);
-              return Expressions.call(dateAdd,one,second);
-            }     if (one.getType() ==Duration.class&&second.getType() == String.class&&
-                    SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
-              Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateAddString", String.class, Duration.class);
-              return Expressions.call(dateAdd,second,one);
-            }
-            return null;
-          }
-        };
-      }
-    }
-  public static class AddTimeFunction extends SqlFunction {
-    public static  final AddTimeFunction INSTANCE =new AddTimeFunction();
-
-    public AddTimeFunction() {
-      super("ADDTIME", SqlKind.OTHER_FUNCTION,
-              ReturnTypes.VARCHAR_2000_NULLABLE
-              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
-    }
-    @Override
-    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
-      return super.checkOperandTypes(callBinding, throwOnFailure);
-    }
-    //SqlParserUtil
-    //DateTimeUtils
-    //SqlLiteral
-    public static String addTime(String time, String tmp) {
-      boolean sub  = false;
-      return addTime(time, tmp, sub);
-    }
-
-    public static String addTime(String time, String tmp, boolean sub) {
-      if (time == null || tmp == null) {
-        return null;
-      }
-      Duration duration = MycatBuiltInMethodImpl.timeStringToTimeDuration(tmp);
-      Temporal temporal;
-      if (time.contains(":") && !time.contains("-")) {//time
-        Duration duration1 = MycatBuiltInMethodImpl.timeStringToTimeDuration(time);
-        duration1 =!sub?  duration1.plus(duration):duration1.minus(duration);
-        long days1 = duration1.toDays();
-        if (days1 == 0){
-          long hours = java.util.concurrent.TimeUnit.SECONDS.toHours(duration1.getSeconds());
-          int SECONDS_PER_HOUR = 60*60;
-          int SECONDS_PER_MINUTE = 60;
-          int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-          int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
-          int nano = duration1.getNano();
-          //01:00:00.999999
-          return String.format("%02d:%02d:%02d.%09d",hours, minutes, secs, nano);
-        }else {
-          long hours = java.util.concurrent.TimeUnit.SECONDS.toHours(duration1.getSeconds());
-          int SECONDS_PER_HOUR = 60*60;
-          int SECONDS_PER_MINUTE = 60;
-          int minutes = (int) (( duration1.getSeconds()  % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-          int secs = (int) ( duration1.getSeconds() % SECONDS_PER_MINUTE);
-          int nano = duration1.getNano();
-          return String.format("%02d:%02d:%02d:%02d.%09d", days1, hours, minutes, secs, nano);
-        }
-      }
-      temporal = MycatBuiltInMethodImpl.timestampStringToTimestamp(time);
-
-      Temporal res = !sub?addTime(temporal, duration):subTime(temporal,duration);
-      if (res instanceof LocalDateTime) {
-        LocalDateTime res1 = (LocalDateTime) res;
-        return res1.toLocalDate().toString() + " " + res1.toLocalTime().toString();
-      }
-      if (res instanceof LocalTime) {
-        LocalTime res1 = (LocalTime) res;
-        return res1.toString();
-      }
-      return res.toString();
-    }
-
-    private static Temporal addTime(Temporal temporal, Duration duration) {
-      if (temporal == null || duration == null) {
-        return null;
-      }
-      Temporal plus = temporal.plus(duration);
-      return plus;
-    }
-    private static Temporal subTime(Temporal temporal, Duration duration) {
-      if (temporal == null || duration == null) {
-        return null;
-      }
-      Temporal plus = temporal.minus(duration);
-      return plus;
-    }
 
 
-    public RexCallImplementor getRexCallImplementor(){
-      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
 
-        @Override
-        protected String getVariableName() {
-          return "ADDTIME";
-        }
-
-        @Override
-        public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-          Expression one = argValueList.get(0);
-          Expression second = argValueList.get(1);
-          Class firstClass = (Class) one.getType();
-          Class secondClass =(Class) second.getType();
-          Method addtime = Types.lookupMethod(AddTimeFunction.class, "addTime", firstClass, secondClass);
-          return Expressions.call(addtime,one,second);
-        }
-      };
-    }
-  }
-  public static class DateSubFunction extends SqlFunction {
-    public static  final DateSubFunction INSTANCE =new DateSubFunction();
-    public static final SqlReturnTypeInference SCOPE = opBinding -> {
-      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
-      return callBinding.getValidator().getNamespace(
-              callBinding.getCall()).getRowType();
-    };
-    public DateSubFunction() {
-      super("DATE_SUB", SqlKind.OTHER_FUNCTION,
-//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
-//                      ,
-//                      ReturnTypes.explicit(SqlTypeName.DATE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
-//              )
-              ReturnTypes.VARCHAR_2000_NULLABLE
-              , InferTypes.FIRST_KNOWN, OperandTypes.VARIADIC, SqlFunctionCategory.STRING);
-    }
-    @Override
-    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
-      return super.checkOperandTypes(callBinding, throwOnFailure);
-    }
-    public RexCallImplementor getRexCallImplementor(){
-      return  new AbstractRexCallImplementor(NullPolicy.ANY, true) {
-
-        @Override
-        protected String getVariableName() {
-          return "DATE_SUB";
-        }
-
-        @Override
-        public Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-          Expression one = argValueList.get(0);
-          Expression second = argValueList.get(1);
-
-          if (one.getType() ==String.class&&second.getType() == Duration.class&&
-                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
-            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
-            return Expressions.call(dateAdd,one,second);
-          }     if (one.getType() ==Duration.class&&second.getType() == String.class&&
-                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
-            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Duration.class);
-            return Expressions.call(dateAdd,second,one);
-          }
-          if (one.getType() ==String.class&&second.getType() == Period.class&&
-                  SqlTypeName.STRING_TYPES.contains(call.getType().getSqlTypeName())){
-            Method dateAdd = Types.lookupMethod(MycatBuiltInMethodImpl.class, "dateSubString", String.class, Period.class);
-            return Expressions.call(dateAdd,one,second);
-          }
-        throw new UnsupportedOperationException("unsupport:"+call);
-        }
-      };
-    }
-  }
-  public static class ExtractFunction extends SqlFunction {
-    public static  final ExtractFunction INSTANCE =new ExtractFunction();
-    public static final SqlReturnTypeInference SCOPE = opBinding -> {
-      SqlCallBinding callBinding = (SqlCallBinding) opBinding;
-      return callBinding.getValidator().getNamespace(
-              callBinding.getCall()).getRowType();
-    };
-    public ExtractFunction() {
-      super("EXTRACT", SqlKind.OTHER_FUNCTION,
-//              ReturnTypes.chain(ReturnTypes.VARCHAR_2000_NULLABLE
-//                      ,
-//                      ReturnTypes.explicit(SqlTypeName.DATE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE),
-//                      ReturnTypes.explicit(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
-//              )
-              ReturnTypes.INTEGER
-              , InferTypes.ANY_NULLABLE, OperandTypes.VARIADIC, SqlFunctionCategory.NUMERIC);
-    }
-    @Override
-    public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
-      return super.checkOperandTypes(callBinding, throwOnFailure);
-    }
-    public RexCallImplementor getRexCallImplementor(){
-      return  new AbstractRexCallImplementor (NullPolicy.STRICT, false) {
-
-        @Override
-        String getVariableName() {
-          return "EXTRACT";
-        }
-
-        @Override
-        Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-          final TimeUnitRange timeUnitRange =
-                  (TimeUnitRange) translator.getLiteralValue(argValueList.get(0));
-          final TimeUnit unit = timeUnitRange.startUnit;
-          Expression operand = argValueList.get(1);
-          final SqlTypeName sqlTypeName =
-                  call.operands.get(1).getType().getSqlTypeName();
-          Method extract = Types.lookupMethod(MycatBuiltInMethodImpl.class, "extract", TimeUnitRange.class, String.class);
-          return Expressions.call(extract,argValueList.get(0),argValueList.get(1));
-
-        }
-      };
-
-    };
-
-    @Override
-    public void unparse(
-            SqlWriter writer,
-            SqlCall call,
-            int leftPrec,
-            int rightPrec) {
-      final SqlWriter.Frame frame = writer.startFunCall(getName());
-      //@todo
-      call.operand(0).unparse(writer, 0, 0);
-      writer.sep("FROM");
-      call.operand(1).unparse(writer, 0, 0);
-      writer.endFunCall(frame);
-    }
-  }
 }

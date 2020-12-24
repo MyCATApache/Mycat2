@@ -27,7 +27,8 @@ import java.util.Map;
 @Data
 public class SecurityConfig {
     private boolean isIgnorePassword;
-    private Map<String,UserConfig> users = new HashMap<>();
+    private Map<String, UserConfig> users = new HashMap<>();
+
     @Data
     public static class UserConfig {
         private String password;

@@ -19,7 +19,6 @@ public enum MycatDataContextEnum {
     NET_WRITE_TIMEOUT,
     IS_READ_ONLY,
     IS_IN_TRANSCATION,
-    USER_INFO
-    ,
+    USER_INFO,
     ;
 }

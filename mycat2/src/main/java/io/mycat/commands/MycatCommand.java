@@ -16,7 +16,7 @@ package io.mycat.commands;
 
 import io.mycat.MycatDataContext;
 import io.mycat.client.MycatRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 /**
  * @author chen junwen

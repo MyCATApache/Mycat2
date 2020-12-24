@@ -4,13 +4,12 @@ import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLDropSequenceStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowCharacterSetStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 
 public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLDropSequenceStatement> {

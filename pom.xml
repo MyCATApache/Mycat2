@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.13-alpha</version>
+  <version>1.3-beta</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -16,15 +16,11 @@
     <module>mycat2</module>
     <!--<module>grid</module>-->
     <module>replica</module>
-      <module>pattern</module>
       <module>hbt</module>
-      <module>booster</module>
       <module>example</module>
-      <module>testsuite</module>
       <module>statistic</module>
       <module>calcite</module>
       <module>linq4j</module>
-    <module>seata</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

@@ -3,7 +3,7 @@ package io.mycat.beans.mycat;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
 
-public enum  UpdateRowMetaData implements MycatRowMetaData {
+public enum UpdateRowMetaData implements MycatRowMetaData {
     INSTANCE;
     public static final String UPDATE_COUNT = "UPDATE_COUNT";
     public static final String LAST_INSERT_ID = "LAST_INSERT_ID";

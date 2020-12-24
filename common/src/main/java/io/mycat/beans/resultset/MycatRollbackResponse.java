@@ -3,8 +3,8 @@ package io.mycat.beans.resultset;
 import java.io.IOException;
 
 public class MycatRollbackResponse implements MycatResponse {
-    final  MycatResultSetType type = MycatResultSetType.ROLLBACK;
     public static final MycatRollbackResponse INSTANCE = new MycatRollbackResponse();
+    final MycatResultSetType type = MycatResultSetType.ROLLBACK;
 
     @Override
     public MycatResultSetType getType() {

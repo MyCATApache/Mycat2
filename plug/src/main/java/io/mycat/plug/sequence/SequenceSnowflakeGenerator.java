@@ -12,9 +12,11 @@ public class SequenceSnowflakeGenerator implements Supplier<Number> {
     protected static final Logger LOGGER = LoggerFactory
             .getLogger(SequenceSnowflakeGenerator.class);
     private final Snowflake snowflake;
-    public SequenceSnowflakeGenerator(Map<String,Object> config) {
-        this. snowflake = Snowflake.create(Long.parseLong(Objects.toString(config.get("workerId"))));
+
+    public SequenceSnowflakeGenerator(Map<String, Object> config) {
+        this.snowflake = Snowflake.create(Long.parseLong(Objects.toString(config.get("workerId"))));
     }
+
     @Override
     public Number get() {
         return snowflake.nextId();

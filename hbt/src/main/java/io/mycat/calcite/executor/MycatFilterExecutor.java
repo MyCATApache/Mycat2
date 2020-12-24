@@ -1,0 +1,73 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
+package io.mycat.calcite.executor;
+
+
+import io.mycat.calcite.Executor;
+import io.mycat.calcite.ExplainWriter;
+import io.mycat.mpp.Row;
+
+import java.util.function.Predicate;
+
+public class MycatFilterExecutor implements Executor {
+    private final Predicate<Row> predicate;
+    private final Executor input;
+
+    public static MycatFilterExecutor create(Predicate<Row> predicate, Executor input) {
+        return new MycatFilterExecutor(predicate, input);
+    }
+
+    protected MycatFilterExecutor(Predicate<Row> predicate, Executor input) {
+        this.predicate = predicate;
+        this.input = input;
+    }
+
+    @Override
+    public void open() {
+        input.open();
+    }
+
+    @Override
+    public Row next() {
+        Row row;
+        do {
+            row = input.next();
+            if (row == null) {
+                input.close();
+                return null;
+            }
+        } while (predicate.test(row) != Boolean.TRUE);
+        return row;
+    }
+
+    @Override
+    public void close() {
+        input.close();
+    }
+
+    @Override
+    public boolean isRewindSupported() {
+        return input.isRewindSupported();
+    }
+
+
+    @Override
+    public ExplainWriter explain(ExplainWriter writer) {
+        ExplainWriter explainWriter = writer.name(this.getClass().getName())
+                .into();
+        input.explain(explainWriter);
+        return explainWriter.ret();
+    }
+}

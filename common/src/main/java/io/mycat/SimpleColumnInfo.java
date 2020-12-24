@@ -4,7 +4,6 @@ import io.mycat.router.CustomRuleFunction;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.JDBCType;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -32,9 +31,13 @@ public class SimpleColumnInfo {
     final boolean autoIncrement;
     final boolean primaryKey;
     final boolean index;
+    /**
+     * 在当前表中的下标 table(name,pwd,phone) 对应ID (0,1,2)
+     */
+    final int id;
 
 
-    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index) {
+    public SimpleColumnInfo(@NonNull String columnName, int precision, int scale, @NonNull JDBCType jdbcType, boolean nullable, boolean autoIncrement, boolean primaryKey, boolean index,int id) {
         this.columnName = columnName;
         this.precision = precision;
         this.scale = scale;
@@ -43,40 +46,7 @@ public class SimpleColumnInfo {
         this.autoIncrement = autoIncrement;
         this.primaryKey = primaryKey;
         this.index = index || primaryKey;
-    }
-
-    /**
-     * jamie 2019-12-11
-     */
-    public enum ShardingType {
-        MAP_TARGET,
-        MAP_SCHEMA,
-        MAP_TABLE,
-        NATURE_DATABASE_TABLE;
-
-        public static ShardingType parse(String name) {
-            if (name == null) {
-                return NATURE_DATABASE_TABLE;
-            }
-            return valueOf(name);
-        }
-    }
-
-    /**
-     * jamie 2019-12-11
-     */
-    @Data
-    @AllArgsConstructor
-    @ToString
-    public static class ShardingInfo {
-        @NonNull
-        final SimpleColumnInfo columnInfo;
-        @NonNull
-        final ShardingType shardingType;
-        @NonNull
-        final List<String> map;
-        @NonNull
-        final CustomRuleFunction function;
+        this.id = id;
     }
 
     public Type getType() {
@@ -132,15 +102,6 @@ public class SimpleColumnInfo {
 
     }
 
-    public enum Type {
-        NUMBER,
-        STRING,
-        BLOB,
-        TIME,
-        DATE,
-        TIMESTAMP
-    }
-
     public Object normalizeValue(Object o) {
         switch (getType()) {
             case NUMBER:
@@ -194,5 +155,48 @@ public class SimpleColumnInfo {
                 throw new IllegalArgumentException();
         }
         throw new IllegalArgumentException();
+    }
+
+    /**
+     * jamie 2019-12-11
+     */
+    public enum ShardingType {
+        MAP_TARGET,
+        MAP_SCHEMA,
+        MAP_TABLE,
+        NATURE_DATABASE_TABLE;
+
+        public static ShardingType parse(String name) {
+            if (name == null) {
+                return NATURE_DATABASE_TABLE;
+            }
+            return valueOf(name);
+        }
+    }
+
+    public enum Type {
+        NUMBER,
+        STRING,
+        BLOB,
+        TIME,
+        DATE,
+        TIMESTAMP
+    }
+
+    /**
+     * jamie 2019-12-11
+     */
+    @Data
+    @AllArgsConstructor
+    @ToString
+    public static class ShardingInfo {
+        @NonNull
+        final SimpleColumnInfo columnInfo;
+        @NonNull
+        final ShardingType shardingType;
+        @NonNull
+        final List<String> map;
+        @NonNull
+        final CustomRuleFunction function;
     }
 }

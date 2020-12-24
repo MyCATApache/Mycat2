@@ -1,6 +1,5 @@
 package io.mycat.config;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -16,8 +15,6 @@ import java.util.List;
 public class PlugRootConfig {
 
     private Sequence sequence = new Sequence();
-
-
 
 
     @Data

@@ -8,20 +8,30 @@ public class SetUserDialectHint extends HintBuilder {
     private String dialect;
     private String username;
 
-    public void setDialect(String dialect) {
-        this.dialect = dialect;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
+    public static String create(
+            String dialect,
+            String username
+    ) {
+        SetUserDialectHint createDataSourceHint = new SetUserDialectHint();
+        createDataSourceHint.setUsername(username);
+        createDataSourceHint.setDialect(dialect);
+        return createDataSourceHint.build();
     }
 
     public String getDialect() {
         return dialect;
     }
 
+    public void setDialect(String dialect) {
+        this.dialect = dialect;
+    }
+
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     @Override
@@ -34,16 +44,6 @@ public class SetUserDialectHint extends HintBuilder {
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(this));
-    }
-
-    public static String create(
-             String dialect,
-             String username
-    ) {
-        SetUserDialectHint createDataSourceHint = new SetUserDialectHint();
-        createDataSourceHint.setUsername(username);
-        createDataSourceHint.setDialect(dialect);
-        return createDataSourceHint.build();
     }
 
 }

@@ -5,14 +5,10 @@ import lombok.SneakyThrows;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -25,7 +21,9 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
     final long timeout;
     final TimeUnit unit;
     volatile Runnable closeCallback;
-
+    Object[] row;
+    int index;
+    volatile MycatRowMetaData mycatRowMetaData;
     public BlockQueueRowBaseIterator(BlockingQueue<Object[]> queue, MycatRowMetaData mycatRowMetaData, long timeout, TimeUnit unit, Runnable closeCallback) {
         this.queue = queue;
         this.mycatRowMetaData = mycatRowMetaData;
@@ -33,10 +31,6 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
         this.unit = unit;
         this.closeCallback = closeCallback;
     }
-
-    Object[] row;
-    int index;
-    volatile MycatRowMetaData mycatRowMetaData;
 
     @Override
     @SneakyThrows
@@ -50,14 +44,14 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
         if (row == null || row.length != 0) {
             row = queue.poll(timeout, unit);
             return row.length != 0;
-        }else {
+        } else {
             return false;
         }
     }
 
     @Override
     public synchronized void close() {
-        if (closeCallback!=null) {
+        if (closeCallback != null) {
             closeCallback.run();
             closeCallback = null;
         }
@@ -65,17 +59,17 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
 
     @Override
     public boolean wasNull() {
-        return row[index-1] == null;
+        return row[index - 1] == null;
     }
 
     @Override
     public String getString(int columnIndex) {
-        return row[index-1].toString();
+        return row[index - 1].toString();
     }
 
     @Override
     public boolean getBoolean(int columnIndex) {
-    throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -140,7 +134,7 @@ public class BlockQueueRowBaseIterator implements RowBaseIterator {
 
     @Override
     public Object getObject(int columnIndex) {
-        return row[columnIndex-1];
+        return row[columnIndex - 1];
     }
 
     @Override

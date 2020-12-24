@@ -11,21 +11,12 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.optimizer.rules.TableSourceExtractor;
 import io.mycat.*;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.booster.BoosterRuntime;
-import io.mycat.hbt4.DataSourceFactory;
-import io.mycat.hbt4.DefaultDatasourceFactory;
-import io.mycat.hbt4.ResponseExecutorImplementor;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
-import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.NameMap;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import lombok.Getter;
-import lombok.SneakyThrows;
 
 import java.sql.JDBCType;
 import java.util.*;
@@ -103,90 +94,6 @@ public class SelectSQLHandler extends ShardingSQLHandler {
         return ExecuteCode.PERFORMED;
     }
 
-    @SneakyThrows
-    protected void onSelectTable(MycatDataContext dataContext, SQLTableSource tableSource,
-                                 SQLRequest<SQLSelectStatement> request, Response receiver) {
-        SQLSelectStatement statement = request.getAst();
-
-
-        ASTCheckCollector collector = new ASTCheckCollector(statement);
-        tableSource.accept(collector);
-        collector.endVisit();
-
-        if (collector.getErrors().size() > 0) {
-            /*检测出存在不支持的错误语法*/
-            receiver.sendError(collector.getErrors().get(0));
-            return;
-        }
-
-        if (collector.isDual()) {
-            /*select 1 from dual; select 1; 空表查询*/
-            onSelectDual(request, receiver);
-            return;
-        }
-
-        ///////////////////////////////booster//////////////////////////////
-        if (!dataContext.isInTransaction() && dataContext.isAutocommit()) {
-            Optional<String> booster = BoosterRuntime.INSTANCE.getBooster(dataContext.getUser().getUserName());
-            if (booster.isPresent()) {
-                receiver.proxySelect(booster.get(), statement.toString());
-                return;
-            }
-        }
-
-        ///////////////////////////////common///////////////////////////////
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        NameMap<SchemaHandler> schemaMap = metadataManager.getSchemaMap();
-        String schemaName = Optional.ofNullable(collector.getSchema()).orElse(dataContext.getDefaultSchema());
-        if (schemaName == null) {
-            receiver.sendError(new MycatException("schema is null"));
-            return;
-        }
-        Set<String> tables = collector.getTables();
-        SchemaHandler schemaHandler = schemaMap.get(schemaName);
-        if (schemaHandler == null) {
-            String defaultSchema = dataContext.getDefaultSchema();
-            if (defaultSchema != null) {
-                schemaHandler = schemaMap.get(defaultSchema);
-            } else if (schemaName != null) {
-                Optional<String> targetNameOptional = Optional.of(metadataManager.getPrototype());
-                if (targetNameOptional.isPresent()) {
-                    receiver.proxySelect(targetNameOptional.get(), statement.toString());
-                    return;
-                } else {
-                    receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
-                    return;
-                }
-            } else {
-                receiver.proxySelect(getPrototypeOrRandomReplicaDataSource(), statement.toString());
-                return;
-            }
-        }
-
-
-        ///////////////////////////////common///////////////////////////////
-
-        TableHandler tableHandlerEntry = chooseTableHandler(schemaHandler.logicTables(), tables);
-        if (tableHandlerEntry == null) {
-            receiver.proxySelect(schemaHandler.defaultTargetName(), statement.toString());
-            return;
-        }
-        try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext);
-        ) {
-            ResponseExecutorImplementor responseExecutorImplementor = ResponseExecutorImplementor.create(dataContext, receiver, datasourceFactory);
-            DrdsRunners.runOnDrds(dataContext, request.getAst(),responseExecutorImplementor );
-        }
-        return;
-    }
-
-
-    public String getPrototypeOrRandomReplicaDataSource() {
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-        Optional<String> prototype = Optional.ofNullable(metadataManager.getPrototype());
-        return prototype.orElseGet(selectorRuntime::getDatasourceNameByRandom);
-    }
 
     private TableHandler chooseTableHandler(NameMap<TableHandler> tableMap, Set<String> tables) {
         for (String table : tables) {

@@ -6,19 +6,20 @@ public class ClassUtil {
 
     /**
      * 寻找声明的泛型
-     * @param object 实例对象
+     *
+     * @param object                 实例对象
      * @param parametrizedSuperclass 声明泛型的类
-     * @param typeParamName 泛型名称
+     * @param typeParamName          泛型名称
      * @return 泛型的实际类型
      */
     public static Class<?> findGenericType(final Object object, Class<?> parametrizedSuperclass, String typeParamName) {
         final Class<?> thisClass = object.getClass();
         Class<?> currentClass = thisClass;
-        for (;;) {
+        for (; ; ) {
             if (currentClass.getSuperclass() == parametrizedSuperclass) {
                 int typeParamIndex = -1;
                 TypeVariable<?>[] typeParams = currentClass.getSuperclass().getTypeParameters();
-                for (int i = 0; i < typeParams.length; i ++) {
+                for (int i = 0; i < typeParams.length; i++) {
                     if (typeParamName.equals(typeParams[i].getName())) {
                         typeParamIndex = i;
                         break;

@@ -14,7 +14,7 @@ public class JsonConfigReaderWriter implements ConfigReaderWriter {
 
     @Override
     public <T> T transformation(String text, Class<T> clazz) {
-        return JsonUtil.from(text,clazz);
+        return JsonUtil.from(text, clazz);
     }
 
     @Override

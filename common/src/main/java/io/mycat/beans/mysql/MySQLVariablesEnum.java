@@ -907,6 +907,22 @@ public enum MySQLVariablesEnum {
         this.type = type;
     }
 
+    static public MySQLVariablesEnum parseFromColumnName(String text) {
+        String sessionPre = "@@session.";
+        text = text.toLowerCase();
+        if (text.startsWith(sessionPre)) {
+            return MySQLVariablesEnum.valueOf(text.substring(sessionPre.length()));
+        }
+        String globalPre = "@@global.";
+        if (text.startsWith(globalPre)) {
+            return MySQLVariablesEnum.valueOf(text.substring(globalPre.length()));
+        }
+        if (text.startsWith("@@")) {
+            return MySQLVariablesEnum.valueOf(text.substring("@@".length()));
+        }
+        return null;
+    }
+
     public String[] getColumnNames() {
         switch (this.type) {
             case VARIES:
@@ -933,22 +949,6 @@ public enum MySQLVariablesEnum {
             default:
                 throw new UnsupportedOperationException();
         }
-    }
-
-   static public MySQLVariablesEnum parseFromColumnName(String text) {
-        String sessionPre = "@@session.";
-         text = text.toLowerCase();
-        if (text.startsWith(sessionPre)) {
-            return MySQLVariablesEnum.valueOf(text.substring(sessionPre.length()));
-        }
-        String globalPre = "@@global.";
-        if (text.startsWith(globalPre)) {
-            return MySQLVariablesEnum.valueOf(text.substring(globalPre.length()));
-        }
-        if (text.startsWith("@@")){
-            return MySQLVariablesEnum.valueOf(text.substring("@@".length()));
-        }
-        return null;
     }
 
     public enum Type {

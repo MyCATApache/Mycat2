@@ -6,6 +6,7 @@ import io.mycat.router.ShardingTableHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -48,6 +49,11 @@ public class TableHandlerMocks {
 
             @Override
             public List<SimpleColumnInfo> getColumns() {
+                return null;
+            }
+
+            @Override
+            public Map<String,IndexInfo> getIndexes() {
                 return null;
             }
 

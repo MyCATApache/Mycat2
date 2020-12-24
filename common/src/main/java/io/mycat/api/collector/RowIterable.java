@@ -6,29 +6,31 @@ import io.mycat.beans.resultset.MycatResultSetType;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-public class RowIterable implements Supplier<RowBaseIterator>, MycatResponse{
+public class RowIterable implements Supplier<RowBaseIterator>, MycatResponse {
     protected RowBaseIterator rowBaseIterator;
-
-   public static RowIterable create(RowBaseIterator rowBaseIterator){
-       return new RowIterable(rowBaseIterator);
-   }
 
     public RowIterable(RowBaseIterator rowBaseIterator) {
         this.rowBaseIterator = rowBaseIterator;
     }
+
     public RowIterable() {
 
     }
+
+    public static RowIterable create(RowBaseIterator rowBaseIterator) {
+        return new RowIterable(rowBaseIterator);
+    }
+
     @Override
-   public MycatResultSetType getType(){
+    public MycatResultSetType getType() {
         return MycatResultSetType.RRESULTSET;
     }
 
     @Override
     public void close() throws IOException {
-       if (rowBaseIterator!=null) {
-           rowBaseIterator.close();
-       }
+        if (rowBaseIterator != null) {
+            rowBaseIterator.close();
+        }
     }
 
     @Override

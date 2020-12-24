@@ -13,9 +13,8 @@ import java.util.Map;
 public class MycatServerConfig {
     LoadBalance loadBalance = new LoadBalance();
     ServerConfig server = new io.mycat.config.ServerConfig ();
-    ManagerConfig manager = new ManagerConfig();
     String mode = "local";
-    String datasourceProvider = DruidDatasourceProvider.class.getName();
+    String datasourceProvider = DruidDatasourceProvider.class.getCanonicalName();
     Map<String, Object> properties = new HashMap<>();
 
     public static void main(String[] args) {

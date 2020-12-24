@@ -23,7 +23,6 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.util.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
