@@ -1,11 +1,8 @@
-package io.mycat;
+package io.mycat.config;
 
-import io.mycat.config.*;
-import io.mycat.sqlhandler.ConfigUpdater;
-import io.mycat.util.JsonUtil;
+import io.mycat.*;
 import lombok.SneakyThrows;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 

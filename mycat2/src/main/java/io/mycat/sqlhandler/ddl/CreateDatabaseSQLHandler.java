@@ -4,7 +4,7 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateDatabaseStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
-import io.mycat.MycatRouterConfigOps;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.MetadataManager;

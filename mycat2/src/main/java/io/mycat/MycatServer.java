@@ -4,6 +4,7 @@ import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
+import io.mycat.commands.DefaultCommandHandler;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -21,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Getter
 public class MycatServer {

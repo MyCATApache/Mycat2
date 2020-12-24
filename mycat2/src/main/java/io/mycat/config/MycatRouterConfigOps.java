@@ -1,9 +1,11 @@
-package io.mycat;
+package io.mycat.config;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import io.mycat.config.*;
+import io.mycat.ConfigOps;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

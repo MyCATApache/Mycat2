@@ -1,4 +1,4 @@
-package io.mycat;
+package io.mycat.config;
 
 import io.mycat.config.DatasourceConfig;
 

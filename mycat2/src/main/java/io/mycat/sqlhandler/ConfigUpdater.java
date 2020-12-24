@@ -2,7 +2,7 @@ package io.mycat.sqlhandler;
 
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataStorageManager;
-import io.mycat.MycatRouterConfigOps;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.ConfigOps;
 import io.mycat.config.MycatRouterConfig;
 import org.jetbrains.annotations.NotNull;

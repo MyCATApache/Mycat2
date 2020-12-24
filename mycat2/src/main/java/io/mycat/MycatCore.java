@@ -1,23 +1,17 @@
 package io.mycat;
 
-import io.mycat.config.MycatServerConfig;
-import io.mycat.config.ServerConfiguration;
-import io.mycat.config.ServerConfigurationImpl;
+import io.mycat.config.*;
 import io.mycat.exporter.PrometheusExporter;
-import io.mycat.gsi.GSIService;
-import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import lombok.SneakyThrows;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.function.BiFunction;
 
 /**
  * @author cjw

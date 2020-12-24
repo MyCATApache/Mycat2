@@ -1,4 +1,4 @@
-package io.mycat;
+package io.mycat.config;
 
 public enum UpdateType {
         USER,

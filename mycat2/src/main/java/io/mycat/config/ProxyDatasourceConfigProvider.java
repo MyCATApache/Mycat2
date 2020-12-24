@@ -1,6 +1,6 @@
-package io.mycat;
+package io.mycat.config;
 
-import io.mycat.config.DatasourceConfig;
+import io.mycat.MetaClusterCurrent;
 
 import java.util.Map;
 

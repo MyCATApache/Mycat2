@@ -1,4 +1,4 @@
-package io.mycat;
+package io.mycat.commands;
 
 import io.mycat.beans.resultset.MycatResponse;
 

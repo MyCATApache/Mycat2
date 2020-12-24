@@ -1,4 +1,4 @@
-package io.mycat.sqlhandler.dml;
+package io.mycat.sqlhandler;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.MetaClusterCurrent;

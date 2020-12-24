@@ -1,4 +1,4 @@
-package io.mycat;
+package io.mycat.commands;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
@@ -6,6 +6,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -22,7 +23,7 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.sqlhandler.dml.DrdsRunners;
+import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;

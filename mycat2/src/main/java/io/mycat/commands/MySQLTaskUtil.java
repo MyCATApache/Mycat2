@@ -12,8 +12,12 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat;
+package io.mycat.commands;
 
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MySQLPacketUtil;
+import io.mycat.MycatException;
+import io.mycat.MycatServer;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;

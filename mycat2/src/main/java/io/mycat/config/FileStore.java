@@ -1,5 +1,6 @@
-package io.mycat;
+package io.mycat.config;
 
+import io.mycat.ConfigReaderWriter;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 

@@ -8,7 +8,6 @@ import io.mycat.*;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.DefaultDatasourceFactory;
 import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.sqlhandler.dml.DrdsRunners;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
 

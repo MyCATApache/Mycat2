@@ -1,4 +1,4 @@
-package io.mycat.client;
+package io.mycat.commands;
 
 import lombok.Builder;
 import lombok.Getter;

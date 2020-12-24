@@ -1,7 +1,10 @@
-package io.mycat;
+package io.mycat.config;
 
 import com.google.common.collect.Lists;
-import io.mycat.config.*;
+import io.mycat.ConfigOps;
+import io.mycat.ConfigReaderWriter;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataStorageManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;

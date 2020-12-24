@@ -12,8 +12,9 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat;
+package io.mycat.commands;
 
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.TransactionType;
