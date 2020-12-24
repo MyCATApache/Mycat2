@@ -451,14 +451,17 @@ public class MycatRouterConfigOps implements AutoCloseable {
     }
 
     public void reset() {
-        this.updateType = UpdateType.RESET;
-        this.schemas = Collections.emptyList();
-        this.clusters = Collections.emptyList();
-        this.users = Collections.emptyList();
-        this.sequences = Collections.emptyList();
-        this.datasources = Collections.emptyList();
-        this.sqlCaches = Collections.emptyList();
-        this.mycatRouterConfig = new MycatRouterConfig();
+        MycatRouterConfig newMycatRouterConfig = new MycatRouterConfig();
+        newMycatRouterConfig.setSchemas(this.mycatRouterConfig.getSchemas().stream()
+                .filter(i -> "mysql".equals(i.getSchemaName())).collect(Collectors.toList()));
+        this.mycatRouterConfig = newMycatRouterConfig;
         FileMetadataStorageManager.defaultConfig(this.mycatRouterConfig);
+        this.updateType = UpdateType.RESET;
+        this.schemas = this.mycatRouterConfig.getSchemas();
+        this.clusters = this.mycatRouterConfig.getClusters();
+        this.users = this.mycatRouterConfig.getUsers();
+        this.sequences = this.mycatRouterConfig.getSequences();
+        this.datasources = this.mycatRouterConfig.getDatasources();
+        this.sqlCaches = this.mycatRouterConfig.getSqlCacheConfigs();
     }
 }

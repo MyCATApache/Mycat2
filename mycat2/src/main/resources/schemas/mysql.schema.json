@@ -1,0 +1,329 @@
+{
+	"customTables":{},
+	"globalTables":{},
+	"normalTables":{
+		"role_edges":{
+			"createTableSQL":"CREATE TABLE mysql.role_edges (\n\t`FROM_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`FROM_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`TO_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`TO_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`WITH_ADMIN_OPTION` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`FROM_HOST`, `FROM_USER`, `TO_HOST`, `TO_USER`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Role hierarchy and role grants'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"role_edges",
+				"targetName":"prototype"
+			}
+		},
+		"server_cost":{
+			"createTableSQL":"CREATE TABLE mysql.server_cost (\n\t`cost_name` varchar(64) NOT NULL,\n\t`cost_value` float DEFAULT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`comment` varchar(1024) DEFAULT NULL,\n\t`default_value` float GENERATED ALWAYS AS (CASE `cost_name`\n\t\tWHEN _utf8mb3 'disk_temptable_create_cost' THEN 20.0\n\t\tWHEN _utf8mb3 'disk_temptable_row_cost' THEN 0.5\n\t\tWHEN _utf8mb3 'key_compare_cost' THEN 0.05\n\t\tWHEN _utf8mb3 'memory_temptable_create_cost' THEN 1.0\n\t\tWHEN _utf8mb3 'memory_temptable_row_cost' THEN 0.1\n\t\tWHEN _utf8mb3 'row_evaluate_cost' THEN 0.1\n\t\tELSE NULL\n\tEND) VIRTUAL,\n\tPRIMARY KEY (`cost_name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"server_cost",
+				"targetName":"prototype"
+			}
+		},
+		"columns_priv":{
+			"createTableSQL":"CREATE TABLE mysql.columns_priv (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Db` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Table_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Column_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`Column_priv` set('Select', 'Insert', 'Update', 'References') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\tPRIMARY KEY (`Host`, `Db`, `User`, `Table_name`, `Column_name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Column privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"columns_priv",
+				"targetName":"prototype"
+			}
+		},
+		"general_log":{
+			"createTableSQL":"CREATE TABLE mysql.general_log (\n\t`event_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),\n\t`user_host` mediumtext NOT NULL,\n\t`thread_id` bigint UNSIGNED NOT NULL,\n\t`server_id` int UNSIGNED NOT NULL,\n\t`command_type` varchar(64) NOT NULL,\n\t`argument` mediumblob NOT NULL\n) ENGINE = CSV CHARSET = utf8 COMMENT 'General log'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"general_log",
+				"targetName":"prototype"
+			}
+		},
+		"innodb_index_stats":{
+			"createTableSQL":"CREATE TABLE mysql.innodb_index_stats (\n\t`database_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`table_name` varchar(199) COLLATE utf8_bin NOT NULL,\n\t`index_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`stat_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`stat_value` bigint UNSIGNED NOT NULL,\n\t`sample_size` bigint UNSIGNED DEFAULT NULL,\n\t`stat_description` varchar(1024) COLLATE utf8_bin NOT NULL,\n\tPRIMARY KEY (`database_name`, `table_name`, `index_name`, `stat_name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"innodb_index_stats",
+				"targetName":"prototype"
+			}
+		},
+		"slave_relay_log_info":{
+			"createTableSQL":"CREATE TABLE mysql.slave_relay_log_info (\n\t`Number_of_lines` int UNSIGNED NOT NULL COMMENT 'Number of lines in the file or rows in the table. Used to version table definitions.',\n\t`Relay_log_name` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The name of the current relay log file.',\n\t`Relay_log_pos` bigint UNSIGNED DEFAULT NULL COMMENT 'The relay log position of the last executed event.',\n\t`Master_log_name` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The name of the master binary log file from which the events in the relay log file were read.',\n\t`Master_log_pos` bigint UNSIGNED DEFAULT NULL COMMENT 'The master log position of the last executed event.',\n\t`Sql_delay` int DEFAULT NULL COMMENT 'The number of seconds that the slave must lag behind the master.',\n\t`Number_of_workers` int UNSIGNED DEFAULT NULL,\n\t`Id` int UNSIGNED DEFAULT NULL COMMENT 'Internal Id that uniquely identifies this record.',\n\t`Channel_name` char(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'The channel on which the slave is connected to a source. Used in Multisource Replication',\n\t`Privilege_checks_username` char(32) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT 'Username part of PRIVILEGE_CHECKS_USER.',\n\t`Privilege_checks_hostname` char(255) CHARACTER SET ascii COLLATE ascii_general_ci DEFAULT NULL COMMENT 'Hostname part of PRIVILEGE_CHECKS_USER.',\n\t`Require_row_format` tinyint(1) NOT NULL COMMENT 'Indicates whether the channel shall only accept row based events.',\n\tPRIMARY KEY (`Channel_name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Relay Log Information'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"slave_relay_log_info",
+				"targetName":"prototype"
+			}
+		},
+		"servers":{
+			"createTableSQL":"CREATE TABLE mysql.servers (\n\t`Server_name` char(64) NOT NULL DEFAULT '',\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Db` char(64) NOT NULL DEFAULT '',\n\t`Username` char(64) NOT NULL DEFAULT '',\n\t`Password` char(64) NOT NULL DEFAULT '',\n\t`Port` int NOT NULL DEFAULT '0',\n\t`Socket` char(64) NOT NULL DEFAULT '',\n\t`Wrapper` char(64) NOT NULL DEFAULT '',\n\t`Owner` char(64) NOT NULL DEFAULT '',\n\tPRIMARY KEY (`Server_name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'MySQL Foreign Servers table'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"servers",
+				"targetName":"prototype"
+			}
+		},
+		"travelrecord":{
+			"createTableSQL":"CREATE TABLE mysql.travelrecord (\n\t`id` bigint NOT NULL AUTO_INCREMENT,\n\t`user_id` varchar(100) DEFAULT NULL,\n\t`traveldate` date DEFAULT NULL,\n\t`fee` decimal(10, 0) DEFAULT NULL,\n\t`days` int DEFAULT NULL,\n\t`blob` longblob,\n\tPRIMARY KEY (`id`),\n\tKEY `id` (`id`)\n) ENGINE = InnoDB AUTO_INCREMENT = 1000000000 CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"travelrecord",
+				"targetName":"prototype"
+			}
+		},
+		"default_roles":{
+			"createTableSQL":"CREATE TABLE mysql.default_roles (\n\t`HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`DEFAULT_ROLE_HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '%',\n\t`DEFAULT_ROLE_USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\tPRIMARY KEY (`HOST`, `USER`, `DEFAULT_ROLE_HOST`, `DEFAULT_ROLE_USER`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Default roles'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"default_roles",
+				"targetName":"prototype"
+			}
+		},
+		"company":{
+			"createTableSQL":"CREATE TABLE mysql.company (\n\t`id` int NOT NULL AUTO_INCREMENT,\n\t`companyname` varchar(20) DEFAULT NULL,\n\t`addressid` int DEFAULT NULL,\n\tPRIMARY KEY (`id`)\n) ENGINE = InnoDB AUTO_INCREMENT = 235 CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"company",
+				"targetName":"prototype"
+			}
+		},
+		"slave_master_info":{
+			"createTableSQL":"CREATE TABLE mysql.slave_master_info (\n\t`Number_of_lines` int UNSIGNED NOT NULL COMMENT 'Number of lines in the file.',\n\t`Master_log_name` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'The name of the master binary log currently being read from the master.',\n\t`Master_log_pos` bigint UNSIGNED NOT NULL COMMENT 'The master log position of the last read event.',\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci DEFAULT NULL COMMENT 'The host name of the master.',\n\t`User_name` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The user name used to connect to the master.',\n\t`User_password` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The password used to connect to the master.',\n\t`Port` int UNSIGNED NOT NULL COMMENT 'The network port used to connect to the master.',\n\t`Connect_retry` int UNSIGNED NOT NULL COMMENT 'The period (in seconds) that the slave will wait before trying to reconnect to the master.',\n\t`Enabled_ssl` tinyint(1) NOT NULL COMMENT 'Indicates whether the server supports SSL connections.',\n\t`Ssl_ca` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The file used for the Certificate Authority (CA) certificate.',\n\t`Ssl_capath` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The path to the Certificate Authority (CA) certificates.',\n\t`Ssl_cert` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The name of the SSL certificate file.',\n\t`Ssl_cipher` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The name of the cipher in use for the SSL connection.',\n\t`Ssl_key` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The name of the SSL key file.',\n\t`Ssl_verify_server_cert` tinyint(1) NOT NULL COMMENT 'Whether to verify the server certificate.',\n\t`Heartbeat` float NOT NULL,\n\t`Bind` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'Displays which interface is employed when connecting to the MySQL server',\n\t`Ignored_server_ids` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The number of server IDs to be ignored, followed by the actual server IDs',\n\t`Uuid` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The master server uuid.',\n\t`Retry_count` bigint UNSIGNED NOT NULL COMMENT 'Number of reconnect attempts, to the master, before giving up.',\n\t`Ssl_crl` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The file used for the Certificate Revocation List (CRL)',\n\t`Ssl_crlpath` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The path used for Certificate Revocation List (CRL) files',\n\t`Enabled_auto_position` tinyint(1) NOT NULL COMMENT 'Indicates whether GTIDs will be used to retrieve events from the master.',\n\t`Channel_name` char(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'The channel on which the slave is connected to a source. Used in Multisource Replication',\n\t`Tls_version` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'Tls version',\n\t`Public_key_path` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'The file containing public key of master server.',\n\t`Get_public_key` tinyint(1) NOT NULL COMMENT 'Preference to get public key from master.',\n\t`Network_namespace` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'Network namespace used for communication with the master server.',\n\t`Master_compression_algorithm` char(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'Compression algorithm supported for data transfer between master and slave.',\n\t`Master_zstd_compression_level` int UNSIGNED NOT NULL COMMENT 'Compression level associated with zstd compression algorithm.',\n\t`Tls_ciphersuites` text CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'Ciphersuites used for TLS 1.3 communication with the master server.',\n\tPRIMARY KEY (`Channel_name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Master Information'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"slave_master_info",
+				"targetName":"prototype"
+			}
+		},
+		"proxies_priv":{
+			"createTableSQL":"CREATE TABLE mysql.proxies_priv (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Proxied_host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Proxied_user` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`With_grant` tinyint(1) NOT NULL DEFAULT '0',\n\t`Grantor` varchar(288) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\tPRIMARY KEY (`Host`, `User`, `Proxied_host`, `Proxied_user`),\n\tKEY `Grantor` (`Grantor`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'User proxy privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"proxies_priv",
+				"targetName":"prototype"
+			}
+		},
+		"time_zone_name":{
+			"createTableSQL":"CREATE TABLE mysql.time_zone_name (\n\t`Name` char(64) NOT NULL,\n\t`Time_zone_id` int UNSIGNED NOT NULL,\n\tPRIMARY KEY (`Name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Time zone names'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"time_zone_name",
+				"targetName":"prototype"
+			}
+		},
+		"time_zone_transition_type":{
+			"createTableSQL":"CREATE TABLE mysql.time_zone_transition_type (\n\t`Time_zone_id` int UNSIGNED NOT NULL,\n\t`Transition_type_id` int UNSIGNED NOT NULL,\n\t`Offset` int NOT NULL DEFAULT '0',\n\t`Is_DST` tinyint UNSIGNED NOT NULL DEFAULT '0',\n\t`Abbreviation` char(8) NOT NULL DEFAULT '',\n\tPRIMARY KEY (`Time_zone_id`, `Transition_type_id`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Time zone transition types'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"time_zone_transition_type",
+				"targetName":"prototype"
+			}
+		},
+		"password_history":{
+			"createTableSQL":"CREATE TABLE mysql.password_history (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Password_timestamp` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),\n\t`Password` text COLLATE utf8_bin,\n\tPRIMARY KEY (`Host`, `User`, `Password_timestamp` DESC)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Password history for user accounts'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"password_history",
+				"targetName":"prototype"
+			}
+		},
+		"tables_priv":{
+			"createTableSQL":"CREATE TABLE mysql.tables_priv (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Db` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Table_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Grantor` varchar(288) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`Table_priv` set('Select', 'Insert', 'Update', 'Delete', 'Create', 'Drop', 'Grant', 'References', 'Index', 'Alter', 'Create View', 'Show view', 'Trigger') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\t`Column_priv` set('Select', 'Insert', 'Update', 'References') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\tPRIMARY KEY (`Host`, `Db`, `User`, `Table_name`),\n\tKEY `Grantor` (`Grantor`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Table privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"tables_priv",
+				"targetName":"prototype"
+			}
+		},
+		"mycat_sequence":{
+			"createTableSQL":"CREATE TABLE mysql.mycat_sequence (\n\t`NAME` varchar(64) NOT NULL,\n\t`current_value` bigint NOT NULL,\n\t`increment` int NOT NULL DEFAULT '1',\n\tPRIMARY KEY (`NAME`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"mycat_sequence",
+				"targetName":"prototype"
+			}
+		},
+		"proc":{
+			"createTableSQL":"CREATE TABLE `mysql`.`proc` (\n  `db` varchar(64) DEFAULT NULL,\n  `name` varchar(64) DEFAULT NULL,\n  `type` enum('FUNCTION','PROCEDURE','PACKAGE', 'PACKAGE BODY'),\n  `specific_name` varchar(64) DEFAULT NULL,\n  `language` enum('SQL'),\n  `sql_data_access` enum('CONTAINS_SQL', 'NO_SQL', 'READS_SQL_DATA', 'MODIFIES_SQL_DATA'),\n  `is_deterministic` enum('YES','NO'),\n  `security_type` enum('INVOKER','DEFINER'),\n  `param_list` blob,\n  `returns` longblob,\n  `body` longblob,\n  `definer` varchar(141),\n  `created` timestamp,\n  `modified` timestamp,\n  `sql_mode` \tset('REAL_AS_FLOAT', 'PIPES_AS_CONCAT', 'ANSI_QUOTES', 'IGNORE_SPACE', 'IGNORE_BAD_TABLE_OPTIONS', 'ONLY_FULL_GROUP_BY', 'NO_UNSIGNED_SUBTRACTION', 'NO_DIR_IN_CREATE', 'POSTGRESQL', 'ORACLE', 'MSSQL', 'DB2', 'MAXDB', 'NO_KEY_OPTIONS', 'NO_TABLE_OPTIONS', 'NO_FIELD_OPTIONS', 'MYSQL323', 'MYSQL40', 'ANSI', 'NO_AUTO_VALUE_ON_ZERO', 'NO_BACKSLASH_ESCAPES', 'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'NO_ZERO_IN_DATE', 'NO_ZERO_DATE', 'INVALID_DATES', 'ERROR_FOR_DIVISION_BY_ZERO', 'TRADITIONAL', 'NO_AUTO_CREATE_USER', 'HIGH_NOT_PRECEDENCE', 'NO_ENGINE_SUBSTITUTION', 'PAD_CHAR_TO_FULL_LENGTH', 'EMPTY_STRING_IS_NULL', 'SIMULTANEOUS_ASSIGNMENT'),\n  `comment` text,\n  `character_set_client` char(32),\n  `collation_connection` \tchar(32),\n  `db_collation` \tchar(32),\n  `body_utf8` \tlongblob,\n  `aggregate` \tenum('NONE', 'GROUP')\n) ",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"proc",
+				"targetName":"prototype"
+			}
+		},
+		"procs_priv":{
+			"createTableSQL":"CREATE TABLE mysql.procs_priv (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Db` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Routine_name` char(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\t`Routine_type` enum('FUNCTION', 'PROCEDURE') COLLATE utf8_bin NOT NULL,\n\t`Grantor` varchar(288) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Proc_priv` set('Execute', 'Alter Routine', 'Grant') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\t`Timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\tPRIMARY KEY (`Host`, `Db`, `User`, `Routine_name`, `Routine_type`),\n\tKEY `Grantor` (`Grantor`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Procedure privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"procs_priv",
+				"targetName":"prototype"
+			}
+		},
+		"address":{
+			"createTableSQL":"CREATE TABLE mysql.address (\n\t`id` int NOT NULL,\n\t`addressname` varchar(20) DEFAULT NULL,\n\tPRIMARY KEY (`id`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"address",
+				"targetName":"prototype"
+			}
+		},
+		"time_zone_transition":{
+			"createTableSQL":"CREATE TABLE mysql.time_zone_transition (\n\t`Time_zone_id` int UNSIGNED NOT NULL,\n\t`Transition_time` bigint NOT NULL,\n\t`Transition_type_id` int UNSIGNED NOT NULL,\n\tPRIMARY KEY (`Time_zone_id`, `Transition_time`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Time zone transitions'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"time_zone_transition",
+				"targetName":"prototype"
+			}
+		},
+		"test":{
+			"createTableSQL":"CREATE TABLE mysql.test (\n\t`id` bigint DEFAULT NULL\n) ENGINE = InnoDB CHARSET = utf8",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"test",
+				"targetName":"prototype"
+			}
+		},
+		"help_category":{
+			"createTableSQL":"CREATE TABLE mysql.help_category (\n\t`help_category_id` smallint UNSIGNED NOT NULL,\n\t`name` char(64) NOT NULL,\n\t`parent_category_id` smallint UNSIGNED DEFAULT NULL,\n\t`url` text NOT NULL,\n\tPRIMARY KEY (`help_category_id`),\n\tUNIQUE KEY `name` (`name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'help categories'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"help_category",
+				"targetName":"prototype"
+			}
+		},
+		"time_zone":{
+			"createTableSQL":"CREATE TABLE mysql.time_zone (\n\t`Time_zone_id` int UNSIGNED NOT NULL AUTO_INCREMENT,\n\t`Use_leap_seconds` enum('Y', 'N') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`Time_zone_id`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Time zones'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"time_zone",
+				"targetName":"prototype"
+			}
+		},
+		"undo_log":{
+			"createTableSQL":"CREATE TABLE mysql.undo_log (\n\t`branch_id` bigint NOT NULL COMMENT 'branch transaction id',\n\t`xid` varchar(100) NOT NULL COMMENT 'global transaction id',\n\t`context` varchar(128) NOT NULL COMMENT 'undo_log context,such as serialization',\n\t`rollback_info` longblob NOT NULL COMMENT 'rollback info',\n\t`log_status` int NOT NULL COMMENT '0:normal status,1:defense status',\n\t`log_created` datetime(6) NOT NULL COMMENT 'create datetime',\n\t`log_modified` datetime(6) NOT NULL COMMENT 'modify datetime',\n\tUNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)\n) ENGINE = InnoDB CHARSET = utf8 COMMENT 'AT transaction mode undo table'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"undo_log",
+				"targetName":"prototype"
+			}
+		},
+		"slow_log":{
+			"createTableSQL":"CREATE TABLE mysql.slow_log (\n\t`start_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),\n\t`user_host` mediumtext NOT NULL,\n\t`query_time` time(6) NOT NULL,\n\t`lock_time` time(6) NOT NULL,\n\t`rows_sent` int NOT NULL,\n\t`rows_examined` int NOT NULL,\n\t`db` varchar(512) NOT NULL,\n\t`last_insert_id` int NOT NULL,\n\t`insert_id` int NOT NULL,\n\t`server_id` int UNSIGNED NOT NULL,\n\t`sql_text` mediumblob NOT NULL,\n\t`thread_id` bigint UNSIGNED NOT NULL\n) ENGINE = CSV CHARSET = utf8 COMMENT 'Slow log'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"slow_log",
+				"targetName":"prototype"
+			}
+		},
+		"innodb_table_stats":{
+			"createTableSQL":"CREATE TABLE mysql.innodb_table_stats (\n\t`database_name` varchar(64) COLLATE utf8_bin NOT NULL,\n\t`table_name` varchar(199) COLLATE utf8_bin NOT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`n_rows` bigint UNSIGNED NOT NULL,\n\t`clustered_index_size` bigint UNSIGNED NOT NULL,\n\t`sum_of_other_index_sizes` bigint UNSIGNED NOT NULL,\n\tPRIMARY KEY (`database_name`, `table_name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"innodb_table_stats",
+				"targetName":"prototype"
+			}
+		},
+		"help_topic":{
+			"createTableSQL":"CREATE TABLE mysql.help_topic (\n\t`help_topic_id` int UNSIGNED NOT NULL,\n\t`name` char(64) NOT NULL,\n\t`help_category_id` smallint UNSIGNED NOT NULL,\n\t`description` text NOT NULL,\n\t`example` text NOT NULL,\n\t`url` text NOT NULL,\n\tPRIMARY KEY (`help_topic_id`),\n\tUNIQUE KEY `name` (`name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'help topics'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"help_topic",
+				"targetName":"prototype"
+			}
+		},
+		"component":{
+			"createTableSQL":"CREATE TABLE mysql.component (\n\t`component_id` int UNSIGNED NOT NULL AUTO_INCREMENT,\n\t`component_group_id` int UNSIGNED NOT NULL,\n\t`component_urn` text NOT NULL,\n\tPRIMARY KEY (`component_id`)\n) ENGINE = InnoDB CHARSET = utf8 ROW_FORMAT = DYNAMIC COMMENT 'Components'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"component",
+				"targetName":"prototype"
+			}
+		},
+		"plugin":{
+			"createTableSQL":"CREATE TABLE mysql.plugin (\n\t`name` varchar(64) NOT NULL DEFAULT '',\n\t`dl` varchar(128) NOT NULL DEFAULT '',\n\tPRIMARY KEY (`name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'MySQL plugins'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"plugin",
+				"targetName":"prototype"
+			}
+		},
+		"func":{
+			"createTableSQL":"CREATE TABLE mysql.func (\n\t`name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`ret` tinyint NOT NULL DEFAULT '0',\n\t`dl` char(128) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`type` enum('function', 'aggregate') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,\n\tPRIMARY KEY (`name`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'User defined functions'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"func",
+				"targetName":"prototype"
+			}
+		},
+		"global_grants":{
+			"createTableSQL":"CREATE TABLE mysql.global_grants (\n\t`USER` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`HOST` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`PRIV` char(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\t`WITH_GRANT_OPTION` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`USER`, `HOST`, `PRIV`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Extended global grants'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"global_grants",
+				"targetName":"prototype"
+			}
+		},
+		"engine_cost":{
+			"createTableSQL":"CREATE TABLE mysql.engine_cost (\n\t`engine_name` varchar(64) NOT NULL,\n\t`device_type` int NOT NULL,\n\t`cost_name` varchar(64) NOT NULL,\n\t`cost_value` float DEFAULT NULL,\n\t`last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n\t`comment` varchar(1024) DEFAULT NULL,\n\t`default_value` float GENERATED ALWAYS AS (CASE `cost_name`\n\t\tWHEN _utf8mb3 'io_block_read_cost' THEN 1.0\n\t\tWHEN _utf8mb3 'memory_block_read_cost' THEN 0.25\n\t\tELSE NULL\n\tEND) VIRTUAL,\n\tPRIMARY KEY (`cost_name`, `engine_name`, `device_type`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"engine_cost",
+				"targetName":"prototype"
+			}
+		},
+		"gtid_executed":{
+			"createTableSQL":"CREATE TABLE mysql.gtid_executed (\n\t`source_uuid` char(36) NOT NULL COMMENT 'uuid of the source where the transaction was originally executed.',\n\t`interval_start` bigint NOT NULL COMMENT 'First number of interval.',\n\t`interval_end` bigint NOT NULL COMMENT 'Last number of interval.',\n\tPRIMARY KEY (`source_uuid`, `interval_start`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"gtid_executed",
+				"targetName":"prototype"
+			}
+		},
+		"slave_worker_info":{
+			"createTableSQL":"CREATE TABLE mysql.slave_worker_info (\n\t`Id` int UNSIGNED NOT NULL,\n\t`Relay_log_name` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n\t`Relay_log_pos` bigint UNSIGNED NOT NULL,\n\t`Master_log_name` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n\t`Master_log_pos` bigint UNSIGNED NOT NULL,\n\t`Checkpoint_relay_log_name` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n\t`Checkpoint_relay_log_pos` bigint UNSIGNED NOT NULL,\n\t`Checkpoint_master_log_name` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n\t`Checkpoint_master_log_pos` bigint UNSIGNED NOT NULL,\n\t`Checkpoint_seqno` int UNSIGNED NOT NULL,\n\t`Checkpoint_group_size` int UNSIGNED NOT NULL,\n\t`Checkpoint_group_bitmap` blob NOT NULL,\n\t`Channel_name` char(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'The channel on which the slave is connected to a source. Used in Multisource Replication',\n\tPRIMARY KEY (`Channel_name`, `Id`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Worker Information'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"slave_worker_info",
+				"targetName":"prototype"
+			}
+		},
+		"time_zone_leap_second":{
+			"createTableSQL":"CREATE TABLE mysql.time_zone_leap_second (\n\t`Transition_time` bigint NOT NULL,\n\t`Correction` int NOT NULL,\n\tPRIMARY KEY (`Transition_time`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Leap seconds information for time zones'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"time_zone_leap_second",
+				"targetName":"prototype"
+			}
+		},
+		"help_relation":{
+			"createTableSQL":"CREATE TABLE mysql.help_relation (\n\t`help_topic_id` int UNSIGNED NOT NULL,\n\t`help_keyword_id` int UNSIGNED NOT NULL,\n\tPRIMARY KEY (`help_keyword_id`, `help_topic_id`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'keyword-topic relation'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"help_relation",
+				"targetName":"prototype"
+			}
+		},
+		"user":{
+			"createTableSQL":"CREATE TABLE mysql.user (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Select_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Insert_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Update_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Delete_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Drop_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Reload_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Shutdown_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Process_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`File_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Grant_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`References_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Index_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Alter_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Show_db_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Super_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_tmp_table_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Lock_tables_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Execute_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Repl_slave_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Repl_client_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_view_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Show_view_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_routine_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Alter_routine_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_user_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Event_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Trigger_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_tablespace_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`ssl_type` enum('', 'ANY', 'X509', 'SPECIFIED') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',\n\t`ssl_cipher` blob NOT NULL,\n\t`x509_issuer` blob NOT NULL,\n\t`x509_subject` blob NOT NULL,\n\t`max_questions` int UNSIGNED NOT NULL DEFAULT '0',\n\t`max_updates` int UNSIGNED NOT NULL DEFAULT '0',\n\t`max_connections` int UNSIGNED NOT NULL DEFAULT '0',\n\t`max_user_connections` int UNSIGNED NOT NULL DEFAULT '0',\n\t`plugin` char(64) COLLATE utf8_bin NOT NULL DEFAULT 'caching_sha2_password',\n\t`authentication_string` text COLLATE utf8_bin,\n\t`password_expired` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`password_last_changed` timestamp NULL DEFAULT NULL,\n\t`password_lifetime` smallint UNSIGNED DEFAULT NULL,\n\t`account_locked` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_role_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Drop_role_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Password_reuse_history` smallint UNSIGNED DEFAULT NULL,\n\t`Password_reuse_time` smallint UNSIGNED DEFAULT NULL,\n\t`Password_require_current` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,\n\t`User_attributes` json DEFAULT NULL,\n\tPRIMARY KEY (`Host`, `User`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Users and global privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"user",
+				"targetName":"prototype"
+			}
+		},
+		"help_keyword":{
+			"createTableSQL":"CREATE TABLE mysql.help_keyword (\n\t`help_keyword_id` int UNSIGNED NOT NULL,\n\t`name` char(64) NOT NULL,\n\tPRIMARY KEY (`help_keyword_id`),\n\tUNIQUE KEY `name` (`name`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'help keywords'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"help_keyword",
+				"targetName":"prototype"
+			}
+		},
+		"db":{
+			"createTableSQL":"CREATE TABLE mysql.db (\n\t`Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',\n\t`Db` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`User` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',\n\t`Select_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Insert_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Update_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Delete_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Drop_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Grant_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`References_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Index_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Alter_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_tmp_table_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Lock_tables_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_view_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Show_view_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Create_routine_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Alter_routine_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Execute_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Event_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\t`Trigger_priv` enum('N', 'Y') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'N',\n\tPRIMARY KEY (`Host`, `Db`, `User`),\n\tKEY `User` (`User`)\n) ENGINE = InnoDB CHARSET = utf8 COLLATE = utf8_bin STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Database privileges'",
+			"dataNode":{
+				"schemaName":"mysql",
+				"tableName":"db",
+				"targetName":"prototype"
+			}
+		}
+	},
+	"schemaName":"mysql",
+	"shadingTables":{},
+	"targetName":"prototype"
+}
