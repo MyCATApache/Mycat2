@@ -115,11 +115,7 @@ public class MycatUpdateExecutor implements Executor {
                 MycatPreparedStatementUtil.setParams(preparedStatement, outParameters);
             }
             int subAffectedRow = 0;
-            try {
-                subAffectedRow = preparedStatement.executeUpdate();
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
+            subAffectedRow = preparedStatement.executeUpdate();
             sqlRecord.addSubRecord(sql, start, SqlRecord.now(), target, subAffectedRow);
             this.affectedRow += subAffectedRow;
             this.lastInsertId = Math.max(this.lastInsertId, getInSingleSqlLastInsertId(insertId, preparedStatement));
