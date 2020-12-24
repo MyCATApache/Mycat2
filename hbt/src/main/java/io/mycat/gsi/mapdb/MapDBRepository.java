@@ -89,25 +89,25 @@ public class MapDBRepository {
         return false;
     }
 
-    private Object getValue(SimpleColumnInfo columnInfo, int[] columnNames,List<Object> values){
-        for (int i = 0; i < columnNames.length; i++) {
-            if(columnInfo.getId() == columnNames[i]){
+    private Object getValue(SimpleColumnInfo columnInfo, SimpleColumnInfo[] columns,List<Object> values){
+        for (int i = 0; i < columns.length; i++) {
+            if(columnInfo.getId() == columns[i].getId()){
                 return values.get(i);
             }
         }
         return null;
     }
 
-    private List<RowIndexValues> getRowIndexValuesList(Map<String,IndexInfo> indexes, int[] columnNames, List<Object> values){
+    private List<RowIndexValues> getRowIndexValuesList(Map<String,IndexInfo> indexes, SimpleColumnInfo[] columns, List<Object> values){
         List<RowIndexValues> rowIndexValuesList = new ArrayList<>();
         for (IndexInfo indexInfo : indexes.values()) {
             RowIndexValues rowIndexValues = new RowIndexValues(indexInfo);
             for (SimpleColumnInfo columnInfo : indexInfo.getIndexes()) {
-                Object value = getValue(columnInfo, columnNames, values);
+                Object value = getValue(columnInfo, columns, values);
                 rowIndexValues.getIndexes().add(new IndexValue(columnInfo,value));
             }
             for (SimpleColumnInfo columnInfo : indexInfo.getCovering()) {
-                Object value = getValue(columnInfo, columnNames, values);
+                Object value = getValue(columnInfo, columns, values);
                 rowIndexValues.getCoverings().add(new IndexValue(columnInfo,value));
             }
             rowIndexValuesList.add(rowIndexValues);
@@ -115,7 +115,7 @@ public class MapDBRepository {
         return rowIndexValuesList;
     }
 
-    public void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> values, List<String> dataNodeKeyList) {
+    public void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> values, String dataNodeKey) {
         TableHandler table = getMetadataManager().getTable(schemaName, tableName);
         Map<String,IndexInfo> indexMap = table.getIndexes();
         if(indexMap == null){
@@ -130,14 +130,14 @@ public class MapDBRepository {
         if(indexStorageMap == null){
             return;
         }
-        List<RowIndexValues> rowIndexValuesList = getRowIndexValuesList(indexMap, columnNames, values);
+        List<RowIndexValues> rowIndexValuesList = getRowIndexValuesList(indexMap, columns, values);
         for (RowIndexValues rowIndexValues : rowIndexValuesList) {
             IndexInfo indexInfo = rowIndexValues.getIndexInfo();
             IndexStorage indexStorage = indexStorageMap.get(indexInfo.getIndexName());
 
             List<Object> storageKeys = rowIndexValues.getIndexes().stream().map(IndexValue::getValue).collect(Collectors.toList());
             List<Object> storageValues = rowIndexValues.getCoverings().stream().map(IndexValue::getValue).collect(Collectors.toList());
-            storageValues.add(0,String.join(",", rowIndexValues.getDataNodeKeyList()));
+            storageValues.add(0,dataNodeKey);
 
             indexStorage.getStorage().put(storageKeys.toArray(),storageValues.toArray());
         }

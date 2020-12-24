@@ -60,7 +60,7 @@ public interface GSIService {
 
     boolean isIndexTable(String schemaName, String tableName);
 
-    void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects,List<String> dataNodeKeyList);
+    void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey);
 
     @Data
     class Transaction {
