@@ -154,14 +154,6 @@
 				"targetName":"prototype"
 			}
 		},
-		"address":{
-			"createTableSQL":"CREATE TABLE mysql.address (\n\t`id` int NOT NULL,\n\t`addressname` varchar(20) DEFAULT NULL,\n\tPRIMARY KEY (`id`)\n) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci",
-			"dataNode":{
-				"schemaName":"mysql",
-				"tableName":"address",
-				"targetName":"prototype"
-			}
-		},
 		"time_zone_transition":{
 			"createTableSQL":"CREATE TABLE mysql.time_zone_transition (\n\t`Time_zone_id` int UNSIGNED NOT NULL,\n\t`Transition_time` bigint NOT NULL,\n\t`Transition_type_id` int UNSIGNED NOT NULL,\n\tPRIMARY KEY (`Time_zone_id`, `Transition_time`)\n) ENGINE = InnoDB CHARSET = utf8 STATS_PERSISTENT = 0 ROW_FORMAT = DYNAMIC COMMENT 'Time zone transitions'",
 			"dataNode":{
