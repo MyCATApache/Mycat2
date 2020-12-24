@@ -5,7 +5,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
@@ -143,12 +142,15 @@ public class MycatInsertExecutor implements Executor {
         String[] columnNames = mycatInsertRel.getColumnNames();
         Supplier<Number> stringSupplier = logicTable.nextSequence();
 
-        MySqlInsertStatement template = (MySqlInsertStatement) mySqlInsertStatement.clone();
-        List<SQLInsertStatement.ValuesClause> valuesList = template.getValuesList();
-        valuesList.clear();
+
+        List<SQLInsertStatement.ValuesClause> valuesList = mySqlInsertStatement.getValuesList();
 
         Map<GroupKey, Group> group = new HashMap<>();
+        int count = 0;
         for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
+            MySqlInsertStatement template = (MySqlInsertStatement) mySqlInsertStatement.clone();
+            template.getValuesList().clear();
+
             boolean fillSequence = finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement();
             Number sequence = null;
             if (fillSequence) {
@@ -170,13 +172,18 @@ public class MycatInsertExecutor implements Executor {
             template.addValueCause(valuesClause);
 
 
-            List<Object> outParams = new ArrayList<>(params);
+            int size = valuesClause.getValues().size();
+            int startIndex = count*size;
+            List<Object> outParams = new ArrayList<>(size);
             StringBuilder sb = new StringBuilder();
-            MycatPreparedStatementUtil.outputToParameters(template, sb, outParams);
+
+            MycatPreparedStatementUtil.collect(template, sb, params, outParams);
             String sql = sb.toString();
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
+
+            count++;
         }
         return group;
     }
@@ -292,7 +299,8 @@ public class MycatInsertExecutor implements Executor {
             SQLExpr sqlExpr = values.get(shardingKey);
             Object o = null;
             if (sqlExpr instanceof SQLVariantRefExpr) {
-                throw new IllegalArgumentException();
+                int index = ((SQLVariantRefExpr) sqlExpr).getIndex();
+                o = params.get(index);
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
             } else {
