@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +71,7 @@ public class MycatPreparedStatementUtil {
                 VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
                 VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
                 | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+                | VisitorFeature.OutputParameterized.mask
         );
         if (inputParameters != null) {
             parameterVisitor.setInputParameters(inputParameters);
