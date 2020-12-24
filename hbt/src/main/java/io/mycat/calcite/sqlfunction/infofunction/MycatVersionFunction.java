@@ -1,5 +1,6 @@
-package org.apache.calcite.mycat;
+package io.mycat.calcite.sqlfunction.infofunction;
 
+import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.type.InferTypes;
