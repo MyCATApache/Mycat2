@@ -195,6 +195,22 @@ public enum MycatCalciteSupport implements Context {
                                 }
                                 return super.implicitCast(in, expected);
                             }
+                            @Override
+                            public RelDataType commonTypeForBinaryComparison(RelDataType type1, RelDataType type2) {
+                                SqlTypeName typeName1 = type1.getSqlTypeName();
+                                SqlTypeName typeName2 = type2.getSqlTypeName();
+
+                                if (typeName1 == null || typeName2 == null) {
+                                    return null;
+                                }
+                                if (typeName1 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName2)) {
+                                    return type2;
+                                }
+                                if (typeName2 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName1)) {
+                                    return type1;
+                                }
+                                return super.commonTypeForBinaryComparison(type1,type2);
+                            }
                         };
                     }
                 });
