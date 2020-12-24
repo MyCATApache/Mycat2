@@ -236,7 +236,10 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
-        LOGGER.info("=>"+statement);
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug("=> {}",statement);
+        }
+
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
         session.getDataContext().block(new Runnable() {
             @Override
