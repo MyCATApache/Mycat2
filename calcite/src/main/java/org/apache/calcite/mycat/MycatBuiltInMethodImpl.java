@@ -263,7 +263,7 @@ public class MycatBuiltInMethodImpl {
         return BigDecimal.valueOf(b);
     }
 
-    public static BigDecimal integerToDecimal(Long b) {
+    public static BigDecimal integerToDecimal(Integer b) {
         if (b == null) return null;
         return BigDecimal.valueOf(b);
     }

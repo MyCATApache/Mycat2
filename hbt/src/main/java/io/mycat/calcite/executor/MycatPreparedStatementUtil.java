@@ -125,7 +125,6 @@ public class MycatPreparedStatementUtil {
         @SneakyThrows
         public ExecuteBatchInsert invoke() {
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                ParameterMetaData parameterMetaData = preparedStatement.getParameterMetaData();
                 for (List<Object> objects : value.args) {
                     setParams(preparedStatement, objects);
                     preparedStatement.addBatch();
