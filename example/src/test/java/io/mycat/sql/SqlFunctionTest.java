@@ -229,7 +229,7 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("SELECT MONTH(\"2017-06-15\");");
         checkValue("SELECT MONTHNAME(\"2017-06-15\");");
 
-        checkValue("SELECT NOW();");
+        uncheckValue("SELECT NOW();");
         checkValue("SELECT PERIOD_ADD(201703, 5)");
         checkValue("SELECT PERIOD_DIFF(201710, 201703);");
         checkValue("SELECT QUARTER(\"2017-06-15\");");
