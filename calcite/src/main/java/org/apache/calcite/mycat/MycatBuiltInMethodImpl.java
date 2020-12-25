@@ -43,7 +43,7 @@ public class MycatBuiltInMethodImpl {
         return b.byteValue();
     }
 
-    public static Byte integerToTinyint(java.lang.Integer b) {
+    public static Byte integerToTinyint(Integer b) {
         if (b == null) return null;
         return b.byteValue();
     }
@@ -117,7 +117,7 @@ public class MycatBuiltInMethodImpl {
         return b.shortValue();
     }
 
-    public static Short integerToTSmallint(Long b) {
+    public static Short integerToTSmallint(Integer b) {
         if (b == null) return null;
         return b.shortValue();
     }
@@ -333,7 +333,7 @@ public class MycatBuiltInMethodImpl {
         return b.doubleValue();
     }
 
-    public static Double integerToFloat(Long b) {
+    public static Double integerToFloat(Integer b) {
         if (b == null) return null;
         return b.doubleValue();
     }
@@ -407,7 +407,7 @@ public class MycatBuiltInMethodImpl {
         return b.doubleValue();
     }
 
-    public static Double integerToDouble(Long b) {
+    public static Double integerToDouble(Integer b) {
         if (b == null) return null;
         return b.doubleValue();
     }
@@ -483,7 +483,7 @@ public class MycatBuiltInMethodImpl {
         return b.floatValue();
     }
 
-    public static Float integerToReal(Long b) {
+    public static Float integerToReal(Integer b) {
         if (b == null) return null;
         return b.floatValue();
     }
@@ -565,7 +565,7 @@ public class MycatBuiltInMethodImpl {
         return doubleToDate(b.doubleValue());
     }
 
-    public static LocalDate integerToDate(Long b) {
+    public static LocalDate integerToDate(Integer b) {
         if (b == null) return null;
         return doubleToDate(b.doubleValue());
     }
@@ -647,7 +647,7 @@ public class MycatBuiltInMethodImpl {
         return doubleToTimestamp(b.doubleValue());
     }
 
-    public static LocalDateTime integerToTimestamp(Long b) {
+    public static LocalDateTime integerToTimestamp(Integer b) {
         if (b == null) return null;
         return doubleToTimestamp(b.doubleValue());
     }
@@ -753,7 +753,7 @@ public class MycatBuiltInMethodImpl {
         return b > 0;
     }
 
-    public static Boolean integerToBoolean(Long b) {
+    public static Boolean integerToBoolean(Integer b) {
         if (b == null) return null;
         return b > 0;
     }
@@ -830,7 +830,7 @@ public class MycatBuiltInMethodImpl {
         return Period.ofDays(b);
     }
 
-    public static Period integerToPeriod(Long b) {
+    public static Period integerToPeriod(Integer b) {
         if (b == null) return null;
         return Period.ofDays(b.intValue());
     }
@@ -907,7 +907,7 @@ public class MycatBuiltInMethodImpl {
         return doubleToDuration(b.doubleValue());
     }
 
-    public static Duration integerToDuration(Long b) {
+    public static Duration integerToDuration(Integer b) {
         if (b == null) return null;
         return doubleToDuration(b.doubleValue());
     }
@@ -1204,10 +1204,6 @@ public class MycatBuiltInMethodImpl {
         return (short) (tmp ? 1 : 0);
     }
 
-    public static Long integerToBigint(Long tmp) {
-        if (tmp == null) return null;
-        return tmp;
-    }
 
     public static Double floatToFloat(Double tmp) {
         if (tmp == null) return null;
