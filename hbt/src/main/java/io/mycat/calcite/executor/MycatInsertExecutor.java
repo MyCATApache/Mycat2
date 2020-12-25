@@ -157,7 +157,7 @@ public class MycatInsertExecutor implements Executor {
                 sequence = stringSupplier.get();
                 valuesClause.addValue(SQLExprUtils.fromJavaObject(sequence));
             }
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),params);
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
                 function.calculate((Map) variables);
@@ -201,12 +201,18 @@ public class MycatInsertExecutor implements Executor {
             MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement();
             List<Object> arg = (List<Object>) param;
             Number sequence = null;
+            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
+
             if (finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement()) {
                 arg.add(sequence = stringSupplier.get());
+                SQLVariantRefExpr sqlVariantRefExpr = new SQLVariantRefExpr();
+                sqlVariantRefExpr.setIndex(valuesClause.getValues().size());
+                sqlVariantRefExpr.setName("?");
+                valuesClause.addValue(sqlVariantRefExpr);
             }
-            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
-            List<SQLExpr> values = valuesClause.getValues();
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, values);
+
+
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),(List)param);
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
                 throw new IllegalArgumentException();
@@ -291,9 +297,10 @@ public class MycatInsertExecutor implements Executor {
         this.affectedRow = affected;
     }
 
-    private Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
+    private static Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
                                                      String[] columnNames,
-                                                     List<SQLExpr> values) {
+                                                     List<SQLExpr> values,
+                                                            List<Object> params) {
         Map<String, List<RangeVariable>> variables = new HashMap<>(1);
         for (Integer shardingKey : shardingKeys) {
             SQLExpr sqlExpr = values.get(shardingKey);

@@ -70,7 +70,7 @@ public class MycatPreparedStatementUtil {
                 VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
                 VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
                 VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
-                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+//                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
                 | VisitorFeature.OutputParameterized.mask
         );
         if (inputParameters != null) {
