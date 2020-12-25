@@ -377,7 +377,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void close() {
         if (transactionSession != null) {
-            transactionSession.clearJdbcConnection();
+            transactionSession.closeStatenmentState();
             transactionSession.close();
         }
         cancelFlag.set(true);

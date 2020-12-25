@@ -5,7 +5,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
@@ -43,18 +42,29 @@ import static io.mycat.calcite.executor.MycatPreparedStatementUtil.setParams;
 
 @Getter
 public class MycatInsertExecutor implements Executor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
     private MycatDataContext context;
     private final MycatInsertRel mycatInsertRel;
     private final DataSourceFactory factory;
+    /**
+     * 最终发给后端的sql, 包含全部字段的数据 （比如自增ID）
+     */
     private final Map<GroupKey, Group> groupMap;
-    private final boolean multi;
+    /**
+     * 只包含sql中明确写的字段 （不包含自增ID 等其他隐式变量）
+     */
     private List<Object> params;
+    /**
+     * 用于区分是否批量插入
+     * multi = true 表示 insert into t_user (id,name) values (1,'李'), (2,'王');
+     * multi = false 表示 insert into t_user (id,name) values (1,'李');
+     */
+    private final boolean multi;
     public long lastInsertId = 0;
     public long affectedRow = 0;
     public String sequence;
     private boolean done = false;
-    static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
     public MycatInsertExecutor(MycatDataContext context, MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
         this.context = context;
@@ -72,17 +82,13 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public boolean isProxy() {
-        return params.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1 && groupMap.keySet().size() == 1;
+        return groupMap.keySet().size() == 1;
     }
 
     public Pair<String, String> getSingleSql() {
         Map.Entry<GroupKey, Group> entry = groupMap.entrySet().iterator().next();
         GroupKey key = entry.getKey();
         String parameterizedSql = key.getParameterizedSql();
-        LinkedList<List<Object>> args = entry.getValue().getArgs();
-        if (args.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1) {
-            return Pair.of(key.getTarget(), parameterizedSql);
-        }
         MySqlInsertStatement sqlStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSql);
         Group value = entry.getValue();
         List<SQLInsertStatement.ValuesClause> valuesList = sqlStatement.getValuesList();
@@ -99,7 +105,7 @@ public class MycatInsertExecutor implements Executor {
             });
             valuesList.add(valuesClause);
         }
-        return Pair.of(key.getTarget(), sqlStatement.toString());
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sqlStatement.toString());
     }
 
     @NotNull
@@ -114,13 +120,17 @@ public class MycatInsertExecutor implements Executor {
 
     @Override
     public void open() {
-        execute(groupMap);
-        onInsertSuccess();
+        try {
+            execute(groupMap);
+            onInsertSuccess();
+        }finally {
+            done = true;
+        }
     }
 
     @SneakyThrows
     private Map<GroupKey, Group> runNormalParams() {
-        MySqlInsertStatement mySqlInsertStatement = mycatInsertRel.getMySqlInsertStatement();
+        MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement();
         ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
         CustomRuleFunction function = logicTable.function();
         int finalAutoIncrementIndex = mycatInsertRel.getFinalAutoIncrementIndex();
@@ -128,19 +138,22 @@ public class MycatInsertExecutor implements Executor {
         String[] columnNames = mycatInsertRel.getColumnNames();
         Supplier<Number> stringSupplier = logicTable.nextSequence();
 
-        MySqlInsertStatement template = (MySqlInsertStatement) mySqlInsertStatement.clone();
-        List<SQLInsertStatement.ValuesClause> valuesList = template.getValuesList();
-        valuesList.clear();
+
+        List<SQLInsertStatement.ValuesClause> valuesList = mySqlInsertStatement.getValuesList();
 
         Map<GroupKey, Group> group = new HashMap<>();
+        int count = 0;
         for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
+            MySqlInsertStatement template = (MySqlInsertStatement) mySqlInsertStatement.clone();
+            template.getValuesList().clear();
+
             boolean fillSequence = finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement();
             Number sequence = null;
             if (fillSequence) {
                 sequence = stringSupplier.get();
                 valuesClause.addValue(SQLExprUtils.fromJavaObject(sequence));
             }
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),params);
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
                 function.calculate((Map) variables);
@@ -155,13 +168,18 @@ public class MycatInsertExecutor implements Executor {
             template.addValueCause(valuesClause);
 
 
-            List<Object> outParams = new ArrayList<>();
+            int size = valuesClause.getValues().size();
+            int startIndex = count*size;
+            List<Object> outParams = new ArrayList<>(size);
             StringBuilder sb = new StringBuilder();
-            MycatPreparedStatementUtil.outputToParameters(template, sb, outParams);
+
+            MycatPreparedStatementUtil.collect(template, sb, params, outParams);
             String sql = sb.toString();
             GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
+
+            count++;
         }
         return group;
     }
@@ -176,15 +194,21 @@ public class MycatInsertExecutor implements Executor {
         Supplier<Number> stringSupplier = logicTable.nextSequence();
         Map<GroupKey, Group> group = new HashMap<>();
         for (Object param : params) {
-            MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement().clone();
+            MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement();
             List<Object> arg = (List<Object>) param;
             Number sequence = null;
+            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
+
             if (finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement()) {
                 arg.add(sequence = stringSupplier.get());
+                SQLVariantRefExpr sqlVariantRefExpr = new SQLVariantRefExpr();
+                sqlVariantRefExpr.setIndex(valuesClause.getValues().size());
+                sqlVariantRefExpr.setName("?");
+                valuesClause.addValue(sqlVariantRefExpr);
             }
-            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
-            List<SQLExpr> values = valuesClause.getValues();
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, values);
+
+
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),(List)param);
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
                 throw new IllegalArgumentException();
@@ -269,15 +293,17 @@ public class MycatInsertExecutor implements Executor {
         this.affectedRow = affected;
     }
 
-    private Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
+    private static Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
                                                      String[] columnNames,
-                                                     List<SQLExpr> values) {
+                                                     List<SQLExpr> values,
+                                                            List<Object> params) {
         Map<String, List<RangeVariable>> variables = new HashMap<>(1);
         for (Integer shardingKey : shardingKeys) {
             SQLExpr sqlExpr = values.get(shardingKey);
             Object o = null;
             if (sqlExpr instanceof SQLVariantRefExpr) {
-                throw new IllegalArgumentException();
+                int index = ((SQLVariantRefExpr) sqlExpr).getIndex();
+                o = params.get(index);
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
             } else {
@@ -320,54 +346,31 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public void onInsertSuccess() {
-        if (!done) {
-            done = true;
-            ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
-            if (logicTable.canIndex()) {
-                if (MetaClusterCurrent.exist(GSIService.class)) {
-                    GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-
-                    MySqlInsertStatement mySqlInsertStatement = mycatInsertRel.getMySqlInsertStatement();
-                    List<SQLExpr> values = mySqlInsertStatement.getValues().getValues();
-                    //check
-                    for (SQLExpr value : values) {
-                        if (!(value instanceof SQLLiteralExpr)) {
-                            throw new MycatException("unsupport " + value);
-                        }
-                    }
-                    String[] columnNames = mycatInsertRel.getColumnNames();
-                    int[] projects = new int[columnNames.length];
-                    int index = 0;
-                    for (String columnName : columnNames) {
-                        projects[index] = logicTable.getIndexBColumnName(columnName);
-                        ++index;
-                    }
-
-                    MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
-                    TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-                    String txId = transactionSession.getTxId();
-
-                    List<String> dataNodeKeyList = groupMap.keySet().stream().map(GroupKey::getTarget).collect(Collectors.toList());
-                    if (this.multi) {
-                        List<List<Object>> paramList = (List) params;
-                        for (List<Object> objects : paramList) {
-                            gsiService.insert(txId, logicTable.getSchemaName(),
-                                    logicTable.getTableName(),
-                                    projects
-                                    , objects,dataNodeKeyList);
-                        }
-                    } else {
-                        gsiService.insert(txId, logicTable.getSchemaName(),
-                                logicTable.getTableName(),
-                                projects
-                                , params,dataNodeKeyList);
-                    }
-
-                }
-            }
-
-
+        ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
+        if (!logicTable.canIndex()) {
+            return;
+        }
+        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+        if (gsiService == null) {
+            return;
+        }
+        String[] columnNames = mycatInsertRel.getColumnNames();
+        SimpleColumnInfo[] columns = new SimpleColumnInfo[columnNames.length];
+        for (int i = 0; i < columnNames.length; i++) {
+            columns[i] = logicTable.getColumnByName(columnNames[i]);
         }
 
+        MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
+        TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+        String txId = transactionSession.getTxId();
+        for (Map.Entry<GroupKey, Group> entry : groupMap.entrySet()) {
+            GroupKey key = entry.getKey();
+            Group value = entry.getValue();
+            LinkedList<List<Object>> args = value.getArgs();
+            for (List<Object> arg : args) {
+                gsiService.insert(txId, logicTable.getSchemaName(),
+                        logicTable.getTableName(),columns, arg,key.getTarget());
+            }
+        }
     }
 }

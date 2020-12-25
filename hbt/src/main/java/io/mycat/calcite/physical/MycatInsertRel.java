@@ -2,6 +2,8 @@ package io.mycat.calcite.physical;
 
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlManageInstanceGroupStatement;
+import io.mycat.MycatException;
 import io.mycat.calcite.*;
 import io.mycat.DrdsRunner;
 import io.mycat.router.ShardingTableHandler;
@@ -12,6 +14,7 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.sql.SqlKind;
 
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 public class MycatInsertRel extends AbstractRelNode implements MycatRel {
@@ -20,6 +23,7 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
     private final int finalAutoIncrementIndex;
     private final List<Integer> shardingKeys;
     private final MySqlInsertStatement mySqlInsertStatement;
+    private final String mySqlInsertStatementTostring;
     private final ShardingTableHandler logicTable;
     private final String[] columnNames;
 
@@ -45,6 +49,7 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
         this.finalAutoIncrementIndex = finalAutoIncrementIndex;
         this.shardingKeys = shardingKeys;
         this.mySqlInsertStatement = mySqlInsertStatement;
+        this.mySqlInsertStatementTostring = mySqlInsertStatement.toString();
         this.logicTable = logicTable;
         List<SQLIdentifierExpr> columns = (List)mySqlInsertStatement.getColumns();
         this.columnNames = columns.stream().map(i -> i.normalizedName()).toArray(size -> new String[size]);
@@ -53,6 +58,13 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
                 SqlKind.INSERT, getCluster().getTypeFactory());
     }
 
+    public MySqlInsertStatement getMySqlInsertStatement() {
+        MySqlInsertStatement clone = (MySqlInsertStatement) mySqlInsertStatement.clone();
+        if(!Objects.equals(mySqlInsertStatementTostring,clone.toString())){
+            throw new MycatException("mycat内部异常， clone对象不一致：source = "+ mySqlInsertStatementTostring+"， target"+clone);
+        }
+        return clone;
+    }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {

@@ -67,8 +67,8 @@ public class MapDBGSIService implements GSIService {
     }
 
     @Override
-    public void insert(String txId, String schemaName, String tableName, int[] columnNames, List<Object> objects,List<String> dataNodeKeyList) {
-        repository.insert(txId, schemaName, tableName, columnNames, objects, dataNodeKeyList);
+    public void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey) {
+        repository.insert(txId, schemaName, tableName, columns, objects, dataNodeKey);
     }
 
     public MetadataManager getMetadataManager() {

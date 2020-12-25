@@ -17,6 +17,7 @@ import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ResponseExecutorImplementor;
 import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.dcl.*;
@@ -163,7 +164,7 @@ public enum MycatdbCommand {
 
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.ensureTranscation();
+        transactionSession.openStatementState();
         //////////////////////////////////////////////////////////////////////////////////////
         if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);

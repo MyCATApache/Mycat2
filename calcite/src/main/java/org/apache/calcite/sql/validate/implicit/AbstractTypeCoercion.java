@@ -437,7 +437,12 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
     if (typeName1 == null || typeName2 == null) {
       return null;
     }
-
+    if (typeName1 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName2)){
+      return type2;
+    }
+    if (typeName2 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName1)){
+      return type1;
+    }
     // DATETIME + CHARACTER -> DATETIME
     // REVIEW Danny 2019-09-23: There is some legacy redundant code in SqlToRelConverter
     // that coerce Datetime and CHARACTER comparison.

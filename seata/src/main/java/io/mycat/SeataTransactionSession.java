@@ -21,11 +21,11 @@ public class SeataTransactionSession extends LocalTransactionSession {
 
     @Override
     @SneakyThrows
-    public void ensureTranscation() {
+    public void openStatementState() {
         if (holder != null && tx != null) {
             tx.resume(holder);
         }
-        super.ensureTranscation();
+        super.openStatementState();
     }
 
     @Override
@@ -108,8 +108,8 @@ public class SeataTransactionSession extends LocalTransactionSession {
 
     @Override
     @SneakyThrows
-    public void clearJdbcConnection() {
-        super.clearJdbcConnection();
+    public void closeStatenmentState() {
+        super.closeStatenmentState();
         if (tx != null) {
             this.holder = tx.suspend();
         }

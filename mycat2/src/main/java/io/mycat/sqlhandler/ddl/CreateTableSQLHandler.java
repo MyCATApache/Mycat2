@@ -4,7 +4,7 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
-import io.mycat.MycatRouterConfigOps;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
