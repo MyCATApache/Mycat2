@@ -5,6 +5,7 @@ import io.mycat.ConfigOps;
 import io.mycat.ConfigReaderWriter;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataStorageManager;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
@@ -187,6 +188,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
    public void start() {
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
+        }catch (Exception e){
+           throw  MycatErrorCode.createMycatException(MycatErrorCode.ERR_INIT_CONFIG,"start FileMetadataStorageManager fail",e);
         }
     }
 
