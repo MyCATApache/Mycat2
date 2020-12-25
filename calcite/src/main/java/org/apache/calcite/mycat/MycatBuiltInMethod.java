@@ -73,7 +73,7 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     SMALLINT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "smallintToDecimal", Short.class),
     BOOLEAN_TO_DECIMAL(MycatBuiltInMethodImpl.class, "booleanToDecimal", Boolean.class),
     TINYINT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "tinyintToDecimal", Byte.class),
-    INTEGER_TO_DECIMAL(MycatBuiltInMethodImpl.class, "integerToDecimal", Long.class),
+    INTEGER_TO_DECIMAL(MycatBuiltInMethodImpl.class, "integerToDecimal", Integer.class),
     BIGINT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "bigintToDecimal", Long.class),
     DECIMAL_TO_DECIMAL(MycatBuiltInMethodImpl.class, "decimalToDecimal", BigDecimal.class),
     FLOAT_TO_DECIMAL(MycatBuiltInMethodImpl.class, "floatToDecimal", Double.class),
