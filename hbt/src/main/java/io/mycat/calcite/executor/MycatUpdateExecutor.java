@@ -71,7 +71,7 @@ public class MycatUpdateExecutor implements Executor {
         GroupKey key = groupKey;
         String parameterizedSql = key.getParameterizedSql();
         String sql = apply(parameterizedSql, inParameters);
-        return Pair.of(key.getTarget(), sql);
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sql);
     }
 
     @Override

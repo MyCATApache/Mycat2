@@ -82,17 +82,13 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public boolean isProxy() {
-        return params.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1 && groupMap.keySet().size() == 1;
+        return groupMap.keySet().size() == 1;
     }
 
     public Pair<String, String> getSingleSql() {
         Map.Entry<GroupKey, Group> entry = groupMap.entrySet().iterator().next();
         GroupKey key = entry.getKey();
         String parameterizedSql = key.getParameterizedSql();
-        LinkedList<List<Object>> args = entry.getValue().getArgs();
-        if (args.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1) {
-            return Pair.of(key.getTarget(), parameterizedSql);
-        }
         MySqlInsertStatement sqlStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSql);
         Group value = entry.getValue();
         List<SQLInsertStatement.ValuesClause> valuesList = sqlStatement.getValuesList();
@@ -109,7 +105,7 @@ public class MycatInsertExecutor implements Executor {
             });
             valuesList.add(valuesClause);
         }
-        return Pair.of(key.getTarget(), sqlStatement.toString());
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sqlStatement.toString());
     }
 
     @NotNull
