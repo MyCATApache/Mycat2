@@ -1,5 +1,7 @@
 package io.mycat.beans.mycat;
 
+import io.mycat.MycatException;
+
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -133,5 +135,18 @@ public class MycatErrorCode {
 
         String s = errorCode(ERR_TRANS_TERMINATED);
         System.out.println();
+    }
+
+    public static MycatException createMycatException(int errorCode,String message,Throwable throwable){
+        if (map.containsKey(errorCode)){
+            return new MycatException(errorCode, errorCode(errorCode)+message,throwable);
+        }
+         return new MycatException(errorCode, message,throwable);
+    }
+    public static MycatException createMycatException(int errorCode,String message){
+        if (map.containsKey(errorCode)){
+            return new MycatException(errorCode, errorCode(errorCode)+message);
+        }
+        return new MycatException(errorCode, message);
     }
 }

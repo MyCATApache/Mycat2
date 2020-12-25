@@ -50,6 +50,10 @@ public class MycatException extends RuntimeException {
         super(MessageFormatter.arrayFormat(message, args).getMessage());
     }
 
+    public MycatException(int errorCode, String s, Throwable throwable) {
+
+    }
+
     public int getErrorCode() {
         return errorCode;
     }

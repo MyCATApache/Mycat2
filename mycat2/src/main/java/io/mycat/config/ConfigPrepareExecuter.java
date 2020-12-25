@@ -141,7 +141,7 @@ public class ConfigPrepareExecuter {
 
     @NotNull
     private MetadataManager createMetaData() {
-        return new MetadataManager(ops.getSchemas(),
+        return  MetadataManager.createMetadataManager(ops.getSchemas(),
                 MetaClusterCurrent.wrapper(LoadBalanceManager.class),
                 MetaClusterCurrent.wrapper(SequenceGenerator.class),
                 MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
@@ -174,7 +174,7 @@ public class ConfigPrepareExecuter {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
         this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
-        this.metadataManager = new MetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
+        this.metadataManager =  MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
 
         if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
