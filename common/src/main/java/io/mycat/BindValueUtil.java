@@ -23,7 +23,7 @@
  */
 package io.mycat;
 
-import io.mycat.beans.mysql.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,7 +34,7 @@ import java.nio.charset.Charset;
  */
 public class BindValueUtil {
 
-    public static final void read(MySQLPacket mm, BindValue bv, Charset charset) {
+    public static final void read(MySQLPayloadReadView mm, BindValue bv, Charset charset) {
         switch (bv.type & 0xff) {
             case MysqlDefs.FIELD_TYPE_BIT:
                 bv.value = mm.readLenencBytes();

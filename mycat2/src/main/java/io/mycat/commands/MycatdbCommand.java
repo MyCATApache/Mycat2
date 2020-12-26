@@ -203,7 +203,7 @@ public enum MycatdbCommand {
     }
 
     @NotNull
-    private LinkedList<SQLStatement> parse(String text, MycatDataContext dataContext) {
+    public LinkedList<SQLStatement> parse(String text, MycatDataContext dataContext) {
         text = text.trim();
         LinkedList<SQLStatement> resStatementList = new LinkedList<>();
         if (text.startsWith("begin") || text.startsWith("BEGIN")) {
