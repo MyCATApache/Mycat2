@@ -17,7 +17,7 @@ package io.mycat.bindthread;
 
 public interface BindThreadCallback<KEY extends BindThreadKey, PROCESS extends BindThread> {
 
-    void accept(KEY key, PROCESS context);
+    void accept(KEY key, PROCESS context)throws Exception;
 
     void finallyAccept(KEY key, PROCESS context);
 

@@ -99,8 +99,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
         return !getCancelFlag().get();
     }
 
-    void run(Runnable runnable);
-
     boolean isReadOnly();
 
     @Override
@@ -111,7 +109,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     void close();
 
     //need catch exception
-    void block(Runnable runnable);
+//    void block(Runnable runnable);
 
     public String resolveDatasourceTargetName(String targetName);
 

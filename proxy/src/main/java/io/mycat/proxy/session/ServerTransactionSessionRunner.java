@@ -1,11 +1,12 @@
 package io.mycat.proxy.session;
 
-import io.mycat.*;
+import io.mycat.MycatDataContext;
+import io.mycat.ThreadUsageEnum;
+import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.bindthread.BindThread;
 import io.mycat.bindthread.BindThreadCallback;
 import io.mycat.bindthread.BindThreadKey;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -16,17 +17,14 @@ import java.util.function.Function;
  * @MySQLProxyServerSession
  * @MySQLServerSession
  */
-public class ServerTransactionSessionRunner implements TransactionSessionRunner {
+public class ServerTransactionSessionRunner  {
     final Map<TransactionType, Function<MycatDataContext, TransactionSession>> map;
-    final MycatSession session;
     private final MycatContextThreadPool threadPool;
 
     public ServerTransactionSessionRunner(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map,
-                                          MycatContextThreadPool threadPool,
-                                          MycatSession session) {
+                                          MycatContextThreadPool threadPool) {
         this.map = map;
         this.threadPool = threadPool;
-        this.session = session;
     }
 
     public void run(MycatDataContext container, BindThreadCallback runner) {
@@ -77,16 +75,20 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
     }
 
 
-    @Override
-    public void run(MycatDataContext mycatDataContext, Runnable runnable) {
-        run(mycatDataContext, getRunner(mycatDataContext, runnable));
+
+    public void run(MycatSession session, Runnable runnable) {
+        run(session.getDataContext(), getRunner(session, runnable));
+    }
+
+   public interface Runnable{
+        void run()throws Exception;
     }
 
     @NotNull
-    private BindThreadCallback getRunner(MycatDataContext mycatDataContext, Runnable runnable) {
+    private BindThreadCallback getRunner(MycatSession session, Runnable runnable) {
         return new BindThreadCallback() {
             @Override
-            public void accept(BindThreadKey key, BindThread context) {
+            public void accept(BindThreadKey key, BindThread context) throws Exception{
                 runnable.run();
             }
 
@@ -103,14 +105,14 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
         };
     }
 
-    public void block(MycatDataContext mycatDataContext, Runnable runnable) {
-        if(Thread.currentThread() instanceof ReactorEnvThread){
-          run(mycatDataContext,getRunner(mycatDataContext,runnable),ThreadUsageEnum.MULTI_THREADING);
-            return;
-        }else {
-            run(mycatDataContext,runnable);
-        }
-    }
+//    public void block(MycatDataContext mycatDataContext, Runnable runnable) {
+//        if(Thread.currentThread() instanceof ReactorEnvThread){
+//          run(mycatDataContext,getRunner(mycatDataContext,runnable),ThreadUsageEnum.MULTI_THREADING);
+//            return;
+//        }else {
+//            run(mycatDataContext,runnable);
+//        }
+//    }
 
 
 }

@@ -82,9 +82,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
-                        SessionManager<MycatSession> sessionManager,
-                        Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
-                                MycatContextThreadPool mycatContextThreadPool) {
+                        SessionManager<MycatSession> sessionManager) {
         super(sessionId, nioHandler, sessionManager);
         HeapBufferPool heapBufferPool = new HeapBufferPool();
         this.proxyBuffer = new ProxyBufferImpl(heapBufferPool);
@@ -93,7 +91,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.processState = ProcessState.READY;
         this.frontResolver = new FrontMySQLPacketResolver(heapBufferPool, this);
         this.packetId = 0;
-        this.dataContext = new MycatDataContextImpl(new ServerTransactionSessionRunner(transcationFactoryMap,mycatContextThreadPool,this));
+        this.dataContext = new MycatDataContextImpl();
     }
 
     public void setCommandHandler(CommandDispatcher commandHandler) {

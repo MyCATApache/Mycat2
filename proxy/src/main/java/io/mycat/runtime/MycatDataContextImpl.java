@@ -53,15 +53,13 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     private MycatUser user;
     private TransactionSession transactionSession;
-    private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
 
     private static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
 
-    public MycatDataContextImpl(TransactionSessionRunner runner) {
-        this.runner = runner;
+    public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
         switchTransaction(TransactionType.DEFAULT);
     }
@@ -293,11 +291,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     public AtomicBoolean getCancelFlag() {
         return cancelFlag;
     }
-
-    @Override
-    public void run(Runnable runnable) {
-        runner.run(this, runnable);
-    }
 //
 //    @Override
 //    public UpdateRowIteratorResponse update(String targetName, String sql) {
@@ -381,11 +374,6 @@ public class MycatDataContextImpl implements MycatDataContext {
             transactionSession.close();
         }
         cancelFlag.set(true);
-    }
-
-    @Override
-    public void block(Runnable runnable) {
-        runner.block(this, runnable);
     }
 
     @Override

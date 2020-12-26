@@ -31,7 +31,10 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
@@ -47,17 +50,12 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     private final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
     private final Authenticator authenticator;
-    private final Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap;
-    private final MycatContextThreadPool mycatContextThreadPool;
+
 
     public MycatSessionManager(Function<MycatSession, CommandDispatcher> function,
-                               Authenticator authenticator,
-                               Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap,
-                               MycatContextThreadPool mycatContextThreadPool) {
+                               Authenticator authenticator) {
         this.commandDispatcher = function;
         this.authenticator = Objects.requireNonNull(authenticator);
-        this.transcationFactoryMap = transcationFactoryMap;
-        this.mycatContextThreadPool = mycatContextThreadPool;
     }
 
 
@@ -93,7 +91,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
                                        Selector nioSelector, SocketChannel frontChannel) throws IOException {
         MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
         MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
-                mySQLClientAuthHandler, this, transcationFactoryMap, mycatContextThreadPool);
+                mySQLClientAuthHandler, this);
 
 
         //用于monitor监控获取session

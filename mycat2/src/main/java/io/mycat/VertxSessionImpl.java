@@ -1,6 +1,5 @@
 package io.mycat;
 
-import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.vertx.core.net.NetSocket;
 
@@ -19,7 +18,7 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public MycatDataContext getDataContext() {
-        return new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+        return new MycatDataContextImpl();
     }
 
     @Override

@@ -30,7 +30,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class MysqlProxyServer {
     private static final Logger logger = LoggerFactory.getLogger(MysqlProxyServer.class);
-    public static MySQLClientManager mySQLClientManager;
     static enum State {
         HEAD,
         PAYLOAD
@@ -49,9 +48,6 @@ public class MysqlProxyServer {
 
         @Override
         public void start() throws Exception {
-            if (mySQLClientManager == null) {
-                mySQLClientManager = new MySQLClientManager(this.vertx);
-            }
             NetServer netServer = vertx.createNetServer();//创建代理服务器
             netServer.connectHandler((socket)->new VertxMySQLAuthHandler(
                     socket,null,new VertxMySQLHandler()

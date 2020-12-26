@@ -29,7 +29,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import static io.mycat.MysqlProxyServer.mySQLClientManager;
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 public class VertxMySQLHandler {
@@ -311,15 +310,6 @@ public class VertxMySQLHandler {
     public void handleQuery(String sql, VertxSession session) throws Exception {
 
         MycatDataContext dataContext = session.getDataContext();
-        LinkedList<SQLStatement> statements =
-                MycatdbCommand.INSTANCE.parse(sql);
-        Response response = new VertxResponse(session, statements.size());
-        String sqlText = sql;
-        List<Object> params = new ArrayList<>();
-        MySQLPool ds1 = mySQLClientManager.map.get("ds");
-        Future<SqlConnection> connection = ds1.getConnection();
-//        prepare(connection);
-        normal("select * from db1.travelrecord", response, params, connection);
 
     }
 

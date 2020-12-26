@@ -47,6 +47,8 @@ public class MycatServer {
 
     private final Authenticator authenticator;
 
+    private final ServerTransactionSessionRunner serverTransactionSessionRunner;
+
     @SneakyThrows
     public MycatServer(MycatServerConfig serverConfig,
                        Authenticator refAuthenticator,
@@ -73,6 +75,8 @@ public class MycatServer {
                 mycatWorkerProcessor.getMycatWorker(),
                 workerPool.getTaskTimeout(),
                 TimeUnit.valueOf(workerPool.getTimeUnit()));
+
+        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(transcationFactoryMap, mycatContextThreadPool);
     }
 
     @SneakyThrows
@@ -82,7 +86,6 @@ public class MycatServer {
 
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
-
 
         String handlerConstructorText = (DefaultCommandHandler.class.getName());
 
@@ -94,6 +97,7 @@ public class MycatServer {
 
         int reactorNumber = Optional.ofNullable(serverConfig).map(i -> i.getReactorNumber()).orElse(1);
         List<MycatReactorThread> list = new ArrayList<>(reactorNumber);
+
         for (int i = 0; i < reactorNumber; i++) {
             Function<MycatSession, CommandDispatcher> function = session -> {
                 try {
@@ -104,7 +108,7 @@ public class MycatServer {
                     throw new RuntimeException(e);
                 }
             };
-            MycatReactorThread thread = new MycatReactorThread(defaultReactorBufferPool, new MycatSessionManager(function, authenticator, transcationFactoryMap, mycatContextThreadPool));
+            MycatReactorThread thread = new MycatReactorThread(defaultReactorBufferPool, new MycatSessionManager(function, authenticator));
             thread.start();
             list.add(thread);
         }
