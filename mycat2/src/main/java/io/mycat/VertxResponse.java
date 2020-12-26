@@ -1,89 +1,107 @@
 package io.mycat;
 
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import io.vertx.core.buffer.Buffer;
 
 import java.util.Iterator;
 
-public class VertxResponse implements Response {
+public abstract class VertxResponse implements Response {
 
-    private VertxSession session;
-    private final int size;
-    private int count;
+    protected final MycatDataContext dataContext;
+    protected VertxSession session;
+    protected final int size;
+    protected int count;
+    protected boolean binary;
 
-    public VertxResponse(VertxSession session, int size) {
+    public VertxResponse(VertxSession session, int size, boolean binary) {
         this.session = session;
         this.size = size;
+        this.binary = binary;
+        this.dataContext = session.getDataContext();
     }
 
     @Override
     public void sendError(Throwable e) {
-
+        dataContext.setLastMessage(e);
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
     public void proxySelectToPrototype(String statement) {
-
-    }
-
-    @Override
-    public void proxySelect(String defaultTargetName, String statement) {
-
-    }
-
-    @Override
-    public void proxyUpdate(String defaultTargetName, String proxyUpdate) {
-
+        proxySelect("prototype",statement);
     }
 
 
     @Override
     public void sendError(String errorMessage, int errorCode) {
-
+        dataContext.setLastMessage(errorMessage);
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
     public void sendResultSet(RowIterable rowIterable) {
-        count++;
-        TextResultSetResponse textResultSetResponse = new TextResultSetResponse(rowIterable.get());
-        byte[] bytes2 = MySQLPacketUtil.generateResultSetCount(textResultSetResponse.columnCount());
-        session.writeBytes(((MySQLPacketUtil.generateMySQLPacket(session.getNextPacketId(), bytes2))),false);
-        Iterator<byte[]> iterator = textResultSetResponse.columnDefIterator();
-        while (iterator.hasNext()) {
-            session.writeBytes((MySQLPacketUtil.generateMySQLPacket(session.getNextPacketId(), iterator.next())),false);
+        ++count;
+        RowBaseIterator resultSet = rowIterable.get();
+        boolean moreResultSet = count < size;
+        MycatResultSetResponse currentResultSet;
+        if (!binary) {
+            currentResultSet = new TextResultSetResponse(resultSet);
+        } else {
+            currentResultSet = new BinaryResultSetResponse(resultSet);
         }
-        session.writeBytes((MySQLPacketUtil.generateMySQLPacket(session.getNextPacketId(), MySQLPacketUtil.generateEof(0, 0))),false);
-        Iterator<byte[]> iterator1 = textResultSetResponse.rowIterator();
-        while (iterator1.hasNext()) {
-            session.writeBytes((MySQLPacketUtil.generateMySQLPacket(session.getNextPacketId(), iterator1.next())),false);
+        session.writeColumnCount(currentResultSet.columnCount());
+        Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
+                .columnDefIterator();
+        while (columnDefPayloadsIterator.hasNext()) {
+            session.writeBytes(columnDefPayloadsIterator.next(), false);
         }
-        session.writeBytes((MySQLPacketUtil.generateMySQLPacket(session.getNextPacketId(), MySQLPacketUtil.generateEof(0, 0))),true);
-    }
-
-
-    @Override
-    public void rollback() {
-
-    }
-
-    @Override
-    public void begin() {
-
-    }
-
-    @Override
-    public void commit() {
-
+        session.writeColumnEndPacket();
+        Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
+        while (rowIterator.hasNext()) {
+            byte[] row = rowIterator.next();
+            session.writeBytes(row, false);
+        }
+        currentResultSet.close();
+        session.getDataContext().getTransactionSession().closeStatenmentState();
+        session.writeRowEndPacket(moreResultSet, false);
     }
 
     @Override
     public void execute(ExplainDetail detail) {
-
+        String target = detail.getTarget();
+        ExecuteType executeType = detail.getExecuteType();
+        String sql = detail.getSql();
+        MycatDataContext dataContext = session.getDataContext();
+        switch (executeType) {
+            case QUERY:
+                target = dataContext.resolveDatasourceTargetName(target, false);
+                break;
+            case QUERY_MASTER:
+            case INSERT:
+            case UPDATE:
+            default:
+                target = dataContext.resolveDatasourceTargetName(target, true);
+                break;
+        }
+        switch (executeType) {
+            case QUERY:
+            case QUERY_MASTER:
+                proxySelect(target,sql);
+                break;
+            case INSERT:
+            case UPDATE:
+                proxyUpdate(target,sql);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + executeType);
+        }
     }
 
     @Override
-    public void sendOk(long lastInsertId, long affectedRow) {
+    public void sendOk(long affectedRow,long lastInsertId ) {
         count++;
         MycatDataContext dataContext = session.getDataContext();
         dataContext.setLastInsertId(lastInsertId);

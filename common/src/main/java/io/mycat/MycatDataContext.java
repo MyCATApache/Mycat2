@@ -4,13 +4,17 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.sqlrecorder.SqlRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
-
+    static final Logger LOGGER = LoggerFactory.getLogger(MycatDataContext.class);
     long getSessionId();
 
     TransactionType transactionType();
@@ -122,4 +126,18 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     SqlRecord currentSqlRecord();
 
     void endSqlRecord();
+
+    default String setLastMessage(Throwable e) {
+        LOGGER.error("",e);
+        String string = getThrowableString(e);
+        setLastMessage(string);
+        return string;
+    }
+
+    static String getThrowableString(Throwable e) {
+        StringWriter errors = new StringWriter();
+        e.printStackTrace(new PrintWriter(errors));
+        //去掉重复提示的消息 return MessageFormat.format("{0} \n {1}",e,errors.toString());
+        return errors.toString();
+    }
 }

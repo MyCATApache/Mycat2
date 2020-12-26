@@ -42,7 +42,7 @@ public interface Response {
         sendOk(0, 0);
     }
 
-    void sendOk(long lastInsertId, long affectedRow);
+    void sendOk(long affectedRow,long lastInsertId);
 
     <T> T unWrapper(Class<T> clazz);
 }

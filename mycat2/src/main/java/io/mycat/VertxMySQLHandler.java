@@ -3,7 +3,6 @@ package io.mycat;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.runtime.MycatDataContextImpl;
@@ -16,7 +15,6 @@ import io.vertx.sqlclient.PreparedStatement;
 import io.vertx.sqlclient.*;
 
 import java.nio.charset.StandardCharsets;
-import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -302,7 +300,12 @@ public class VertxMySQLHandler {
     }
 
     private void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, VertxSession vertxSession) {
-
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        if (preparedStatement != null) {
+            preparedStatement.appendLongData(paramId, data);
+        }
     }
 
     private void handlePrepareStatement(byte[] bytes, VertxSession vertxSession) {
@@ -311,12 +314,10 @@ public class VertxMySQLHandler {
 
 
     public void handleQuery(String sql, VertxSession session) throws Exception {
-        VertxResponse vertxResponse = new VertxResponse(session, 1);
+        VertxResponse vertxResponse = new VertxJdbcResponseImpl(session, 1,false);
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         if (sqlStatement instanceof SQLSelectStatement){
-            ResultSetBuilder builder = ResultSetBuilder.create();
-            builder.addColumnInfo("1", JDBCType.VARCHAR);
-            vertxResponse.sendResultSet(builder.build());
+            vertxResponse.proxySelectToPrototype(sql);
         }else {
             vertxResponse.sendOk(0, 0);
         }

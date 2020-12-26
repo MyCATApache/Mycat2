@@ -123,27 +123,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     ||
                     sqlStatement instanceof SQLDeleteStatement
             );
-//            if (!allow){
-//                session.writeErrorEndPacketBySyncInProcessError();
-//                return;
-//            }
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             metadataManager.resolveMetadata(sqlStatement);
             ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
-//            if (sqlStatement instanceof SQLSelectStatement) {
-//                List<SQLSelectItem> selectList = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().getSelectList();
-//                for (SQLSelectItem sqlSelectItem : selectList) {
-//                    SQLDataType sqlDataType = sqlSelectItem.computeDataType();
-//                    JDBCType res = JDBCType.VARCHAR;
-//                    if (sqlDataType != null) {
-//                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-//                    }
-//                    if (res == null) {
-//                        res = JDBCType.VARCHAR;
-//                    }
-//                    fieldsBuilder.addColumnInfo(sqlSelectItem.toString(), res);
-//                }
-//            }
             MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
             ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
 
