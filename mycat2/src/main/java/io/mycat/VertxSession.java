@@ -1,13 +1,10 @@
 package io.mycat;
 
-public interface VertxSession {
-    int getCapabilities();
+import io.mycat.proxy.session.MySQLServerSession;
+
+public interface VertxSession extends MySQLServerSession {
 
     MycatDataContext getDataContext();
 
     void close();
-
-    void sendOk();
-
-    void writeError(Throwable throwable);
 }

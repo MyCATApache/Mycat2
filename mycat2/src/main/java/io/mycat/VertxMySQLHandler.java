@@ -1,27 +1,22 @@
 package io.mycat;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.runtime.MycatDataContextImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import io.vertx.mysqlclient.MySQLClient;
-import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.PreparedStatement;
-import io.vertx.sqlclient.desc.ColumnDescriptor;
+import io.vertx.sqlclient.*;
 
-import java.io.InputStream;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.sql.JDBCType;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -32,68 +27,76 @@ import java.util.stream.Collector;
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 public class VertxMySQLHandler {
+    private final VertxSessionImpl session;
+    private MycatDataContextImpl mycatDataContext;
+    private NetSocket socket;
 
+    public VertxMySQLHandler(MycatDataContextImpl mycatDataContext, NetSocket socket) {
+        this.mycatDataContext = mycatDataContext;
+        this.socket = socket;
+        this.session = new VertxSessionImpl(mycatDataContext, socket);
+    }
 
-    public void handle(Buffer event, NetSocket socket) {
+    public void handle(int packetId, Buffer event, NetSocket socket) {
+        session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
-        VertxSession vertxSession = new VertxSessionImpl(socket);
         try {
             switch (readView.readByte()) {
                 case MySQLCommandType.COM_SLEEP: {
-                    handleSleep(vertxSession);
+                    handleSleep(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_QUIT: {
-                    handleQuit(vertxSession);
+                    handleQuit(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_QUERY: {
                     String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
-                    handleQuery(sql, vertxSession);
+                    handleQuery(sql, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_INIT_DB: {
                     String schema = readView.readEOFString();
-                    handleInitDb(schema, vertxSession);
+                    handleInitDb(schema, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_PING: {
-                    handlePing(vertxSession);
+                    handlePing(this.session);
                     break;
                 }
 
                 case MySQLCommandType.COM_FIELD_LIST: {
                     String table = readView.readNULString();
                     String field = readView.readEOFString();
-                    handleFieldList(table, field, vertxSession);
+                    handleFieldList(table, field, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_SET_OPTION: {
                     boolean option = readView.readFixInt(2) == 1;
-                    handleSetOption(option, vertxSession);
+                    handleSetOption(option, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_STMT_PREPARE: {
                     byte[] bytes = readView.readEOFStringBytes();
-                    handlePrepareStatement(bytes, vertxSession);
+                    handlePrepareStatement(bytes, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
                     long statementId = readView.readFixInt(4);
                     int paramId = (int) readView.readFixInt(2);
                     byte[] data = readView.readEOFStringBytes();
-                    handlePrepareStatementLongdata(statementId, paramId, data, vertxSession);
+                    handlePrepareStatementLongdata(statementId, paramId, data, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_STMT_EXECUTE: {
-                    MycatDataContext dataContext = vertxSession.getDataContext();
+                    MycatDataContext dataContext = this.session.getDataContext();
                     dataContext.getPrepareInfo();
                     try {
                         long statementId = readView.readFixInt(4);
                         byte flags = readView.readByte();
                         long iteration = readView.readFixInt(4);
                         assert iteration == 1;
-                        int numParams = getNumParamsByStatementId(statementId, vertxSession);
+                        int numParams = getNumParamsByStatementId(statementId, this.session);
                         byte[] nullMap = null;
                         if (numParams > 0) {
                             nullMap = readView.readBytes((numParams + 7) / 8);
@@ -113,7 +116,7 @@ public class VertxMySQLHandler {
                                 if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
                                     bv.isNull = true;
                                 } else {
-                                    byte[] longData = getLongData(statementId, i, vertxSession);
+                                    byte[] longData = getLongData(statementId, i, this.session);
                                     if (longData == null) {
                                         BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
                                     } else {
@@ -122,12 +125,12 @@ public class VertxMySQLHandler {
                                 }
                                 values[i] = bv;
                             }
-                            saveBindValue(statementId, values, vertxSession);
+                            saveBindValue(statementId, values, this.session);
                         } else {
-                            values = getLastBindValue(statementId, vertxSession);
+                            values = getLastBindValue(statementId, this.session);
                         }
                         handlePrepareStatementExecute(statementId, flags, params, values,
-                                vertxSession);
+                                this.session);
                         break;
                     } finally {
 
@@ -135,76 +138,76 @@ public class VertxMySQLHandler {
                 }
                 case MySQLCommandType.COM_STMT_CLOSE: {
                     long statementId = readView.readFixInt(4);
-                    handlePrepareStatementClose(statementId, vertxSession);
+                    handlePrepareStatementClose(statementId, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_STMT_FETCH: {
                     long statementId = readView.readFixInt(4);
                     long row = readView.readFixInt(4);
-                    handlePrepareStatementFetch(statementId, row, vertxSession);
+                    handlePrepareStatementFetch(statementId, row, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_STMT_RESET: {
                     long statementId = readView.readFixInt(4);
-                    handlePrepareStatementReset(statementId, vertxSession);
+                    handlePrepareStatementReset(statementId, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_CREATE_DB: {
                     String schema = readView.readEOFString();
                     ;
-                    handleCreateDb(schema, vertxSession);
+                    handleCreateDb(schema, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_DROP_DB: {
                     String schema = readView.readEOFString();
-                    handleDropDb(schema, vertxSession);
+                    handleDropDb(schema, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_REFRESH: {
                     byte subCommand = readView.readByte();
-                    handleRefresh(subCommand, vertxSession);
+                    handleRefresh(subCommand, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_SHUTDOWN: {
                     try {
                         if (!readView.readFinished()) {
                             byte shutdownType = readView.readByte();
-                            handleShutdown(shutdownType, vertxSession);
+                            handleShutdown(shutdownType, this.session);
                         } else {
-                            handleShutdown(0, vertxSession);
+                            handleShutdown(0, this.session);
                         }
                     } finally {
                     }
                     break;
                 }
                 case MySQLCommandType.COM_STATISTICS: {
-                    handleStatistics(vertxSession);
+                    handleStatistics(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_PROCESS_INFO: {
-                    handleProcessInfo(vertxSession);
+                    handleProcessInfo(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_CONNECT: {
-                    handleConnect(vertxSession);
+                    handleConnect(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_PROCESS_KILL: {
                     long connectionId = readView.readFixInt(4);
-                    handleProcessKill(connectionId, vertxSession);
+                    handleProcessKill(connectionId, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_DEBUG: {
-                    handleDebug(vertxSession);
+                    handleDebug(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_TIME: {
-                    handleTime(vertxSession);
+                    handleTime(this.session);
 
                     break;
                 }
                 case MySQLCommandType.COM_DELAYED_INSERT: {
-                    handleDelayedInsert(vertxSession);
+                    handleDelayedInsert(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_CHANGE_USER: {
@@ -214,7 +217,7 @@ public class VertxMySQLHandler {
                     Integer characterSet = null;
                     String authPluginName = null;
                     HashMap<String, String> clientConnectAttrs = new HashMap<>();
-                    int capabilities = vertxSession.getCapabilities();
+                    int capabilities = this.session.getCapabilities();
                     if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)) {
                         byte len = readView.readByte();
                         authResponse = readView.readFixString(len);
@@ -245,15 +248,15 @@ public class VertxMySQLHandler {
                         }
                     }
                     handleChangeUser(userName, authResponse, schemaName, characterSet, authPluginName,
-                            clientConnectAttrs, vertxSession);
+                            clientConnectAttrs, this.session);
                     break;
                 }
                 case MySQLCommandType.COM_RESET_CONNECTION: {
-                    handleResetConnection(vertxSession);
+                    handleResetConnection(this.session);
                     break;
                 }
                 case MySQLCommandType.COM_DAEMON: {
-                    handleDaemon(vertxSession);
+                    handleDaemon(this.session);
                     break;
                 }
                 default: {
@@ -261,7 +264,7 @@ public class VertxMySQLHandler {
                 }
             }
         } catch (Throwable throwable) {
-            vertxSession.writeError(throwable);
+            this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
     }
 
@@ -308,9 +311,15 @@ public class VertxMySQLHandler {
 
 
     public void handleQuery(String sql, VertxSession session) throws Exception {
-
-        MycatDataContext dataContext = session.getDataContext();
-
+        VertxResponse vertxResponse = new VertxResponse(session, 1);
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        if (sqlStatement instanceof SQLSelectStatement){
+            ResultSetBuilder builder = ResultSetBuilder.create();
+            builder.addColumnInfo("1", JDBCType.VARCHAR);
+            vertxResponse.sendResultSet(builder.build());
+        }else {
+            vertxResponse.sendOk(0, 0);
+        }
     }
 
     private void prepare(Future<SqlConnection> connection) {
@@ -334,6 +343,7 @@ public class VertxMySQLHandler {
             }
         });
     }
+
     private void normal2(String sql, Response response, List<Object> params, Future<SqlConnection> connection) {
         Handler<Throwable> exceptionhandler = new Handler<Throwable>() {
             @Override
@@ -345,7 +355,7 @@ public class VertxMySQLHandler {
         Future<SqlConnection> sqlConnectionFuture = connection.onSuccess(sqlConnection -> sqlConnection.prepare(sql));
         sqlConnectionFuture.onFailure(exceptionhandler);
         sqlConnectionFuture.onSuccess(preparedStatement -> {
-            PreparedQuery<RowSet<Row>> rowSetPreparedQuery =  preparedStatement.preparedQuery(sql);
+            PreparedQuery<RowSet<Row>> rowSetPreparedQuery = preparedStatement.preparedQuery(sql);
             Future<SqlResult<Object>> execute = rowSetPreparedQuery.collecting(new Collector<Row, Object, Object>() {
                 @Override
                 public Supplier<Object> supplier() {
@@ -402,6 +412,7 @@ public class VertxMySQLHandler {
             });
         });
     }
+
     private void normal(String sql, Response response, List<Object> params, Future<SqlConnection> connection) {
         Handler<Throwable> exceptionhandler = new Handler<Throwable>() {
             @Override
@@ -422,9 +433,9 @@ public class VertxMySQLHandler {
                 boolean updatePacket = strings == null;
                 long lastInsertId = result.property(MySQLClient.LAST_INSERTED_ID);
                 int rowCount = result.rowCount();
-                if (updatePacket){
-                    response.sendOk(rowCount,lastInsertId);
-                }else {
+                if (updatePacket) {
+                    response.sendOk(rowCount, lastInsertId);
+                } else {
                     VertxMycatRowMetaData vertxMycatRowMetaData = new VertxMycatRowMetaData(result.columnDescriptors());
 
                 }
@@ -442,11 +453,11 @@ public class VertxMySQLHandler {
 
     public void handleInitDb(String db, VertxSession session) {
         session.getDataContext().useShcema(db);
-        session.sendOk();
+        session.writeOk(false);
     }
 
     public void handlePing(VertxSession session) {
-        session.sendOk();
+        session.writeOk(false);
     }
 
     public void handleFieldList(String table, String filedWildcard, VertxSession session) {

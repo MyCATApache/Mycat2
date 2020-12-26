@@ -13,6 +13,6 @@ public class ShowIndexesSQLHandler extends AbstractSQLHandler<SQLShowIndexesStat
 
     @Override
     protected void onExecute(SQLRequest<SQLShowIndexesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
 }

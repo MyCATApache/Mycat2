@@ -180,7 +180,7 @@ public enum MycatdbCommand {
         if (instance != null) {
             instance.execute(request, dataContext, receiver);
         } else {
-            receiver.tryBroadcastShow(sqlStatement.toString());
+            receiver.proxySelectToPrototype(sqlStatement.toString());
         }
     }
 

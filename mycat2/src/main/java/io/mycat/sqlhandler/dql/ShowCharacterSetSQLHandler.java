@@ -13,6 +13,6 @@ public class ShowCharacterSetSQLHandler extends AbstractSQLHandler<MySqlShowChar
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowCharacterSetStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
 }

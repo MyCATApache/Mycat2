@@ -13,6 +13,6 @@ public class ShowErrorsSQLHandler extends AbstractSQLHandler<MySqlShowErrorsStat
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowErrorsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getSqlString());
+        response.proxySelectToPrototype(request.getSqlString());
     }
 }

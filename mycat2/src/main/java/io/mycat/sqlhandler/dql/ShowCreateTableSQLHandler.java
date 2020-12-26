@@ -22,7 +22,7 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
             sqlPropertyExpr.setName(name.toString());
             ast.setName(sqlPropertyExpr);
         }
-        response.tryBroadcastShow(ast.toString());
+        response.proxySelectToPrototype(ast.toString());
         return ;
 //
 //        SQLName nameExpr = ast.getName();
