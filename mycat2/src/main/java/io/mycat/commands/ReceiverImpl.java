@@ -31,12 +31,6 @@ public class ReceiverImpl implements Response {
         session.setLastMessage(e);
         sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
     }
-
-    @Override
-    public void proxySelectToPrototype(String statement) {
-        proxySelect("prototype",statement);
-    }
-
     @Override
     public void proxySelect(String defaultTargetName, String statement) {
         execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
@@ -49,7 +43,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void tryBroadcastShow(String statement) {
+    public void proxySelectToPrototype(String statement) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<String> infos = new ArrayList<>();
         List<String> keySet = new ArrayList<>();

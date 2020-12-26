@@ -12,6 +12,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     int currentPacketLength;
     VertxMySQLHandler mySQLHandler;
     NetSocket socket;
+    private int packetId;
 
     public VertxMySQLPacketResolver(NetSocket socket, VertxMySQLHandler mySQLHandler) {
         this.mySQLHandler = mySQLHandler;
@@ -41,7 +42,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     }
                     if (state == MysqlProxyServer.State.PAYLOAD) {
                         currentPacketLength = readInt(head, 0, 3);
-                        int packetId = head.getUnsignedByte(3);
+                       this. packetId = head.getUnsignedByte(3);
                         assert packetCounter == packetId;
                         ++packetCounter;
                         head = null;//help gc
@@ -63,7 +64,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                         if (payload.length() == currentPacketLength) {
                             Buffer payload = this.payload;
                             this.payload = null;
-                            mySQLHandler.handle(payload, socket);
+                            mySQLHandler.handle(packetId,payload, socket);
                             return;
                         }
                     }

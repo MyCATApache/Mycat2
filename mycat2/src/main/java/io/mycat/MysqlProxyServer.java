@@ -50,7 +50,7 @@ public class MysqlProxyServer {
         public void start() throws Exception {
             NetServer netServer = vertx.createNetServer();//创建代理服务器
             netServer.connectHandler((socket)->new VertxMySQLAuthHandler(
-                    socket,null,new VertxMySQLHandler()
+                    socket,null
             )).listen(port, listenResult -> {//代理服务器的监听端口
                 if (listenResult.succeeded()) {
                     //成功启动代理服务器

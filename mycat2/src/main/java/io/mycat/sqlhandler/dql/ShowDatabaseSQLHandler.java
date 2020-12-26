@@ -13,6 +13,6 @@ public class ShowDatabaseSQLHandler extends AbstractSQLHandler<SQLShowDatabasesS
 
     @Override
     protected void onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getSqlString());
+        response.proxySelectToPrototype(request.getSqlString());
     }
 }

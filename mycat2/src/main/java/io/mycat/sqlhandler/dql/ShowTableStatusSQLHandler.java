@@ -44,7 +44,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
-            response.tryBroadcastShow(ast.toString());
+            response.proxySelectToPrototype(ast.toString());
         }
         return ;
 //        MySqlShowTableStatusStatement ast = request.getAst();
