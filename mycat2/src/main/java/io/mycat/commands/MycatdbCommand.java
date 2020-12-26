@@ -122,7 +122,7 @@ public enum MycatdbCommand {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
-            LinkedList<SQLStatement> statements = parse(text, dataContext);
+            LinkedList<SQLStatement> statements = parse(text);
             Response receiver;
             if (statements.size() == 1 && statements.get(0) instanceof MySqlExplainStatement) {
                 receiver = new ReceiverImpl(session, statements.size(), false, false);
@@ -203,7 +203,7 @@ public enum MycatdbCommand {
     }
 
     @NotNull
-    public LinkedList<SQLStatement> parse(String text, MycatDataContext dataContext) {
+    public LinkedList<SQLStatement> parse(String text) {
         text = text.trim();
         LinkedList<SQLStatement> resStatementList = new LinkedList<>();
         if (text.startsWith("begin") || text.startsWith("BEGIN")) {
@@ -219,7 +219,6 @@ public enum MycatdbCommand {
                 return resStatementList;
             }
         }
-        MycatUser user = dataContext.getUser();
         return parseMySQLString(text, resStatementList);
     }
 
