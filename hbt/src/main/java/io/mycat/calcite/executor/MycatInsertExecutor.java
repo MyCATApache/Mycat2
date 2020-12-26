@@ -5,7 +5,6 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLReplaceable;
 import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLLiteralExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
@@ -343,22 +342,24 @@ public class MycatInsertExecutor implements Executor {
         if (gsiService == null) {
             return;
         }
+
+        MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
+        TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+        String txId = transactionSession.getTxId();
+
         String[] columnNames = mycatInsertRel.getColumnNames();
         SimpleColumnInfo[] columns = new SimpleColumnInfo[columnNames.length];
         for (int i = 0; i < columnNames.length; i++) {
             columns[i] = logicTable.getColumnByName(columnNames[i]);
         }
 
-        MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
-        TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-        String txId = transactionSession.getTxId();
         for (Map.Entry<GroupKey, Group> entry : groupMap.entrySet()) {
             GroupKey key = entry.getKey();
             Group value = entry.getValue();
             LinkedList<List<Object>> args = value.getArgs();
             for (List<Object> arg : args) {
                 gsiService.insert(txId, logicTable.getSchemaName(),
-                        logicTable.getTableName(),columns, arg,key.getTarget());
+                        logicTable.getTableName(), columns, arg, key.getTarget());
             }
         }
     }

@@ -1,6 +1,5 @@
 package io.mycat.gsi;
 
-import io.mycat.DataNode;
 import io.mycat.IndexInfo;
 import io.mycat.SimpleColumnInfo;
 import lombok.AllArgsConstructor;
@@ -8,6 +7,7 @@ import lombok.Data;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,15 +56,21 @@ public interface GSIService {
 
     Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int[] projects, int[] filterIndexes, Object[] values);
 
-    Optional<DataNode> queryDataNode(String schemaName, String tableName, int index, Object value);
+    Collection<String> queryDataNode(String schemaName, String tableName, int index, Object value);
 
     boolean isIndexTable(String schemaName, String tableName);
 
     void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey);
 
+    boolean preCommit(String txId);
+
+    boolean commit(String txId);
+
+    boolean rollback(String txId);
+
     @Data
     class Transaction {
-        private Long id;
+        private String id;
     }
 
     @Getter
@@ -74,6 +80,11 @@ public interface GSIService {
         private final List<IndexValue> indexes = new ArrayList<>();
         private final List<IndexValue> coverings = new ArrayList<>();
         private final List<String> dataNodeKeyList = new ArrayList<>();
+
+        @Override
+        public String toString() {
+            return indexInfo+", dataNode="+dataNodeKeyList+", indexes"+indexes+", coverings="+coverings;
+        }
     }
 
     @Getter
@@ -81,5 +92,10 @@ public interface GSIService {
     class IndexValue{
         private final SimpleColumnInfo column;
         private final Object value;
+
+        @Override
+        public String toString() {
+            return column.getColumnName()+"="+value;
+        }
     }
 }

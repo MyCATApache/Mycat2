@@ -13,7 +13,9 @@ import org.mapdb.serializer.SerializerArrayTuple;
 import org.mapdb.serializer.SerializerUtils;
 
 import java.math.BigDecimal;
+import java.sql.JDBCType;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -41,17 +43,58 @@ public class MapDBRepository {
     /**
      * 字段类型映射
      */
-    private final Map<SimpleColumnInfo.Type,Class> typeClassMap = new HashMap<>();
+    private final Map<JDBCType,Class> typeClassMap = new HashMap<>();
+    private Function<SimpleColumnInfo,Class> typeMap = columnInfo -> typeClassMap.get(columnInfo.getJdbcType());
 
     public MapDBRepository(DB db, MetadataManager metadataManager) {
         this.db = db;
         this.metadataManager = metadataManager;
-        typeClassMap.put(SimpleColumnInfo.Type.STRING,String.class);
-        typeClassMap.put(SimpleColumnInfo.Type.NUMBER,BigDecimal.class);
-        typeClassMap.put(SimpleColumnInfo.Type.BLOB,byte[].class);
-        typeClassMap.put(SimpleColumnInfo.Type.TIMESTAMP,Date.class);
-        typeClassMap.put(SimpleColumnInfo.Type.DATE,Date.class);
-        typeClassMap.put(SimpleColumnInfo.Type.TIME,Date.class);
+        // 数字
+        typeClassMap.put(JDBCType.BIT,Byte.class);
+        typeClassMap.put(JDBCType.TINYINT,Integer.class);
+        typeClassMap.put(JDBCType.SMALLINT,Integer.class);
+        typeClassMap.put(JDBCType.INTEGER,Integer.class);
+        typeClassMap.put(JDBCType.BIGINT,Long.class);
+        typeClassMap.put(JDBCType.FLOAT,BigDecimal.class);
+        typeClassMap.put(JDBCType.REAL,BigDecimal.class);
+        typeClassMap.put(JDBCType.DOUBLE,BigDecimal.class);
+        typeClassMap.put(JDBCType.NUMERIC,BigDecimal.class);
+        typeClassMap.put(JDBCType.DECIMAL,BigDecimal.class);
+
+        // 文本
+        typeClassMap.put(JDBCType.CHAR,String.class);
+        typeClassMap.put(JDBCType.VARCHAR,String.class);
+        typeClassMap.put(JDBCType.LONGVARCHAR,String.class);
+        typeClassMap.put(JDBCType.NULL,String.class);
+        typeClassMap.put(JDBCType.OTHER,String.class);
+        typeClassMap.put(JDBCType.JAVA_OBJECT,String.class);
+        typeClassMap.put(JDBCType.DISTINCT,String.class);
+        typeClassMap.put(JDBCType.STRUCT,String.class);
+        typeClassMap.put(JDBCType.ARRAY,String.class);
+        typeClassMap.put(JDBCType.REF,String.class);
+        typeClassMap.put(JDBCType.DATALINK,String.class);
+        typeClassMap.put(JDBCType.BOOLEAN,String.class);
+        typeClassMap.put(JDBCType.ROWID,String.class);
+        typeClassMap.put(JDBCType.NCHAR,String.class);
+        typeClassMap.put(JDBCType.NVARCHAR,String.class);
+        typeClassMap.put(JDBCType.LONGNVARCHAR,String.class);
+        typeClassMap.put(JDBCType.NCLOB,String.class);
+        typeClassMap.put(JDBCType.SQLXML,String.class);
+        typeClassMap.put(JDBCType.REF_CURSOR,String.class);
+
+        // 日期
+        typeClassMap.put(JDBCType.DATE,Date.class);
+        typeClassMap.put(JDBCType.TIME,Date.class);
+        typeClassMap.put(JDBCType.TIMESTAMP,Date.class);
+        typeClassMap.put(JDBCType.TIME_WITH_TIMEZONE,Date.class);
+        typeClassMap.put(JDBCType.TIMESTAMP_WITH_TIMEZONE,Date.class);
+
+        // 字节
+        typeClassMap.put(JDBCType.BINARY,byte[].class);
+        typeClassMap.put(JDBCType.VARBINARY,byte[].class);
+        typeClassMap.put(JDBCType.LONGVARBINARY,byte[].class);
+        typeClassMap.put(JDBCType.BLOB,byte[].class);
+        typeClassMap.put(JDBCType.CLOB,byte[].class);
 
         Runtime.getRuntime().addShutdownHook(new Thread("mapDB-gsi"){
             @Override
@@ -135,13 +178,20 @@ public class MapDBRepository {
             IndexInfo indexInfo = rowIndexValues.getIndexInfo();
             IndexStorage indexStorage = indexStorageMap.get(indexInfo.getIndexName());
 
-            List<Object> storageKeys = rowIndexValues.getIndexes().stream().map(IndexValue::getValue).collect(Collectors.toList());
-            List<Object> storageValues = rowIndexValues.getCoverings().stream().map(IndexValue::getValue).collect(Collectors.toList());
+            List<Object> storageKeys = rowIndexValues.getIndexes().stream().map(this::getValueAndCast).collect(Collectors.toList());
+            List<Object> storageValues = rowIndexValues.getCoverings().stream().map(this::getValueAndCast).collect(Collectors.toList());
             storageValues.add(0,dataNodeKey);
 
             indexStorage.getStorage().put(storageKeys.toArray(),storageValues.toArray());
         }
         db.commit();
+    }
+
+    private Object getValueAndCast(IndexValue indexValue){
+        Object value = indexValue.getValue();
+        Class javaClass = typeMap.apply(indexValue.getColumn());
+        Object result = MapDBUtils.cast(value, javaClass);
+        return result;
     }
 
     public Map<String, IndexStorage> getIndexStorageMap(String schemaName, String tableName){
@@ -153,11 +203,11 @@ public class MapDBRepository {
         return tableIndexStorageMap.get(tableName);
     }
 
-    public boolean preCommit(Long txId) {
+    public boolean preCommit(String txId) {
         return true;
     }
 
-    public boolean commit(Long txId) {
+    public boolean commit(String txId) {
         //todo 事物id未实行
         try {
             db.commit();
@@ -169,7 +219,7 @@ public class MapDBRepository {
         }
     }
 
-    public boolean rollback(Long txId) {
+    public boolean rollback(String txId) {
         try {
             db.rollback();
             return true;
@@ -232,23 +282,27 @@ public class MapDBRepository {
 
         Serializer[] keySerializers = new Serializer[indexInfo.getIndexes().length];
         Serializer[] valueSerializers = new Serializer[indexInfo.getCovering().length + 1];
+        Class[] keyTypes = new Class[keySerializers.length];
+        Class[] valueTypes = new Class[valueSerializers.length];
 
         for (int i = 0; i < keySerializers.length; i++) {
             SimpleColumnInfo columnInfo = indexInfo.getIndexes()[i];
-            Class type = typeClassMap.get(columnInfo.getType());
+            Class type = typeMap.apply(columnInfo);
             if(type == null){
                 throw new IllegalStateException("不支持的字段类型" + columnInfo);
             }
+            keyTypes[i] = type;
             keySerializers[i] = SerializerUtils.serializerForClass(type);
         }
 
         valueSerializers[0] = SerializerUtils.serializerForClass(String.class);
         for (int i = 1; i < valueSerializers.length; i++) {
             SimpleColumnInfo columnInfo = indexInfo.getCovering()[i-1];
-            Class type = typeClassMap.get(columnInfo.getType());
+            Class type = typeMap.apply(columnInfo);
             if(type == null){
                 throw new IllegalStateException("不支持的字段类型" + columnInfo);
             }
+            valueTypes[i] = type;
             valueSerializers[i] = SerializerUtils.serializerForClass(type);
         }
 
@@ -257,6 +311,7 @@ public class MapDBRepository {
                 .valueSerializer(new SerializerArrayTuple(valueSerializers))
                 .createOrOpen();
         index.setStorage(bTreeMap);
+        index.setTypeMap(typeMap);
         return index;
     }
 

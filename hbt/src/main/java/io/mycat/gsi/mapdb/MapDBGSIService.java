@@ -1,6 +1,5 @@
 package io.mycat.gsi.mapdb;
 
-import io.mycat.DataNode;
 import io.mycat.MetadataManager;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
@@ -9,10 +8,7 @@ import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MapDBGSIService implements GSIService {
     private final MapDBRepository repository;
@@ -43,7 +39,7 @@ public class MapDBGSIService implements GSIService {
     }
 
     @Override
-    public Optional<DataNode> queryDataNode(String schemaName, String tableName, int index, Object value) {
+    public Collection<String> queryDataNode(String schemaName, String tableName, int index, Object value) {
         MetadataManager metadataManager = getMetadataManager();
         TableHandler table = metadataManager.getTable(schemaName, tableName);
         SimpleColumnInfo columnInfo = table.getColumns().get(index);
@@ -54,10 +50,10 @@ public class MapDBGSIService implements GSIService {
         for (RowIndexValues rowIndexValue : rowIndexValues) {
             List<String> dataNodeKeyList = rowIndexValue.getDataNodeKeyList();
             if(dataNodeKeyList.size() > 0){
-                return Optional.empty();
+                return dataNodeKeyList;
             }
         }
-        return Optional.empty();
+        return Collections.emptyList();
     }
 
     @Override
@@ -69,6 +65,21 @@ public class MapDBGSIService implements GSIService {
     @Override
     public void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey) {
         repository.insert(txId, schemaName, tableName, columns, objects, dataNodeKey);
+    }
+
+    @Override
+    public boolean preCommit(String txId) {
+        return repository.preCommit(txId);
+    }
+
+    @Override
+    public boolean commit(String txId) {
+        return repository.commit(txId);
+    }
+
+    @Override
+    public boolean rollback(String txId) {
+        return repository.rollback(txId);
     }
 
     public MetadataManager getMetadataManager() {
