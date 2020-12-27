@@ -47,13 +47,11 @@ public class MapDBGSIService implements GSIService {
 
         IndexStorage indexStorage = IndexChooser.HIT_MAX_COLUMNS.choseIndex(indexStorageMap.values(), new SimpleColumnInfo[]{columnInfo});
         Collection<RowIndexValues> rowIndexValues = indexStorage.getByPrefix(value);
+        Set<String> dataNodeSet = new LinkedHashSet<>();
         for (RowIndexValues rowIndexValue : rowIndexValues) {
-            List<String> dataNodeKeyList = rowIndexValue.getDataNodeKeyList();
-            if(dataNodeKeyList.size() > 0){
-                return dataNodeKeyList;
-            }
+            dataNodeSet.addAll(rowIndexValue.getDataNodeKeyList());
         }
-        return Collections.emptyList();
+        return dataNodeSet;
     }
 
     @Override

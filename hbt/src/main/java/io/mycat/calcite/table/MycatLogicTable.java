@@ -119,15 +119,19 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                                         table.getSchemaName(),
                                         table.getTableName(),
                                         index, value);
-                                if (!dataNodes.isEmpty()) {
-                                    return LazyTransformCollection.transform(dataNodes,dataNodeKey ->{
-                                            DataNode dataNode = dataNodeMap.get(dataNodeKey);
-                                            if(dataNode == null){
-                                                throw new IllegalStateException("数据源["+dataNodeKey+"]不存在, 所有数据源="+dataNodeMap.keySet());
-                                            }
-                                            return dataNode;
-                                        });
+                                if(dataNodes == null){
+                                    return backendTableInfos;
                                 }
+                                if(dataNodes.isEmpty()){
+                                    return new ArrayList<>();
+                                }
+                                return LazyTransformCollection.transform(dataNodes,dataNodeKey ->{
+                                        DataNode dataNode = dataNodeMap.get(dataNodeKey);
+                                        if(dataNode == null){
+                                            throw new IllegalStateException("数据源["+dataNodeKey+"]不存在, 所有数据源="+dataNodeMap.keySet());
+                                        }
+                                        return dataNode;
+                                    });
                             }
                         }
                     }

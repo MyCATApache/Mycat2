@@ -4,6 +4,7 @@ package io.mycat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public interface TableHandler {
 
@@ -14,6 +15,12 @@ public interface TableHandler {
     String getTableName();
 
     String getCreateTableSQL();
+
+    default List<SimpleColumnInfo> getPrimaryKeyList(){
+        return getColumns().stream()
+                .filter(SimpleColumnInfo::isPrimaryKey)
+                .collect(Collectors.toList());
+    }
 
     List<SimpleColumnInfo> getColumns();
 

@@ -6,12 +6,14 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
-import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.hbt.TextConvertor;
 import io.mycat.mpp.Row;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -19,8 +21,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
 import java.sql.PreparedStatement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,6 +73,17 @@ public class MycatUpdateExecutor implements Executor {
         return Pair.of(key.getTarget(), sql);
     }
 
+
+    private FastSqlUtils.Select getSelectPrimaryKeyStatementIfNeed(DataNode dataNode, MetadataManager metadataManager){
+        TableHandler table = metadataManager.getTable(dataNode.getSchema(), dataNode.getTable());
+        if(sqlStatement instanceof MySqlUpdateStatement) {
+            return FastSqlUtils.conversionToSelectSql((MySqlUpdateStatement) sqlStatement, table.getPrimaryKeyList(),parameters);
+        }else if(sqlStatement instanceof MySqlDeleteStatement){
+            return FastSqlUtils.conversionToSelectSql((MySqlDeleteStatement) sqlStatement,table.getPrimaryKeyList(),parameters);
+        }
+        return null;
+    }
+
     @Override
     @SneakyThrows
     public void open() {
@@ -91,6 +104,7 @@ public class MycatUpdateExecutor implements Executor {
 
         boolean insertId = sqlStatement instanceof MySqlInsertStatement;
         SqlRecord sqlRecord = context.currentSqlRecord();
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
 
         //建立targetName与连接的映射
         for (GroupKey key : groupKeys) {
@@ -105,6 +119,17 @@ public class MycatUpdateExecutor implements Executor {
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
                 LOGGER.debug("{} has closed but still using", mycatConnection);
             }
+
+            FastSqlUtils.Select select = getSelectPrimaryKeyStatementIfNeed(key.getDataNode(), metadataManager);
+            if(select != null) {
+                try(PreparedStatement statement = MycatPreparedStatementUtil.setParams(
+                        connection.prepareStatement(select.getStatement().toString()),select.getParameters());
+                    ResultSet resultSet = statement.executeQuery()){
+                    String s = TextConvertor.dumpResultSet(resultSet);
+                    System.out.println("selectPrimaryKeyStatement = " + s);
+                }
+            }
+
             long start = SqlRecord.now();
             PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
             MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
@@ -138,7 +163,7 @@ public class MycatUpdateExecutor implements Executor {
             MycatPreparedStatementUtil.collect(sqlStatement, sb, parameters, outparameters);
             String sql = sb.toString();
             this.parameters = outparameters;
-            GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
+            GroupKey key = GroupKey.of(sql, dataNode.getTargetName(),dataNode);
             groupHashMap.add(key);
         }
         return groupHashMap;

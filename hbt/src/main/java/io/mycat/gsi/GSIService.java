@@ -56,6 +56,14 @@ public interface GSIService {
 
     Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int[] projects, int[] filterIndexes, Object[] values);
 
+    /**
+     *
+     * @param schemaName
+     * @param tableName
+     * @param index
+     * @param value
+     * @return 返回NULL=没有走索引, 返回空集合=不存在任何节点, 返回有数据=存在于集合中的节点
+     */
     Collection<String> queryDataNode(String schemaName, String tableName, int index, Object value);
 
     boolean isIndexTable(String schemaName, String tableName);

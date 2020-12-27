@@ -173,7 +173,7 @@ public class MycatInsertExecutor implements Executor {
             StringBuilder sb = new StringBuilder();
             MycatPreparedStatementUtil.outputToParameters(template, sb, outParams);
             String sql = sb.toString();
-            GroupKey key = GroupKey.of(sql, dataNode.getTargetName());
+            GroupKey key = GroupKey.of(sql, dataNode.getTargetName(),dataNode);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
         }
@@ -208,7 +208,7 @@ public class MycatInsertExecutor implements Executor {
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
             String parameterizedString = mySqlInsertStatement.toParameterizedString();
-            GroupKey key = GroupKey.of(parameterizedString, dataNode.getTargetName());
+            GroupKey key = GroupKey.of(parameterizedString, dataNode.getTargetName(),dataNode);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(arg);
         }
