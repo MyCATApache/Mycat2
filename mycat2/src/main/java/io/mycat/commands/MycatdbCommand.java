@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.IntFunction;
 
 /**
  * @author Junwen Chen
@@ -117,34 +118,29 @@ public enum MycatdbCommand {
 
     }
 
-    public void executeQuery(String text, MycatSession session, MycatDataContext dataContext) {
+    public void executeQuery(String text,
+                             MycatDataContext dataContext,
+                             IntFunction<Response> responseFactory) {
         try {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
-            Response receiver;
-            if (statements.size() == 1 && statements.get(0) instanceof MySqlExplainStatement) {
-                receiver = new ReceiverImpl(session, statements.size(), false, false);
-            } else {
-                receiver = new ReceiverImpl(session, statements.size(), false, false);
-            }
-            for (SQLStatement sqlStatement : statements) {
+            Response response = responseFactory.apply(statements.size());
 
+            for (SQLStatement sqlStatement : statements) {
                 SqlRecord sqlRecord = dataContext.startSqlRecord();
                 sqlRecord.setTarget(dataContext.getUser().getHost());
                 sqlRecord.setSql(sqlStatement);
-
-                execute(dataContext, receiver, sqlStatement);
-
+                execute(dataContext, response, sqlStatement);
             }
         } catch (Throwable e) {
+            Response response = responseFactory.apply(1);
             if (isNavicatClientStatusQuery(text)) {
-                session.writeOkEndPacket();
+                response.sendOk();
                 return;
             }
-            session.setLastMessage(e);
-            session.writeErrorEndPacketBySyncInProcessError();
+            response.sendError(e);
             return;
         }
 

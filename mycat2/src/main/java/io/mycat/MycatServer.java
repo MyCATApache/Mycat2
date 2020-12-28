@@ -37,8 +37,6 @@ public class MycatServer {
 
     private final MycatContextThreadPool mycatContextThreadPool;
 
-    private final Map<TransactionType, Function<MycatDataContext, TransactionSession>> transcationFactoryMap;
-
     private final LoadBalanceManager loadBalanceManager;
 
     private final MycatWorkerProcessor mycatWorkerProcessor;
@@ -52,6 +50,7 @@ public class MycatServer {
     @SneakyThrows
     public MycatServer(MycatServerConfig serverConfig,
                        Authenticator refAuthenticator,
+                       TranscationSwitch transcationSwitch,
                        DatasourceConfigProvider datasourceConfigProvider) {
         this.serverConfig = serverConfig;
         this.authenticator = refAuthenticator;
@@ -60,23 +59,14 @@ public class MycatServer {
         io.mycat.config.ServerConfig serverConfigServer = serverConfig.getServer();
         ThreadPoolExecutorConfig workerPool = serverConfigServer.getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfigServer.getTimeWorkerPool());
-        this.transcationFactoryMap = new HashMap<>();
-        this.transcationFactoryMap.put(TransactionType.PROXY_TRANSACTION_TYPE,
-                mycatDataContext -> {
-                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    return new ProxyTransactionSession(connection.getDatasourceProvider().createSession(mycatDataContext));
-                });
-        this.transcationFactoryMap.put(TransactionType.JDBC_TRANSACTION_TYPE,
-                mycatDataContext -> {
-                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    return connection.getDatasourceProvider().createSession(mycatDataContext);
-                });
         this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
                 mycatWorkerProcessor.getMycatWorker(),
                 workerPool.getTaskTimeout(),
                 TimeUnit.valueOf(workerPool.getTimeUnit()));
 
-        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(transcationFactoryMap, mycatContextThreadPool);
+        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(
+                transcationSwitch,
+                mycatContextThreadPool);
     }
 
     @SneakyThrows

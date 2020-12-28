@@ -1,19 +1,27 @@
 package io.mycat;
 
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.session.ProxyAuthenticator;
+import io.mycat.proxy.session.TranscationSwitch;
+import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author cjw
@@ -26,7 +34,7 @@ public class MycatCore {
     private final MycatServer mycatServer;
     private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
-
+    private final TranscationSwitch transcationSwitch;
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if(classLoader == null){
@@ -49,37 +57,25 @@ public class MycatCore {
         }
     }
 
+
+
     @SneakyThrows
     public MycatCore() {
-        String path = null;
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
-        if (path == null) {
-            String configResourceKeyName = "MYCAT_HOME";
-            path = System.getProperty(configResourceKeyName);
-        }
+        String path = findMycatHome();
         boolean enableGSI = false;
-
-        if (path == null) {
-            Path bottom = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            while (!(Files.isDirectory(bottom) && Files.isWritable(bottom))) {
-                bottom = bottom.getParent();
-            }
-            path = bottom.toString();
-        }
-        if (path == null) {
-            throw new MycatException("can not find MYCAT_HOME");
-        }
-
         this.baseDirectory = Paths.get(path).toAbsolutePath();
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         String datasourceProvider = serverConfig.getDatasourceProvider();
-        this.mycatServer = new MycatServer(serverConfig, new ProxyAuthenticator(), new ProxyDatasourceConfigProvider());
+        this.transcationSwitch = new TranscationSwitch();
+        this.mycatServer = new MycatServer(serverConfig, new ProxyAuthenticator(), this.transcationSwitch,new ProxyDatasourceConfigProvider());
         LoadBalanceManager loadBalanceManager = mycatServer.getLoadBalanceManager();
         MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
 
         HashMap<Class, Object> context = new HashMap<>();
+        context.put(TranscationSwitch.class,  this.transcationSwitch);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
@@ -118,6 +114,24 @@ public class MycatCore {
 
         context.put(metadataStorageManager.getClass(), metadataStorageManager);
         MetaClusterCurrent.register(context);
+    }
+
+    @NotNull
+    private String findMycatHome() throws URISyntaxException {
+        String configResourceKeyName = "MYCAT_HOME";
+        String path = System.getProperty(configResourceKeyName);
+
+        if (path == null) {
+            Path bottom = Paths.get(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            while (!(Files.isDirectory(bottom) && Files.isWritable(bottom))) {
+                bottom = bottom.getParent();
+            }
+            path = bottom.toString();
+        }
+        if (path == null) {
+            throw new MycatException("can not find MYCAT_HOME");
+        }
+        return path;
     }
 
     public void start() throws Exception {

@@ -38,11 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.sql.JDBCType;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author chen junwen
@@ -79,12 +77,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug(new String(bytes));
             }
             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
-            mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
-                @Override
-                public void run() throws Exception {
-                    MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session, session.getDataContext());
-                }
-            });
+            mycatServer.getServerTransactionSessionRunner().run(session,
+                    () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+                            (size) -> {
+                return new ReceiverImpl(session, size, false);
+            }));
 
             return;
         } catch (Throwable e) {
@@ -204,7 +201,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 return;
             }
         } catch (Throwable throwable) {
-            ReceiverImpl receiver = new ReceiverImpl(session, 1, false, false);
+            ReceiverImpl receiver = new ReceiverImpl(session, 1, false);
             receiver.sendError(throwable);
         }
     }
@@ -231,7 +228,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             LOGGER.debug("=> {}", statement);
         }
 
-        ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
+        ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
         MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
         mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
             @Override

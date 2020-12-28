@@ -34,18 +34,15 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     final MycatSession session;
     final Response receiver;
     final boolean binary;
-    final boolean explain;
     int count;
     final static Logger LOGGER = LoggerFactory.getLogger(SQLExecuterWriter.class);
 
     public SQLExecuterWriter(int total,
                              boolean binary,
-                             boolean explain,
                              MycatSession session, Response receiver) {
         this.total = total;
         this.count = total;
         this.binary = binary;
-        this.explain = explain;
         this.session = session;
         this.receiver = receiver;
 
@@ -57,20 +54,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                 throw new AssertionError();
             }
         }
-        if (explain && this.count != 1) {
-            throw new UnsupportedOperationException();
-        }
     }
 
     public void writeToMycatSession(MycatResponse response) {
         TransactionSession transactionSession = session.getDataContext().getTransactionSession();
         boolean moreResultSet = !(this.count == 1);
         try{
-            if (explain) {
-                sendResultSet(moreResultSet, response.explain());
-                return;
-            }
-
             try (MycatResponse mycatResponse = response) {
                 switch (mycatResponse.getType()) {
                     case RRESULTSET: {
@@ -253,9 +242,5 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         currentResultSet.close();
         session.getDataContext().getTransactionSession().closeStatenmentState();
         session.writeRowEndPacket(moreResultSet, false);
-    }
-
-    public boolean isExplain() {
-        return explain;
     }
 }

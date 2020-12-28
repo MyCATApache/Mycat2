@@ -21,8 +21,8 @@ public class ReceiverImpl implements Response {
     protected final MycatSession session;
     protected final SQLExecuterWriter sqlExecuterWriter;
 
-    public ReceiverImpl(MycatSession session,int stmtSize, boolean binary,boolean explain) {
-        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session,this);
+    public ReceiverImpl(MycatSession session,int stmtSize, boolean binary) {
+        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary, session,this);
         this.session = session;
     }
 

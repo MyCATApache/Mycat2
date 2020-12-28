@@ -8,14 +8,18 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
+import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.proxy.session.TranscationSwitch;
 import io.mycat.runtime.MycatDataContextImpl;
+import io.mycat.sqlrecorder.SqlRecord;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -454,35 +458,10 @@ public class VertxMySQLHandler {
 
 
     public void handleQuery(String sql, VertxSession session) throws Exception {
-        VertxResponse vertxResponse = new VertxJdbcResponseImpl(session, 1, false);
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        if (sqlStatement instanceof SQLSelectStatement) {
-            vertxResponse.proxySelectToPrototype(sql);
-        } else {
-            vertxResponse.sendOk(0, 0);
-        }
-    }
-
-    private void prepare(Future<SqlConnection> connection) {
-        connection.onSuccess(new Handler<SqlConnection>() {
-            @Override
-            public void handle(SqlConnection sqlConnection) {
-                Future<PreparedStatement> prepare = sqlConnection.prepare(
-                        "select * from db1/");
-                prepare.onSuccess(new Handler<PreparedStatement>() {
-                    @Override
-                    public void handle(PreparedStatement preparedStatement) {
-                        RowStream<Row> stream = preparedStatement.createStream(5);
-                        stream.handler(new Handler<Row>() {
-                            @Override
-                            public void handle(Row row) {
-                                System.out.println(row);
-                            }
-                        });
-                    }
-                });
-            }
-        });
+        TranscationSwitch transcationSwitch = MetaClusterCurrent.wrapper(TranscationSwitch.class);
+        transcationSwitch.ensureTranscation(mycatDataContext);
+        MycatdbCommand.INSTANCE.executeQuery(sql,mycatDataContext,(size)->
+                new VertxJdbcResponseImpl(session,size, false));
     }
 
     public void handleSleep(VertxSession session) {
