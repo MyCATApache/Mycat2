@@ -81,9 +81,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private final ArrayDeque<NIOJob> delayedNioJobs = new ArrayDeque<>();
 
 
-    public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
+    public MycatSession(MycatDataContext dataContext, BufferPool bufferPool, NIOHandler nioHandler,
                         SessionManager<MycatSession> sessionManager) {
-        super(sessionId, nioHandler, sessionManager);
+        super(dataContext.getSessionId(), nioHandler, sessionManager);
         HeapBufferPool heapBufferPool = new HeapBufferPool();
         this.proxyBuffer = new ProxyBufferImpl(heapBufferPool);
         this.crossSwapThreadBufferPool = bufferPool;
@@ -91,7 +91,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.processState = ProcessState.READY;
         this.frontResolver = new FrontMySQLPacketResolver(heapBufferPool, this);
         this.packetId = 0;
-        this.dataContext = new MycatDataContextImpl();
+        this.dataContext = dataContext;
     }
 
     public void setCommandHandler(CommandDispatcher commandHandler) {
@@ -394,7 +394,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public int hashCode() {
-        return this.sessionId;
+        return Long.hashCode(this.sessionId);
     }
 
     @Override

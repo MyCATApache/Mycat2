@@ -76,7 +76,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
             mycatServer.getServerTransactionSessionRunner().run(session,
                     () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
                             (size) -> {
@@ -229,7 +229,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         }
 
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
-        MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+        NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
         mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
             @Override
             public void run() throws Exception {

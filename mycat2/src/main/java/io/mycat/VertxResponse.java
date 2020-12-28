@@ -7,6 +7,10 @@ import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 
 import java.util.Iterator;
+import java.util.Objects;
+
+import static io.mycat.ExecuteType.QUERY;
+import static io.mycat.ExecuteType.UPDATE;
 
 public abstract class VertxResponse implements Response {
 
@@ -24,7 +28,18 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
+    public void proxySelect(String defaultTargetName, String statement) {
+        execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
+    }
+
+    @Override
+    public void proxyUpdate(String defaultTargetName, String proxyUpdate) {
+        execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), proxyUpdate, null));
+    }
+
+    @Override
     public void sendError(Throwable e) {
+        dataContext.getTransactionSession().closeStatenmentState();
         dataContext.setLastMessage(e);
         session.writeErrorEndPacketBySyncInProcessError();
     }
@@ -37,6 +52,7 @@ public abstract class VertxResponse implements Response {
 
     @Override
     public void sendError(String errorMessage, int errorCode) {
+        dataContext.getTransactionSession().closeStatenmentState();
         dataContext.setLastMessage(errorMessage);
         session.writeErrorEndPacketBySyncInProcessError();
     }
@@ -75,6 +91,7 @@ public abstract class VertxResponse implements Response {
         ExecuteType executeType = detail.getExecuteType();
         String sql = detail.getSql();
         MycatDataContext dataContext = session.getDataContext();
+
         switch (executeType) {
             case QUERY:
                 target = dataContext.resolveDatasourceTargetName(target, false);
@@ -86,14 +103,19 @@ public abstract class VertxResponse implements Response {
                 target = dataContext.resolveDatasourceTargetName(target, true);
                 break;
         }
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        MycatConnection connection = transactionSession.getConnection(target);
+        count++;
         switch (executeType) {
             case QUERY:
             case QUERY_MASTER:
-                proxySelect(target,sql);
+                sendResultSet(connection.executeQuery(null, sql));
                 break;
             case INSERT:
             case UPDATE:
-                proxyUpdate(target,sql);
+                long[] longs = connection.executeUpdate(sql, true);
+                transactionSession.closeStatenmentState();
+                sendOk(longs[0],longs[1]);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + executeType);
@@ -104,6 +126,7 @@ public abstract class VertxResponse implements Response {
     public void sendOk(long affectedRow,long lastInsertId ) {
         count++;
         MycatDataContext dataContext = session.getDataContext();
+        dataContext.getTransactionSession().closeStatenmentState();
         dataContext.setLastInsertId(lastInsertId);
         dataContext.setAffectedRows(affectedRow);
         session.writeOk(count < size);

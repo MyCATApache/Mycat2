@@ -1,15 +1,10 @@
 package io.mycat;
 
-import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.*;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.proxy.session.ProxyAuthenticator;
-import io.mycat.proxy.session.TranscationSwitch;
-import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -20,8 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 
 /**
  * @author cjw
@@ -34,7 +27,8 @@ public class MycatCore {
     private final MycatServer mycatServer;
     private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
-    private final TranscationSwitch transcationSwitch;
+    private final MycatWorkerProcessor mycatWorkerProcessor;
+
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if(classLoader == null){
@@ -69,19 +63,17 @@ public class MycatCore {
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         String datasourceProvider = serverConfig.getDatasourceProvider();
-        this.transcationSwitch = new TranscationSwitch();
-        this.mycatServer = new MycatServer(serverConfig, new ProxyAuthenticator(), this.transcationSwitch,new ProxyDatasourceConfigProvider());
-        LoadBalanceManager loadBalanceManager = mycatServer.getLoadBalanceManager();
-        MycatWorkerProcessor mycatWorkerProcessor = mycatServer.getMycatWorkerProcessor();
+        ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
+        this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
+        this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
-        context.put(TranscationSwitch.class,  this.transcationSwitch);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
-        context.put(loadBalanceManager.getClass(), loadBalanceManager);
+        context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
-        context.put(mycatServer.getClass(), mycatServer);
+        context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
         ////////////////////////////////////////////tmp///////////////////////////////////
         if(enableGSI) {
@@ -133,7 +125,18 @@ public class MycatCore {
         }
         return path;
     }
-
+    @NotNull
+    private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
+        String configResourceKeyName = "server";
+        String type = System.getProperty(configResourceKeyName,"vertx");
+        if ("native".equalsIgnoreCase(type)){
+            return new NativeMycatServer(serverConfig);
+        }
+        if ("vertx".equalsIgnoreCase(type)){
+            return new VertxMycatServer(serverConfig);
+        }
+        throw new UnsupportedOperationException("unsupport server type:"+type);
+    }
     public void start() throws Exception {
         metadataStorageManager.start();
         mycatServer.start();

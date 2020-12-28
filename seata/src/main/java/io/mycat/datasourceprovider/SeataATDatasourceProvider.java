@@ -38,7 +38,9 @@ public class SeataATDatasourceProvider extends DruidDatasourceProvider {
 
   @Override
   public TransactionSession createSession(MycatDataContext context) {
-    return new SeataTransactionSession(context);
+    SeataTransactionSession seataTransactionSession =  new SeataTransactionSession(context);
+    context.setTransactionSession(context);
+    return setTransactionSessionp;
   }
 
   @Override

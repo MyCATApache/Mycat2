@@ -27,7 +27,7 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public byte getNextPacketId() {
-        return (byte)(++packetId);
+        return (byte) (++packetId);
     }
 
     @Override
@@ -102,7 +102,18 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public void writeBytes(byte[] payload, boolean end) {
-        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(),payload)));
+        if (end) {
+            if (mycatDataContext!=null){
+                TransactionSession transactionSession = mycatDataContext.getTransactionSession();
+                if (transactionSession!=null){
+                    transactionSession.closeStatenmentState();
+                }
+            }
+        }
+        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
+        if (end) {
+            this.socket.resume();
+        }
     }
 
     @Override
@@ -111,7 +122,7 @@ public class VertxSessionImpl implements VertxSession {
                 mycatDataContext.getLastErrorCode(),
                 mycatDataContext.getLastMessage(),
                 getCapabilities()
-        ),true);
+        ), true);
     }
 
     @Override
@@ -120,7 +131,7 @@ public class VertxSessionImpl implements VertxSession {
                 errorCode,
                 mycatDataContext.getLastMessage(),
                 getCapabilities()
-        ),true);
+        ), true);
     }
 
     @Override
@@ -131,5 +142,10 @@ public class VertxSessionImpl implements VertxSession {
     @Override
     public void close() {
         socket.close();
+    }
+
+    @Override
+    public NetSocket getSocket() {
+        return socket;
     }
 }

@@ -7,29 +7,13 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         super(session, size, binary);
     }
 
-    @Override
-    public void proxySelect(String defaultTargetName, String statement) {
-        count++;
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        MycatConnection connection = transactionSession.getConnection(defaultTargetName);
-        sendResultSet(connection.executeQuery(null, statement));
-    }
-
-    @Override
-    public void proxyUpdate(String defaultTargetName, String proxyUpdate) {
-        count++;
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        MycatConnection connection = transactionSession.getConnection(defaultTargetName);
-        long[] longs = connection.executeUpdate(null, true);
-        transactionSession.closeStatenmentState();
-        sendOk(longs[0],longs[1]);
-    }
 
     @Override
     public void rollback() {
         count++;
         TransactionSession transactionSession = dataContext.getTransactionSession();
         transactionSession.rollback();
+        transactionSession.closeStatenmentState();
         session.writeOk(count<size);
     }
 
@@ -46,6 +30,7 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         count++;
         TransactionSession transactionSession = dataContext.getTransactionSession();
         transactionSession.commit();
+        transactionSession.closeStatenmentState();
         session.writeOk(count<size);
     }
 }

@@ -1,9 +1,12 @@
 package io.mycat;
 
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
+import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.vertx.core.Handler;
@@ -19,14 +22,14 @@ import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 
 public class VertxMySQLAuthHandler implements Handler<Buffer> {
     final NetSocket socket;
-    private Authenticator authenticator;
+    final VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle;
     public static final AtomicInteger sessionId = new AtomicInteger();
     private byte[][] seedParts;
     Buffer buffer = Buffer.buffer();
 
-    public VertxMySQLAuthHandler(NetSocket socket, Authenticator authenticator) {
+    public VertxMySQLAuthHandler(NetSocket socket, VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle) {
         this.socket = socket;
-        this.authenticator = authenticator;
+        this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
         int id = sessionId.getAndIncrement();
         int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
@@ -48,7 +51,11 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
                 authPacket.readPayload(readView);
                 if ("mysql_native_password".equals(authPacket.getAuthPluginName())) {
                     String username = authPacket.getUsername();
-                    String host = socket.remoteAddress().host();
+                    String host =  SocketAddressUtil.simplySocketAddress(socket.remoteAddress().toString());
+                    Authenticator authenticator = null;
+                    if (MetaClusterCurrent.exist(Authenticator.class)) {
+                        authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+                    }
                     if (authenticator != null) {
                         Authenticator.AuthInfo authInfo = authenticator.getPassword(username,
                                 host);
@@ -67,16 +74,26 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
                         }
                     }
                     buffer = null;
-                    socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(2,
-                            MySQLPacketUtil.generateOk(0, 0, 0, 0, 0, false, false, false, ""))));
-
                     UserConfig userInfo = null;
                     if (authenticator != null) {
                         userInfo = authenticator.getUserInfo(username);
                     }
                     MycatDataContextImpl mycatDataContext = new MycatDataContextImpl();
                     mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
-                    socket.handler(new VertxMySQLPacketResolver(socket, new VertxMySQLHandler(mycatDataContext, socket)));
+                    VertxSession vertxSession = new VertxSessionImpl(mycatDataContext, socket);
+                    mycatDataContext.useShcema(authPacket.getDatabase());
+                    mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
+                    mycatDataContext.setAutoCommit(true);
+                    mycatDataContext.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
+                    mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
+                    JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                    connection.getDatasourceProvider().createSession(mycatDataContext);
+                    socket.handler(new VertxMySQLPacketResolver(socket, new VertxMySQLHandler(vertxSession)));
+                    vertxSession.setPacketId(1);
+
+                    mysqlProxyServerVerticle.addSession(vertxSession);
+
+                    vertxSession.writeOkEndPacket();
                 }
             }
         }

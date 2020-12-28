@@ -157,7 +157,6 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     public static void defaultConfig(MycatRouterConfig routerConfig) {
         if (routerConfig.getUsers().isEmpty()) {
             UserConfig userConfig = new UserConfig();
-            userConfig.setIp("127.0.0.1");
             userConfig.setPassword("123456");
             userConfig.setUsername("root");
             routerConfig.getUsers().add(userConfig);

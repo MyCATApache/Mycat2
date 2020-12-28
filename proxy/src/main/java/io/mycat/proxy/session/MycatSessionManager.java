@@ -24,6 +24,7 @@ import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import io.mycat.runtime.MycatDataContextImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,13 +50,10 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatSessionManager.class);
     private final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
-    private final Authenticator authenticator;
 
 
-    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function,
-                               Authenticator authenticator) {
+    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function) {
         this.commandDispatcher = function;
-        this.authenticator = Objects.requireNonNull(authenticator);
     }
 
 
@@ -90,7 +88,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
                                        Selector nioSelector, SocketChannel frontChannel) throws IOException {
         MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
-        MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
+        MycatSession mycat = new MycatSession(new MycatDataContextImpl(), bufPool,
                 mySQLClientAuthHandler, this);
 
 
@@ -116,9 +114,5 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     public void initCommandDispatcher(MycatSession session) {
         session.setCommandHandler(commandDispatcher.apply(session));
-    }
-
-    public Authenticator getAuthenticator() {
-        return authenticator;
     }
 }

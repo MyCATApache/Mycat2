@@ -8,51 +8,40 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
-import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.session.TranscationSwitch;
-import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.sqlrecorder.SqlRecord;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
-import io.vertx.mysqlclient.MySQLClient;
-import io.vertx.sqlclient.PreparedStatement;
-import io.vertx.sqlclient.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 public class VertxMySQLHandler {
-    private final VertxSessionImpl session;
-    private MycatDataContextImpl mycatDataContext;
-    private NetSocket socket;
+    private VertxSession session;
+    private MycatDataContext mycatDataContext;
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLHandler.class);
 
-    public VertxMySQLHandler(MycatDataContextImpl mycatDataContext, NetSocket socket) {
-        this.mycatDataContext = mycatDataContext;
-        this.socket = socket;
-        this.session = new VertxSessionImpl(mycatDataContext, socket);
+    public VertxMySQLHandler(VertxSession vertxSession) {
+        this.mycatDataContext = vertxSession.getDataContext();
+        this.session = vertxSession;
+        NetSocket socket = this.session.getSocket();
+        socket.exceptionHandler(event -> {
+            mycatDataContext.setLastMessage(event);
+            vertxSession.writeErrorEndPacketBySyncInProcessError();
+        });
     }
 
     public void handle(int packetId, Buffer event, NetSocket socket) {
@@ -278,6 +267,7 @@ public class VertxMySQLHandler {
                 }
             }
         } catch (Throwable throwable) {
+            mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
     }
@@ -313,7 +303,7 @@ public class VertxMySQLHandler {
     }
 
     private byte[] getLongData(long statementId, int i, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPreparedStatementMap();
+        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = preparedStatementMap.get(statementId);
         ByteArrayOutputStream longData = preparedStatement.getLongData(i);
         if (longData == null) {
@@ -323,7 +313,7 @@ public class VertxMySQLHandler {
     }
 
     private int getNumParamsByStatementId(long statementId, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPreparedStatementMap();
+        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = Objects.requireNonNull(
                 preparedStatementMap.get(statementId),
                 () -> "preparedStatement:" + statementId + "  not exist"
@@ -458,10 +448,8 @@ public class VertxMySQLHandler {
 
 
     public void handleQuery(String sql, VertxSession session) throws Exception {
-        TranscationSwitch transcationSwitch = MetaClusterCurrent.wrapper(TranscationSwitch.class);
-        transcationSwitch.ensureTranscation(mycatDataContext);
-        MycatdbCommand.INSTANCE.executeQuery(sql,mycatDataContext,(size)->
-                new VertxJdbcResponseImpl(session,size, false));
+        MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
+                new VertxJdbcResponseImpl(session, size, false));
     }
 
     public void handleSleep(VertxSession session) {

@@ -15,6 +15,7 @@
 package io.mycat.proxy.handler.front;
 
 import io.mycat.Authenticator;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatUser;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -123,7 +124,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
             MycatUser user = null;
             SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
-            Authenticator authenticator = mycatSessionManager.getAuthenticator();
+            Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
             String ip = SocketAddressUtil.simplySocketAddress(remoteSocketAddress);
 
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username, ip);
@@ -233,7 +234,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     public void sendAuthPackge(MycatSession mycat) {
 
-        int sessionId = mycat.sessionId();
+        long sessionId = mycat.sessionId();
         int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
 
         byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
@@ -245,7 +246,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         mycat.writeBytes(bytes, true);
     }
 
-    public static byte[] createHandshakePayload(int sessionId, int serverCapabilities, byte[][] seedParts) {
+    public static byte[] createHandshakePayload(long sessionId, int serverCapabilities, byte[][] seedParts) {
         HandshakePacket hs = new HandshakePacket();
         hs.setProtocolVersion(MySQLVersion.PROTOCOL_VERSION);
         hs.setServerVersion(new String(MySQLVersion.SERVER_VERSION));

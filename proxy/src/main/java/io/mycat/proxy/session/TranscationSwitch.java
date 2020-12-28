@@ -8,6 +8,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.runtime.ProxyTransactionSession;
 import org.apache.groovy.util.Maps;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -16,7 +17,7 @@ public class TranscationSwitch {
     final Map<TransactionType, Function<MycatDataContext, TransactionSession>> map;
 
     public TranscationSwitch() {
-        this(Maps.of(TransactionType.PROXY_TRANSACTION_TYPE,
+        this(new HashMap<>(Maps.of(TransactionType.PROXY_TRANSACTION_TYPE,
                 mycatDataContext -> {
                     JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     return new ProxyTransactionSession(connection.getDatasourceProvider().createSession(mycatDataContext));
@@ -26,38 +27,46 @@ public class TranscationSwitch {
                     JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     return connection.getDatasourceProvider().createSession(mycatDataContext);
                 }
-        ));
+        )));
     }
 
     public TranscationSwitch(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map) {
         this.map = map;
     }
 
-    public TransactionSession ensureTranscation(MycatDataContext container) {
-        TransactionSession transactionSession = container.getTransactionSession();
+    public TransactionSession ensureTranscation(MycatDataContext dataContext) {
+        TransactionSession transactionSession = dataContext.getTransactionSession();
         if (transactionSession == null) {
-            TransactionType transactionType = container.transactionType();
+            TransactionType transactionType = dataContext.transactionType();
             Objects.requireNonNull(transactionType);
-            container.setTransactionSession(transactionSession = map.get(transactionType).apply(container));
+            dataContext.setTransactionSession(transactionSession = map.get(transactionType).apply(dataContext));
         } else {
-            if (!transactionSession.name().equals(container.transactionType().getName())) {
+            if (!transactionSession.name().equals(dataContext.transactionType().getName())) {
                 if (transactionSession.isInTransaction()) {
                     throw new IllegalArgumentException("正在处于事务状态,不能切换事务模式");
                 } else {
                     //
                     Function<MycatDataContext, TransactionSession> transactionSessionFunction =
-                            Objects.requireNonNull(map.get(container.transactionType()));
-                    TransactionSession newTransactionSession = transactionSessionFunction.apply(container);
+                            Objects.requireNonNull(map.get(dataContext.transactionType()));
+                    TransactionSession newTransactionSession = transactionSessionFunction.apply(dataContext);
 
-                    newTransactionSession.setReadOnly(transactionSession.isReadOnly());
-                    newTransactionSession.setAutocommit(transactionSession.isAutocommit());
-                    newTransactionSession.setTransactionIsolation(transactionSession.getTransactionIsolation());
-
-                    container.setTransactionSession(newTransactionSession);
+                    setTranscation(dataContext, transactionSession, newTransactionSession);
                     transactionSession = newTransactionSession;
                 }
             }
         }
         return transactionSession;
+    }
+
+    private void setTranscation(MycatDataContext container, TransactionSession transactionSession, TransactionSession newTransactionSession) {
+        newTransactionSession.setReadOnly(transactionSession.isReadOnly());
+        newTransactionSession.setAutocommit(transactionSession.isAutocommit());
+        newTransactionSession.setTransactionIsolation(transactionSession.getTransactionIsolation());
+
+        container.setTransactionSession(newTransactionSession);
+    }
+
+    public void banProxy() {
+        map.put(TransactionType.PROXY_TRANSACTION_TYPE,map.get(TransactionType.JDBC_TRANSACTION_TYPE));
     }
 }

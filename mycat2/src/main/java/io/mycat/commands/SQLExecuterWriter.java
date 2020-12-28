@@ -81,7 +81,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
 
                         if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
-                            MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
                             if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
                                 transactionSession.closeStatenmentState();
                                 MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
