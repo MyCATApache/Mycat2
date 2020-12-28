@@ -141,6 +141,7 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public void close() {
+        mycatDataContext.close();
         socket.close();
     }
 
