@@ -164,6 +164,12 @@ public class DatasourceConfig {
             if (!properties.containsKey("serverTimezone")) {
                 properties.put("serverTimezone", "UTC");
             }
+            if (!properties.containsKey("useSSL")) {
+                properties.put("useSSL", "false");
+            }
+            if (!properties.containsKey("autoReconnect")) {
+                properties.put("autoReconnect", "true");
+            }
             int i = url.indexOf('?');
             if (i == -1) {
                 url += "?";

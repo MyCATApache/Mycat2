@@ -391,4 +391,12 @@ public class MycatDataContextImpl implements MycatDataContext {
     public int hashCode() {
         return (int) id;
     }
+
+    public void setServerStatus(int serverStatus) {
+        this.serverStatus = serverStatus;
+    }
+
+    public void setLastInsertId(long lastInsertId) {
+        this.lastInsertId = lastInsertId;
+    }
 }

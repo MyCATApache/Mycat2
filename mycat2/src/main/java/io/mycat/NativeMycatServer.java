@@ -57,15 +57,16 @@ public class NativeMycatServer implements MycatServer {
     public void start() {
         this.authenticator = new ProxyAuthenticator();
         this.datasourceConfigProvider = new ProxyDatasourceConfigProvider();
-        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(
-                new TranscationSwitch(),
-                mycatContextThreadPool);
+
         this.mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         io.mycat.config.ServerConfig serverConfigServer = serverConfig.getServer();
         this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
                 mycatWorkerProcessor.getMycatWorker(),
                 serverConfigServer.getWorkerPool().getTaskTimeout(),
                 TimeUnit.valueOf(serverConfigServer.getWorkerPool().getTimeUnit()));
+        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(
+                new TranscationSwitch(),
+                mycatContextThreadPool);
         startProxy(this.serverConfig.getServer());
     }
 

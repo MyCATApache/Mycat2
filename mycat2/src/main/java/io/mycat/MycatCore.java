@@ -31,26 +31,25 @@ public class MycatCore {
 
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        if(classLoader == null){
+        if (classLoader == null) {
             classLoader = MycatCore.class.getClassLoader();
         }
         boolean initialize = !Boolean.getBoolean("MYCAT_LAZY_STARTUP");
         try {
-            Class.forName("org.apache.calcite.rel.core.Project",initialize,classLoader);
-            Class.forName("oshi.util.platform.windows.PerfCounterQuery",initialize,classLoader);
-            Class.forName("io.mycat.datasource.jdbc.datasource.JdbcConnectionManager",initialize,classLoader);
-            Class.forName("org.apache.calcite.sql.SqlUtil",initialize,classLoader);
-            Class.forName("org.apache.calcite.plan.RelOptUtil",initialize,classLoader);
-            Class.forName("org.apache.calcite.plan.RelOptUtil",initialize,classLoader);
-            Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod",initialize,classLoader);
-            Class.forName("com.alibaba.fastsql.sql.SQLUtils",initialize,classLoader);
-            Class.forName("com.alibaba.druid.sql.SQLUtils",initialize,classLoader);
+            Class.forName("org.apache.calcite.rel.core.Project", initialize, classLoader);
+            Class.forName("oshi.util.platform.windows.PerfCounterQuery", initialize, classLoader);
+            Class.forName("io.mycat.datasource.jdbc.datasource.JdbcConnectionManager", initialize, classLoader);
+            Class.forName("org.apache.calcite.sql.SqlUtil", initialize, classLoader);
+            Class.forName("org.apache.calcite.plan.RelOptUtil", initialize, classLoader);
+            Class.forName("org.apache.calcite.plan.RelOptUtil", initialize, classLoader);
+            Class.forName("org.apache.calcite.mycat.MycatBuiltInMethod", initialize, classLoader);
+            Class.forName("com.alibaba.fastsql.sql.SQLUtils", initialize, classLoader);
+            Class.forName("com.alibaba.druid.sql.SQLUtils", initialize, classLoader);
 
         } catch (ClassNotFoundException e) {
-            throw new Error("init error. "+e.toString());
+            throw new Error("init error. " + e.toString());
         }
     }
-
 
 
     @SneakyThrows
@@ -73,10 +72,11 @@ public class MycatCore {
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
+        context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
         ////////////////////////////////////////////tmp///////////////////////////////////
-        if(enableGSI) {
+        if (enableGSI) {
             File gsiMapDBFile = baseDirectory.resolve("gsi.db").toFile();
             context.put(GSIService.class, new MapDBGSIService(gsiMapDBFile, null));
         }
@@ -89,7 +89,7 @@ public class MycatCore {
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
-                String zkAddress = System.getProperty("zk_address",(String) serverConfig.getProperties().get("zk_address"));
+                String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
                     metadataStorageManager =
                             new CoordinatorMetadataStorageManager(
@@ -125,18 +125,20 @@ public class MycatCore {
         }
         return path;
     }
+
     @NotNull
     private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
         String configResourceKeyName = "server";
-        String type = System.getProperty(configResourceKeyName,"vertx");
-        if ("native".equalsIgnoreCase(type)){
+        String type = System.getProperty(configResourceKeyName, "vertx");
+        if ("native".equalsIgnoreCase(type)) {
             return new NativeMycatServer(serverConfig);
         }
-        if ("vertx".equalsIgnoreCase(type)){
+        if ("vertx".equalsIgnoreCase(type)) {
             return new VertxMycatServer(serverConfig);
         }
-        throw new UnsupportedOperationException("unsupport server type:"+type);
+        throw new UnsupportedOperationException("unsupport server type:" + type);
     }
+
     public void start() throws Exception {
         metadataStorageManager.start();
         mycatServer.start();

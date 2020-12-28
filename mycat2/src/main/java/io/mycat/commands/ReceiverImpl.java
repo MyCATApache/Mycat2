@@ -103,7 +103,7 @@ public class ReceiverImpl implements Response {
         sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
     }
     @Override
-    public void sendOk(long lastInsertId, long affectedRow) {
+    public void sendOk(long affectedRow , long lastInsertId) {
         session.setLastInsertId(lastInsertId);
         session.setAffectedRows(affectedRow);
         sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
