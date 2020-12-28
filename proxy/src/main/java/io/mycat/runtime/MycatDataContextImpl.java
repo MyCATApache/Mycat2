@@ -58,6 +58,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     private static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
+    private final AtomicLong prepareStatementIds = new AtomicLong(0);
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -365,6 +366,11 @@ public class MycatDataContextImpl implements MycatDataContext {
             record.setEndTime();
             SqlRecorderRuntime.INSTANCE.addSqlRecord(record);
         }
+    }
+
+    @Override
+    public long nextPrepareStatementId() {
+        return prepareStatementIds.getAndIncrement();
     }
 
     @Override

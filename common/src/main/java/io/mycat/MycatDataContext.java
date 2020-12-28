@@ -140,4 +140,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
         //去掉重复提示的消息 return MessageFormat.format("{0} \n {1}",e,errors.toString());
         return errors.toString();
     }
+
+    public long nextPrepareStatementId();
 }

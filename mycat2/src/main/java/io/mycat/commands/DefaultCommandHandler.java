@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author chen junwen
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
-    final static AtomicLong ids = new AtomicLong(0);
+
     //  private MycatClient client;
     //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
@@ -145,7 +145,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             });
 
             MycatRowMetaData params = paramsBuilder.build().getMetaData();
-            long stmtId = ids.getAndIncrement();
+            long stmtId = dataContext.nextPrepareStatementId();
             Map<Long, PreparedStatement> statementMap = dataContext.getPrepareInfo();
             statementMap.put(stmtId, new PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
 
@@ -283,10 +283,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (byteArrayOutputStream == null) {
             return null;
         }
-
-        byte[] bytes = byteArrayOutputStream.toByteArray();
-        byteArrayOutputStream.reset();
-        return bytes;
+        return byteArrayOutputStream.toByteArray();
     }
 
     @Override

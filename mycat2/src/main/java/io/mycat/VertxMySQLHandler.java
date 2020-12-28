@@ -1,9 +1,19 @@
 package io.mycat;
 
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
+import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.vertx.core.Future;
@@ -13,9 +23,14 @@ import io.vertx.core.net.NetSocket;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.PreparedStatement;
 import io.vertx.sqlclient.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.JDBCType;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -28,6 +43,7 @@ public class VertxMySQLHandler {
     private final VertxSessionImpl session;
     private MycatDataContextImpl mycatDataContext;
     private NetSocket socket;
+    private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLHandler.class);
 
     public VertxMySQLHandler(MycatDataContextImpl mycatDataContext, NetSocket socket) {
         this.mycatDataContext = mycatDataContext;
@@ -89,50 +105,46 @@ public class VertxMySQLHandler {
                 case MySQLCommandType.COM_STMT_EXECUTE: {
                     MycatDataContext dataContext = this.session.getDataContext();
                     dataContext.getPrepareInfo();
-                    try {
-                        long statementId = readView.readFixInt(4);
-                        byte flags = readView.readByte();
-                        long iteration = readView.readFixInt(4);
-                        assert iteration == 1;
-                        int numParams = getNumParamsByStatementId(statementId, this.session);
-                        byte[] nullMap = null;
-                        if (numParams > 0) {
-                            nullMap = readView.readBytes((numParams + 7) / 8);
-                        }
-                        int[] params = null;
-                        BindValue[] values = null;
-                        boolean newParameterBoundFlag = readView.readByte() == 1;
-                        if (newParameterBoundFlag) {
-                            params = new int[numParams];
-                            for (int i = 0; i < numParams; i++) {
-                                params[i] = (int) readView.readFixInt(2);
-                            }
-                            values = new BindValue[numParams];
-                            for (int i = 0; i < numParams; i++) {
-                                BindValue bv = new BindValue();
-                                bv.type = params[i];
-                                if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
-                                    bv.isNull = true;
-                                } else {
-                                    byte[] longData = getLongData(statementId, i, this.session);
-                                    if (longData == null) {
-                                        BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
-                                    } else {
-                                        bv.value = longData;
-                                    }
-                                }
-                                values[i] = bv;
-                            }
-                            saveBindValue(statementId, values, this.session);
-                        } else {
-                            values = getLastBindValue(statementId, this.session);
-                        }
-                        handlePrepareStatementExecute(statementId, flags, params, values,
-                                this.session);
-                        break;
-                    } finally {
-
+                    long statementId = readView.readFixInt(4);
+                    byte flags = readView.readByte();
+                    long iteration = readView.readFixInt(4);
+                    assert iteration == 1;
+                    int numParams = getNumParamsByStatementId(statementId, this.session);
+                    byte[] nullMap = null;
+                    if (numParams > 0) {
+                        nullMap = readView.readBytes((numParams + 7) / 8);
                     }
+                    int[] params = null;
+                    BindValue[] values = null;
+                    boolean newParameterBoundFlag = readView.readByte() == 1;
+                    if (newParameterBoundFlag) {
+                        params = new int[numParams];
+                        for (int i = 0; i < numParams; i++) {
+                            params[i] = (int) readView.readFixInt(2);
+                        }
+                        values = new BindValue[numParams];
+                        for (int i = 0; i < numParams; i++) {
+                            BindValue bv = new BindValue();
+                            bv.type = params[i];
+                            if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
+                                bv.isNull = true;
+                            } else {
+                                byte[] longData = getLongData(statementId, i, this.session);
+                                if (longData == null) {
+                                    BindValueUtil.read(readView, bv, StandardCharsets.UTF_8);
+                                } else {
+                                    bv.value = longData;
+                                }
+                            }
+                            values[i] = bv;
+                        }
+                        saveBindValue(statementId, values, this.session);
+                    } else {
+                        values = getLastBindValue(statementId, this.session);
+                    }
+                    handlePrepareStatementExecute(statementId, flags, params, values,
+                            this.session);
+                    break;
                 }
                 case MySQLCommandType.COM_STMT_CLOSE: {
                     long statementId = readView.readFixInt(4);
@@ -267,36 +279,72 @@ public class VertxMySQLHandler {
     }
 
     private void saveBindValue(long statementId, BindValue[] values, VertxSession vertxSession) {
-
+        Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
+        io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return;
+        }
+        preparedStatement.setBindValues(values);
     }
 
     private BindValue[] getLastBindValue(long statementId, VertxSession vertxSession) {
-        return new BindValue[0];
+        Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
+        io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
+        if (preparedStatement == null) {
+            return null;
+        }
+        return preparedStatement.getBindValues();
     }
 
-    private void handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, VertxSession vertxSession) {
-
+    private void handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, VertxSession vertxSession) throws Exception {
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("=> {}", statement);
+        }
+        Response receiver = new VertxJdbcResponseImpl(vertxSession, 1, true);
+        MycatdbCommand.execute(dataContext, receiver, statement);
     }
 
     private byte[] getLongData(long statementId, int i, VertxSession vertxSession) {
-        return new byte[0];
+        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPreparedStatementMap();
+        io.mycat.PreparedStatement preparedStatement = preparedStatementMap.get(statementId);
+        ByteArrayOutputStream longData = preparedStatement.getLongData(i);
+        if (longData == null) {
+            return null;
+        }
+        return longData.toByteArray();
     }
 
     private int getNumParamsByStatementId(long statementId, VertxSession vertxSession) {
-        return 0;
+        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPreparedStatementMap();
+        io.mycat.PreparedStatement preparedStatement = Objects.requireNonNull(
+                preparedStatementMap.get(statementId),
+                () -> "preparedStatement:" + statementId + "  not exist"
+        );
+        return preparedStatement.getParametersNumber();
     }
 
     private void handlePrepareStatementReset(long statementId, VertxSession vertxSession) {
-
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
+        if (preparedStatement != null) {
+            preparedStatement.resetLongData();
+        }
+        session.writeOkEndPacket();
     }
 
     private void handlePrepareStatementFetch(long statementId, long row, VertxSession vertxSession) {
-
+        vertxSession.writeErrorEndPacketBySyncInProcessError();
     }
 
     private void handlePrepareStatementClose(long statementId, VertxSession vertxSession) {
-
-
+        MycatDataContext dataContext = session.getDataContext();
+        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
+        longPreparedStatementMap.remove(statementId);
     }
 
     private void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, VertxSession vertxSession) {
@@ -309,16 +357,108 @@ public class VertxMySQLHandler {
     }
 
     private void handlePrepareStatement(byte[] bytes, VertxSession vertxSession) {
+        boolean deprecateEOF = session.isDeprecateEOF();
+        String sql = new String(bytes);
+        /////////////////////////////////////////////////////
 
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+        boolean allow = (sqlStatement instanceof SQLSelectStatement
+                ||
+                sqlStatement instanceof SQLInsertStatement
+                ||
+                sqlStatement instanceof SQLUpdateStatement
+                ||
+                sqlStatement instanceof SQLDeleteStatement
+        );
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        metadataManager.resolveMetadata(sqlStatement);
+        ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
+        MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
+        ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
+
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+            @Override
+            public void endVisit(SQLVariantRefExpr x) {
+                if ("?".equalsIgnoreCase(x.getName())) {
+                    SQLDataType sqlDataType = x.computeDataType();
+                    JDBCType res = JDBCType.VARCHAR;
+                    if (sqlDataType != null) {
+                        res = JDBCType.valueOf(sqlDataType.jdbcType());
+                    }
+                    paramsBuilder.addColumnInfo("", res);
+                }
+                super.endVisit(x);
+            }
+        });
+
+        MycatRowMetaData params = paramsBuilder.build().getMetaData();
+        long stmtId = mycatDataContext.nextPrepareStatementId();
+        Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
+        statementMap.put(stmtId, new io.mycat.PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
+
+        DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
+
+        if (info.getPrepareOkColumnsCount() == 0 && info.getPrepareOkParametersCount() == 0) {
+            session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), true);
+            return;
+        }
+        session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
+        if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
+            for (int i = 1; i <= info.getPrepareOkParametersCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
+                        info.getPrepareOkParametersCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
+                        info.getPrepareOkParametersCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
+            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        } else {
+            for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
+            }
+            session.writeColumnEndPacket();
+            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
+            }
+            if (deprecateEOF) {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), true);
+            } else {
+                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
+                        info.getPrepareOkColumnsCount()), false);
+                session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
+                        session.getServerStatusValue()), true);
+            }
+            return;
+        }
     }
 
 
     public void handleQuery(String sql, VertxSession session) throws Exception {
-        VertxResponse vertxResponse = new VertxJdbcResponseImpl(session, 1,false);
+        VertxResponse vertxResponse = new VertxJdbcResponseImpl(session, 1, false);
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        if (sqlStatement instanceof SQLSelectStatement){
+        if (sqlStatement instanceof SQLSelectStatement) {
             vertxResponse.proxySelectToPrototype(sql);
-        }else {
+        } else {
             vertxResponse.sendOk(0, 0);
         }
     }
@@ -345,107 +485,8 @@ public class VertxMySQLHandler {
         });
     }
 
-    private void normal2(String sql, Response response, List<Object> params, Future<SqlConnection> connection) {
-        Handler<Throwable> exceptionhandler = new Handler<Throwable>() {
-            @Override
-            public void handle(Throwable throwable) {
-                System.out.println();
-            }
-        };
-        connection.onFailure(exceptionhandler);
-        Future<SqlConnection> sqlConnectionFuture = connection.onSuccess(sqlConnection -> sqlConnection.prepare(sql));
-        sqlConnectionFuture.onFailure(exceptionhandler);
-        sqlConnectionFuture.onSuccess(preparedStatement -> {
-            PreparedQuery<RowSet<Row>> rowSetPreparedQuery = preparedStatement.preparedQuery(sql);
-            Future<SqlResult<Object>> execute = rowSetPreparedQuery.collecting(new Collector<Row, Object, Object>() {
-                @Override
-                public Supplier<Object> supplier() {
-                    return new Supplier<Object>() {
-                        @Override
-                        public Object get() {
-                            return null;
-                        }
-                    };
-
-                }
-
-                @Override
-                public BiConsumer<Object, Row> accumulator() {
-                    return new BiConsumer<Object, Row>() {
-                        @Override
-                        public void accept(Object o, Row row) {
-                            System.out.println();
-                        }
-                    };
-                }
-
-                @Override
-                public BinaryOperator<Object> combiner() {
-                    return new BinaryOperator<Object>() {
-                        @Override
-                        public Object apply(Object o, Object o2) {
-                            return null;
-                        }
-                    };
-                }
-
-                @Override
-                public Function<Object, Object> finisher() {
-                    return new Function<Object, Object>() {
-                        @Override
-                        public Object apply(Object o) {
-                            return null;
-                        }
-                    };
-                }
-
-                @Override
-                public Set<Characteristics> characteristics() {
-                    return Collections.emptySet();
-                }
-            }).execute(Tuple.tuple());
-            execute.onSuccess(new Handler<SqlResult<Object>>() {
-                @Override
-                public void handle(SqlResult<Object> objectSqlResult) {
-
-                    System.out.println();
-                }
-            });
-        });
-    }
-
-    private void normal(String sql, Response response, List<Object> params, Future<SqlConnection> connection) {
-        Handler<Throwable> exceptionhandler = new Handler<Throwable>() {
-            @Override
-            public void handle(Throwable throwable) {
-                System.out.println();
-            }
-        };
-        connection.onFailure(exceptionhandler);
-        Future<SqlConnection> sqlConnectionFuture = connection.onSuccess(sqlConnection -> sqlConnection.prepare(sql));
-        sqlConnectionFuture.onFailure(exceptionhandler);
-        sqlConnectionFuture.onSuccess(preparedStatement -> {
-            PreparedQuery<RowSet<Row>> rowSetPreparedQuery = preparedStatement.preparedQuery(sql);
-            Future<RowSet<Row>> rowSetFuture = rowSetPreparedQuery.execute(Tuple.tuple(params));
-            rowSetFuture.onFailure(exceptionhandler);
-            rowSetFuture.onSuccess(rows -> {
-                RowSet<Row> result = rows;
-                List<String> strings = result.columnsNames();
-                boolean updatePacket = strings == null;
-                long lastInsertId = result.property(MySQLClient.LAST_INSERTED_ID);
-                int rowCount = result.rowCount();
-                if (updatePacket) {
-                    response.sendOk(rowCount, lastInsertId);
-                } else {
-                    VertxMycatRowMetaData vertxMycatRowMetaData = new VertxMycatRowMetaData(result.columnDescriptors());
-
-                }
-            });
-        });
-    }
-
     public void handleSleep(VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleQuit(VertxSession session) {
@@ -458,72 +499,73 @@ public class VertxMySQLHandler {
     }
 
     public void handlePing(VertxSession session) {
-        session.writeOk(false);
+        session.writeOkEndPacket();
     }
 
     public void handleFieldList(String table, String filedWildcard, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleSetOption(boolean on, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleCreateDb(String schemaName, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleDropDb(String schemaName, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleRefresh(int subCommand, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleShutdown(int shutdownType, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleStatistics(VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleProcessInfo(VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleConnect(VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleProcessKill(long connectionId, VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleDebug(VertxSession session) {
-
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     public void handleTime(VertxSession session) {
-
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     public void handleChangeUser(String userName, String authResponse, String schemaName,
                                  int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
                                  VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 
     public void handleDelayedInsert(VertxSession session) {
-
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     public void handleResetConnection(VertxSession session) {
-
+        session.resetSession();
+        session.writeOkEndPacket();
     }
 
     public void handleDaemon(VertxSession session) {
-
+        session.writeOkEndPacket();
     }
 }
