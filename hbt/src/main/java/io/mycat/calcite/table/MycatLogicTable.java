@@ -19,13 +19,14 @@ import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
-import io.mycat.util.CalciteUtls;
 import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.ShardingInfo;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.LazyRexDistribution;
-import io.mycat.calcite.ShardingInfo;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.gsi.GSIService;
+import io.mycat.router.ShardingTableHandler;
+import io.mycat.util.CalciteUtls;
+import io.mycat.util.LazyTransformCollection;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.rel.type.RelDataType;
@@ -38,10 +39,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import static io.mycat.util.CalciteUtls.unCastWrapper;
 
@@ -83,10 +85,10 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                         rexNodes.add(condition.accept(new RexShuttle() {
                             @Override
                             public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
-                                RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+                                RexBuilder rexBuilder = MycatCalciteSupport.RexBuilder;
                                 Object o = paras.get(dynamicParam.getIndex());
                                 RelDataType type;
-                                RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
+                                RelDataTypeFactory typeFactory = MycatCalciteSupport.TypeFactory;
                                 if (o == null) {
                                     type = typeFactory.createSqlType(SqlTypeName.NULL);
                                 } else {
@@ -112,13 +114,24 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                                 int index = ((RexInputRef) left).getIndex();
                                 Object value = ((RexLiteral) right).getValue2();
                                 TableHandler table = getTable();
-                                Optional<DataNode> dataNodeOptional = gsiService.queryDataNode(
+                                Map<String, DataNode> dataNodeMap = backendTableInfos.stream().collect(Collectors.toMap(DataNode::getTargetName, e -> e));
+                                Collection<String> dataNodes = gsiService.queryDataNode(
                                         table.getSchemaName(),
                                         table.getTableName(),
                                         index, value);
-                                if (dataNodeOptional.isPresent()) {
-                                    return Collections.singletonList(dataNodeOptional.get());
+                                if(dataNodes == null){
+                                    return backendTableInfos;
                                 }
+                                if(dataNodes.isEmpty()){
+                                    return new ArrayList<>();
+                                }
+                                return LazyTransformCollection.transform(dataNodes,dataNodeKey ->{
+                                        DataNode dataNode = dataNodeMap.get(dataNodeKey);
+                                        if(dataNode == null){
+                                            throw new IllegalStateException("数据源["+dataNodeKey+"]不存在, 所有数据源="+dataNodeMap.keySet());
+                                        }
+                                        return dataNode;
+                                    });
                             }
                         }
                     }
@@ -128,8 +141,10 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                 return computeDataNode();
             case NORMAL:
                 return computeDataNode();
+            default:{
+                throw new UnsupportedOperationException();
+            }
         }
-        throw new UnsupportedOperationException();
     }
 
 

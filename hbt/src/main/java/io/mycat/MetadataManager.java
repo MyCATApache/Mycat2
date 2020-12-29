@@ -432,6 +432,10 @@ public class MetadataManager implements MysqlVariableService {
                 backends, columns, null, indexInfos, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
+
+        for (SimpleColumnInfo column : columns) {
+            column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
+        }
     }
 
     private synchronized void addLogicTable(TableHandler logicTable) {

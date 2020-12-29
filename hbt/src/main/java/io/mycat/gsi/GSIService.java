@@ -1,15 +1,12 @@
 package io.mycat.gsi;
 
-import io.mycat.DataNode;
 import io.mycat.IndexInfo;
 import io.mycat.SimpleColumnInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 全局二级索引 (Global Secondary Index, GSI)
@@ -56,15 +53,33 @@ public interface GSIService {
 
     Optional<Iterable<Object[]>> scanProjectFilter(String schemaName, String tableName, int[] projects, int[] filterIndexes, Object[] values);
 
-    Optional<DataNode> queryDataNode(String schemaName, String tableName, int index, Object value);
+    /**
+     *
+     * @param schemaName
+     * @param tableName
+     * @param index
+     * @param value
+     * @return 返回NULL=没有走索引, 返回空集合=不存在任何节点, 返回有数据=存在于集合中的节点
+     */
+    Collection<String> queryDataNode(String schemaName, String tableName, int index, Object value);
 
     boolean isIndexTable(String schemaName, String tableName);
 
-    void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey);
+    void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> values,String dataNodeKey);
+
+    void updateByPrimaryKey(String txId, String schemaName, String tableName,
+                            Map<SimpleColumnInfo,Object> setValues,
+                            Collection<Map<SimpleColumnInfo,Object>> whereList, String dataNodeKey);
+
+    boolean preCommit(String txId);
+
+    boolean commit(String txId);
+
+    boolean rollback(String txId);
 
     @Data
     class Transaction {
-        private Long id;
+        private String id;
     }
 
     @Getter
@@ -74,6 +89,11 @@ public interface GSIService {
         private final List<IndexValue> indexes = new ArrayList<>();
         private final List<IndexValue> coverings = new ArrayList<>();
         private final List<String> dataNodeKeyList = new ArrayList<>();
+
+        @Override
+        public String toString() {
+            return indexInfo+", dataNode="+dataNodeKeyList+", indexes"+indexes+", coverings="+coverings;
+        }
     }
 
     @Getter
@@ -81,5 +101,10 @@ public interface GSIService {
     class IndexValue{
         private final SimpleColumnInfo column;
         private final Object value;
+
+        @Override
+        public String toString() {
+            return column.getColumnName()+"="+value;
+        }
     }
 }

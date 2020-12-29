@@ -146,12 +146,13 @@ public class MycatPreparedStatementUtil {
         }
     }
 
-    public static void setParams(PreparedStatement preparedStatement, List<Object> objects) throws SQLException {
+    public static PreparedStatement setParams(PreparedStatement preparedStatement, List<Object> objects) throws SQLException {
         int index = 1;
         for (Object object : objects) {
             preparedStatement.setObject(index, object);
             index++;
         }
+        return preparedStatement;
     }
 
     public static String apply(String parameterizedSql, List<Object> parameters) {

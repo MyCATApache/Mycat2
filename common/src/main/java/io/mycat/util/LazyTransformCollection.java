@@ -31,37 +31,42 @@ public class LazyTransformCollection<I, O> extends AbstractCollection<O> impleme
         return new LazyTransformCollection<>(list, transform);
     }
 
+    public static <I, O> Collection<O> transform(Iterable<I> list) {
+        return new LazyTransformCollection<>(list, o->(O)o);
+    }
+
     public Collection<O> getOutputList() {
-        if (outputList == null) {
-            List<O> list = new ArrayList<>();
-            for (I i : inputList) {
-                list.add(transform.apply(i));
+        synchronized (this) {
+            if (outputList == null) {
+                Iterator<O> iterator = new IteratorImpl<>(inputList.iterator(), transform, this);
+                while (iterator.hasNext()) {
+                    iterator.next();
+                }
             }
-            outputList = list;
+            return outputList;
         }
-        return outputList;
     }
 
     @Override
     public int size() {
-        if (outputList == null && inputList instanceof Collection) {
-            return ((Collection<I>) inputList).size();
-        } else {
-            return getOutputList().size();
+        if(outputList != null){
+            return outputList.size();
         }
+        if(inputList instanceof Collection){
+            return ((Collection<I>) inputList).size();
+        }
+        return getOutputList().size();
     }
 
     @Override
     public boolean isEmpty() {
-        if (outputList == null) {
-            if (inputList instanceof Collection && !(inputList instanceof LazyTransformCollection)) {
-                return ((Collection<I>) inputList).isEmpty();
-            } else {
-                return !inputList.iterator().hasNext();
-            }
-        } else {
-            return getOutputList().isEmpty();
+        if(outputList != null){
+            return outputList.isEmpty();
         }
+        if(inputList instanceof Collection){
+            return ((Collection<I>) inputList).isEmpty();
+        }
+        return getOutputList().isEmpty();
     }
 
     @Override
@@ -71,21 +76,18 @@ public class LazyTransformCollection<I, O> extends AbstractCollection<O> impleme
 
     @Override
     public Iterator<O> iterator() {
-        if (outputList == null) {
-            return new IteratorImpl<>(inputList.iterator(), transform, this);
-        } else {
-            return getOutputList().iterator();
+        synchronized (this) {
+            if (outputList == null) {
+                return new IteratorImpl<>(inputList.iterator(), transform, this);
+            } else {
+                return outputList.iterator();
+            }
         }
     }
 
     @Override
     public Object[] toArray() {
-        Object[] array = new Object[size()];
-        int i = 0;
-        for (O o : this) {
-            array[i++] = o;
-        }
-        return array;
+        return getOutputList().toArray();
     }
 
     @Override
