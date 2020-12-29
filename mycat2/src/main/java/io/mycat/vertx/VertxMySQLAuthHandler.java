@@ -28,17 +28,17 @@ import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 public class VertxMySQLAuthHandler implements Handler<Buffer> {
     final NetSocket socket;
     final VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle;
-    public static final AtomicInteger sessionId = new AtomicInteger();
+    private final MycatDataContextImpl mycatDataContext;
     private byte[][] seedParts;
     Buffer buffer = Buffer.buffer();
 
     public VertxMySQLAuthHandler(NetSocket socket, VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle) {
         this.socket = socket;
         this.mysqlProxyServerVerticle = mysqlProxyServerVerticle;
-        int id = sessionId.getAndIncrement();
+        this. mycatDataContext = new MycatDataContextImpl();
         int defaultServerCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
         this.seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
-        byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(id, defaultServerCapabilities, seedParts);
+        byte[] handshakePacket = MySQLClientAuthHandler.createHandshakePayload(mycatDataContext.getSessionId(), defaultServerCapabilities, seedParts);
         socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(0, handshakePacket)));
         socket.handler(this);
     }
@@ -85,7 +85,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
                     if (authenticator != null) {
                         userInfo = authenticator.getUserInfo(username);
                     }
-                    MycatDataContextImpl mycatDataContext = new MycatDataContextImpl();
+
                     mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
                     VertxSession vertxSession = new VertxSessionImpl(mycatDataContext, socket);
                     mycatDataContext.useShcema(authPacket.getDatabase());
