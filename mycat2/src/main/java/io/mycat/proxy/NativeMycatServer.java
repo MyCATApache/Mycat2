@@ -1,5 +1,6 @@
-package io.mycat;
+package io.mycat.proxy;
 
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.ResultSetBuilder;

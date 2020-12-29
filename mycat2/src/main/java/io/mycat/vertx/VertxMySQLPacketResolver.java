@@ -1,15 +1,14 @@
-package io.mycat;
+package io.mycat.vertx;
 
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
 import java.text.MessageFormat;
 
-import static io.mycat.VertxMySQLPacketResolver.State.HEAD;
-import static io.mycat.VertxMySQLPacketResolver.State.PAYLOAD;
+import static io.mycat.vertx.VertxMySQLPacketResolver.State.HEAD;
+import static io.mycat.vertx.VertxMySQLPacketResolver.State.PAYLOAD;
 
 public class VertxMySQLPacketResolver implements Handler<Buffer> {
     Buffer head ;

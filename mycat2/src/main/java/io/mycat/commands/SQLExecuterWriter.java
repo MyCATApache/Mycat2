@@ -21,6 +21,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;

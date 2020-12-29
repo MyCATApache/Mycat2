@@ -1,5 +1,6 @@
-package io.mycat;
+package io.mycat.vertx;
 
+import io.mycat.MycatDataContext;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.vertx.core.net.NetSocket;
 

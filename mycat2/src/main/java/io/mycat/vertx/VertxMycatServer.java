@@ -1,5 +1,6 @@
-package io.mycat;
+package io.mycat.vertx;
 
+import io.mycat.MycatServer;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.config.MycatServerConfig;
@@ -18,7 +19,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 
-public class VertxMycatServer implements MycatServer{
+public class VertxMycatServer implements MycatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMycatServer.class);
     MycatSessionManager server;
     private MycatServerConfig serverConfig;
@@ -68,32 +69,39 @@ public class VertxMycatServer implements MycatServer{
                 .setHa(true)
                 .setWorkerPoolName("vertx-mycat")
                 .setWorkerPoolSize(workerPool.getMaxPoolSize());
-        this.server =new MycatSessionManager();
-        Vertx.vertx().deployVerticle(this.server,workerOpts);
+        this.server = new MycatSessionManager(serverConfig);
+        Vertx.vertx().deployVerticle(this.server, workerOpts);
     }
 
     public static class MycatSessionManager extends AbstractVerticle implements MycatServer {
         private final ConcurrentLinkedDeque<VertxSession> sessions = new ConcurrentLinkedDeque<>();
+        private MycatServerConfig serverConfig;
+
+        public MycatSessionManager(MycatServerConfig serverConfig) {
+            this.serverConfig = serverConfig;
+        }
+
         @Override
         public void start() throws Exception {
             NetServer netServer = vertx.createNetServer();//创建代理服务器
             netServer.connectHandler(socket -> {
                 VertxMySQLAuthHandler vertxMySQLAuthHandler = new VertxMySQLAuthHandler(socket, MycatSessionManager.this);
-            }).listen(8066, listenResult -> {//代理服务器的监听端口
-                if (listenResult.succeeded()) {
-                    LOGGER.info("Mysql proxy server start up.");
-                } else {
-                    LOGGER.error("Mysql proxy exit. because: " + listenResult.cause().getMessage(), listenResult.cause());
-                    System.exit(1);
-                }
-            });
+            }).listen(this.serverConfig.getServer().getPort(),
+                    this.serverConfig.getServer().getIp(), listenResult -> {//代理服务器的监听端口
+                        if (listenResult.succeeded()) {
+                            LOGGER.info("Mycat Vertx server start up.");
+                        } else {
+                            LOGGER.error("Mycat Vertx server exit. because: " + listenResult.cause().getMessage(), listenResult.cause());
+                            System.exit(1);
+                        }
+                    });
         }
 
         public void addSession(VertxSession vertxSession) {
             NetSocket socket = vertxSession.getSocket();
             socket.closeHandler(event -> {
                 String message = "session:{} is closing:{}";
-                LOGGER.info(message,vertxSession);
+                LOGGER.info(message, vertxSession);
             });
             sessions.add(vertxSession);
         }

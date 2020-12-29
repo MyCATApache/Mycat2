@@ -5,7 +5,9 @@ import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
+import io.mycat.proxy.NativeMycatServer;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
+import io.mycat.vertx.VertxMycatServer;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 

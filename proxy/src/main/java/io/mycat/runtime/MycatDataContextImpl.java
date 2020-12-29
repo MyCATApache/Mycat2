@@ -56,7 +56,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
 
-    private static final AtomicLong IDS = new AtomicLong();
+    public static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
 
