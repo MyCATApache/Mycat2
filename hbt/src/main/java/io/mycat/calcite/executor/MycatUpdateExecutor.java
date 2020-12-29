@@ -166,10 +166,10 @@ public class MycatUpdateExecutor implements Executor {
     }
 
     private void onUpdateIndex(UpdateSQL<?> sql,Connection connection,TransactionSession transactionSession) throws SQLException {
-        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-        if(gsiService == null){
+        if(!MetaClusterCurrent.exist(GSIService.class)){
             return;
         }
+        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
         // 获取主键
         Collection<Map<SimpleColumnInfo, Object>> primaryKeyList;
         if(sql.isWherePrimaryKeyCovering()){

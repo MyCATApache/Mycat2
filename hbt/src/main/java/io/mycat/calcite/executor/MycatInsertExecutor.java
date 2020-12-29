@@ -345,11 +345,10 @@ public class MycatInsertExecutor implements Executor {
         if (!logicTable.canIndex()) {
             return;
         }
-        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-        if (gsiService == null) {
+        if(!MetaClusterCurrent.exist(GSIService.class)){
             return;
         }
-
+        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
         MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
         TransactionSession transactionSession = mycatDataContext.getTransactionSession();
         String txId = transactionSession.getTxId();
