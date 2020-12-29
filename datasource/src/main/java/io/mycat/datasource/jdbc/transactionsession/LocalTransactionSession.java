@@ -96,7 +96,6 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
         for (DefaultConnection value : this.updateConnectionMap.values()) {
             try {
                 value.getRawConnection().commit();
-                value.getRawConnection().setAutoCommit(true);
             } catch (SQLException e) {
                 LOGGER.error("本地事务提交失败", e);
                 exceptions.add(e);
@@ -113,7 +112,6 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
         for (DefaultConnection value : this.updateConnectionMap.values()) {
             try {
                 value.getRawConnection().rollback();
-                value.getRawConnection().setAutoCommit(true);
             } catch (SQLException e) {
                 LOGGER.error("本地事务回滚失败", e);
                 exceptions.add(e);
