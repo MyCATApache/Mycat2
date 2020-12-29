@@ -164,7 +164,7 @@ public class MycatInsertExecutor implements Executor {
 
             int size = valuesClause.getValues().size();
             int startIndex = count*size;
-            List<Object> outParams = new ArrayList<>(size);
+            List<Object> outParams = new ArrayList<>(params);
             StringBuilder sb = new StringBuilder();
 
             MycatPreparedStatementUtil.outputToParameters(cloneStatement, sb, outParams);

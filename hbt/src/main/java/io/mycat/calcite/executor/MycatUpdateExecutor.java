@@ -1,18 +1,11 @@
 package io.mycat.calcite.executor;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import io.mycat.DataNode;
-import io.mycat.MycatConnection;
-import io.mycat.MycatDataContext;
-import io.mycat.TransactionSession;
-
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
@@ -31,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -191,20 +183,20 @@ public class MycatUpdateExecutor implements Executor {
     }
 
     private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement statement, List<Object> parameters) {
-        Iterable<DataNode> dataNodes = distribution.getDataNodes(parameters);
+        List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
+
+        Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
         for (DataNode dataNode : dataNodes) {
-            SQLStatement cloneStatement = FastSqlUtils.clone(statement);
-
-            SQLExprTableSource tableSource = FastSqlUtils.getTableSource(cloneStatement);
+            SQLExprTableSource tableSource = FastSqlUtils.getTableSource(statement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
             StringBuilder sqlStringBuilder = new StringBuilder();
             List<Object> cloneParameters = new ArrayList<>();
-            MycatPreparedStatementUtil.collect(cloneStatement, sqlStringBuilder, parameters, cloneParameters);
-            SQL sql = SQL.of(sqlStringBuilder.toString(),dataNode,cloneStatement,cloneParameters);
-
+            MycatPreparedStatementUtil.collect(statement, sqlStringBuilder, readOnlyParameters, cloneParameters);
+            String sqlString = sqlStringBuilder.toString();
+            SQL sql = SQL.of(sqlString,dataNode, SQLUtils.parseSingleMysqlStatement(sqlString),cloneParameters);
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){
                 LOGGER.debug("remove exist sql = {}",exist);
