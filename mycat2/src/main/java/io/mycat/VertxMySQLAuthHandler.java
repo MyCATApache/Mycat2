@@ -1,7 +1,10 @@
 package io.mycat;
 
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.AuthPacket;
+import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -9,6 +12,7 @@ import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+import io.mycat.util.StringUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
@@ -45,11 +49,13 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
             int length = readInt(buffer, 0, 3);
             if (length == buffer.length() - 4) {
                 int packetId = buffer.getUnsignedByte(3);
-                Buffer payload = buffer.slice(4, 4 + buffer.length());
+                Buffer payload = buffer.slice(4, buffer.length());
                 ReadView readView = new ReadView(payload);
                 AuthPacket authPacket = new AuthPacket();
                 authPacket.readPayload(readView);
-                if ("mysql_native_password".equals(authPacket.getAuthPluginName())) {
+                if ("mysql_native_password".equalsIgnoreCase(authPacket.getAuthPluginName())
+                        ||
+                        authPacket.getAuthPluginName()==null) {
                     String username = authPacket.getUsername();
                     String host =  SocketAddressUtil.simplySocketAddress(socket.remoteAddress().toString());
                     Authenticator authenticator = null;
@@ -89,11 +95,17 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
                     JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     connection.getDatasourceProvider().createSession(mycatDataContext);
                     socket.handler(new VertxMySQLPacketResolver(socket, new VertxMySQLHandler(vertxSession)));
-                    vertxSession.setPacketId(1);
+                    vertxSession.setPacketId(packetId);
 
                     mysqlProxyServerVerticle.addSession(vertxSession);
 
                     vertxSession.writeOkEndPacket();
+                }else {
+                    socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(
+                            packetId+1,
+                            MySQLPacketUtil.generateError(MySQLErrorCode.ER_UNKNOWN_ERROR,"need mysql_native_password plugin",0)
+                    )));
+                    return;
                 }
             }
         }
