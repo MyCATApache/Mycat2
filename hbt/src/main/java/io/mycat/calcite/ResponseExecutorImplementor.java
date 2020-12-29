@@ -1,19 +1,19 @@
 package io.mycat.calcite;
 
 import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.executor.TempResultSetFactory;
 import io.mycat.calcite.executor.TempResultSetFactoryImpl;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.Explains;
-import io.mycat.Response;
 import lombok.SneakyThrows;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
@@ -36,7 +36,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 return ProxyExecutorImplementor.create(context, response);
             default:
             case JDBC_TRANSACTION_TYPE:
-                return new ResponseExecutorImplementor(context,datasourceFactory, tempResultSetFactory, response);
+                return new ResponseExecutorImplementor(context, datasourceFactory, tempResultSetFactory, response);
         }
 
     }
@@ -46,7 +46,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
             DataSourceFactory factory,
             TempResultSetFactory tempResultSetFactory,
             Response response) {
-        super(context,factory, tempResultSetFactory);
+        super(context, factory, tempResultSetFactory);
         this.context = context;
         this.response = response;
     }
@@ -77,7 +77,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
                 executor.close();
             }
             response.sendError(e);
-        }finally {
+        } finally {
             factory.close();
         }
         return;
@@ -86,7 +86,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
     protected void runQuery(MycatRel rel, Executor executor, List<String> aliasList) {
         RelDataType rowType = rel.getRowType();
 
-        CalciteRowMetaData calciteRowMetaData = aliasList!=null?
+        CalciteRowMetaData calciteRowMetaData = aliasList != null ?
                 new CalciteRowMetaData(rowType.getFieldList(), aliasList)
                 : new CalciteRowMetaData(rowType.getFieldList());
         EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(
@@ -127,7 +127,7 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         long lastInsertId = updateExecutor.getLastInsertId();
         SqlRecord sqlRecord = context.currentSqlRecord();
         sqlRecord.setSqlRows(affectedRow);
-        response.sendOk(lastInsertId, affectedRow);
+        response.sendOk(affectedRow, lastInsertId);
     }
 
     protected void runInsert(MycatInsertExecutor insertExecutor) {
@@ -136,6 +136,6 @@ public class ResponseExecutorImplementor extends ExecutorImplementorImpl impleme
         long lastInsertId = insertExecutor.lastInsertId;
         SqlRecord sqlRecord = context.currentSqlRecord();
         sqlRecord.setSqlRows(affectedRow);
-        response.sendOk(lastInsertId, affectedRow);
+        response.sendOk(affectedRow, lastInsertId);
     }
 }

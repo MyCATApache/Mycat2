@@ -5,7 +5,7 @@ import java.util.Set;
 
 public abstract class MetadataStorageManager {
 
-    abstract void start() throws Exception;
+    public abstract void start() throws Exception;
 
     public abstract void reportReplica(Map<String, Set<String>> dsNames);
 

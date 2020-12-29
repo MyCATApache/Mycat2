@@ -99,7 +99,9 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                 condition),
                 combinedRowType(mycatJoin.getInputs()),params
         );
-        log.info("-------------------complie----------------");
+        if (log.isDebugEnabled()){
+            log.debug("-------------------complie----------------");
+        }
         final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
         MycatContext context = new MycatContext();
         Predicate2<Row, Row> predicate = (v0, v1) -> {
@@ -125,8 +127,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         RelDataType inputRowType = mycatProject.getInput().getRowType();
         List<RexNode> childExps = mycatProject.getProjects();
         int outputSize = childExps.size();
-        log.info("-------------------complie:" +mycatProject+
-                "----------------");
+        if (log.isDebugEnabled()){
+            log.debug("-------------------complie:" +mycatProject+
+                    "----------------");
+        }
         MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput,params);
         MycatContext context = new MycatContext();
         return MycatProjectExecutor.create((input) -> {
@@ -147,7 +151,9 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 //        }
         RelDataType inputRowType = mycatFilter.getInput().getRowType();
         ImmutableList<RexNode> conditions = ImmutableList.of(mycatFilter.getCondition());
-        log.info("-------------------complie----------------");
+        if (log.isDebugEnabled()) {
+            log.debug("-------------------complie----------------");
+        }
         MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput,params);
         MycatContext context = new MycatContext();
         Predicate<Row> predicate = row -> {

@@ -3,7 +3,7 @@ package io.mycat.sqlhandler.dql;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateSequenceStatement;
 import io.mycat.MycatDataContext;
-import io.mycat.MycatRouterConfigOps;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.config.SequenceConfig;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;

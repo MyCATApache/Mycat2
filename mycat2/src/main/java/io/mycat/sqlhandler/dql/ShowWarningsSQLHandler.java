@@ -13,6 +13,6 @@ public class ShowWarningsSQLHandler extends AbstractSQLHandler<MySqlShowWarnings
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowWarningsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
 }

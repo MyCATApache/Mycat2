@@ -84,17 +84,13 @@ public class MycatInsertExecutor implements Executor {
     }
 
     public boolean isProxy() {
-        return params.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1 && groupMap.keySet().size() == 1;
+        return groupMap.keySet().size() == 1;
     }
 
     public Pair<String, String> getSingleSql() {
         Map.Entry<SQL, Group> entry = groupMap.entrySet().iterator().next();
         SQL key = entry.getKey();
         String parameterizedSql = key.getParameterizedSql();
-        LinkedList<List<Object>> args = entry.getValue().getArgs();
-        if (args.isEmpty() && mycatInsertRel.getFinalAutoIncrementIndex() != -1) {
-            return Pair.of(key.getTarget(), parameterizedSql);
-        }
         MySqlInsertStatement sqlStatement = (MySqlInsertStatement) SQLUtils.parseSingleMysqlStatement(parameterizedSql);
         Group value = entry.getValue();
         List<SQLInsertStatement.ValuesClause> valuesList = sqlStatement.getValuesList();
@@ -111,7 +107,7 @@ public class MycatInsertExecutor implements Executor {
             });
             valuesList.add(valuesClause);
         }
-        return Pair.of(key.getTarget(), sqlStatement.toString());
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sqlStatement.toString());
     }
 
     @NotNull
@@ -149,12 +145,14 @@ public class MycatInsertExecutor implements Executor {
             MySqlInsertStatement cloneStatement = FastSqlUtils.clone(mySqlInsertStatement);
             List<SQLInsertStatement.ValuesClause> valuesList = cloneStatement.getValuesList();
             valuesList.clear();
+
             boolean fillSequence = finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement();
             Number sequence;
             if (fillSequence) {
                 sequence = stringSupplier.get();
                 valuesClause.addValue(SQLExprUtils.fromJavaObject(sequence));
             }
+
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
             DataNode dataNode = function.calculateOne((Map) variables);
 
@@ -163,13 +161,19 @@ public class MycatInsertExecutor implements Executor {
             tableSource.setSchema(dataNode.getSchema());
             cloneStatement.addValueCause(valuesClause);
 
-            List<Object> outParams = new ArrayList<>(params);
+            int size = valuesClause.getValues().size();
+            int startIndex = count*size;
+            List<Object> outParams = new ArrayList<>(size);
             StringBuilder sb = new StringBuilder();
+
             MycatPreparedStatementUtil.outputToParameters(cloneStatement, sb, outParams);
+
             String sql = sb.toString();
             SQL key = SQL.of(sql, dataNode,cloneStatement,outParams);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
+
+            count++;
         }
         return group;
     }
@@ -187,12 +191,18 @@ public class MycatInsertExecutor implements Executor {
             MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement();
             List<Object> arg = (List<Object>) param;
             Number sequence = null;
+            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
+
             if (finalAutoIncrementIndex == -1 && logicTable.isAutoIncrement()) {
                 arg.add(sequence = stringSupplier.get());
+                SQLVariantRefExpr sqlVariantRefExpr = new SQLVariantRefExpr();
+                sqlVariantRefExpr.setIndex(valuesClause.getValues().size());
+                sqlVariantRefExpr.setName("?");
+                valuesClause.addValue(sqlVariantRefExpr);
             }
-            SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
-            List<SQLExpr> values = valuesClause.getValues();
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, values);
+
+
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),(List)param);
             List<DataNode> dataNodes = function.calculate((Map) variables);
             if (dataNodes.size() != 1) {
                 throw new IllegalArgumentException();
@@ -277,15 +287,17 @@ public class MycatInsertExecutor implements Executor {
         this.affectedRow = affected;
     }
 
-    private Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
+    private static Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
                                                      String[] columnNames,
-                                                     List<SQLExpr> values) {
+                                                     List<SQLExpr> values,
+                                                            List<Object> params) {
         Map<String, List<RangeVariable>> variables = new HashMap<>(1);
         for (Integer shardingKey : shardingKeys) {
             SQLExpr sqlExpr = values.get(shardingKey);
             Object o = null;
             if (sqlExpr instanceof SQLVariantRefExpr) {
-                throw new IllegalArgumentException();
+                int index = ((SQLVariantRefExpr) sqlExpr).getIndex();
+                o = params.get(index);
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
             } else {

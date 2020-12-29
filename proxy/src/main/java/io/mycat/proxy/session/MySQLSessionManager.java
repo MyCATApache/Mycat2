@@ -52,9 +52,9 @@ public class MySQLSessionManager implements
         BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
-    final ConcurrentHashMap<Integer, MySQLClientSession> allSessions = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Long, MySQLClientSession> allSessions = new ConcurrentHashMap<>();
     final ConcurrentHashMap<String, LinkedList<MySQLClientSession>> idleDatasourcehMap = new ConcurrentHashMap<>();
-    final ConcurrentHashMap<Integer, MySQLPayloadWriter> clearTask = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Long, MySQLPayloadWriter> clearTask = new ConcurrentHashMap<>();
 
 //  private ProxyRuntime runtime;
 
@@ -168,10 +168,10 @@ public class MySQLSessionManager implements
 
 
     private MySQLClientSession searchMap(List<SessionIdAble> ids,
-                                         Map<Integer, MySQLClientSession> source) {
+                                         Map<Long, MySQLClientSession> source) {
         int size = ids.size();
         for (int i = 0; i < size; i++) {
-            int id = ids.get(i).getSessionId();
+            long id = ids.get(i).getSessionId();
             MySQLClientSession mySQLClientSession = source.get(id);
             if (mySQLClientSession.isIdle()) {
                 LinkedList<MySQLClientSession> sessions = this.idleDatasourcehMap
@@ -256,7 +256,7 @@ public class MySQLSessionManager implements
         return false;
     }
 
-    public void appendClearRequest(int sessionId, byte[] packet) {
+    public void appendClearRequest(long sessionId, byte[] packet) {
         CheckResult check = check(sessionId);
         switch (check) {
             case NOT_EXIST:
@@ -264,7 +264,7 @@ public class MySQLSessionManager implements
             case IDLE:
             case BUSY:
                 this.clearTask.compute(sessionId,
-                        (integer, writer1) -> {
+                        (n, writer1) -> {
                             if (writer1 == null) {
                                 writer1 = new MySQLPayloadWriter();
                             }
@@ -636,7 +636,7 @@ public class MySQLSessionManager implements
         }
     }
 
-    public CheckResult check(int sessionId) {
+    public CheckResult check(long sessionId) {
         MySQLClientSession session = allSessions.get(sessionId);
         if (session == null) {
             return CheckResult.NOT_EXIST;

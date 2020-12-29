@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.13-alpha</version>
+        <version>1.13-beta</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -58,13 +58,13 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-            <version>1.13-alpha</version>
+            <version>1.13-beta</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.13-alpha</version>
+            <version>1.13-beta</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>

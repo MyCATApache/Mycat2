@@ -46,8 +46,8 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private final ReplicaSelectorRuntime replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
-                                 Map<String,DatasourceConfig> datasources,
-                                 Map<String,ClusterConfig> clusterConfigs,
+                                 Map<String, DatasourceConfig> datasources,
+                                 Map<String, ClusterConfig> clusterConfigs,
                                  MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorRuntime replicaSelector) {
         this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), workerProcessor, replicaSelector);
@@ -57,7 +57,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         String defaultDatasourceProvider = Optional.ofNullable(customerDatasourceProvider).orElse(DruidDatasourceProvider.class.getName());
         try {
-            DatasourceProvider o = (DatasourceProvider)Class.forName(defaultDatasourceProvider)
+            DatasourceProvider o = (DatasourceProvider) Class.forName(defaultDatasourceProvider)
                     .getDeclaredConstructor().newInstance();
             o.init(serverConfig);
             return o;
@@ -66,8 +66,8 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         }
     }
 
-    public JdbcConnectionManager(Map<String,DatasourceConfig> datasources,
-                                 Map<String,ClusterConfig> clusterConfigs,
+    public JdbcConnectionManager(Map<String, DatasourceConfig> datasources,
+                                 Map<String, ClusterConfig> clusterConfigs,
                                  DatasourceProvider provider,
                                  MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorRuntime replicaSelector) {
@@ -107,7 +107,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     @Override
     public void removeDatasource(String jdbcDataSourceName) {
         JdbcDataSource remove = dataSourceMap.remove(jdbcDataSourceName);
-        if (remove!=null){
+        if (remove != null) {
             remove.close();
         }
     }
@@ -121,7 +121,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
                     return dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
-                }),()->"unknown target:"+name);
+                }), () -> "unknown target:" + name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {
                 return ++operand;
@@ -136,7 +136,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 try {
                     return defaultConnection;
                 } finally {
-                    LOGGER.debug("获取连接:{} {}", name, defaultConnection);
+                    LOGGER.debug("get connection:{} {}", name, defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
@@ -165,8 +165,8 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             }
             return --operand;
         });
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("close :{} {}", connection,connection.connection);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("close :{} {}", connection, connection.connection);
         }
         //LOGGER.error("{} {}",connection,connection.connection, new Throwable());
         /**
@@ -175,10 +175,9 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
          * it is implemented in some databases.
          */
         try {
-            if(!connection.getDataSource().isMySQLType()){
-                if(!connection.connection.getAutoCommit()){
-                    connection.connection.rollback();
-                }
+            if (!connection.connection.getAutoCommit()) {
+                connection.connection.rollback();
+
             }
         } catch (SQLException e) {
             LOGGER.error("", e);
@@ -239,7 +238,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             for (JdbcDataSource value : dataSourceMap.values()) {
                 value.close();
             }
-        },1,TimeUnit.MINUTES);
+        }, 1, TimeUnit.MINUTES);
     }
 
     public DatasourceProvider getDatasourceProvider() {

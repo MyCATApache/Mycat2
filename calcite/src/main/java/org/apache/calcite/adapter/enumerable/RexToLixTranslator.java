@@ -16,42 +16,15 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.BlockStatement;
-import org.apache.calcite.linq4j.tree.CatchBlock;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Statement;
+import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.mycat.MycatBuiltInMethod;
-import org.apache.calcite.mycat.MycatSessionValueFunction;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexCorrelVariable;
-import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexLocalRef;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
-import org.apache.calcite.rex.RexPatternFieldRef;
-import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.rex.RexRangeRef;
-import org.apache.calcite.rex.RexSubQuery;
-import org.apache.calcite.rex.RexTableInputRef;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.rex.RexVisitor;
-import org.apache.calcite.runtime.GeoFunctions;
-import org.apache.calcite.runtime.Geometries;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
@@ -64,27 +37,15 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import com.google.common.collect.ImmutableList;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.TRANSLATE3;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.PREV;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUBSTRING;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.*;
 
 /**
  * Translates {@link org.apache.calcite.rex.RexNode REX expressions} to
@@ -2559,11 +2520,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         RexImpTable.INSTANCE.get(operator);
 
     if (implementor == null) {
-      if (MycatSessionValueFunction.INSTANCE.getName().equalsIgnoreCase(operator.getName())){
-        implementor = RexImpTable.MycatSessionValueImplementor.INSTANCE;
-      }else {
         throw new RuntimeException("cannot translate call " + call);
-      }
     }
     final List<RexNode> operandList = call.getOperands();
     final List<Type> storageTypes = EnumUtils.internalTypes(operandList);
@@ -2853,7 +2810,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
   }
 
   /** Returns the value of a literal. */
-  Object getLiteralValue(Expression expr) {
+  public Object getLiteralValue(Expression expr) {
     if (expr instanceof ParameterExpression) {
       final Expression constantExpr = literalMap.get(expr);
       return getLiteralValue(constantExpr);

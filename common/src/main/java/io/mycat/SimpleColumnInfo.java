@@ -162,6 +162,9 @@ public class SimpleColumnInfo {
     }
 
     public Object normalizeValue(Object o) {
+        if (o == null){
+            return o;
+        }
         switch (getType()) {
             case NUMBER:
                 if (o instanceof String) {

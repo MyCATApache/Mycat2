@@ -41,13 +41,13 @@ public class MycatException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    public MycatException(String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
-    }
-
     public MycatException(String message, Object... args) {
         super(MessageFormatter.arrayFormat(message, args).getMessage());
+    }
+
+    public MycatException(int errorCode, String message, Throwable throwable) {
+        super(message, throwable);
+        this.errorCode = errorCode;
     }
 
     public int getErrorCode() {

@@ -5,6 +5,14 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import io.mycat.DataNode;
+import io.mycat.MycatConnection;
+import io.mycat.MycatDataContext;
+import io.mycat.TransactionSession;
+
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
@@ -23,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +39,7 @@ import static io.mycat.calcite.executor.MycatPreparedStatementUtil.apply;
 
 @Getter
 public class MycatUpdateExecutor implements Executor {
+
     private final MycatDataContext context;
     private final Distribution distribution;
     /**
@@ -45,6 +55,7 @@ public class MycatUpdateExecutor implements Executor {
      */
     private final Set<SQL> reallySqlSet;
     private final DataSourceFactory factory;
+
     private long lastInsertId = 0;
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
@@ -54,9 +65,11 @@ public class MycatUpdateExecutor implements Executor {
                                List<Object> parameters,
                                DataSourceFactory factory) {
         this.context = context;
+
         this.distribution = distribution;
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
+
         this.factory = factory;
         this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(distribution,logicStatement,parameters));
         factory.registered(reallySqlSet.stream().map(SQL::getTarget).distinct().collect(Collectors.toList()));
@@ -66,7 +79,7 @@ public class MycatUpdateExecutor implements Executor {
                                              SQLStatement sqlStatement,
                                              DataSourceFactory factory,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(context,values, sqlStatement, parameters, factory);
+        return new MycatUpdateExecutor(context, values, sqlStatement, parameters, factory);
     }
 
     public boolean isProxy() {
@@ -116,6 +129,7 @@ public class MycatUpdateExecutor implements Executor {
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, parameterizedSql, logicParameters);
+
             }
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
                 LOGGER.debug("{} has closed but still using", mycatConnection);
@@ -179,13 +193,13 @@ public class MycatUpdateExecutor implements Executor {
     private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement statement, List<Object> parameters) {
         Iterable<DataNode> dataNodes = distribution.getDataNodes(parameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
+
         for (DataNode dataNode : dataNodes) {
             SQLStatement cloneStatement = FastSqlUtils.clone(statement);
 
             SQLExprTableSource tableSource = FastSqlUtils.getTableSource(cloneStatement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-
             StringBuilder sqlStringBuilder = new StringBuilder();
             List<Object> cloneParameters = new ArrayList<>();
             MycatPreparedStatementUtil.collect(cloneStatement, sqlStringBuilder, parameters, cloneParameters);
@@ -222,6 +236,7 @@ public class MycatUpdateExecutor implements Executor {
             String target = sql.getTarget();
             String parameterizedSql = sql.getParameterizedSql();
             explainWriter.item("target:" + target + " " + parameterizedSql, logicParameters);
+
         }
         return explainWriter.ret();
     }

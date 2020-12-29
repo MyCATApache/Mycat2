@@ -34,9 +34,9 @@ import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.google.common.collect.ImmutableList;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLType;
-import io.mycat.util.CalciteConvertors;
 import io.mycat.calcite.table.*;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -48,10 +48,7 @@ import io.mycat.querycondition.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
-import io.mycat.util.NameMap;
-import io.mycat.util.Pair;
-import io.mycat.util.SQL2ResultSetUtil;
-import io.mycat.util.SplitUtil;
+import io.mycat.util.*;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -105,6 +102,23 @@ public class MetadataManager implements MysqlVariableService {
         }
     }
 
+    public static MetadataManager createMetadataManager(List<LogicSchemaConfig> schemaConfigs,
+                                                        LoadBalanceManager loadBalanceManager,
+                                                        SequenceGenerator sequenceGenerator,
+                                                        ReplicaSelectorRuntime replicaSelectorRuntime,
+                                                        JdbcConnectionManager jdbcConnectionManager,
+                                                        String prototype) {
+        try {
+            return new MetadataManager(schemaConfigs,
+                    loadBalanceManager,
+                    sequenceGenerator,
+                    replicaSelectorRuntime,
+                    jdbcConnectionManager,
+                    prototype);
+        } catch (Throwable throwable) {
+            throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_FETCH_METADATA, "MetadataManager init fail", throwable);
+        }
+    }
 
     @SneakyThrows
     public MetadataManager(List<LogicSchemaConfig> schemaConfigs,
@@ -284,7 +298,7 @@ public class MetadataManager implements MysqlVariableService {
                 });
         Map<String, CustomTableConfig> customTables = mycat.getCustomTables();
 
-        customTables.computeIfAbsent("dual",(n)->{
+        customTables.computeIfAbsent("dual", (n) -> {
             CustomTableConfig tableConfig = CustomTableConfig.builder().build();
             tableConfig.setClazz(DualCustomTableHandler.class.getCanonicalName());
             tableConfig.setCreateTableSQL("create table mycat.dual(id int)");
@@ -322,9 +336,9 @@ public class MetadataManager implements MysqlVariableService {
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
         String clazz = tableConfigEntry.getClazz();
         List<SimpleColumnInfo> columns = getColumnInfo(createTableSQL);
-        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL,schemaName, columns);
+        Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
         LogicTable logicTable = new LogicTable(LogicTableType.CUSTOM,
-                schemaName, tableName, columns,indexInfos, createTableSQL);
+                schemaName, tableName, columns, indexInfos, createTableSQL);
         CustomTableHandlerWrapper customTableHandler = new CustomTableHandlerWrapper(logicTable, clazz, tableConfigEntry.getKvOptions(),
                 tableConfigEntry.getListOptions());
         addLogicTable(customTableHandler);
@@ -343,8 +357,8 @@ public class MetadataManager implements MysqlVariableService {
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, tableName, dataNodes));
         if (createTableSQL != null) {
             List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, dataNodes);
-            Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
-            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, indexInfos,createTableSQL));
+            Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
+            addLogicTable(LogicTable.createNormalTable(schemaName, tableName, dataNodes.get(0), columns, indexInfos, createTableSQL));
             return true;
         }
         return false;
@@ -360,13 +374,13 @@ public class MetadataManager implements MysqlVariableService {
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL())
                 .orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backendTableInfos));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, tableName, createTableSQL, backendTableInfos);
-        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
+        Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
 
         //////////////////////////////////////////////
 
         LoadBalanceStrategy loadBalance = loadBalanceManager.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
 
-        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos,createTableSQL));
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos, loadBalance, columns, indexInfos, createTableSQL));
     }
 
 
@@ -409,13 +423,13 @@ public class MetadataManager implements MysqlVariableService {
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
-        Map<String,IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName,columns);
+        Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
 
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<Number> sequence = sequenceGenerator.getSequence(s);
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
-                backends, columns, null,indexInfos, createTableSQL);
+                backends, columns, null, indexInfos, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
         addLogicTable(shardingTable);
 
@@ -884,10 +898,10 @@ public class MetadataManager implements MysqlVariableService {
                                 if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
                                     return false;
                                 }
-                              continue;
+                                continue;
                             }
                             return false;
-                        }else {
+                        } else {
                             return false;
                         }
                     }
@@ -929,7 +943,10 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     public List<String> showDatabases() {
-        return schemaMap.keySet().stream().map(i -> SQLUtils.normalize(i)).distinct().sorted(Comparator.comparing(s -> s)).collect(Collectors.toList());
+        return schemaMap.keySet().stream().map(i -> SQLUtils.normalize(i))
+                .distinct()
+                .filter(i -> !"mycat".equals(i))
+                .sorted(Comparator.comparing(s -> s)).collect(Collectors.toList());
     }
 
     public MetadataManager clear() {
@@ -963,14 +980,14 @@ public class MetadataManager implements MysqlVariableService {
         return CalciteConvertors.getColumnInfo(Objects.requireNonNull(mycatRowMetaData));
     }
 
-    public static Map<String,IndexInfo> getIndexInfo(String sql,String schemaName,List<SimpleColumnInfo> columnInfoList) {
+    public static Map<String, IndexInfo> getIndexInfo(String sql, String schemaName, List<SimpleColumnInfo> columnInfoList) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         if (!(sqlStatement instanceof MySqlCreateTableStatement)) {
             return null;
         }
         String tableName = ((MySqlCreateTableStatement) sqlStatement).getTableName();
         List<MySqlTableIndex> mysqlIndexes = ((MySqlCreateTableStatement) sqlStatement).getMysqlIndexes();
-        Map<String,IndexInfo> indexInfoMap = new LinkedHashMap<>();
+        Map<String, IndexInfo> indexInfoMap = new LinkedHashMap<>();
         for (MySqlTableIndex astIndex : mysqlIndexes) {
             // 索引名
             String indexName = SQLUtils.normalize(astIndex.getName().getSimpleName());
@@ -1018,16 +1035,16 @@ public class MetadataManager implements MysqlVariableService {
                     }
                 }
 
-                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName,tableName, indexName,
+                IndexInfo old = indexInfoMap.put(indexName, new IndexInfo(schemaName, tableName, indexName,
                         mycatIndexes.toArray(new SimpleColumnInfo[0]),
                         mycatCoverings.toArray(new SimpleColumnInfo[0]),
                         new IndexInfo.DBPartitionBy(dbPartitionByMethodName,
                                 dbPartitionByColumms.toArray(new SimpleColumnInfo[0]))));
-                if(old != null){
-                    throw new IllegalStateException("存在重复的索引名称 "+ indexName);
+                if (old != null) {
+                    throw new IllegalStateException("存在重复的索引名称 " + indexName);
                 }
-            }catch (ClassCastException e){
-                throw new IllegalStateException("暂时不支持该索引语法"+ astIndex);
+            } catch (ClassCastException e) {
+                throw new IllegalStateException("暂时不支持该索引语法" + astIndex);
             }
         }
         return indexInfoMap;

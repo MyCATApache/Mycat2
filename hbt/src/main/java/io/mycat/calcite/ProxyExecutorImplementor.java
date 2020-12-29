@@ -45,7 +45,8 @@ public class ProxyExecutorImplementor extends ResponseExecutorImplementor  {
                 Executor executor = super.implement((MycatUpdateRel) rel);
                 MycatUpdateExecutor updateExecutor = (MycatUpdateExecutor) executor;
                 if (updateExecutor.isProxy()) {
-                    response.sendOk(updateExecutor.getLastInsertId(), updateExecutor.getAffectedRow());
+                    Pair<String, String> pair = updateExecutor.getSingleSql();
+                    response.proxyUpdate(pair.getKey(), pair.getValue());
                 } else {
                     factory.open();
                     runUpdate(updateExecutor);

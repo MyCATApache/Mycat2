@@ -181,7 +181,9 @@ public class MySQLPacketUtil {
     ) {
         try (MySQLPayloadWriter writer = new MySQLPayloadWriter(64)) {
             ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-            errorPacket.setErrorMessage(message.getBytes());
+            if (message!=null) {
+                errorPacket.setErrorMessage(message.getBytes());
+            }
             errorPacket.setErrorCode(errno);
             errorPacket.writePayload(writer, serverCapabilityFlags);
             return writer.toByteArray();

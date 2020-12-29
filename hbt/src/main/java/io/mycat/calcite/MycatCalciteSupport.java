@@ -22,6 +22,10 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
+import io.mycat.calcite.sqlfunction.infofunction.*;
 import io.mycat.calcite.sqlfunction.mathfunction.CRC32Function;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -44,7 +48,6 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.Driver;
-import org.apache.calcite.mycat.*;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
@@ -192,6 +195,22 @@ public enum MycatCalciteSupport implements Context {
                                 }
                                 return super.implicitCast(in, expected);
                             }
+                            @Override
+                            public RelDataType commonTypeForBinaryComparison(RelDataType type1, RelDataType type2) {
+                                SqlTypeName typeName1 = type1.getSqlTypeName();
+                                SqlTypeName typeName2 = type2.getSqlTypeName();
+
+                                if (typeName1 == null || typeName2 == null) {
+                                    return null;
+                                }
+                                if (typeName1 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName2)) {
+                                    return type2;
+                                }
+                                if (typeName2 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName1)) {
+                                    return type1;
+                                }
+                                return super.commonTypeForBinaryComparison(type1,type2);
+                            }
                         };
                     }
                 });
@@ -199,6 +218,12 @@ public enum MycatCalciteSupport implements Context {
     }
 
     static {
+        Map<SqlOperator, RexImpTable.RexCallImplementor> rexImpTableMap = RexImpTable.INSTANCE.map;
+        rexImpTableMap.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(DateSubFunction.INSTANCE,DateSubFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(ExtractFunction.INSTANCE,ExtractFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(AddTimeFunction.INSTANCE,AddTimeFunction.INSTANCE.getRexCallImplementor());
+
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
 //        configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
@@ -277,18 +302,18 @@ public enum MycatCalciteSupport implements Context {
                             UpdateXMLFunction.INSTANCE,
                             WeightStringFunction.INSTANCE,
                             /////////////////////////////////////////
-                            AddDateFunction.INSTANCE,
 //                            DateAddFunction.INSTANCE,
-                            RexImpTable.AddTimeFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
                             ConvertTzFunction.INSTANCE,
                             CurDateFunction.INSTANCE,
                             DateDiffFunction.INSTANCE,
                             DateFormatFunction.INSTANCE,
                             DateFormat2Function.INSTANCE,
                             StringToTimestampFunction.INSTANCE,
-                            RexImpTable.DateAddFunction.INSTANCE,
-                            RexImpTable.DateSubFunction.INSTANCE,
-                            RexImpTable.ExtractFunction.INSTANCE,
+                            DateAddFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
+                            DateSubFunction.INSTANCE,
+                            ExtractFunction.INSTANCE,
                             DayOfWeekFunction.INSTANCE,
                             FromDaysFunction.INSTANCE,
                             HourFunction.INSTANCE,

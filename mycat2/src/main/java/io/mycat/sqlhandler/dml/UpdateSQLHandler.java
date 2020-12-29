@@ -13,6 +13,7 @@ import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.MetadataManager;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.Response;

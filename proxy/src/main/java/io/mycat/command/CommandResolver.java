@@ -306,7 +306,7 @@ public class CommandResolver {
                     MycatMonitor.onDelayedInsertCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleTime(mycat);
+                    commandHandler.handleDelayedInsert(mycat);
                     MycatMonitor.onDelayedInsertCommandEnd(mycat);
                     break;
                 }

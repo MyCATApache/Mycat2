@@ -30,8 +30,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.calcite.*;
+import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
@@ -39,19 +45,17 @@ import io.mycat.calcite.rules.*;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanCache;
 import io.mycat.calcite.table.*;
+import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
-import io.mycat.calcite.executor.MycatPreparedStatementUtil;
-import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.gsi.GSIService;
 import io.mycat.util.LazyTransformCollection;
 import lombok.SneakyThrows;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -149,7 +153,7 @@ public class DrdsRunner {
 
 
     public Iterable<DrdsSql> preParse(List<SQLStatement> sqlStatements, List<Object> inputParameters) {
-        return LazyTransformCollection.transform(sqlStatements,sqlStatement ->{
+        return LazyTransformCollection.transform(sqlStatements, sqlStatement -> {
             List<Object> params = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
             MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
@@ -201,7 +205,7 @@ public class DrdsRunner {
                                                Iterable<DrdsSql> stmtList,
                                                SchemaPlus plus,
                                                MycatDataContext dataContext) {
-        return LazyTransformCollection.transform(stmtList, drdsSql ->{
+        return LazyTransformCollection.transform(stmtList, drdsSql -> {
             RelOptCluster cluster = newCluster();
             MycatRel rel;
             Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
@@ -295,7 +299,7 @@ public class DrdsRunner {
     private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTableHandler logicTable) {
         GlobalTableHandler globalTableHandler = logicTable;
         Distribution distribution = Distribution.of(globalTableHandler.getGlobalDataNode(), false, Distribution.Type.BroadCast);
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement,true);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, true);
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }
@@ -304,7 +308,7 @@ public class DrdsRunner {
     private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTableHandler logicTable) {
         NormalTableHandler normalTableHandler = logicTable;
         Distribution distribution = Distribution.of(ImmutableList.of(normalTableHandler.getDataNode()), false, Distribution.Type.PHY);
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement,false);
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, false);
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }
@@ -411,14 +415,14 @@ public class DrdsRunner {
             rboInCbo = Collections.singletonList(
                     new MycatViewToIndexViewRule(optimizationContext, drdsSql.getParams())
             );
-        }else {
+        } else {
             rboInCbo = Collections.emptyList();
         }
         MycatRel cboLogPlan = optimizeWithCBO(rboLogPlan, rboInCbo);
         List<Object> params = drdsSql.getParams();
-        if (params.isEmpty()){
+        if (params.isEmpty()) {
             optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
-        }else if (!optimizationContext.isPredicateOnPhyView() && !optimizationContext.isPredicateOnView()) {
+        } else if (!optimizationContext.isPredicateOnPhyView() && !optimizationContext.isPredicateOnView()) {
             //全表扫描
             optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
         } else if (!optimizationContext.isPredicateOnPhyView() && optimizationContext.isPredicateOnView()) {
@@ -484,7 +488,22 @@ public class DrdsRunner {
                                 if (o == null) {
                                     return super.typeFactory.createUnknownType();
                                 } else {
-                                    return super.typeFactory.createJavaType(o.getClass());
+                                    SqlTypeName type = null;
+                                    if (o instanceof String) {
+                                        type = SqlTypeName.VARCHAR;
+                                    } else if (o instanceof Number) {
+                                        type = SqlTypeName.DECIMAL;
+                                    } else {
+                                        Class<?> aClass = o.getClass();
+                                        for (SqlType value : SqlType.values()) {
+                                            if (value.clazz == aClass) {
+                                                type = SqlTypeName.getNameForJdbcType(value.id);
+                                            }
+                                        }
+                                    }
+
+                                    Objects.requireNonNull(type, () -> "unknown type:" + o.getClass());
+                                    return super.typeFactory.createSqlType(type);
                                 }
                             }
                         }
@@ -556,7 +575,7 @@ public class DrdsRunner {
             Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(condition));
             MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                     distribution,
-                    drdsSql.getSqlStatement(),mycatTable.isBroadCast());
+                    drdsSql.getSqlStatement(), mycatTable.isBroadCast());
             optimizationContext.saveParameterized(drdsSql.getParameterizedString(), mycatUpdateRel);
             return mycatUpdateRel;
         }
@@ -564,7 +583,7 @@ public class DrdsRunner {
         Distribution distribution = mycatTable.computeDataNode();
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                 distribution,
-                drdsSql.getSqlStatement(),mycatTable.isBroadCast());
+                drdsSql.getSqlStatement(), mycatTable.isBroadCast());
         optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
         return mycatUpdateRel;
     }

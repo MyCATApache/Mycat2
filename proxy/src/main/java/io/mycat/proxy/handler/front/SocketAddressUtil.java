@@ -11,6 +11,10 @@ public class SocketAddressUtil {
             return null;
         }
         String string = remoteSocketAddress.toString();
+        return simplySocketAddress(string);
+    }
+
+    public static String simplySocketAddress(String string) {
         if (string != null) {
             if (string.startsWith("/")) {
                 string = string.substring(1);

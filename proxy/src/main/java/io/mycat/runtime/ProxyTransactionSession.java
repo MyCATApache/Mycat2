@@ -84,8 +84,8 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void clearJdbcConnection() {
-        parent.clearJdbcConnection();
+    public void closeStatenmentState() {
+        parent.closeStatenmentState();
     }
 
     @Override
@@ -109,8 +109,8 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void ensureTranscation() {
-        parent.ensureTranscation();
+    public void openStatementState() {
+        parent.openStatementState();
     }
 
     @Override

@@ -13,14 +13,16 @@ import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
 import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
 import com.alibaba.fastsql.util.FnvHash;
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
+import io.mycat.calcite.sqlfunction.infofunction.*;
 import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
 import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
-import org.apache.calcite.mycat.*;
 import io.mycat.calcite.sqlfunction.datefunction.*;
-import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.sql.*;
@@ -1065,7 +1067,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 break;
             case Add:
                 if (rightExpr instanceof SQLIntervalExpr || x.getLeft() instanceof SQLIntervalExpr) {
-                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    operator = DateAddFunction.INSTANCE;
                     break;
                 }
                 operator = SqlStdOperatorTable.PLUS;
@@ -1076,7 +1078,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                     SQLIntegerExpr value1 = (SQLIntegerExpr) value;
                     right = convertToSqlNode(new SQLIntervalExpr(new SQLIntegerExpr(-value1.getNumber().longValue()),
                             ((SQLIntervalExpr) rightExpr).getUnit()));
-                    operator = RexImpTable.DateAddFunction.INSTANCE;
+                    operator = DateAddFunction.INSTANCE;
                     break;
                 }
                 operator = SqlStdOperatorTable.MINUS;
@@ -1610,7 +1612,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 return false;
             }
             case "ADDTIME": {
-                this.sqlNode = RexImpTable.AddTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = AddTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "TRUNCATE": {
@@ -1668,7 +1670,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 }
             }
             case "DATE_ADD": {
-                this.sqlNode = RexImpTable.DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = DateAddFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "SUBDATE": {
@@ -1679,7 +1681,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 }
             }
             case "DATE_SUB":
-                this.sqlNode = RexImpTable.DateSubFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                this.sqlNode = DateSubFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             case "SUBTIME": {
                 this.sqlNode = SubTimeFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
@@ -1759,7 +1761,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "DAY":
             case "DAYOFMONTH": {
                 ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(TimeUnitRange.DAY, SqlParserPos.ZERO), argNodes.get(0));
-                this.sqlNode = RexImpTable.ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
+                this.sqlNode = ExtractFunction.INSTANCE.createCall(SqlParserPos.ZERO, sqlNodes);
                 return false;
             }
             case "DAYOFWEEK": {
@@ -2297,7 +2299,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         TimeUnitRange range = TimeUnitRange.of(timeUnits[0], timeUnits[1]);
         ImmutableList<SqlNode> sqlNodes = ImmutableList.of(SqlLiteral.createSymbol(range, SqlParserPos.ZERO), sqlNode);
 
-        this.sqlNode = RexImpTable.ExtractFunction.INSTANCE
+        this.sqlNode = ExtractFunction.INSTANCE
                 .createCall(SqlParserPos.ZERO, sqlNodes);
         return false;
     }

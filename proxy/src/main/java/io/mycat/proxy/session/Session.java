@@ -56,8 +56,9 @@ public interface Session<T extends Session> extends Wrapper {
 
   /**
    * 该session的标识符,唯一
+   * @return
    */
-  int sessionId();
+  long sessionId();
 
   /**
    * 获取该session,最近活跃的时间

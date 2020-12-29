@@ -18,8 +18,6 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -37,7 +35,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     protected SocketChannel channel;
     protected SelectionKey channelKey;
     protected final SessionManager<T> sessionManager;
-    protected final int sessionId;
+    protected final long sessionId;
     protected long startTime;
     protected long lastActiveTime;
     protected NIOHandler nioHandler;
@@ -45,7 +43,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     private final MycatReactorThread ioThread;
     private final long timeout = TimeUnit.SECONDS.toMillis(5);
 
-    public AbstractSession(int sessionId,
+    public AbstractSession(long sessionId,
                            NIOHandler nioHandler, SessionManager<T> sessionManager) {
         this.ioThread = (MycatReactorThread) Thread.currentThread();
         this.nioHandler = nioHandler;
@@ -119,7 +117,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     }
 
     @Override
-    public int sessionId() {
+    public long sessionId() {
         return sessionId;
     }
 

@@ -53,7 +53,7 @@ public interface TransactionSession extends Dumpable {
 
     ThreadUsageEnum getThreadUsageEnum();
 
-    void clearJdbcConnection();
+    void closeStatenmentState();
 
     void close();
 
@@ -66,7 +66,7 @@ public interface TransactionSession extends Dumpable {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void ensureTranscation();
+    public void openStatementState();
 
     public void addCloseResource(AutoCloseable closeable);
 
