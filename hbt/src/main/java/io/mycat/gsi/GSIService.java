@@ -6,10 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 全局二级索引 (Global Secondary Index, GSI)
@@ -68,7 +65,11 @@ public interface GSIService {
 
     boolean isIndexTable(String schemaName, String tableName);
 
-    void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey);
+    void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> values,String dataNodeKey);
+
+    void updateByPrimaryKey(String txId, String schemaName, String tableName,
+                            Map<SimpleColumnInfo,Object> setValues,
+                            Collection<Map<SimpleColumnInfo,Object>> whereList, String dataNodeKey);
 
     boolean preCommit(String txId);
 

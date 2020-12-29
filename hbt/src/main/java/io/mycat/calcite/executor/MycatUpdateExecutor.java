@@ -1,57 +1,65 @@
 package io.mycat.calcite.executor;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.hbt.TextConvertor;
+import io.mycat.gsi.GSIService;
 import io.mycat.mpp.Row;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
+import io.mycat.util.SQL;
+import io.mycat.util.UpdateSQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.PreparedStatement;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.apply;
-import static java.sql.Statement.NO_GENERATED_KEYS;
 
 @Getter
 public class MycatUpdateExecutor implements Executor {
-    private MycatDataContext context;
-    private final Distribution values;
-    private final SQLStatement sqlStatement;
-    private List<Object> parameters;
-    private final HashSet<GroupKey> groupKeys;
-    private DataSourceFactory factory;
+    private final MycatDataContext context;
+    private final Distribution distribution;
+    /**
+     * 逻辑语法树（用户在前端写的SQL语句）
+     */
+    private final SQLStatement logicStatement;
+    /**
+     * 逻辑参数 （用户在前端写的SQL语句中的参数）
+     */
+    private final List<Object> logicParameters;
+    /**
+     * 由逻辑SQL 改成真正发送给后端数据库的sql语句. 一个不可变的集合 {@link Collections#unmodifiableSet(Set)}
+     */
+    private final Set<SQL> reallySqlSet;
+    private final DataSourceFactory factory;
     private long lastInsertId = 0;
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
-    public MycatUpdateExecutor(MycatDataContext context, Distribution values,
-                               SQLStatement sqlStatement,
+    public MycatUpdateExecutor(MycatDataContext context, Distribution distribution,
+                               SQLStatement logicStatement,
                                List<Object> parameters,
                                DataSourceFactory factory) {
         this.context = context;
-        this.values = values;
-        this.sqlStatement = sqlStatement;
-        this.parameters = parameters;
+        this.distribution = distribution;
+        this.logicStatement = logicStatement;
+        this.logicParameters = parameters;
         this.factory = factory;
-        this.groupKeys = getGroup();
-        factory.registered(this.groupKeys.stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
+        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(distribution,logicStatement,parameters));
+        factory.registered(reallySqlSet.stream().map(SQL::getTarget).distinct().collect(Collectors.toList()));
     }
 
     public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
@@ -62,137 +70,133 @@ public class MycatUpdateExecutor implements Executor {
     }
 
     public boolean isProxy() {
-        return groupKeys.size() == 1;
+        return reallySqlSet.size() == 1;
     }
 
     public Pair<String, String> getSingleSql() {
-        GroupKey groupKey = groupKeys.iterator().next();
-        GroupKey key = groupKey;
+        SQL key = reallySqlSet.iterator().next();
         String parameterizedSql = key.getParameterizedSql();
-        String sql = apply(parameterizedSql, parameters);
+        String sql = apply(parameterizedSql, logicParameters);
         return Pair.of(key.getTarget(), sql);
     }
 
-
-    private FastSqlUtils.Select getSelectPrimaryKeyStatementIfNeed(DataNode dataNode, MetadataManager metadataManager){
-        TableHandler table = metadataManager.getTable(dataNode.getSchema(), dataNode.getTable());
-        if(sqlStatement instanceof MySqlUpdateStatement) {
-            return FastSqlUtils.conversionToSelectSql((MySqlUpdateStatement) sqlStatement, table.getPrimaryKeyList(),parameters);
-        }else if(sqlStatement instanceof MySqlDeleteStatement){
-            return FastSqlUtils.conversionToSelectSql((MySqlDeleteStatement) sqlStatement,table.getPrimaryKeyList(),parameters);
+    private FastSqlUtils.Select getSelectPrimaryKeyStatementIfNeed(SQL sql){
+        TableHandler table = sql.getTable();
+        SQLStatement statement = sql.getStatement();
+        if(statement instanceof SQLUpdateStatement) {
+            return FastSqlUtils.conversionToSelectSql((SQLUpdateStatement) statement, table.getPrimaryKeyList(),sql.getParameters());
+        }else if(statement instanceof SQLDeleteStatement){
+            return FastSqlUtils.conversionToSelectSql((SQLDeleteStatement) statement,table.getPrimaryKeyList(),sql.getParameters());
         }
-        return null;
+        throw new MycatException("更新语句转查询语句出错，不支持的语法。 \n sql = "+ statement);
     }
 
     @Override
     @SneakyThrows
     public void open() {
-
         TransactionSession transactionSession = context.getTransactionSession();
-
-        Map<String, MycatConnection> connections = new HashMap<>();
+        Map<String, MycatConnection> connections = new HashMap<>(3);
         Set<String> uniqueValues = new HashSet<>();
-        for (GroupKey target : groupKeys) {
-            String k = context.resolveDatasourceTargetName(target.getTarget());
+        for (SQL sql : reallySqlSet) {
+            String k = context.resolveDatasourceTargetName(sql.getTarget());
             if (uniqueValues.add(k)) {
-                if (connections.put(target.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(sql.getTarget(), transactionSession.getConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }
         }
 
-
-        boolean insertId = sqlStatement instanceof MySqlInsertStatement;
         SqlRecord sqlRecord = context.currentSqlRecord();
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-
         //建立targetName与连接的映射
-        for (GroupKey key : groupKeys) {
-            String sql = key.getParameterizedSql();
-            String target = key.getTarget();
+        for (SQL sql : reallySqlSet) {
+            String parameterizedSql = sql.getParameterizedSql();
+            String target = sql.getTarget();
 
             MycatConnection mycatConnection = connections.get(target);
             Connection connection = mycatConnection.unwrap(Connection.class);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, sql, parameters);
+                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, parameterizedSql, logicParameters);
             }
             if (LOGGER.isDebugEnabled() && connection.isClosed()) {
                 LOGGER.debug("{} has closed but still using", mycatConnection);
             }
 
-            FastSqlUtils.Select select = getSelectPrimaryKeyStatementIfNeed(key.getDataNode(), metadataManager);
-            if(select != null) {
-                try(PreparedStatement statement = MycatPreparedStatementUtil.setParams(
-                        connection.prepareStatement(select.getStatement().toString()),select.getParameters());
-                    ResultSet resultSet = statement.executeQuery()){
-                    String s = TextConvertor.dumpResultSet(resultSet);
-                    System.out.println("selectPrimaryKeyStatement = " + s);
+            // 如果是更新语法. 例： update set id = 1
+            if(sql instanceof UpdateSQL) {
+                UpdateSQL updateSQL = (UpdateSQL) sql;
+                // 如果用户修改了分片键
+                if(updateSQL.isUpdateShardingKey()){
+                    onUpdateShardingKey(updateSQL,connection,transactionSession);
+                }
+
+                // 如果用户修改了索引
+                if(updateSQL.isUpdateIndex()){
+                    onUpdateIndex(updateSQL,connection,transactionSession);
                 }
             }
 
             long start = SqlRecord.now();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql, insertId ? Statement.RETURN_GENERATED_KEYS : NO_GENERATED_KEYS);
-            MycatPreparedStatementUtil.setParams(preparedStatement, parameters);
-            int subAffectedRow = preparedStatement.executeUpdate();
-            sqlRecord.addSubRecord(sql,start,SqlRecord.now(),target,subAffectedRow);
+            SQL.UpdateResult updateResult = sql.executeUpdate(connection);
+            Long lastInsertId = updateResult.getLastInsertId();
+            int subAffectedRow = updateResult.getAffectedRow();
+            sqlRecord.addSubRecord(parameterizedSql,start,SqlRecord.now(),target,subAffectedRow);
             this.affectedRow += subAffectedRow;
-            this.lastInsertId = Math.max(this.lastInsertId, getInSingleSqlLastInsertId(insertId, preparedStatement));
+            if(lastInsertId != null && lastInsertId > 0) {
+                this.lastInsertId = lastInsertId;
+            }
         }
     }
 
-    @NotNull
-    private HashSet<GroupKey> getGroup() {
-        Iterable<DataNode> dataNodes = values.getDataNodes(parameters);
-        HashSet<GroupKey> groupHashMap = new HashSet<>();
+    private void onUpdateShardingKey(UpdateSQL sql,Connection connection,TransactionSession transactionSession) throws SQLException {
+
+    }
+
+    private void onUpdateIndex(UpdateSQL<?> sql,Connection connection,TransactionSession transactionSession) throws SQLException {
+        GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
+        if(gsiService == null){
+            return;
+        }
+        // 获取主键
+        Collection<Map<SimpleColumnInfo, Object>> primaryKeyList;
+        if(sql.isWherePrimaryKeyCovering()){
+            // 条件满足覆盖主键
+            primaryKeyList = sql.getWherePrimaryKeyList();
+        }else {
+            // 不满足覆盖主键 就查询后端数据库
+            primaryKeyList = sql.selectPrimaryKey(connection);
+        }
+
+        // 更新索引
+        // todo 更新语句包含limit或者order by的情况处理，等实现了全局索引再考虑实现。 wangzihaogithub 2020-12-29
+        TableHandler table = sql.getTable();
+        gsiService.updateByPrimaryKey(transactionSession.getTxId(),
+                table.getSchemaName(),
+                table.getTableName(),
+                sql.getSetColumnMap(),
+                primaryKeyList,sql.getTarget());
+    }
+
+    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement statement, List<Object> parameters) {
+        Iterable<DataNode> dataNodes = distribution.getDataNodes(parameters);
+        Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
         for (DataNode dataNode : dataNodes) {
-            SQLExprTableSource tableSource = null;
-            if (sqlStatement instanceof MySqlUpdateStatement) {
-                tableSource = (SQLExprTableSource) ((MySqlUpdateStatement) sqlStatement).getTableSource();
-            }
-            if (sqlStatement instanceof MySqlDeleteStatement) {
-                tableSource = (SQLExprTableSource) ((MySqlDeleteStatement) sqlStatement).getTableSource();
-            }
-            if (sqlStatement instanceof MySqlInsertStatement) {
-                tableSource = (SQLExprTableSource) ((MySqlInsertStatement) sqlStatement).getTableSource();
-            }
-            Objects.requireNonNull(tableSource);
+            SQLStatement cloneStatement = FastSqlUtils.clone(statement);
+
+            SQLExprTableSource tableSource = FastSqlUtils.getTableSource(cloneStatement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            StringBuilder sb = new StringBuilder();
-            List<Object> outparameters = new ArrayList<>();
-            MycatPreparedStatementUtil.collect(sqlStatement, sb, parameters, outparameters);
-            String sql = sb.toString();
-            this.parameters = outparameters;
-            GroupKey key = GroupKey.of(sql, dataNode.getTargetName(),dataNode);
-            groupHashMap.add(key);
-        }
-        return groupHashMap;
-    }
 
-    /**
-     * ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-     * 会生成多个值,其中第一个是真正的值
-     *
-     * @param insertId
-     * @param preparedStatement
-     * @return
-     * @throws SQLException
-     */
-    public static long getInSingleSqlLastInsertId(boolean insertId, Statement preparedStatement) throws SQLException {
-        long lastInsertId = 0;
-        if (insertId) {
-            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            if (generatedKeys != null) {
-                if (generatedKeys.next()) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("preparedStatement:{} insertId:{}", preparedStatement, insertId);
-                    }
-                    long aLong = generatedKeys.getLong(1);
-                    lastInsertId = Math.max(lastInsertId, aLong);
-                }
+            StringBuilder sqlStringBuilder = new StringBuilder();
+            List<Object> cloneParameters = new ArrayList<>();
+            MycatPreparedStatementUtil.collect(cloneStatement, sqlStringBuilder, parameters, cloneParameters);
+            SQL sql = SQL.of(sqlStringBuilder.toString(),dataNode,cloneStatement,cloneParameters);
+
+            SQL exist = sqlMap.put(sql, sql);
+            if(exist != null){
+                LOGGER.debug("remove exist sql = {}",exist);
             }
         }
-        return lastInsertId;
+        return new LinkedHashSet<>(sqlMap.keySet());
     }
 
     @Override
@@ -214,10 +218,10 @@ public class MycatUpdateExecutor implements Executor {
     public ExplainWriter explain(ExplainWriter writer) {
         ExplainWriter explainWriter = writer.name(this.getClass().getName())
                 .into();
-        for (GroupKey groupKey : groupKeys) {
-            String target = groupKey.getTarget();
-            String parameterizedSql = groupKey.getParameterizedSql();
-            explainWriter.item("target:" + target + " " + parameterizedSql, parameters);
+        for (SQL sql : reallySqlSet) {
+            String target = sql.getTarget();
+            String parameterizedSql = sql.getParameterizedSql();
+            explainWriter.item("target:" + target + " " + parameterizedSql, logicParameters);
         }
         return explainWriter.ret();
     }

@@ -61,8 +61,13 @@ public class MapDBGSIService implements GSIService {
     }
 
     @Override
-    public void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> objects,String dataNodeKey) {
-        repository.insert(txId, schemaName, tableName, columns, objects, dataNodeKey);
+    public void insert(String txId, String schemaName, String tableName, SimpleColumnInfo[] columns, List<Object> values, String dataNodeKey) {
+        repository.insert(txId, schemaName, tableName, columns, values, dataNodeKey);
+    }
+
+    @Override
+    public void updateByPrimaryKey(String txId, String schemaName, String tableName, Map<SimpleColumnInfo, Object> setValues, Collection<Map<SimpleColumnInfo, Object>> whereList, String dataNodeKey) {
+
     }
 
     @Override

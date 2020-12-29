@@ -38,6 +38,12 @@ public class IndexInfo {
         this.dbPartitionBy = dbPartitionBy;
         this.indexes = Stream.of(mapIndexes).filter(Objects::nonNull).toArray(SimpleColumnInfo[]::new);
         this.covering = Stream.of(mapCovering).filter(Objects::nonNull).toArray(SimpleColumnInfo[]::new);
+        for (SimpleColumnInfo index : indexes) {
+            index.getIndexCoveringList().add(this);
+        }
+        for (SimpleColumnInfo columnInfo : covering) {
+            columnInfo.getIndexCoveringList().add(this);
+        }
     }
 
     @Getter

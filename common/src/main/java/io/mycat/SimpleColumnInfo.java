@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -16,9 +17,8 @@ import java.util.Objects;
  * @author Weiqing Xu
  * @author Junwen Chen
  **/
-
-@Getter
 @EqualsAndHashCode
+@Getter
 @ToString
 public class SimpleColumnInfo {
     @NonNull
@@ -31,6 +31,19 @@ public class SimpleColumnInfo {
     final boolean autoIncrement;
     final boolean primaryKey;
     final boolean index;
+    /**
+     * 是否是分片键
+     */
+    @Setter
+    private boolean shardingKey;
+    /**
+     * 索引列
+     */
+    private final List<IndexInfo> indexKeyList = new ArrayList<>();
+    /**
+     * 覆盖列
+     */
+    private final List<IndexInfo> indexCoveringList = new ArrayList<>();
     /**
      * 在当前表中的下标 table(name,pwd,phone) 对应ID (0,1,2)
      */
@@ -47,6 +60,52 @@ public class SimpleColumnInfo {
         this.primaryKey = primaryKey;
         this.index = index || primaryKey;
         this.id = id;
+    }
+
+    /**
+     * 是否是索引列
+     * @return true =是索引列
+     */
+    public boolean isIndexKey(){
+        for (IndexInfo indexInfo : indexKeyList) {
+            for (SimpleColumnInfo indexInfoIndex : indexInfo.getIndexes()) {
+                if(indexInfoIndex == this){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 是否是覆盖列
+     * @return true =是覆盖列
+     */
+    public boolean isIndexCovering(){
+        for (IndexInfo indexInfo : indexCoveringList) {
+            for (SimpleColumnInfo indexInfoIndex : indexInfo.getCovering()) {
+                if (indexInfoIndex == this) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 是否是主键
+     * @return
+     */
+    public boolean isPrimaryKey(){
+        return primaryKey;
+    }
+
+    /**
+     * 是否是分片键
+     * @return
+     */
+    public boolean isShardingKey(){
+        return shardingKey;
     }
 
     public Type getType() {
