@@ -2,8 +2,11 @@ package io.mycat.hint;
 
 import io.mycat.config.DatasourceConfig;
 import io.mycat.util.JsonUtil;
+import lombok.SneakyThrows;
 
+import java.net.URL;
 import java.text.MessageFormat;
+import java.util.Map;
 
 public class CreateDataSourceHint extends HintBuilder {
     private DatasourceConfig config;
@@ -45,10 +48,24 @@ public class CreateDataSourceHint extends HintBuilder {
         return "createDataSource";
     }
 
+    @SneakyThrows
     @Override
     public String build() {
+        String urlStr = config.getUrl();
+
+        Map<String, String> urlParameters = JsonUtil.urlSplit(urlStr);
+        String username = urlParameters.get("username");
+        String password = urlParameters.get("password");
+        if(password != null){
+            config.setPassword(password);
+        }
+        if(username != null){
+            config.setUser(username);
+        }
         return MessageFormat.format("/*+ mycat:{0}{1} */;",
                 getCmd(),
                 JsonUtil.toJson(config));
     }
+
+
 }

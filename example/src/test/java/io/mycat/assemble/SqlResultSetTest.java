@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class SqlResultSetTest implements MycatTest {
     @Test
     public void testCreateSqlCache() throws Exception {
-        try (Connection connection = getMySQLConnection(8066)) {
+        try (Connection connection = getMySQLConnection(DB_MYCAT);) {
             execute(connection, RESET_CONFIG);
             SqlCacheConfig sqlCacheConfig = new SqlCacheConfig();
 

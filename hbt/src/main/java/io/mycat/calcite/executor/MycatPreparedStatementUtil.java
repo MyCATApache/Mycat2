@@ -147,8 +147,10 @@ public class MycatPreparedStatementUtil {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("batch parameterizedSql:{} args:{} lastInsertId:{}", sql, value.args, aLong);
                     }
-                    lastInsertId = Math.max(lastInsertId, aLong);
+                    lastInsertId = aLong;
                 }
+            }catch (Exception e){
+                throw e;
             }
             return this;
         }

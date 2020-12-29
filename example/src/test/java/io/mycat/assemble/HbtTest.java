@@ -18,27 +18,27 @@ public class HbtTest implements MycatTest {
 
     @Test
     public void testHBT() throws Exception {
-        try (Connection mycatConnection = getMySQLConnection(8066)) {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dw0",
-                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
+                                    DB1));
 
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dr0",
-                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
+                                    DB1));
 
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dw1",
-                                    "jdbc:mysql://127.0.0.1:3307/mysql"));
+                                    DB2));
 
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dr1",
-                                    "jdbc:mysql://127.0.0.1:3307"));
+                                    DB2));
 
             execute(mycatConnection,
                     CreateClusterHint

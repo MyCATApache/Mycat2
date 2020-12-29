@@ -23,8 +23,8 @@ public class RwTest implements MycatTest {
 
     @Test
     public void testRw() throws Exception {
-        try (Connection mycat = getMySQLConnection(8066);
-             Connection readMysql = getMySQLConnection(3306);) {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection readMysql = getMySQLConnection(DB1);) {
             execute(mycat,RESET_CONFIG);
             String db = "testSchema";
             execute(mycat, "drop database " + db);
@@ -32,11 +32,9 @@ public class RwTest implements MycatTest {
             execute(mycat, "use " + db);
 
             execute(mycat, CreateDataSourceHint
-                    .create("dw0",
-                            "jdbc:mysql://127.0.0.1:3306/mysql"));
+                    .create("dw0",DB1));
             execute(mycat, CreateDataSourceHint
-                    .create("dr0",
-                            "jdbc:mysql://127.0.0.1:3307"));
+                    .create("dr0",DB2));
 
             execute(mycat,
                     "/*+ mycat:createCluster{\"name\":\"c0\",\"masters\":[\"dw0\"],\"replicas\":[\"dr0\"]} */;");
@@ -71,8 +69,8 @@ public class RwTest implements MycatTest {
 
     @Test
     public void testSharding() throws Exception {
-        try (Connection mycat = getMySQLConnection(8066);
-             Connection prototypeMysql = getMySQLConnection(3306);) {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection prototypeMysql = getMySQLConnection(DB1);) {
             execute(mycat,RESET_CONFIG);
             String db = "testSchema";
             String tableName = "sharding";
@@ -81,11 +79,9 @@ public class RwTest implements MycatTest {
             execute(mycat, "use " + db);
 
             execute(mycat, CreateDataSourceHint
-                    .create("dw0",
-                            "jdbc:mysql://127.0.0.1:3306/mysql"));
+                    .create("dw0",DB1));
             execute(mycat, CreateDataSourceHint
-                    .create("dw1",
-                            "jdbc:mysql://127.0.0.1:3306/mysql"));
+                    .create("dw1",DB2));
 
             execute(prototypeMysql,"use mysql");
             execute(prototypeMysql,"DROP TABLE IF EXISTS MYCAT_SEQUENCE;");
@@ -123,7 +119,7 @@ public class RwTest implements MycatTest {
                     "/*+ mycat:setSequence{\"name\":\""+db+"_"+tableName+"\",\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\"schemaName\":\"mysql\"} */;");
 
             execute(mycat, "insert into "+tableName+" (user_id,user_name) VALUES (1,'wang')");
-            execute(mycat, "insert into "+tableName+"(user_id,user_name) VALUES (2,'zhang')");
+            execute(mycat, "insert into "+tableName+"(user_id,user_name) VALUES (3,'zhang')");
             execute(mycat, "insert into "+tableName+" (user_id,user_name) VALUES (3,'li')");
             long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
             boolean res = false;

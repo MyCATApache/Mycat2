@@ -16,7 +16,7 @@ public class UserTest implements MycatTest{
 
     @Test
     public void testCreateUser() throws Exception {
-        try (Connection connection = getMySQLConnection(8066)) {
+        try (Connection connection = getMySQLConnection(DB_MYCAT);) {
             execute(connection,RESET_CONFIG);
          execute(connection, "/*+ mycat:createUser{\n" +
                     "\t\"username\":\"user\",\n" +
