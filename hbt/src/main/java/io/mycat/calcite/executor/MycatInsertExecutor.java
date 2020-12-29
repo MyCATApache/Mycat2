@@ -141,6 +141,7 @@ public class MycatInsertExecutor implements Executor {
         Supplier<Number> stringSupplier = logicTable.nextSequence();
 
         Map<SQL, Group> group = new HashMap<>();
+        int count = 0;
         for (SQLInsertStatement.ValuesClause valuesClause : mySqlInsertStatement.getValuesList()) {
             MySqlInsertStatement cloneStatement = FastSqlUtils.clone(mySqlInsertStatement);
             List<SQLInsertStatement.ValuesClause> valuesList = cloneStatement.getValuesList();
@@ -153,7 +154,7 @@ public class MycatInsertExecutor implements Executor {
                 valuesClause.addValue(SQLExprUtils.fromJavaObject(sequence));
             }
 
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues());
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),params);
             DataNode dataNode = function.calculateOne((Map) variables);
 
             SQLExprTableSource tableSource = cloneStatement.getTableSource();
