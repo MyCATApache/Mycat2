@@ -31,6 +31,14 @@ import java.util.stream.Collectors;
 public class MycatPreparedStatementUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatPreparedStatementUtil.class);
 
+    public static void main(String[] args) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("INSERT INTO `sharding` (`user_id`, `user_name`) VALUES \t('123', '323'),  \t('223', '323')");
+        StringBuilder sb = new StringBuilder();
+        ArrayList<Object> objects = new ArrayList<>();
+        collect(sqlStatement,sb,new ArrayList<>(),objects);
+        System.out.println("objects = " + objects);
+    }
+
     public static void collect(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
 
@@ -70,7 +78,7 @@ public class MycatPreparedStatementUtil {
                 VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
                 VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
                 VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
-                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+//                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
                 | VisitorFeature.OutputParameterized.mask
         );
         if (inputParameters != null) {

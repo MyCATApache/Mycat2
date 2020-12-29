@@ -6,6 +6,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
+import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
@@ -153,8 +154,13 @@ public class MycatUpdateExecutor implements Executor {
         }
     }
 
-    private void onUpdateShardingKey(UpdateSQL sql,Connection connection,TransactionSession transactionSession) throws SQLException {
-
+    private void onUpdateShardingKey(UpdateSQL<?> sql,Connection connection,TransactionSession transactionSession) throws SQLException {
+        List<String> shardingKeys = sql.getSetColumnMap().keySet().stream()
+                .filter(SimpleColumnInfo::isShardingKey)
+                .map(SimpleColumnInfo::getColumnName)
+                .collect(Collectors.toList());
+        throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_MODIFY_SHARDING_COLUMN,
+                "暂时不支持修改分片键" + shardingKeys);
     }
 
     private void onUpdateIndex(UpdateSQL<?> sql,Connection connection,TransactionSession transactionSession) throws SQLException {
