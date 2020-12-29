@@ -33,6 +33,6 @@ jobs:
         run: |
           mvn -B package -Dmaven.test.skip=true
           java -jar mycat2/target/mycat2-1.13-beta-jar-with-dependencies.jar &
-          sleep 5s
-          mvn test
+          sleep 15s
+          mvn test -o
 
