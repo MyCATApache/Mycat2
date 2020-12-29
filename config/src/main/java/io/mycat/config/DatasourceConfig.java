@@ -170,6 +170,9 @@ public class DatasourceConfig {
             if (!properties.containsKey("autoReconnect")) {
                 properties.put("autoReconnect", "true");
             }
+            if (!properties.containsKey("AllowPublicKeyRetrieval")) {
+                properties.put("AllowPublicKeyRetrieval", "true");
+            }
             int i = url.indexOf('?');
             if (i == -1) {
                 url += "?";
