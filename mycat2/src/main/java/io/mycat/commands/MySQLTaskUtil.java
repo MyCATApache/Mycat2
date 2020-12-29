@@ -17,7 +17,7 @@ package io.mycat.commands;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.MycatException;
-import io.mycat.NativeMycatServer;
+import io.mycat.proxy.NativeMycatServer;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;

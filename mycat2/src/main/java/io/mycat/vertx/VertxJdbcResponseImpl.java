@@ -1,6 +1,6 @@
-package io.mycat;
+package io.mycat.vertx;
 
-import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.TransactionSession;
 
 public class VertxJdbcResponseImpl extends VertxResponse {
     public VertxJdbcResponseImpl(VertxSession session, int size, boolean binary) {

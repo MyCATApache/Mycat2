@@ -1,5 +1,6 @@
-package io.mycat;
+package io.mycat.vertx;
 
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.beans.resultset.MycatResultSetResponse;
