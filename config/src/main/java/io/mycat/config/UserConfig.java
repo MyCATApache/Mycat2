@@ -11,7 +11,7 @@ import lombok.*;
 public class UserConfig {
     private String username;
     private String password;
-    private String ip = ".";
+    private String ip = null;
     private String transactionType = "xa";
     private String dialect = "mysql";
 
