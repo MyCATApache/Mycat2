@@ -297,7 +297,7 @@ public class VertxMySQLHandler {
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("=> {}", statement);
+            LOGGER.debug("preparestatement:{}", statement);
         }
         Response receiver = new VertxJdbcResponseImpl(vertxSession, 1, true);
         MycatdbCommand.execute(dataContext, receiver, statement);
