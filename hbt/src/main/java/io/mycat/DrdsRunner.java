@@ -156,7 +156,7 @@ public class DrdsRunner {
         return LazyTransformCollection.transform(sqlStatements, sqlStatement -> {
             List<Object> params = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
-            MycatPreparedStatementUtil.collect(sqlStatement, sb, inputParameters, params);
+            MycatPreparedStatementUtil.outputToParameterized(sqlStatement, sb, inputParameters, params);
             String string = sb.toString();
             sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
             return DrdsSql.of(sqlStatement, string, params);
