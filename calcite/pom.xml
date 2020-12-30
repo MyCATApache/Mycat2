@@ -13,7 +13,6 @@
 
 
     <properties>
-        <kotlin.version>1.4.10</kotlin.version>
     </properties>
 
 
@@ -414,12 +413,6 @@
         <!--            <version>1.7.25</version>-->
 
         <!--        </dependency>-->
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test-junit</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>com.github.sisyphsu</groupId>
             <artifactId>dateparser</artifactId>
