@@ -117,7 +117,7 @@ public class RwTest implements MycatTest {
             );
             execute(mycat,
                     "/*+ mycat:setSequence{\"name\":\""+db+"_"+tableName+"\",\"clazz\":\"io.mycat.plug.sequence.SequenceMySQLGenerator\",\"schemaName\":\"mysql\"} */;");
-
+            deleteData(mycat,db, tableName);
             execute(mycat, "insert into "+tableName+" (user_id,user_name) VALUES (1,'wang')");
             execute(mycat, "insert into "+tableName+"(user_id,user_name) VALUES (3,'zhang')");
             execute(mycat, "insert into "+tableName+" (user_id,user_name) VALUES (3,'li')");
