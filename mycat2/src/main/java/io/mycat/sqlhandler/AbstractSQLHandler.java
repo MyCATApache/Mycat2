@@ -12,6 +12,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
 import lombok.EqualsAndHashCode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,12 +58,18 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
 
     public void resolveSQLExprTableSource( SQLExprTableSource tableSource,MycatDataContext dataContext) {
         if (tableSource.getSchema() == null) {
-            String defaultSchema = dataContext.getDefaultSchema();
-            if (defaultSchema == null) {
-                throw new MycatException("please use schema");
-            }
+            String defaultSchema = checkDefaultSchemaNotNull(dataContext);
             tableSource.setSchema(defaultSchema);
         }
+    }
+
+    @NotNull
+    public String checkDefaultSchemaNotNull(MycatDataContext dataContext) {
+        String defaultSchema = dataContext.getDefaultSchema();
+        if (defaultSchema == null) {
+            throw new MycatException("please use schema");
+        }
+        return defaultSchema;
     }
 
     public void executeOnPrototype(SQLStatement sqlStatement,
