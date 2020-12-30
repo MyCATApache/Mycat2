@@ -145,6 +145,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
         int index = packetReadStartIndex();
         long len = readInt(index, 1) & 0xff;
         if (len < 251) {
+            packetReadStartIndexAdd(1);
             return Long.valueOf(currentBuffer().get(index));
         } else if (len == 0xfc) {
             packetReadStartIndexAdd(3);
@@ -153,6 +154,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
             packetReadStartIndexAdd(4);
             return Long.valueOf(readInt(index + 1, 3));
         }else if (len == 0xfb) {
+            packetReadStartIndexAdd(1);
             return null;
         }  else {
             packetReadStartIndexAdd(9);

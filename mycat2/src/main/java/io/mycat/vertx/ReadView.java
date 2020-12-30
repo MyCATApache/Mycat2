@@ -33,18 +33,16 @@ public class ReadView implements MySQLPayloadReadView {
     @Override
     public Long readLenencInt() {
         int len = buffer.getByte(index)&0xff;
+        index++;
         if (len < 251) {
             return  Long.valueOf(len);
         } else if (len == 0xfc) {
-            index++;
             return  readFixInt(2);
         } else if (len == 0xfd) {
-            index++;
             return Long.valueOf(readFixInt(3));
         } else if (len == 0xfb) {
             return null;
         } else {
-            index++;
             return Long.valueOf(readFixInt(8));
         }
     }
