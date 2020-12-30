@@ -23,14 +23,8 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
     @Override
     protected void onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
-        if (sqlAlterTableStatement.getSchema() == null) {
-            SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
-            String defaultSchema = dataContext.getDefaultSchema();
-            if (defaultSchema == null) {
-                throw new MycatException("please use schema");
-            }
-            tableSource.setSchema(defaultSchema);
-        }
+        SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
+        resolveSQLExprTableSource(tableSource,dataContext);
         String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
         String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
@@ -39,7 +33,6 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
         boolean changed = createTableStatement.apply(sqlAlterTableStatement);
         if (changed) {
             JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-            SQLExprTableSource tableSource = createTableStatement.getTableSource();
             List<DataNode> dataNodes;
             switch (tableHandler.getType()) {
                 case SHARDING: {
@@ -61,13 +54,24 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                 default:
                     throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
             }
-            executeAlter(sqlAlterTableStatement, connectionManager, tableSource, dataNodes);
+            executeAlterOnPrototype(sqlAlterTableStatement,connectionManager);
+            executeAlter(sqlAlterTableStatement, connectionManager, dataNodes);
             CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),schema,tableName,createTableStatement);
         }
         response.sendOk();
     }
 
-    private void executeAlter(SQLAlterTableStatement alterTableStatement, JdbcConnectionManager connectionManager, SQLExprTableSource tableSource, List<DataNode> dataNodes) {
+    private void executeAlterOnPrototype(SQLAlterTableStatement sqlAlterTableStatement,
+                                         JdbcConnectionManager connectionManager) {
+        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
+            connection.executeUpdate(sqlAlterTableStatement.toString(),false);
+        }
+    }
+
+    private void executeAlter(SQLAlterTableStatement alterTableStatement,
+                              JdbcConnectionManager connectionManager,
+                              List<DataNode> dataNodes) {
+        SQLExprTableSource tableSource = alterTableStatement.getTableSource();
         for (DataNode dataNode : dataNodes) {
             tableSource.setSimpleName(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());

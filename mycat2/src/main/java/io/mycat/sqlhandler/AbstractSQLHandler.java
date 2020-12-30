@@ -1,9 +1,11 @@
 package io.mycat.sqlhandler;
 
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import io.mycat.MycatDataContext;
-import io.mycat.util.ClassUtil;
+import io.mycat.MycatException;
 import io.mycat.Response;
+import io.mycat.util.ClassUtil;
 import lombok.EqualsAndHashCode;
 
 import java.util.Objects;
@@ -23,7 +25,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     @Override
-    public void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)  throws Exception {
+    public void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
         try {
             onExecuteBefore(request, dataContext, response);
             onExecute(request, dataContext, response);
@@ -35,7 +37,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     protected void onExecuteBefore(SQLRequest<Statement> request, MycatDataContext dataContext, Response respons) {
     }
 
-    protected abstract void onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)  throws Exception;
+    protected abstract void onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception;
 
     protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
 
@@ -44,5 +46,15 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
 
     public Class getStatementClass() {
         return statementClass;
+    }
+
+    public void resolveSQLExprTableSource( SQLExprTableSource tableSource,MycatDataContext dataContext) {
+        if (tableSource.getSchema() == null) {
+            String defaultSchema = dataContext.getDefaultSchema();
+            if (defaultSchema == null) {
+                throw new MycatException("please use schema");
+            }
+            tableSource.setSchema(defaultSchema);
+        }
     }
 }
