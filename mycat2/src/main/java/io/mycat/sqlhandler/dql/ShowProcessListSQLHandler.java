@@ -13,7 +13,7 @@ public class ShowProcessListSQLHandler extends AbstractSQLHandler<MySqlShowProce
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowProcessListStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
         return ;
     }
 }

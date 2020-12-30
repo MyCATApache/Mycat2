@@ -17,7 +17,7 @@ package io.mycat.commands;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.MycatException;
-import io.mycat.MycatServer;
+import io.mycat.proxy.NativeMycatServer;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;
@@ -93,7 +93,7 @@ public class MySQLTaskUtil {
                         mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
                     }
                 };
-                MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+                NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
                 MySQLDatasource datasource = mycatServer.getDatasource(datasourceName);
                 getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
                     @Override
@@ -223,7 +223,7 @@ public class MySQLTaskUtil {
         if (thread instanceof MycatReactorThread) {
             MySQLSessionManager manager = ((MycatReactorThread) thread)
                     .getMySQLSessionManager();
-            MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
+            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
             manager.getIdleSessionsOfIdsOrPartial(
                     mycatServer.getDatasource(datasource), null, PartialType.SMALL_ID
                     , asynTaskCallBack);

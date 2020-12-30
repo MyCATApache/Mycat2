@@ -38,7 +38,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
-            response.tryBroadcastShow(ast.toString());
+            response.proxySelectToPrototype(ast.toString());
         }
 //        DDLManager.INSTANCE.updateTables();
 //        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());

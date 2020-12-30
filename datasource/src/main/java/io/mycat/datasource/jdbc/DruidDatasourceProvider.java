@@ -83,6 +83,8 @@ public class DruidDatasourceProvider implements DatasourceProvider {
 
     @Override
     public TransactionSession createSession(MycatDataContext context) {
-        return new LocalTransactionSession(context);
+        LocalTransactionSession localTransactionSession = new LocalTransactionSession(context);
+        context.setTransactionSession(localTransactionSession);
+        return localTransactionSession;
     }
 }

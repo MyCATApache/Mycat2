@@ -55,12 +55,6 @@
             <version>1.18.10</version>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>3.8.2</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.codehaus.janino/janino -->
         <dependency>
             <groupId>org.codehaus.janino</groupId>

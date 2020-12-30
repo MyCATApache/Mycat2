@@ -21,7 +21,6 @@ import io.mycat.calcite.MycatRel;
 import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.proxy.session.SimpleTransactionSessionRunner;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.util.Dumper;
@@ -160,7 +159,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
                     return new Object[2];
                 }
                 Object[] pair = new Object[2];
-                MycatDataContext context = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+                MycatDataContext context = new MycatDataContextImpl();
                 try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
                     TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
                     ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, defaultDatasourceFactory, tempResultSetFactory) {

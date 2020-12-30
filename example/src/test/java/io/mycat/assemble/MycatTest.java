@@ -2,17 +2,13 @@ package io.mycat.assemble;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
-import com.mysql.cj.jdbc.MysqlDataSource;
-import io.mycat.MycatCore;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.example.MycatRunner;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.util.JsonUtil;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,22 +21,27 @@ import java.util.function.Function;
 
 public interface MycatTest {
 
+    String DB_MYCAT = System.getProperty("db_mycat","jdbc:mysql://127.0.0.1:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+    String DB1 = System.getProperty("db1","jdbc:mysql://127.0.0.1:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+    String DB2 = System.getProperty("db2","jdbc:mysql://127.0.0.1:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+
     String RESET_CONFIG ="/*+ mycat:resetConfig{} */";
 
-    final Map<Integer, DruidDataSource> dsMap = new ConcurrentHashMap<>();
-     static final Logger LOGGER = LoggerFactory.getLogger(MycatTest.class);
+    Map<String, DruidDataSource> dsMap = new ConcurrentHashMap<>();
+    Logger LOGGER = LoggerFactory.getLogger(MycatTest.class);
 
 
-    default Connection getMySQLConnection(int port) throws Exception {
-        return dsMap.computeIfAbsent(port, new Function<Integer, DruidDataSource>() {
+    default Connection getMySQLConnection(String url) throws Exception {
+        return dsMap.computeIfAbsent(url, new Function<String, DruidDataSource>() {
             @Override
             @SneakyThrows
-            public DruidDataSource apply(Integer integer) {
-                String username = "root";
-                String password = "123456";
+            public DruidDataSource apply(String url) {
+                Map<String, String> urlParameters = JsonUtil.urlSplit(url);
+                String username = urlParameters.getOrDefault("username","root");
+                String password = urlParameters.getOrDefault("password","123456");
+
                 DruidDataSource dataSource = new DruidDataSource();
-                dataSource.setUrl("jdbc:mysql://127.0.0.1:" +
-                        port + "/?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+                dataSource.setUrl(url);
                 dataSource.setUsername(username);
                 dataSource.setPassword(password);
                 dataSource.setLoginTimeout(5);
@@ -77,7 +78,7 @@ public interface MycatTest {
     public default void addC0(Connection connection) throws Exception {
         execute(connection, CreateDataSourceHint
                 .create("newDs",
-                        "jdbc:mysql://127.0.0.1:3306/mysql"));
+                        DB1));
         execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
     }
 }

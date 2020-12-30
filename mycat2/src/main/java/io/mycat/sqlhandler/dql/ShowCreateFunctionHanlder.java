@@ -12,6 +12,6 @@ public class ShowCreateFunctionHanlder  extends AbstractSQLHandler<com.alibaba.f
 
     @Override
     protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowCreateFunctionStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
 }

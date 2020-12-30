@@ -38,7 +38,6 @@ public class PatternRootConfig {
     public static void main(String[] args) {
         PatternRootConfig config = PatternRootConfig.builder().user(
                 UserConfig.builder()
-                        .ip(".")
                         .password("123456")
                         .username("root")
                         .build()

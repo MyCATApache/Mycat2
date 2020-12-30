@@ -30,8 +30,19 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         return dataContext.isInTransaction();
     }
 
+    @SneakyThrows
     public void setAutocommit(boolean autocommit) {
         dataContext.setAutoCommit(autocommit);
+        for (DefaultConnection c : updateConnectionMap.values()) {
+            c.getRawConnection().setAutoCommit(autocommit);
+        }
+        if (autocommit){
+            for (DefaultConnection value : updateConnectionMap.values()) {
+                value.close();
+            }
+            updateConnectionMap.clear();
+            setInTranscation(true);
+        }
     }
 
     public boolean isAutocommit() {

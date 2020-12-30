@@ -53,15 +53,14 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     private MycatUser user;
     private TransactionSession transactionSession;
-    private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
     private final Map<Long, PreparedStatement> preparedStatementMap = new HashMap<>();
 
-    private static final AtomicLong IDS = new AtomicLong();
+    public static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
+    private final AtomicLong prepareStatementIds = new AtomicLong(0);
 
-    public MycatDataContextImpl(TransactionSessionRunner runner) {
-        this.runner = runner;
+    public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
         switchTransaction(TransactionType.DEFAULT);
     }
@@ -293,11 +292,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     public AtomicBoolean getCancelFlag() {
         return cancelFlag;
     }
-
-    @Override
-    public void run(Runnable runnable) {
-        runner.run(this, runnable);
-    }
 //
 //    @Override
 //    public UpdateRowIteratorResponse update(String targetName, String sql) {
@@ -375,17 +369,17 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
+    public long nextPrepareStatementId() {
+        return prepareStatementIds.getAndIncrement();
+    }
+
+    @Override
     public void close() {
         if (transactionSession != null) {
             transactionSession.closeStatenmentState();
             transactionSession.close();
         }
         cancelFlag.set(true);
-    }
-
-    @Override
-    public void block(Runnable runnable) {
-        runner.block(this, runnable);
     }
 
     @Override
@@ -396,5 +390,13 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public int hashCode() {
         return (int) id;
+    }
+
+    public void setServerStatus(int serverStatus) {
+        this.serverStatus = serverStatus;
+    }
+
+    public void setLastInsertId(long lastInsertId) {
+        this.lastInsertId = lastInsertId;
     }
 }

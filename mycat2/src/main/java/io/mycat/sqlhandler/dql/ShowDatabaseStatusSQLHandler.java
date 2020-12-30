@@ -13,6 +13,6 @@ public class ShowDatabaseStatusSQLHandler extends AbstractSQLHandler<MySqlShowDa
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowDatabaseStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getSqlString());
+        response.proxySelectToPrototype(request.getSqlString());
     }
 }

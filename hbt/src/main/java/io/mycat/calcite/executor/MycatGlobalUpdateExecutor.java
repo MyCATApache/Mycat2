@@ -14,6 +14,6 @@ public class MycatGlobalUpdateExecutor extends MycatUpdateExecutor {
 
     @Override
     public long getAffectedRow() {
-        return super.getAffectedRow()/this.getGroupKeys().size();
+        return super.getAffectedRow() / this.getReallySqlSet().size();
     }
 }

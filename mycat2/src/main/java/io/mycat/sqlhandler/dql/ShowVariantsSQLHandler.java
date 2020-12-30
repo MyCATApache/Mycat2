@@ -94,7 +94,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
 //        ResultSetBuilder builder = ResultSetBuilder.create();
 //        builder.addColumnInfo("Variable_name", JDBCType.VARCHAR);
 //        builder.addColumnInfo("Value", JDBCType.VARCHAR);
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
     @NotNull
     private String fixKeyName(String key) {

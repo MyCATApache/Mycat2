@@ -31,7 +31,23 @@ import java.util.stream.Collectors;
 public class MycatPreparedStatementUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatPreparedStatementUtil.class);
 
-    public static void collect(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
+    public static void main(String[] args) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("INSERT INTO `sharding` (`user_id`, `user_name`) VALUES \t('123', '323'),  \t('223', '323')");
+        StringBuilder sb = new StringBuilder();
+        ArrayList<Object> objects = new ArrayList<>();
+        outputToParameterized(sqlStatement,sb,new ArrayList<>(),objects);
+        System.out.println("objects = " + objects);
+    }
+
+    /**
+     * 将参数改为占位符(?), 同时将占位符替换过的参数, 添加到outputParameters数组中.
+     * 例: set name = '123' where id = 10. 则 set name = ? where id = ?. 同时会向数组中添加 '123'和10.
+     * @param sqlStatement 语法树
+     * @param sb 参数化后的字符串. 返回 set name = ? where id = ?
+     * @param inputParameters 输入参数
+     * @param outputParameters 输出被参数化的参数
+     */
+    public static void outputToParameterized(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
 
             @Override
@@ -70,7 +86,7 @@ public class MycatPreparedStatementUtil {
                 VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
                 VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
                 VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
-                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
+//                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
                 | VisitorFeature.OutputParameterized.mask
         );
         if (inputParameters != null) {
@@ -80,7 +96,14 @@ public class MycatPreparedStatementUtil {
         sqlStatement.accept(parameterVisitor);
     }
 
-    public static void outputToParameters(SQLStatement sqlStatement, StringBuilder sb, List<Object> outputParameters) {
+    /**
+     * 将参数改为占位符(?), 同时将占位符替换过的参数, 添加到outputParameters数组中.
+     * 例: set name = '123' where id = 10. 则 set name = ? where id = ?. 同时会向数组中添加 '123'和10.
+     * @param sqlStatement 语法树
+     * @param sb 参数化后的字符串. 返回 set name = ? where id = ?
+     * @param outputParameters 输出被参数化的参数
+     */
+    public static void outputToParameterized(SQLStatement sqlStatement, StringBuilder sb, List<Object> outputParameters) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
 
         };
@@ -139,19 +162,22 @@ public class MycatPreparedStatementUtil {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("batch parameterizedSql:{} args:{} lastInsertId:{}", sql, value.args, aLong);
                     }
-                    lastInsertId = Math.max(lastInsertId, aLong);
+                    lastInsertId = aLong;
                 }
+            }catch (Exception e){
+                throw e;
             }
             return this;
         }
     }
 
-    public static void setParams(PreparedStatement preparedStatement, List<Object> objects) throws SQLException {
+    public static PreparedStatement setParams(PreparedStatement preparedStatement, List<Object> objects) throws SQLException {
         int index = 1;
         for (Object object : objects) {
             preparedStatement.setObject(index, object);
             index++;
         }
+        return preparedStatement;
     }
 
     public static String apply(String parameterizedSql, List<Object> parameters) {

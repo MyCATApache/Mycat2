@@ -1,63 +1,34 @@
 package io.mycat.proxy.session;
 
-import io.mycat.*;
-import io.mycat.beans.mycat.TransactionType;
+import io.mycat.MycatDataContext;
+import io.mycat.ThreadUsageEnum;
+import io.mycat.TransactionSession;
 import io.mycat.bindthread.BindThread;
 import io.mycat.bindthread.BindThreadCallback;
 import io.mycat.bindthread.BindThreadKey;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * @MySQLProxyServerSession
  * @MySQLServerSession
  */
-public class ServerTransactionSessionRunner implements TransactionSessionRunner {
-    final Map<TransactionType, Function<MycatDataContext, TransactionSession>> map;
-    final MycatSession session;
-    private final MycatContextThreadPool threadPool;
+public class ServerTransactionSessionRunner {
+    final TranscationSwitch transcationSwitch;
+    final MycatContextThreadPool threadPool;
 
-    public ServerTransactionSessionRunner(Map<TransactionType, Function<MycatDataContext, TransactionSession>> map,
-                                          MycatContextThreadPool threadPool,
-                                          MycatSession session) {
-        this.map = map;
+    public ServerTransactionSessionRunner(TranscationSwitch transcationSwitch,
+                                          MycatContextThreadPool threadPool) {
+        this.transcationSwitch = transcationSwitch;
         this.threadPool = threadPool;
-        this.session = session;
     }
 
     public void run(MycatDataContext container, BindThreadCallback runner) {
-        TransactionSession transactionSession = container.getTransactionSession();
-        if (transactionSession == null) {
-            TransactionType transactionType = container.transactionType();
-            Objects.requireNonNull(transactionType);
-            container.setTransactionSession(transactionSession = map.get(transactionType).apply(container));
-        } else {
-            if (!transactionSession.name().equals(container.transactionType().getName())) {
-                if (transactionSession.isInTransaction()) {
-                    throw new IllegalArgumentException("正在处于事务状态,不能切换事务模式");
-                } else {
-                    //
-                    Function<MycatDataContext, TransactionSession> transactionSessionFunction =
-                            Objects.requireNonNull(map.get(container.transactionType()));
-                    TransactionSession newTransactionSession = transactionSessionFunction.apply(container);
-
-                    newTransactionSession.setReadOnly(transactionSession.isReadOnly());
-                    newTransactionSession.setAutocommit(transactionSession.isAutocommit());
-                    newTransactionSession.setTransactionIsolation(transactionSession.getTransactionIsolation());
-
-                    container.setTransactionSession(newTransactionSession);
-                    transactionSession = newTransactionSession;
-                }
-            }
-        }
+        TransactionSession transactionSession = transcationSwitch.ensureTranscation(container);
         ThreadUsageEnum threadUsageEnum = transactionSession.getThreadUsageEnum();
         run(container, runner, threadUsageEnum);
         return;
     }
+
 
     private void run(MycatDataContext container, BindThreadCallback runner, ThreadUsageEnum threadUsageEnum) {
         switch (threadUsageEnum) {
@@ -77,16 +48,19 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
     }
 
 
-    @Override
-    public void run(MycatDataContext mycatDataContext, Runnable runnable) {
-        run(mycatDataContext, getRunner(mycatDataContext, runnable));
+    public void run(MycatSession session, Runnable runnable) {
+        run(session.getDataContext(), getRunner(session, runnable));
+    }
+
+    public interface Runnable {
+        void run() throws Exception;
     }
 
     @NotNull
-    private BindThreadCallback getRunner(MycatDataContext mycatDataContext, Runnable runnable) {
+    private BindThreadCallback getRunner(MycatSession session, Runnable runnable) {
         return new BindThreadCallback() {
             @Override
-            public void accept(BindThreadKey key, BindThread context) {
+            public void accept(BindThreadKey key, BindThread context) throws Exception {
                 runnable.run();
             }
 
@@ -102,15 +76,4 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
             }
         };
     }
-
-    public void block(MycatDataContext mycatDataContext, Runnable runnable) {
-        if(Thread.currentThread() instanceof ReactorEnvThread){
-          run(mycatDataContext,getRunner(mycatDataContext,runnable),ThreadUsageEnum.MULTI_THREADING);
-            return;
-        }else {
-            run(mycatDataContext,runnable);
-        }
-    }
-
-
 }

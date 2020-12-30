@@ -19,7 +19,10 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.*;
+import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -28,7 +31,9 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
+import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.ServerTransactionSessionRunner;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,13 +42,12 @@ import java.io.ByteArrayOutputStream;
 import java.sql.JDBCType;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author chen junwen
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
-   final static AtomicLong ids = new AtomicLong(0);
+
     //  private MycatClient client;
     //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
@@ -73,11 +77,14 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            Boolean hasRun = false;
-            if (!hasRun) {
-                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session, session.getDataContext());
-                return;
-            }
+            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+            mycatServer.getServerTransactionSessionRunner().run(session,
+                    () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+                            (size) -> {
+                return new ReceiverImpl(session, size, false);
+            }));
+
+            return;
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
@@ -106,7 +113,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             /////////////////////////////////////////////////////
 
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            boolean allow =  (sqlStatement instanceof SQLSelectStatement
+            boolean allow = (sqlStatement instanceof SQLSelectStatement
                     ||
                     sqlStatement instanceof SQLInsertStatement
                     ||
@@ -114,27 +121,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     ||
                     sqlStatement instanceof SQLDeleteStatement
             );
-//            if (!allow){
-//                session.writeErrorEndPacketBySyncInProcessError();
-//                return;
-//            }
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             metadataManager.resolveMetadata(sqlStatement);
             ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
-//            if (sqlStatement instanceof SQLSelectStatement) {
-//                List<SQLSelectItem> selectList = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().getSelectList();
-//                for (SQLSelectItem sqlSelectItem : selectList) {
-//                    SQLDataType sqlDataType = sqlSelectItem.computeDataType();
-//                    JDBCType res = JDBCType.VARCHAR;
-//                    if (sqlDataType != null) {
-//                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-//                    }
-//                    if (res == null) {
-//                        res = JDBCType.VARCHAR;
-//                    }
-//                    fieldsBuilder.addColumnInfo(sqlSelectItem.toString(), res);
-//                }
-//            }
             MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
             ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
 
@@ -154,7 +143,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             });
 
             MycatRowMetaData params = paramsBuilder.build().getMetaData();
-            long stmtId = ids.getAndIncrement();
+            long stmtId = dataContext.nextPrepareStatementId();
             Map<Long, PreparedStatement> statementMap = dataContext.getPrepareInfo();
             statementMap.put(stmtId, new PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
 
@@ -212,8 +201,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 }
                 return;
             }
-        }catch (Throwable throwable){
-            ReceiverImpl receiver = new ReceiverImpl(session, 1, false, false);
+        } catch (Throwable throwable) {
+            ReceiverImpl receiver = new ReceiverImpl(session, 1, false);
             receiver.sendError(throwable);
         }
     }
@@ -236,15 +225,15 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("=> {}",statement);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("=> {}", statement);
         }
 
-        ReceiverImpl receiver = new ReceiverImpl(session, 1, true, false);
-        session.getDataContext().block(new Runnable() {
+        ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
+        NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+        mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
             @Override
-            @SneakyThrows
-            public void run() {
+            public void run() throws Exception {
                 MycatdbCommand.execute(dataContext, receiver, statement);
             }
         });
@@ -292,10 +281,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (byteArrayOutputStream == null) {
             return null;
         }
-
-        byte[] bytes = byteArrayOutputStream.toByteArray();
-        byteArrayOutputStream.reset();
-        return bytes;
+        return byteArrayOutputStream.toByteArray();
     }
 
     @Override

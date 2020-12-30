@@ -4,12 +4,12 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
+import io.mycat.Response;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
-import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,14 +28,14 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     public static final CreateTableSQLHandler INSTANCE = new CreateTableSQLHandler();
 
     @Override
-    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
-        Map hint= Optional.ofNullable( request.getAst().getHeadHintsDirect())
-              .map(i->i.get(0))
-              .map(i->i.getText())
-              .filter(i->{
-                  i=i.replaceAll(" ","");
-                  return i.contains("+mycat:createTable{");
-              }).map(i->i.substring(i.indexOf("{"))).map(i-> JsonUtil.from(i,Map.class)).orElse(null);
+    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+        Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
+                .map(i -> i.get(0))
+                .map(i -> i.getText())
+                .filter(i -> {
+                    i = i.replaceAll(" ", "");
+                    return i.contains("+mycat:createTable{");
+                }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
 
         MySqlCreateTableStatement ast = request.getAst();
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
@@ -60,7 +60,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
             Object sql = hint.get("createTableSql");
             if (sql instanceof MySqlCreateTableStatement) {
                 createTableSql = (MySqlCreateTableStatement) sql;
-            }else {
+            } else {
                 createTableSql = (MySqlCreateTableStatement)
                         SQLUtils.parseSingleMysqlStatement(Objects.toString(sql));
             }
@@ -72,12 +72,12 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
                 schemaName = SQLUtils.normalize(ast.getSchema());
                 tableName = SQLUtils.normalize(ast.getTableName());
             }
-            if (hint == null) {
-                if (createTableSql.isBroadCast()){
+            if (hint == null || (hint != null && hint.isEmpty())) {
+                if (createTableSql.isBroadCast()) {
                     ops.putGlobalTable(schemaName, tableName, createTableSql);
-                }else if(createTableSql.getDbPartitionBy()==null&&createTableSql.getTablePartitionBy() == null){
+                } else if (createTableSql.getDbPartitionBy() == null && createTableSql.getTablePartitionBy() == null) {
                     ops.putNormalTable(schemaName, tableName, createTableSql);
-                }else{
+                } else {
                     ops.putHashTable(schemaName, tableName, createTableSql);
                 }
 

@@ -21,8 +21,8 @@ public class ReceiverImpl implements Response {
     protected final MycatSession session;
     protected final SQLExecuterWriter sqlExecuterWriter;
 
-    public ReceiverImpl(MycatSession session,int stmtSize, boolean binary,boolean explain) {
-        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary,explain, session,this);
+    public ReceiverImpl(MycatSession session,int stmtSize, boolean binary) {
+        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary, session,this);
         this.session = session;
     }
 
@@ -31,12 +31,6 @@ public class ReceiverImpl implements Response {
         session.setLastMessage(e);
         sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
     }
-
-    @Override
-    public void proxySelectToPrototype(String statement) {
-        proxySelect("prototype",statement);
-    }
-
     @Override
     public void proxySelect(String defaultTargetName, String statement) {
         execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
@@ -49,7 +43,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public void tryBroadcastShow(String statement) {
+    public void proxySelectToPrototype(String statement) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         List<String> infos = new ArrayList<>();
         List<String> keySet = new ArrayList<>();
@@ -109,7 +103,7 @@ public class ReceiverImpl implements Response {
         sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
     }
     @Override
-    public void sendOk(long lastInsertId, long affectedRow) {
+    public void sendOk(long affectedRow , long lastInsertId) {
         session.setLastInsertId(lastInsertId);
         session.setAffectedRows(affectedRow);
         sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
