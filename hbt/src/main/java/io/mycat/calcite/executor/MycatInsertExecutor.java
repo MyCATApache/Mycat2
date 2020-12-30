@@ -169,8 +169,8 @@ public class MycatInsertExecutor implements Executor {
 
             MycatPreparedStatementUtil.outputToParameters(cloneStatement, sb, outParams);
 
-            String sql = sb.toString();
-            SQL key = SQL.of(sql, dataNode,cloneStatement,outParams);
+            String parameterizedString = sb.toString();
+            SQL key = SQL.of(parameterizedString, dataNode,cloneStatement,outParams);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
 
@@ -202,17 +202,16 @@ public class MycatInsertExecutor implements Executor {
                 valuesClause.addValue(sqlVariantRefExpr);
             }
 
-
             Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),(List)param);
-            List<DataNode> dataNodes = function.calculate((Map) variables);
-            if (dataNodes.size() != 1) {
-                throw new IllegalArgumentException();
-            }
-            DataNode dataNode = dataNodes.get(0);
+            DataNode dataNode = function.calculateOne((Map) variables);
             SQLExprTableSource tableSource = mySqlInsertStatement.getTableSource();
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            String parameterizedString = mySqlInsertStatement.toParameterizedString();
+
+            StringBuilder sb = new StringBuilder();
+            List<Object> out = new ArrayList<>();
+            MycatPreparedStatementUtil.outputToParameters(mySqlInsertStatement, sb, out);
+            String parameterizedString = sb.toString();
             SQL key = SQL.of(parameterizedString, dataNode,mySqlInsertStatement,arg);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(arg);

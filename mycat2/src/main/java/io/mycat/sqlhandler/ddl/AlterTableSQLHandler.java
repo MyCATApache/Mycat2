@@ -22,21 +22,21 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
 
     @Override
     protected void onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        SQLAlterTableStatement ast = request.getAst();
-        if (ast.getSchema() == null) {
-            SQLExprTableSource tableSource = ast.getTableSource();
+        SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
+        if (sqlAlterTableStatement.getSchema() == null) {
+            SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
             String defaultSchema = dataContext.getDefaultSchema();
             if (defaultSchema == null) {
                 throw new MycatException("please use schema");
             }
             tableSource.setSchema(defaultSchema);
         }
-        String schema = SQLUtils.normalize(ast.getSchema());
-        String tableName = SQLUtils.normalize(ast.getTableName());
+        String schema = SQLUtils.normalize(sqlAlterTableStatement.getSchema());
+        String tableName = SQLUtils.normalize(sqlAlterTableStatement.getTableName());
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         TableHandler tableHandler = metadataManager.getTable(schema, tableName);
         MySqlCreateTableStatement createTableStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(tableHandler.getCreateTableSQL());
-        boolean changed = createTableStatement.apply(ast);
+        boolean changed = createTableStatement.apply(sqlAlterTableStatement);
         if (changed) {
             JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             SQLExprTableSource tableSource = createTableStatement.getTableSource();
@@ -61,17 +61,17 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
                 default:
                     throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
             }
-            executeAlter(createTableStatement, connectionManager, tableSource, dataNodes);
+            executeAlter(sqlAlterTableStatement, connectionManager, tableSource, dataNodes);
             CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),schema,tableName,createTableStatement);
         }
         response.sendOk();
     }
 
-    private void executeAlter(MySqlCreateTableStatement createTableStatement, JdbcConnectionManager connectionManager, SQLExprTableSource tableSource, List<DataNode> dataNodes) {
+    private void executeAlter(SQLAlterTableStatement alterTableStatement, JdbcConnectionManager connectionManager, SQLExprTableSource tableSource, List<DataNode> dataNodes) {
         for (DataNode dataNode : dataNodes) {
             tableSource.setSimpleName(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            String sql = createTableStatement.toString();
+            String sql = alterTableStatement.toString();
             try (DefaultConnection connection = connectionManager.getConnection(dataNode.getTargetName())) {
                 connection.executeUpdate(sql, false);
             }

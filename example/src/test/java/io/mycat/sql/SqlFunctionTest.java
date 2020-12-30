@@ -87,8 +87,8 @@ public class SqlFunctionTest implements MycatTest {
     }
 
     private void check(String s) throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(3306);
-             Connection mycatConnection = getMySQLConnection(8066);
+        try (Connection mySQLConnection = getMySQLConnection(DB1);
+             Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             Assert.assertEquals(
                     executeQueryAsString(mySQLConnection, s)
@@ -98,15 +98,15 @@ public class SqlFunctionTest implements MycatTest {
 
     private void uncheckValue(String s) throws Exception {
         try (
-                Connection mycatConnection = getMySQLConnection(8066);
+                Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             executeQuery(mycatConnection, s);
         }
     }
 
     private void checkValue(String s) throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(3306);
-             Connection mycatConnection = getMySQLConnection(8066);
+        try (Connection mySQLConnection = getMySQLConnection(DB1);
+             Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             Assert.assertEquals(
                     executeQuery(mySQLConnection, s)
@@ -279,9 +279,9 @@ public class SqlFunctionTest implements MycatTest {
 
 
     private void initShardingTable() throws Exception {
-        Connection mycatConnection = getMySQLConnection(8066);
+        Connection mycatConnection = getMySQLConnection(DB_MYCAT);
 
-        Connection mysql3306 = getMySQLConnection(3306);
+        Connection mysql3306 = getMySQLConnection(DB1);
 
         execute(mycatConnection, "DROP DATABASE db1");
 
@@ -292,10 +292,10 @@ public class SqlFunctionTest implements MycatTest {
 
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds0",
-                        "jdbc:mysql://127.0.0.1:3306/mysql"));
+                        DB1));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        "jdbc:mysql://127.0.0.1:3306/mysql"));
+                        DB1));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",
