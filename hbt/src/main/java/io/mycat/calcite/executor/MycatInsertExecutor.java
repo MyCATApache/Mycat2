@@ -167,7 +167,7 @@ public class MycatInsertExecutor implements Executor {
             List<Object> outParams = new ArrayList<>(params);
             StringBuilder sb = new StringBuilder();
 
-            MycatPreparedStatementUtil.outputToParameters(cloneStatement, sb, outParams);
+            MycatPreparedStatementUtil.outputToParameterized(cloneStatement, sb, outParams);
 
             String parameterizedString = sb.toString();
             SQL key = SQL.of(parameterizedString, dataNode,cloneStatement,outParams);
@@ -210,7 +210,7 @@ public class MycatInsertExecutor implements Executor {
 
             StringBuilder sb = new StringBuilder();
             List<Object> out = new ArrayList<>();
-            MycatPreparedStatementUtil.outputToParameters(mySqlInsertStatement, sb, out);
+            MycatPreparedStatementUtil.outputToParameterized(mySqlInsertStatement, sb, out);
             String parameterizedString = sb.toString();
             SQL key = SQL.of(parameterizedString, dataNode,mySqlInsertStatement,arg);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());

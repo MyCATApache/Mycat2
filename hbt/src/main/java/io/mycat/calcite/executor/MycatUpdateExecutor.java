@@ -200,7 +200,7 @@ public class MycatUpdateExecutor implements Executor {
             tableSource.setSchema(dataNode.getSchema());
             StringBuilder sqlStringBuilder = new StringBuilder();
             List<Object> cloneParameters = new ArrayList<>();
-            MycatPreparedStatementUtil.collect(statement, sqlStringBuilder, readOnlyParameters, cloneParameters);
+            MycatPreparedStatementUtil.outputToParameterized(statement, sqlStringBuilder, readOnlyParameters, cloneParameters);
             String sqlString = sqlStringBuilder.toString();
             SQL sql = SQL.of(sqlString,dataNode, SQLUtils.parseSingleMysqlStatement(sqlString),cloneParameters);
             SQL exist = sqlMap.put(sql, sql);
