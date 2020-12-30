@@ -14,11 +14,11 @@
  */
 package io.mycat.router.util;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.SchemaInfo;
 
 import java.util.Map;

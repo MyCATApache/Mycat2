@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler.dcl;
 
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlhandler.AbstractSQLHandler;

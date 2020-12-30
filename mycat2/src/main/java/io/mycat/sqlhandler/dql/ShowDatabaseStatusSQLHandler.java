@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowDatabaseStatusStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabaseStatusStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;

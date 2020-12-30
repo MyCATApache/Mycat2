@@ -1,8 +1,8 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.statement.SQLDropTableStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.config.MycatRouterConfigOps;

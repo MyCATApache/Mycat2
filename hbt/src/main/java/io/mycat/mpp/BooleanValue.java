@@ -1,7 +1,7 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLObject;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLObject;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 

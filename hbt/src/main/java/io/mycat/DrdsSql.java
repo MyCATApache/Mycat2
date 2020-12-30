@@ -1,7 +1,7 @@
 package io.mycat;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import lombok.Data;
 import org.apache.calcite.rel.RelNode;
 

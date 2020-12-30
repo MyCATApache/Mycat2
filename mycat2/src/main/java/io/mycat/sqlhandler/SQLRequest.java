@@ -1,7 +1,7 @@
 package io.mycat.sqlhandler;
 
-import com.alibaba.fastsql.sql.ast.SQLCommentHint;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,6 +1,6 @@
 package io.mycat.calcite.executor;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.DataSourceFactory;

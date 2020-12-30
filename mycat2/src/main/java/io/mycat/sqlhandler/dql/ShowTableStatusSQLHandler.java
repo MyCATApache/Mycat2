@@ -1,9 +1,9 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;

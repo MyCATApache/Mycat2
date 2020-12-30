@@ -1,7 +1,7 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import io.mycat.mpp.plan.Column;
 import io.mycat.mpp.plan.QueryPlan;
 import io.mycat.mpp.plan.TableProvider;

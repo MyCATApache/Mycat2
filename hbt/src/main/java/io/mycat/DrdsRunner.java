@@ -14,18 +14,18 @@
  */
 package io.mycat;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;

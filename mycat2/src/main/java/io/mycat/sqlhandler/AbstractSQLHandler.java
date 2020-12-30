@@ -1,8 +1,8 @@
 package io.mycat.sqlhandler;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLAlterTableStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.table.GlobalTableHandler;

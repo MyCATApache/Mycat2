@@ -1,16 +1,16 @@
 package io.mycat.calcite.executor;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLLimit;
-import com.alibaba.fastsql.sql.ast.SQLOrderBy;
-import com.alibaba.fastsql.sql.ast.SQLReplaceable;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
-import com.alibaba.fastsql.sql.visitor.VisitorFeature;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
+import com.alibaba.druid.sql.visitor.VisitorFeature;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatConnection;
 import io.mycat.api.collector.RowBaseIterator;

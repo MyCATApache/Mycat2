@@ -31,16 +31,19 @@ public class ReadView implements MySQLPayloadReadView {
     }
 
     @Override
-    public int readLenencInt() {
-        long len = readFixInt(1) & 0xff;
+    public Long readLenencInt() {
+        int len = buffer.getByte(index)&0xff;
+        index++;
         if (len < 251) {
-            return (int) readFixInt(1);
+            return  Long.valueOf(len);
         } else if (len == 0xfc) {
-            return (int) readFixInt(2);
+            return  readFixInt(2);
         } else if (len == 0xfd) {
-            return (int) readFixInt(3);
+            return Long.valueOf(readFixInt(3));
+        } else if (len == 0xfb) {
+            return null;
         } else {
-            return (int) readFixInt(8);
+            return Long.valueOf(readFixInt(8));
         }
     }
 
@@ -112,7 +115,11 @@ public class ReadView implements MySQLPayloadReadView {
 
     @Override
     public byte[] readLenencBytes() {
-        int len = readLenencInt();
+        Long aLong = readLenencInt();
+        if (aLong == null){
+            return null;
+        }
+        int len =aLong.intValue();
         byte[] bytes = null;
         if ((len & 0xff) == 0xfb) {
             return null;

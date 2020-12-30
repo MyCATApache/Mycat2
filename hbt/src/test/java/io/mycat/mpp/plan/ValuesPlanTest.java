@@ -1,8 +1,8 @@
 package io.mycat.mpp.plan;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.MyRelBuilder;
 import io.mycat.mpp.SqlToExprTranslator;

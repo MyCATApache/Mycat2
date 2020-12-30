@@ -1,7 +1,7 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.Response;

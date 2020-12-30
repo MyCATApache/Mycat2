@@ -1,7 +1,7 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.statement.SQLDropDatabaseStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.statement.SQLDropDatabaseStatement;
 import io.mycat.*;
 import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;

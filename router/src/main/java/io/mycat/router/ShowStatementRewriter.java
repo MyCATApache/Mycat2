@@ -1,14 +1,14 @@
 package io.mycat.router;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLBooleanExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
-import com.alibaba.fastsql.sql.builder.impl.SQLSelectBuilderImpl;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.expr.SQLBooleanExpr;
+import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
+import com.alibaba.druid.sql.builder.impl.SQLSelectBuilderImpl;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

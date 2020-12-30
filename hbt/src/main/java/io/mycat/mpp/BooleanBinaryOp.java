@@ -1,6 +1,6 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Invoker;

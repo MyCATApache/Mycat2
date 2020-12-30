@@ -1,14 +1,14 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLLimit;
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.SQLOrderBy;
-import com.alibaba.fastsql.sql.ast.expr.SQLListExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLNumericLiteralExpr;
-import com.alibaba.fastsql.sql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
+import com.alibaba.druid.sql.ast.expr.SQLListExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNumericLiteralExpr;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import io.mycat.mpp.element.Order;
 import io.mycat.mpp.plan.DualPlan;
 import io.mycat.mpp.plan.QueryPlan;

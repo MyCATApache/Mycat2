@@ -1,11 +1,11 @@
 package io.mycat.springdata;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;

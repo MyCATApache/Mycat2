@@ -59,12 +59,12 @@ import java.util.Map;
  * </pre>
  *
  * @author : zhuqiang
- *  date : 2018/11/14 21:40
- *
-/**
+ * date : 2018/11/14 21:40
+ * <p>
+ * /**
  * @author jamie12221
- *  date 2019-05-07 13:58
- *
+ * date 2019-05-07 13:58
+ * <p>
  * 验证包
  **/
 public class AuthPacket {
@@ -108,7 +108,10 @@ public class AuthPacket {
         buffer.readBytes(RESERVED.length);
         username = buffer.readNULString();
         if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
-            password = buffer.readFixStringBytes(buffer.readLenencInt());
+            Long len = buffer.readLenencInt();
+            if (len != null) {
+                password = buffer.readFixStringBytes(len.intValue());
+            }
         } else if ((MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities))) {
             int passwordLength = buffer.readByte();
             password = buffer.readFixStringBytes(passwordLength);

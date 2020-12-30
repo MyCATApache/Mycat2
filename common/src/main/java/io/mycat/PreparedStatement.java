@@ -23,17 +23,17 @@
  */
 package io.mycat;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLReplaceable;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.*;
-import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.parser.ParserException;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.parser.ParserException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

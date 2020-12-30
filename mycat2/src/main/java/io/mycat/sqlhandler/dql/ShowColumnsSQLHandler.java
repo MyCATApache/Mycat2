@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLShowColumnsStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;

@@ -1,13 +1,13 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.MycatException;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 封装统一了一些 com.alibaba.fastsql的常用方法
+ * 封装统一了一些 com.alibaba.druid的常用方法
  * @author wangzihaogithub 2020-12-29
  */
 @Slf4j

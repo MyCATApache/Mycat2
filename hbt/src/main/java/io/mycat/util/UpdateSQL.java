@@ -1,16 +1,16 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLUpdateSetItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.fastsql.sql.visitor.SQLASTVisitorAdapter;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
 import io.mycat.DataNode;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;

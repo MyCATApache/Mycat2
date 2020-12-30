@@ -1,8 +1,8 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLInsertInto;
-import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertInto;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;

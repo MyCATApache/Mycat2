@@ -14,9 +14,9 @@ import java.sql.JDBCType;
 import java.util.List;
 
 
-public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> {
+public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement> {
     @Override
-    protected void onExecute(SQLRequest<com.alibaba.fastsql.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected void onExecute(SQLRequest<com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<String> collect = metadataManager.showDatabases();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();

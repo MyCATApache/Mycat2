@@ -55,10 +55,6 @@
             <artifactId>proxy</artifactId>
             <version>1.13-beta</version>
             <exclusions>
-                <exclusion>
-                    <artifactId>druid</artifactId>
-                    <groupId>com.alibaba</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -78,10 +74,6 @@
                     <artifactId>guava</artifactId>
                     <groupId>com.google.guava</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>druid</artifactId>
-                    <groupId>com.alibaba</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -92,10 +84,6 @@
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>druid</artifactId>
-                    <groupId>com.alibaba</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -170,13 +158,6 @@
             <artifactId>vertx-mysql-client</artifactId>
             <version>4.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>1.2.1</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
     <build>
 

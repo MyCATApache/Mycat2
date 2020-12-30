@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import com.alibaba.fastsql.util.HexBin;
+import com.alibaba.druid.util.HexBin;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.calcite.adapter.enumerable.RexImpTable;

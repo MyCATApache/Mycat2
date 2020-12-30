@@ -1,8 +1,8 @@
 package io.mycat.statistic;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.builder.SQLBuilderFactory;
-import com.alibaba.fastsql.sql.builder.SQLSelectBuilder;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.builder.SQLBuilderFactory;
+import com.alibaba.druid.sql.builder.SQLSelectBuilder;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
