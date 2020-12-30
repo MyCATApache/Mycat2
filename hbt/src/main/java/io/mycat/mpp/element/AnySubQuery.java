@@ -1,7 +1,7 @@
 package io.mycat.mpp.element;
 
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.SqlValue;
 import io.mycat.mpp.plan.DataAccessor;

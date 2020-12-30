@@ -1,6 +1,6 @@
 package io.mycat.calcite.physical;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.DataNode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.rewriter.Distribution;

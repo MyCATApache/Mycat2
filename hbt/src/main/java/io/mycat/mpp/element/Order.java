@@ -1,6 +1,6 @@
 package io.mycat.mpp.element;
 
-import com.alibaba.fastsql.sql.ast.SQLOrderingSpecification;
+import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import io.mycat.mpp.SqlValue;
 
 public class Order {

@@ -1,12 +1,12 @@
 package io.mycat.sqlhandler.dml;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.ast.expr.*;
-import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLAssignItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLSetStatement;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
+import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
 import io.mycat.MySQLVariablesUtil;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;

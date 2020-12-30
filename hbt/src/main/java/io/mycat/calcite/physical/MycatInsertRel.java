@@ -1,7 +1,7 @@
 package io.mycat.calcite.physical;
 
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import io.mycat.DrdsRunner;
 import io.mycat.calcite.*;
 import io.mycat.router.ShardingTableHandler;

@@ -1,7 +1,7 @@
 package io.mycat.mpp.runtime;
 
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import io.mycat.mpp.DataContext;
 import io.mycat.mpp.SqlValue;
 import io.mycat.mpp.plan.DataAccessor;

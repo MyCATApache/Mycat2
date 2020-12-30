@@ -1,6 +1,6 @@
 package io.mycat.runtime;
 
-import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;

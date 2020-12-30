@@ -15,10 +15,10 @@
 
 package io.mycat.router.function;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.fastsql.sql.parser.SQLExprParser;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.parser.SQLExprParser;
 import groovy.text.SimpleTemplateEngine;
 import groovy.text.Template;
 import io.mycat.BackendTableInfo;

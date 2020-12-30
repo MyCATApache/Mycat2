@@ -1,6 +1,6 @@
 package io.mycat.mpp.plan;
 
-import com.alibaba.fastsql.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 
 import java.util.Arrays;
 import java.util.List;

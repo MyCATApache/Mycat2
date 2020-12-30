@@ -1,7 +1,7 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlTableIndex;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.beans.mycat.MycatRowMetaData;
 
 import java.sql.ResultSetMetaData;

@@ -1,14 +1,14 @@
 package io.mycat.commands;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLStartTransactionStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
-import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
@@ -20,6 +20,7 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.ShardingSQLHandler;
 import io.mycat.sqlhandler.dcl.*;
 import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
@@ -47,7 +48,7 @@ public enum MycatdbCommand {
         ImmutableClassToInstanceMap.Builder<SQLHandler> builder = ImmutableClassToInstanceMap.builder();
         try {
             final HashSet<SQLHandler> sqlHandlers = new HashSet<>();
-            sqlHandlers.add(new SelectSQLHandler());
+            sqlHandlers.add(new ShardingSQLHandler());
             sqlHandlers.add(new InsertSQLHandler());
             sqlHandlers.add(new DeleteSQLHandler());
             sqlHandlers.add(new UpdateSQLHandler());

@@ -1,18 +1,18 @@
 package io.mycat.calcite;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.FastsqlException;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.*;
-import com.alibaba.fastsql.sql.ast.expr.*;
-import com.alibaba.fastsql.sql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.parser.ParserException;
-import com.alibaba.fastsql.support.calcite.CalciteSqlBasicCall;
-import com.alibaba.fastsql.support.calcite.TDDLSqlSelect;
-import com.alibaba.fastsql.util.FnvHash;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.*;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.parser.ParserException;
+import com.alibaba.druid.support.calcite.CalciteSqlBasicCall;
+import com.alibaba.druid.support.calcite.TDDLSqlSelect;
+import com.alibaba.druid.util.FnvHash;
 import com.google.common.collect.ImmutableList;
+import io.mycat.MycatException;
 import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
 import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
 import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
@@ -245,7 +245,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                         SqlParserPos.ZERO);
                 break;
             default:
-                throw new FastsqlException("unsupported join type: " + operator);
+                throw new MycatException("unsupported join type: " + operator);
         }
 
         if (null == orderBy && null == offset && null == fetch) {
@@ -470,7 +470,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         } else if (expr instanceof SQLPropertyExpr) {
             table = buildIdentifier((SQLPropertyExpr) expr);
         } else {
-            throw new FastsqlException("not support : " + expr);
+            throw new MycatException("not support : " + expr);
         }
 
         if (x.getAlias() != null) {
@@ -931,7 +931,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         } else if (owner instanceof SQLVariantRefExpr) {
             return handleSQLVariantRefExpr(name, (SQLVariantRefExpr) owner);
         } else {
-            throw new FastsqlException("not support : " + owner);
+            throw new MycatException("not support : " + owner);
         }
 
         return new SqlIdentifier(names, SqlParserPos.ZERO);
@@ -964,7 +964,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         } else if (owner instanceof SQLPropertyExpr) {
             buildIdentifier((SQLPropertyExpr) owner, names);
         } else {
-            throw new FastsqlException("not support : " + owner);
+            throw new MycatException("not support : " + owner);
         }
 
         names.add(name);
@@ -1665,7 +1665,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "ADDDATE": {
                 SQLExpr sqlExpr = x.getArguments().get(1);
                 if (x.getArguments().size() > 1 &&
-                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                        sqlExpr instanceof com.alibaba.druid.sql.ast.expr.SQLIntegerExpr) {
                     argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
                 }
             }
@@ -1676,7 +1676,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "SUBDATE": {
                 SQLExpr sqlExpr = x.getArguments().get(1);
                 if (x.getArguments().size() > 1 &&
-                        sqlExpr instanceof com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr) {
+                        sqlExpr instanceof com.alibaba.druid.sql.ast.expr.SQLIntegerExpr) {
                     argNodes.set(1, convertToSqlNode(new SQLIntervalExpr(sqlExpr, SQLIntervalUnit.DAY)));
                 }
             }

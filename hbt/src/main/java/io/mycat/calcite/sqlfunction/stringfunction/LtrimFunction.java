@@ -1,6 +1,6 @@
 package io.mycat.calcite.sqlfunction.stringfunction;
 
-import com.alibaba.fastsql.util.StringUtils;
+import com.alibaba.druid.util.StringUtils;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.calcite.schema.ScalarFunction;
@@ -19,10 +19,17 @@ public class LtrimFunction extends MycatStringFunction {
         super("ltrim", scalarFunction);
     }
 
-    public static String ltrim(String str) {
-        if (str == null ) {
+    public static String ltrim(String val) {
+        if (val == null) {
             return null;
         }
-        return StringUtils.ltrim(str);
+
+        int len = val.length();
+        int st = 0;
+        while ((st < len) && (val.charAt(st) <= ' ')) {
+            st++;
+        }
+
+        return (st > 0) ? val.substring(st, len) : val;
     }
 }

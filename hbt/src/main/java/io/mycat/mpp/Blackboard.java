@@ -20,7 +20,7 @@ import java.util.List;
  * 理想情况下,发现存在关联子查询,应该把MyRelBuilder生产对象的目标设定为calcite,生产的对象应该接近calcite的sqlNode,RelNode,RexNode,并且把此前生产的对象一并转换
  * 如果没有发现关联子查询,则使用常见的分库分表规则处理sql即可,遇到要在mycat中执行的表达式运算,使用表达式树求值执行,这个引擎暂定名称mpp
  * mpp的类型系统可能是直到收到mysql响应的时候,收到各个数据源的字段报文时候,才可开始推导的,推导方式也是表达式树遍历求类型
- * (当然fastsql也能一定程度推导出select顶层字段的类型,但是如果出现推导的数据类型与实际收到的后端响应不一致,则要进行类型转换)
+ * (当然druid也能一定程度推导出select顶层字段的类型,但是如果出现推导的数据类型与实际收到的后端响应不一致,则要进行类型转换)
  */
 public class Blackboard {
     private final MyRelBuilder rexBuilder;

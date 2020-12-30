@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler;
 
-import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.util.StringUtil;
 
 import java.util.Collections;

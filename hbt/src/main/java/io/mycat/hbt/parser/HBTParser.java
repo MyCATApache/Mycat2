@@ -14,9 +14,9 @@
  */
 package io.mycat.hbt.parser;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.parser.ParserException;
-import com.alibaba.fastsql.sql.parser.Token;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.parser.ParserException;
+import com.alibaba.druid.sql.parser.Token;
 import io.mycat.hbt.HBTCalciteSupport;
 import io.mycat.hbt.parser.literal.*;
 

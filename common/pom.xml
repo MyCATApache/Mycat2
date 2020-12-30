@@ -36,12 +36,6 @@
             <artifactId>guava</artifactId>
             <version>27.1-jre</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
-        <dependency>
-            <groupId>com.alibaba.fastsql</groupId>
-            <artifactId>fastsql</artifactId>
-            <version>2.0.0_preview_973</version>
-        </dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>

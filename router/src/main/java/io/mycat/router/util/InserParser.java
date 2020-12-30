@@ -1,10 +1,10 @@
 //package io.mycat.router.util;
 //
 //
-//import com.alibaba.fastsql.sql.ast.expr.SQLCharExpr;
-//import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
-//import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-//import com.alibaba.fastsql.sql.dialect.mysql.parser.MySqlStatementParser;
+//import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+//import com.alibaba.druid.sql.ast.expr.SQLValuableExpr;
+//import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+//import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 //import io.mycat.api.collector.AbstractStringRowIterator;
 //import io.mycat.beans.mycat.MycatRowMetaData;
 //import java.io.IOException;
@@ -18,7 +18,7 @@
 //import java.util.stream.Stream;
 //import java.util.stream.StreamSupport;
 //
-//import static com.alibaba.fastsql.sql.parser.SQLParserFeature.*;
+//import static com.alibaba.druid.sql.parser.SQLParserFeature.*;
 //
 ///**
 // * @author chen junwen

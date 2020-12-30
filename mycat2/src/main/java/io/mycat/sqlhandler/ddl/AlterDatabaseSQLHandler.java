@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLAlterDatabaseStatement;
+import com.alibaba.druid.sql.ast.statement.SQLAlterDatabaseStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;

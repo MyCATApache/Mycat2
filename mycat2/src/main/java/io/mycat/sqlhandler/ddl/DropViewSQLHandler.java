@@ -1,6 +1,6 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLDropViewStatement;
+import com.alibaba.druid.sql.ast.statement.SQLDropViewStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
