@@ -80,12 +80,8 @@
             <artifactId>jaxen</artifactId>
             <version>1.2.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>linq4j</artifactId>
-            <version>1.13-beta</version>
-            <scope>compile</scope>
-        </dependency>
+
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>

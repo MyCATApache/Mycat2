@@ -20,7 +20,6 @@
       <module>example</module>
       <module>statistic</module>
       <module>calcite</module>
-      <module>linq4j</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
