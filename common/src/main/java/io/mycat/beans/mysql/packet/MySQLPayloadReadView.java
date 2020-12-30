@@ -32,7 +32,7 @@ public interface MySQLPayloadReadView {
 
     long readFixInt(int length);
 
-    int readLenencInt();
+    Long readLenencInt();
 
     String readFixString(int length);
 

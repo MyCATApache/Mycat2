@@ -14,13 +14,8 @@
  */
 package io.mycat.beans.mysql.packet;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.sql.Time;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * @author jamie12221
@@ -146,21 +141,22 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
         return readInt(index, length);
     }
 
-    default int readLenencInt() {
+    default Long readLenencInt() {
         int index = packetReadStartIndex();
         long len = readInt(index, 1) & 0xff;
         if (len < 251) {
-            packetReadStartIndexAdd(1);
-            return readInt(index, 1);
+            return Long.valueOf(currentBuffer().get(index));
         } else if (len == 0xfc) {
             packetReadStartIndexAdd(3);
-            return readInt(index + 1, 2);
+            return Long.valueOf(readInt(index + 1, 2));
         } else if (len == 0xfd) {
             packetReadStartIndexAdd(4);
-            return readInt(index + 1, 3);
-        } else {
+            return Long.valueOf(readInt(index + 1, 3));
+        }else if (len == 0xfb) {
+            return null;
+        }  else {
             packetReadStartIndexAdd(9);
-            return readInt(index + 1, 8);
+            return Long.valueOf(readInt(index + 1, 8));
         }
     }
 

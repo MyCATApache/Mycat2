@@ -108,7 +108,10 @@ public class AuthPacket {
         buffer.readBytes(RESERVED.length);
         username = buffer.readNULString();
         if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
-            password = buffer.readFixStringBytes(buffer.readLenencInt());
+            Long len = buffer.readLenencInt();
+            if (len!=null){
+                password = buffer.readFixStringBytes(len.intValue());
+            }
         } else if ((MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities))) {
             int passwordLength = buffer.readByte();
             password = buffer.readFixStringBytes(passwordLength);

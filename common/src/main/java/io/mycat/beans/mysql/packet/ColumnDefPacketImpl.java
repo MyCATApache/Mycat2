@@ -298,9 +298,9 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         this.columnDecimals = buffer.readByte();
         buffer.skipInReading(2);
         if (!buffer.readFinished()) {
-            int len = buffer.readLenencInt();
-            if (len > 0) {
-                this.columnDefaultValues = buffer.readFixStringBytes(len);
+            Long len = buffer.readLenencInt();
+            if (len!=null&&len > 0) {
+                this.columnDefaultValues = buffer.readFixStringBytes(len.intValue());
             }
         }
     }
