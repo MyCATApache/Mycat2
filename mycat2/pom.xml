@@ -170,13 +170,6 @@
             <artifactId>vertx-mysql-client</artifactId>
             <version>4.0.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>1.2.1</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
     <build>
 
