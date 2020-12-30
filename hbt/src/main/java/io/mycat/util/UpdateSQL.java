@@ -152,6 +152,16 @@ public class UpdateSQL<T extends SQLUpdateStatement> extends SQL<T> {
         return select.executeQuery(connection);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
     /**
      * 用于根据OR关键词分割条件
      */

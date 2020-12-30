@@ -58,7 +58,7 @@ public abstract class TableJPATemplateTest implements MycatTest {
         } else if ("PostgreSQL".equalsIgnoreCase(dbtype)) {
             dialect = "org.hibernate.dialect.PostgreSQL82Dialect";
         }
-        try (Connection mySQLConnection = getMySQLConnection(8066)) {
+        try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
             execute(mySQLConnection, RESET_CONFIG);
             execute(mySQLConnection, "drop database IF EXISTS db1");
             execute(mySQLConnection, "create database IF NOT EXISTS db1");
@@ -98,26 +98,26 @@ public abstract class TableJPATemplateTest implements MycatTest {
                 break;
         }
 
-        try (Connection mySQLConnection = getMySQLConnection(8066)) {
+        try (Connection mySQLConnection = getMySQLConnection(DB_MYCAT);) {
 
             switch (this.createTableSQLType) {
 
                 case GLOBAL:
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs",
-                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
+                                    DB1));
                     execute(mySQLConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
                     break;
 
                 case SHARDING:
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs",
-                                    "jdbc:mysql://127.0.0.1:3306/mysql"));
+                                    DB1));
                     execute(mySQLConnection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
 
                     execute(mySQLConnection, CreateDataSourceHint
                             .create("newDs2",
-                                    "jdbc:mysql://127.0.0.1:3307"));
+                                    DB2));
                     execute(mySQLConnection, CreateClusterHint.create("c1", Arrays.asList("newDs2"), Collections.emptyList()));
                     break;
 
