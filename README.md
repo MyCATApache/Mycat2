@@ -3,11 +3,14 @@
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-
 [文档](https://github.com/MyCATApache/Mycat2/wiki)
 [测试版本](https://github.com/MyCATApache/Mycat2/releases/tag/v1.13-alpha)
 
 
+
+## 架构
+
+![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
 
 ## 核心团队
 
