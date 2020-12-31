@@ -8,6 +8,10 @@
 [测试版本](https://github.com/MyCATApache/Mycat2/releases/tag/v1.13-alpha)
 
 
+## 架构
+
+![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
+
 
 ## 核心团队
 
