@@ -44,7 +44,7 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
 
     @Override
     public MycatNestedLoopSemiJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new MycatNestedLoopSemiJoin(getCluster(),traitSet,getHints(),left,right,conditionExpr,joinType);
+        return new MycatNestedLoopSemiJoin(getCluster(), traitSet, getHints(), left, right, conditionExpr, joinType);
     }
 
     public static MycatNestedLoopSemiJoin create(
@@ -60,7 +60,7 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
                 traitSet.replace(MycatConvention.INSTANCE)
                         .replaceIfs(
                                 RelCollationTraitDef.INSTANCE,
-                                () -> RelMdCollation.enumerableNestedLoopJoin(metadataQuery, left,right,joinType)),
+                                () -> RelMdCollation.enumerableNestedLoopJoin(metadataQuery, left, right, joinType)),
                 hints,
                 left,
                 right,
@@ -71,7 +71,7 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
-         writer.name("MycatMaterializedSemiJoin");
+        writer.name("MycatMaterializedSemiJoin");
         for (RelNode input : getInputs()) {
             MycatRel mycatRel = (MycatRel) input;
             mycatRel.explain(writer);
@@ -85,4 +85,9 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
         return implementor.implement(this);
     }
 
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        MycatNestedLoopJoin mycatNestedLoopJoin = MycatNestedLoopJoin.create(getTraitSet(), getLeft(), getRight(), getCondition(), joinType);
+        return mycatNestedLoopJoin.implement(implementor, pref);
+    }
 }

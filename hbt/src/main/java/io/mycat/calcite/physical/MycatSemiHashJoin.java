@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
 import org.apache.calcite.plan.RelOptCluster;
@@ -36,13 +37,12 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
 
     protected MycatSemiHashJoin(RelOptCluster cluster,
                                 RelTraitSet traitSet,
-                                List<RelHint> hints,
                                 RelNode left,
                                 RelNode right,
                                 RexNode condition,
                                 Set<CorrelationId> variablesSet,
                                 JoinRelType joinType) {
-        super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
+        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     public static MycatSemiHashJoin create(List<RelHint> hints, RelNode left, RelNode right, RexNode condition, JoinRelType joinType) {
@@ -53,7 +53,6 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
                 .replaceIfs(
                         RelCollationTraitDef.INSTANCE,
                         () -> RelMdCollation.enumerableHashJoin(metadataQuery, left,right,joinType)),
-                hints,
                 left,
                 right,
                 condition,
@@ -71,6 +70,5 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
     }
-
 
 }

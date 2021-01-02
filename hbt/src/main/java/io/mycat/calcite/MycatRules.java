@@ -18,7 +18,6 @@ package io.mycat.calcite;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.physical.*;
 import io.mycat.calcite.rules.*;
 import org.apache.calcite.plan.*;
@@ -74,7 +73,7 @@ public class MycatRules {
             (left, right, hints, condition, variablesSet, joinType, semiJoinDone) -> {
                 final RelOptCluster cluster = left.getCluster();
                 final RelTraitSet traitSet = cluster.traitSetOf(left.getConvention());
-                return MycatNestedLoopJoin.create(ImmutableList.of(), traitSet, left, right, condition, joinType);
+                return MycatNestedLoopJoin.create(traitSet, left, right, condition, joinType);
             };
 
     static final RelFactories.CorrelateFactory CORRELATE_FACTORY =

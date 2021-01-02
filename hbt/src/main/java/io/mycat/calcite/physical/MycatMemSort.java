@@ -15,6 +15,13 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -23,7 +30,11 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 
 /**
  * Sort operator implemented in Mycat convention.
@@ -76,5 +87,60 @@ public class MycatMemSort
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        final BlockBuilder builder = new BlockBuilder();
+        final EnumerableRel child = (EnumerableRel) this.getInput();
+        final Result result = implementor.visitChild(this, 0, child, pref);
+        final PhysType physType = PhysTypeImpl.of(
+                implementor.getTypeFactory(),
+                this.getRowType(),
+                result.format);
+        final Expression childExp = builder.append("child", result.block);
+
+        final PhysType inputPhysType = result.physType;
+        final Pair<Expression, Expression> pair =
+                inputPhysType.generateCollationKey(this.collation.getFieldCollations());
+
+        final Expression fetchVal;
+        if (this.fetch == null) {
+            fetchVal = Expressions.constant(Integer.valueOf(Integer.MAX_VALUE));
+        } else {
+            fetchVal = getExpression(this.fetch);
+        }
+
+        final Expression offsetVal = this.offset == null ? Expressions.constant(Integer.valueOf(0))
+                : getExpression(this.offset);
+
+        builder.add(
+                Expressions.return_(
+                        null, Expressions.call(
+                                BuiltInMethod.ORDER_BY_WITH_FETCH_AND_OFFSET.method, Expressions.list(
+                                        childExp,
+                                        builder.append("keySelector", pair.left))
+                                        .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
+                                        .appendIfNotNull(
+                                                builder.appendIfNotNull("offset",
+                                                        Expressions.constant(offsetVal)))
+                                        .appendIfNotNull(
+                                                builder.appendIfNotNull("fetch",
+                                                        Expressions.constant(fetchVal)))
+                        )));
+        return implementor.result(physType, builder.toBlock());
+    }
+
+    static Expression getExpression(RexNode rexNode) {
+        if (rexNode instanceof RexDynamicParam) {
+            final RexDynamicParam param = (RexDynamicParam) rexNode;
+            return Expressions.convert_(
+                    Expressions.call(DataContext.ROOT,
+                            BuiltInMethod.DATA_CONTEXT_GET.method,
+                            Expressions.constant("?" + param.getIndex())),
+                    Integer.class);
+        } else {
+            return Expressions.constant(RexLiteral.intValue(rexNode));
+        }
     }
 }

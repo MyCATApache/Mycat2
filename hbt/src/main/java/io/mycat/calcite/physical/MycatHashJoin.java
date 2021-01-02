@@ -3,6 +3,10 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -18,6 +22,8 @@ import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 
 import java.util.List;
@@ -118,5 +124,63 @@ public class MycatHashJoin extends Join implements MycatRel {
             relOptCost = planner.getCostFactory().makeCost(rowCount, 0, 0);
         }
         return relOptCost;
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        return implementHashJoin(implementor,pref);
+    }
+
+    private  Result implementHashJoin(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        BlockBuilder builder = new BlockBuilder();
+        final Result leftResult =
+                implementor.visitChild(this, 0, (EnumerableRel) left, pref);
+        Expression leftExpression =
+                builder.append(
+                        "left", leftResult.block);
+        final Result rightResult =
+                implementor.visitChild(this, 1, (EnumerableRel) right, pref);
+        Expression rightExpression =
+                builder.append(
+                        "right", rightResult.block);
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(), getRowType(), pref.preferArray());
+        final PhysType keyPhysType =
+                leftResult.physType.project(
+                        joinInfo.leftKeys, JavaRowFormat.LIST);
+        Expression predicate = Expressions.constant(null);
+        if (!joinInfo.nonEquiConditions.isEmpty()) {
+            RexNode nonEquiCondition = RexUtil.composeConjunction(
+                    getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+            if (nonEquiCondition != null) {
+                predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
+                        left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+            }
+        }
+        return implementor.result(
+                physType,
+                builder.append(
+                        Expressions.call(
+                                leftExpression,
+                                BuiltInMethod.HASH_JOIN.method,
+                                Expressions.list(
+                                        rightExpression,
+                                        leftResult.physType.generateAccessor(joinInfo.leftKeys),
+                                        rightResult.physType.generateAccessor(joinInfo.rightKeys),
+                                        EnumUtils.joinSelector(joinType,
+                                                physType,
+                                                ImmutableList.of(
+                                                        leftResult.physType, rightResult.physType)))
+                                        .append(
+                                                Util.first(keyPhysType.comparer(),
+                                                        Expressions.constant(null)))
+                                        .append(
+                                                Expressions.constant(joinType.generatesNullsOnLeft()))
+                                        .append(
+                                                Expressions.constant(
+                                                        joinType.generatesNullsOnRight()))
+                                        .append(predicate)))
+                        .toBlock());
     }
 }

@@ -38,7 +38,8 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
             });
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             NameMap<MetadataManager.SimpleRoute> normalTables = new NameMap<>();
-            if (metadataManager.checkVaildNormalRoute(tableNames, normalTables)) {
+            boolean singleTarget = metadataManager.checkVaildNormalRoute(tableNames, normalTables);
+            if (singleTarget) {
                 String[] targetName = new String[1];
                 selectStatement.accept(new MySqlASTVisitorAdapter() {
                     @Override

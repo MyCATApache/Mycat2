@@ -16,17 +16,34 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalCalc;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.*;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
+
+import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
 
 /**
  * Implementation of {@link Project} in
@@ -45,10 +62,12 @@ public class MycatProject
         assert getConvention() instanceof MycatConvention;
     }
 
-    /** Creates an MycatProject, specifying row type rather than field
-     * names. */
+    /**
+     * Creates an MycatProject, specifying row type rather than field
+     * names.
+     */
     public static MycatProject create(final RelNode input,
-                                           final List<? extends RexNode> projects, RelDataType rowType) {
+                                      final List<? extends RexNode> projects, RelDataType rowType) {
         final RelOptCluster cluster = input.getCluster();
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet =
@@ -77,5 +96,21 @@ public class MycatProject
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+
+        final Project project = this;
+        final RelNode input = project.getInput();
+        final RexProgram program =
+                RexProgram.create(
+                        input.getRowType(),
+                        project.getProjects(),
+                        null,
+                        project.getRowType(),
+                        project.getCluster().getRexBuilder());
+        MycatCalc mycatCalc = MycatCalc.create(getTraitSet(), input, program);
+        return mycatCalc.implement(implementor,pref);
     }
 }
