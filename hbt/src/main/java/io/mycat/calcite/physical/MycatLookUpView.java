@@ -2,6 +2,7 @@ package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
@@ -49,5 +50,10 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new MycatLookUpView(relNode);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return relNode.implement(implementor,pref);
     }
 }

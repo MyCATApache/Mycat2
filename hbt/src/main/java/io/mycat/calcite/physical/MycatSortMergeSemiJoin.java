@@ -18,19 +18,34 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+
+import static org.apache.calcite.adapter.enumerable.EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE;
 
 public class MycatSortMergeSemiJoin extends Join implements MycatRel {
     /**
@@ -100,4 +115,16 @@ public class MycatSortMergeSemiJoin extends Join implements MycatRel {
         return implementor.implement(this);
     }
 
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableRel res = (EnumerableRel)
+                new EnumerableMergeJoin(getCluster(),
+                        getTraitSet().replace(EnumerableConvention.INSTANCE),
+                        getLeft(),
+                        getRight(),
+                        getCondition(),
+                        getVariablesSet(),
+                        joinType
+                        ){};
+        return res.implement(implementor, pref);
+    }
 }

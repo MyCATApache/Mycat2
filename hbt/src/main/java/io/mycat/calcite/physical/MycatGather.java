@@ -1,6 +1,7 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -37,5 +38,10 @@ public class MycatGather extends SingleRel implements MycatRel {
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new MycatGather(getCluster(),traitSet,inputs.get(0));
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return null;
     }
 }

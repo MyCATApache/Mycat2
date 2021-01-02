@@ -2,6 +2,8 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -95,5 +97,10 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(getLeft(), getRight(), condition, variablesSet, joinType);
+        return enumerableHashJoin.implement(implementor, pref);
     }
 }

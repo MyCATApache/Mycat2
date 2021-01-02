@@ -15,8 +15,11 @@
 package io.mycat.calcite.physical;
 
 
-
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableMinus;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -24,18 +27,22 @@ import org.apache.calcite.rel.core.Minus;
 
 import java.util.List;
 
+import static io.mycat.calcite.physical.MycatIntersect.convertList;
+
 /**
  * Minus operator implemented in Mycat convention.
  */
 public class MycatMinus extends Minus implements MycatRel {
     protected MycatMinus(RelOptCluster cluster, RelTraitSet traitSet,
-                      List<RelNode> inputs, boolean all) {
+                         List<RelNode> inputs, boolean all) {
         super(cluster, traitSet, inputs, all);
     }
+
     public static MycatMinus create(RelTraitSet traitSet,
-                      List<RelNode> inputs, boolean all) {
-        return new MycatMinus(inputs.get(0).getCluster(),traitSet.replace(MycatConvention.INSTANCE),inputs,all);
+                                    List<RelNode> inputs, boolean all) {
+        return new MycatMinus(inputs.get(0).getCluster(), traitSet.replace(MycatConvention.INSTANCE), inputs, all);
     }
+
     public MycatMinus copy(RelTraitSet traitSet, List<RelNode> inputs,
                            boolean all) {
         return new MycatMinus(getCluster(), traitSet, inputs, all);
@@ -55,5 +62,18 @@ public class MycatMinus extends Minus implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Minus minus = (Minus) this;
+        final EnumerableConvention out = EnumerableConvention.INSTANCE;
+        final RelTraitSet traitSet =
+                this.getTraitSet().replace(
+                        EnumerableConvention.INSTANCE);
+
+        EnumerableRel res = (EnumerableRel) new EnumerableMinus(this.getCluster(), traitSet,
+                convertList(minus.getInputs(), out), minus.all);
+        return res.implement(implementor, pref);
     }
 }

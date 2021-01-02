@@ -19,6 +19,8 @@ import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.EnumerableValues;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -33,11 +35,12 @@ import java.util.List;
  */
 public class MycatValues extends Values implements MycatRel {
     protected MycatValues(RelOptCluster cluster, RelDataType rowType,
-                       ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
+                          ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
         super(cluster, rowType, tuples, traitSet);
     }
-    public static MycatValues create( RelOptCluster cluster, RelDataType rowType,
-                                      ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
+
+    public static MycatValues create(RelOptCluster cluster, RelDataType rowType,
+                                     ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
         return new MycatValues(cluster, rowType, tuples, traitSet);
     }
 
@@ -56,5 +59,10 @@ public class MycatValues extends Values implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableValues enumerableValues = EnumerableValues.create(getCluster(), rowType, tuples);
+        return enumerableValues.implement(implementor, pref);
     }
 }

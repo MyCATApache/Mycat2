@@ -16,13 +16,20 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableIntersect;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.Util;
 
 import java.util.List;
+
+import static org.apache.calcite.plan.RelOptRule.convert;
 
 /**
  * Intersect operator implemented in Mycat convention.
@@ -66,5 +73,20 @@ public class MycatIntersect
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Intersect intersect = this;
+        final EnumerableConvention out = EnumerableConvention.INSTANCE;
+        final RelTraitSet traitSet = intersect.getTraitSet().replace(out);
+        EnumerableIntersect enumerableIntersect = new EnumerableIntersect(getCluster(), traitSet,
+                convertList(intersect.getInputs(), out), intersect.all);
+        return enumerableIntersect.implement(implementor,pref);
+    }
+    protected static List<RelNode> convertList(List<RelNode> rels,
+                                               final RelTrait trait) {
+        return Util.transform(rels,
+                rel -> convert(rel, rel.getTraitSet().replace(trait)));
     }
 }

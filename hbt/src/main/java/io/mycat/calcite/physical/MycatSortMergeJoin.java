@@ -17,19 +17,34 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+
+import static org.apache.calcite.adapter.enumerable.EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE;
+import static org.apache.calcite.plan.RelOptRule.convert;
 
 public class MycatSortMergeJoin extends Join implements MycatRel {
     protected MycatSortMergeJoin(RelOptCluster cluster,
@@ -85,5 +100,14 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new MycatSortMergeJoin(getCluster(), traitSet, left, right, conditionExpr, getVariablesSet(), joinType);
+    }
+
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableMergeJoin enumerableMergeJoin = new EnumerableMergeJoin(
+                getCluster(),getTraitSet().replace(EnumerableConvention.INSTANCE),left,right,condition,getVariablesSet(),joinType
+        ){
+
+        };
+        return enumerableMergeJoin.implement(implementor,pref);
     }
 }

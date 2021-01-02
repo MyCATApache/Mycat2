@@ -16,6 +16,10 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
+import org.apache.calcite.adapter.enumerable.EnumerableIntersect;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.EnumerableSort;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -61,5 +65,11 @@ public class MycatMergeSort extends Sort implements MycatRel {
     @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableSort enumerableSort = EnumerableSort.create(getInput(), getCollation(), offset, fetch);
+        return enumerableSort.implement(implementor, pref);
     }
 }

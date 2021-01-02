@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.ScanExecutor;
 import io.mycat.mpp.Row;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -40,5 +41,10 @@ public class IndexTableView extends AbstractRelNode implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return new ScanExecutor( Iterables.transform(rows,(i)-> Row.of(i)).iterator());
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return null;
     }
 }

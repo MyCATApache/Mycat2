@@ -1,6 +1,8 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableCorrelate;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -63,5 +65,11 @@ public class MycatCorrelate extends Correlate implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableCorrelate enumerableCorrelate = EnumerableCorrelate.create(getLeft(), getRight(), correlationId, requiredColumns, joinType);
+        return enumerableCorrelate.implement(implementor, pref);
     }
 }

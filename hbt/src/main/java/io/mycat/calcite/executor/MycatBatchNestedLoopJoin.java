@@ -16,6 +16,7 @@ package io.mycat.calcite.executor;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -109,5 +110,10 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
 
     public ImmutableBitSet getRequiredColumns() {
         return requiredColumns;
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return null;
     }
 }

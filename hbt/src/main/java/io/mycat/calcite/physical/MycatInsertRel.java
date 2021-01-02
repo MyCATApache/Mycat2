@@ -7,6 +7,7 @@ import io.mycat.calcite.*;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.FastSqlUtils;
 import lombok.Getter;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -69,4 +70,8 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
         return implementor.implement(this);
     }
 
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        throw new UnsupportedOperationException();
+    }
 }

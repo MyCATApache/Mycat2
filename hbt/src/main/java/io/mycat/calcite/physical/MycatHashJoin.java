@@ -3,6 +3,8 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -118,5 +120,11 @@ public class MycatHashJoin extends Join implements MycatRel {
             relOptCost = planner.getCostFactory().makeCost(rowCount, 0, 0);
         }
         return relOptCost;
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(getLeft(), getRight(), getCondition(), getVariablesSet(), getJoinType());
+        return enumerableHashJoin.implement(implementor,pref);
     }
 }

@@ -3,6 +3,7 @@ package io.mycat.calcite.table;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.SimpleExecutor;
 import io.mycat.mpp.Row;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -47,6 +48,11 @@ public abstract class QueryBuilder extends AbstractRelNode implements MycatRel {
                                                          String name,
                                                          Iterable<Row> rows) {
         return new QueryBuilder(cluster) {
+            @Override
+            public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+                return null;
+            }
+
             @Override
             public Optional<QueryBuilder> filter(RexNode condition) {
                 return Optional.empty();

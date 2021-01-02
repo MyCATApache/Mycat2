@@ -21,6 +21,9 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.rewriter.Distribution;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
@@ -35,6 +38,8 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -195,5 +200,16 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
 
-
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        pref.prefer(JavaRowFormat.CUSTOM));
+        return implementor.result(
+                physType,
+              builder.toBlock());
+    }
 }

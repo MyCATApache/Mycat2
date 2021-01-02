@@ -16,15 +16,25 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Util;
 
 import java.util.List;
+
+import static org.apache.calcite.plan.RelOptRule.convert;
 
 /**
  * Union operator implemented in Mycat convention.
@@ -69,5 +79,16 @@ public class MycatUnion extends Union implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Union union =this;
+        final EnumerableConvention out = EnumerableConvention.INSTANCE;
+        final RelTraitSet traitSet = getCluster().traitSet().replace(out);
+        final List<RelNode> newInputs = Util.transform(
+                union.getInputs(), n -> convert(n, traitSet));
+        return new EnumerableUnion(getCluster(), traitSet,
+                newInputs, union.all).implement(implementor,pref);
     }
 }

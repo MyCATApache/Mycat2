@@ -17,6 +17,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -29,7 +30,7 @@ import java.util.List;
 /**
  * Relational expression that uses JDBC calling convention.
  */
-public interface MycatRel extends RelNode {
+public interface MycatRel extends RelNode, EnumerableRel {
 
     ExplainWriter explain(ExplainWriter writer);
 
@@ -39,7 +40,7 @@ public interface MycatRel extends RelNode {
         writer.name(name);
         List<String> fieldList = join.getRowType().getFieldNames();
         writer.item("columns", String.join(",", fieldList));
-        SqlImplementor.Context context = explainRex(MycatSqlDialect.DEFAULT,fieldList);
+        SqlImplementor.Context context = explainRex(MycatSqlDialect.DEFAULT, fieldList);
         SqlNode sqlNode = context.toSql(null, join.getCondition());
         writer.item("condition", sqlNode);
         writer.into();
@@ -50,14 +51,15 @@ public interface MycatRel extends RelNode {
 
     public static SqlImplementor.Context explainRex(SqlDialect dialect, List<String> fieldList) {
         return new SqlImplementor.Context(dialect, fieldList.size()) {
-                @Override
-                public SqlNode field(int ordinal) {
-                    String fieldName = fieldList.get(ordinal);
-                    return new SqlIdentifier(ImmutableList.of(fieldName), SqlImplementor.POS);
-                }
+            @Override
+            public SqlNode field(int ordinal) {
+                String fieldName = fieldList.get(ordinal);
+                return new SqlIdentifier(ImmutableList.of(fieldName), SqlImplementor.POS);
+            }
 
-            @Override public SqlImplementor implementor() {
-                    return null;
+            @Override
+            public SqlImplementor implementor() {
+                return null;
             }
         };
     }

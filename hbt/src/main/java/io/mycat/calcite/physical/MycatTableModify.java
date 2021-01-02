@@ -15,6 +15,7 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
@@ -25,9 +26,9 @@ import org.apache.calcite.rex.RexNode;
 import java.util.List;
 
 /**
-     * Table-modification operator implemented in Mycat convention.
-     */
-    public  class MycatTableModify extends TableModify implements MycatRel {
+ * Table-modification operator implemented in Mycat convention.
+ */
+public class MycatTableModify extends TableModify implements MycatRel {
 
     public MycatTableModify(RelOptCluster cluster,
                             RelTraitSet traitSet,
@@ -64,5 +65,10 @@ import java.util.List;
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return null;
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        throw new UnsupportedOperationException();
     }
 }

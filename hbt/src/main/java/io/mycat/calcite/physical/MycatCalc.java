@@ -14,7 +14,9 @@
  */
 package io.mycat.calcite.physical;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -22,25 +24,28 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexProgram;
 
-import java.util.List;
-
 /**
  * Calc operator implemented in Mycat convention.
  */
-public class MycatCalc extends SingleRel implements MycatRel {
+public class MycatCalc extends Calc implements MycatRel {
     private final RexProgram program;
 
     protected MycatCalc(RelOptCluster cluster,
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input);
+        super(
+                cluster,
+                traitSet,
+                ImmutableList.of(),
+                input,
+                program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();
@@ -81,10 +86,16 @@ public class MycatCalc extends SingleRel implements MycatRel {
         return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
     }
 
-    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new MycatCalc(getCluster(), traitSet, sole(inputs), program);
+    //    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+//        return new MycatCalc(getCluster(), traitSet, sole(inputs), program);
+//    }
+    @Override
+    public Calc copy(
+            RelTraitSet traitSet,
+            RelNode child,
+            RexProgram program) {
+        return new MycatCalc(getCluster(), traitSet, child, program);
     }
-
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
@@ -100,5 +111,12 @@ public class MycatCalc extends SingleRel implements MycatRel {
 
     public RexProgram getProgram() {
         return program;
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableCalc calc = EnumerableCalc.create(input, program);
+        Result result = calc.implement(implementor, pref);
+        return result;
     }
 }

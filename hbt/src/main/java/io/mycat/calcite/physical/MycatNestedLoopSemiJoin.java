@@ -17,6 +17,8 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableNestedLoopJoin;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -85,4 +87,9 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
         return implementor.implement(this);
     }
 
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableNestedLoopJoin enumerableNestedLoopJoin = EnumerableNestedLoopJoin.create(left, right, condition, variablesSet, joinType);
+        return enumerableNestedLoopJoin.implement(implementor, pref);
+    }
 }

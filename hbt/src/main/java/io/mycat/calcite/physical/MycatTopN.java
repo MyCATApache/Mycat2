@@ -16,12 +16,27 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.*;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
+
+import static org.apache.calcite.plan.RelOptRule.convert;
 
 public class MycatTopN extends Sort implements MycatRel {
 
@@ -66,5 +81,15 @@ public class MycatTopN extends Sort implements MycatRel {
     @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatTopN(getCluster(), traitSet, newInput, newCollation, offset, fetch);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final EnumerableLimitSort o = EnumerableLimitSort.create(
+                convert(input, input.getTraitSet().replace(EnumerableConvention.INSTANCE)),
+               getCollation(),
+                offset, fetch
+        );
+       return o.implement(implementor,pref);
     }
 }

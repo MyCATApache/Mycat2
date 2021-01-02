@@ -18,6 +18,7 @@ import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -49,5 +50,10 @@ public class QueryView extends Union implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return null;
     }
 }

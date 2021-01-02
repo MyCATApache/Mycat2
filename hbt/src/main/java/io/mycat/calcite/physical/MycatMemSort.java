@@ -15,6 +15,8 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.EnumerableSort;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -76,5 +78,11 @@ public class MycatMemSort
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableSort enumerableSort = EnumerableSort.create(getInput(), getCollation(), offset, fetch);
+        return enumerableSort.implement(implementor, pref);
     }
 }

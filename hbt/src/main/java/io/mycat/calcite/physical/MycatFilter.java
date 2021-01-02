@@ -15,14 +15,23 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableCalc;
+import org.apache.calcite.adapter.enumerable.EnumerableCorrelate;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.logical.LogicalCalc;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.rex.RexProgramBuilder;
 
 /**
  * Implementation of {@link Filter} in
@@ -64,5 +73,23 @@ public class MycatFilter extends Filter implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Filter filter = this;
+        final RelNode rel = filter.getInput();
+
+        // Create a program containing a filter.
+        final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
+        final RelDataType inputRowType = rel.getRowType();
+        final RexProgramBuilder programBuilder =
+                new RexProgramBuilder(inputRowType, rexBuilder);
+        programBuilder.addIdentity();
+        programBuilder.addCondition(filter.getCondition());
+        final RexProgram program = programBuilder.getProgram();
+
+        EnumerableCalc enumerableCalc = EnumerableCalc.create(input, program);
+        return enumerableCalc.implement(implementor,pref);
     }
 }

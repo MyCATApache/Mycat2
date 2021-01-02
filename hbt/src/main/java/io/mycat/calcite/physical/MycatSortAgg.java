@@ -16,20 +16,28 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 
 import java.util.List;
 
-public class MycatSortAgg extends Aggregate implements MycatRel {
+import static org.apache.calcite.adapter.enumerable.EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE;
+import static org.apache.calcite.plan.RelOptRule.convert;
+
+public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
 
     protected MycatSortAgg(RelOptCluster cluster, RelTraitSet traitSet, RelNode input,
                            ImmutableBitSet groupSet,
@@ -46,11 +54,11 @@ public class MycatSortAgg extends Aggregate implements MycatRel {
             List<AggregateCall> aggCalls) {
         RelOptCluster cluster = input.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
-        traitSet= traitSet.replace(MycatConvention.INSTANCE);
-        traitSet=traitSet .replaceIfs(
+        traitSet = traitSet.replace(MycatConvention.INSTANCE);
+        traitSet = traitSet.replaceIfs(
                 RelCollationTraitDef.INSTANCE,
                 () -> mq.collations(input));//sortagg结果也是已经排序的
-        return new MycatSortAgg(cluster,traitSet,input,groupSet,groupSets,aggCalls);
+        return new MycatSortAgg(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     @Override
@@ -74,5 +82,28 @@ public class MycatSortAgg extends Aggregate implements MycatRel {
     @Override
     public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new MycatSortAgg(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+    }
+
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Aggregate agg = (Aggregate) this;
+        if (!Aggregate.isSimple(agg)) {
+            return null;
+        }
+        final RelTraitSet inputTraits = getCluster()
+                .traitSet().replace(EnumerableConvention.INSTANCE)
+                .replace(
+                        RelCollations.of(
+                                ImmutableIntList.copyOf(
+                                        agg.getGroupSet().asList())));
+        final RelTraitSet selfTraits = inputTraits.replace(
+                RelCollations.of(
+                        ImmutableIntList.identity(agg.getGroupSet().cardinality())));
+        return new EnumerableSortedAggregate(
+                getCluster(),
+                selfTraits,
+                convert(agg.getInput(), inputTraits),
+                agg.getGroupSet(),
+                agg.getGroupSets(),
+                agg.getAggCallList()).implement(implementor, pref);
     }
 }

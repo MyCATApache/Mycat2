@@ -16,6 +16,10 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.EnumerableAggregate;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -24,6 +28,8 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.util.ImmutableBitSet;
 
 import java.util.List;
+
+import static org.apache.calcite.plan.RelOptRule.convert;
 
 
 /**
@@ -40,6 +46,7 @@ public class MycatHashAggregate extends Aggregate implements MycatRel {
         super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
         assert getConvention() instanceof MycatConvention;
     }
+
     public static MycatHashAggregate create(
             RelTraitSet traitSet,
             RelNode input,
@@ -47,9 +54,10 @@ public class MycatHashAggregate extends Aggregate implements MycatRel {
             List<ImmutableBitSet> groupSets,
             List<AggregateCall> aggCalls) {
         traitSet = traitSet.replace(MycatConvention.INSTANCE);
-        return new MycatHashAggregate(input.getCluster(),traitSet,input,groupSet,groupSets,aggCalls);
+        return new MycatHashAggregate(input.getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
 
     }
+
     @Override
     public MycatHashAggregate copy(RelTraitSet traitSet, RelNode input,
                                    ImmutableBitSet groupSet,
@@ -70,5 +78,19 @@ public class MycatHashAggregate extends Aggregate implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @SneakyThrows
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final RelTraitSet traitSet = getCluster()
+                .traitSet().replace(EnumerableConvention.INSTANCE);
+        return new EnumerableAggregate(
+                this.getCluster(),
+                traitSet,
+                convert(this.getInput(), traitSet),
+                this.getGroupSet(),
+                this.getGroupSets(),
+                this.getAggCallList()).implement(implementor, pref);
     }
 }

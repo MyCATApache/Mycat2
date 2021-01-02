@@ -17,6 +17,10 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -27,7 +31,11 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Util;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 
@@ -50,16 +58,16 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
         return new MycatSemiHashJoin(left.getCluster(),
                 cluster.traitSetOf(MycatConvention.INSTANCE)
-                .replaceIfs(
-                        RelCollationTraitDef.INSTANCE,
-                        () -> RelMdCollation.enumerableHashJoin(metadataQuery, left,right,joinType)),
+                        .replaceIfs(
+                                RelCollationTraitDef.INSTANCE,
+                                () -> RelMdCollation.enumerableHashJoin(metadataQuery, left, right, joinType)),
                 hints,
                 left,
                 right,
                 condition,
                 ImmutableSet.of(),
                 joinType
-                );
+        );
     }
 
     @Override
@@ -72,5 +80,9 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
         return implementor.implement(this);
     }
 
-
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(getLeft(), getRight(), getCondition(), getVariablesSet(), getJoinType());
+        return enumerableHashJoin.implement(implementor,pref);
+    }
 }

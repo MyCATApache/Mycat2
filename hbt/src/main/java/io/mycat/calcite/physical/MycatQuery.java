@@ -14,12 +14,13 @@
  */
 package io.mycat.calcite.physical;
 
-import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.logical.MycatView;
 import lombok.Getter;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -51,5 +52,10 @@ public class MycatQuery extends AbstractRelNode implements MycatRel {
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq).multiplyBy(0.1);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        throw new UnsupportedOperationException();
     }
 }

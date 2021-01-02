@@ -6,6 +6,7 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.DrdsRunner;
 import lombok.Getter;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -61,5 +62,10 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
             pw.item("dataNodes$"+index,dataNode+"\n");
         }
         return pw;
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+       throw new UnsupportedOperationException();
     }
 }

@@ -5,6 +5,7 @@ import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -55,5 +56,10 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        return null;
     }
 }

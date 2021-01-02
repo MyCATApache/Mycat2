@@ -16,6 +16,9 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.EnumerableCalc;
+import org.apache.calcite.adapter.enumerable.EnumerableProject;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -25,6 +28,7 @@ import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
 
 import java.util.List;
 
@@ -77,5 +81,19 @@ public class MycatProject
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+        final Project project = this;
+        final RelNode input = project.getInput();
+        final RexProgram program =
+                RexProgram.create(input.getRowType(),
+                        project.getProjects(),
+                        null,
+                        project.getRowType(),
+                        project.getCluster().getRexBuilder());
+        final EnumerableCalc calc = EnumerableCalc.create(input, program);
+        return calc.implement(implementor,pref);
     }
 }
