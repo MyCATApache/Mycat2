@@ -62,4 +62,10 @@ public class MycatMergeSort extends Sort implements MycatRel {
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        MycatMemSort mycatMemSort = MycatMemSort.create(getTraitSet(), getInput(), getCollation(), offset, fetch);
+        return mycatMemSort.implement(implementor,pref);
+    }
 }

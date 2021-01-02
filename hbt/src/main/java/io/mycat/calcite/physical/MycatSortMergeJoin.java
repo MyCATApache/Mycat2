@@ -17,18 +17,30 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class MycatSortMergeJoin extends Join implements MycatRel {
@@ -85,5 +97,85 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new MycatSortMergeJoin(getCluster(), traitSet, left, right, conditionExpr, getVariablesSet(), joinType);
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        BlockBuilder builder = new BlockBuilder();
+        final Result leftResult =
+                implementor.visitChild(this, 0, (EnumerableRel) left, pref);
+        final Expression leftExpression =
+                builder.append("left", leftResult.block);
+        final ParameterExpression left_ =
+                Expressions.parameter(leftResult.physType.getJavaRowType(), "left");
+        final Result rightResult =
+                implementor.visitChild(this, 1, (EnumerableRel) right, pref);
+        final Expression rightExpression =
+                builder.append("right", rightResult.block);
+        final ParameterExpression right_ =
+                Expressions.parameter(rightResult.physType.getJavaRowType(), "right");
+        final JavaTypeFactory typeFactory = implementor.getTypeFactory();
+        final PhysType physType =
+                PhysTypeImpl.of(typeFactory, getRowType(), pref.preferArray());
+        final List<Expression> leftExpressions = new ArrayList<>();
+        final List<Expression> rightExpressions = new ArrayList<>();
+        for (Pair<Integer, Integer> pair : Pair.zip(joinInfo.leftKeys, joinInfo.rightKeys)) {
+            final RelDataType keyType =
+                    typeFactory.leastRestrictive(
+                            ImmutableList.of(
+                                    left.getRowType().getFieldList().get(pair.left).getType(),
+                                    right.getRowType().getFieldList().get(pair.right).getType()));
+            final Type keyClass = typeFactory.getJavaClass(keyType);
+            leftExpressions.add(
+                    EnumUtils.convert(
+                            leftResult.physType.fieldReference(left_, pair.left), keyClass));
+            rightExpressions.add(
+                    EnumUtils.convert(
+                            rightResult.physType.fieldReference(right_, pair.right), keyClass));
+        }
+        Expression predicate = Expressions.constant(null);
+        if (!joinInfo.nonEquiConditions.isEmpty()) {
+            final RexNode nonEquiCondition = RexUtil.composeConjunction(
+                    getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+            if (nonEquiCondition != null) {
+                predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
+                        left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
+            }
+        }
+        final PhysType leftKeyPhysType =
+                leftResult.physType.project(joinInfo.leftKeys, JavaRowFormat.LIST);
+        final PhysType rightKeyPhysType =
+                rightResult.physType.project(joinInfo.rightKeys, JavaRowFormat.LIST);
+
+        // Generate the appropriate key Comparator (keys must be sorted in ascending order, nulls last).
+        final int keysSize = joinInfo.leftKeys.size();
+        final List<RelFieldCollation> fieldCollations = new ArrayList<>(keysSize);
+        for (int i = 0; i < keysSize; i++) {
+            fieldCollations.add(
+                    new RelFieldCollation(i, RelFieldCollation.Direction.ASCENDING,
+                            RelFieldCollation.NullDirection.LAST));
+        }
+        final RelCollation collation = RelCollations.of(fieldCollations);
+        final Expression comparator = leftKeyPhysType.generateComparator(collation);
+
+        return implementor.result(
+                physType,
+                builder.append(
+                        Expressions.call(
+                                BuiltInMethod.MERGE_JOIN.method,
+                                Expressions.list(
+                                        leftExpression,
+                                        rightExpression,
+                                        Expressions.lambda(
+                                                leftKeyPhysType.record(leftExpressions), left_),
+                                        Expressions.lambda(
+                                                rightKeyPhysType.record(rightExpressions), right_),
+                                        predicate,
+                                        EnumUtils.joinSelector(joinType,
+                                                physType,
+                                                ImmutableList.of(
+                                                        leftResult.physType, rightResult.physType)),
+                                        Expressions.constant(EnumUtils.toLinq4jJoinType(joinType)),
+                                        comparator))).toBlock());
     }
 }

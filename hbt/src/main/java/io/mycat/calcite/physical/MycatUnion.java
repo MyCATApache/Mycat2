@@ -78,7 +78,7 @@ public class MycatUnion extends Union implements MycatRel {
     }
 
     @Override
-    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         Expression unionExp = null;
         for (Ord<RelNode> ord : Ord.zip(inputs)) {

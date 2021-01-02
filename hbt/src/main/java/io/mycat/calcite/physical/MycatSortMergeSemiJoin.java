@@ -32,14 +32,14 @@ import org.apache.calcite.rex.RexNode;
 
 import java.util.Set;
 
-public class MycatSortMergeSemiJoin extends Join implements MycatRel {
+public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatRel {
     /**
      * Creates a MycatJoin.
      */
     protected MycatSortMergeSemiJoin(RelOptCluster cluster, RelTraitSet traitSet,
                                      RelNode left, RelNode right, RexNode condition,
                                      Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
     public static MycatSortMergeSemiJoin create(RelTraitSet traitSet,

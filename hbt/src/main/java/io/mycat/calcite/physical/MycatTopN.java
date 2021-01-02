@@ -82,7 +82,7 @@ public class MycatTopN extends Sort implements MycatRel {
     }
 
     @Override
-    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableRel child = (EnumerableRel) this.getInput();
         final Result result = implementor.visitChild(this, 0, child, pref);

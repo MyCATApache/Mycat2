@@ -15,10 +15,7 @@
 package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.Executor;
-import io.mycat.calcite.ExecutorImplementor;
-import io.mycat.calcite.ExplainWriter;
-import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.*;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -70,7 +67,7 @@ public class MycatValues extends Values implements MycatRel {
     }
 
     @Override
-    public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
 /*
           return Linq4j.asEnumerable(
               new Object[][] {

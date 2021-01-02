@@ -106,7 +106,6 @@ public class MycatJoinRule extends MycatConverterRule {
             );
         } else {
             return MycatNestedLoopJoin.create(
-                    join.getHints(),
                     join.getTraitSet().replace(out),
                     convert(left, out),
                     convert(right, out),
