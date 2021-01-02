@@ -14,19 +14,15 @@
  */
 package io.mycat.resultset;
 
+import io.mycat.MySQLPacketUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.MySQLPacketUtil;
 
 import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Date;
 import java.util.Iterator;
 
 /**
@@ -103,15 +99,8 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertShort(value);
                 break;
             }
+            case Types.BIGINT:
             case Types.INTEGER: {
-                int value = rowBaseIterator.getInt(columnIndex);
-                if (rowBaseIterator.wasNull()) {
-                    return null;
-                }
-                res = convertor.convertInteger(value);
-                break;
-            }
-            case Types.BIGINT: {
                 long value = rowBaseIterator.getLong(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
@@ -163,7 +152,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 break;
             }
             case Types.TIMESTAMP: {
-                LocalDateTime  value = rowBaseIterator.getTimestamp(columnIndex);
+                LocalDateTime value = rowBaseIterator.getTimestamp(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;
                 }

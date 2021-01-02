@@ -49,8 +49,10 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -866,6 +868,8 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     @Getter
+    @EqualsAndHashCode
+    @ToString
     public static class SimpleRoute {
         String schemaName;
         String tableName;
@@ -911,6 +915,7 @@ public class MetadataManager implements MysqlVariableService {
         if (tables.values().isEmpty() && tableNames.size() == 1) {
             Pair<String, String> next = tableNames.iterator().next();
             tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
+            targets.add(prototype);
         }
         return targets.size() == 1;
     }
