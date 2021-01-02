@@ -17,6 +17,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -29,7 +31,7 @@ import java.util.List;
 /**
  * Relational expression that uses JDBC calling convention.
  */
-public interface MycatRel extends RelNode {
+public interface MycatRel extends RelNode, EnumerableRel {
 
     ExplainWriter explain(ExplainWriter writer);
 
@@ -60,5 +62,10 @@ public interface MycatRel extends RelNode {
                     return null;
             }
         };
+    }
+
+    @Override
+    default Result implement(EnumerableRelImplementor implementor, Prefer pref){
+        throw new UnsupportedOperationException();
     }
 }
