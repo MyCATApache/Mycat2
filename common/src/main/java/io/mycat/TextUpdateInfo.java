@@ -3,13 +3,13 @@ package io.mycat;
 import java.util.List;
 
 public interface TextUpdateInfo {
-    String targetName();
-
-    List<String> sqls();
-
     public static TextUpdateInfo create(String targetName, List<String> sqls) {
         return new TextUpdateInfoImpl(targetName, sqls);
     }
+
+    String targetName();
+
+    List<String> sqls();
 
     public class TextUpdateInfoImpl implements TextUpdateInfo {
         final String targetName;

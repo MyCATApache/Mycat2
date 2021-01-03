@@ -17,11 +17,9 @@
 package io.mycat.util;
 
 import com.google.common.collect.ImmutableSortedMap;
-import io.mycat.TableHandler;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static io.mycat.util.CaseInsensitiveComparator.COMPARATOR;
 
@@ -50,6 +48,13 @@ public class NameMap<V> {
         this(new TreeMap<String, V>(COMPARATOR));
     }
 
+    /**
+     * Creates a NameMap that is an immutable copy of a given map.
+     */
+    public static <V> NameMap immutableCopyOf(Map<String, V> names) {
+        return new NameMap<>(ImmutableSortedMap.copyOf(names, COMPARATOR));
+    }
+
     @Override
     public String toString() {
         return map.toString();
@@ -65,13 +70,6 @@ public class NameMap<V> {
         return this == obj
                 || obj instanceof NameMap
                 && map.equals(((NameMap) obj).map);
-    }
-
-    /**
-     * Creates a NameMap that is an immutable copy of a given map.
-     */
-    public static <V> NameMap immutableCopyOf(Map<String, V> names) {
-        return new NameMap<>(ImmutableSortedMap.copyOf(names, COMPARATOR));
     }
 
     public NameMap<V> put(String name, V v) {
@@ -139,17 +137,17 @@ public class NameMap<V> {
         return map.keySet();
     }
 
-  public void clear() {
-    map.clear();
-  }
+    public void clear() {
+        map.clear();
+    }
 
-  public Collection<? extends Map.Entry<String,V>> entrySet() {
-    HashMap<String, V> tableMap = new HashMap(this.map);
-    return tableMap.entrySet();
-  }
+    public Collection<? extends Map.Entry<String, V>> entrySet() {
+        HashMap<String, V> tableMap = new HashMap(this.map);
+        return tableMap.entrySet();
+    }
 
-  public Collection<V> values() {
-    HashMap<String, V> tableMap = new HashMap(this.map);
-    return tableMap.values();
-  }
+    public Collection<V> values() {
+        HashMap<String, V> tableMap = new HashMap(this.map);
+        return tableMap.values();
+    }
 }

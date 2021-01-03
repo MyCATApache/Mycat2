@@ -1,11 +1,10 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLShowColumnsStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 
 
@@ -18,7 +17,7 @@ public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStat
     @Override
     protected void onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLShowColumnsStatement ast = request.getAst();
-        response.tryBroadcastShow(ast.toString());
+        response.proxySelectToPrototype(ast.toString());
 //        response.proxyShow(ast);
 //        return ExecuteCode.PERFORMED;
 //        String defaultSchema = dataContext.getDefaultSchema();

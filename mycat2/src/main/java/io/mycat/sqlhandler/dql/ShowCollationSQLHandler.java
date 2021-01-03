@@ -1,11 +1,10 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowCollationStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCollationStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 
 
@@ -15,6 +14,6 @@ public class ShowCollationSQLHandler extends AbstractSQLHandler<MySqlShowCollati
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowCollationStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
 }

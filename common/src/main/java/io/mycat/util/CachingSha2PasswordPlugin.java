@@ -47,11 +47,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 
-public class CachingSha2PasswordPlugin  {
+public class CachingSha2PasswordPlugin {
 
 
-    static final Logger LOGGER = LoggerFactory.getLogger(CachingSha2PasswordPlugin.class);
     public static final String PROTOCOL_PLUGIN_NAME = "caching_sha2_password"; // caching_sha2_password
+    static final Logger LOGGER = LoggerFactory.getLogger(CachingSha2PasswordPlugin.class);
 
     public static byte[] scrambleCachingSha2(String password, byte[] seed) {
         if (password == null || password.length() == 0) {
@@ -74,17 +74,17 @@ public class CachingSha2PasswordPlugin  {
     public static byte[] encrypt(String mysqlVersion, String publicKeyString, String password, String seed, String encoding) throws Exception {
         ServerVersion currentVersion = ServerVersion.parseVersion(mysqlVersion);
         final ServerVersion min = new ServerVersion(8, 0, 5);
-        if(currentVersion.compareTo(min) >= 0) {
-            return encryptPassword("RSA/ECB/OAEPWithSHA-1AndMGF1Padding",  publicKeyString,  password,  seed,  encoding);
+        if (currentVersion.compareTo(min) >= 0) {
+            return encryptPassword("RSA/ECB/OAEPWithSHA-1AndMGF1Padding", publicKeyString, password, seed, encoding);
         }
-        return encryptPassword("RSA/ECB/PKCS1Padding",  publicKeyString,  password,  seed,  encoding);
+        return encryptPassword("RSA/ECB/PKCS1Padding", publicKeyString, password, seed, encoding);
 
     }
 
     public static byte[] encryptPassword(String transformation, String publicKeyString, String password, String seed, String encoding)
-        throws Exception {
+            throws Exception {
         byte[] input = null;
-        input = password != null ? getBytesNullTerminated(password, encoding) : new byte[] { 0 };
+        input = password != null ? getBytesNullTerminated(password, encoding) : new byte[]{0};
         byte[] mysqlScrambleBuff = new byte[input.length];
         SecurityUtil.xorString(input, mysqlScrambleBuff, seed.getBytes(), input.length);
         return encryptWithRSAPublicKey(mysqlScrambleBuff, decodeRSAPublicKey(publicKeyString), transformation);
@@ -100,8 +100,9 @@ public class CachingSha2PasswordPlugin  {
 
         return asBytes;
     }
+
     public static byte[] encryptWithRSAPublicKey(byte[] source, RSAPublicKey key, String transformation)
-        throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
+            throws IllegalBlockSizeException, InvalidKeyException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
         try {
             Cipher cipher = Cipher.getInstance(transformation);
             cipher.init(Cipher.ENCRYPT_MODE, key);

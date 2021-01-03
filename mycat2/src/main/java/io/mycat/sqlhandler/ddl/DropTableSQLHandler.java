@@ -1,18 +1,18 @@
 package io.mycat.sqlhandler.ddl;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.statement.SQLDropTableStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
-import io.mycat.MycatRouterConfigOps;
+import io.mycat.config.MycatRouterConfigOps;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

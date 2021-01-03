@@ -32,7 +32,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final ConcurrentHashMap<KEY, PROCESS> map = new ConcurrentHashMap<>();
     final ArrayBlockingQueue<PROCESS> idleList;
     final ArrayBlockingQueue<PengdingJob> pending;
-    private long keeplive;
     final Function<BindThreadPool, PROCESS> processFactory;
     final Consumer<Exception> exceptionHandler;
     final AtomicInteger threadCounter = new AtomicInteger(0);
@@ -41,12 +40,8 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
     private final ExecutorService noBindingPool;
-
     long lastPollTaskTime = System.currentTimeMillis();
-
-    public boolean isBind(KEY key) {
-        return map.containsKey(key);
-    }
+    private long keeplive;
 
     public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
                           TimeUnit timeoutUnit,
@@ -75,6 +70,10 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }, 1, 1, TimeUnit.MILLISECONDS);
         //   , 1, 1, TimeUnit.MILLISECONDS
         this.noBindingPool = noBindingPool;
+    }
+
+    public boolean isBind(KEY key) {
+        return map.containsKey(key);
     }
 
     void pollTask() {
@@ -219,15 +218,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }
     }
 
-    interface PengdingJob {
-
-        boolean run();
-
-        BindThreadKey getKey();
-
-        BindThreadCallback getTask();
-    }
-
     public int getIdleListSize() {
         return idleList.size();
     }
@@ -262,5 +252,14 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
 
     public long getCompletedTasks() {
         return Stream.concat(map.values().stream(), idleList.stream()).mapToLong(i -> i.getCompletedTasks()).sum();
+    }
+
+    interface PengdingJob {
+
+        boolean run();
+
+        BindThreadKey getKey();
+
+        BindThreadCallback getTask();
     }
 }

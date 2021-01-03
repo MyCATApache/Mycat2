@@ -18,7 +18,7 @@ import java.util.Map;
 public class CharsetTest implements MycatTest {
     @Test
     public void testChineseCharset() throws Exception {
-        try (Connection mycatConnection = getMySQLConnection(8066);
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "create database db1");
@@ -51,7 +51,7 @@ public class CharsetTest implements MycatTest {
             execute(mycatConnection,
                     CreateDataSourceHint
                             .create("dw0",
-                                    "jdbc:mysql://127.0.0.1:3307"));
+                                    DB2));
 
             execute(mycatConnection,
                     CreateClusterHint

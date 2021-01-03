@@ -3,12 +3,12 @@ package io.mycat.config;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Map;
-
 @Data
 @EqualsAndHashCode
 public class SequenceConfig {
     private String name;
+
+    // ---------给用户自行扩展预留字段------------
 
     private String startWith;
     private String incrementBy;
@@ -31,9 +31,13 @@ public class SequenceConfig {
 
     private Long step;
 
+    // ---------给用户自定义预留------------
+
     private String clazz;
 
     private String targetName;
+    private String schemaName;
+
 
     public SequenceConfig() {
     }

@@ -1,8 +1,9 @@
 package io.mycat.config;
 
-import lombok.*;
-
-import javax.management.remote.rmi._RMIConnection_Stub;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,10 +13,10 @@ public class NormalTableConfig {
     String createTableSQL;
     NormalBackEndTableInfoConfig dataNode;
 
-    public static  NormalTableConfig create(String schemaName,
-                                            String tableName,
-                                            String createTableSQL,
-                                            String targetName){
+    public static NormalTableConfig create(String schemaName,
+                                           String tableName,
+                                           String createTableSQL,
+                                           String targetName) {
         NormalTableConfig normalTableConfig = new NormalTableConfig();
         NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig();
         normalBackEndTableInfoConfig.setSchemaName(schemaName);

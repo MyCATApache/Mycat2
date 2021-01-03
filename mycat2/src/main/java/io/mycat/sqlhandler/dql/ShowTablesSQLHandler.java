@@ -1,21 +1,17 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLShowTablesStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
-import io.mycat.api.collector.ComposeRowBaseIterator;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.SchemaHandler;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.MetadataManager;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +33,12 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
             return ;
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
-        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name ->replicaSelectorRuntime.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
+        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name ->dataContext.resolveDatasourceTargetName(name)).orElse(null);
         if (targetName != null) {
             response.proxySelect(targetName, ast.toString());
         } else {
-            response.tryBroadcastShow(ast.toString());
+            response.proxySelectToPrototype(ast.toString());
         }
 //        DDLManager.INSTANCE.updateTables();
 //        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());

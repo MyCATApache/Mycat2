@@ -731,7 +731,7 @@ public enum MysqlKeywords {
         MysqlKeywords[] values = MysqlKeywords.values();
         for (MysqlKeywords value : values) {
             map.put(value.name(), null);
-            map.put("`"+value.name()+"`", null);
+            map.put("`" + value.name() + "`", null);
         }
     }
 

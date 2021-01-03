@@ -1,5 +1,3 @@
-
-
 package io.mycat.buffer;
 
 import java.nio.ByteBuffer;

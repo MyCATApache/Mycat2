@@ -23,8 +23,8 @@ public class DefaultReactorBufferPool extends HeapBufferPool implements ReactorB
                 Objects.requireNonNull(sessionConfig.get("pageCount"), "pageCount must not be null").toString());
         setChunkSize(chunkSize);
 
-        this. directByteBufferPool =
-                new MycatDirectByteBufferPool(pageSize,chunkSize,pageCount);
+        this.directByteBufferPool =
+                new MycatDirectByteBufferPool(pageSize, chunkSize, pageCount);
     }
 
     @Override
@@ -32,22 +32,22 @@ public class DefaultReactorBufferPool extends HeapBufferPool implements ReactorB
         return new BufferPool() {
             @Override
             public ByteBuffer allocate() {
-                return      directByteBufferPool.allocate();
+                return directByteBufferPool.allocate();
             }
 
             @Override
             public ByteBuffer allocate(int size) {
-                return      directByteBufferPool.allocate(size);
+                return directByteBufferPool.allocate(size);
             }
 
             @Override
             public ByteBuffer allocate(byte[] bytes) {
-                return      directByteBufferPool.allocate(bytes);
+                return directByteBufferPool.allocate(bytes);
             }
 
             @Override
             public int trace() {
-                return     (int) directByteBufferPool.usage();
+                return (int) directByteBufferPool.usage();
             }
 
             @Override
@@ -67,7 +67,7 @@ public class DefaultReactorBufferPool extends HeapBufferPool implements ReactorB
 
             @Override
             public Dumper snapshot() {
-                return Dumper.create(Collections.singletonMap("trace",trace()));
+                return Dumper.create(Collections.singletonMap("trace", trace()));
             }
         };
     }

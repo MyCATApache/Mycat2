@@ -45,6 +45,9 @@ public class ScheduleUtil {
         return timerTask;
     }
 
+    public static int getScheduleCount() {
+        return COUNTER.get();
+    }
 
     @Getter
     public static abstract class TimerTask {
@@ -77,10 +80,5 @@ public class ScheduleUtil {
                 e.printStackTrace();
             }
         }
-    }
-
-
-    public static int getScheduleCount() {
-        return COUNTER.get();
     }
 }

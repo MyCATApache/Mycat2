@@ -78,12 +78,12 @@ public class EnumUtils {
 
   private EnumUtils() {}
 
-  static final boolean BRIDGE_METHODS = true;
+  public  static final boolean BRIDGE_METHODS = true;
 
-  static final List<ParameterExpression> NO_PARAMS =
+  public  static final List<ParameterExpression> NO_PARAMS =
       ImmutableList.of();
 
-  static final List<Expression> NO_EXPRS =
+  public static final List<Expression> NO_EXPRS =
       ImmutableList.of();
 
   public static final List<String> LEFT_RIGHT =
@@ -138,7 +138,7 @@ public class EnumUtils {
     };
   }
 
-  static Expression joinSelector(JoinRelType joinType, PhysType physType,
+ public static Expression joinSelector(JoinRelType joinType, PhysType physType,
       List<PhysType> inputPhysTypes) {
     // A parameter for each input.
     final List<ParameterExpression> parameters = new ArrayList<>();
@@ -727,7 +727,7 @@ public class EnumUtils {
   }
 
   /** Transforms a JoinRelType to Linq4j JoinType. **/
-  static JoinType toLinq4jJoinType(JoinRelType joinRelType) {
+  public static JoinType toLinq4jJoinType(JoinRelType joinRelType) {
     switch (joinRelType) {
     case INNER:
       return JoinType.INNER;
@@ -747,7 +747,7 @@ public class EnumUtils {
   }
 
   /** Returns a predicate expression based on a join condition. **/
-  static Expression generatePredicate(
+ public static Expression generatePredicate(
       EnumerableRelImplementor implementor,
       RexBuilder rexBuilder,
       RelNode left,

@@ -23,17 +23,17 @@
  */
 package io.mycat;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLReplaceable;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.*;
-import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLUpdateStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.parser.ParserException;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.parser.ParserException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +72,38 @@ public class PreparedStatement {
         this.parametersNumber = parametersNumber;
         this.parametersType = new int[parametersNumber];
         this.longDataMap = new HashMap<>();
+    }
+
+    public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
+        if (o == null) {
+            return new SQLNullExpr();
+        }
+
+        if (o instanceof String) {
+            return new SQLCharExpr((String) o);
+        }
+
+        if (o instanceof BigDecimal) {
+            return new SQLDecimalExpr((BigDecimal) o);
+        }
+
+        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
+            return new SQLIntegerExpr((Number) o);
+        }
+
+        if (o instanceof Number) {
+            return new SQLNumberExpr((Number) o);
+        }
+
+        if (o instanceof Date) {
+            return new SQLTimestampExpr((Date) o, timeZone);
+        }
+
+        throw new ParserException("not support class : " + o.getClass());
+    }
+
+    public static SQLExpr fromJavaObject(Object o) {
+        return fromJavaObject(o, null);
     }
 
     public long getId() {
@@ -145,8 +177,8 @@ public class PreparedStatement {
                 statement instanceof SQLInsertStatement ||
                 statement instanceof SQLUpdateStatement ||
                 statement instanceof SQLDeleteStatement) {
-            sqlStatement= statement.clone();
-        }else {
+            sqlStatement = statement.clone();
+        } else {
             sqlStatement = SQLUtils.parseSingleMysqlStatement(this.statement.toString());
         }
 
@@ -170,38 +202,6 @@ public class PreparedStatement {
             }
         });
         return sqlStatement;
-    }
-
-    public static SQLExpr fromJavaObject(Object o, TimeZone timeZone) {
-        if (o == null) {
-            return new SQLNullExpr();
-        }
-
-        if (o instanceof String) {
-            return new SQLCharExpr((String) o);
-        }
-
-        if (o instanceof BigDecimal) {
-            return new SQLDecimalExpr((BigDecimal) o);
-        }
-
-        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
-            return new SQLIntegerExpr((Number) o);
-        }
-
-        if (o instanceof Number) {
-            return new SQLNumberExpr((Number) o);
-        }
-
-        if (o instanceof Date) {
-            return new SQLTimestampExpr((Date) o, timeZone);
-        }
-
-        throw new ParserException("not support class : " + o.getClass());
-    }
-
-    public static SQLExpr fromJavaObject(Object o) {
-        return fromJavaObject(o, null);
     }
 
     public BindValue[] getBindValues() {

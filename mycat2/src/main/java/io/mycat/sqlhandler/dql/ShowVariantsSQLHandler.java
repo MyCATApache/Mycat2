@@ -1,18 +1,13 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import io.mycat.MycatDataContext;
-import io.mycat.ResultSetProvider;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.JDBCType;
 
 /**
  * chenjunwen
@@ -99,7 +94,7 @@ public class ShowVariantsSQLHandler extends AbstractSQLHandler<MySqlShowVariants
 //        ResultSetBuilder builder = ResultSetBuilder.create();
 //        builder.addColumnInfo("Variable_name", JDBCType.VARCHAR);
 //        builder.addColumnInfo("Value", JDBCType.VARCHAR);
-        response.tryBroadcastShow(request.getAst().toString());
+        response.proxySelectToPrototype(request.getAst().toString());
     }
     @NotNull
     private String fixKeyName(String key) {

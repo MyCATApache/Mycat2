@@ -27,6 +27,12 @@ public enum MySQLIsolation {
             Connection.TRANSACTION_SERIALIZABLE),
 
     ;
+    public static MySQLIsolation DEFAULT = REPEATED_READ;
+
+    static {
+
+    }
+
     private final String text;
     private final String cmd;
     private final int jdbcValue;
@@ -37,20 +43,6 @@ public enum MySQLIsolation {
         this.jdbcValue = jdbcValue;
     }
 
-    public String getText() {
-        return text;
-    }
-
-    public String getCmd() {
-        return cmd;
-    }
-
-    public int getJdbcValue() {
-        return jdbcValue;
-    }
-
-    public static MySQLIsolation DEFAULT = REPEATED_READ;
-
     public static MySQLIsolation parse(String name) {
         for (MySQLIsolation value : values()) {
             if (value.getText().equalsIgnoreCase(name)) {
@@ -58,10 +50,6 @@ public enum MySQLIsolation {
             }
         }
         return null;
-    }
-
-    static {
-
     }
 
     public static MySQLIsolation parseJdbcValue(int name) {
@@ -80,5 +68,17 @@ public enum MySQLIsolation {
             }
         }
         throw new UnsupportedOperationException();
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public String getCmd() {
+        return cmd;
+    }
+
+    public int getJdbcValue() {
+        return jdbcValue;
     }
 }

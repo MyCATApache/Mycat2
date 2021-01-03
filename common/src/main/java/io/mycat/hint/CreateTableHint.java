@@ -9,22 +9,6 @@ import java.util.List;
 public class CreateTableHint extends HintBuilder {
     private CreateTableConfig config;
 
-    public void setConfig(CreateTableConfig config) {
-        this.config = config;
-    }
-
-    @Override
-    public String getCmd() {
-        return "createTable";
-    }
-
-    @Override
-    public String build() {
-        return MessageFormat.format("/*+ mycat:{0}{1} */;",
-                getCmd(),
-                JsonUtil.toJson(config));
-    }
-
     public static String create(
             CreateTableConfig config) {
         CreateTableHint createDataSourceHint = new CreateTableHint();
@@ -101,5 +85,21 @@ public class CreateTableHint extends HintBuilder {
         createTableConfig.setSchemaName(schemaName);
         createTableConfig.setTableName(tableName);
         return create(createTableConfig);
+    }
+
+    public void setConfig(CreateTableConfig config) {
+        this.config = config;
+    }
+
+    @Override
+    public String getCmd() {
+        return "createTable";
+    }
+
+    @Override
+    public String build() {
+        return MessageFormat.format("/*+ mycat:{0}{1} */;",
+                getCmd(),
+                JsonUtil.toJson(config));
     }
 }

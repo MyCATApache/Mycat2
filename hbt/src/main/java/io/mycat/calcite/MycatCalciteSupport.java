@@ -17,36 +17,29 @@ package io.mycat.calcite;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.sqlfunction.CRC32Function;
+import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
+import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
+import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
+import io.mycat.calcite.sqlfunction.infofunction.*;
+import io.mycat.calcite.sqlfunction.mathfunction.CRC32Function;
+import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
+import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
 import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
-import org.apache.calcite.mycat.*;
-import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
-import io.mycat.calcite.sqlfunction.datefunction.*;
-import io.mycat.calcite.sqlfunction.datefunction.AddDateFunction;
-import io.mycat.calcite.sqlfunction.datefunction.AddTimeFunction;
-import io.mycat.calcite.sqlfunction.datefunction.ConvertTzFunction;
-import io.mycat.calcite.sqlfunction.datefunction.CurTimeFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DateDiffFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DateFormatFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DayOfMonthFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DayOfWeekFunction;
-import io.mycat.calcite.sqlfunction.datefunction.UnixTimestampFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.BinFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.BitLengthFunction;
-import io.mycat.calcite.sqlfunction.stringfunction.CharFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
 import io.mycat.calcite.table.SingeTargetSQLTable;
 import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.Explains;
 import io.mycat.util.NameMap;
 import lombok.SneakyThrows;
@@ -68,6 +61,8 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.dialect.MssqlSqlDialect;
+import org.apache.calcite.sql.dialect.OracleSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -132,7 +127,7 @@ public enum MycatCalciteSupport implements Context {
 
     }
 
-//    public static final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+    //    public static final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
 //            .setConformance(SqlConformanceEnum.MYSQL_5)
 //            .setCaseSensitive(false).build();
     public static final MycatTypeSystem TypeSystem = new MycatTypeSystem();
@@ -200,6 +195,22 @@ public enum MycatCalciteSupport implements Context {
                                 }
                                 return super.implicitCast(in, expected);
                             }
+                            @Override
+                            public RelDataType commonTypeForBinaryComparison(RelDataType type1, RelDataType type2) {
+                                SqlTypeName typeName1 = type1.getSqlTypeName();
+                                SqlTypeName typeName2 = type2.getSqlTypeName();
+
+                                if (typeName1 == null || typeName2 == null) {
+                                    return null;
+                                }
+                                if (typeName1 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName2)) {
+                                    return type2;
+                                }
+                                if (typeName2 == SqlTypeName.VARBINARY && SqlTypeUtil.inCharFamily(typeName1)) {
+                                    return type1;
+                                }
+                                return super.commonTypeForBinaryComparison(type1,type2);
+                            }
                         };
                     }
                 });
@@ -207,6 +218,12 @@ public enum MycatCalciteSupport implements Context {
     }
 
     static {
+        Map<SqlOperator, RexImpTable.RexCallImplementor> rexImpTableMap = RexImpTable.INSTANCE.map;
+        rexImpTableMap.put(DateAddFunction.INSTANCE,DateAddFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(DateSubFunction.INSTANCE,DateSubFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(ExtractFunction.INSTANCE,ExtractFunction.INSTANCE.getRexCallImplementor());
+        rexImpTableMap.put(AddTimeFunction.INSTANCE,AddTimeFunction.INSTANCE.getRexCallImplementor());
+
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
 //        configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
@@ -285,18 +302,18 @@ public enum MycatCalciteSupport implements Context {
                             UpdateXMLFunction.INSTANCE,
                             WeightStringFunction.INSTANCE,
                             /////////////////////////////////////////
-                            AddDateFunction.INSTANCE,
 //                            DateAddFunction.INSTANCE,
-                            RexImpTable.AddTimeFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
                             ConvertTzFunction.INSTANCE,
                             CurDateFunction.INSTANCE,
                             DateDiffFunction.INSTANCE,
                             DateFormatFunction.INSTANCE,
                             DateFormat2Function.INSTANCE,
                             StringToTimestampFunction.INSTANCE,
-                            RexImpTable.DateAddFunction.INSTANCE,
-                            RexImpTable.DateSubFunction.INSTANCE,
-                            RexImpTable.ExtractFunction.INSTANCE,
+                            DateAddFunction.INSTANCE,
+                            AddTimeFunction.INSTANCE,
+                            DateSubFunction.INSTANCE,
+                            ExtractFunction.INSTANCE,
                             DayOfWeekFunction.INSTANCE,
                             FromDaysFunction.INSTANCE,
                             HourFunction.INSTANCE,
@@ -504,7 +521,7 @@ public enum MycatCalciteSupport implements Context {
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
         System.setProperty("calcite.default.charset", charset);
-        System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
+        System.setProperty("saffron.default.collation.tableName", charset + "$ en_US");
         Properties properties = new Properties();
         properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
                 String.valueOf(false));
@@ -630,7 +647,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate, List<Object> params) {
-        MycatImplementor mycatImplementor = new MycatImplementor(MycatSqlDialect.DEFAULT, params);
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         if (forUpdate) {
@@ -689,5 +706,22 @@ public enum MycatCalciteSupport implements Context {
                         new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
     }
 
+    public SqlDialect getSqlDialectByTargetName(String name) {
+        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
+        switch (dbTypeText) {
+            case "sqlserver":
+                return MssqlSqlDialect.DEFAULT;
+            case "oracle":
+                return OracleSqlDialect.DEFAULT;
+            case "postgresql":
+            case "polardb":
+            case  "mysql":
+            case "mariadb":
+            default:
+                return MycatSqlDialect.DEFAULT;
+
+        }
+    }
 
 }

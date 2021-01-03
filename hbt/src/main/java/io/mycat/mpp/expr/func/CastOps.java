@@ -1,10 +1,8 @@
 package io.mycat.mpp.expr.func;
 
-import com.alibaba.fastsql.util.DataTimeUtils;
 import io.mycat.mpp.NullPointer;
 
 import java.nio.charset.Charset;
-import java.time.LocalDateTime;
 
 public class CastOps {
 

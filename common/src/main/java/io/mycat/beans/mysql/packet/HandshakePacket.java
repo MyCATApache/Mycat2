@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,22 +27,22 @@ import io.mycat.config.MySQLServerCapabilityFlags;
  */
 public class HandshakePacket {
 
-  private int protocolVersion;
-  private String serverVersion;
-  private long connectionId;
-  private String authPluginDataPartOne;//salt auth plugin sql part 1
-  private MySQLServerCapabilityFlags capabilities;
-  private boolean hasPartTwo = false;
-  private int characterSet;
-  private int statusFlags;
-  private int authPluginDataLen;
-  private String authPluginDataPartTwo;
-  private String authPluginName;
+    private int protocolVersion;
+    private String serverVersion;
+    private long connectionId;
+    private String authPluginDataPartOne;//salt auth plugin sql part 1
+    private MySQLServerCapabilityFlags capabilities;
+    private boolean hasPartTwo = false;
+    private int characterSet;
+    private int statusFlags;
+    private int authPluginDataLen;
+    private String authPluginDataPartTwo;
+    private String authPluginName;
 
-  public void readPayload(MySQLPayloadReadView buffer) {
+    public void readPayload(MySQLPayloadReadView buffer) {
         protocolVersion = buffer.readByte();
         if (protocolVersion != 0x0a) {
-          throw new MycatException("unsupport HandshakeV9");
+            throw new MycatException("unsupport HandshakeV9");
         }
         serverVersion = buffer.readNULString();
         connectionId = buffer.readFixInt(4);
@@ -62,7 +62,7 @@ public class HandshakePacket {
                 buffer.skipInReading(1);
             }
             //reserved = buffers.readFixString(10);
-         buffer.skipInReading(10);
+            buffer.skipInReading(10);
             if (capabilities.isCanDo41Anthentication()) {
                 //todo check length in range [13.authPluginDataLen)
 //                authPluginDataPartTwo = buffers.readFixString(13);
@@ -74,12 +74,12 @@ public class HandshakePacket {
         }
     }
 
-  public void writePayload(MySQLPayloadWriteView buffer) {
+    public void writePayload(MySQLPayloadWriteView buffer) {
         buffer.writeByte((byte) 0x0a);
         buffer.writeNULString(serverVersion);
         buffer.writeFixInt(4, connectionId);
         if (authPluginDataPartOne.length() != 8) {
-          throw new MycatException("authPluginDataPartOne's length must be 8!");
+            throw new MycatException("authPluginDataPartOne's length must be 8!");
         }
         buffer.writeFixString(authPluginDataPartOne);
         buffer.writeByte((byte) 0);
@@ -141,91 +141,91 @@ public class HandshakePacket {
         return size;
     }
 
-  public int getProtocolVersion() {
-    return protocolVersion;
-  }
+    public int getProtocolVersion() {
+        return protocolVersion;
+    }
 
-  public void setProtocolVersion(int protocolVersion) {
-    this.protocolVersion = protocolVersion;
-  }
+    public void setProtocolVersion(int protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
 
-  public String getServerVersion() {
-    return serverVersion;
-  }
+    public String getServerVersion() {
+        return serverVersion;
+    }
 
-  public void setServerVersion(String serverVersion) {
-    this.serverVersion = serverVersion;
-  }
+    public void setServerVersion(String serverVersion) {
+        this.serverVersion = serverVersion;
+    }
 
-  public long getConnectionId() {
-    return connectionId;
-  }
+    public long getConnectionId() {
+        return connectionId;
+    }
 
-  public void setConnectionId(long connectionId) {
-    this.connectionId = connectionId;
-  }
+    public void setConnectionId(long connectionId) {
+        this.connectionId = connectionId;
+    }
 
-  public String getAuthPluginDataPartOne() {
-    return authPluginDataPartOne;
-  }
+    public String getAuthPluginDataPartOne() {
+        return authPluginDataPartOne;
+    }
 
-  public void setAuthPluginDataPartOne(String authPluginDataPartOne) {
-    this.authPluginDataPartOne = authPluginDataPartOne;
-  }
+    public void setAuthPluginDataPartOne(String authPluginDataPartOne) {
+        this.authPluginDataPartOne = authPluginDataPartOne;
+    }
 
-  public MySQLServerCapabilityFlags getCapabilities() {
-    return capabilities;
-  }
+    public MySQLServerCapabilityFlags getCapabilities() {
+        return capabilities;
+    }
 
-  public void setCapabilities(MySQLServerCapabilityFlags capabilities) {
-    this.capabilities = capabilities;
-  }
+    public void setCapabilities(MySQLServerCapabilityFlags capabilities) {
+        this.capabilities = capabilities;
+    }
 
-  public boolean isHasPartTwo() {
-    return hasPartTwo;
-  }
+    public boolean isHasPartTwo() {
+        return hasPartTwo;
+    }
 
-  public void setHasPartTwo(boolean hasPartTwo) {
-    this.hasPartTwo = hasPartTwo;
-  }
+    public void setHasPartTwo(boolean hasPartTwo) {
+        this.hasPartTwo = hasPartTwo;
+    }
 
-  public int getCharacterSet() {
-    return characterSet;
-  }
+    public int getCharacterSet() {
+        return characterSet;
+    }
 
-  public void setCharacterSet(int characterSet) {
-    this.characterSet = characterSet;
-  }
+    public void setCharacterSet(int characterSet) {
+        this.characterSet = characterSet;
+    }
 
-  public int getStatusFlags() {
-    return statusFlags;
-  }
+    public int getStatusFlags() {
+        return statusFlags;
+    }
 
-  public void setStatusFlags(int statusFlags) {
-    this.statusFlags = statusFlags;
-  }
+    public void setStatusFlags(int statusFlags) {
+        this.statusFlags = statusFlags;
+    }
 
-  public int getAuthPluginDataLen() {
-    return authPluginDataLen;
-  }
+    public int getAuthPluginDataLen() {
+        return authPluginDataLen;
+    }
 
-  public void setAuthPluginDataLen(int authPluginDataLen) {
-    this.authPluginDataLen = authPluginDataLen;
-  }
+    public void setAuthPluginDataLen(int authPluginDataLen) {
+        this.authPluginDataLen = authPluginDataLen;
+    }
 
-  public String getAuthPluginDataPartTwo() {
-    return authPluginDataPartTwo;
-  }
+    public String getAuthPluginDataPartTwo() {
+        return authPluginDataPartTwo;
+    }
 
-  public void setAuthPluginDataPartTwo(String authPluginDataPartTwo) {
-    this.authPluginDataPartTwo = authPluginDataPartTwo;
-  }
+    public void setAuthPluginDataPartTwo(String authPluginDataPartTwo) {
+        this.authPluginDataPartTwo = authPluginDataPartTwo;
+    }
 
-  public String getAuthPluginName() {
-    return authPluginName;
-  }
+    public String getAuthPluginName() {
+        return authPluginName;
+    }
 
-  public void setAuthPluginName(String authPluginName) {
-    this.authPluginName = authPluginName;
-  }
+    public void setAuthPluginName(String authPluginName) {
+        this.authPluginName = authPluginName;
+    }
 }

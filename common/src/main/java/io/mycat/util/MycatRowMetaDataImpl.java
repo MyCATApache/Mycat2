@@ -1,6 +1,7 @@
 package io.mycat.util;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import io.mycat.beans.mycat.MycatRowMetaData;
 
 import java.sql.ResultSetMetaData;
@@ -8,12 +9,14 @@ import java.util.List;
 
 public class MycatRowMetaDataImpl implements MycatRowMetaData {
     final List<SQLColumnDefinition> columnInfo;
+    final List<MySqlTableIndex> indexList;
     final String tableName;
     final String schemaName;
     final int columnCount;
 
-    public MycatRowMetaDataImpl(List<SQLColumnDefinition> columnInfo, String schemaName, String tableName) {
+    public MycatRowMetaDataImpl(List<SQLColumnDefinition> columnInfo, List<MySqlTableIndex> indexList,String schemaName, String tableName) {
         this.columnInfo = columnInfo;
+        this.indexList = indexList;
         this.tableName = tableName;
         this.schemaName = schemaName;
         this.columnCount = columnInfo.size();

@@ -15,15 +15,13 @@
 package io.mycat.datasource.jdbc.datasource;
 
 
-import io.mycat.ConnectionManager;
-import io.mycat.MycatException;
-import io.mycat.MycatWorkerProcessor;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
+import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
-import io.mycat.datasource.jdbc.datasourceprovider.DruidDatasourceProvider;
+import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
@@ -48,25 +46,28 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private final ReplicaSelectorRuntime replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
-                                 Map<String,DatasourceConfig> datasources,
-                                 Map<String,ClusterConfig> clusterConfigs,
+                                 Map<String, DatasourceConfig> datasources,
+                                 Map<String, ClusterConfig> clusterConfigs,
                                  MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorRuntime replicaSelector) {
         this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), workerProcessor, replicaSelector);
     }
 
     private static DatasourceProvider createDatasourceProvider(String customerDatasourceProvider) {
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
         String defaultDatasourceProvider = Optional.ofNullable(customerDatasourceProvider).orElse(DruidDatasourceProvider.class.getName());
         try {
-            return (DatasourceProvider) Class.forName(defaultDatasourceProvider)
+            DatasourceProvider o = (DatasourceProvider) Class.forName(defaultDatasourceProvider)
                     .getDeclaredConstructor().newInstance();
+            o.init(serverConfig);
+            return o;
         } catch (Exception e) {
             throw new MycatException("can not load datasourceProvider:{}", customerDatasourceProvider);
         }
     }
 
-    public JdbcConnectionManager(Map<String,DatasourceConfig> datasources,
-                                 Map<String,ClusterConfig> clusterConfigs,
+    public JdbcConnectionManager(Map<String, DatasourceConfig> datasources,
+                                 Map<String, ClusterConfig> clusterConfigs,
                                  DatasourceProvider provider,
                                  MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorRuntime replicaSelector) {
@@ -106,7 +107,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     @Override
     public void removeDatasource(String jdbcDataSourceName) {
         JdbcDataSource remove = dataSourceMap.remove(jdbcDataSourceName);
-        if (remove!=null){
+        if (remove != null) {
             remove.close();
         }
     }
@@ -120,7 +121,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
                     return dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
-                }),()->"unknown target:"+name);
+                }), () -> "unknown target:" + name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {
                 return ++operand;
@@ -135,7 +136,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 try {
                     return defaultConnection;
                 } finally {
-                    LOGGER.debug("获取连接:{} {}", name, defaultConnection);
+                    LOGGER.debug("get connection:{} {}", name, defaultConnection);
                     if (config.isInitSqlsGetConnection()) {
                         if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
                             try (Statement statement = connection.createStatement()) {
@@ -164,17 +165,19 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             }
             return --operand;
         });
-        if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("close :{} {}", connection,connection.connection);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("close :{} {}", connection, connection.connection);
         }
+        //LOGGER.error("{} {}",connection,connection.connection, new Throwable());
         /**
          *
          * To prevent the transaction from being committed at close time,
          * it is implemented in some databases.
          */
         try {
-            if(!connection.connection.getAutoCommit()){
+            if (!connection.connection.getAutoCommit()) {
                 connection.connection.rollback();
+
             }
         } catch (SQLException e) {
             LOGGER.error("", e);
@@ -235,6 +238,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             for (JdbcDataSource value : dataSourceMap.values()) {
                 value.close();
             }
-        },1,TimeUnit.MINUTES);
+        }, 1, TimeUnit.MINUTES);
+    }
+
+    public DatasourceProvider getDatasourceProvider() {
+        return datasourceProvider;
     }
 }

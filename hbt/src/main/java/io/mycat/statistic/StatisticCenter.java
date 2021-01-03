@@ -1,16 +1,16 @@
 package io.mycat.statistic;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.builder.SQLBuilderFactory;
-import com.alibaba.fastsql.sql.builder.SQLSelectBuilder;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.builder.SQLBuilderFactory;
+import com.alibaba.druid.sql.builder.SQLSelectBuilder;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.metadata.GlobalTable;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.metadata.ShardingTable;
+import io.mycat.calcite.table.GlobalTable;
+import io.mycat.MetadataManager;
+import io.mycat.calcite.table.ShardingTable;
 import io.mycat.TableHandler;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.Data;

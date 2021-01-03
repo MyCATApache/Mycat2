@@ -1,13 +1,13 @@
 package io.mycat.sql;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -141,28 +141,32 @@ public class SensitiveRemover {
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLJoinTableSource x) {
                 String alias = x.getAlias();
-                if (alias!=null){
-                    x.setAlias( "a_" + aliasAcc.getAndIncrement());
+                if (alias != null) {
+                    x.setAlias("a_" + aliasAcc.getAndIncrement());
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLPropertyExpr x) {
                 String newColumnName = "p_" + propertyAcc.getAndIncrement();
                 x.setName(newColumnName);
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLSelectItem x) {
                 String alias = x.getAlias();
-                if (alias!=null){
-                    x.setAlias( "a_" + aliasAcc.getAndIncrement());
+                if (alias != null) {
+                    x.setAlias("a_" + aliasAcc.getAndIncrement());
                 }
                 return super.visit(x);
             }
+
             @Override
             public boolean visit(SQLIdentifierExpr x) {
                 String newColumnName = "i_" + columnAcc.getAndIncrement();

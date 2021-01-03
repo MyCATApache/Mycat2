@@ -65,13 +65,12 @@ public class ReplicaSelectorRuntime implements Closeable {
 
         this.replicaConfigList = clusters;
 
-        Map<String, DatasourceConfig> datasourceConfigMap = datasources;
         ////////////////////////////////////check/////////////////////////////////////////////////
         Objects.requireNonNull(replicaConfigList, "replica config can not be empty");
         ////////////////////////////////////check/////////////////////////////////////////////////
 
         for (ClusterConfig replicaConfig : replicaConfigList) {
-            addCluster(datasourceConfigMap, replicaConfig);
+            addCluster(this.datasources, replicaConfig);
         }
 
 
@@ -201,8 +200,21 @@ public class ReplicaSelectorRuntime implements Closeable {
         LoadBalanceStrategy readLB = loadBalanceManager.getLoadBalanceByBalanceName(replicaConfig.getReadBalanceName());
         LoadBalanceStrategy writeLB = loadBalanceManager.getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
         int maxRequestCount = replicaConfig.getMaxCon() == null ? Integer.MAX_VALUE : replicaConfig.getMaxCon();
-        ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
-                replicaType, maxRequestCount, switchType, readLB, writeLB, replicaConfig.getTimer());
+
+        assert datasourceConfigMap.size() != 0;
+        DatasourceConfig datasourceConfig = datasourceConfigMap.values().stream().iterator().next();
+        String dbType = datasourceConfig.getDbType();
+
+        ReplicaDataSourceSelector selector = registerCluster(
+                name,
+                dbType,
+                balanceType,
+                replicaType,
+                maxRequestCount,
+                switchType,
+                readLB,
+                writeLB,
+                replicaConfig.getTimer());
 
         if (replicaConfig.getMasters() != null) {
             registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
@@ -235,14 +247,16 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
 
-    private ReplicaDataSourceSelector registerCluster(String replicaName, BalanceType balanceType,
+    private ReplicaDataSourceSelector registerCluster(String replicaName,
+                                                      String dbType,
+                                                      BalanceType balanceType,
                                                       ReplicaType type,
                                                       int maxRequestCount,
                                                       ReplicaSwitchType switchType, LoadBalanceStrategy readLB,
                                                       LoadBalanceStrategy writeLB,
                                                       TimerConfig timer) {
         return replicaMap.computeIfAbsent(replicaName,
-                s -> new ReplicaDataSourceSelector(replicaName, balanceType, type, maxRequestCount, switchType, readLB,
+                s -> new ReplicaDataSourceSelector(replicaName, dbType, balanceType, type, maxRequestCount, switchType, readLB,
                         writeLB, timer, this));
     }
 
@@ -377,7 +391,7 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
     public boolean isDatasource(String targetName) {
-        return this.physicsInstanceMap.containsKey(targetName);
+        return this.physicsInstanceMap.containsKey(targetName)||this.datasources.containsKey(targetName);
     }
 
 
@@ -415,5 +429,24 @@ public class ReplicaSelectorRuntime implements Closeable {
                 e.printStackTrace();
             }
         }
+    }
+
+    public String getDbTypeByTargetName(String name) {
+        ReplicaDataSourceSelector replicaDataSourceSelector = this.getReplicaMap().get(name);
+        if (replicaDataSourceSelector != null) {
+            return replicaDataSourceSelector.getDbType();
+        }
+        DatasourceConfig datasourceConfig = datasources.get(name);
+        Objects.requireNonNull(datasourceConfig, "unknown dbType:" + name);
+        return datasourceConfig.getDbType();
+    }
+   public Map<String,Set<String>> getState(){
+        Map<String,Set<String>> map = new HashMap<>();
+        for (ReplicaDataSourceSelector value : replicaMap.values()) {
+            ArrayList<PhysicsInstance> objects = new ArrayList<>(  value.getWriteDataSource());
+            map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toSet()));
+        }
+        return map;
+
     }
 }

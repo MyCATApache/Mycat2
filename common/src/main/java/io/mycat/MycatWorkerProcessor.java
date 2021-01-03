@@ -1,7 +1,6 @@
 package io.mycat;
 
 
-import io.mycat.config.ServerConfig;
 import io.mycat.config.ThreadPoolExecutorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,9 +9,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class MycatWorkerProcessor {
+    private final static Logger LOGGER = LoggerFactory.getLogger(MycatWorkerProcessor.class);
     private NameableExecutor mycatWorker;
     private NameableExecutor timeWorker;
-    private final static Logger LOGGER = LoggerFactory.getLogger(MycatWorkerProcessor.class);
 
     public MycatWorkerProcessor(NameableExecutor mycatWorker, NameableExecutor timeWorker) {
         this.mycatWorker = mycatWorker;
@@ -29,7 +28,7 @@ public class MycatWorkerProcessor {
         this(init("MYCAT_WORKER", workerConfig), init("MYCAT_TIME_WORKER", timeConfig));
     }
 
-    private static NameableExecutor init(String name,ThreadPoolExecutorConfig workerConfig) {
+    private static NameableExecutor init(String name, ThreadPoolExecutorConfig workerConfig) {
         int corePoolSize = workerConfig.getCorePoolSize();
         int maximumPoolSize = workerConfig.getMaxPoolSize();
         long keepAliveTime = workerConfig.getKeepAliveTime();

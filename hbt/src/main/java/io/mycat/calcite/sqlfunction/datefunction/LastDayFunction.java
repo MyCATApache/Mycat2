@@ -4,7 +4,6 @@ import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 
 import java.time.LocalDate;
-import java.time.Period;
 import java.time.YearMonth;
 
 public class LastDayFunction extends MycatDateFunction {
@@ -15,19 +14,21 @@ public class LastDayFunction extends MycatDateFunction {
     public LastDayFunction() {
         super("LAST_DAY", scalarFunction);
     }
+
+
     public static LocalDate lastDay(LocalDate date) {
         if (date == null)return null;
         return    YearMonth.from(date).atEndOfMonth();
     }
-    public static LocalDate lastDay(Period date){
-        if (date == null){
-            return null;
-        }
-        if (date.isNegative()){
-            throw new UnsupportedOperationException();
-        }
-       return LocalDate.of(date.getMonths(),date.getMonths(),date.getDays());
-    }
+//    public static LocalDate lastDay(Period date){
+//        if (date == null){
+//            return null;
+//        }
+//        if (date.isNegative()){
+//            throw new UnsupportedOperationException();
+//        }
+//       return LocalDate.of(date.getMonths(),date.getMonths(),date.getDays());
+//    }
 
 }
 

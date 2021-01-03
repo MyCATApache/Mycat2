@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <mycat>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -37,6 +37,50 @@ public class ServerVersion implements Comparable<ServerVersion> {
         this(null, major, minor, subminor);
     }
 
+    /**
+     * Parse the server version into major/minor/subminor.
+     *
+     * @param versionString
+     *            string version representation
+     * @return {@link ServerVersion}
+     */
+    public static ServerVersion parseVersion(final String versionString) {
+        int point = versionString.indexOf('.');
+
+        if (point != -1) {
+            try {
+                int serverMajorVersion = Integer.parseInt(versionString.substring(0, point));
+
+                String remaining = versionString.substring(point + 1, versionString.length());
+                point = remaining.indexOf('.');
+
+                if (point != -1) {
+                    int serverMinorVersion = Integer.parseInt(remaining.substring(0, point));
+
+                    remaining = remaining.substring(point + 1, remaining.length());
+
+                    int pos = 0;
+
+                    while (pos < remaining.length()) {
+                        if ((remaining.charAt(pos) < '0') || (remaining.charAt(pos) > '9')) {
+                            break;
+                        }
+
+                        pos++;
+                    }
+
+                    int serverSubminorVersion = Integer.parseInt(remaining.substring(0, pos));
+
+                    return new ServerVersion(versionString, serverMajorVersion, serverMinorVersion, serverSubminorVersion);
+                }
+            } catch (NumberFormatException NFE1) {
+            }
+        }
+
+        // can't parse the server version
+        return new ServerVersion(0, 0, 0);
+    }
+
     public int getMajor() {
         return this.major;
     }
@@ -52,7 +96,7 @@ public class ServerVersion implements Comparable<ServerVersion> {
     /**
      * A string representation of this version. If this version was parsed from, or provided with, a "complete" string which may contain more than just the
      * version number, this string is returned verbatim. Otherwise, a string representation of the version numbers is given.
-     * 
+     *
      * @return string version representation
      */
     @Override
@@ -106,49 +150,5 @@ public class ServerVersion implements Comparable<ServerVersion> {
      */
     public boolean meetsMinimum(ServerVersion min) {
         return compareTo(min) >= 0;
-    }
-
-    /**
-     * Parse the server version into major/minor/subminor.
-     * 
-     * @param versionString
-     *            string version representation
-     * @return {@link ServerVersion}
-     */
-    public static ServerVersion parseVersion(final String versionString) {
-        int point = versionString.indexOf('.');
-
-        if (point != -1) {
-            try {
-                int serverMajorVersion = Integer.parseInt(versionString.substring(0, point));
-
-                String remaining = versionString.substring(point + 1, versionString.length());
-                point = remaining.indexOf('.');
-
-                if (point != -1) {
-                    int serverMinorVersion = Integer.parseInt(remaining.substring(0, point));
-
-                    remaining = remaining.substring(point + 1, remaining.length());
-
-                    int pos = 0;
-
-                    while (pos < remaining.length()) {
-                        if ((remaining.charAt(pos) < '0') || (remaining.charAt(pos) > '9')) {
-                            break;
-                        }
-
-                        pos++;
-                    }
-
-                    int serverSubminorVersion = Integer.parseInt(remaining.substring(0, pos));
-
-                    return new ServerVersion(versionString, serverMajorVersion, serverMinorVersion, serverSubminorVersion);
-                }
-            } catch (NumberFormatException NFE1) {
-            }
-        }
-
-        // can't parse the server version
-        return new ServerVersion(0, 0, 0);
     }
 }

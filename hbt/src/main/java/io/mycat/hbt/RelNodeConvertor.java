@@ -25,7 +25,7 @@ import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.hbt3.View;
+import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -111,9 +111,9 @@ public class RelNodeConvertor {
             MycatTransientSQLTableScan tableScan = (MycatTransientSQLTableScan) relNode;
             return new FromSqlSchema(fields, tableScan.getTargetName(), tableScan.getSql());
         }
-        if (relNode instanceof View) {
+        if (relNode instanceof MycatView) {
             List<FieldType> fields = getFields(relNode);
-            View tableScan = (View) relNode;
+            MycatView tableScan = (MycatView) relNode;
             ImmutableMultimap<String, SqlString> stringStringImmutableMultimap = tableScan.expandToSql(false,Collections.emptyList());
             List<Schema> fromSqlSchemas = stringStringImmutableMultimap.entries().stream().map(i -> new FromSqlSchema(fields, i.getKey(), i.getValue().getSql())).collect(Collectors.toList());
             if (fromSqlSchemas.size() > 1) {

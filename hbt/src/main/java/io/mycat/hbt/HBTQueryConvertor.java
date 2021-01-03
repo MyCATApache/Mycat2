@@ -14,30 +14,28 @@
  */
 package io.mycat.hbt;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLDataType;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLDataType;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.hbt3.Distribution;
-import io.mycat.metadata.MetadataManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.MetadataManager;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.plan.RelOptTable;
@@ -54,6 +52,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RelBuilder;
@@ -94,23 +93,21 @@ public class HBTQueryConvertor {
 
         metaDataFetcher = (targetName, sql) -> {
             try {
-                ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-                targetName = selectorRuntime.getDatasourceNameByReplicaName(targetName, false, null);
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                JdbcDataSource jdbcDataSource =jdbcConnectionManager.getDatasourceInfo().get(targetName);
-                try (Connection connection1 = jdbcDataSource.getDataSource().getConnection()) {
-                    try (Statement statement = connection1.createStatement()) {
-                        statement.setMaxRows(0);
-                        try (ResultSet resultSet = statement.executeQuery(sql)) {
-                            ResultSetMetaData metaData = resultSet.getMetaData();
-                            JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
-                            return FieldTypes.getFieldTypes(jdbcRowMetaData);
-                        }
+                try(DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName)){
+                    Connection rawConnection = mycatConnection.getRawConnection();
+                    try (Statement statement = rawConnection.createStatement()) {
+                            statement.setMaxRows(0);
+                            try (ResultSet resultSet = statement.executeQuery(sql)) {
+                                ResultSetMetaData metaData = resultSet.getMetaData();
+                                JdbcRowMetaData jdbcRowMetaData = new JdbcRowMetaData(metaData);
+                                return FieldTypes.getFieldTypes(jdbcRowMetaData);
+                            }
+                    } catch (SQLException e) {
+                        log.warn("{}", e);
                     }
-                } catch (SQLException e) {
-                    log.warn("{}", e);
+                    return null;
                 }
-                return null;
             } catch (Throwable e) {
                 log.warn("{0}", e);
             }
@@ -696,7 +693,8 @@ public class HBTQueryConvertor {
 
     public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
         RelDataType rowType = input.getRowType();
-        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, MycatSqlDialect.DEFAULT, forUpdate).getSql()
+        SqlDialect sqlDialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, sqlDialect, forUpdate).getSql()
         );
     }
 

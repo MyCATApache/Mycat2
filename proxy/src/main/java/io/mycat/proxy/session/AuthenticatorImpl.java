@@ -2,6 +2,7 @@ package io.mycat.proxy.session;
 
 import io.mycat.Authenticator;
 import io.mycat.MycatException;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.config.UserConfig;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,12 +36,16 @@ public class AuthenticatorImpl implements Authenticator {
     public AuthInfo getPassword(String username, String ip) {
         Matcher matcher = userMatchers.get(username);
         if (matcher == null) {
-            return new AuthInfo(new MycatException("user:" + username + " is not existed"), null);
+            return new AuthInfo(("user:" + username + " is not existed"),
+                    null,
+                    MySQLErrorCode.ER_ACCESS_DENIED_ERROR);
         }
         if( !matcher.getIpPredicate().test(ip)){
-            return new AuthInfo(new MycatException("ip:" + ip + " is banned"), null);
+            return new AuthInfo(("ip:" + ip + " is banned"), null,
+                    MySQLErrorCode.ER_ACCESS_DENIED_ERROR);
         }
-        return new AuthInfo(null, matcher.getRightPassword());
+        return new AuthInfo(null, matcher.getRightPassword(),
+                MySQLErrorCode.ER_ACCESS_DENIED_ERROR);
     }
 
     @Override

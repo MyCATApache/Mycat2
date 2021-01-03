@@ -14,9 +14,9 @@
  */
 package io.mycat.querycondition;
 
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 /**
  * @author Junwen Chen
  **/

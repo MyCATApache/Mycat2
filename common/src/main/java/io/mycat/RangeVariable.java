@@ -17,8 +17,6 @@ package io.mycat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import javax.swing.*;
-
 /**
  * @author Junwen Chen
  **/

@@ -1,13 +1,16 @@
 package io.mycat.runtime;
 
-import io.mycat.MycatDataContext;
+import io.mycat.MycatConnection;
 import io.mycat.ThreadUsageEnum;
+import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.util.Dumper;
 
-public class ProxyTransactionSession extends LocalTransactionSession {
-    public ProxyTransactionSession(MycatDataContext dataContext) {
-        super(dataContext);
+public class ProxyTransactionSession implements TransactionSession {
+    private TransactionSession parent;
+
+    public ProxyTransactionSession(TransactionSession parent) {
+        this.parent = parent;
     }
 
     @Override
@@ -16,8 +19,88 @@ public class ProxyTransactionSession extends LocalTransactionSession {
     }
 
     @Override
+    public void setTransactionIsolation(int transactionIsolation) {
+        parent.setTransactionIsolation(transactionIsolation);
+    }
+
+    @Override
+    public void begin() {
+        parent.begin();
+    }
+
+    @Override
+    public void commit() {
+        parent.commit();
+    }
+
+    @Override
+    public void rollback() {
+        parent.rollback();
+    }
+
+    @Override
+    public boolean isInTransaction() {
+        return parent.isInTransaction();
+    }
+
+    @Override
+    public void setAutocommit(boolean autocommit) {
+        parent.setAutocommit(autocommit);
+    }
+
+    @Override
+    public boolean isAutocommit() {
+        return parent.isAutocommit();
+    }
+
+    @Override
+    public MycatConnection getConnection(String targetName) {
+        return parent.getConnection(targetName);
+    }
+
+    @Override
+    public int getServerStatus() {
+        return parent.getServerStatus();
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return parent.isReadOnly();
+    }
+
+    @Override
+    public void setReadOnly(boolean readOnly) {
+        parent.setReadOnly(readOnly);
+    }
+
+    @Override
+    public int getTransactionIsolation() {
+        return parent.getTransactionIsolation();
+    }
+
+    @Override
     public ThreadUsageEnum getThreadUsageEnum() {
-        return ThreadUsageEnum.THIS_THREADING;
+        return ThreadUsageEnum.MULTI_THREADING;
+    }
+
+    @Override
+    public void closeStatenmentState() {
+        parent.closeStatenmentState();
+    }
+
+    @Override
+    public void close() {
+        parent.close();
+    }
+
+    @Override
+    public String resolveFinalTargetName(String targetName) {
+        return parent.resolveFinalTargetName(targetName);
+    }
+
+    @Override
+    public String resolveFinalTargetName(String targetName, boolean master) {
+        return parent.resolveFinalTargetName(targetName, master);
     }
 
     @Override
@@ -26,24 +109,22 @@ public class ProxyTransactionSession extends LocalTransactionSession {
     }
 
     @Override
-    protected void callBackBegin() {
-        super.callBackBegin();
+    public void openStatementState() {
+        parent.openStatementState();
     }
 
     @Override
-    protected void callBackCommit() {
-        super.callBackCommit();
+    public void addCloseResource(AutoCloseable closeable) {
+        parent.addCloseResource(closeable);
     }
 
     @Override
-    protected void callBackRollback() {
-        super.callBackRollback();
+    public String getTxId() {
+        return parent.getTxId();
     }
+
     @Override
     public Dumper snapshot() {
-        return super.snapshot()
-                .addText("name",name())
-                .addText("threadUsage",getThreadUsageEnum())
-                .addText("transactionType",this.transactionType());
+        return parent.snapshot().addText("proxy");
     }
 }

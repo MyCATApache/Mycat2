@@ -1,16 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,31 +27,31 @@ import java.math.BigDecimal;
 
 public interface ResultSetCollector {
 
-  void onResultSetStart();
+    void onResultSetStart();
 
-  void onResultSetEnd();
+    void onResultSetEnd();
 
-  void onRowStart();
+    void onRowStart();
 
-  void onRowEnd();
+    void onRowEnd();
 
-  void addNull(int columnIndex);
+    void addNull(int columnIndex);
 
-  void addString(int columnIndex, String value);
+    void addString(int columnIndex, String value);
 
-  void addBlob(int columnIndex, byte[] value);
-
-
-  void addValue(int columnIndex, long value, boolean isNUll);
-
-  void addValue(int columnIndex, double value, boolean isNUll);
-
-  void addValue(int columnIndex, byte value, boolean isNUll);
+    void addBlob(int columnIndex, byte[] value);
 
 
-  void addDecimal(int columnIndex, BigDecimal value);
+    void addValue(int columnIndex, long value, boolean isNUll);
 
-  void collectColumnList(ColumnDefPacket[] packets);
+    void addValue(int columnIndex, double value, boolean isNUll);
 
-  void addDate(int columnIndex, java.util.Date date);
+    void addValue(int columnIndex, byte value, boolean isNUll);
+
+
+    void addDecimal(int columnIndex, BigDecimal value);
+
+    void collectColumnList(ColumnDefPacket[] packets);
+
+    void addDate(int columnIndex, java.util.Date date);
 }

@@ -132,7 +132,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
     public LocalDateTime getTimestamp(int columnIndex) {
         String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
-        return (LocalDateTime)MycatTimeUtil.timestampStringToTimestamp(o);
+        return (LocalDateTime) MycatTimeUtil.timestampStringToTimestamp(o);
     }
 
     @Override

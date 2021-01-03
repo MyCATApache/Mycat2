@@ -30,9 +30,8 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     final BindThreadPool manager;
     long startTime;
     volatile KEY key;
+    long completedTasks = 0;
     private long endTime;
-
-   long completedTasks = 0;
 
     public BindThread(BindThreadPool manager) {
         this.manager = manager;
@@ -78,7 +77,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
                         throw new RuntimeException("unknown state");
                     }
                 } finally {
-                    if (callback!=null) {
+                    if (callback != null) {
                         callback.finallyAccept(key, this);
                     }
                 }
@@ -95,7 +94,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         } catch (Exception e) {
             manager.exceptionHandler.accept(e);
             exception = e;
-        }finally {
+        } finally {
             completedTasks++;
         }
         this.endTime = System.currentTimeMillis();

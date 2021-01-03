@@ -56,6 +56,10 @@ public class ServerConfig {
     private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
 
+    public static void main(String[] args) {
+        System.out.println(JsonUtil.toJson(new ServerConfig()));
+    }
+
     public String getTempDirectory() {
         String mycat_temp_directory = "mycat_temp_directory";
         if (tempDirectory == null) {
@@ -87,10 +91,5 @@ public class ServerConfig {
             System.out.println("tempDirectory:" + tempDirectory);
         }
         return tempDirectory;
-    }
-
-
-    public static void main(String[] args) {
-        System.out.println(JsonUtil.toJson(new ServerConfig()));
     }
 }

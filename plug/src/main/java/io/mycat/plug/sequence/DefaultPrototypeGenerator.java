@@ -14,13 +14,10 @@ import java.sql.ResultSet;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongBinaryOperator;
-import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 public class DefaultPrototypeGenerator implements Supplier<Number> {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultPrototypeGenerator.class);
@@ -46,13 +43,6 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
                 TimeUnit.MILLISECONDS);
     }
 
-    @Getter
-    @AllArgsConstructor
-    static class Value {
-        private final long count;
-        private final long step;
-    }
-
     @Override
     @SneakyThrows
     public Number get() {
@@ -73,7 +63,7 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
         if (andUpdate != null) {
             fetch();
         } else {
-            Thread.sleep(inv/2);
+            Thread.sleep(inv / 2);
         }
         return get();
     }
@@ -81,10 +71,10 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
     public void fetch() {
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         mycatWorkerProcessor.getMycatWorker().execute(() -> {
-            if(this.value==null){
+            if (this.value == null) {
                 Value number = getNumber();
                 synchronized (this) {
-                    if(this.value==null){
+                    if (this.value == null) {
                         this.value = number;
                     }
                 }
@@ -113,5 +103,12 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
         try (MycatConnection prototype = connectionManager.getConnection(this.targetName)) {
             prototype.executeUpdate(MessageFormat.format(setValueSql, schema, table, value), false);
         }
+    }
+
+    @Getter
+    @AllArgsConstructor
+    static class Value {
+        private final long count;
+        private final long step;
     }
 }

@@ -1,19 +1,12 @@
 package io.mycat;
 
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public interface TableHandler {
-//
-//    public Function<MySqlInsertStatement, Iterable<ParameterizedValues>> insertHandler();
-//
-//    public Function<MySqlUpdateStatement, Iterable<TextUpdateInfo>> updateHandler();
-//
-//    public Function<MySqlDeleteStatement, Iterable<TextUpdateInfo>> deleteHandler();
 
     public LogicTableType getType();
 
@@ -23,7 +16,15 @@ public interface TableHandler {
 
     String getCreateTableSQL();
 
+    default List<SimpleColumnInfo> getPrimaryKeyList(){
+        return getColumns().stream()
+                .filter(SimpleColumnInfo::isPrimaryKey)
+                .collect(Collectors.toList());
+    }
+
     List<SimpleColumnInfo> getColumns();
+
+    Map<String,IndexInfo> getIndexes();
 
     SimpleColumnInfo getColumnByName(String name);
 
@@ -40,7 +41,6 @@ public interface TableHandler {
     void createPhysicalTables();
 
     void dropPhysicalTables();
-
 
 
 }

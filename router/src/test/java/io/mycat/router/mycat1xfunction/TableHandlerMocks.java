@@ -6,6 +6,8 @@ import io.mycat.router.ShardingTableHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class TableHandlerMocks {
@@ -48,6 +50,37 @@ public class TableHandlerMocks {
             @Override
             public List<SimpleColumnInfo> getColumns() {
                 return null;
+            }
+
+            @Override
+            public Map<String,IndexInfo> getIndexes() {
+                return null;
+            }
+
+            @Override
+            public Optional canIndexTableScan(int[] projects) {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Iterable<Object[]>> canIndexTableScan(int[] projects, int[] filterIndex, Object[] value) {
+                return Optional.empty();
+            }
+
+
+            @Override
+            public Optional canIndexTableScan() {
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean canIndex() {
+                return false;
+            }
+
+            @Override
+            public int getIndexBColumnName(String name) {
+                return 0;
             }
 
 

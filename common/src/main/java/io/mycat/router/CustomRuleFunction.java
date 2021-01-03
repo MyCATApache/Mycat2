@@ -34,6 +34,18 @@ public abstract class CustomRuleFunction {
 
     public abstract List<DataNode> calculate(Map<String, Collection<RangeVariable>> values);
 
+    public DataNode calculateOne(Map<String, Collection<RangeVariable>> values){
+        List<DataNode> dataNodes = calculate(values);
+        if (dataNodes.isEmpty()) {
+            throw new IllegalArgumentException("路由计算返回结果个数为0");
+        }
+        DataNode dataNode = dataNodes.get(0);
+        if(dataNode == null){
+            throw new IllegalArgumentException("路由计算返回结果为NULL");
+        }
+        return dataNodes.get(0);
+    }
+
     protected abstract void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges);
 
     public Map<String, Object> getProperties() {
@@ -56,9 +68,9 @@ public abstract class CustomRuleFunction {
     }
 
 
-
     public boolean isSameRule(CustomRuleFunction other) {
         return false;
     }
- public abstract    boolean isShardingKey(String name);
+
+    public abstract boolean isShardingKey(String name);
 }

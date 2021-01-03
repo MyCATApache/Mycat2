@@ -14,7 +14,10 @@
  */
 package io.mycat.proxy.handler.front;
 
+import io.mycat.Authenticator;
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatUser;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
@@ -23,10 +26,10 @@ import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.config.UserConfig;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.Authenticator;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.proxy.session.ProcessState;
@@ -53,7 +56,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 //    public MycatSession mycat;
     private boolean finished = false;
     private AuthPacket auth;
-    public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
+    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
     private MycatSessionManager mycatSessionManager;
 
@@ -89,7 +92,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                     isChangeAuthPlugin = true;
                     AuthSwitchRequestPacket authSwitchRequestPacket = new AuthSwitchRequestPacket();
                     clientAuthPluginName = StringUtil.isEmpty(authPluginName) ? MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME : authPluginName;
-                    authSwitchRequestPacket.setAuthPluginName(clientAuthPluginName);
+                    authSwitchRequestPacket.setAuthPluginName( MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
                     authSwitchRequestPacket.setStatus((byte) 0xfe);
                     authSwitchRequestPacket.setAuthPluginData(new String(seed));
 
@@ -108,7 +111,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
-                failture(mycat, message);
+                failture(mycat, MySQLErrorCode.ER_UNKNOWN_ERROR,message);
                 mycat.lazyClose(true, message);
                 return;
             }
@@ -121,24 +124,33 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
             MycatUser user = null;
             SocketAddress remoteSocketAddress = mycat.channel().socket().getRemoteSocketAddress();
-            Authenticator authenticator = mycatSessionManager.getAuthenticator();
+            Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
             String ip = SocketAddressUtil.simplySocketAddress(remoteSocketAddress);
+
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username, ip);
             if (!authInfo.isOk()) {
-                failture(mycat, authInfo.getException());
+                failture(mycat,authInfo.getErrorCode() ,authInfo.getException());
                 return;
             } else {
                 String rightPassword = authInfo.getRightPassword();
                 if (rightPassword != null) {
-                    if (!checkPassword(rightPassword, password)) {
-                        failture(mycat, "password is wrong");
+                    if (!checkPassword(rightPassword, password)) {//may be bug
+                        String message ="Access denied for user '" +
+                                username +
+                                "'@'" +
+                                remoteSocketAddress.toString() +
+                                "' (using password: YES)";
+                        mycat.setLastMessage(message);
+                        mycat.setLastErrorCode(ER_ACCESS_DENIED_ERROR);
+                        LOGGER.error("login fail: {}",message);
+                        mycat.writeErrorEndPacketBySyncInProcessError(ER_ACCESS_DENIED_ERROR);
+                        LOGGER.error("remoteSocketAddress:{} password is wrong",remoteSocketAddress);
                         return;
-                    } else {
-                        user = new MycatUser(username, null, null, ip);
                     }
-                } else {
-                    user = new MycatUser(username, null, null, ip);
                 }
+                UserConfig userInfo = authenticator.getUserInfo(username);
+                user = new MycatUser(username, null, null, ip,
+                        userInfo);
             }
 
             mycat.setUser(user);
@@ -166,15 +178,23 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         mycat.resetCurrentProxyPayload();
         return auth;
     }
+    public void failture(MycatSession mycat, Authenticator.AuthInfo authInfo) {
+        mycat.setLastMessage(authInfo.getException());
+        LOGGER.error("login fail: {}",authInfo.getException());
+        mycat.writeErrorEndPacketBySyncInProcessError( ER_ACCESS_DENIED_ERROR);
+    }
 
-    public void failture(MycatSession mycat, String message) {
+    public void failture(MycatSession mycat, int errorCode, String message) {
         mycat.setLastMessage(message);
-        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
+        mycat.setLastErrorCode(errorCode);
+        LOGGER.error("login fail: {}",message);
+        mycat.writeErrorEndPacketBySyncInProcessError(errorCode);
     }
 
     public void failture(MycatSession mycat, Exception e) {
         mycat.setLastMessage(e);
-        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
+        LOGGER.error("login fail: {}",e.getMessage(),e);
+        mycat.writeErrorEndPacketBySyncInProcessError(ER_ACCESS_DENIED_ERROR);
     }
 
     @Override
@@ -213,15 +233,25 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     }
 
     public void sendAuthPackge(MycatSession mycat) {
+
+        long sessionId = mycat.sessionId();
+        int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
+
         byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
+        byte[] bytes = createHandshakePayload(sessionId, serverCapabilities, seedParts);
+
         this.seed = seedParts[2];
+        mycat.setServerCapabilities(serverCapabilities);
+        mycat.setPacketId(-1);//使用获取的packetId变为0
+        mycat.writeBytes(bytes, true);
+    }
+
+    public static byte[] createHandshakePayload(long sessionId, int serverCapabilities, byte[][] seedParts) {
         HandshakePacket hs = new HandshakePacket();
         hs.setProtocolVersion(MySQLVersion.PROTOCOL_VERSION);
         hs.setServerVersion(new String(MySQLVersion.SERVER_VERSION));
-        hs.setConnectionId(mycat.sessionId());
+        hs.setConnectionId(sessionId);
         hs.setAuthPluginDataPartOne(new String(seedParts[0]));
-        int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
-        mycat.setServerCapabilities(serverCapabilities);
         hs.setCapabilities(new MySQLServerCapabilityFlags(serverCapabilities));
         hs.setHasPartTwo(true);
         hs.setCharacterSet(8);
@@ -231,8 +261,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         hs.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
-        mycat.setPacketId(-1);//使用获取的packetId变为0
-        mycat.writeBytes(mySQLPayloadWriter.toByteArray(), true);
+        return mySQLPayloadWriter.toByteArray();
     }
 
 

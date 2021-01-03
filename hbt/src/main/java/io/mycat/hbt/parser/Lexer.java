@@ -14,15 +14,15 @@
  */
 package io.mycat.hbt.parser;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
-import com.alibaba.fastsql.sql.parser.Token;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
+import com.alibaba.druid.sql.parser.Token;
 
 /**
  * @author jamie12221
  **/
 public class Lexer {
-    final com.alibaba.fastsql.sql.parser.Lexer lexer;
+    final com.alibaba.druid.sql.parser.Lexer lexer;
 
     public Lexer(String text) {
         this.lexer = SQLParserUtils.createLexer(text, DbType.mysql);

@@ -14,9 +14,7 @@
  */
 package io.mycat;
 
-import io.mycat.MycatConnection;
 import io.mycat.config.DatasourceConfig;
-import io.mycat.config.DatasourceRootConfig;
 
 /**
  * @author Junwen Chen

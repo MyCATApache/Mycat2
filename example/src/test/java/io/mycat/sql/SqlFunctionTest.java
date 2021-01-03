@@ -87,8 +87,8 @@ public class SqlFunctionTest implements MycatTest {
     }
 
     private void check(String s) throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(3306);
-             Connection mycatConnection = getMySQLConnection(8066);
+        try (Connection mySQLConnection = getMySQLConnection(DB1);
+             Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             Assert.assertEquals(
                     executeQueryAsString(mySQLConnection, s)
@@ -98,15 +98,15 @@ public class SqlFunctionTest implements MycatTest {
 
     private void uncheckValue(String s) throws Exception {
         try (
-                Connection mycatConnection = getMySQLConnection(8066);
+                Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             executeQuery(mycatConnection, s);
         }
     }
 
     private void checkValue(String s) throws Exception {
-        try (Connection mySQLConnection = getMySQLConnection(3306);
-             Connection mycatConnection = getMySQLConnection(8066);
+        try (Connection mySQLConnection = getMySQLConnection(DB1);
+             Connection mycatConnection = getMySQLConnection(DB_MYCAT);
         ) {
             Assert.assertEquals(
                     executeQuery(mySQLConnection, s)
@@ -219,38 +219,38 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("SELECT EXTRACT(MONTH FROM \"2017-06-15\");");
         checkValue("SELECT FROM_DAYS(685467);");
         checkValue("SELECT HOUR(\"2017-06-20 09:34:00\");");
-//        checkValue("SELECT LAST_DAY(\"2017-06-20\");");
-//        checkValue("SELECT LOCALTIME();");
-//        checkValue("SELECT LOCALTIMESTAMP();");
-//        checkValue("SELECT MAKEDATE(2017, 3);");
-//        checkValue("SELECT MAKETIME(11, 35, 4);");
-//        checkValue("SELECT MICROSECOND(\"2017-06-20 09:34:00.000023\");");
-//        checkValue("SELECT MINUTE(\"2017-06-20 09:34:00\");");
-//        checkValue("SELECT MONTH(\"2017-06-15\");");
-//        checkValue("SELECT MONTHNAME(\"2017-06-15\");");
-//
-//        checkValue("SELECT NOW();");
-//        checkValue("SELECT PERIOD_ADD(201703, 5)");
-//        checkValue("SELECT PERIOD_DIFF(201710, 201703);");
-//        checkValue("SELECT QUARTER(\"2017-06-15\");");
-//        checkValue("SELECT QUARTER(\"2017-06-15\");");
-//        checkValue("SELECT SECOND(\"2017-06-20 09:34:00.000023\");");
-//        checkValue("SELECT SEC_TO_TIME(1);");
-//        checkValue("SELECT STR_TO_DATE(\"August 10 2017\", \"%M %d %Y\");");
-//        checkValue("SELECT SUBDATE(\"2017-06-15\", INTERVAL 10 DAY);");
-//        checkValue("SELECT SUBTIME(\"2017-06-15 10:24:21.000004\", \"5.000001\");");
-//        uncheckValue("SELECT SYSDATE();");
-//        checkValue("SELECT TIME(\"19:30:10\");");
-//        checkValue("SELECT TIME_FORMAT(\"19:30:10\", \"%H %i %s\");");
-//        uncheckValue("SELECT TIME_TO_SEC(\"19:30:10\");");
-//        checkValue("SELECT TIMEDIFF(\"13:10:11\", \"13:10:10\");");
-//        checkValue("SELECT TIMESTAMP(\"2017-07-23\",  \"13:10:11\");");
-//        checkValue("SELECT TO_DAYS(\"2017-06-20\");");
-//        checkValue("SELECT WEEK(\"2017-06-15\");");
-//        checkValue("SELECT WEEKDAY(\"2017-06-15\");");
-//        checkValue("SELECT WEEKOFYEAR(\"2017-06-15\");");
-//        checkValue("SELECT YEAR(\"2017-06-15\");");
-//        checkValue("SELECT YEARWEEK(\"2017-06-15\");");
+        checkValue("SELECT LAST_DAY(\"2017-06-20\");");
+        uncheckValue("SELECT LOCALTIME();");
+        uncheckValue("SELECT LOCALTIMESTAMP();");
+        checkValue("SELECT MAKEDATE(2017, 3);");
+        checkValue("SELECT MAKETIME(11, 35, 4);");
+        checkValue("SELECT MICROSECOND(\"2017-06-20 09:34:00.000023\");");
+        checkValue("SELECT MINUTE(\"2017-06-20 09:34:00\");");
+        checkValue("SELECT MONTH(\"2017-06-15\");");
+        checkValue("SELECT MONTHNAME(\"2017-06-15\");");
+
+        uncheckValue("SELECT NOW();");
+        checkValue("SELECT PERIOD_ADD(201703, 5)");
+        checkValue("SELECT PERIOD_DIFF(201710, 201703);");
+        checkValue("SELECT QUARTER(\"2017-06-15\");");
+        checkValue("SELECT QUARTER(\"2017-06-15\");");
+        checkValue("SELECT SECOND(\"2017-06-20 09:34:00.000023\");");
+        checkValue("SELECT SEC_TO_TIME(1);");
+        checkValue("SELECT STR_TO_DATE(\"August 10 2017\", \"%M %d %Y\");");
+        checkValue("SELECT SUBDATE(\"2017-06-15\", INTERVAL 10 DAY);");
+        checkValue("SELECT SUBTIME(\"2017-06-15 10:24:21.000004\", \"5.000001\");");
+        uncheckValue("SELECT SYSDATE();");
+        checkValue("SELECT TIME(\"19:30:10\");");
+        checkValue("SELECT TIME_FORMAT(\"19:30:10\", \"%H %i %s\");");
+        uncheckValue("SELECT TIME_TO_SEC(\"19:30:10\");");
+        checkValue("SELECT TIMEDIFF(\"13:10:11\", \"13:10:10\");");
+        checkValue("SELECT TIMESTAMP(\"2017-07-23\",  \"13:10:11\");");
+        checkValue("SELECT TO_DAYS(\"2017-06-20\");");
+        checkValue("SELECT WEEK(\"2017-06-15\");");
+        checkValue("SELECT WEEKDAY(\"2017-06-15\");");
+        checkValue("SELECT WEEKOFYEAR(\"2017-06-15\");");
+        checkValue("SELECT YEAR(\"2017-06-15\");");
+        checkValue("SELECT YEARWEEK(\"2017-06-15\");");
         //todo
     }
 
@@ -279,9 +279,9 @@ public class SqlFunctionTest implements MycatTest {
 
 
     private void initShardingTable() throws Exception {
-        Connection mycatConnection = getMySQLConnection(8066);
+        Connection mycatConnection = getMySQLConnection(DB_MYCAT);
 
-        Connection mysql3306 = getMySQLConnection(3306);
+        Connection mysql3306 = getMySQLConnection(DB1);
 
         execute(mycatConnection, "DROP DATABASE db1");
 
@@ -292,10 +292,10 @@ public class SqlFunctionTest implements MycatTest {
 
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds0",
-                        "jdbc:mysql://127.0.0.1:3306"));
+                        DB1));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        "jdbc:mysql://127.0.0.1:3306"));
+                        DB1));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",
@@ -353,6 +353,7 @@ public class SqlFunctionTest implements MycatTest {
     @Test
     public void testComplexQuery() throws Exception {
         initShardingTable();
+        checkValue("SELECT * FROM `travelrecord` WHERE (ISNULL(`id`)) AND (`user_id`='3') AND (`traveldate`='2020-12-25') AND (`fee`='333') AND (`days`='111') AND (`blob`='张三') LIMIT 1", "");
         checkValue("select * from db1.travelrecord as t,db1.company as c  where t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
         checkValue("select * from db1.travelrecord as t INNER JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
         checkValue("select * from db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id order by  t.id", "(999999999,999,null,null,null,null,null,null,null)(1,999,null,null,null,null,1,Intel,1)");

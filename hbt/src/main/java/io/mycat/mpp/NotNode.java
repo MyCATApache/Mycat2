@@ -1,8 +1,8 @@
 package io.mycat.mpp;
 
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.expr.SQLNotExpr;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.expr.SQLNotExpr;
 import io.mycat.mpp.plan.DataAccessor;
 import io.mycat.mpp.plan.RowType;
 import io.mycat.mpp.runtime.Type;

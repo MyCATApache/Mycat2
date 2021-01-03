@@ -1,18 +1,28 @@
 package io.mycat.sqlhandler.dql;
 
-import com.alibaba.fastsql.sql.ast.statement.SQLShowCreateTableStatement;
+import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.SQLShowCreateTableStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.ExecuteCode;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.util.Response;
+import io.mycat.Response;
 
 
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override
     protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.tryBroadcastShow(request.getAst().toString());
+        SQLShowCreateTableStatement ast = request.getAst();
+        SQLName name = ast.getName();
+        if (name instanceof SQLIdentifierExpr){
+            SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
+            sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
+            sqlPropertyExpr.setName(name.toString());
+            ast.setName(sqlPropertyExpr);
+        }
+        response.proxySelectToPrototype(ast.toString());
         return ;
 //
 //        SQLName nameExpr = ast.getName();

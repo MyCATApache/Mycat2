@@ -15,7 +15,6 @@
 package io.mycat.proxy.handler;
 
 import io.mycat.command.CommandResolver;
-import io.mycat.command.ThreadModeCommandHanlderImpl;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.session.MycatSession;
@@ -41,19 +40,12 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     @Override
     public void onSocketRead(MycatSession mycat) {
         try {
-//      if (!mycat.checkOpen()) {
-//        onException(mycat, new ClosedChannelException());
-//        mycat.close(false, "mysql session has closed");
-//        return;
-//      }
             FrontMySQLPacketResolver resolver = mycat.getMySQLPacketResolver();
             ProcessState processState = mycat.getProcessState();
             if (processState == ProcessState.READY) {
                 if (resolver.readFromChannel()) {
                     mycat.clearReadWriteOpts();
-
-                        CommandResolver.handle(mycat, resolver.getPayload(),new ThreadModeCommandHanlderImpl( mycat.getCommandHandler()));
-
+                        CommandResolver.handle(mycat, resolver.getPayload(),mycat.getCommandHandler());
                     return;
                 } else {
                     return;
