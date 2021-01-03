@@ -282,26 +282,14 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
                 boolean b = resultSet.wasNull();
                 return b ? null : aShort;
             }
-            case INTEGER: {
-                int anInt = resultSet.getInt(columnIndex);
-                boolean b = resultSet.wasNull();
-                return b ? null : anInt;
-            }
+            case INTEGER:
             case BIGINT: {
                 long aLong = resultSet.getLong(columnIndex);
                 boolean b = resultSet.wasNull();
                 return b ? null : aLong;
             }
-            case FLOAT: {
-                float aFloat = resultSet.getFloat(columnIndex);
-                boolean b = resultSet.wasNull();
-                return b ? null : aFloat;
-            }
-            case REAL: {
-                float aFloat = resultSet.getFloat(columnIndex);
-                boolean b = resultSet.wasNull();
-                return b ? null : aFloat;
-            }
+            case FLOAT:
+            case REAL:
             case DOUBLE: {
                 double aDouble = resultSet.getDouble(columnIndex);
                 boolean b = resultSet.wasNull();
