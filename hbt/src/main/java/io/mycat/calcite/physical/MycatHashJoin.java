@@ -32,20 +32,18 @@ import java.util.Set;
 public class MycatHashJoin extends Join implements MycatRel {
     protected MycatHashJoin(RelOptCluster cluster,
                             RelTraitSet traitSet,
-                            List<RelHint> hints,
                             RelNode left,
                             RelNode right,
                             RexNode condition,
                             Set<CorrelationId> variablesSet,
                             JoinRelType joinType) {
-        super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
+        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     /**
      * Creates an MycatHashJoin.
      */
     public static MycatHashJoin create(
-            ImmutableList<RelHint> hints,
             RelTraitSet traitSet,
             RelNode left,
             RelNode right,
@@ -57,7 +55,7 @@ public class MycatHashJoin extends Join implements MycatRel {
                 traitSet.replace(MycatConvention.INSTANCE)
                         .replaceIfs(RelCollationTraitDef.INSTANCE,
                                 () -> RelMdCollation.enumerableHashJoin(mq, left, right, joinType));
-        return new MycatHashJoin(cluster, traitSet, hints, left, right, condition,
+        return new MycatHashJoin(cluster, traitSet, left, right, condition,
                 ImmutableSet.of(), joinType);
     }
 
@@ -78,7 +76,7 @@ public class MycatHashJoin extends Join implements MycatRel {
 
     @Override
     public MycatHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-        return new MycatHashJoin(getCluster(), traitSet, ImmutableList.of(), left, right, conditionExpr, getVariablesSet(), joinType);
+        return new MycatHashJoin(getCluster(), traitSet,left, right, conditionExpr, getVariablesSet(), joinType);
     }
 
     @Override
@@ -128,59 +126,8 @@ public class MycatHashJoin extends Join implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        return implementHashJoin(implementor,pref);
-    }
-
-    private  Result implementHashJoin(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        BlockBuilder builder = new BlockBuilder();
-        final Result leftResult =
-                implementor.visitChild(this, 0, (EnumerableRel) left, pref);
-        Expression leftExpression =
-                builder.append(
-                        "left", leftResult.block);
-        final Result rightResult =
-                implementor.visitChild(this, 1, (EnumerableRel) right, pref);
-        Expression rightExpression =
-                builder.append(
-                        "right", rightResult.block);
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(), getRowType(), pref.preferArray());
-        final PhysType keyPhysType =
-                leftResult.physType.project(
-                        joinInfo.leftKeys, JavaRowFormat.LIST);
-        Expression predicate = Expressions.constant(null);
-        if (!joinInfo.nonEquiConditions.isEmpty()) {
-            RexNode nonEquiCondition = RexUtil.composeConjunction(
-                    getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
-            if (nonEquiCondition != null) {
-                predicate = EnumUtils.generatePredicate(implementor, getCluster().getRexBuilder(),
-                        left, right, leftResult.physType, rightResult.physType, nonEquiCondition);
-            }
-        }
-        return implementor.result(
-                physType,
-                builder.append(
-                        Expressions.call(
-                                leftExpression,
-                                BuiltInMethod.HASH_JOIN.method,
-                                Expressions.list(
-                                        rightExpression,
-                                        leftResult.physType.generateAccessor(joinInfo.leftKeys),
-                                        rightResult.physType.generateAccessor(joinInfo.rightKeys),
-                                        EnumUtils.joinSelector(joinType,
-                                                physType,
-                                                ImmutableList.of(
-                                                        leftResult.physType, rightResult.physType)))
-                                        .append(
-                                                Util.first(keyPhysType.comparer(),
-                                                        Expressions.constant(null)))
-                                        .append(
-                                                Expressions.constant(joinType.generatesNullsOnLeft()))
-                                        .append(
-                                                Expressions.constant(
-                                                        joinType.generatesNullsOnRight()))
-                                        .append(predicate)))
-                        .toBlock());
+        EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(left, right, condition, variablesSet, joinType);
+        Result result = enumerableHashJoin.implement(implementor, pref);
+        return result;
     }
 }

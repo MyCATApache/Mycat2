@@ -4,10 +4,9 @@ import com.github.sisyphsu.dateparser.DateParserUtils;
 import io.mycat.MycatTimeUtil;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.apache.calcite.util.TimestampString;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.nio.ByteBuffer;
 import java.time.*;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -16,23 +15,27 @@ import java.time.temporal.Temporal;
 import java.time.temporal.WeekFields;
 
 public class MycatBuiltInMethodImpl {
-    public static String dateSubString(java.lang.String date,  java.time.Period sub) {
-        if (date == null|| sub ==null) return null;
+    public static String dateSubString(java.lang.String date, java.time.Period sub) {
+        if (date == null || sub == null) return null;
         LocalDate date1 = stringToDate(date);
-       return dateToString(date1.minus(sub));
+        return dateToString(date1.minus(sub));
     }
+
     public static BigDecimal smallintToDecimal(Short b) {
         if (b == null) return null;
-        return  BigDecimal.valueOf(b);
+        return BigDecimal.valueOf(b);
     }
+
     public static Double smallintToFloat(Short b) {
         if (b == null) return null;
-        return  b.doubleValue();
+        return b.doubleValue();
     }
+
     public static Long smallintToBigint(Short b) {
         if (b == null) return null;
-        return  b.longValue();
+        return b.longValue();
     }
+
     public static Byte booleanToTinyint(Boolean b) {
         if (b == null) return null;
         return (byte) (b ? 1 : 0);
@@ -691,7 +694,7 @@ public class MycatBuiltInMethodImpl {
 
     public static LocalDateTime timeToTimestamp(Duration b) {
         if (b == null) return null;
-        return LocalDateTime.of(LocalDate.ofYearDay(0,1),
+        return LocalDateTime.of(LocalDate.ofYearDay(0, 1),
                 LocalTime.ofSecondOfDay(b.getSeconds()).withNano(b.getNano()));
     }
 
@@ -868,7 +871,7 @@ public class MycatBuiltInMethodImpl {
 
     public static Period timeToPeriod(Duration b) {
         if (b == null) return null;
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     public static Period timestampToPeriod(LocalDateTime b) {
@@ -1080,15 +1083,18 @@ public class MycatBuiltInMethodImpl {
         if (b == null) return null;
         return b;
     }
+
     public static Double dateToDouble(LocalDate b) {
         if (b == null) return null;
         return dateToLong(b).doubleValue();
     }
+
     public static LocalDate dateToDate(LocalDate b) {
         if (b == null) return null;
         return b;
     }
-//    public static LocalDate bigintToDate(Long b) {
+
+    //    public static LocalDate bigintToDate(Long b) {
 //        if (b == null) return null;
 //        return b;
 //    }
@@ -1348,7 +1354,7 @@ public class MycatBuiltInMethodImpl {
     }
 
     public static Temporal timestampStringToTimestamp(String s) {
-       return MycatTimeUtil.timestampStringToTimestamp(s);
+        return MycatTimeUtil.timestampStringToTimestamp(s);
     }
 
     public static Temporal timestampStringToDate(String s) {
@@ -1368,7 +1374,7 @@ public class MycatBuiltInMethodImpl {
     }
 
     public static Duration timeStringToTimeDuration(String text) {
-     return    MycatTimeUtil.timeStringToTimeDuration(text);
+        return MycatTimeUtil.timeStringToTimeDuration(text);
     }
 
     /**
@@ -1408,4 +1414,105 @@ public class MycatBuiltInMethodImpl {
         }
     }
 
+    public static ByteString stringToByteString(String input) {
+        if (input == null) return null;
+        return new ByteString(input.getBytes());
+    }
+
+    public static ByteString booleanToByteString(Boolean input) {
+        if (input == null) return null;
+        return new ByteString(new byte[]{(byte) (input ? 1 : 0)});
+    }
+
+    public static ByteString tinyintToByteString(Byte input) {
+        if (input == null) return null;
+        return new ByteString(new byte[]{(byte) (input)});
+    }
+
+    public static ByteString smallintToByteString(Short input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(2).putShort(input).array());
+    }
+
+    public static ByteString integerToByteString(Integer input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(4).putInt(input).array());
+    }
+
+    public static ByteString bigintToByteString(Long input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(8).putLong(input).array());
+    }
+
+    public static ByteString decimalToByteString(BigDecimal input) {
+        if (input == null) return null;
+        return new ByteString(input.toString().getBytes());
+    }
+
+    public static ByteString floatToByteString(Double input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(8).putDouble(input).array());
+    }
+
+    public static ByteString realToByteString(Float input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(4).putFloat(input).array());
+    }
+
+    public static ByteString doubleToByteString(Double input) {
+        if (input == null) return null;
+        return new ByteString(ByteBuffer.allocate(8).putDouble(input).array());
+    }
+
+    public static ByteString dateToByteString(LocalDate input) {
+        if (input == null) return null;
+        return doubleToByteString(dateToDouble(input));
+    }
+
+    public static ByteString dateToByteString(Duration input) {
+        if (input == null) return null;
+        return doubleToByteString(timeToDouble(input));
+    }
+
+    public static ByteString timeToByteString(Duration input) {
+        if (input == null) return null;
+        return doubleToByteString(timeToDouble(input));
+    }
+
+    public static ByteString timestampToByteString(LocalDateTime input) {
+        if (input == null) return null;
+        return doubleToByteString(timestampToDouble(input));
+    }
+
+    public static ByteString periodToByteString(Period input) {
+        if (input == null) return null;
+        return (doubleToByteString(periodToDouble(input)));
+    }
+
+    public static ByteString byteStringToByteString(ByteString input) {
+        if (input == null) return null;
+        return input;
+    }
+    public static String tinyintToString(Byte input) {
+        if (input == null) return null;
+        return input.toString();
+    }
+    public static ByteString durationToByteString(Duration input) {
+        if (input == null) return null;
+        return new ByteString(durationToDouble(input).toString().getBytes());
+    }
+    public static String durationToString(Duration input) {
+        if (input == null) return null;
+        Duration duration = (Duration) input;
+        int SECONDS_PER_HOUR = 60*60;
+        int SECONDS_PER_MINUTE = 60;
+        long hours = duration.getSeconds()/ SECONDS_PER_HOUR;
+        int minutes = (int) ((duration.getSeconds() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+        int secs = (int) (duration.getSeconds() % SECONDS_PER_MINUTE);
+        int nano = duration.getNano();
+        if (nano == 0) {
+            return String.format("%d:%02d:%02d",hours,minutes,secs);
+        }
+        return String.format("%d:%02d:%02d.%09d",hours,minutes,secs,nano);
+    }
 }

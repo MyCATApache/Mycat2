@@ -230,7 +230,7 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     BYTESTRING_TO_DURATION(MycatBuiltInMethodImpl.class, "byteStringToDuration", ByteString.class),
 
     BOOLEAN_TO_STRING(MycatBuiltInMethodImpl.class, "stringToString", String.class),
-    TINYINT_TO_STRING(MycatBuiltInMethodImpl.class, "booleanToString", Boolean.class),
+    TINYINT_TO_STRING(MycatBuiltInMethodImpl.class, "tinyintToString", Byte.class),
     SMALLINT_TO_STRING(MycatBuiltInMethodImpl.class, "smallintToString", Short.class),
     INTEGER_TO_STRING(MycatBuiltInMethodImpl.class, "integerToString", Integer.class),
     BIGINT_TO_STRING(MycatBuiltInMethodImpl.class, "bigintToString", Long.class),
@@ -244,7 +244,26 @@ DECIMAL_TO_TINYINT(MycatBuiltInMethodImpl.class, "decimalToTinyint", BigDecimal.
     PERIOD_TO_STRING(MycatBuiltInMethodImpl.class, "periodToString", Period.class),
     BYTESTRING_TO_STRING(MycatBuiltInMethodImpl.class, "byteStringToString", ByteString.class),
 
-    ;
+
+    STRING_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "stringToByteString", String.class),
+    BOOLEAN_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "booleanToByteString", Boolean.class),
+    TINYINT_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "tinyintToByteString", Byte.class),
+    SMALLINT_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "smallintToByteString", Short.class),
+    INTEGER_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "integerToByteString", Integer.class),
+    BIGINT_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "bigintToByteString", Long.class),
+    DECIMAL_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "decimalToByteString", BigDecimal.class),
+    FLOAT_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "floatToByteString", Double.class),
+    REAL_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "realToByteString", Float.class),
+    DOUBLE_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "doubleToByteString", Double.class),
+    DATE_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "dateToByteString", LocalDate.class),
+    TIME_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "timeToByteString", Duration.class),
+    TIMESTAMP_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "timestampToByteString", LocalDateTime.class),
+    PERIOD_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "periodToByteString", Period.class),
+    BYTESTRING_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "byteStringToByteString", ByteString.class),
+    DURATION_TO_BYTESTRING(MycatBuiltInMethodImpl.class, "durationToByteString", Duration.class),
+    DURATION_TO_STRING(MycatBuiltInMethodImpl.class, "durationToString", Duration.class),
+
+            ;
     public final Method method;
     public final Constructor constructor;
     public final Field field;

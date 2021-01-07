@@ -155,6 +155,10 @@ public class MycatCalc extends Calc implements MycatRel {
                                 inputEnumerator,
                                 BuiltInMethod.ENUMERATOR_CURRENT.method),
                         inputJavaType);
+        if (!input.getType() .equals(inputJavaType)){
+            input  = Expressions.convert_(input, inputJavaType);
+            System.out.println();
+        }
 
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
         final RelMetadataQuery mq = getCluster().getMetadataQuery();
@@ -278,4 +282,6 @@ public class MycatCalc extends Calc implements MycatRel {
                                                 Blocks.toFunctionBlock(body))))));
         return implementor.result(physType, builder.toBlock());
     }
+
+
 }

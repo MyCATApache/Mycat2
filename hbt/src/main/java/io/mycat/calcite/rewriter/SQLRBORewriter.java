@@ -101,11 +101,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (!userDefinedFunctionInFilter(filter)) {
-            if (RelMdSqlViews.filter(input)) {
-                return filter(input, filter, optimizationContext);
-            }
-        }
+//        if (!userDefinedFunctionInFilter(filter)) {
+//            if (RelMdSqlViews.filter(input)) {
+//                return filter(input, filter, optimizationContext);
+//            }
+//        }
         return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
     }
 
@@ -504,49 +504,49 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                                   MycatView rightView,
                                                   Iterable<DataNode> leftDataNodes,
                                                   Iterable<DataNode> rightDataNodes) {
-        Map<String, List<RelNode>> phyViews = new HashMap<>();
-        ArrayList<RelNode> list = new ArrayList<>();
-        for (DataNode leftDataNode : leftDataNodes) {
-            for (DataNode rightDataNode : rightDataNodes) {
-                RelNode leftN = leftView.applyDataNode(leftDataNode);
-                RelNode rightN = rightView.applyDataNode(rightDataNode);
-                if (leftDataNode.getTargetName().equals(rightDataNode.getTargetName())) {
-                    List<RelNode> relNodes = phyViews.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
-                    relNodes.add(join.copy(join.getTraitSet(),
-                            ImmutableList.of(
-                                    leftN,
-                                    rightN)));
-                } else {
-                    list.add(join.copy(join.getTraitSet(), ImmutableList.of(
-                            MycatView.of(leftN,
-                                    Distribution.of(leftDataNode)),
-                            MycatView.of(rightN,
-                                    Distribution.of(rightDataNode)))));
-                }
-            }
-
-        }
-
-
-        int unionLimit = 4;
-        for (Map.Entry<String, List<RelNode>> e : phyViews.entrySet()) {
-            String key = e.getKey();
-            List<RelNode> value = new ArrayList<>(e.getValue());
-            while (true) {
-                List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
-                list.add(MycatView.of(LogicalUnion.create(relNodes, true),
-                        Distribution.of(new BackendTableInfo(key, "", ""))));
-                if (unionLimit < value.size()) {
-                    value = value.subList(relNodes.size(), value.size());
-                } else {
-                    break;
-                }
-            }
-        }
-        if (list.size() == 1) {
-            return list.get(0);
-        }
-        return LogicalUnion.create(list, true);
+//        Map<String, List<RelNode>> phyViews = new HashMap<>();
+//        ArrayList<RelNode> list = new ArrayList<>();
+//        for (DataNode leftDataNode : leftDataNodes) {
+//            for (DataNode rightDataNode : rightDataNodes) {
+//                RelNode leftN = leftView.applyDataNode(leftDataNode);
+//                RelNode rightN = rightView.applyDataNode(rightDataNode);
+//                if (leftDataNode.getTargetName().equals(rightDataNode.getTargetName())) {
+//                    List<RelNode> relNodes = phyViews.computeIfAbsent(leftDataNode.getTargetName(), (k) -> new ArrayList<>());
+//                    relNodes.add(join.copy(join.getTraitSet(),
+//                            ImmutableList.of(
+//                                    leftN,
+//                                    rightN)));
+//                } else {
+//                    list.add(join.copy(join.getTraitSet(), ImmutableList.of(
+//                            MycatView.of(leftN,
+//                                    Distribution.of(leftDataNode)),
+//                            MycatView.of(rightN,
+//                                    Distribution.of(rightDataNode)))));
+//                }
+//            }
+//
+//        }
+//
+//
+//        int unionLimit = 4;
+//        for (Map.Entry<String, List<RelNode>> e : phyViews.entrySet()) {
+//            String key = e.getKey();
+//            List<RelNode> value = new ArrayList<>(e.getValue());
+//            while (true) {
+//                List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
+//                list.add(MycatView.of(LogicalUnion.create(relNodes, true),
+//                        Distribution.of(new BackendTableInfo(key, "", ""))));
+//                if (unionLimit < value.size()) {
+//                    value = value.subList(relNodes.size(), value.size());
+//                } else {
+//                    break;
+//                }
+//            }
+//        }
+//        if (list.size() == 1) {
+//            return list.get(0);
+//        }
+        return join.copy(join.getTraitSet(),ImmutableList.of(leftView,rightView));
     }
 
     public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {

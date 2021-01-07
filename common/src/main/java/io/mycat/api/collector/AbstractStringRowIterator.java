@@ -54,83 +54,83 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
 
     @Override
     public String getString(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         return o;
     }
 
     @Override
     public boolean getBoolean(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return false;
         return Boolean.parseBoolean(o);
     }
 
     @Override
     public byte getByte(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Byte.parseByte(o);
     }
 
     @Override
     public short getShort(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Short.parseShort(o);
     }
 
     @Override
     public int getInt(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Integer.parseInt(o);
     }
 
     @Override
     public long getLong(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Long.parseLong(o);
     }
 
     @Override
     public float getFloat(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Float.parseFloat(o);
     }
 
     @Override
     public double getDouble(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return Double.parseDouble(o);
     }
 
     @Override
     public byte[] getBytes(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return o.getBytes();
     }
 
     @Override
     public LocalDate getDate(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return LocalDate.parse(o);
     }
 
     @Override
     public Duration getTime(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return MycatTimeUtil.timeStringToTimeDuration(o);
     }
 
     @Override
     public LocalDateTime getTimestamp(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (LocalDateTime) MycatTimeUtil.timestampStringToTimestamp(o);
     }
@@ -142,7 +142,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
 
     @Override
     public InputStream getBinaryStream(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return new ByteArrayInputStream(o.getBytes());
     }
@@ -155,7 +155,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) {
-        String o = getString(currentRow[columnIndex - 1]);
+        String o = getString(currentRow[columnIndex ]);
         if (wasNull) return null;
         return new BigDecimal(o);
     }

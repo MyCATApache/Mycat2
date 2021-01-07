@@ -14,7 +14,6 @@
  */
 package io.mycat;
 
-import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -30,20 +29,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.calcite.MycatCalciteMySqlNodeVisitor;
-import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.MycatConvention;
-import io.mycat.calcite.MycatRel;
+import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.plan.PlanImplementor;
+import io.mycat.calcite.plan.PlanImplementorImpl;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
 import io.mycat.calcite.rules.*;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanCache;
+import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
 import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
@@ -53,12 +54,20 @@ import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.util.LazyTransformCollection;
 import lombok.SneakyThrows;
+import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.tree.ClassDeclaration;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -71,10 +80,11 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.runtime.*;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.*;
@@ -91,12 +101,16 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IClassBodyEvaluator;
+import org.codehaus.commons.compiler.ICompilerFactory;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
@@ -115,7 +129,7 @@ public class DrdsRunner {
     }
 
     @SneakyThrows
-    public MycatRel doHbt(String hbtText, MycatDataContext dataContext) {
+    public MycatRel doHbt(String hbtText) {
         log.debug("reveice hbt");
         log.debug(hbtText);
         HBTParser hbtParser = new HBTParser(hbtText);
@@ -132,7 +146,13 @@ public class DrdsRunner {
         RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
         HBTQueryConvertor hbtQueryConvertor = new HBTQueryConvertor(Collections.emptyList(), relBuilder);
         RelNode relNode = hbtQueryConvertor.complie(originSchema);
-        relNode = relNode.accept(new RelShuttleImpl() {
+        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
+        HepProgram hepProgram = hepProgramBuilder.build();
+        HepPlanner hepPlanner = new HepPlanner(hepProgram);
+        hepPlanner.setRoot(relNode);
+        RelNode bestExp = hepPlanner.findBestExp();
+        bestExp = bestExp.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
@@ -143,31 +163,24 @@ public class DrdsRunner {
                 return super.visit(scan);
             }
         });
-        return optimizeWithCBO(relNode, Collections.emptyList());
-    }
-
-    public Iterable<DrdsSql> preParse(String stmtList, List<Object> inputParameters) {
-        List<SQLStatement> sqlStatements = SQLUtils.parseStatements(stmtList, DbType.mysql, true);
-        return preParse(sqlStatements, inputParameters);
+        return optimizeWithCBO(bestExp, Collections.emptyList());
     }
 
 
-    public Iterable<DrdsSql> preParse(List<SQLStatement> sqlStatements, List<Object> inputParameters) {
-        return LazyTransformCollection.transform(sqlStatements, sqlStatement -> {
-            List<Object> params = new ArrayList<>();
-            StringBuilder sb = new StringBuilder();
-            MycatPreparedStatementUtil.outputToParameterized(sqlStatement, sb, inputParameters, params);
-            String string = sb.toString();
-            sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
-            return DrdsSql.of(sqlStatement, string, params);
-        });
+    public DrdsSql preParse(SQLStatement sqlStatement) {
+        List<Object> params = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        MycatPreparedStatementUtil.outputToParameterized(sqlStatement, sb, Collections.emptyList(), params);
+        String string = sb.toString();
+        sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
+        return DrdsSql.of(sqlStatement, string, params);
     }
 
 
     @SneakyThrows
-    public Iterable<DrdsSql> convertToMycatRel(Iterable<DrdsSql> stmtList, MycatDataContext dataContext) {
+    public DrdsSql convertToMycatRel(DrdsSql stmt, MycatDataContext dataContext, OptimizationContext optimizationContext) {
         SchemaPlus plus = this.schemas;
-        return convertToMycatRel(planCache, stmtList, plus, dataContext);
+        return convertToMycatRel(planCache, stmt, plus, dataContext, optimizationContext);
     }
 
     public SchemaPlus convertRoSchemaPlus(DrdsConst config) {
@@ -201,34 +214,33 @@ public class DrdsRunner {
         return builder.build();
     }
 
-    public Iterable<DrdsSql> convertToMycatRel(PlanCache planCache,
-                                               Iterable<DrdsSql> stmtList,
-                                               SchemaPlus plus,
-                                               MycatDataContext dataContext) {
-        return LazyTransformCollection.transform(stmtList, drdsSql -> {
-            RelOptCluster cluster = newCluster();
-            MycatRel rel;
-            Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString());
-            if (minCostPlan != null) {
-                switch (minCostPlan.getType()) {
-                    case PARSE:
-                        drdsSql.setRelNode(minCostPlan.getRelNode());
-                        OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                        rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
-                        break;
-                    case FINAL:
-                        rel = (MycatRel) minCostPlan.getRelNode();
-                        break;
-                    default:
-                        throw new UnsupportedOperationException();
-                }
-            } else {
-                OptimizationContext optimizationContext = new OptimizationContext(drdsSql.getParams(), planCache);
-                rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
+    public DrdsSql convertToMycatRel(PlanCache planCache,
+                                     DrdsSql drdsSql,
+                                     SchemaPlus plus,
+                                     MycatDataContext dataContext,
+                                     OptimizationContext optimizationContext) {
+        RelOptCluster cluster = newCluster();
+        MycatRel rel;
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        if (minCostPlan != null) {
+            switch (minCostPlan.getType()) {
+                case LOGICAL:
+                    drdsSql.setRelNode(minCostPlan.getLogical());
+                    drdsSql.setRelNode(dispatch(optimizationContext, drdsSql, plus, dataContext));
+                    break;
+                case PHYSICAL:
+                    drdsSql.setRelNode((MycatRel) minCostPlan.getPhysical());
+                    break;
+                case UPDATE:
+                case INSERT:
+                    drdsSql.setRelNode(minCostPlan.getPhysical());
             }
+        } else {
+            rel = dispatch(optimizationContext, drdsSql, plus, dataContext);
             drdsSql.setRelNode(rel);
-            return drdsSql;
-        });
+        }
+        Objects.requireNonNull(drdsSql.getRelNode());
+        return drdsSql;
     }
 
     public MycatRel dispatch(OptimizationContext optimizationContext,
@@ -300,7 +312,7 @@ public class DrdsRunner {
         GlobalTableHandler globalTableHandler = logicTable;
         Distribution distribution = Distribution.of(globalTableHandler.getGlobalDataNode(), false, Distribution.Type.BroadCast);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, true);
-        optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
+        optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
@@ -309,7 +321,7 @@ public class DrdsRunner {
         NormalTableHandler normalTableHandler = logicTable;
         Distribution distribution = Distribution.of(ImmutableList.of(normalTableHandler.getDataNode()), false, Distribution.Type.PHY);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, false);
-        optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
+        optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
@@ -380,7 +392,7 @@ public class DrdsRunner {
         }
         final int finalAutoIncrementIndex = autoIncrementIndexTmp;
         MycatInsertRel mycatInsertRel = MycatInsertRel.create(finalAutoIncrementIndex, shardingKeys, mySqlInsertStatement, logicTable);
-        optimizationContext.saveParameterized(drdsSql.getParameterizedString(), mycatInsertRel);
+        optimizationContext.saveParameterized();
         return mycatInsertRel;
     }
 
@@ -388,7 +400,6 @@ public class DrdsRunner {
                                   OptimizationContext optimizationContext,
                                   SchemaPlus plus,
                                   DrdsSql drdsSql) {
-        SQLStatement sqlStatement = drdsSql.getSqlStatement();
         RelNode logPlan;
         if (drdsSql.getRelNode() != null) {
             if (drdsSql.getRelNode() instanceof MycatRel) {
@@ -418,21 +429,7 @@ public class DrdsRunner {
         } else {
             rboInCbo = Collections.emptyList();
         }
-        MycatRel cboLogPlan = optimizeWithCBO(rboLogPlan, rboInCbo);
-        List<Object> params = drdsSql.getParams();
-        if (params.isEmpty()) {
-            optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
-        } else if (!optimizationContext.isPredicateOnPhyView() && !optimizationContext.isPredicateOnView()) {
-            //全表扫描
-            optimizationContext.saveAlways(drdsSql.getParameterizedString(), cboLogPlan);
-        } else if (!optimizationContext.isPredicateOnPhyView() && optimizationContext.isPredicateOnView()) {
-            //缓存rel
-            optimizationContext.saveParameterized(drdsSql.getParameterizedString(), cboLogPlan);
-        } else {
-            //仅缓存sql解析
-            optimizationContext.saveParse(drdsSql.getParameterizedString(), logPlan);
-        }
-        return cboLogPlan;
+        return optimizeWithCBO(rboLogPlan, rboInCbo);
     }
 
     private RelNode getRelRoot(String defaultSchemaName,
@@ -576,7 +573,7 @@ public class DrdsRunner {
             MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                     distribution,
                     drdsSql.getSqlStatement(), mycatTable.isBroadCast());
-            optimizationContext.saveParameterized(drdsSql.getParameterizedString(), mycatUpdateRel);
+            optimizationContext.saveParameterized();
             return mycatUpdateRel;
         }
         AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
@@ -584,7 +581,7 @@ public class DrdsRunner {
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
                 distribution,
                 drdsSql.getSqlStatement(), mycatTable.isBroadCast());
-        optimizationContext.saveAlways(drdsSql.getParameterizedString(), mycatUpdateRel);
+        optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
@@ -593,6 +590,80 @@ public class DrdsRunner {
         logPlan.accept(complexJudged);
         return complexJudged.c;
 
+    }
+
+    public Plan convertToExecuter(DrdsSql drdsSql, MycatDataContext dataContext, OptimizationContext optimizationContext) {
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        if (minCostPlan != null) {
+            switch (minCostPlan.getType()) {
+                case PHYSICAL:
+                    return minCostPlan;
+            }
+        }
+        drdsSql = convertToMycatRel(drdsSql, dataContext, optimizationContext);
+        MycatRel mycatRel = (MycatRel) drdsSql.getRelNode();
+        if (mycatRel instanceof MycatUpdateRel) {
+            return new PlanImpl((MycatUpdateRel) mycatRel);
+        } else if (mycatRel instanceof MycatInsertRel) {
+            return new PlanImpl((MycatInsertRel) mycatRel);
+        }
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel));
+        return new PlanImpl(mycatRel, codeExecuterContext, drdsSql.isForUpdate());
+    }
+
+    @NotNull
+    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
+        int fieldCount = relNode.getRowType().getFieldCount();
+        HashMap<String, Object> context = new HashMap<>();
+        MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
+        ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
+        String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
+        System.out.println(code);
+        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getMycatViews(),context,
+                asObjectArray(getBindable(classDeclaration, code, fieldCount)),
+                code);
+    }
+
+    @NotNull
+    private static ArrayBindable asObjectArray(ArrayBindable bindable) {
+        if (bindable.getElementType().isArray()) {
+            return bindable;
+        }
+        return new ArrayBindable() {
+            @Override
+            public Class<Object[]> getElementType() {
+                return Object[].class;
+            }
+
+            @Override
+            public Enumerable<Object[]> bind(NewMycatDataContext dataContext) {
+                Enumerable enumerable = bindable.bind(dataContext);
+                return enumerable.select(e -> {
+                    return new Object[]{e};
+                });
+            }
+        };
+    }
+
+    @SneakyThrows
+    static ArrayBindable getBindable(ClassDeclaration expr, String s, int fieldCount) {
+        ICompilerFactory compilerFactory;
+        try {
+            compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Unable to instantiate java compiler", e);
+        }
+        final IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
+        cbe.setClassName(expr.name);
+        cbe.setExtendedClass(Utilities.class);
+        cbe.setImplementedInterfaces(new Class[]{ArrayBindable.class});
+        cbe.setParentClassLoader(EnumerableInterpretable.class.getClassLoader());
+        if (CalciteSystemProperty.DEBUG.value()) {
+            // Add line numbers to the generated janino class
+            cbe.setDebuggingInformation(true, true, true);
+        }
+        return (ArrayBindable) cbe.createInstance(new StringReader(s));
     }
 
     static class ComplexJudged extends RelShuttleImpl {
@@ -667,10 +738,11 @@ public class DrdsRunner {
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(128);
-        builder.addRuleCollection(FILTER);
+//        builder.addRuleCollection(FILTER);
         if (false) {
-            MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
-            ImmutableList<RelOptRule> relOptRules = ImmutableList.of(mycatFilterPhyViewRule,
+//            MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
+            ImmutableList<RelOptRule> relOptRules = ImmutableList.of(
+//                    mycatFilterPhyViewRule,
                     MycatTablePhyViewRule.INSTANCE,
                     CoreRules.PROJECT_SET_OP_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
@@ -694,7 +766,8 @@ public class DrdsRunner {
                 MycatProjectViewRule.INSTANCE,
                 MycatJoinViewRule.INSTANCE,
                 MycatAggregateViewRule.INSTANCE,
-                MycatSortViewRule.INSTANCE
+                MycatSortViewRule.INSTANCE,
+                CoreRules.AGGREGATE_REDUCE_FUNCTIONS
         ));
 
         HepPlanner planner = new HepPlanner(builder.build());
@@ -739,4 +812,69 @@ public class DrdsRunner {
             return parameterized;
         }
     }
+
+    public PlanCache getPlanCache() {
+        return planCache;
+    }
+
+
+    @SneakyThrows
+    public void runOnDrds(MycatDataContext dataContext,
+                          SQLStatement statement, Response response) {
+        DrdsSql drdsSql = this.preParse(statement);
+        Plan plan = getPlan(dataContext, drdsSql);
+        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, drdsSql.getParams(), response);
+        impl(plan, planImplementor);
+    }
+
+    private void impl(Plan plan, PlanImplementorImpl planImplementor) {
+        switch (plan.getType()) {
+            case LOGICAL:
+                assert false;
+            case PHYSICAL:
+                planImplementor.execute(plan);
+                break;
+            case UPDATE:
+                planImplementor.execute((MycatUpdateRel)Objects.requireNonNull(plan.getPhysical()));
+                break;
+            case INSERT:
+                planImplementor.execute((MycatInsertRel)Objects.requireNonNull(plan.getPhysical()));
+                break;
+        }
+    }
+
+
+    public Plan getPlan(MycatDataContext dataContext, DrdsSql drdsSql) {
+        OptimizationContext optimizationContext = new OptimizationContext();
+        Plan plan = this.convertToExecuter(drdsSql, dataContext, optimizationContext);
+        getPlanCache().put(drdsSql.getParameterizedString(),drdsSql.getTypes(), plan);
+        return plan;
+    }
+
+    public void runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, Collections.emptyList(), response);
+        runHbtOnDrds(dataContext, statement, planImplementor);
+    }
+
+    public void runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
+        DrdsRunner drdsRunners = this;
+        MycatRel mycatRel = drdsRunners.doHbt(statement);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
+        planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
+    }
+
+    @NotNull
+    public static EnumeratorRowIterator getEnumeratorRowIterator(Plan plan, MycatDataContext context, List<Object> params) {
+        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+
+        NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, plan.forUpdate());
+        newMycatDataContext.allocateResource();
+        ArrayBindable bindable = codeExecuterContext.getBindable();
+        Enumerable enumerable = bindable.bind(newMycatDataContext);
+        Enumerator enumerator = enumerable.enumerator();
+        RelNode physical = plan.getPhysical();
+        return new EnumeratorRowIterator(new CalciteRowMetaData(physical.getRowType().getFieldList()), enumerator);
+    }
+
+
 }

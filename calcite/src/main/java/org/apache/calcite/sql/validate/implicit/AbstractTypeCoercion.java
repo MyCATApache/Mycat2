@@ -93,10 +93,10 @@ public abstract class AbstractTypeCoercion implements TypeCoercion {
     }
 
     SqlNode operand = call.getOperandList().get(index);
-    if (operand instanceof SqlDynamicParam) {
-      // Do not support implicit type coercion for dynamic param.
-      return false;
-    }
+//    if (operand instanceof SqlDynamicParam) {//fix mycat
+//      // Do not support implicit type coercion for dynamic param.
+//      return false;
+//    }
     // Check it early.
     if (!needToCast(scope, operand, targetType)) {
       return false;

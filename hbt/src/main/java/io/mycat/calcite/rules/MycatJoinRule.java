@@ -78,7 +78,6 @@ public class MycatJoinRule extends MycatConverterRule {
             }
             if (!join.isSemiJoin()) {
                 return MycatHashJoin.create(
-                        join.getHints(),
                         join.getTraitSet().replace(out),
                         convert(left, out),
                         convert(right, out),
@@ -86,8 +85,6 @@ public class MycatJoinRule extends MycatConverterRule {
                         join.getJoinType());
             } else {
                 return MycatSemiHashJoin.create(
-                        join.getHints(),
-                        join.getTraitSet().replace(out),
                         convert(left, out),
                         convert(right, out),
                         condition,

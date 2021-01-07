@@ -10,6 +10,7 @@ import io.mycat.calcite.*;
 import io.mycat.DrdsRunner;
 import io.mycat.DrdsSql;
 import io.mycat.calcite.executor.TempResultSetFactoryImpl;
+import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.Explains;
@@ -42,25 +43,12 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
         try (DataSourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
             try{
                 DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(ast.getStatement()), Collections.emptyList());
-                Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls, dataContext);
-                DrdsSql drdsSql = iterable.iterator().next();
+                DrdsSql drdsSql = drdsRunner.preParse(ast.getStatement());
+                 drdsSql = drdsRunner.convertToMycatRel(drdsSql, dataContext,new OptimizationContext());
                 MycatRel relNode = (MycatRel) drdsSql.getRelNode();
                 String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode);
                 List<String> explain = Explains.explain(ast.getStatement().toString(), null, null, null, s);
                 for (String s1 : explain) {
-                    builder.addObjectRowPayload(Arrays.asList(s1));
-                }
-
-                ResponseExecutorImplementor responseExecutorImplementor =
-                        new ResponseExecutorImplementor(dataContext,ignored, new TempResultSetFactoryImpl(), response);
-                responseExecutorImplementor.setParams(drdsSql.getParams());
-                responseExecutorImplementor.setForUpdate(forUpdate);
-                Executor executor = relNode.implement(responseExecutorImplementor);
-                ExplainWriter explainWriter = new ExplainWriter();
-                executor.explain(explainWriter);
-                String[] split = explainWriter.getText().toString().split("\n");
-                for (String s1 : split) {
                     builder.addObjectRowPayload(Arrays.asList(s1));
                 }
             }catch (Throwable th){

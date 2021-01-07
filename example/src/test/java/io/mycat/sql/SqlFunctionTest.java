@@ -280,7 +280,7 @@ public class SqlFunctionTest implements MycatTest {
 
     private void initShardingTable() throws Exception {
         Connection mycatConnection = getMySQLConnection(DB_MYCAT);
-
+        execute(mycatConnection, RESET_CONFIG);
         Connection mysql3306 = getMySQLConnection(DB1);
 
         execute(mycatConnection, "DROP DATABASE db1");

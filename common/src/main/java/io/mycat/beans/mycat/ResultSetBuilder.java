@@ -15,7 +15,7 @@ public class ResultSetBuilder {
     final List<Object[]> objectList = new ArrayList<>();
 
     public ResultSetBuilder() {
-        columnInfos.add(null);
+
     }
 
     public static ResultSetBuilder create() {
@@ -87,7 +87,7 @@ public class ResultSetBuilder {
 
         @Override
         public int getColumnCount() {
-            return columnInfos.size() - 1;
+            return columnInfos.size();
         }
 
         @Override

@@ -47,7 +47,6 @@ public class MycatUpdateExecutor implements Executor {
      * 由逻辑SQL 改成真正发送给后端数据库的sql语句. 一个不可变的集合 {@link Collections#unmodifiableSet(Set)}
      */
     private final Set<SQL> reallySqlSet;
-    private final DataSourceFactory factory;
 
     private long lastInsertId = 0;
     private long affectedRow = 0;
@@ -55,24 +54,20 @@ public class MycatUpdateExecutor implements Executor {
 
     public MycatUpdateExecutor(MycatDataContext context, Distribution distribution,
                                SQLStatement logicStatement,
-                               List<Object> parameters,
-                               DataSourceFactory factory) {
+                               List<Object> parameters) {
         this.context = context;
 
         this.distribution = distribution;
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
 
-        this.factory = factory;
         this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(distribution,logicStatement,parameters));
-        factory.registered(reallySqlSet.stream().map(SQL::getTarget).distinct().collect(Collectors.toList()));
     }
 
     public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
                                              SQLStatement sqlStatement,
-                                             DataSourceFactory factory,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(context, values, sqlStatement, parameters, factory);
+        return new MycatUpdateExecutor(context, values, sqlStatement, parameters);
     }
 
     public boolean isProxy() {
@@ -83,7 +78,7 @@ public class MycatUpdateExecutor implements Executor {
         SQL key = reallySqlSet.iterator().next();
         String parameterizedSql = key.getParameterizedSql();
         String sql = apply(parameterizedSql, logicParameters);
-        return Pair.of(key.getTarget(), sql);
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sql);
     }
 
     private FastSqlUtils.Select getSelectPrimaryKeyStatementIfNeed(SQL sql){

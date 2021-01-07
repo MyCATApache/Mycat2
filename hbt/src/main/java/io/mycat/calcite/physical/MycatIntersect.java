@@ -110,7 +110,7 @@ public class MycatIntersect
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getRowType(),
-                        pref.prefer(JavaRowFormat.CUSTOM));
+                        pref.prefer(JavaRowFormat.ARRAY));
         return implementor.result(physType, builder.toBlock());
     }
 }

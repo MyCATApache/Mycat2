@@ -60,6 +60,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -303,10 +306,11 @@ public class EnumUtils {
   static Type toInternal(RelDataType type, boolean forceNotNull) {
     switch (type.getSqlTypeName()) {
     case DATE:
+      return LocalDate.class;
     case TIME:
-      return type.isNullable() && !forceNotNull ? Integer.class : int.class;
+      return Duration.class;
     case TIMESTAMP:
-      return type.isNullable() && !forceNotNull ? Long.class : long.class;
+      return LocalDateTime.class;
     default:
       return null; // we don't care; use the default storage type
     }

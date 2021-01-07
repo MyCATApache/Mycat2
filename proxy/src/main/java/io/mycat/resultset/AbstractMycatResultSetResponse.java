@@ -39,11 +39,11 @@ public abstract class AbstractMycatResultSetResponse implements MycatResultSetRe
   public Iterator<byte[]> columnDefIterator() {
     return new Iterator<byte[]>() {
       final int count = columnCount();
-      int index = 1;
+      int index = 0;
 
       @Override
       public boolean hasNext() {
-        return index <= count;
+        return index < count;
       }
 
       @Override

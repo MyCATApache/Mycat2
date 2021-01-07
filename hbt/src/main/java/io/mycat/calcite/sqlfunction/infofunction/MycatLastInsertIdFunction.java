@@ -1,5 +1,6 @@
 package io.mycat.calcite.sqlfunction.infofunction;
 
+import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -22,7 +23,7 @@ public class MycatLastInsertIdFunction extends MycatSqlDefinedFunction {
 
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
-            return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getLastInsertId"
+            return Expressions.call(DataContext.ROOT,"getLastInsertId"
             );
     }
 }

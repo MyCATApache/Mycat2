@@ -21,7 +21,7 @@ public class FieldTypes {
     public static List<FieldType> getFieldTypes(MycatRowMetaData metaData) {
         int columnCount = metaData.getColumnCount();
         ArrayList<FieldType> fieldTypes = new ArrayList<>(columnCount);
-        for (int i = 1; i <= columnCount; i++) {
+        for (int i = 0; i < columnCount; i++) {
             final String columnName = metaData.getColumnName(i);
             SqlTypeName sqlTypeName = Objects.requireNonNull(HBTCalciteSupport.INSTANCE.getSqlTypeByJdbcValue(metaData.getColumnType(i)), "type is not existed,类型不存在");
             final String columnType = sqlTypeName.getName();

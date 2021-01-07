@@ -51,7 +51,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
             @Override
             public byte[] next() {
                 byte[][] row = new byte[columnCount][];
-                for (int columnIndex = 1, rowIndex = 0; rowIndex < columnCount; columnIndex++, rowIndex++) {
+                for (int columnIndex = 0, rowIndex = 0; rowIndex < columnCount; columnIndex++, rowIndex++) {
                     int columnType = mycatRowMetaData.getColumnType(columnIndex);
                     row[rowIndex] = getValue(rowBaseIterator, convertor, columnIndex, columnType);
                 }

@@ -39,11 +39,11 @@ public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetRespo
   public Iterator<byte[]> columnDefIterator() {
     return new Iterator<byte[]>() {
       final int count = MysqlSingleDataNodeResultSetResponse.this.columnCount();
-      int index = 1;
+      int index = 0;
 
       @Override
       public boolean hasNext() {
-        return index <= count;
+        return index < count;
       }
 
       @Override
@@ -71,7 +71,7 @@ public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetRespo
         //todo optimize to remove tmp array
         RowBaseIterator rowBaseIterator = MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator;
         byte[][] bytes = new byte[count][];
-        for (int i = 0, j = 1; i < count; i++, j++) {
+        for (int i = 0, j = 0; i < count; i++, j++) {
           bytes[i] = rowBaseIterator.getBytes(j);
         }
         return MySQLPacketUtil.generateTextRow(bytes);
