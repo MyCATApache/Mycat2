@@ -133,6 +133,13 @@ public abstract class VertxResponse implements Response {
         session.writeOk(count < size);
 
     }
+    @Override
+    public void sendOk() {
+        count++;
+        MycatDataContext dataContext = session.getDataContext();
+        dataContext.getTransactionSession().closeStatenmentState();
+        session.writeOk(count < size);
+    }
 
     @Override
     public <T> T unWrapper(Class<T> clazz) {
