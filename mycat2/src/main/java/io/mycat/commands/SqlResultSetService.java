@@ -15,28 +15,16 @@ import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
-import io.mycat.calcite.DefaultDatasourceFactory;
-import io.mycat.calcite.Executor;
-import io.mycat.calcite.ExecutorImplementorImpl;
-import io.mycat.calcite.MycatRel;
-import io.mycat.calcite.executor.TempResultSetFactoryImpl;
-import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.rel.type.RelDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class SqlResultSetService implements Closeable, Dumpable {
@@ -141,9 +129,28 @@ public class SqlResultSetService implements Closeable, Dumpable {
         if (objects == null) {
             objects = loadResultSet(sqlSelectStatement);
         }
-        if (objects != null &&objects.length==2&& objects[0] != null && objects[1] != null) {
+        if (objects != null && objects.length == 2 && objects[0] != null && objects[1] != null) {
+
+            List<Object[]> list = (List<Object[]>) objects[1];
+            if (log.isDebugEnabled()) {
+                log.debug("------------------------------------cache-----------------------------------");
+                for (Object[] objects1 : list) {
+                    log.debug(Arrays.toString(objects1));
+                    int index = 0;
+                    for (Object o : objects1) {
+                        log.debug(index + "");
+                        if (o == null) {
+                            log.debug("null");
+                        } else {
+                            log.debug(o.getClass() + "");
+                        }
+                        index++;
+                    }
+                }
+            }
+
             ResultSetBuilder.DefObjectRowIteratorImpl rowIterator =
-                    new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], ((List<Object[]>) objects[1]).iterator());
+                    new ResultSetBuilder.DefObjectRowIteratorImpl((MycatRowMetaData) objects[0], list.iterator());
             return Optional.of(rowIterator);
         } else {
             return Optional.empty();
@@ -155,7 +162,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
         return cache.get(sqlSelectStatement, new Callable<Object[]>() {
             @Override
             public Object[] call() throws Exception {
-                if (!MetaClusterCurrent.exist(DrdsRunner.class)){
+                if (!MetaClusterCurrent.exist(DrdsRunner.class)) {
                     return new Object[2];
                 }
                 Object[] pair = new Object[2];
@@ -180,12 +187,12 @@ public class SqlResultSetService implements Closeable, Dumpable {
                     pair[0] = mycatRowMetaData;
                     pair[1] = objects1;
                     return (pair);
-                }finally {
+                } finally {
                     context.close();
                 }
             }
         });
-        }
+    }
 
     @Override
     public void close() {
