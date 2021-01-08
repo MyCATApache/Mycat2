@@ -640,7 +640,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             convert = Expressions.call(MycatBuiltInMethod.TINYINT_TO_FLOAT.method, operand);
             break;
           case SMALLINT:
-            convert = Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_FLOAT.method, operand);
+            convert = Expressions.call(MycatBuiltInMethod.SMALLINT_TO_FLOAT.method, operand);
             break;
           case INTEGER:
             convert = Expressions.call(MycatBuiltInMethod.INTEGER_TO_FLOAT.method, operand);
@@ -1787,8 +1787,123 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     }
     break;
       case BINARY:
-      case VARBINARY:
+      case VARBINARY:{
+        switch (sourceType.getSqlTypeName()) {
+          case CHAR:
+          case VARCHAR:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.STRING_TO_BYTESTRING.method, operand);
+            break;
+          case BOOLEAN:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BOOLEAN_TO_BYTESTRING.method, operand);
+            break;
+          case TINYINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TINYINT_TO_BYTESTRING.method, operand);
+            break;
+          case SMALLINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.SMALLINT_TO_BYTESTRING.method, operand);
+            break;
+          case INTEGER:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.INTEGER_TO_BYTESTRING.method, operand);
+            break;
+          case BIGINT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BIGINT_TO_BYTESTRING.method, operand);
+            break;
+          case DECIMAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DECIMAL_TO_BYTESTRING.method, operand);
+            break;
+          case FLOAT:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.FLOAT_TO_BYTESTRING.method, operand);
+            break;
+          case REAL:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.REAL_TO_BYTESTRING.method, operand);
+            break;
+          case DOUBLE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DOUBLE_TO_BYTESTRING.method, operand);
+            break;
+          case DATE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DATE_TO_BYTESTRING.method, operand);
+            break;
+          case TIME:
+            convert = Expressions.call(MycatBuiltInMethod.TIME_TO_BYTESTRING.method, operand);
+            break;
+          case TIME_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIME_TO_BYTESTRING.method, operand);
+            break;
+          case TIMESTAMP:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_BYTESTRING.method, operand);
+            break;
+          case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.TIMESTAMP_TO_BYTESTRING.method, operand);
+            break;
+          case INTERVAL_WEEK:
+          case INTERVAL_QUARTER:
+          case INTERVAL_YEAR:
+          case INTERVAL_YEAR_MONTH:
+          case INTERVAL_MONTH:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.PERIOD_TO_BYTESTRING.method, operand);
+            break;
+          case INTERVAL_DAY:
+          case INTERVAL_DAY_HOUR:
+          case INTERVAL_DAY_MINUTE:
+          case INTERVAL_DAY_SECOND:
+          case INTERVAL_HOUR:
+          case INTERVAL_HOUR_MINUTE:
+          case INTERVAL_HOUR_SECOND:
+          case INTERVAL_MINUTE:
+          case INTERVAL_MINUTE_SECOND:
+          case INTERVAL_SECOND:
+          case INTERVAL_MICROSECOND:
+          case INTERVAL_SECOND_MICROSECOND:
+          case INTERVAL_MINUTE_MICROSECOND:
+          case INTERVAL_HOUR_MICROSECOND:
+          case INTERVAL_DAY_MICROSECOND:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.DURATION_TO_BYTESTRING.method, operand);
+            break;
+          case BINARY:
+          case VARBINARY:
+            convert =
+                    Expressions.call(MycatBuiltInMethod.BYTESTRING_TO_BYTESTRING.method, operand);
+            break;
+          case NULL:
+            convert = Expressions.constant(null);
+            break;
+          case ANY:
+            convert = operand;
+            break;
+          case SYMBOL:
+          case MULTISET:
+          case ARRAY:
+          case MAP:
+          case DISTINCT:
+          case STRUCTURED:
+          case ROW:
+          case OTHER:
+          case CURSOR:
+          case COLUMN_LIST:
+          case DYNAMIC_STAR:
+          case GEOMETRY:
+          case SARG:
+          default:
+            throw new UnsupportedOperationException("can not convert "+sourceType.getSqlTypeName()+" to "+targetType.getSqlTypeName());
+        }
         break;
+      }
       case NULL:
         convert = Expressions.constant(null);
         break;

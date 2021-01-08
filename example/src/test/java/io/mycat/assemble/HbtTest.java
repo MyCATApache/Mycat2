@@ -96,10 +96,10 @@ public class HbtTest implements MycatTest {
             Assert.assertEquals("[{1=1}]",runHBT("fromSql('prototype','select 1')"));
 
             //map
-            Assert.assertEquals("[{$f0=null, id=1}, {$f0=3, id=1}]",runHBT("table(fields(fieldType(id,integer),fieldType(id2,integer)),values(1,2)).map(id + id2,id)"));
+            Assert.assertEquals("[{$f0=3, id=1}]",runHBT("table(fields(fieldType(id,integer),fieldType(id2,integer)),values(1,2)).map(id + id2,id)"));
 
             //rename
-            Assert.assertEquals("[{2=1, 1=null}, {2=1, 1=2}]",runHBT("table(fields(fieldType(`1`,`integer`,true),fieldType(`2`,`integer`,true)),values(1,2)).rename(`2`,`1`)"));
+            Assert.assertEquals("[{2=1, 1=2}]",runHBT("table(fields(fieldType(`1`,`integer`,true),fieldType(`2`,`integer`,true)),values(1,2)).rename(`2`,`1`)"));
 
             //filter
             Assert.assertEquals("[{id=1, user_id=999, traveldate=null, fee=null, days=null, blob=null}]",runHBT("fromTable(db1,travelrecord).filter(`id` = 1)"));

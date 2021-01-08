@@ -78,7 +78,7 @@ public class PhysTypeImpl implements PhysType {
       JavaTypeFactory typeFactory,
       RelDataType rowType,
       JavaRowFormat format) {
-    return of(typeFactory, rowType, format, true);
+    return of(typeFactory, rowType, format, false);
   }
 
   public static PhysType of(
@@ -672,6 +672,12 @@ public class PhysTypeImpl implements PhysType {
         fieldType = null;
       }
     }
-    return format.field(expression, field, fieldType, storageType);
+    try {
+        return format.field(expression, field, fieldType, storageType);
+    }catch (Throwable throwable){
+        System.out.println(expression);
+        throwable.printStackTrace();
+        return Expressions.constant("111111111111111111111111");
+    }
   }
 }

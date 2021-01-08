@@ -103,7 +103,7 @@ public class TextConvertor {
     public static String dumpMetadata(JdbcRowMetaData metaData) {
         int columnCount = metaData.getColumnCount();
         ArrayList<String> names = new ArrayList<>();
-        for (int i = 1; i <= columnCount; i++) {
+        for (int i = 0; i < columnCount; i++) {
             names.add(metaData.getColumnName(i));
         }
         return String.join(",",names).trim();

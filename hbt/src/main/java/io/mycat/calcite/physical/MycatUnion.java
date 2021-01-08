@@ -106,7 +106,7 @@ public class MycatUnion extends Union implements MycatRel {
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getRowType(),
-                        pref.prefer(JavaRowFormat.CUSTOM));
+                        pref.prefer(JavaRowFormat.ARRAY));
         return implementor.result(physType, builder.toBlock());
     }
 }

@@ -13,6 +13,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
+import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
 import io.mycat.calcite.DefaultDatasourceFactory;
 import io.mycat.calcite.Executor;
@@ -22,7 +23,6 @@ import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;
@@ -160,51 +160,32 @@ public class SqlResultSetService implements Closeable, Dumpable {
                 }
                 Object[] pair = new Object[2];
                 MycatDataContext context = new MycatDataContextImpl();
-                try (DefaultDatasourceFactory defaultDatasourceFactory = new DefaultDatasourceFactory(context)) {
-                    TempResultSetFactoryImpl tempResultSetFactory = new TempResultSetFactoryImpl();
-                    ExecutorImplementorImpl executorImplementor = new ExecutorImplementorImpl(context, defaultDatasourceFactory, tempResultSetFactory) {
-                        @Override
-                        public void implementRoot(MycatRel rel, List<String> aliasList) {
-                            if (rel instanceof MycatInsertRel) {
-                                return;
-                            }
-                            if (rel instanceof MycatUpdateRel) {
-                                return;
-                            }
-                            Executor executor = rel.implement(this);
-                            RelDataType rowType = rel.getRowType();
-                            EnumeratorRowIterator rowIterator = new EnumeratorRowIterator(new CalciteRowMetaData(rowType.getFieldList()),
-                                    Linq4j.asEnumerable(() -> executor.outputObjectIterator()).enumerator(), () -> {
-                            });
-                            executor.open();
-                            try {
-                                MycatRowMetaData metaData = rowIterator.getMetaData();
-                                CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
-                                int columnCount = metaData.getColumnCount();
-                                ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
-                                while (rowIterator.next()) {
-                                    Object[] row = new Object[columnCount];
-                                    for (int i = 0; i < columnCount; i++) {
-                                        row[i] = rowIterator.getObject(i + 1);
-                                    }
-                                    builder.add(row);
-                                }
-                                ImmutableList<Object[]> objects1 = builder.build();
-                                pair[0] = mycatRowMetaData;
-                                pair[1] = objects1;
-                            } finally {
-                                executor.close();
-                            }
+                try {
+                    DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                    DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
+                    Plan plan = drdsRunner.getPlan(context, drdsSql);
+                    EnumeratorRowIterator enumeratorRowIterator = DrdsRunner.getEnumeratorRowIterator(plan, context, drdsSql.getParams());
+                    MycatRowMetaData metaData = new CalciteRowMetaData(plan.getPhysical().getRowType().getFieldList());
+                    CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
+                    int columnCount = metaData.getColumnCount();
+                    ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
+                    while (enumeratorRowIterator.next()) {
+                        Object[] row = new Object[columnCount];
+                        for (int i = 0; i < columnCount; i++) {
+                            row[i] = enumeratorRowIterator.getObject(i);
                         }
-                    };
-                    DrdsRunners.runOnDrds(context, sqlSelectStatement, executorImplementor);
-                } finally {
+                        builder.add(row);
+                    }
+                    ImmutableList<Object[]> objects1 = builder.build();
+                    pair[0] = mycatRowMetaData;
+                    pair[1] = objects1;
+                    return (pair);
+                }finally {
                     context.close();
                 }
-                return (pair);
             }
         });
-    }
+        }
 
     @Override
     public void close() {

@@ -101,7 +101,7 @@ public class ViewExecutor implements Executor {
                 while (rowIterator.next()) {
                     Object[] row = new Object[columnCount];
                     for (int i = 0; i < columnCount; i++) {
-                        row[i] = rowIterator.getObject(i + 1);
+                        row[i] = rowIterator.getObject(i);
                     }
                     builder.add(row);
                 }

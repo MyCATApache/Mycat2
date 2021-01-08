@@ -11,9 +11,10 @@ import io.mycat.calcite.ResponseExecutorImplementor;
 import io.mycat.calcite.executor.TempResultSetFactory;
 import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.MetadataManager;
+import io.mycat.calcite.plan.PlanImplementor;
+import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
-import io.mycat.sqlhandler.DrdsRunners;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.Response;
@@ -67,9 +68,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
             receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
             return;
         }
-        TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-        try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-            DrdsRunners.runOnDrds(dataContext, sqlStatement, new ResponseExecutorImplementor(dataContext,datasourceFactory, tempResultSetFactory, receiver));
-        }
+        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+        drdsRunner.runOnDrds(dataContext,sqlStatement,receiver);
     }
 }

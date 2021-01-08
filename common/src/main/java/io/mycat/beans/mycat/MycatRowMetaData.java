@@ -60,7 +60,7 @@ public interface MycatRowMetaData {
     default String toSimpleText() {
         int columnCount = getColumnCount();
         List list = new ArrayList();
-        for (int i = 1; i <= columnCount; i++) {
+        for (int i = 0; i < columnCount; i++) {
             Map<String, Object> info = new HashMap<>();
 
 
@@ -97,7 +97,7 @@ public interface MycatRowMetaData {
     default List<String> getColumnList() {
         int columnCount = getColumnCount();
         ArrayList<String> fields = new ArrayList<>();
-        for (int i = 1; i <= columnCount; i++) {
+        for (int i = 0; i < columnCount; i++) {
             fields.add(getColumnName(i));
         }
         return fields;

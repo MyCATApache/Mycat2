@@ -125,7 +125,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public String getString(int columnIndex) {
         try {
-            return resultSet.getString(columnIndex);
+            return resultSet.getString(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -134,7 +134,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public boolean getBoolean(int columnIndex) {
         try {
-            return resultSet.getBoolean(columnIndex);
+            return resultSet.getBoolean(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -143,7 +143,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public byte getByte(int columnIndex) {
         try {
-            return resultSet.getByte(columnIndex);
+            return resultSet.getByte(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -152,7 +152,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public short getShort(int columnIndex) {
         try {
-            return resultSet.getShort(columnIndex);
+            return resultSet.getShort(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -161,7 +161,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public int getInt(int columnIndex) {
         try {
-            return resultSet.getInt(columnIndex);
+            return resultSet.getInt(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -170,7 +170,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public long getLong(int columnIndex) {
         try {
-            return resultSet.getLong(columnIndex);
+            return resultSet.getLong(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -179,7 +179,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public float getFloat(int columnIndex) {
         try {
-            return resultSet.getFloat(columnIndex);
+            return resultSet.getFloat(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -188,7 +188,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public double getDouble(int columnIndex) {
         try {
-            return resultSet.getDouble(columnIndex);
+            return resultSet.getDouble(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -197,7 +197,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public byte[] getBytes(int columnIndex) {
         try {
-            return resultSet.getBytes(columnIndex);
+            return resultSet.getBytes(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -206,7 +206,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public LocalDate getDate(int columnIndex) {
         try {
-            Date date = resultSet.getDate(columnIndex);
+            Date date = resultSet.getDate(columnIndex+1);
             if (date != null) {
                 return date.toLocalDate();
             }
@@ -219,7 +219,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public Duration getTime(int columnIndex) {
         try {
-            String string = resultSet.getString(columnIndex);
+            String string = resultSet.getString(columnIndex+1);
             if (string == null) {
                 return null;
             }
@@ -232,7 +232,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public LocalDateTime getTimestamp(int columnIndex) {
         try {
-            Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+            Timestamp timestamp = resultSet.getTimestamp(columnIndex+1);
             if (timestamp == null) {
                 return null;
             }
@@ -245,7 +245,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public InputStream getAsciiStream(int columnIndex) {
         try {
-            return resultSet.getAsciiStream(columnIndex);
+            return resultSet.getAsciiStream(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -254,7 +254,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     @Override
     public InputStream getBinaryStream(int columnIndex) {
         try {
-            return resultSet.getBinaryStream(columnIndex);
+            return resultSet.getBinaryStream(columnIndex+1);
         } catch (Exception e) {
             throw new MycatException(toMessage(e));
         }
@@ -266,6 +266,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
         ResultSetMetaData origin = resultSet.getMetaData();
         MycatRowMetaData metaData = getMetaData();//该方法可能被重写
         int columnType = metaData.getColumnType(columnIndex);
+        columnIndex = columnIndex+1;
         switch (columnType) {
             case BIT: {
                 boolean aBoolean = resultSet.getBoolean(columnIndex);

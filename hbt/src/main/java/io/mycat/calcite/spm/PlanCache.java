@@ -17,57 +17,76 @@ package io.mycat.calcite.spm;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public enum PlanCache {
     INSTANCE;
 
-    private LoadingCache<String, AtomicReference<Plan>> cache;
+    private LoadingCache<Key, AtomicReference<Plan>> cache;
 
     PlanCache() {
         this.cache = newCache();
     }
 
     @NotNull
-    private LoadingCache<String, AtomicReference<Plan>> newCache() {
-        LoadingCache<String, AtomicReference<Plan>> cache = CacheBuilder.newBuilder()
+    private LoadingCache<Key, AtomicReference<Plan>> newCache() {
+        LoadingCache<Key, AtomicReference<Plan>> cache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
                 .expireAfterWrite(10, TimeUnit.MINUTES)
                 .build(
-                        new CacheLoader<String, AtomicReference<Plan>>() {
-                            public AtomicReference<Plan> load(String key) {
+                        new CacheLoader<Key, AtomicReference<Plan>>() {
+                            public AtomicReference<Plan> load(Key key) {
                                 return new AtomicReference<Plan>();
                             }
                         });
         return cache;
     }
+    public Plan getMinCostPlan(String sql,List<SqlTypeName> types) {
+        AtomicReference<Plan> plans = computeIfAbsent(new Key(sql,types));
+        return plans.get();
+    }
 
-
-    public Plan getMinCostPlan(String sql) {
+    public Plan getMinCostPlan(Key sql) {
         AtomicReference<Plan> plans = computeIfAbsent(sql);
         return plans.get();
     }
 
     @SneakyThrows
-    private AtomicReference<Plan> computeIfAbsent(String sql) {
+    private AtomicReference<Plan> computeIfAbsent(Key sql) {
         return this.cache.get(sql, () -> new AtomicReference<Plan>());
     }
 
-    public void put(String sql, Plan update) {
-        AtomicReference<Plan> plans = computeIfAbsent(sql);
-        plans.updateAndGet(plan -> {
-            if (plan == null) {
-                return update;
-            }
-            if (plan.compareTo(update) <= 0) {
-                return plan;
-            }
-            return update;
-        });
+    @EqualsAndHashCode
+    @Getter
+    public static class Key {
+        private String sql;
+        private List<SqlTypeName> types;
+
+        public Key(String sql, List<SqlTypeName> types) {
+            this.sql = sql;
+            this.types = types;
+        }
+    }
+
+    public void put(String sql, List<SqlTypeName> types, Plan update) {
+        AtomicReference<Plan> plans = computeIfAbsent(new Key(sql,types));
+//        plans.updateAndGet(plan -> {
+//            if (plan == null) {
+//                return update;
+//            }
+//            if (plan.compareTo(update) <= 0) {
+//                return plan;
+//            }
+//            return update;
+//        });
     }
 
     public void clear() {

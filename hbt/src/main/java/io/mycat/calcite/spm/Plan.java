@@ -14,20 +14,28 @@
  */
 package io.mycat.calcite.spm;
 
-import io.mycat.beans.mycat.MycatRowMetaData;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.runtime.CodeExecuterContext;
 
 public interface Plan extends Comparable<Plan> {
 
+    boolean forUpdate();
+
     RelOptCost getRelOptCost();
 
-    public MycatRowMetaData rowMetaData();
-
     public Type getType();
-    public RelNode getRelNode();
-    static public enum Type{
-        PARSE,
-        FINAL
+
+    public RelNode getLogical();
+
+    public CodeExecuterContext getCodeExecuterContext();
+
+    public RelNode getPhysical();
+
+    static public enum Type {
+        LOGICAL,
+        PHYSICAL,
+        UPDATE,
+        INSERT
     }
 }

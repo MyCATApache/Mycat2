@@ -18,21 +18,30 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.calcite.*;
+import org.apache.calcite.adapter.enumerable.*;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Util;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 
-public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
+public class MycatSemiHashJoin extends Join implements MycatRel {
 
 
     protected MycatSemiHashJoin(RelOptCluster cluster,
@@ -45,7 +54,12 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
         super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
-    public static MycatSemiHashJoin create(List<RelHint> hints, RelNode left, RelNode right, RexNode condition, JoinRelType joinType) {
+    @Override
+    public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
+        return new MycatSemiHashJoin(getCluster(), traitSet, left, right, conditionExpr, getVariablesSet(), joinType);
+    }
+
+    public static MycatSemiHashJoin create( RelNode left, RelNode right, RexNode condition, JoinRelType joinType) {
         RelOptCluster cluster = left.getCluster();
         RelMetadataQuery metadataQuery = cluster.getMetadataQuery();
         return new MycatSemiHashJoin(left.getCluster(),
@@ -69,6 +83,13 @@ public class MycatSemiHashJoin extends MycatHashJoin implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(left, right, condition, variablesSet, joinType);
+        Result result = enumerableHashJoin.implement(implementor, pref);
+        return result;
     }
 
 }

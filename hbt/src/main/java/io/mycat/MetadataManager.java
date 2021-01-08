@@ -156,8 +156,8 @@ public class MetadataManager implements MysqlVariableService {
             try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW GLOBAL VARIABLES;")) {
                 while (rowBaseIterator.next()) {
                     globalVariables.put(
-                            rowBaseIterator.getString(1),
-                            rowBaseIterator.getObject(2)
+                            rowBaseIterator.getString(0),
+                            rowBaseIterator.getObject(1)
                     );
                 }
             }
@@ -167,8 +167,8 @@ public class MetadataManager implements MysqlVariableService {
             try (RowBaseIterator rowBaseIterator = connection.executeQuery(" SHOW SESSION VARIABLES;")) {
                 while (rowBaseIterator.next()) {
                     sessionVariables.put(
-                            rowBaseIterator.getString(1),
-                            rowBaseIterator.getObject(2)
+                            rowBaseIterator.getString(0),
+                            rowBaseIterator.getObject(1)
                     );
                 }
             }
@@ -314,7 +314,7 @@ public class MetadataManager implements MysqlVariableService {
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
-                tables.add(tableIterator.getString(1));
+                tables.add(tableIterator.getString(0));
             }
         }
         Map<String, NormalTableConfig> res = new HashMap<>();
@@ -559,7 +559,7 @@ public class MetadataManager implements MysqlVariableService {
                     String sql = "SHOW CREATE TABLE " + targetSchemaTable;
                     try (RowBaseIterator rowBaseIterator = connection.executeQuery(sql)) {
                         while (rowBaseIterator.next()) {
-                            String string = rowBaseIterator.getString(2);
+                            String string = rowBaseIterator.getString(1);
                             SQLStatement sqlStatement = null;
                             try {
                                 sqlStatement = SQLUtils.parseSingleMysqlStatement(string);
@@ -602,7 +602,7 @@ public class MetadataManager implements MysqlVariableService {
                         mySqlCreateTableStatement.setTableName(tableName);
                         mySqlCreateTableStatement.setSchema(schemaName);
                         int columnCount = metaData.getColumnCount();
-                        for (int i = 1; i <= columnCount; i++) {
+                        for (int i = 0; i < columnCount; i++) {
                             int columnType = metaData.getColumnType(i);
                             String type = SQLDataType.Constants.VARCHAR;
                             for (MySQLType value : MySQLType.values()) {
@@ -853,7 +853,8 @@ public class MetadataManager implements MysqlVariableService {
 
     @Override
     public Object getSessionVariable(String name) {
-        return sessionVariables.get(name, false);
+        Object o = sessionVariables.get(name, false);
+        return o;
     }
 
     @Override

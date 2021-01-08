@@ -27,14 +27,11 @@ import java.util.List;
  * @author Junwen Chen
  **/
 public class CalciteRowMetaData implements MycatRowMetaData {
-    final ArrayList<RelDataTypeField> fieldList;
+    final List<RelDataTypeField> fieldList;
     private List<String> aliasList = null;
 
     public CalciteRowMetaData(List<RelDataTypeField> fieldList) {
-        ArrayList<RelDataTypeField> objects = new ArrayList<>();
-        objects.add(null);
-        objects.addAll(fieldList);
-        this.fieldList = objects;
+        this.fieldList = fieldList;
     }
 
     public CalciteRowMetaData(List<RelDataTypeField> fieldList, List<String> aliasList) {
@@ -44,7 +41,7 @@ public class CalciteRowMetaData implements MycatRowMetaData {
 
     @Override
     public int getColumnCount() {
-        return fieldList.size() - 1;
+        return fieldList.size();
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
@@ -26,7 +27,7 @@ public class MycatSessionValueFunction extends MycatSqlDefinedFunction {
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
         List<Expression> argValueList = translator.translateList(call.getOperands(),nullAs);
         return Expressions.call(
-                Expressions.variable(org.apache.calcite.MycatContext.class,"context"),
+                NewMycatDataContext.ROOT,
                 "getSessionVariable",
                 argValueList.get(0));
     }

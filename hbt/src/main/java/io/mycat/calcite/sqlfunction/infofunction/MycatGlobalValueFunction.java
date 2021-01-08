@@ -1,5 +1,6 @@
 package io.mycat.calcite.sqlfunction.infofunction;
 
+import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -25,7 +26,7 @@ public class MycatGlobalValueFunction extends MycatSqlDefinedFunction {
     @Override
     public Expression implement(RexToLixTranslator translator, RexCall call, RexImpTable.NullAs nullAs) {
         List<Expression> argValueList = translator.translateList(call.getOperands(), nullAs);
-        return Expressions.call(Expressions.variable(org.apache.calcite.MycatContext.class,"context"),"getGlobalValue"
+        return Expressions.call(DataContext.ROOT,"getGlobalValue"
                 ,argValueList.get(0));
     }
 }

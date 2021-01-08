@@ -1549,6 +1549,9 @@ public class SqlFunctions {
   public static int sround(int b0, int b1) {
     return sround(BigDecimal.valueOf(b0), b1).intValue();
   }
+  public static int sround(String b0, int b1) {
+    return sround(new BigDecimal(b0), b1).intValue();
+  }
 
   /** SQL <code>ROUND</code> operator applied to long values. */
   public static long sround(long b0) {

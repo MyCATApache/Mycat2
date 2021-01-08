@@ -11,7 +11,7 @@ public class RowIteratorUtil {
         int columnCount = mycatRowMetaData.getColumnCount();
 
         while (iterator.next()) {
-            for (int i = 1; i <= columnCount; i++) {
+            for (int i = 0; i < columnCount; i++) {
                 sb.append(mycatRowMetaData.getColumnName(i)).append(":").append(Objects.toString(iterator.getObject(i))).append(" | ");
             }
             sb.append("\n");
