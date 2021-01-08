@@ -147,18 +147,7 @@ public class MySQLPacketUtil {
             writer.writeLenencInt(lastInsertId);
             writer.writeFixInt(2, serverStatus);
             writer.writeFixInt(2, warningCount);
-            if (isClientProtocol41) {
-            } else if (isKnowsAboutTransactions) {
-                writer.writeFixInt(2, serverStatus);
-            }
-            if (sessionVariableTracking) {
-                throw new MycatException("unsupport!!");
-            } else {
-                if (message == null){
-                    message="";
-                }
-                writer.writeEOFString(message);
-            }
+            writer.writeEOFString(message);
             return writer.toByteArray();
         }
     }
