@@ -40,35 +40,35 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
 
     @Override
     public String getString(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return Objects.toString(o);
     }
 
     @Override
     public boolean getBoolean(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return false;
         return (Boolean) o;
     }
 
     @Override
     public byte getByte(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return (Byte) o;
     }
 
     @Override
     public short getShort(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return (Short) o;
     }
 
     @Override
     public int getInt(int columnIndex) {
-        Number o = (Number) getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return o.intValue();
     }
@@ -76,7 +76,7 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     @Override
     public long getLong(int columnIndex) {
 
-        Number o = (Number) getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return ((Number) o).longValue();
 
@@ -84,69 +84,69 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
 
     @Override
     public float getFloat(int columnIndex) {
-        Number o = (Number) getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return ((Number) o).floatValue();
     }
 
     @Override
     public double getDouble(int columnIndex) {
-        Number o = (Number) getObject(currentRow[columnIndex - 1]);
+        Number o = (Number) getObject(currentRow[columnIndex ]);
         if (wasNull) return 0;
         return ((Number) o).doubleValue();
     }
 
     @Override
     public byte[] getBytes(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (byte[]) o;
     }
 
     @Override
     public LocalDate getDate(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (LocalDate) o;
     }
 
     @Override
     public Duration getTime(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (Duration) o;
     }
 
     @Override
     public LocalDateTime getTimestamp(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (LocalDateTime) o;
     }
 
     @Override
     public InputStream getAsciiStream(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (InputStream) o;
     }
 
     @Override
     public InputStream getBinaryStream(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (InputStream) o;
     }
 
     @Override
     public Object getObject(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         return o;
     }
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) {
-        Object o = getObject(currentRow[columnIndex - 1]);
+        Object o = getObject(currentRow[columnIndex ]);
         if (wasNull) return null;
         return (BigDecimal) o;
     }

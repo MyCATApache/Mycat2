@@ -18,11 +18,21 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DataNode;
 import io.mycat.calcite.*;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
-import io.mycat.calcite.rewriter.Distribution;
+import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -33,10 +43,20 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.runtime.NewMycatDataContext;
+import org.apache.calcite.schema.FilterableTable;
+import org.apache.calcite.schema.ProjectableFilterableTable;
+import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.util.BuiltInMethod;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -90,19 +110,19 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     @Override
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("relNode",relNode);
-        writer.item("distribution",distribution);
+        writer.item("relNode", relNode);
+        writer.item("distribution", distribution);
         return writer;
     }
 
     @NotNull
     private RelWriter innerExplainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
-        writer.item("\nrelNode",getSql(MycatSqlDialect.DEFAULT));
+        writer.item("\nrelNode", getSql(MycatSqlDialect.DEFAULT));
         String msg = StreamSupport
                 .stream(distribution.getDataNodes().spliterator(), false)
                 .map(i -> i.toString()).collect(Collectors.joining(",\n"));
-        writer.item("\ndistribution","\n"+msg);
+        writer.item("\ndistribution", "\n" + msg);
         return writer;
     }
 
@@ -162,13 +182,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
-            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update,params);
+            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update, params);
             return ImmutableMultimap.of(dataNode.getTargetName(), sql);
         } else {
             ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             for (DataNode dataNode : this.distribution.getDataNodes(params)) {
                 SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
-                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update,params);
+                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update, params);
                 builder.put(dataNode.getTargetName(), sql);
             }
             return builder.build();
@@ -185,7 +205,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                     RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
                             scan.getRowType(),
                             physicalTable,
-                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())
+                            ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
                     );
                     return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
                 }
@@ -194,6 +214,92 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         });
     }
 
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        implementor.collectMycatView(this);
+        final BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        ParameterExpression root = implementor.getRootExpression();
+        Expression mycatViewStash = implementor.stash(this, RelNode.class);
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class);
+        final Expression expression2 = toEnumerable(
+                Expressions.call(root, getEnumerable, mycatViewStash));
+        assert Types.isAssignableFrom(Enumerable.class, expression2.getType());
+        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        return implementor.result(physType, builder.toBlock());
+    }
 
+
+    public static Expression toEnumerable(Expression expression) {
+        final Type type = expression.getType();
+        if (Types.isArray(type)) {
+            if (Types.toClass(type).getComponentType().isPrimitive()) {
+                expression =
+                        Expressions.call(BuiltInMethod.AS_LIST.method, expression);
+            }
+            return Expressions.call(BuiltInMethod.AS_ENUMERABLE.method, expression);
+        } else if (Types.isAssignableFrom(Iterable.class, type)
+                && !Types.isAssignableFrom(Enumerable.class, type)) {
+            return Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method,
+                    expression);
+        } else if (Types.isAssignableFrom(Queryable.class, type)) {
+            // Queryable extends Enumerable, but it's too "clever", so we call
+            // Queryable.asEnumerable so that operations such as take(int) will be
+            // evaluated directly.
+            return Expressions.call(expression,
+                    BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
+        }
+        return expression;
+    }
+
+    public static Expression toRows(PhysType physType, Expression expression,final int fieldCount ) {
+        JavaRowFormat oldFormat = JavaRowFormat.ARRAY;
+        if (physType.getFormat() == oldFormat) {
+            return expression;
+        }
+        final ParameterExpression row_ =
+                Expressions.parameter(Object[].class, "row");
+        List<Expression> expressionList = new ArrayList<>(fieldCount);
+        for (int i = 0; i < fieldCount; i++) {
+            expressionList.add(fieldExpression(row_, i, physType, oldFormat));
+        }
+        return Expressions.call(expression,
+                BuiltInMethod.SELECT.method,
+                Expressions.lambda(Function1.class, physType.record(expressionList),
+                        row_));
+    }
+    public static Expression fieldExpression(ParameterExpression row_, int i,
+                                       PhysType physType, JavaRowFormat format) {
+        final Expression e =
+                format.field(row_, i, null, physType.getJavaFieldType(i));
+        final RelDataType relFieldType =
+                physType.getRowType().getFieldList().get(i).getType();
+        switch (relFieldType.getSqlTypeName()) {
+            case ARRAY:
+            case MULTISET:
+                final RelDataType fieldType = relFieldType.getComponentType();
+                if (fieldType.isStruct()) {
+                    // We can't represent a multiset or array as a List<Employee>, because
+                    // the consumer does not know the element type.
+                    // The standard element type is List.
+                    // We need to convert to a List<List>.
+                    final JavaTypeFactory typeFactory = MycatCalciteSupport.TypeFactory;
+                    final PhysType elementPhysType = PhysTypeImpl.of(
+                            typeFactory, fieldType, JavaRowFormat.CUSTOM);
+                    final MethodCallExpression e2 =
+                            Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
+                    final Expression e3 = elementPhysType.convertTo(e2, JavaRowFormat.LIST);
+                    return Expressions.call(e3, BuiltInMethod.ENUMERABLE_TO_LIST.method);
+                } else {
+                    return e;
+                }
+            default:
+                return e;
+        }
+    }
 
 }

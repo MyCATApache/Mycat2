@@ -57,7 +57,7 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
 
     @Override
     public Executor implement(MycatInsertRel mycatInsertRel) {
-        return MycatInsertExecutor.create(context,mycatInsertRel, factory, params);
+        return null;
     }
 
     @Override
@@ -65,11 +65,10 @@ public abstract class ExecutorImplementorImpl extends BaseExecutorImplementor {
         if (mycatUpdateRel.isGlobal()){
             return new MycatGlobalUpdateExecutor(context,mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
-                    params,factory);
+                    params);
         }
         return MycatUpdateExecutor.create(context,mycatUpdateRel.getValues(),
                 mycatUpdateRel.getSqlStatement(),
-                factory,
                 params
         );
     }

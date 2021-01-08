@@ -112,7 +112,7 @@ public class MycatCorrelate extends Correlate implements MycatRel {
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getRowType(),
-                        pref.prefer(JavaRowFormat.CUSTOM));
+                        pref.prefer(JavaRowFormat.ARRAY));
 
         Expression selector =
                 EnumUtils.joinSelector(

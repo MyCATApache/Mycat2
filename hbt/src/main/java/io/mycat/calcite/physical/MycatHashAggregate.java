@@ -349,19 +349,5 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
         }
         return implementor.result(physType, builder.toBlock());
     }
-    static PhysType of(
-            final JavaTypeFactory typeFactory,
-            Type javaRowClass) {
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
-        if (javaRowClass instanceof Types.RecordType) {
-            final Types.RecordType recordType = (Types.RecordType) javaRowClass;
-            for (Types.RecordField field : recordType.getRecordFields()) {
-                builder.add(field.getName(), typeFactory.createType(field.getType()));
-            }
-        }
-        RelDataType rowType = builder.build();
-        // Do not optimize if there are 0 or 1 fields.
-        return new PhysTypeImpl(typeFactory, rowType, javaRowClass,
-                JavaRowFormat.CUSTOM);
-    }
+
 }

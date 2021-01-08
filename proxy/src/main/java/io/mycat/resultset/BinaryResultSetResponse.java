@@ -30,7 +30,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
         int columnCount = mycatRowMetaData.getColumnCount();
         jdbcTypes = new int[columnCount];
         for (int i = 0; i < columnCount; i++) {
-            int type = mycatRowMetaData.getColumnType(i + 1);
+            int type = mycatRowMetaData.getColumnType(i);
             jdbcTypes[i] = type;
         }
     }
@@ -50,7 +50,7 @@ public class BinaryResultSetResponse extends AbstractMycatResultSetResponse {
                 byte[][] rows = new byte[jdbcTypes.length][];
                 for (int i = 0; i < jdbcTypes.length; i++) {
                     int columnType = jdbcTypes[i];
-                    Object object = rowBaseIterator.getObject(i+1);
+                    Object object = rowBaseIterator.getObject(i);
                     boolean wasNull = rowBaseIterator.wasNull();
                     if (wasNull){
                         rows[i] = null;

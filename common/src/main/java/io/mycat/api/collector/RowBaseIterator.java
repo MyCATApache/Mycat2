@@ -69,7 +69,7 @@ public interface RowBaseIterator extends Closeable, BaseIterator {
         List<Map<String, Object>> resultList = new ArrayList<>();
         while (iterator.next()) {
             HashMap<String, Object> row = new HashMap<>(columnCount);
-            for (int i = 1; i <= columnCount; i++) {
+            for (int i = 0; i < columnCount; i++) {
                 row.put(metaData.getColumnName(i), iterator.getObject(i));
             }
             resultList.add(row);

@@ -235,7 +235,7 @@ public class CalciteConvertors {
     public static List<SimpleColumnInfo> getColumnInfo(MycatRowMetaData mycatRowMetaData) {
         int columnCount = mycatRowMetaData.getColumnCount();
         List<SimpleColumnInfo> list = new ArrayList<>();
-        for (int i = 1,id=0; i <= columnCount; i++,id++) {
+        for (int i = 0,id=0; i < columnCount; i++,id++) {
             String columnName = mycatRowMetaData.getColumnName(i);
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);

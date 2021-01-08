@@ -101,11 +101,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalFilter filter) {
         RelNode input = filter.getInput().accept(this);
-        if (!userDefinedFunctionInFilter(filter)) {
-            if (RelMdSqlViews.filter(input)) {
-                return filter(input, filter, optimizationContext);
-            }
-        }
+//        if (!userDefinedFunctionInFilter(filter)) {
+//            if (RelMdSqlViews.filter(input)) {
+//                return filter(input, filter, optimizationContext);
+//            }
+//        }
         return filter.copy(filter.getTraitSet(), ImmutableList.of(input));
     }
 

@@ -1,44 +1,58 @@
-package io.mycat.sqlhandler;
-
-import com.alibaba.druid.sql.ast.SQLStatement;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatDataContext;
-import io.mycat.calcite.ExecutorImplementor;
-import io.mycat.calcite.MycatRel;
-import io.mycat.calcite.spm.PlanCache;
-import io.mycat.DrdsConfig;
-import io.mycat.DrdsConst;
-import io.mycat.DrdsRunner;
-import io.mycat.DrdsSql;
-import lombok.SneakyThrows;
-import org.apache.calcite.MycatContext;
-
-import java.util.Collections;
-
-public class DrdsRunners {
-    public static void main(String[] args) {
-
-    }
-
-    @SneakyThrows
-    public static void runOnDrds(MycatDataContext dataContext,
-                                 SQLStatement statement,
-                                 ExecutorImplementor executorImplementor) {
-        MycatContext.CONTEXT.set(dataContext);
-        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-        Iterable<DrdsSql> drdsSqls = drdsRunner.preParse(Collections.singletonList(statement), Collections.emptyList());
-        Iterable<DrdsSql> iterable = drdsRunner.convertToMycatRel(drdsSqls, dataContext);
-        DrdsSql drdsSql = iterable.iterator().next();
-        executorImplementor.setParams(drdsSql.getParams());
-        executorImplementor.implementRoot((MycatRel) drdsSql.getRelNode(), drdsSql.getAliasList());
-    }
-
-    public static void runHbtOnDrds(MycatDataContext dataContext, String statement, ExecutorImplementor executorImplementor) throws Exception {
-        MycatContext.CONTEXT.set(dataContext);
-        DrdsConst drdsConst = new DrdsConfig();
-        DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
-                PlanCache.INSTANCE);
-        MycatRel mycatRel = drdsRunners.doHbt(statement, dataContext);
-        executorImplementor.implementRoot(mycatRel, Collections.emptyList());
-    }
-}
+//package io.mycat.sqlhandler;
+//
+//import com.alibaba.druid.sql.ast.SQLStatement;
+//import io.mycat.*;
+//import io.mycat.calcite.MycatRel;
+//import io.mycat.calcite.physical.MycatInsertRel;
+//import io.mycat.calcite.physical.MycatUpdateRel;
+//import io.mycat.calcite.plan.PlanImplementor;
+//import io.mycat.calcite.rewriter.OptimizationContext;
+//import io.mycat.calcite.spm.Plan;
+//import io.mycat.calcite.spm.PlanCache;
+//import io.mycat.calcite.spm.PlanImpl;
+//import lombok.SneakyThrows;
+//import org.apache.calcite.runtime.CodeExecuterContext;
+//
+//import static io.mycat.DrdsRunner.getCodeExecuterContext;
+//
+//public class DrdsRunners {
+//    public static void main(String[] args) {
+//
+//    }
+//
+//    @SneakyThrows
+//    public void runOnDrds(MycatDataContext dataContext,
+//                          SQLStatement statement,
+//                          PlanImplementor planImplementor) {
+//        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+//        DrdsSql drdsSql = drdsRunner.preParse(statement);
+//        PlanCache planCache = drdsRunner.getPlanCache();
+//        OptimizationContext optimizationContext = new OptimizationContext();
+//        Plan plan = drdsRunner.convertToExecuter(drdsSql, dataContext, optimizationContext);
+//        planCache.put(drdsSql.getParameterizedString(), plan);
+//        switch (plan.getType()) {
+//            case LOGICAL:
+//                assert false;
+//            case PHYSICAL:
+//                planImplementor.execute(plan);
+//                break;
+//            case UPDATE:
+//                planImplementor.execute((MycatUpdateRel) plan.getLogical());
+//                break;
+//            case INSERT:
+//                planImplementor.execute((MycatInsertRel) plan.getLogical());
+//                break;
+//        }
+//    }
+//
+//
+//    public void runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) throws Exception {
+//        DrdsConst drdsConst = new DrdsConfig();
+//        DrdsRunner drdsRunners = new DrdsRunner(drdsConst,
+//                PlanCache.INSTANCE);
+//        MycatRel mycatRel = drdsRunners.doHbt(statement, dataContext);
+//        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
+//        planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext));
+//    }
+//
+//}

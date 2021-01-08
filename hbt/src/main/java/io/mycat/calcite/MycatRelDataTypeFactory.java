@@ -108,6 +108,7 @@ public class MycatRelDataTypeFactory implements JavaTypeFactory {
 
     @Override
     public RelDataType leastRestrictive(List<RelDataType> list) {
+
         return this.javaTypeFactory.leastRestrictive(list);
     }
 

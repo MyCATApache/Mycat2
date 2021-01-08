@@ -103,7 +103,7 @@ public  class AddTimeFunction extends SqlFunction {
 
 
     public RexImpTable.RexCallImplementor getRexCallImplementor(){
-      return  new RexImpTable.MycatAbstractRexCallImplementor(NullPolicy.ANY, true) {
+      return  new RexImpTable.MycatAbstractRexCallImplementor(NullPolicy.ANY, false) {
 
         @Override
         public String getVariableName() {

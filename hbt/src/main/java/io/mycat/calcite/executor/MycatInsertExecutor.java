@@ -48,7 +48,6 @@ public class MycatInsertExecutor implements Executor {
 
     private MycatDataContext context;
     private final MycatInsertRel mycatInsertRel;
-    private final DataSourceFactory factory;
     /**
      * 最终发给后端的sql, 包含全部字段的数据 （比如自增ID）
      */
@@ -68,10 +67,9 @@ public class MycatInsertExecutor implements Executor {
     public String sequence;
     private boolean done = false;
 
-    public MycatInsertExecutor(MycatDataContext context, MycatInsertRel mycatInsertRel, List<Object> params,DataSourceFactory factory) {
+    public MycatInsertExecutor(MycatDataContext context, MycatInsertRel mycatInsertRel, List<Object> params) {
         this.context = context;
         this.mycatInsertRel = mycatInsertRel;
-        this.factory = factory;
         this.params = params;
 
         this.multi = !params.isEmpty() && (params.get(0) instanceof List);
@@ -80,7 +78,6 @@ public class MycatInsertExecutor implements Executor {
         } else {
             this.groupMap = runNormalParams();
         }
-        this.factory.registered(this.groupMap.keySet().stream().map(i -> i.getTarget()).distinct().collect(Collectors.toList()));
     }
 
     public boolean isProxy() {
@@ -116,8 +113,8 @@ public class MycatInsertExecutor implements Executor {
         return null;
     }
 
-    public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel, DataSourceFactory factory, List<Object> params) {
-        return new MycatInsertExecutor(context, mycatInsertRel, params,factory);
+    public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel,List<Object> params) {
+        return new MycatInsertExecutor(context, mycatInsertRel, params);
     }
 
     @Override
@@ -348,7 +345,7 @@ public class MycatInsertExecutor implements Executor {
             return;
         }
         GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
-        MycatDataContext mycatDataContext = MycatContext.CONTEXT.get();
+        MycatDataContext mycatDataContext = this.context;
         TransactionSession transactionSession = mycatDataContext.getTransactionSession();
         String txId = transactionSession.getTxId();
 

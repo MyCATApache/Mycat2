@@ -8,11 +8,6 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
-import io.mycat.calcite.DataSourceFactory;
-import io.mycat.calcite.DefaultDatasourceFactory;
-import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.calcite.executor.TempResultSetFactory;
-import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.SchemaHandler;
@@ -29,7 +24,10 @@ import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.sqlhandler.*;
+import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.ConfigUpdater;
+import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.sqlhandler.SqlHints;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
@@ -165,11 +163,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 if ("run".equalsIgnoreCase(cmd)) {
                     Map<String, Object> map = JsonUtil.from(body, Map.class);
                     String hbt = Objects.toString(map.get("hbt"));
-                    TempResultSetFactory tempResultSetFactory = new TempResultSetFactoryImpl();
-                    try (DataSourceFactory datasourceFactory = new DefaultDatasourceFactory(dataContext)) {
-                        DrdsRunners.runHbtOnDrds(dataContext, hbt,
-                                new ResponseExecutorImplementor(dataContext, datasourceFactory, tempResultSetFactory, response));
-                    }
+                    DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                    drdsRunner.runHbtOnDrds(dataContext, hbt, response);
                     return;
                 }
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {

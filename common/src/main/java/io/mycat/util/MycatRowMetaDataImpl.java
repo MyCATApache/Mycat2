@@ -20,8 +20,6 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
         this.tableName = tableName;
         this.schemaName = schemaName;
         this.columnCount = columnInfo.size();
-        this.columnInfo.add(0, null);
-
     }
 
     @Override

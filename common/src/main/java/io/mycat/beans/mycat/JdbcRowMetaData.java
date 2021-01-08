@@ -47,7 +47,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public boolean isAutoIncrement(int column) {
         try {
-            return resultSetMetaData.isAutoIncrement(column);
+            return resultSetMetaData.isAutoIncrement(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -56,7 +56,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public boolean isCaseSensitive(int column) {
         try {
-            return resultSetMetaData.isCaseSensitive(column);
+            return resultSetMetaData.isCaseSensitive(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -65,7 +65,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public boolean isNullable(int column) {
         try {
-            return resultSetMetaData.isNullable(column) == columnNullable;
+            return resultSetMetaData.isNullable(column+1) == columnNullable;
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -74,7 +74,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public boolean isSigned(int column) {
         try {
-            return resultSetMetaData.isSigned(column);
+            return resultSetMetaData.isSigned(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -83,7 +83,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public int getColumnDisplaySize(int column) {
         try {
-            return resultSetMetaData.getColumnDisplaySize(column);
+            return resultSetMetaData.getColumnDisplaySize(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -92,7 +92,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public String getColumnName(int column) {
         try {
-            return resultSetMetaData.getColumnName(column);
+            return resultSetMetaData.getColumnName(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -101,7 +101,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public String getSchemaName(int column) {
         try {
-            return resultSetMetaData.getSchemaName(column);
+            return resultSetMetaData.getSchemaName(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -110,7 +110,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public int getPrecision(int column) {
         try {
-            return resultSetMetaData.getPrecision(column);
+            return resultSetMetaData.getPrecision(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -119,7 +119,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public int getScale(int column) {
         try {
-            return resultSetMetaData.getScale(column);
+            return resultSetMetaData.getScale(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -128,7 +128,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public String getTableName(int column) {
         try {
-            return resultSetMetaData.getTableName(column);
+            return resultSetMetaData.getTableName(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -137,7 +137,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public int getColumnType(int column) {
         try {
-            return resultSetMetaData.getColumnType(column);
+            return resultSetMetaData.getColumnType(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
@@ -146,7 +146,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public String getColumnLabel(int i) {
         try {
-            return resultSetMetaData.getColumnLabel(i);
+            return resultSetMetaData.getColumnLabel(i+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }

@@ -13,16 +13,13 @@ import com.alibaba.druid.support.calcite.TDDLSqlSelect;
 import com.alibaba.druid.util.FnvHash;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatException;
-import io.mycat.calcite.sqlfunction.datefunction.DateAddFunction;
-import io.mycat.calcite.sqlfunction.datefunction.DateSubFunction;
-import io.mycat.calcite.sqlfunction.datefunction.ExtractFunction;
+import io.mycat.calcite.sqlfunction.datefunction.*;
 import io.mycat.calcite.sqlfunction.infofunction.*;
 import io.mycat.calcite.sqlfunction.mathfunction.Log2Function;
 import io.mycat.calcite.sqlfunction.mathfunction.LogFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.RandFunction;
 import io.mycat.calcite.sqlfunction.mathfunction.TruncateFunction;
 import io.mycat.calcite.sqlfunction.stringfunction.*;
-import io.mycat.calcite.sqlfunction.datefunction.*;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.sql.*;
@@ -40,6 +37,8 @@ import org.apache.calcite.util.TimestampString;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NULL;
 
 public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     static Map<Long, SqlOperator> operators = new HashMap<Long, SqlOperator>();
@@ -1127,7 +1126,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 break;
             case Is: {
                 if (rightExpr instanceof SQLNullExpr) {
-                    operator = SqlStdOperatorTable.IS_NULL;
+                    operator = IS_NULL;
                 } else if (rightExpr instanceof SQLIdentifierExpr) {
                     long hashCode64 = ((SQLIdentifierExpr) rightExpr).nameHashCode64();
                     if (hashCode64 == FnvHash.Constants.JSON
@@ -1304,7 +1303,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             this.sqlNode = new SqlBasicCall(someOrAllOperator, new SqlNode[]{left, right},
                     SqlParserPos.ZERO);
         } else {
-            if (operator == SqlStdOperatorTable.IS_NULL
+            if (operator == IS_NULL
                     || operator == SqlStdOperatorTable.IS_NOT_NULL
                     || operator == SqlStdOperatorTable.IS_TRUE
                     || operator == SqlStdOperatorTable.IS_NOT_TRUE) {
@@ -1557,48 +1556,48 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         switch (methodName) {
-            case "ASCII":{
+            case "ASCII": {
                 this.sqlNode = AsciiFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "IN":{
+            case "IN": {
                 this.sqlNode = SqlStdOperatorTable.IN.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "BIT_LENGTH":{
+            case "BIT_LENGTH": {
                 this.sqlNode = BitLengthFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "BIN":{
+            case "BIN": {
                 this.sqlNode = BinFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "EXPORT_SET":{
+            case "EXPORT_SET": {
                 this.sqlNode = ExportSetFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "UNHEX":{
+            case "UNHEX": {
                 this.sqlNode = UnhexFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
             case "LCASE":
-            case "LOWER":{
+            case "LOWER": {
                 this.sqlNode = SqlStdOperatorTable.LOWER.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "SUBSTRING":{
+            case "SUBSTRING": {
                 this.sqlNode = SubStringFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "LPAD":{
+            case "LPAD": {
                 this.sqlNode = LpadFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "LTRIM":{
+            case "LTRIM": {
                 this.sqlNode = LtrimFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
-            case "MAKE_SET":{
+            case "MAKE_SET": {
                 this.sqlNode = MakeSetFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
@@ -1919,6 +1918,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 } else {
                     functionOperator = TrimBothFunction.INSTANCE;
                 }
+                sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
+                return false;
+            }
+            case "ISNULL": {
+                functionOperator = IS_NULL;
                 sqlNode = Objects.requireNonNull(functionOperator).createCall(SqlParserPos.ZERO, argNodes);
                 return false;
             }
