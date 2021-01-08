@@ -147,6 +147,9 @@ public class MySQLPacketUtil {
             writer.writeLenencInt(lastInsertId);
             writer.writeFixInt(2, serverStatus);
             writer.writeFixInt(2, warningCount);
+            if (message == null){
+                message = "";
+            }
             writer.writeEOFString(message);
             return writer.toByteArray();
         }
