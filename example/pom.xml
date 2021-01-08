@@ -5,13 +5,45 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.13-realase</version>
+        <version>1.14-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>example</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-test-autoconfigure -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test-autoconfigure</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.7.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-jpa -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-core -->
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>5.4.25.Final</version>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -26,18 +58,24 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>
             <version>1.0-1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>5.3.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

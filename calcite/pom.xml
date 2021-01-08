@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.13-realase</version>
+        <version>1.14-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>calcite</artifactId>
@@ -13,9 +13,7 @@
 
 
     <properties>
-        <kotlin.version>1.4.10</kotlin.version>
     </properties>
-
 
 
     <build>
@@ -77,10 +75,12 @@
         </plugins>
     </build>
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+        <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
         <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>linq4j</artifactId>
-            <version>1.13-realase</version>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.13</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -151,12 +151,6 @@
 
         </dependency>
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.12</version>
-
-        </dependency>
-        <dependency>
             <groupId>net.hydromatic</groupId>
             <artifactId>aggdesigner-algorithm</artifactId>
             <version>6.0</version>
@@ -192,23 +186,12 @@
             <version>3.0.11</version>
 
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+        <!--        <dependency>-->
+        <!--            <groupId>org.slf4j</groupId>-->
+        <!--            <artifactId>slf4j-api</artifactId>-->
+        <!--            <version>1.7.25</version>-->
 
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
             <groupId>junit</groupId>
@@ -261,17 +244,16 @@
             <version>1.9.0</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.calcite.avatica/avatica-core -->
+        <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
         <dependency>
-            <groupId>org.apache.calcite.avatica</groupId>
-            <artifactId>avatica-core</artifactId>
-            <version>1.17.0</version>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+            <version>1.26.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.calcite.avatica/avatica-server -->
         <dependency>
-            <groupId>org.apache.calcite.avatica</groupId>
-            <artifactId>avatica-server</artifactId>
-            <version>1.17.0</version>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-linq4j</artifactId>
+            <version>1.26.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/net.hydromatic/foodmart-data-hsqldb -->
         <dependency>
@@ -390,12 +372,6 @@
 
         </dependency>
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.12</version>
-
-        </dependency>
-        <dependency>
             <groupId>net.hydromatic</groupId>
             <artifactId>aggdesigner-algorithm</artifactId>
             <version>6.0</version>
@@ -431,23 +407,12 @@
             <version>3.0.11</version>
 
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+        <!--        <dependency>-->
+        <!--            <groupId>org.slf4j</groupId>-->
+        <!--            <artifactId>slf4j-api</artifactId>-->
+        <!--            <version>1.7.25</version>-->
 
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test-junit</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <!--        </dependency>-->
         <dependency>
             <groupId>com.github.sisyphsu</groupId>
             <artifactId>dateparser</artifactId>
@@ -457,7 +422,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
     </dependencies>
     <repositories>

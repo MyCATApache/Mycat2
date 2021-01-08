@@ -5,13 +5,21 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.13-realase</version>
+        <version>1.14-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
     <artifactId>mycat2</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>2.7.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
@@ -45,23 +53,39 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
+            <exclusions>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>log4j</artifactId>
+                    <groupId>log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.13-realase</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>pattern</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/au.com.bytecode/opencsv -->
         <dependency>
@@ -75,35 +99,65 @@
             <artifactId>guava</artifactId>
             <version>28.1-jre</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>booster</artifactId>
-            <version>1.13-realase</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-recipes</artifactId>
-            <version>5.1.0</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/log4j/log4j -->
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>log4j</groupId>-->
+<!--            <artifactId>log4j</artifactId>-->
+<!--            <version>1.2.17</version>-->
+<!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/log4j/apache-log4j-extras -->
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>apache-log4j-extras</artifactId>
-            <version>1.0</version>
-        </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>hbt</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-databind</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>protobuf-java</artifactId>
+                    <groupId>com.google.protobuf</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>javax.servlet-api</artifactId>
+                    <groupId>javax.servlet</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-core</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>snakeyaml</artifactId>
+                    <groupId>org.yaml</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jsr305</artifactId>
+                    <groupId>com.google.code.findbugs</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j</artifactId>
+                    <groupId>log4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mysql-client</artifactId>
+            <version>4.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
     <build>
 
@@ -209,8 +263,7 @@
                                     <systemProperty>MYCAT_HOME=./conf</systemProperty>
                                 </systemProperties>
                                 <extraArguments>
-                                    <extraArgument>-Dlog4j.debug</extraArgument>
-                                    <extraArgument>-Dlog4j.configuration=file:./conf/log4j.properties</extraArgument>
+                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <extraArgument>-server</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
@@ -259,10 +312,6 @@
                                         <include name="mycat/conf/**"/>
                                         <include name="mycat/logs"/>
                                         <include name="mycat/lib/**"/>
-                                    </tarfileset>
-                                    <tarfileset dir="${project.basedir}/../example/src/main/resources/io"
-                                                filemode="755">
-                                        <include name="**"/>
                                     </tarfileset>
                                     <tarfileset dir="${project.basedir}/..">
                                         <include name="README.md"/>

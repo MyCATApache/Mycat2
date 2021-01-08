@@ -293,9 +293,9 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
                 return b ? null : aLong;
             }
             case FLOAT: {
-                float aFloat = resultSet.getFloat(columnIndex);
+                double aDouble = resultSet.getDouble(columnIndex);
                 boolean b = resultSet.wasNull();
-                return b ? null : aFloat;
+                return b ? null : aDouble;
             }
             case REAL: {
                 float aFloat = resultSet.getFloat(columnIndex);

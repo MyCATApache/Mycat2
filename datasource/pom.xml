@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.13-realase</version>
+    <version>1.14-dev</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,22 +15,22 @@
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
-    <version>1.13-realase</version>
+    <version>1.14-dev</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
-    <version>1.13-realase</version>
+    <version>1.14-dev</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>plug</artifactId>
-    <version>1.13-realase</version>
+    <version>1.14-dev</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>replica</artifactId>
-    <version>1.13-realase</version>
+    <version>1.14-dev</version>
   </dependency>
   <dependency>
     <groupId>com.zaxxer</groupId>
@@ -47,9 +47,9 @@
   <dependency>
     <groupId>com.alibaba</groupId>
     <artifactId>druid</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.4</version>
   </dependency>
-  <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+  <!-- https://mvnrepository.com/artifact/mysql-connector-java -->
   <dependency>
     <groupId>mysql</groupId>
     <artifactId>mysql-connector-java</artifactId>
@@ -57,17 +57,17 @@
   </dependency>
 
   <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-jdbc -->
-  <dependency>
-    <groupId>com.atomikos</groupId>
-    <artifactId>transactions-jdbc</artifactId>
-    <version>5.0.6</version>
-  </dependency>
+<!--  <dependency>-->
+<!--    <groupId>com.atomikos</groupId>-->
+<!--    <artifactId>transactions-jdbc</artifactId>-->
+<!--    <version>5.0.6</version>-->
+<!--  </dependency>-->
   <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-api -->
-  <dependency>
-    <groupId>com.atomikos</groupId>
-    <artifactId>transactions-api</artifactId>
-    <version>5.0.1</version>
-  </dependency>
+<!--  <dependency>-->
+<!--    <groupId>com.atomikos</groupId>-->
+<!--    <artifactId>transactions-api</artifactId>-->
+<!--    <version>5.0.1</version>-->
+<!--  </dependency>-->
   <dependency>
     <groupId>javax.transaction</groupId>
     <artifactId>jta</artifactId>

@@ -1,78 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>parent</artifactId>
-    <groupId>io.mycat</groupId>
-    <version>1.13-realase</version>
-  </parent>
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>parent</artifactId>
+        <groupId>io.mycat</groupId>
+        <version>1.14-dev</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>common</artifactId>
+    <artifactId>common</artifactId>
 
-  <dependencies>
-    <!-- https://mvnrepository.com/artifact/commons-transaction/commons-transaction -->
-    <dependency>
-      <groupId>commons-transaction</groupId>
-      <artifactId>commons-transaction</artifactId>
-      <version>1.2</version>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>config</artifactId>
+            <version>1.14-dev</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/net.sf.ehcache/ehcache -->
+        <dependency>
+            <groupId>net.sf.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>2.10.6</version>
+        </dependency>
 
-    <dependency>
-      <groupId>io.mycat</groupId>
-      <artifactId>config</artifactId>
-      <version>1.13-realase</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
-    <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <version>2.10.1</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/net.sf.ehcache/ehcache -->
-    <dependency>
-      <groupId>net.sf.ehcache</groupId>
-      <artifactId>ehcache</artifactId>
-      <version>2.10.6</version>
-    </dependency>
-
-    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>27.1-jre</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
-    <dependency>
-      <groupId>com.alibaba.fastsql</groupId>
-      <artifactId>fastsql</artifactId>
-      <version>2.0.0_preview_973</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
-    <dependency>
-      <groupId>org.mariadb.jdbc</groupId>
-      <artifactId>mariadb-java-client</artifactId>
-      <version>2.5.2</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
-    <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.22</version>
-    </dependency>
-      <dependency>
-          <groupId>com.alibaba</groupId>
-          <artifactId>druid</artifactId>
-          <version>1.2.1</version>
-          <scope>compile</scope>
-      </dependency>
-      <dependency>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-buffer</artifactId>
-          <version>4.1.45.Final</version>
-          <scope>compile</scope>
-      </dependency>
-  </dependencies>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>27.1-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.22</version>
+        </dependency>
+    </dependencies>
 
 </project>

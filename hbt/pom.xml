@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.13-realase</version>
+        <version>1.14-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,32 +21,27 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>calcite</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>plug</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.13-realase</version>
+            <version>1.14-dev</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
-            <version>1.13-realase</version>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.fastsql</groupId>
-            <artifactId>fastsql</artifactId>
-            <version>2.0.0_preview_973</version>
+            <version>1.14-dev</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
@@ -54,12 +49,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.10</version>
             <scope>provided</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>3.8.2</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.codehaus.janino/janino -->
         <dependency>
@@ -91,12 +80,8 @@
             <artifactId>jaxen</artifactId>
             <version>1.2.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>linq4j</artifactId>
-            <version>1.13-realase</version>
-            <scope>compile</scope>
-        </dependency>
+
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
