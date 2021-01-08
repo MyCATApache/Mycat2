@@ -527,26 +527,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
         }
 
-
-        int unionLimit = 4;
-        for (Map.Entry<String, List<RelNode>> e : phyViews.entrySet()) {
-            String key = e.getKey();
-            List<RelNode> value = new ArrayList<>(e.getValue());
-            while (true) {
-                List<RelNode> relNodes = value.subList(0, Math.min(value.size(), unionLimit));
-                list.add(MycatView.of(LogicalUnion.create(relNodes, true),
-                        Distribution.of(new BackendTableInfo(key, "", ""))));
-                if (unionLimit < value.size()) {
-                    value = value.subList(relNodes.size(), value.size());
-                } else {
-                    break;
-                }
-            }
-        }
         if (list.size() == 1) {
             return list.get(0);
         }
-        return LogicalUnion.create(list, true);
+        return LogicalUnion.create(list,true);
     }
 
     public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {
