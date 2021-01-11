@@ -41,7 +41,7 @@ public class CopyMycatRowMetaData implements MycatRowMetaData, Serializable {
 
     @Override
     public int getColumnCount() {
-        return columns.length - 1;
+        return columns.length;
     }
 
     @Override
