@@ -21,7 +21,6 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
-import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
@@ -32,7 +31,6 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -45,11 +43,7 @@ import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.NewMycatDataContext;
-import org.apache.calcite.schema.FilterableTable;
-import org.apache.calcite.schema.ProjectableFilterableTable;
-import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
 import org.jetbrains.annotations.NotNull;
@@ -216,7 +210,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectMycatView(this);
+        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

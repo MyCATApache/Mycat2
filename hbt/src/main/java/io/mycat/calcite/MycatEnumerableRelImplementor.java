@@ -3,7 +3,6 @@ package io.mycat.calcite;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -21,7 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
-    final ArrayList<RelNode> mycatViews = new ArrayList<>();
+    final ArrayList<RelNode> leafRelNodes = new ArrayList<>();
 
     public MycatEnumerableRelImplementor(Map<String, Object> internalParameters) {
         super(MycatCalciteSupport.RexBuilder, internalParameters);
@@ -83,11 +82,11 @@ public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
                 memberDeclarations);
     }
 
-    public void collectMycatView(RelNode view) {
-        mycatViews.add(view);
+    public void collectLeafRelNode(RelNode view) {
+        leafRelNodes.add(view);
     }
 
-    public List<RelNode> getMycatViews() {
-        return (List)mycatViews;
+    public List<RelNode> getLeafRelNodes() {
+        return (List) leafRelNodes;
     }
 }

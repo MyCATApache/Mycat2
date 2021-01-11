@@ -1,7 +1,6 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.*;
-import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
@@ -66,7 +65,7 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectMycatView(this);
+        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

@@ -16,10 +16,10 @@ package io.mycat.calcite.physical;
 
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.UnmodifiableIterator;
 import io.mycat.calcite.*;
+import io.mycat.calcite.logical.MycatView;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.linq4j.*;
@@ -33,6 +33,7 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.jetbrains.annotations.NotNull;
@@ -54,8 +55,7 @@ public class MycatMergeSort extends Sort implements MycatRel {
                           RexNode fetch) {
         super(cluster, traits, child, collation, offset, fetch);
     }
-    public static MycatMergeSort create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {
-        return new MycatMergeSort(
+    public static MycatMergeSort create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) { return new MycatMergeSort(
                 child.getCluster(),
                 traits.replace(MycatConvention.INSTANCE),
                 child,
@@ -84,27 +84,23 @@ public class MycatMergeSort extends Sort implements MycatRel {
         return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
 
+    final static Method GET_ENUMERABLES =
+            Types.lookupMethod(NewMycatDataContext.class,
+                    "getEnumerables",org.apache.calcite.rel.RelNode.class);
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        implementor.collectLeafRelNode(this.getInput());
+        Expression inputExpression = implementor.stash((MycatView) this.getInput(), MycatView.class);
         final BlockBuilder builder = new BlockBuilder();
-        ParameterExpression list = Expressions.parameter(List.class,
-                builder.newName("list"));
-        builder.add(
-                Expressions.declare(0, list, Expressions.new_(LinkedList.class)));
-         Result result = null;
-        for (Ord<RelNode> ord : Ord.zip(getInputs())) {
-            result  = implementor.visitChild(this, ord.i, (MycatRel)ord.e, pref);
-            Expressions.call(list, BuiltInMethod.COLLECTION_ADD.method, Expressions.convert_(builder.append(
-                    "child" + ord.i,
-                    result.block),Object.class));
-        }
-        Objects.requireNonNull(result);
-        final PhysType physType = PhysTypeImpl.of(
-                implementor.getTypeFactory(),
-                this.getRowType(),
-                result.format);
+        Expression listExpression = builder.append("list", Expressions.call(
+                DataContext.ROOT, GET_ENUMERABLES, inputExpression));
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
 
-        final PhysType inputPhysType = result.physType;
+        final PhysType inputPhysType = physType;
         final Pair<Expression, Expression> pair =
                 inputPhysType.generateCollationKey(this.collation.getFieldCollations());
 
@@ -122,7 +118,7 @@ public class MycatMergeSort extends Sort implements MycatRel {
                 Expressions.return_(
                         null, Expressions.call(
                                 METHOD, Expressions.list(
-                                        list,
+                                        listExpression,
                                         builder.append("keySelector", pair.left))
                                         .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
                                         .appendIfNotNull(
@@ -155,7 +151,12 @@ public class MycatMergeSort extends Sort implements MycatRel {
             @NotNull
             @Override
             public Iterator<TSource> iterator() {
-                return Iterators.<TSource>mergeSorted((List) sources, (o1, o2) -> {
+                List<Iterator<TSource>> list = new ArrayList<>();
+                for (Enumerable<TSource> source : sources) {
+                    list.add(source.iterator());
+                }
+
+                return Iterators.<TSource>mergeSorted(list, (o1, o2) -> {
                     TKey left = keySelector.apply(o1);
                     TKey right = keySelector.apply(o2);
                     return comparator.compare(left, right);
