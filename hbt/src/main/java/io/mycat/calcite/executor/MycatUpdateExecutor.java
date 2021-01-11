@@ -10,6 +10,7 @@ import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
+import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.gsi.GSIService;
 import io.mycat.mpp.Row;
@@ -68,6 +69,21 @@ public class MycatUpdateExecutor implements Executor {
                                              SQLStatement sqlStatement,
                                              List<Object> parameters) {
         return new MycatUpdateExecutor(context, values, sqlStatement, parameters);
+    }
+
+    public static MycatUpdateExecutor create(MycatUpdateRel mycatUpdateRel,MycatDataContext dataContext,List<Object> params) {
+        MycatUpdateExecutor updateExecutor;
+        if (mycatUpdateRel.isGlobal()) {
+            updateExecutor = new MycatGlobalUpdateExecutor(dataContext, mycatUpdateRel.getValues(),
+                    mycatUpdateRel.getSqlStatement(),
+                    params);
+        } else {
+            updateExecutor = MycatUpdateExecutor.create(dataContext, mycatUpdateRel.getValues(),
+                    mycatUpdateRel.getSqlStatement(),
+                    params
+            );
+        }
+        return updateExecutor;
     }
 
     public boolean isProxy() {

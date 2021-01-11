@@ -222,10 +222,6 @@ public class DrdsRunner {
         Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
-                case LOGICAL:
-                    drdsSql.setRelNode(minCostPlan.getLogical());
-                    drdsSql.setRelNode(dispatch(optimizationContext, drdsSql, plus, dataContext));
-                    break;
                 case PHYSICAL:
                     drdsSql.setRelNode((MycatRel) minCostPlan.getPhysical());
                     break;
@@ -827,8 +823,6 @@ public class DrdsRunner {
 
     private void impl(Plan plan, PlanImplementorImpl planImplementor) {
         switch (plan.getType()) {
-            case LOGICAL:
-                assert false;
             case PHYSICAL:
                 planImplementor.execute(plan);
                 break;
