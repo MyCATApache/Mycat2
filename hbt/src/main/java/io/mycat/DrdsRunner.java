@@ -612,7 +612,10 @@ public class DrdsRunner {
         MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
-        System.out.println(code);
+        if (log.isDebugEnabled()){
+            log.debug("----------------------------------------code----------------------------------------");
+            log.debug(code);
+        }
         return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(),context,
                 asObjectArray(getBindable(classDeclaration, code, fieldCount)),
                 code);

@@ -59,7 +59,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
       } else if (heartbeatFlow.instance().asSelectRead()) {
         String Last_IO_Error =
             resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
-        System.out.println("found MySQL master/slave Replication err !!! "
+        LOGGER.error("found MySQL master/slave Replication err !!! "
             + Last_IO_Error);
         datasourceStatus.setDbSynStatus(DatasourceEnum.DB_SYN_ERROR);
       }

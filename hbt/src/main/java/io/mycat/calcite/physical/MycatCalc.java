@@ -16,6 +16,7 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
+import io.mycat.util.CalciteConvertors;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -37,6 +38,8 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -50,6 +53,8 @@ import static org.apache.calcite.adapter.enumerable.EnumUtils.NO_PARAMS;
  * Calc operator implemented in Mycat convention.
  */
 public class MycatCalc extends Calc implements MycatRel {
+    private final static Logger LOGGER = LoggerFactory.getLogger(MycatCalc.class);
+
     private final RexProgram program;
 
     protected MycatCalc(RelOptCluster cluster,
@@ -157,7 +162,9 @@ public class MycatCalc extends Calc implements MycatRel {
                         inputJavaType);
         if (!input.getType() .equals(inputJavaType)){
             input  = Expressions.convert_(input, inputJavaType);
-            System.out.println();
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("cast {} to {} fail",input,inputJavaType);
+            }
         }
 
         final RexBuilder rexBuilder = getCluster().getRexBuilder();

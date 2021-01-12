@@ -672,12 +672,6 @@ public class PhysTypeImpl implements PhysType {
         fieldType = null;
       }
     }
-    try {
-        return format.field(expression, field, fieldType, storageType);
-    }catch (Throwable throwable){
-        System.out.println(expression);
-        throwable.printStackTrace();
-        return Expressions.constant("111111111111111111111111");
-    }
+    return format.field(expression, field, fieldType, storageType);
   }
 }
