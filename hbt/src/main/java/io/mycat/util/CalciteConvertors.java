@@ -83,7 +83,10 @@ public class CalciteConvertors {
             int columnCount = metaData.getColumnCount();
             for (int i = 1; i <= columnCount; i++) {
                 String columnName = metaData.getColumnName(i);
-                System.out.println(columnName + ":" + metaData.getColumnTypeName(i));
+                if(LOGGER.isDebugEnabled()){
+                    LOGGER.debug(columnName + ":" + metaData.getColumnTypeName(i));
+                }
+
 
             }
 

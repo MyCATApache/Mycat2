@@ -133,6 +133,8 @@ public class PlanImpl implements Plan {
                         return super.visitChildren(rel);
                     }
                 });
+                list.add("\n");
+                list.addAll(Arrays.asList(getCodeExecuterContext().getCode().split("\n")));
                 break;
             case UPDATE: {
                 MycatUpdateRel physical = (MycatUpdateRel) this.physical;
