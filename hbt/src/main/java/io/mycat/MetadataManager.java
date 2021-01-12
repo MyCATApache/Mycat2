@@ -208,6 +208,7 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
                 String tableName = e.getKey();
+                removeTable(schemaName,tableName);
                 NormalTableConfig tableConfigEntry = e.getValue();
                 try {
                     addNormalTable(schemaName, tableName,
@@ -220,6 +221,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                 String tableName = e.getKey();
+                removeTable(schemaName,tableName);
                 GlobalTableConfig tableConfigEntry = e.getValue();
                 List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                 addGlobalTable(schemaName, tableName,
@@ -230,6 +232,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                 String tableName = e.getKey();
+                removeTable(schemaName,tableName);
                 ShardingTableConfig tableConfigEntry = e.getValue();
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
@@ -239,6 +242,7 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
                 String tableName = e.getKey();
+                removeTable(schemaName,tableName);
                 CustomTableConfig tableConfigEntry = e.getValue();
                 addCustomTable(schemaName, tableName,
                         tableConfigEntry

@@ -37,7 +37,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -67,13 +66,12 @@ public class AutoFunctionFactory {
         int dbNum = Integer.parseInt(properties.getOrDefault("dbNum", 1).toString());
         int tableNum = Integer.parseInt(properties.getOrDefault("tableNum", 1).toString());
 
-        Integer groupNum = Optional.ofNullable(properties.get("storeNum"))
+        Integer storeNum = Optional.ofNullable(properties.get("storeNum"))
                 .map(i -> Integer.parseInt(i.toString()))
-                .orElseGet(() -> Optional.ofNullable(tableHandler.dataNodes()).filter(i -> !i.isEmpty()).map(i -> i.size())
-                        .orElseThrow(() -> new IllegalArgumentException("can not get storeNum")));
-        if (groupNum == 0){
-            throw new UnsupportedOperationException("groupNum is zero");
-        }
+                .orElseThrow(() -> new IllegalArgumentException("can not get storeNum"));
+
+        Integer storeDbNum = Optional.ofNullable(properties.get("storeDbNum"))
+                .map(i -> Integer.parseInt(i.toString())).orElse(dbNum * tableNum / storeNum);
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
@@ -83,21 +81,21 @@ public class AutoFunctionFactory {
                         tableHandler.getTableName() + "_${tableIndex}"));
         List<IndexDataNode> datanodes = new ArrayList<>();
         List<int[]> seq = new ArrayList<>();
-        {
-            int tableIndex = 0;
-            for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-                for (int i = 0; i < tableNum;i++, tableIndex++) {
-                    seq.add(new int[]{dbIndex, tableIndex});
-                }
+
+        for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
+            for (int tableIndex = 0; tableIndex < tableNum; tableIndex++) {
+                seq.add(new int[]{dbIndex, tableIndex});
             }
         }
+
         SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
         Template template = templateEngine.createTemplate(mappingFormat);
         HashMap<String, Object> context = new HashMap<>(properties);
 
+
         Map<Key, DataNode> cache = new ConcurrentHashMap<>();
         for (int i = 0; i < seq.size(); i++) {
-            int seqIndex = i % groupNum;
+            int seqIndex = i / storeDbNum;
             int[] ints = seq.get(i);
             int dbIndex = ints[0];
             int tableIndex = ints[1];
@@ -447,9 +445,9 @@ public class AutoFunctionFactory {
                 Set<Map.Entry<String, Collection<RangeVariable>>> entries = stringCollectionMap.entrySet();
                 for (Map.Entry<String, Collection<RangeVariable>> e : entries) {
                     for (String dbShardingKey : dbShardingKeys) {
-                        if(SQLUtils.nameEquals(dbShardingKey,e.getKey())){
+                        if (SQLUtils.nameEquals(dbShardingKey, e.getKey())) {
                             Collection<RangeVariable> rangeVariables = e.getValue();
-                            if (rangeVariables.size()!=1){
+                            if (rangeVariables.size() != 1) {
                                 break;
                             }
                             if (rangeVariables != null && !rangeVariables.isEmpty()) {
@@ -473,9 +471,9 @@ public class AutoFunctionFactory {
                         }
                     }
                     for (String tableShardingKey : tableShardingKeys) {
-                        if(SQLUtils.nameEquals(tableShardingKey,e.getKey())){
+                        if (SQLUtils.nameEquals(tableShardingKey, e.getKey())) {
                             Collection<RangeVariable> rangeVariables = e.getValue();
-                            if (rangeVariables.size()!=1){
+                            if (rangeVariables.size() != 1) {
                                 break;
                             }
                             if (rangeVariables != null && !rangeVariables.isEmpty()) {
@@ -497,7 +495,7 @@ public class AutoFunctionFactory {
                 }
                 if (getDbIndex && getTIndex) {
                     for (IndexDataNode datanode : datanodes) {
-                        if (dIndex == datanode.getDbIndex()&&tIndex == datanode.getTableIndex()) {
+                        if (dIndex == datanode.getDbIndex() && tIndex == datanode.getTableIndex()) {
                             return Collections.singletonList(datanode);
                         }
                     }
@@ -562,7 +560,7 @@ public class AutoFunctionFactory {
             @Override
             public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
                 for (Map.Entry<String, Collection<RangeVariable>> e : values.entrySet()) {
-                    if(SQLUtils.nameEquals(e.getKey(),dbShardingKey)){
+                    if (SQLUtils.nameEquals(e.getKey(), dbShardingKey)) {
                         Collection<RangeVariable> rangeVariables = e.getValue();
                         if (rangeVariables != null && !rangeVariables.isEmpty()) {
                             for (RangeVariable rangeVariable : rangeVariables) {
@@ -940,17 +938,17 @@ public class AutoFunctionFactory {
 
     public static int mm(int num, Object o) {
         if (o == null) return 0;
-        long mm ;
+        long mm;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             mm = localDate.getMonthValue();
-        }else if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             mm = localDateTime.getMonthValue();
-        }else {
+        } else {
             throw new UnsupportedOperationException();
         }
         return (int) (mm % num);
@@ -958,20 +956,20 @@ public class AutoFunctionFactory {
 
     public static int dd(int num, Object o) {
         if (o == null) return 0;
-        long day ;
+        long day;
         if (o instanceof String) {
             o = LocalDate.parse((String) o);
         }
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             day = localDate.getDayOfMonth();
-        }else if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             day = localDateTime.getDayOfMonth();
-        }else {
+        } else {
             throw new UnsupportedOperationException();
         }
-        return (int) (day% num);
+        return (int) (day % num);
     }
 
     public static int mmdd(int num, Object o) {
@@ -983,13 +981,13 @@ public class AutoFunctionFactory {
         if (o instanceof LocalDate) {
             LocalDate localDate = (LocalDate) o;
             day = localDate.getDayOfYear();
-        }else if (o instanceof LocalDateTime) {
+        } else if (o instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) o;
             day = localDateTime.getDayOfYear();
-        }else {
+        } else {
             throw new UnsupportedOperationException();
         }
-        return (int)((day) % num);
+        return (int) ((day) % num);
     }
 
     public static int strHash(int num, int startIndex, int endIndex, int valType, int randSeed, Object value) {
@@ -999,7 +997,7 @@ public class AutoFunctionFactory {
             return hashCode(s, randSeed) % num;
         }
         if (valType == 1) {
-            return (int)(Long.parseLong(s) % num);
+            return (int) (Long.parseLong(s) % num);
         }
         throw new UnsupportedOperationException();
     }
