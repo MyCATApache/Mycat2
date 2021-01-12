@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 public class AutoFunctionFactory {
 
@@ -79,12 +80,12 @@ public class AutoFunctionFactory {
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
                         tableHandler.getTableName() + "_${tableIndex}"));
-        List<IndexDataNode> datanodes = new ArrayList<>();
+        Map<Integer, List<IndexDataNode>> datanodes = new HashMap<>();
         List<int[]> seq = new ArrayList<>();
-
+        int tableCount = 0;
         for (int dbIndex = 0; dbIndex < dbNum; dbIndex++) {
-            for (int tableIndex = 0; tableIndex < tableNum; tableIndex++) {
-                seq.add(new int[]{dbIndex, tableIndex});
+            for ( int tableIndex = 0; tableIndex < tableNum; tableCount++,tableIndex++) {
+                seq.add(new int[]{dbIndex, tableCount,tableIndex});
             }
         }
 
@@ -97,18 +98,20 @@ public class AutoFunctionFactory {
         for (int i = 0; i < seq.size(); i++) {
             int seqIndex = i / storeDbNum;
             int[] ints = seq.get(i);
-            int dbIndex = ints[0];
-            int tableIndex = ints[1];
+            int currentDbIndex = ints[0];
+            int currentTableCount= ints[1];
+            int currentTableIndex = ints[2];
             context.put("targetIndex", String.valueOf(seqIndex));
-            context.put("dbIndex", String.valueOf(dbIndex));
-            context.put("tableIndex", String.valueOf(tableIndex));
+            context.put("dbIndex", String.valueOf(currentDbIndex));
+            context.put("tableIndex", String.valueOf(currentTableIndex));
             StringWriter stringWriter = new StringWriter();
             template.make(context).writeTo(stringWriter);
             String[] strings = SplitUtil.split(stringWriter.getBuffer().toString(), sep);
 
-            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], dbIndex, tableIndex);
+            IndexDataNode backendTableInfo = new IndexDataNode(strings[0], strings[1], strings[2], currentDbIndex, currentTableCount);
             cache.put(new Key(ints[0], ints[1]), backendTableInfo);
-            datanodes.add(backendTableInfo);
+            List<IndexDataNode> nodeList = datanodes.computeIfAbsent(currentDbIndex, (k) -> new ArrayList<>());
+            nodeList.add(backendTableInfo);
         }
 
 
@@ -367,7 +370,7 @@ public class AutoFunctionFactory {
                     tableShardingKeys.add(tableShardingKey);
                     dbShardingKeys.add(dbShardingKey);
 
-                    dbFunction = specilizeSingleModHash(dbNum, dbColumn);
+
 
                     if (tableShardingKey.equalsIgnoreCase(dbShardingKey)) {
                         int total = dbNum * tableNum;
@@ -387,7 +390,10 @@ public class AutoFunctionFactory {
                             }
                             throw new UnsupportedOperationException();
                         };
-                        dbShardingKeys.clear();
+                        ToIntFunction<Object> function = tableFunction;
+                        dbFunction = (o) -> {
+                          return   function.applyAsInt(o)/tableNum;
+                        };
                     } else {
                         tableFunction = specilizeSingleModHash(tableNum, tableColumn);
                     }
@@ -494,32 +500,26 @@ public class AutoFunctionFactory {
                     }
                 }
                 if (getDbIndex && getTIndex) {
-                    for (IndexDataNode datanode : datanodes) {
-                        if (dIndex == datanode.getDbIndex() && tIndex == datanode.getTableIndex()) {
-                            return Collections.singletonList(datanode);
+                    List<IndexDataNode> indexDataNodes = Objects.requireNonNull((List) datanodes.get(dIndex));
+                    for (IndexDataNode indexDataNode : indexDataNodes) {
+                        if(indexDataNode.getTableIndex() ==  tIndex){
+                            return Collections.singletonList(indexDataNode);
                         }
                     }
-                    return (List) datanodes;
                 }
                 if (getDbIndex) {
-                    List<DataNode> list = new ArrayList<>();
-                    for (IndexDataNode i : datanodes) {
-                        if (i.getDbIndex() == dIndex) {
-                            list.add(i);
-                        }
-                    }
-                    return list;
+                    return new ArrayList<>((List) datanodes.get(dIndex));
                 }
                 if (getTIndex) {
-                    List<DataNode> list = new ArrayList<>();
-                    for (IndexDataNode i : datanodes) {
-                        if (i.getTableIndex() == tIndex) {
-                            list.add(i);
+                    for (List<IndexDataNode> value : datanodes.values()) {
+                        for (IndexDataNode indexDataNode : value) {
+                            if(indexDataNode.getTableIndex() ==  tIndex){
+                                return Collections.singletonList(indexDataNode);
+                            }
                         }
                     }
-                    return list;
                 }
-                return Collections.unmodifiableList(datanodes);
+                return datanodes.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
             }
         };
         Set<String> keys = new HashSet<>(dbShardingKeys);
@@ -732,6 +732,34 @@ public class AutoFunctionFactory {
                 throw new IllegalStateException("Unexpected value: " + column1.getType());
         }
         return tableFunction;
+    }
+
+    @NotNull
+    public static ToIntFunction<Object> specilizeSingleDivHash(int num, SimpleColumnInfo columnInfo) {
+        ToIntFunction<Object> dbFunction;
+        switch (columnInfo.getType()) {
+            case NUMBER:
+                dbFunction = o -> singleDivHash(num, (Number) columnInfo.normalizeValue(o));
+                break;
+            case STRING:
+                dbFunction = o -> singleDivHash(num, (String) columnInfo.normalizeValue(o));
+                break;
+            case BLOB:
+                dbFunction = o -> singleDivHash(num, (byte[]) columnInfo.normalizeValue(o));
+                break;
+            case TIME:
+                dbFunction = o -> singleDivHash(num, (Duration) columnInfo.normalizeValue(o));
+                break;
+            case DATE:
+                dbFunction = o -> singleDivHash(num, (LocalDate) columnInfo.normalizeValue(o));
+                break;
+            case TIMESTAMP:
+                dbFunction = o -> singleDivHash(num, (LocalDateTime) columnInfo.normalizeValue(o));
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + columnInfo.getType());
+        }
+        return dbFunction;
     }
 
     @NotNull
@@ -1147,6 +1175,27 @@ public class AutoFunctionFactory {
         return (int) (o.longValue() % num);
     }
 
+    public static int singleDivHash(int num, Number o) {
+        if (o == null) {
+            o = 0;
+        }
+        return (int) (o.longValue() / num);
+    }
+    public static int singleDivHash(int num, String o) {
+        if (o == null) {
+            o = "null";
+        }
+        return (int) (hashCode(o) / num);
+    }
+    public static int singleDivHash(int num, Object o) {
+        if (o instanceof Number) {
+            return singleDivHash(num, (Number) o);
+        }
+        if (o instanceof String) {
+            return singleDivHash(num, (String) o);
+        }
+        throw new UnsupportedOperationException();
+    }
 //    public static int singleRemainderHash(int num, Object o) {
 //        if (o instanceof Number) {
 //            return singleRemainderHash(num, (Number) o);
