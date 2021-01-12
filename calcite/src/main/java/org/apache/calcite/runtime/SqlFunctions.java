@@ -3057,5 +3057,9 @@ public class SqlFunctions {
   public enum FlatProductInputType {
     SCALAR, LIST, MAP
   }
+  public static boolean gt(LocalDateTime left,
+                           LocalDateTime right) {
+    return left.compareTo(right)>0;
+  }
 
 }
