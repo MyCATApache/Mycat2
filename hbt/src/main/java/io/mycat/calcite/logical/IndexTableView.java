@@ -4,12 +4,22 @@ import com.google.common.collect.Iterables;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.ScanExecutor;
 import io.mycat.mpp.Row;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.util.BuiltInMethod;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import static io.mycat.calcite.logical.MycatView.toEnumerable;
+import static io.mycat.calcite.logical.MycatView.toRows;
 
 public class IndexTableView extends AbstractRelNode implements MycatRel {
     private final RelNode input;
@@ -40,5 +50,26 @@ public class IndexTableView extends AbstractRelNode implements MycatRel {
     @Override
     public Executor implement(ExecutorImplementor implementor) {
         return new ScanExecutor( Iterables.transform(rows,(i)-> Row.of(i)).iterator());
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        final BlockBuilder builder = new BlockBuilder();
+        Expression stash = implementor.stash(this, IndexTableView.class);
+        final Expression iterable = toEnumerable(
+                Expressions.call(stash, "getRows"));
+        final Expression expression2 = toEnumerable(
+                Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method,iterable));
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        return implementor.result(physType, builder.toBlock());
+    }
+
+    public Iterable<Object[]> getRows() {
+        return rows;
     }
 }
