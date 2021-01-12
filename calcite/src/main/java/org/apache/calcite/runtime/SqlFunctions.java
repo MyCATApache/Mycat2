@@ -3061,5 +3061,12 @@ public class SqlFunctions {
                            LocalDateTime right) {
     return left.compareTo(right)>0;
   }
-
+  public static boolean ge(LocalDateTime left,
+                           LocalDateTime right) {
+    return left.compareTo(right)<0;
+  }
+  public static boolean eq(LocalDateTime left,
+                           LocalDateTime right) {
+    return left.compareTo(right)==0;
+  }
 }
