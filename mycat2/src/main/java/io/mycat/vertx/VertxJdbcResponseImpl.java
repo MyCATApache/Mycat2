@@ -33,4 +33,6 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         transactionSession.closeStatenmentState();
         session.writeOk(count<size);
     }
+
+
 }

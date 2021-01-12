@@ -75,4 +75,8 @@ public class ExplainWriter {
         text.append("\n").append(s);
         return this;
     }
+
+    public String getText() {
+        return text.toString();
+    }
 }

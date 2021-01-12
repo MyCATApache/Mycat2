@@ -131,7 +131,7 @@ public class MycatMemSort
         return implementor.result(physType, builder.toBlock());
     }
 
-    static Expression getExpression(RexNode rexNode) {
+   public static Expression getExpression(RexNode rexNode) {
         if (rexNode instanceof RexDynamicParam) {
             final RexDynamicParam param = (RexDynamicParam) rexNode;
             return Expressions.convert_(

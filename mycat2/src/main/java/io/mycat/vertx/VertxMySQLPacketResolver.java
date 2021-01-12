@@ -11,14 +11,15 @@ import static io.mycat.vertx.VertxMySQLPacketResolver.State.HEAD;
 import static io.mycat.vertx.VertxMySQLPacketResolver.State.PAYLOAD;
 
 public class VertxMySQLPacketResolver implements Handler<Buffer> {
-    Buffer head ;
-    Buffer payload ;
+    Buffer head;
+    Buffer payload;
     int mycatPacketCounter = 0;
     State state = HEAD;
     int currentPacketLength;
     VertxMySQLHandler mySQLHandler;
     NetSocket socket;
     private int reveicePayloadCount = 0;
+
     static enum State {
         HEAD,
         PAYLOAD
@@ -39,20 +40,20 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                         head = Buffer.buffer();
                     }
                     int restEnd = 4 - head.length();
-                    head.appendBuffer(event.slice(0, Math.min(event.length(),restEnd)));
+                    head.appendBuffer(event.slice(0, Math.min(event.length(), restEnd)));
                     if (head.length() < 4) {
-                        state =HEAD;
+                        state = HEAD;
                         return;
                     } else {
-                        state =PAYLOAD;
+                        state = PAYLOAD;
                         event = event.slice(restEnd, event.length());
                     }
-                    if (state ==PAYLOAD) {
+                    if (state == PAYLOAD) {
                         currentPacketLength = readInt(head, 0, 3);
-                      int packetId = head.getUnsignedByte(3);
-                        if (mycatPacketCounter != packetId){
+                        int packetId = head.getUnsignedByte(3);
+                        if (mycatPacketCounter != packetId) {
                             throw new AssertionError(MessageFormat.format("packet id not match " +
-                                    "mycat:{0} ordinal packet:{1}", mycatPacketCounter,packetId));
+                                    "mycat:{0} ordinal packet:{1}", mycatPacketCounter, packetId));
                         }
                         ++mycatPacketCounter;
                         head = null;//help gc
@@ -64,19 +65,19 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                         payload = Buffer.buffer();
                     }
                     payload.appendBuffer(event);
-                    reveicePayloadCount+=event.length();
+                    reveicePayloadCount += event.length();
                     boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
                     if (multiPacket) {
                         if ((MySQLPacketSplitter.MAX_PACKET_SIZE) == reveicePayloadCount) {
-                            state =HEAD;
+                            state = HEAD;
                         }
                         return;
                     } else {
-                        if (reveicePayloadCount  == currentPacketLength) {
+                        if (reveicePayloadCount == currentPacketLength) {
                             Buffer payload = this.payload;
                             this.payload = null;
                             reveicePayloadCount = 0;
-                            state =HEAD;
+                            state = HEAD;
                             mycatPacketCounter = 0;
                             mySQLHandler.handle(reveicePayloadCount, payload, socket);
                             return;
@@ -92,8 +93,8 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
 
     public static int readInt(Buffer buffer, int start, int length) {
         int rv = 0;
-        for (int i = start; i < length; i++) {
-            byte b = buffer.getByte(i);
+        for (int i = 0; i < length; i++) {
+            byte b = buffer.getByte(start + i);
             rv |= (((long) b) & 0xFF) << (i * 8);
         }
         return rv;

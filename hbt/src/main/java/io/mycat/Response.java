@@ -38,9 +38,7 @@ public interface Response {
 
     void execute(ExplainDetail detail);
 
-    default void sendOk() {
-        sendOk(0, 0);
-    }
+    void sendOk();
 
     void sendOk(long affectedRow,long lastInsertId);
 

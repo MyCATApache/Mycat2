@@ -504,7 +504,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                                   MycatView rightView,
                                                   Iterable<DataNode> leftDataNodes,
                                                   Iterable<DataNode> rightDataNodes) {
-      return   join.copy(join.getTraitSet(), ImmutableList.of(leftView, rightView));
+        return join.copy(join.getTraitSet(), ImmutableList.of(leftView, rightView));
     }
 
     public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {

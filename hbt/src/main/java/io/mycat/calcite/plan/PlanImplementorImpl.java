@@ -42,16 +42,8 @@ public class PlanImplementorImpl implements PlanImplementor {
     @Override
     public void execute(MycatUpdateRel mycatUpdateRel) {
         MycatUpdateExecutor updateExecutor;
-        if (mycatUpdateRel.isGlobal()) {
-            updateExecutor = new MycatGlobalUpdateExecutor(context, mycatUpdateRel.getValues(),
-                    mycatUpdateRel.getSqlStatement(),
-                    params);
-        } else {
-            updateExecutor = MycatUpdateExecutor.create(context, mycatUpdateRel.getValues(),
-                    mycatUpdateRel.getSqlStatement(),
-                    params
-            );
-        }
+        updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel,context,params);
+
         if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
             if (updateExecutor.isProxy()){
                 Pair<String, String> singleSql = updateExecutor.getSingleSql();

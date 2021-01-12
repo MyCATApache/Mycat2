@@ -200,7 +200,7 @@ public class MySQLServerCapabilityFlags {
         flag |= MySQLServerCapabilityFlags.CLIENT_PLUGIN_AUTH;
 //        flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_ATTRS;
 //        flag |= MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF;
-        flag &= ~MySQLServerCapabilityFlags.CLIENT_SESSION_TRACK;
+//        flag |= (MySQLServerCapabilityFlags.CLIENT_SESSION_TRACK);
         return flag;
     }
 

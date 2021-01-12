@@ -60,7 +60,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
@@ -80,7 +79,6 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
@@ -224,10 +222,6 @@ public class DrdsRunner {
         Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
-                case LOGICAL:
-                    drdsSql.setRelNode(minCostPlan.getLogical());
-                    drdsSql.setRelNode(dispatch(optimizationContext, drdsSql, plus, dataContext));
-                    break;
                 case PHYSICAL:
                     drdsSql.setRelNode((MycatRel) minCostPlan.getPhysical());
                     break;
@@ -619,7 +613,7 @@ public class DrdsRunner {
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
         System.out.println(code);
-        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getMycatViews(),context,
+        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(),context,
                 asObjectArray(getBindable(classDeclaration, code, fieldCount)),
                 code);
     }
@@ -829,8 +823,6 @@ public class DrdsRunner {
 
     private void impl(Plan plan, PlanImplementorImpl planImplementor) {
         switch (plan.getType()) {
-            case LOGICAL:
-                assert false;
             case PHYSICAL:
                 planImplementor.execute(plan);
                 break;

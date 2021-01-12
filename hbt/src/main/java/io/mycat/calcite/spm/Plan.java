@@ -14,9 +14,13 @@
  */
 package io.mycat.calcite.spm;
 
+import io.mycat.DrdsSql;
+import io.mycat.MycatDataContext;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.CodeExecuterContext;
+
+import java.util.List;
 
 public interface Plan extends Comparable<Plan> {
 
@@ -25,15 +29,13 @@ public interface Plan extends Comparable<Plan> {
     RelOptCost getRelOptCost();
 
     public Type getType();
-
-    public RelNode getLogical();
-
     public CodeExecuterContext getCodeExecuterContext();
 
     public RelNode getPhysical();
 
+    List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql);
+
     static public enum Type {
-        LOGICAL,
         PHYSICAL,
         UPDATE,
         INSERT

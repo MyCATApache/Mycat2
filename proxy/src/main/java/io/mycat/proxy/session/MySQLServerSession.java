@@ -141,7 +141,7 @@ public interface MySQLServerSession<T> {
             getLastInsertId(),
             MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
             MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
-            false, ""
+                MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
 
         );
     writeBytes(bytes,true);
@@ -156,7 +156,7 @@ public interface MySQLServerSession<T> {
             getLastInsertId(),
             MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
             MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
-            false, ""
+                MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
 
         );
     writeBytes(bytes, !hasMoreResult);
