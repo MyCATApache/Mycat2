@@ -14,10 +14,6 @@
 ![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
 
 
-## 架构
-
-![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
-
 ## 核心团队
 
 [junwen12221](https://github.com/junwen12221)
