@@ -199,21 +199,18 @@ public class MycatUpdateExecutor implements Executor {
                 primaryKeyList,sql.getTarget());
     }
 
-    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement statement, List<Object> parameters) {
+    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
         Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
         for (DataNode dataNode : dataNodes) {
-            SQLExprTableSource tableSource = FastSqlUtils.getTableSource(statement);
+            SQLStatement currentStatement = FastSqlUtils.clone(orginalStatement);
+            SQLExprTableSource tableSource = FastSqlUtils.getTableSource(currentStatement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            StringBuilder sqlStringBuilder = new StringBuilder();
-            List<Object> cloneParameters = new ArrayList<>();
-            MycatPreparedStatementUtil.outputToParameterized(statement, sqlStringBuilder, readOnlyParameters, cloneParameters);
-            String sqlString = sqlStringBuilder.toString();
-            SQL sql = SQL.of(sqlString,dataNode, SQLUtils.parseSingleMysqlStatement(sqlString),cloneParameters);
+            SQL sql = SQL.of(currentStatement.toString(),dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){
                 LOGGER.debug("remove exist sql = {}",exist);

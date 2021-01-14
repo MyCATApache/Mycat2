@@ -17,6 +17,7 @@ package io.mycat.commands;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
@@ -24,6 +25,7 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
+import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,7 +226,11 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     private void sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
         MycatResultSetResponse currentResultSet;
         if (!binary) {
-            currentResultSet = new TextResultSetResponse(resultSet);
+            if (resultSet instanceof JdbcRowBaseIterator){
+                currentResultSet = new DirectTextResultSetResponse((resultSet));
+            }else {
+                currentResultSet = new TextResultSetResponse(resultSet);
+            }
         } else {
             currentResultSet = new BinaryResultSetResponse(resultSet);
         }

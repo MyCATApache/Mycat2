@@ -3,8 +3,10 @@ package io.mycat.vertx;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.resultset.BinaryResultSetResponse;
+import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 
 import java.util.Iterator;
@@ -65,7 +67,11 @@ public abstract class VertxResponse implements Response {
         boolean moreResultSet = count < size;
         MycatResultSetResponse currentResultSet;
         if (!binary) {
-            currentResultSet = new TextResultSetResponse(resultSet);
+            if (resultSet instanceof JdbcRowBaseIterator){
+                currentResultSet = new DirectTextResultSetResponse((resultSet));
+            }else {
+                currentResultSet = new TextResultSetResponse(resultSet);
+            }
         } else {
             currentResultSet = new BinaryResultSetResponse(resultSet);
         }
