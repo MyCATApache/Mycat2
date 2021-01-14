@@ -5,22 +5,16 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import io.mycat.*;
-import io.mycat.calcite.DataSourceFactory;
-import io.mycat.calcite.DefaultDatasourceFactory;
-import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.calcite.executor.TempResultSetFactory;
-import io.mycat.calcite.executor.TempResultSetFactoryImpl;
-import io.mycat.MetadataManager;
-import io.mycat.calcite.plan.PlanImplementor;
-import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
-import io.mycat.Response;
+import io.mycat.util.Pair;
 import lombok.SneakyThrows;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
 
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
@@ -67,6 +61,18 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         if (tableHandler == null) {
             receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
             return;
+        }
+        switch (tableHandler.getType()) {
+            case NORMAL:
+                HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
+                if(hackRouter.analyse()){
+                    Pair<String, String> plan = hackRouter.getPlan();
+                    receiver.proxyUpdate(plan.getKey(),plan.getValue());
+                    return;
+                }
+                break;
+            default:
+                break;
         }
         DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
         drdsRunner.runOnDrds(dataContext,sqlStatement,receiver);
