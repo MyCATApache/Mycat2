@@ -18,6 +18,7 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 
+import java.sql.Types;
 import java.util.Iterator;
 
 /**
@@ -45,8 +46,21 @@ public class DirectTextResultSetResponse extends AbstractMycatResultSetResponse 
             public byte[] next() {
                 byte[][] row = new byte[columnCount][];
                 for (int columnIndex = 0, rowIndex = 0; rowIndex < columnCount; columnIndex++, rowIndex++) {
-                    String string = rowBaseIterator.getString(columnIndex);
-                    row[rowIndex] = rowBaseIterator.wasNull()?null:string.getBytes();
+
+                    int columnType = mycatRowMetaData.getColumnType(columnIndex);
+                    switch (columnType){
+                        case Types.VARBINARY:
+                        case Types.LONGVARBINARY:
+                        case Types.BINARY:
+                            byte[] bytes = rowBaseIterator.getBytes(columnIndex);
+                            row[rowIndex] = rowBaseIterator.wasNull()?null:bytes;
+                            break;
+                        default:
+                            String string = rowBaseIterator.getString(columnIndex);
+                            row[rowIndex] = rowBaseIterator.wasNull()?null:string.getBytes();
+                            break;
+                    }
+
                 }
                 return MySQLPacketUtil.generateTextRow(row);
             }
