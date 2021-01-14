@@ -13,6 +13,7 @@ public class ShowStatusSQLHandler extends AbstractSQLHandler<MySqlShowStatusStat
 
     @Override
     protected void onExecute(SQLRequest<MySqlShowStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.sendOk();
+        response.proxySelectToPrototype(request.getAst().toString());
+        return ;
     }
 }
