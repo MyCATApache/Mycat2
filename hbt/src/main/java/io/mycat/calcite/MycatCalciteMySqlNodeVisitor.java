@@ -280,17 +280,19 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         // select list
         List<SqlNode> columnNodes = new ArrayList<SqlNode>(x.getSelectList().size());
         for (SQLSelectItem selectItem : x.getSelectList()) {
-//            if (selectItem.getAlias()==null){
-//                if (selectItem.getExpr() instanceof SQLAllColumnExpr){
-//
-//                }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
-//                    selectItem.setAlias(((SQLPropertyExpr) selectItem.getExpr()).getName());
-//                }else {
-//                    StringBuilder sb = new StringBuilder();
-//                    selectItem.output(sb);
-//                    selectItem.setAlias(sb.toString().replaceAll(" ", ""));
-//                }
-//            }
+            if (selectItem.getAlias()==null){
+                if (selectItem.getExpr() instanceof SQLAllColumnExpr){
+
+                }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
+                    selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
+                    selectItem.setAlias(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
+                }else{
+                    StringBuilder sb = new StringBuilder();
+                    selectItem.output(sb);
+                    selectItem.setAlias(sb.toString().replaceAll(" ", ""));
+                }
+            }
             SqlNode column = convertToSqlNode(selectItem);
             columnNodes.add(column);
         }
