@@ -759,6 +759,7 @@ public class DrdsRunner {
             builder.addRuleCollection(relOptRules);
         }
         builder.addRuleCollection(FILTER);
+        builder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
         builder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
 //        builder.addRuleCollection(ImmutableList.of(
 //                new MycatFilterViewRule(optimizationContext),

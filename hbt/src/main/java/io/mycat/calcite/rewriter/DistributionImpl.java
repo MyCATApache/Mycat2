@@ -42,12 +42,12 @@ public class DistributionImpl extends Distribution {
 
     @Override
     public boolean isBroadCast() {
-        return false;
+        return type == Type.BroadCast;
     }
 
     @Override
     public boolean isSharding() {
-        return false;
+        return type == Type.Sharding;
     }
 
     @Override
