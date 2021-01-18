@@ -61,7 +61,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
-    final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
+   private final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
 
     final Map<String, RexToLixTranslator.InputGetter> ref = new HashMap<>();
     final Map<String, Cor[]> refValue = new HashMap<>();

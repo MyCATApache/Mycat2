@@ -50,4 +50,9 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new MycatLookUpView(relNode);
     }
+
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

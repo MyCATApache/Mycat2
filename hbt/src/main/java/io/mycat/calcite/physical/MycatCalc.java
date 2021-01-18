@@ -16,7 +16,6 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
-import io.mycat.util.CalciteConvertors;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -47,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
-import static org.apache.calcite.adapter.enumerable.EnumUtils.NO_PARAMS;
 
 /**
  * Calc operator implemented in Mycat convention.
@@ -61,7 +59,7 @@ public class MycatCalc extends Calc implements MycatRel {
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input,program);
+        super(cluster, traitSet, input, program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();
@@ -160,10 +158,10 @@ public class MycatCalc extends Calc implements MycatRel {
                                 inputEnumerator,
                                 BuiltInMethod.ENUMERATOR_CURRENT.method),
                         inputJavaType);
-        if (!input.getType() .equals(inputJavaType)){
-            input  = Expressions.convert_(input, inputJavaType);
-            if(LOGGER.isDebugEnabled()){
-                LOGGER.debug("cast {} to {} fail",input,inputJavaType);
+        if (!input.getType().equals(inputJavaType)) {
+            input = Expressions.convert_(input, inputJavaType);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("cast {} to {} fail", input, inputJavaType);
             }
         }
 
@@ -290,5 +288,18 @@ public class MycatCalc extends Calc implements MycatRel {
         return implementor.result(physType, builder.toBlock());
     }
 
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        String correlVariable = this.getCorrelVariable();
+        if (implementor.isStream() && correlVariable == null) {
+            return implement(implementor, pref);
+        } else {
+            return implement(implementor, pref);
+        }
+    }
 
+    @Override
+    public boolean isSupportStream() {
+        return this.getCorrelVariable() == null;
+    }
 }

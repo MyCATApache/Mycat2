@@ -77,4 +77,10 @@ public interface MycatRel extends RelNode, EnumerableRel {
     default Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         throw new UnsupportedOperationException();
     }
+    default Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        throw new UnsupportedOperationException();
+    }
+    default boolean isSupportStream(){
+        return false;
+    }
 }

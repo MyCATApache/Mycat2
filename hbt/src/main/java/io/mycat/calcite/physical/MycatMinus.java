@@ -102,4 +102,8 @@ public class MycatMinus extends Minus implements MycatRel {
                         pref.prefer(JavaRowFormat.ARRAY));
         return implementor.result(physType, builder.toBlock());
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }
