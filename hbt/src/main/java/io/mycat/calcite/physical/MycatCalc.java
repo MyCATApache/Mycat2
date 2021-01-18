@@ -289,16 +289,6 @@ public class MycatCalc extends Calc implements MycatRel {
     }
 
     @Override
-    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        String correlVariable = this.getCorrelVariable();
-        if (implementor.isStream() && correlVariable == null) {
-            return implement(implementor, pref);
-        } else {
-            return implement(implementor, pref);
-        }
-    }
-
-    @Override
     public boolean isSupportStream() {
         return this.getCorrelVariable() == null;
     }
