@@ -65,6 +65,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.hep.HepMatchOrder;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -217,7 +218,6 @@ public class DrdsRunner {
                                      SchemaPlus plus,
                                      MycatDataContext dataContext,
                                      OptimizationContext optimizationContext) {
-        RelOptCluster cluster = newCluster();
         MycatRel rel;
         Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
         if (minCostPlan != null) {
@@ -758,14 +758,16 @@ public class DrdsRunner {
             );
             builder.addRuleCollection(relOptRules);
         }
-        builder.addRuleCollection(ImmutableList.of(
-                new MycatFilterViewRule(optimizationContext),
-                MycatProjectViewRule.INSTANCE,
-                MycatJoinViewRule.INSTANCE,
-                MycatAggregateViewRule.INSTANCE,
-                MycatSortViewRule.INSTANCE,
-                CoreRules.AGGREGATE_REDUCE_FUNCTIONS
-        ));
+        builder.addRuleCollection(FILTER);
+        builder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
+//        builder.addRuleCollection(ImmutableList.of(
+//                new MycatFilterViewRule(optimizationContext),
+//                MycatProjectViewRule.INSTANCE,
+//                MycatJoinViewRule.INSTANCE,
+//                MycatAggregateViewRule.INSTANCE,
+//                MycatSortViewRule.INSTANCE,
+//                CoreRules.AGGREGATE_REDUCE_FUNCTIONS
+//        ));
 
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
@@ -780,7 +782,6 @@ public class DrdsRunner {
         for (RelTraitDef i : TRAITS) {
             planner.addRelTraitDef(i);
         }
-        FILTER.forEach(f -> planner.addRule(f));
         return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
     }
 
