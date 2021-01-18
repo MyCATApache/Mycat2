@@ -109,4 +109,9 @@ public class MycatValues extends Values implements MycatRel {
                                         Primitive.box(rowClass), expressions))));
         return implementor.result(physType, builder.toBlock());
     }
+
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

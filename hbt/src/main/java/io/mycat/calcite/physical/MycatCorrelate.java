@@ -127,4 +127,8 @@ public class MycatCorrelate extends Correlate implements MycatRel {
 
         return implementor.result(physType, builder.toBlock());
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

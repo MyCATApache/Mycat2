@@ -90,4 +90,13 @@ public class MycatFilter extends Filter implements MycatRel {
 
         return calc.implement(implementor,pref);
     }
+
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        return implement(implementor,pref);
+    }
+    @Override
+    public boolean isSupportStream() {
+        return this.getCorrelVariable() == null;
+    }
 }

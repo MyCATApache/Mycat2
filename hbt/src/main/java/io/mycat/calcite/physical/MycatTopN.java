@@ -135,4 +135,8 @@ public class MycatTopN extends Sort implements MycatRel {
             return Expressions.constant(RexLiteral.intValue(rexNode));
         }
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }
