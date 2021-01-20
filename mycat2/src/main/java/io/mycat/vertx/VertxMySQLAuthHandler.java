@@ -96,7 +96,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         if (authenticator != null) {
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username,
                     host);
-            String rightPassword = Objects.requireNonNull(
+            String rightPassword = (
                     authInfo.getRightPassword());
             if (!checkPassword(rightPassword, authPacket.getPassword())) {
                 String message = "Access denied for user '" +
