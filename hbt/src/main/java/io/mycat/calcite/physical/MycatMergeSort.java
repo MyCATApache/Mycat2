@@ -167,5 +167,8 @@ public class MycatMergeSort extends Sort implements MycatRel {
         tSources = EnumerableDefaults.take(tSources,fetch);
         return tSources;
     }
-
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

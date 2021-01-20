@@ -38,4 +38,8 @@ public class MycatGather extends SingleRel implements MycatRel {
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new MycatGather(getCluster(),traitSet,inputs.get(0));
     }
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

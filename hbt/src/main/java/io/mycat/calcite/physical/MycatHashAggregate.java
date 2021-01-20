@@ -350,4 +350,8 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
         return implementor.result(physType, builder.toBlock());
     }
 
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

@@ -130,4 +130,9 @@ public class MycatHashJoin extends Join implements MycatRel {
         Result result = enumerableHashJoin.implement(implementor, pref);
         return result;
     }
+
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

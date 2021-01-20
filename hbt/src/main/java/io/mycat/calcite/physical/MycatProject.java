@@ -113,4 +113,8 @@ public class MycatProject
         MycatCalc mycatCalc = MycatCalc.create(getTraitSet(), input, program);
         return mycatCalc.implement(implementor,pref);
     }
+    @Override
+    public boolean isSupportStream() {
+        return this.getCorrelVariable() == null;
+    }
 }

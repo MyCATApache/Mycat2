@@ -50,4 +50,9 @@ public class QueryView extends Union implements MycatRel {
     public Executor implement(ExecutorImplementor implementor) {
         return implementor.implement(this);
     }
+
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

@@ -178,4 +178,8 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
                                         Expressions.constant(EnumUtils.toLinq4jJoinType(joinType)),
                                         comparator))).toBlock());
     }
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

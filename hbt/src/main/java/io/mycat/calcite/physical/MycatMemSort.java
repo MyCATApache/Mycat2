@@ -143,4 +143,8 @@ public class MycatMemSort
             return Expressions.constant(RexLiteral.intValue(rexNode));
         }
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }
