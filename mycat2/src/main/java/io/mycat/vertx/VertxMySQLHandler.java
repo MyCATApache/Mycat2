@@ -327,20 +327,29 @@ public class VertxMySQLHandler {
     }
 
     private Disposable subscribe(Observable<Runnable> observable){
-        Disposable disposable = observable.subscribe(new Consumer<Runnable>() {
+        Disposable disposable = observable.subscribe(
+        // 收到数据
+        new Consumer<Runnable>() {
             @Override
             public void accept(Runnable runnable) throws Throwable {
                 runnable.run();
             }
         }, new Consumer<Throwable>() {
+        // 异常
             @Override
             public void accept(Throwable throwable) throws Throwable {
 
             }
         }, new Action() {
+        // 完毕
             @Override
             public void run() throws Throwable {
-
+                // check if handle set handleIng gap
+                for (PendingMessage pendingMessage : pendingMessages) {
+                    while ((pendingMessage = pendingMessages.poll()) != null) {
+                        handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+                    }
+                }
             }
         });
         return disposable;
