@@ -41,7 +41,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
                 value.close();
             }
             updateConnectionMap.clear();
-            setInTranscation(true);
+            setInTranscation(false);
         }
     }
 
