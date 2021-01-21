@@ -21,6 +21,7 @@ import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -107,6 +108,15 @@ public class VertxExecuter {
                 .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
                     PreparedQuery<RowSet<Row>> query = preparedStatement.query();
                     RowObservable observable = new RowObservable() {
+                        private Observer<? super Object[]> observer;
+
+                        @Override
+                        public void close() throws IOException {
+                            if (observer != null) {
+                                observer.onComplete();
+                            }
+                        }
+
                         @Override
                         public MycatRowMetaData getRowMetaData() {
                             return metaData;
@@ -116,6 +126,7 @@ public class VertxExecuter {
 
                         @Override
                         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
+                            this.observer = observer;
                             query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
                                 @Override
                                 public void onRow(Row row) {
@@ -149,16 +160,27 @@ public class VertxExecuter {
                 .flatMap(connection -> {
                     Query<RowSet<Row>> query = connection.query(sql);
                     RowObservable observable = new RowObservable() {
+                        private Observer observer;
+                        private ProcessMonitor processMonitor;
+                        private MycatRowMetaData metaData;
+
+                        @Override
+                        public void close() throws IOException {
+                            if (observer != null) {
+                                observer.onComplete();
+                            }
+                        }
+
                         @Override
                         public MycatRowMetaData getRowMetaData() {
                             return metaData;
                         }
 
-                        MycatRowMetaData metaData;
 
                         @Override
                         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                            query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
+                            this.observer = observer;
+                            this.processMonitor = new ProcessMonitor() {
                                 @Override
                                 public void onRow(Row row) {
                                     int size = row.size();
@@ -178,7 +200,8 @@ public class VertxExecuter {
                                 public void onThrowable(Throwable throwable) {
                                     observer.onError(throwable);
                                 }
-                            })).execute().onSuccess(event -> metaData = extracted(event.columnDescriptors()));
+                            };
+                            query.collecting(ProcessMonitor.getCollector(this.processMonitor)).execute().onSuccess(event -> metaData = extracted(event.columnDescriptors()));
                         }
 
                     };

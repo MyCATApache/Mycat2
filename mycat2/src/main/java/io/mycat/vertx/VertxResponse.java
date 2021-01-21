@@ -198,48 +198,56 @@ public abstract class VertxResponse implements Response {
             @Override
             public void writeToSocket() {
                 count++;
-                rowIterable.subscribe(new Observer<Object[]>() {
-                     boolean moreResultSet;
-                    Function<Object[], byte[]> convertor;
-                    Disposable disposable;
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        this.disposable = d;
-                        MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-                        this. moreResultSet = count < size;
-                        session.writeColumnCount(rowMetaData.getColumnCount());
-                        if(!binary){
-                            this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-                        }else {
-                            this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
-                        }
-                        Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-                        while (columnIterator.hasNext()) {
-                            session.writeBytes(columnIterator.next(), false);
-                        }
-                        session.writeColumnEndPacket();
-                    }
-
-                    @Override
-                    public void onNext(Object @NonNull [] objects) {
-                        session.writeBytes(this.convertor.apply(objects), false);;
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        session.getDataContext().getTransactionSession().closeStatenmentState();
-                        disposable.dispose();
-                        sendError(e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        session.getDataContext().getTransactionSession().closeStatenmentState();
-                        disposable.dispose();
-                        session.writeRowEndPacket(moreResultSet, false);
-                    }
-                });
+                rowIterable.subscribe(new ObserverWrite(rowIterable));
             }
         });
+    }
+
+    private class ObserverWrite implements Observer<Object[]> {
+        private final RowObservable rowIterable;
+        boolean moreResultSet;
+        Function<Object[], byte[]> convertor;
+        Disposable disposable;
+
+        public ObserverWrite(RowObservable rowIterable) {
+            this.rowIterable = rowIterable;
+        }
+
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            this.disposable = d;
+            MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
+            this. moreResultSet = count < size;
+            session.writeColumnCount(rowMetaData.getColumnCount());
+            if(!binary){
+                this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+            }else {
+                this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+            }
+            Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+            while (columnIterator.hasNext()) {
+                session.writeBytes(columnIterator.next(), false);
+            }
+            session.writeColumnEndPacket();
+        }
+
+        @Override
+        public void onNext(Object @NonNull [] objects) {
+            session.writeBytes(this.convertor.apply(objects), false);;
+        }
+
+        @Override
+        public void onError(@NonNull Throwable e) {
+            session.getDataContext().getTransactionSession().closeStatenmentState();
+            disposable.dispose();
+            sendError(e);
+        }
+
+        @Override
+        public void onComplete() {
+            session.getDataContext().getTransactionSession().closeStatenmentState();
+            disposable.dispose();
+            session.writeRowEndPacket(moreResultSet, false);
+        }
     }
 }

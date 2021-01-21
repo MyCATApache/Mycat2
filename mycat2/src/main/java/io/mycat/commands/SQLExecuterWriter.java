@@ -17,7 +17,9 @@ package io.mycat.commands;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResponse;
@@ -27,10 +29,15 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.vertx.ResultSetMapping;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     final int total;
@@ -208,6 +215,12 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 throw new IllegalStateException("Unexpected value: " + transactionType);
                         }
                     }
+                    case OBSERVER_RRESULTSET: {
+                        RowObservable rowObservable = (RowObservable) response;
+                        ObserverWrite observerWrite = new ObserverWrite(rowObservable);
+                        rowObservable.subscribe(observerWrite);
+                        break;
+                    }
                     default:
                         throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());
                 }
@@ -221,6 +234,56 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
 
         }
 
+    }
+
+    private class ObserverWrite implements Observer<Object[]> {
+        private final RowObservable rowIterable;
+        boolean moreResultSet;
+        Function<Object[], byte[]> convertor;
+        Disposable disposable;
+
+        public ObserverWrite(RowObservable rowIterable) {
+            this.rowIterable = rowIterable;
+        }
+
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            this.disposable = d;
+            MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
+            this. moreResultSet = count !=0;
+            session.writeColumnCount(rowMetaData.getColumnCount());
+            if(!binary){
+                this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+            }else {
+                this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+            }
+            Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+            while (columnIterator.hasNext()) {
+                session.writeBytes(columnIterator.next(), false);
+            }
+            session.writeColumnEndPacket();
+        }
+
+        @Override
+        public void onNext(Object @NonNull [] objects) {
+            session.writeBytes(this.convertor.apply(objects), false);;
+        }
+
+        @Override
+        public void onError(@NonNull Throwable e) {
+            session.getDataContext().getTransactionSession().closeStatenmentState();
+            disposable.dispose();
+            session.setLastMessage(e);
+            session.writeErrorEndPacketBySyncInProcessError();
+            return;
+        }
+
+        @Override
+        public void onComplete() {
+            session.getDataContext().getTransactionSession().closeStatenmentState();
+            disposable.dispose();
+            session.writeRowEndPacket(moreResultSet, false);
+        }
     }
 
     private void sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {

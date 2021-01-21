@@ -34,6 +34,10 @@ import io.mycat.config.UserConfig;
 import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ServerTransactionSessionRunner;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +57,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
+    Disposable disposable;
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
@@ -68,7 +73,10 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (userInfo != null) {
             session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
         }
+        disposable = subscribe(session.getDataContext().getObservable());
     }
+
+
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
@@ -81,8 +89,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             mycatServer.getServerTransactionSessionRunner().run(session,
                     () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
                             (size) -> {
-                return new ReceiverImpl(session, size, false);
-            }));
+                                return new ReceiverImpl(session, size, false);
+                            }));
 
             return;
         } catch (Throwable e) {
@@ -302,5 +310,29 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             return;
         }
         preparedStatement.setBindValues(values);
+    }
+    private Disposable subscribe(Observable<Runnable> observable) {
+        Disposable disposable = observable.subscribe(
+                // 收到数据
+                new Consumer<Runnable>() {
+                    @Override
+                    public void accept(Runnable runnable) throws Throwable {
+                        runnable.run();
+                    }
+                }, new Consumer<Throwable>() {
+                    // 异常
+                    @Override
+                    public void accept(Throwable throwable) throws Throwable {
+
+                    }
+                }, new Action() {
+                    // 完毕
+                    @Override
+                    public void run() throws Throwable {
+                        // check if handle set handleIng gap
+
+                    }
+                });
+        return disposable;
     }
 }

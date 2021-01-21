@@ -24,6 +24,7 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     TransactionSession getTransactionSession();
 
     Observable<Runnable> getObservable();
+
     ObservableEmitter<Runnable> getEmitter();
 
     void setTransactionSession(TransactionSession transactionSession);
