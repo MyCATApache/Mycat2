@@ -16,6 +16,11 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.net.NetSocket;
@@ -90,7 +95,7 @@ public class VertxMySQLHandler {
         }
     }
 
-    public void handle0(int packetId, Buffer event, NetSocket socket) {
+    public Disposable handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         try {
@@ -312,10 +317,33 @@ public class VertxMySQLHandler {
                     assert false;
                 }
             }
+
+            return subscribe(session.getDataContext().getObservable());
         } catch (Throwable throwable) {
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
+            return null;
         }
+    }
+
+    private Disposable subscribe(Observable<Runnable> observable){
+        Disposable disposable = observable.subscribe(new Consumer<Runnable>() {
+            @Override
+            public void accept(Runnable runnable) throws Throwable {
+                runnable.run();
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Throwable {
+
+            }
+        }, new Action() {
+            @Override
+            public void run() throws Throwable {
+
+            }
+        });
+        return disposable;
     }
 
     private void saveBindValue(long statementId, BindValue[] values, VertxSession vertxSession) {

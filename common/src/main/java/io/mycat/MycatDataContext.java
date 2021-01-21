@@ -4,6 +4,8 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,8 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     TransactionSession getTransactionSession();
 
+    Observable<Runnable> getObservable();
+    ObservableEmitter<Runnable> getEmitter();
 
     void setTransactionSession(TransactionSession transactionSession);
 

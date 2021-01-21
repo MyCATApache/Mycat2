@@ -10,28 +10,34 @@ public class VertxJdbcResponseImpl extends VertxResponse {
 
     @Override
     public void rollback() {
-        count++;
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.rollback();
-        transactionSession.closeStatenmentState();
-        session.writeOk(count<size);
+        dataContext.getEmitter().onNext(()->{
+            count++;
+            TransactionSession transactionSession = dataContext.getTransactionSession();
+            transactionSession.rollback();
+            transactionSession.closeStatenmentState();
+            session.writeOk(count<size);
+        });
     }
 
     @Override
     public void begin() {
-        count++;
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.begin();
-        session.writeOk(count<size);
+        dataContext.getEmitter().onNext(()->{
+            count++;
+            TransactionSession transactionSession = dataContext.getTransactionSession();
+            transactionSession.begin();
+            session.writeOk(count<size);
+        });
     }
 
     @Override
     public void commit() {
-        count++;
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.commit();
-        transactionSession.closeStatenmentState();
-        session.writeOk(count<size);
+        dataContext.getEmitter().onNext(()->{
+            count++;
+            TransactionSession transactionSession = dataContext.getTransactionSession();
+            transactionSession.commit();
+            transactionSession.closeStatenmentState();
+            session.writeOk(count<size);
+        });
     }
 
 

@@ -6,6 +6,10 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
+import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -59,6 +63,8 @@ public class MycatDataContextImpl implements MycatDataContext {
     public static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
+    private ObservableEmitter<Runnable> emitter;
+    private volatile Observable<Runnable> observable;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -79,6 +85,18 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public TransactionSession getTransactionSession() {
         return this.transactionSession;
+    }
+
+    @Override
+    public Observable<Runnable> getObservable() {
+        if(observable == null){
+            synchronized (this){
+                if(observable == null){
+                    observable = Observable.create(emitter -> MycatDataContextImpl.this.emitter = emitter);
+                }
+            }
+        }
+        return observable;
     }
 
     @Override
