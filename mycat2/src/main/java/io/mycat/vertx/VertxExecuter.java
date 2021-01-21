@@ -240,7 +240,7 @@ public class VertxExecuter {
             Future<long[]> future = sqlConnectionFuture.flatMap(connection -> connection.prepare(sql).flatMap(preparedStatement -> {
                 Future<RowSet<Row>> rowSetFuture;
                 if (!values.isEmpty() && values.get(0) instanceof List) {
-                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List) i)).collect(Collectors.toList()));
+                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
                 } else {
                     rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
                 }
