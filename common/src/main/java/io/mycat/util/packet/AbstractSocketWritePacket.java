@@ -1,5 +1,8 @@
 package io.mycat.util.packet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 写任务
  * 上下文 #{@link io.mycat.MycatDataContext}
@@ -12,6 +15,7 @@ package io.mycat.util.packet;
  * @author wangzihaogithub 2021-01-21
  */
 public abstract class AbstractSocketWritePacket implements Runnable{
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public final void run() {
@@ -21,10 +25,11 @@ public abstract class AbstractSocketWritePacket implements Runnable{
     }
 
     public void writeBefore(){
-
+        logger.debug("writeBefore");
     }
-    public void writeAfter(){
 
+    public void writeAfter(){
+        logger.debug("writeAfter");
     }
 
     public abstract void writeToSocket();
