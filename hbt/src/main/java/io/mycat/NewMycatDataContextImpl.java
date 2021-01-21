@@ -11,6 +11,8 @@ import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.*;
@@ -25,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.executeQuery;
@@ -296,4 +300,21 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
     public boolean isForUpdate() {
         return forUpdate;
     }
+
+
+    @Override
+    public io.reactivex.rxjava3.core.Observable <Object[]> getObservable(RelNode node) {
+        return  io.reactivex.rxjava3.core.Observable.fromIterable(getEnumerable(node));
+    }
+
+    @Override
+    public Queue<List<io.reactivex.rxjava3.core.Observable<Object[]>>> getObservables(RelNode node) {
+        Queue<List<Enumerable<Object[]>>> enumerableList = getEnumerableList(node);
+        LinkedList<List<io.reactivex.rxjava3.core.Observable<Object[]>>> lists = new LinkedList<>();
+        for (List<Enumerable<Object[]>> enumerables : enumerableList) {
+            lists.add(enumerables.stream().map(i-> Observable.fromIterable(i)).collect(Collectors.toList()));
+        }
+        return lists;
+    }
+
 }
