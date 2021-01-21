@@ -43,6 +43,7 @@ public class VertxMySQLHandler {
     private VertxSession session;
     private MycatDataContext mycatDataContext;
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLHandler.class);
+    private Disposable disposable;
 
     public VertxMySQLHandler(VertxSession vertxSession) {
         this.mycatDataContext = vertxSession.getDataContext();
@@ -52,6 +53,8 @@ public class VertxMySQLHandler {
             mycatDataContext.setLastMessage(event);
             vertxSession.writeErrorEndPacketBySyncInProcessError();
         });
+
+        this.disposable = subscribe(session.getDataContext().getObservable());
     }
 
 
@@ -95,7 +98,7 @@ public class VertxMySQLHandler {
         }
     }
 
-    public Disposable handle0(int packetId, Buffer event, NetSocket socket) {
+    public void handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         try {
@@ -318,11 +321,9 @@ public class VertxMySQLHandler {
                 }
             }
 
-            return subscribe(session.getDataContext().getObservable());
         } catch (Throwable throwable) {
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
-            return null;
         }
     }
 
