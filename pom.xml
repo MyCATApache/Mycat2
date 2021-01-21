@@ -20,6 +20,7 @@
       <module>example</module>
       <module>statistic</module>
       <module>calcite</module>
+      <module>va</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
