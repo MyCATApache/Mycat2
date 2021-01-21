@@ -3,14 +3,13 @@ package io.mycat;
 import io.mycat.ExplainDetail;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.api.collector.RowObservable;
 
 import java.util.function.Supplier;
 
 public interface Response {
 
     void sendError(Throwable e);
-
-//    void proxySelectToPrototype(String statement);
 
     void proxySelect(String defaultTargetName, String statement);
 
@@ -28,6 +27,11 @@ public interface Response {
 
     default void sendResultSet(RowBaseIterator rowBaseIterator) {
         sendResultSet(RowIterable.create(rowBaseIterator));
+    }
+
+
+    default void sendResultSet(RowObservable rowIterable){
+        throw new UnsupportedOperationException();
     }
 
     void rollback();
