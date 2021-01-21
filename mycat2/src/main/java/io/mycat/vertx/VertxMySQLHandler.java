@@ -482,7 +482,7 @@ public class VertxMySQLHandler {
         }
         session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
         if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
-            for (int i = 1; i <= info.getPrepareOkParametersCount() - 1; i++) {
+            for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
             }
             if (deprecateEOF) {
@@ -496,7 +496,7 @@ public class VertxMySQLHandler {
             }
             return;
         } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
-            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+            for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
             }
             if (deprecateEOF) {
@@ -510,11 +510,11 @@ public class VertxMySQLHandler {
             }
             return;
         } else {
-            for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
+            for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
             }
             session.writeColumnEndPacket();
-            for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
+            for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
             }
             if (deprecateEOF) {
