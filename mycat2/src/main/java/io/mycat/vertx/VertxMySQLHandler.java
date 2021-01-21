@@ -16,8 +16,15 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.net.NetSocket;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +34,8 @@ import java.sql.JDBCType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
@@ -45,7 +54,48 @@ public class VertxMySQLHandler {
         });
     }
 
+
+    @AllArgsConstructor
+    public static class PendingMessage {
+        private final int packetId;
+        private final Buffer event;
+        private final NetSocket socket;
+    }
+
+    private final AtomicBoolean handleIng = new AtomicBoolean(false);
+    private final ConcurrentLinkedQueue<PendingMessage> pendingMessages = new ConcurrentLinkedQueue<>();
+
+    public Buffer copyIfDirectBuf(Buffer event) {
+        if (event instanceof BufferImpl && ((BufferImpl) event).byteBuf().isDirect()) {
+            Buffer buffer = Buffer.buffer(event.length());
+            buffer.appendBuffer(event);
+            return buffer;
+        } else {
+            return event;
+        }
+    }
+
     public void handle(int packetId, Buffer event, NetSocket socket) {
+        if (handleIng.compareAndSet(false, true)) {
+            PendingMessage pendingMessage;
+            try {
+                handle0(packetId, event, socket);
+                while ((pendingMessage = pendingMessages.poll()) != null) {
+                    handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+                }
+            } finally {
+                handleIng.set(false);
+                // check if handle set handleIng gap
+                while ((pendingMessage = pendingMessages.poll()) != null) {
+                    handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+                }
+            }
+        } else {
+            pendingMessages.offer(new PendingMessage(packetId, copyIfDirectBuf(event), socket));
+        }
+    }
+
+    public Disposable handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
         try {
@@ -267,10 +317,42 @@ public class VertxMySQLHandler {
                     assert false;
                 }
             }
+
+            return subscribe(session.getDataContext().getObservable());
         } catch (Throwable throwable) {
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
+            return null;
         }
+    }
+
+    private Disposable subscribe(Observable<Runnable> observable){
+        Disposable disposable = observable.subscribe(
+        // 收到数据
+        new Consumer<Runnable>() {
+            @Override
+            public void accept(Runnable runnable) throws Throwable {
+                runnable.run();
+            }
+        }, new Consumer<Throwable>() {
+        // 异常
+            @Override
+            public void accept(Throwable throwable) throws Throwable {
+
+            }
+        }, new Action() {
+        // 完毕
+            @Override
+            public void run() throws Throwable {
+                // check if handle set handleIng gap
+                for (PendingMessage pendingMessage : pendingMessages) {
+                    while ((pendingMessage = pendingMessages.poll()) != null) {
+                        handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
+                    }
+                }
+            }
+        });
+        return disposable;
     }
 
     private void saveBindValue(long statementId, BindValue[] values, VertxSession vertxSession) {

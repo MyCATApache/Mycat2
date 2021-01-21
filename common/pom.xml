@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>3.0.6</version>
+        </dependency>
+        <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
             <version>1.14-release</version>
