@@ -5,6 +5,8 @@ import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.runtime.Bindable;
+import org.apache.calcite.runtime.NewMycatDataContext;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -16,21 +18,23 @@ public enum RxBuiltInMethod {
     OBSERVABLE_SELECT(RxBuiltInMethodImpl.class,
             "select", Observable.class, Function1.class),
     OBSERVABLE_FILTER(RxBuiltInMethodImpl.class,
-            "filter",Observable.class, Predicate1.class ),
-    OBSERVABLE_CACL(RxBuiltInMethodImpl.class,"calc",Observable.class,Function1.class),
-    OBSERVABLE_UNION_ALL(RxBuiltInMethodImpl.class,"unionAll",Observable.class, List.class),
-    OBSERVABLE_TOP_N(RxBuiltInMethodImpl.class,"topN",Observable.class, Comparator.class,long.class,long.class),
-    OBSERVABLE_SORT(RxBuiltInMethodImpl.class,"sort",Observable.class,Comparator.class),
-    OBSERVABLE_LIMIT(RxBuiltInMethodImpl.class,"limit",Observable.class,long.class),
-    OBSERVABLE_OFFSET(RxBuiltInMethodImpl.class,"offset",Observable.class,long.class),
-    OBSERVABLE_TO_ENUMERABLE(RxBuiltInMethodImpl.class,"observableToEnumerable",Observable.class),
-    ENUMERABLE_TO_OBSERVABLE(RxBuiltInMethodImpl.class,"enumerableToObservable",Observable.class),
-    OBSERVABLE_MERGE_SORT(RxBuiltInMethodImpl.class,"mergeSort",List.class,Comparator.class,long.class,long.class),
-    OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class,"mergeSort",List.class,Comparator.class),
-    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class,"matierial",Observable.class),
+            "filter", Observable.class, Predicate1.class),
+    OBSERVABLE_CACL(RxBuiltInMethodImpl.class, "calc", Observable.class, Function1.class),
+    OBSERVABLE_UNION_ALL(RxBuiltInMethodImpl.class, "unionAll", Observable.class, List.class),
+    OBSERVABLE_UNION(RxBuiltInMethodImpl.class, "unionAll", Observable.class, Observable.class),
+    OBSERVABLE_TOP_N(RxBuiltInMethodImpl.class, "topN", Observable.class, Comparator.class, long.class, long.class),
+    OBSERVABLE_SORT(RxBuiltInMethodImpl.class, "sort", Observable.class, Comparator.class),
+    OBSERVABLE_LIMIT(RxBuiltInMethodImpl.class, "limit", Observable.class, long.class),
+    OBSERVABLE_OFFSET(RxBuiltInMethodImpl.class, "offset", Observable.class, long.class),
+    OBSERVABLE_TO_ENUMERABLE(RxBuiltInMethodImpl.class, "observableToEnumerable", Observable.class),
+    ENUMERABLE_TO_OBSERVABLE(RxBuiltInMethodImpl.class, "enumerableToObservable", Observable.class),
+    OBSERVABLE_MERGE_SORT(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class, long.class, long.class),
+    OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class),
+    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),
+    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
+    AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
 
     ;
-
     public final Method method;
     public final Constructor constructor;
     public final Field field;
@@ -47,7 +51,7 @@ public enum RxBuiltInMethod {
                     builder.put(value.method, value);
                 }
             }
-        }catch (Throwable t){
+        } catch (Throwable t) {
             t.printStackTrace();
         }
         MAP = builder.build();
@@ -59,17 +63,23 @@ public enum RxBuiltInMethod {
         this.field = field;
     }
 
-    /** Defines a method. */
+    /**
+     * Defines a method.
+     */
     RxBuiltInMethod(Class clazz, String methodName, Class... argumentTypes) {
         this(Types.lookupMethod(clazz, methodName, argumentTypes), null, null);
     }
 
-    /** Defines a constructor. */
+    /**
+     * Defines a constructor.
+     */
     RxBuiltInMethod(Class clazz, Class... argumentTypes) {
         this(null, Types.lookupConstructor(clazz, argumentTypes), null);
     }
 
-    /** Defines a field. */
+    /**
+     * Defines a field.
+     */
     RxBuiltInMethod(Class clazz, String fieldName, boolean dummy) {
         this(null, null, Types.lookupField(clazz, fieldName));
         assert dummy : "dummy value for method overloading must be true";

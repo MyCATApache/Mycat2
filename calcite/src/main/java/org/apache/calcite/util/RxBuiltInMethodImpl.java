@@ -15,11 +15,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class RxBuiltInMethodImpl {
-    public static Observable<Object[]> select(Observable<Object[]> input, Function1<Object[], Object[]> map) {
+
+    public static   Observable<Object[]> select(Observable<Object[]> input, Function1<Object[], Object[]> map) {
         return input.map(objects -> map.invoke(objects));
     }
 
-    public static Observable<Object[]> filter(Observable<Object[]> input, Predicate1<Object[]> filter) {
+    public static  Observable<Object[]> filter(Observable<Object[]> input, Predicate1<Object[]> filter) {
         return input.filter(objects -> filter.apply(objects));
     }
 
@@ -30,8 +31,10 @@ public class RxBuiltInMethodImpl {
     public static Observable<Object[]> unionAll(List<Observable<Object[]>> inputs) {
         return inputs.stream().reduce((observable, observable2) -> observable.concatWith(observable2)).orElse(Observable.empty());
     }
-
-    public static Observable<Object[]> topN(Observable<Object[]> input, Comparator<Object[]> sortFunction, long skip, long limit) {
+    public static Observable<Object[]> unionAll(Observable<Object[]> left,Observable<Object[]> right) {
+        return left.concatWith(right);
+    }
+    public static  Observable<Object[]> topN(Observable<Object[]> input, Comparator<Object[]> sortFunction, long skip, long limit) {
         return input.sorted(sortFunction).skip(skip).take(limit);
     }
 
@@ -55,19 +58,23 @@ public class RxBuiltInMethodImpl {
         return Observable.fromIterable(input);
     }
 
-    public static Observable<Object[]> mergeSort(List<Observable<Object[]>> inputs,
-                                                 Comparator<Object[]> sortFunction,
-                                                 long skip, long limit) {
+    public static <T> Observable<T> mergeSort(List<Observable<T>> inputs,
+                                              Comparator<T> sortFunction,
+                                              long skip, long limit) {
         return mergeSort(inputs, sortFunction).skip(skip).take(limit);
     }
 
-    public static Observable<Object[]> mergeSort(List<Observable<Object[]>> inputs, Comparator<Object[]> sortFunction) {
-        Flowable<Object[]> flowable = Flowables.orderedMerge(inputs.stream().map(i -> i.toFlowable(BackpressureStrategy.BUFFER)).collect(Collectors.toList()),
+    public static <T>  Observable<T> mergeSort(List<Observable<T>> inputs, Comparator<T> sortFunction) {
+        Flowable<T> flowable = Flowables.orderedMerge(inputs.stream().map(i -> i.toFlowable(BackpressureStrategy.BUFFER)).collect(Collectors.toList()),
                 sortFunction);
         return flowable.toObservable();
     }
 
     public static Observable<Object[]> matierial(Observable<Object[]> input) {
         return input.cache();
+    }
+
+    public static Observable<Object[]> asObservable(Object[][] input) {
+        return Observable.fromArray(input);
     }
 }

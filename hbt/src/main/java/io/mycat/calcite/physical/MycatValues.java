@@ -42,7 +42,7 @@ import java.util.List;
  */
 public class MycatValues extends Values implements MycatRel {
     protected MycatValues(RelOptCluster cluster, RelDataType rowType,
-                       ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
+                          ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
         super(cluster, rowType, tuples, traitSet);
     }
     public static MycatValues create( RelOptCluster cluster, RelDataType rowType,
