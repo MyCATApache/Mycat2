@@ -199,7 +199,7 @@ public class MycatUpdateExecutor implements Executor {
                 primaryKeyList,sql.getTarget());
     }
 
-    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+    public static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
         Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
