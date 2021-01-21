@@ -3,6 +3,8 @@ package io.mycat;
 import io.mycat.ExplainDetail;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.reactivex.rxjava3.core.Observable;
 
 import java.util.function.Supplier;
 
@@ -19,6 +21,8 @@ public interface Response {
     void proxySelectToPrototype(String statement);
 
     void sendError(String errorMessage, int errorCode);
+
+    void sendResultSet(Observable<Object[]> rowIterable, MycatRowMetaData mycatRowMetaData);
 
     void sendResultSet(RowIterable rowIterable);
 
@@ -43,4 +47,10 @@ public interface Response {
     void sendOk(long affectedRow,long lastInsertId);
 
     <T> T unWrapper(Class<T> clazz);
+
+    public enum ResultType{
+        DIRECT_TEXT,
+        BINARY,
+        TEXT
+    }
 }

@@ -11,6 +11,9 @@ import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.*;
@@ -24,7 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.*;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.executeQuery;
@@ -35,6 +39,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
     private final List<Object> params;
     private final boolean forUpdate;
     private final IdentityHashMap<Object, Queue<List<Enumerable<Object[]>>>> viewMap = new IdentityHashMap<>();
+    private final IdentityHashMap<Object, Queue<List<Enumerable<Object[]>>>> rxMap = new IdentityHashMap<>();
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(NewMycatDataContextImpl.class);
 
     public NewMycatDataContextImpl(MycatDataContext dataContext,
@@ -234,6 +239,39 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         Queue<List<Enumerable<Object[]>>> lists = viewMap.get(node);
         return lists.remove();
     }
+
+    @Override
+    public io.reactivex.rxjava3.core.Observable <Object[]> getObservable(RelNode node) {
+
+        return  new Observable<Object[]>() {
+            @Override
+            protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
+                ScheduledExecutorService timer = ScheduleUtil.getTimer();
+                timer.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        Enumerable<Object[]> enumerable = getEnumerable(node);
+                        for (Object[] objects : enumerable) {
+                            observer.onNext(objects);
+                        }
+                        observer.onComplete();
+                    }
+                }, 10, TimeUnit.SECONDS);
+                System.out.println("end");
+            }
+        };
+    }
+
+    @Override
+    public Queue<List<Observable<Object[]>>> getObservables(RelNode node) {
+        Queue<List<Enumerable<Object[]>>> enumerableList = getEnumerableList(node);
+        LinkedList<List<Observable<Object[]>>> lists = new LinkedList<>();
+        for (List<Enumerable<Object[]>> enumerables : enumerableList) {
+            lists.add(enumerables.stream().map(i->Observable.fromIterable(i)).collect(Collectors.toList()));
+        }
+        return lists;
+    }
+
     private Queue<List<Enumerable<Object[]>>> getEnumerableList(RelNode mycatView) {
         Queue<List<Enumerable<Object[]>>> list;
         if(!viewMap.containsKey(mycatView)){

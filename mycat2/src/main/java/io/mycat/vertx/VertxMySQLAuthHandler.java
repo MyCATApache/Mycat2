@@ -125,7 +125,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
         JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         connection.getDatasourceProvider().createSession(mycatDataContext);
-        socket.handler(new VertxMySQLPacketResolver(socket, new VertxMySQLHandler(vertxSession)));
+        socket.handler(vertxSession.getVertxMySQLPacketResolver());
         vertxSession.setPacketId(packetId);
 
         mysqlProxyServerVerticle.addSession(vertxSession);

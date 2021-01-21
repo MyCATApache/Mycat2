@@ -12,15 +12,16 @@ import io.vertx.core.net.NetSocket;
 import java.nio.charset.Charset;
 
 public class VertxSessionImpl implements VertxSession {
+
     private MycatDataContextImpl mycatDataContext;
     private NetSocket socket;
     int packetId = 0;
     private ProcessState processState;
-
+    private final VertxMySQLPacketResolver vertxMySQLPacketResolver;
     public VertxSessionImpl(MycatDataContextImpl mycatDataContext, NetSocket socket) {
         this.mycatDataContext = mycatDataContext;
-
         this.socket = socket;
+        this.vertxMySQLPacketResolver = new VertxMySQLPacketResolver(socket, new VertxMySQLHandler(this));
     }
 
     @Override
@@ -106,16 +107,18 @@ public class VertxSessionImpl implements VertxSession {
     @Override
     public void writeBytes(byte[] payload, boolean end) {
         if (end) {
-            if (mycatDataContext!=null){
+            if (mycatDataContext != null) {
                 TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-                if (transactionSession!=null){
+                if (transactionSession != null) {
                     transactionSession.closeStatenmentState();
+
                 }
             }
         }
         socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
         if (end) {
             this.socket.resume();
+            vertxMySQLPacketResolver.nextPacket();
         }
     }
 
@@ -151,5 +154,9 @@ public class VertxSessionImpl implements VertxSession {
     @Override
     public NetSocket getSocket() {
         return socket;
+    }
+
+    public VertxMySQLPacketResolver getVertxMySQLPacketResolver() {
+        return vertxMySQLPacketResolver;
     }
 }

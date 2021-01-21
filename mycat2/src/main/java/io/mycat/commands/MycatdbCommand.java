@@ -25,6 +25,10 @@ import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.Response;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -128,19 +132,29 @@ public enum MycatdbCommand {
             LinkedList<SQLStatement> statements = parse(text);
             Response response = responseFactory.apply(statements.size());
 
+            Future future = Future.succeededFuture();
             for (SQLStatement sqlStatement : statements) {
-                SqlRecord sqlRecord = dataContext.startSqlRecord();
-                sqlRecord.setTarget(dataContext.getUser().getHost());
-                sqlRecord.setSql(sqlStatement);
-                execute(dataContext, response, sqlStatement);
+                Future<Object> future1 = Future.future(event -> {
+                    try {
+                        SqlRecord sqlRecord = dataContext.startSqlRecord();
+                        sqlRecord.setTarget(dataContext.getUser().getHost());
+                        sqlRecord.setSql(sqlStatement);
+                        execute(dataContext, response, sqlStatement);
+                        event.complete();
+                    } catch (Throwable throwable) {
+                        Response response1 = responseFactory.apply(1);
+                        if (isNavicatClientStatusQuery(text)) {
+                            response1.sendOk();
+                            return;
+                        }
+                        response1.sendError(throwable);
+                        event.fail(throwable);
+                    }
+                });
+
             }
         } catch (Throwable e) {
-            Response response = responseFactory.apply(1);
-            if (isNavicatClientStatusQuery(text)) {
-                response.sendOk();
-                return;
-            }
-            response.sendError(e);
+
             return;
         }
 

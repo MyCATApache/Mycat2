@@ -1,7 +1,9 @@
 package io.mycat.vertx;
 
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
@@ -11,14 +13,16 @@ import static io.mycat.vertx.VertxMySQLPacketResolver.State.HEAD;
 import static io.mycat.vertx.VertxMySQLPacketResolver.State.PAYLOAD;
 
 public class VertxMySQLPacketResolver implements Handler<Buffer> {
+    final VertxMySQLHandler mySQLHandler;
     Buffer head;
     Buffer payload;
     int mycatPacketCounter = 0;
     State state = HEAD;
     int currentPacketLength;
-    VertxMySQLHandler mySQLHandler;
     NetSocket socket;
-    private int reveicePayloadCount = 0;
+    volatile Buffer queue;
+    private short packetId;
+    private volatile boolean running = false;
 
     static enum State {
         HEAD,
@@ -32,8 +36,19 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     }
 
     @Override
-    public void handle(Buffer event) {
+    public synchronized void handle(Buffer event) {
+        if (running) {
+            if (queue != null) {
+                queue = queue.appendBuffer(event);
+            } else {
+                queue = event;
+            }
+        }
         for (; ; ) {
+            if (queue != null) {
+                event = queue.appendBuffer(event);
+                queue = null;
+            }
             switch (state) {
                 case HEAD: {
                     if (head == null) {
@@ -50,7 +65,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     }
                     if (state == PAYLOAD) {
                         currentPacketLength = readInt(head, 0, 3);
-                        int packetId = head.getUnsignedByte(3);
+                        this.packetId = head.getUnsignedByte(3);
                         if (mycatPacketCounter != packetId) {
                             throw new AssertionError(MessageFormat.format("packet id not match " +
                                     "mycat:{0} ordinal packet:{1}", mycatPacketCounter, packetId));
@@ -64,22 +79,35 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     if (payload == null) {
                         payload = Buffer.buffer();
                     }
-                    payload.appendBuffer(event);
-                    reveicePayloadCount += event.length();
+                    int rest = currentPacketLength - payload.length();
+                    if (event.length() <= rest) {
+                        payload =  payload.appendBuffer(event);
+                    } else {
+                        Buffer slice = event.slice(0, rest);
+                        payload = payload.appendBuffer(slice);
+                        queue = (event.slice(rest, event.length()));
+                    }
+                    event = Buffer.buffer(0);
+
                     boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
                     if (multiPacket) {
-                        if ((MySQLPacketSplitter.MAX_PACKET_SIZE) == reveicePayloadCount) {
+                        if ((MySQLPacketSplitter.MAX_PACKET_SIZE) == payload.length()) {
                             state = HEAD;
+                            continue;
                         }
                         return;
                     } else {
-                        if (reveicePayloadCount == currentPacketLength) {
+                        if (payload.length() == currentPacketLength) {
                             Buffer payload = this.payload;
                             this.payload = null;
-                            reveicePayloadCount = 0;
                             state = HEAD;
                             mycatPacketCounter = 0;
-                            mySQLHandler.handle(reveicePayloadCount, payload, socket);
+
+                            Context context = Vertx.currentContext();
+                            running = true;
+                            context.executeBlocking(event1 -> {
+                                mySQLHandler.handle(packetId, payload, socket);
+                            });
                             return;
                         }
                     }
@@ -98,5 +126,15 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
             rv |= (((long) b) & 0xFF) << (i * 8);
         }
         return rv;
+    }
+
+    public synchronized void nextPacket() {
+        running = false;
+        if (queue != null) {
+            Buffer buffer = this.queue;
+            this.queue = null;
+            handle(buffer);
+        }
+
     }
 }

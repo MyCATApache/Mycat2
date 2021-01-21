@@ -54,6 +54,7 @@ import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -601,23 +602,47 @@ public class DrdsRunner {
         } else if (mycatRel instanceof MycatInsertRel) {
             return new PlanImpl((MycatInsertRel) mycatRel);
         }
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel));
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(dataContext, Objects.requireNonNull(mycatRel));
         return new PlanImpl(mycatRel, codeExecuterContext, drdsSql.isForUpdate());
     }
 
     @NotNull
-    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
+    public static CodeExecuterContext getCodeExecuterContext(MycatDataContext dataContext, MycatRel relNode) {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>();
+                try{
+            StreamMycatEnumerableRelImplementor streamMycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
+                    ClassDeclaration classDeclaration = streamMycatEnumerableRelImplementor.implementHybridRoot(relNode, EnumerableRel.Prefer.ARRAY);
+                    String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
+                    System.out.println(classDeclaration);
+                    CodeExecuterContext codeExecuterContext = CodeExecuterContext.of(streamMycatEnumerableRelImplementor.getLeafRelNodes(), context,
+                            (getBindable(classDeclaration, code, fieldCount, ArrayBindable.class)),
+                            code);
+                    return codeExecuterContext;
+//                    NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(
+//                            dataContext, codeExecuterContext, Collections.emptyList(), false);
+//                    newMycatDataContext.allocateResource();
+//                    ArrayBindable bindable = codeExecuterContext.getBindable();
+//                    Observable<Object[]> observable = bindable.bindObservable(newMycatDataContext);
+//                    List<Object[]> objects = observable.toList().blockingGet();
+//                    for (Object[] object : objects) {
+//                        System.out.println(Arrays.toString(object));
+//                    }
+                }catch (Throwable throwable){
+            log.debug("----------------------------------------code----------------------------------------");
+            log.debug("",throwable);
+        }
         MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
+
+
         if (log.isDebugEnabled()){
             log.debug("----------------------------------------code----------------------------------------");
             log.debug(code);
         }
         return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(),context,
-                asObjectArray(getBindable(classDeclaration, code, fieldCount)),
+                asObjectArray(getBindable(classDeclaration, code, fieldCount,ArrayBindable.class)),
                 code);
     }
 
@@ -643,7 +668,7 @@ public class DrdsRunner {
     }
 
     @SneakyThrows
-    static ArrayBindable getBindable(ClassDeclaration expr, String s, int fieldCount) {
+    static <T> T getBindable(ClassDeclaration expr, String s, int fieldCount,Class<T> tClass) {
         ICompilerFactory compilerFactory;
         try {
             compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
@@ -660,7 +685,7 @@ public class DrdsRunner {
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation(true, true, true);
         }
-        return (ArrayBindable) cbe.createInstance(new StringReader(s));
+        return tClass.cast( cbe.createInstance(new StringReader(s)));
     }
 
     static class ComplexJudged extends RelShuttleImpl {
@@ -856,7 +881,7 @@ public class DrdsRunner {
     public void runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
         DrdsRunner drdsRunners = this;
         MycatRel mycatRel = drdsRunners.doHbt(statement);
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(dataContext,mycatRel);
         planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
     }
 

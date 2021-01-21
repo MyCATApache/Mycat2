@@ -8,6 +8,7 @@ import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MycatDataContext;
+import io.mycat.NewMycatDataContextImpl;
 import io.mycat.Response;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.executor.MycatGlobalUpdateExecutor;
@@ -16,12 +17,17 @@ import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.runtime.ArrayBindable;
+import org.apache.calcite.runtime.CodeExecuterContext;
 import org.apache.calcite.sql.util.SqlString;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -89,8 +95,14 @@ public class PlanImplementorImpl implements PlanImplementor {
                 }
             }
         }
-        EnumeratorRowIterator enumeratorRowIterator = getEnumeratorRowIterator(plan, context, params);
-        response.sendResultSet(enumeratorRowIterator);
+        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+        ArrayBindable bindable = codeExecuterContext.getBindable();
+
+        NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, Collections.emptyList(), false);
+        newMycatDataContext.allocateResource();
+        Observable<Object[]> observable = bindable.bindObservable(newMycatDataContext);
+        RelNode physical = plan.getPhysical();
+        response.sendResultSet(observable,new CalciteRowMetaData(physical.getRowType().getFieldList()), Response.ResultType.TEXT);
     }
 
 

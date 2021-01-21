@@ -13,6 +13,19 @@
 
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.reactivex.rxjava2/rxjava -->
+        <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.github.davidmoten/rxjava2-extras -->
+        <dependency>
+            <groupId>com.github.davidmoten</groupId>
+            <artifactId>rxjava2-extras</artifactId>
+            <version>0.1.38</version>
+        </dependency>
+
         <dependency>
             <groupId>com.github.sisyphsu</groupId>
             <artifactId>dateparser</artifactId>
@@ -86,6 +99,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.11</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>va</artifactId>
+            <version>1.14-release</version>
             <scope>compile</scope>
         </dependency>
 

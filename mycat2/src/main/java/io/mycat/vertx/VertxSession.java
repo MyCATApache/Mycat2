@@ -11,4 +11,6 @@ public interface VertxSession extends MySQLServerSession {
     void close();
 
     NetSocket getSocket();
+
+    VertxMySQLPacketResolver getVertxMySQLPacketResolver();
 }

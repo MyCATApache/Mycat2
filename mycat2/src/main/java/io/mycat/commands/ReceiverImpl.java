@@ -3,10 +3,12 @@ package io.mycat.commands;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.proxy.session.MycatSession;
+import io.reactivex.rxjava3.core.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +71,11 @@ public class ReceiverImpl implements Response {
         session.setLastMessage(errorMessage);
         session.setLastErrorCode(errorCode);
         sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
+    }
+
+    @Override
+    public void sendResultSet(Observable<Object[]> rowIterable, MycatRowMetaData mycatRowMetaData,ResultType resultType) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

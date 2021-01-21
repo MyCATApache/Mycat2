@@ -1,5 +1,9 @@
 package io.mycat;
 
+
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.SimpleConfig;
+import cn.mycat.vertx.xa.impl.MySQLManagerImpl;
 import io.mycat.config.*;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
@@ -16,6 +20,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -52,10 +57,15 @@ public class MycatCore {
             throw new Error("init error. " + e.toString());
         }
     }
-
+    public static SimpleConfig demoConfig(String name, int port) {
+        SimpleConfig simpleConfig = new SimpleConfig(name, "127.0.0.1", port, "root", "123456", "mysql", 5);
+        return simpleConfig;
+    }
 
     @SneakyThrows
     public MycatCore() {
+       MySQLManagerImpl mySQLManager = new MySQLManagerImpl(Arrays.asList(demoConfig("ds1", 3306)
+                , demoConfig("ds2", 3307)));
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
         boolean enableGSI = false;
@@ -69,6 +79,7 @@ public class MycatCore {
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
+        context.put(MySQLManager.class,mySQLManager);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
