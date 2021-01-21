@@ -1,7 +1,7 @@
 package org.apache.calcite.util;
 
 import com.google.common.collect.ImmutableMap;
-import io.reactivex.Observable;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Types;
@@ -14,7 +14,7 @@ import java.util.List;
 
 public enum RxBuiltInMethod {
     OBSERVABLE_SELECT(RxBuiltInMethodImpl.class,
-            "select",Observable.class, Function1.class),
+            "select", Observable.class, Function1.class),
     OBSERVABLE_FILTER(RxBuiltInMethodImpl.class,
             "filter",Observable.class, Predicate1.class ),
     OBSERVABLE_CACL(RxBuiltInMethodImpl.class,"calc",Observable.class,Function1.class),
