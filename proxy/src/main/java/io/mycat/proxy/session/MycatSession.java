@@ -37,6 +37,7 @@ import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.VertxUtil;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,7 +150,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public  synchronized  void close(boolean normal, String hint) {
+    public  synchronized  PromiseInternal<Void> close(boolean normal, String hint) {
         try {
             dataContext.close();
         } catch (Exception e) {
@@ -179,6 +180,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         } catch (Exception e) {
             LOGGER.error("", e);
         }
+        return VertxUtil.newSuccessPromise();
     }
 
 

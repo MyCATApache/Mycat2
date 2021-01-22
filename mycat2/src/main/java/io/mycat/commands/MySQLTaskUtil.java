@@ -107,12 +107,12 @@ public class MySQLTaskUtil {
                             public void onSession(MySQLClientSession session, Object sender, Object attr) {
                                 PromiseInternal<Void> proxyBackend = MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
                                 // todo 异步未实现完全 wangzihaogithub
-                                proxyBackend.onComplete(promise);
+                                proxyBackend.onComplete(o-> promise.tryComplete());
                             }
 
                             @Override
                             public void onException(Exception exception, Object sender, Object attr) {
-                                promise.fail(exception);
+                                promise.tryFail(exception);
                                 finallyCallBack.onRequestMySQLException(mycat, exception, null);
                             }
                         };
@@ -125,7 +125,7 @@ public class MySQLTaskUtil {
 
                     @Override
                     public void onException(Exception exception, Object sender, Object attr) {
-                        promise.fail(exception);
+                        promise.tryFail(exception);
                         finallyCallBack.onRequestMySQLException(mycat, exception, attr);
                     }
                 });
@@ -136,7 +136,7 @@ public class MySQLTaskUtil {
                 mycat.setLastMessage(reason);
                 // todo 异步未实现完全 wangzihaogithub
                 PromiseInternal<Void> proxyBackend = mycat.writeErrorEndPacketBySyncInProcessError();
-                promise.fail(reason);
+                promise.tryFail(reason);
             }
 
             @Override

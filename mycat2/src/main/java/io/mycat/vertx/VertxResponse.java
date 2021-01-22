@@ -70,6 +70,7 @@ public abstract class VertxResponse implements Response {
 
     @Override
     public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
+        // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
         ++count;
         RowBaseIterator resultSet = rowIterable.get();
         boolean moreResultSet = count < size;

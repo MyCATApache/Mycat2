@@ -116,17 +116,19 @@ public class MySQLClientSession extends
    * session1解除绑定
    */
   @Override
-  public synchronized void close(boolean normal, String hint) {
+  public synchronized PromiseInternal<Void> close(boolean normal, String hint) {
     if (hasClosed) {
-      return;
+      return VertxUtil.newSuccessPromise();
     }
     resetPacket();
     hasClosed = true;
 //    getDatasource().decrementUsedCounter();
     try {
       getSessionManager().removeSession(this, normal, hint);
+      return VertxUtil.newSuccessPromise();
     } catch (Exception e) {
       LOGGER.error("channel close occur exception:{}", e);
+      return VertxUtil.newFailPromise(e);
     }
   }
   /**
