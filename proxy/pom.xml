@@ -12,6 +12,11 @@
     <artifactId>proxy</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mysql-client</artifactId>
+            <version>4.0.1-SNAPSHOT</version>
+        </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
