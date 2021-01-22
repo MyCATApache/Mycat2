@@ -282,7 +282,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
     }
 
     private PromiseInternal<Void> sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
-        // todo 异步未实现完全 wangzihaogithub
+        // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
         MycatResultSetResponse currentResultSet;
         if (!binary) {
             if (resultSet instanceof JdbcRowBaseIterator){
