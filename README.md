@@ -13,6 +13,7 @@
 
 ![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
 
+目前仅支持在java8上运行Mycat2,其他版本后续会支持.
 
 ## 核心团队
 
