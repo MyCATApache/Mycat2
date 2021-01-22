@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
@@ -54,6 +55,8 @@ import io.mycat.hbt.parser.HBTParser;
 import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -139,10 +142,10 @@ public class DrdsRunner {
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 ImmutableList.of(),
-                MycatCalciteSupport.INSTANCE.TypeFactory,
+                MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         RelOptCluster cluster = newCluster();
-        RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         HBTQueryConvertor hbtQueryConvertor = new HBTQueryConvertor(Collections.emptyList(), relBuilder);
         RelNode relNode = hbtQueryConvertor.complie(originSchema);
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
@@ -436,11 +439,11 @@ public class DrdsRunner {
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
-                MycatCalciteSupport.INSTANCE.TypeFactory,
+                MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
         SqlValidator validator =
 
-                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.INSTANCE.config.getOperatorTable()), catalogReader, MycatCalciteSupport.INSTANCE.TypeFactory,
+                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.config.getOperatorTable()), catalogReader, MycatCalciteSupport.TypeFactory,
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
@@ -534,14 +537,14 @@ public class DrdsRunner {
         validated = validator.validate(sqlNode);
 
         RelOptCluster cluster = newCluster();
-        RelBuilder relBuilder = MycatCalciteSupport.INSTANCE.relBuilderFactory.create(cluster, catalogReader);
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
                 NOOP_EXPANDER,
                 validator,
                 catalogReader,
                 cluster,
-                MycatCalciteSupport.INSTANCE.config.getConvertletTable(),
-                MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
+                MycatCalciteSupport.config.getConvertletTable(),
+                MycatCalciteSupport.sqlToRelConverterConfig);
 
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
         drdsSql.setAliasList(
@@ -608,7 +611,7 @@ public class DrdsRunner {
     @NotNull
     public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
         int fieldCount = relNode.getRowType().getFieldCount();
-        HashMap<String, Object> context = new HashMap<>();
+        HashMap<String, Object> context = new HashMap<>(2);
         MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
@@ -783,7 +786,7 @@ public class DrdsRunner {
         for (RelTraitDef i : TRAITS) {
             planner.addRelTraitDef(i);
         }
-        return RelOptCluster.create(planner, MycatCalciteSupport.INSTANCE.RexBuilder);
+        return RelOptCluster.create(planner, MycatCalciteSupport.RexBuilder);
     }
 
     private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;
@@ -818,25 +821,25 @@ public class DrdsRunner {
 
 
     @SneakyThrows
-    public void runOnDrds(MycatDataContext dataContext,
+    public PromiseInternal<Void>  runOnDrds(MycatDataContext dataContext,
                           SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
         PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, drdsSql.getParams(), response);
-        impl(plan, planImplementor);
+        return impl(plan, planImplementor);
     }
 
-    private void impl(Plan plan, PlanImplementorImpl planImplementor) {
+    private PromiseInternal<Void> impl(Plan plan, PlanImplementorImpl planImplementor) {
         switch (plan.getType()) {
             case PHYSICAL:
-                planImplementor.execute(plan);
-                break;
+                return planImplementor.execute(plan);
             case UPDATE:
-                planImplementor.execute((MycatUpdateRel)Objects.requireNonNull(plan.getPhysical()));
-                break;
+                return planImplementor.execute((MycatUpdateRel)Objects.requireNonNull(plan.getPhysical()));
             case INSERT:
-                planImplementor.execute((MycatInsertRel)Objects.requireNonNull(plan.getPhysical()));
-                break;
+                return planImplementor.execute((MycatInsertRel)Objects.requireNonNull(plan.getPhysical()));
+            default:{
+                return VertxUtil.newFailPromise(new MycatException(MySQLErrorCode.ER_NOT_SUPPORTED_YET,"不支持的执行计划"));
+            }
         }
     }
 
@@ -848,16 +851,16 @@ public class DrdsRunner {
         return plan;
     }
 
-    public void runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
         PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, Collections.emptyList(), response);
-        runHbtOnDrds(dataContext, statement, planImplementor);
+        return runHbtOnDrds(dataContext, statement, planImplementor);
     }
 
-    public void runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
+    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
         DrdsRunner drdsRunners = this;
         MycatRel mycatRel = drdsRunners.doHbt(statement);
         CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
-        planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
+        return planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
     }
 
     @NotNull

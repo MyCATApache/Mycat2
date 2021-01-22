@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 写任务
+ * 数据包
  * 上下文 #{@link io.mycat.MycatDataContext}
  * 日志 #{@link org.slf4j.MDC}
  * 事务 #{@link io.mycat.TransactionSession}
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author wangzihaogithub 2021-01-21
  */
-public abstract class AbstractSocketWritePacket implements Runnable{
+public abstract class AbstractWritePacket implements Runnable{
     private final Logger logger = LoggerFactory.getLogger(javaClass());
 
     @Override
@@ -23,7 +23,7 @@ public abstract class AbstractSocketWritePacket implements Runnable{
         writeToSocket();
         writeAfter();
     }
-    public abstract Class<? extends AbstractSocketWritePacket> javaClass();
+    public abstract Class<? extends AbstractWritePacket> javaClass();
 
     public void writeBefore(){
         logger.debug("writeBefore {}",getClass());
@@ -35,4 +35,8 @@ public abstract class AbstractSocketWritePacket implements Runnable{
 
     public abstract void writeToSocket();
 
+    @Override
+    public String toString() {
+        return javaClass().getSimpleName()+" ("+getClass().getName()+")";
+    }
 }

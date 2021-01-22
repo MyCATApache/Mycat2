@@ -1,6 +1,7 @@
 package io.mycat.proxy.handler;
 
 import io.mycat.proxy.session.MycatSession;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.io.IOException;
 
@@ -15,7 +16,7 @@ public interface MycatSessionWriteHandler {
      * @param session the session
      * @throws IOException the io exception
      */
-    void writeToChannel(MycatSession session) throws IOException;
+    PromiseInternal<Void> writeToChannel(MycatSession session) throws IOException;
 
     /**
      * On exception.

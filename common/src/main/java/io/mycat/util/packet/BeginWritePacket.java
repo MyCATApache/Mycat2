@@ -1,9 +1,9 @@
 package io.mycat.util.packet;
 
-public abstract class BeginWritePacket extends AbstractSocketWritePacket {
+public abstract class BeginWritePacket extends AbstractWritePacket {
 
     @Override
-    public Class<? extends AbstractSocketWritePacket> javaClass() {
+    public Class<? extends AbstractWritePacket> javaClass() {
         return BeginWritePacket.class;
     }
 }

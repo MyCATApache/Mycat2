@@ -8,12 +8,13 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 
 
 public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateTableStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLShowCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLShowCreateTableStatement ast = request.getAst();
         SQLName name = ast.getName();
         if (name instanceof SQLIdentifierExpr){
@@ -22,8 +23,7 @@ public class ShowCreateTableSQLHandler extends AbstractSQLHandler<SQLShowCreateT
             sqlPropertyExpr.setName(name.toString());
             ast.setName(sqlPropertyExpr);
         }
-        response.proxySelectToPrototype(ast.toString());
-        return ;
+        return response.proxySelectToPrototype(ast.toString());
 //
 //        SQLName nameExpr = ast.getName();
 //        if (nameExpr == null) {

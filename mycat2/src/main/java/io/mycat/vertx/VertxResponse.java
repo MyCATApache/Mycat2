@@ -10,13 +10,11 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
-import io.mycat.util.packet.ExplainWritePacket;
-import io.mycat.util.packet.SendErrorWritePacket;
-import io.mycat.util.packet.SendOkWritePacket;
-import io.mycat.util.packet.SendResultSetWritePacket;
+import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -41,150 +39,122 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public void proxySelect(String defaultTargetName, String statement) {
-        execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
+    public PromiseInternal<Void> proxySelect(String defaultTargetName, String statement) {
+        return execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
     }
 
     @Override
-    public void proxyUpdate(String defaultTargetName, String proxyUpdate) {
-        execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), proxyUpdate, null));
+    public PromiseInternal<Void> proxyUpdate(String defaultTargetName, String proxyUpdate) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), proxyUpdate, null));
     }
 
     @Override
-    public void sendError(Throwable e) {
-        dataContext.getEmitter().onNext(new SendErrorWritePacket(null, e, 0) {
-            @Override
-            public void writeToSocket() {
-                dataContext.getTransactionSession().closeStatenmentState();
-                dataContext.setLastMessage(e);
-                session.writeErrorEndPacketBySyncInProcessError();
+    public PromiseInternal<Void> sendError(Throwable e) {
+        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.setLastMessage(e);
+        return session.writeErrorEndPacketBySyncInProcessError();
+    }
+
+    @Override
+    public PromiseInternal<Void> proxySelectToPrototype(String statement) {
+        return proxySelect("prototype", statement);
+    }
+
+
+    @Override
+    public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
+        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.setLastMessage(errorMessage);
+        return session.writeErrorEndPacketBySyncInProcessError();
+    }
+
+    @Override
+    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
+        ++count;
+        RowBaseIterator resultSet = rowIterable.get();
+        boolean moreResultSet = count < size;
+        MycatResultSetResponse currentResultSet;
+        if (!binary) {
+            if (resultSet instanceof JdbcRowBaseIterator) {
+                currentResultSet = new DirectTextResultSetResponse((resultSet));
+            } else {
+                currentResultSet = new TextResultSetResponse(resultSet);
             }
-        });
+        } else {
+            currentResultSet = new BinaryResultSetResponse(resultSet);
+        }
+        session.writeColumnCount(currentResultSet.columnCount());
+        Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
+                .columnDefIterator();
+        while (columnDefPayloadsIterator.hasNext()) {
+            session.writeBytes(columnDefPayloadsIterator.next(), false);
+        }
+        session.writeColumnEndPacket();
+        Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
+        while (rowIterator.hasNext()) {
+            byte[] row = rowIterator.next();
+            session.writeBytes(row, false);
+        }
+        currentResultSet.close();
+        session.getDataContext().getTransactionSession().closeStatenmentState();
+        return session.writeRowEndPacket(moreResultSet, false);
     }
 
     @Override
-    public void proxySelectToPrototype(String statement) {
-        proxySelect("prototype", statement);
-    }
+    public PromiseInternal<Void> execute(ExplainDetail detail) {
+        PromiseInternal<Void> promise;
+        String target = detail.getTarget();
+        ExecuteType executeType = detail.getExecuteType();
+        String sql = detail.getSql();
+        MycatDataContext dataContext = session.getDataContext();
 
-
-    @Override
-    public void sendError(String errorMessage, int errorCode) {
-        dataContext.getEmitter().onNext(new SendErrorWritePacket(errorMessage, null, errorCode) {
-            @Override
-            public void writeToSocket() {
-                dataContext.getTransactionSession().closeStatenmentState();
-                dataContext.setLastMessage(errorMessage);
-                session.writeErrorEndPacketBySyncInProcessError();
-            }
-        });
-    }
-
-    @Override
-    public void sendResultSet(RowIterable rowIterable) {
-        dataContext.getEmitter().onNext(new SendResultSetWritePacket() {
-            @Override
-            public void writeToSocket() {
-                ++count;
-                RowBaseIterator resultSet = rowIterable.get();
-                boolean moreResultSet = count < size;
-                MycatResultSetResponse currentResultSet;
-                if (!binary) {
-                    if (resultSet instanceof JdbcRowBaseIterator) {
-                        currentResultSet = new DirectTextResultSetResponse((resultSet));
-                    } else {
-                        currentResultSet = new TextResultSetResponse(resultSet);
-                    }
-                } else {
-                    currentResultSet = new BinaryResultSetResponse(resultSet);
-                }
-                session.writeColumnCount(currentResultSet.columnCount());
-                Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                        .columnDefIterator();
-                while (columnDefPayloadsIterator.hasNext()) {
-                    session.writeBytes(columnDefPayloadsIterator.next(), false);
-                }
-                session.writeColumnEndPacket();
-                Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-                while (rowIterator.hasNext()) {
-                    byte[] row = rowIterator.next();
-                    session.writeBytes(row, false);
-                }
-                currentResultSet.close();
-                session.getDataContext().getTransactionSession().closeStatenmentState();
-                session.writeRowEndPacket(moreResultSet, false);
-            }
-        });
+        switch (executeType) {
+            case QUERY:
+                target = dataContext.resolveDatasourceTargetName(target, false);
+                break;
+            case QUERY_MASTER:
+            case INSERT:
+            case UPDATE:
+            default:
+                target = dataContext.resolveDatasourceTargetName(target, true);
+                break;
+        }
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        MycatConnection connection = transactionSession.getConnection(target);
+        count++;
+        switch (executeType) {
+            case QUERY:
+            case QUERY_MASTER:
+                promise = sendResultSet(connection.executeQuery(null, sql));
+                break;
+            case INSERT:
+            case UPDATE:
+                long[] longs = connection.executeUpdate(sql, true);
+                transactionSession.closeStatenmentState();
+                promise = sendOk(longs[0], longs[1]);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + executeType);
+        }
+        return promise;
     }
 
     @Override
-    public void execute(ExplainDetail detail) {
-        dataContext.getEmitter().onNext(new ExplainWritePacket() {
-            @Override
-            public void writeToSocket() {
-                String target = detail.getTarget();
-                ExecuteType executeType = detail.getExecuteType();
-                String sql = detail.getSql();
-                MycatDataContext dataContext = session.getDataContext();
-
-                switch (executeType) {
-                    case QUERY:
-                        target = dataContext.resolveDatasourceTargetName(target, false);
-                        break;
-                    case QUERY_MASTER:
-                    case INSERT:
-                    case UPDATE:
-                    default:
-                        target = dataContext.resolveDatasourceTargetName(target, true);
-                        break;
-                }
-                TransactionSession transactionSession = dataContext.getTransactionSession();
-                MycatConnection connection = transactionSession.getConnection(target);
-                count++;
-                switch (executeType) {
-                    case QUERY:
-                    case QUERY_MASTER:
-                        sendResultSet(connection.executeQuery(null, sql));
-                        break;
-                    case INSERT:
-                    case UPDATE:
-                        long[] longs = connection.executeUpdate(sql, true);
-                        transactionSession.closeStatenmentState();
-                        sendOk(longs[0], longs[1]);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unexpected value: " + executeType);
-                }
-            }
-        });
+    public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
+        count++;
+        MycatDataContext dataContext = session.getDataContext();
+        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.setLastInsertId(lastInsertId);
+        dataContext.setAffectedRows(affectedRow);
+        return session.writeOk(count < size);
     }
 
     @Override
-    public void sendOk(long affectedRow, long lastInsertId) {
-        dataContext.getEmitter().onNext(new SendOkWritePacket() {
-            @Override
-            public void writeToSocket() {
-                count++;
-                MycatDataContext dataContext = session.getDataContext();
-                dataContext.getTransactionSession().closeStatenmentState();
-                dataContext.setLastInsertId(lastInsertId);
-                dataContext.setAffectedRows(affectedRow);
-                session.writeOk(count < size);
-            }
-        });
-    }
-
-    @Override
-    public void sendOk() {
-        dataContext.getEmitter().onNext(new SendOkWritePacket() {
-            @Override
-            public void writeToSocket() {
-                count++;
-                MycatDataContext dataContext = session.getDataContext();
-                dataContext.getTransactionSession().closeStatenmentState();
-                session.writeOk(count < size);
-            }
-        });
+    public PromiseInternal<Void>  sendOk() {
+        count++;
+        MycatDataContext dataContext = session.getDataContext();
+        dataContext.getTransactionSession().closeStatenmentState();
+        return session.writeOk(count < size);
     }
 
     @Override
@@ -193,14 +163,10 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public void sendResultSet(RowObservable rowIterable) {
-        dataContext.getEmitter().onNext(new SendResultSetWritePacket() {
-            @Override
-            public void writeToSocket() {
-                count++;
-                rowIterable.subscribe(new ObserverWrite(rowIterable));
-            }
-        });
+    public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
+        count++;
+        rowIterable.subscribe(new ObserverWrite(rowIterable));
+        return VertxUtil.newSuccessPromise();
     }
 
     private class ObserverWrite implements Observer<Object[]> {

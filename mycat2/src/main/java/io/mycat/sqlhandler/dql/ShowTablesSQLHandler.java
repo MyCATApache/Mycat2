@@ -12,6 +12,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,23 +23,22 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTablesSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLShowTablesStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
         }
         SQLName database = ast.getDatabase();
         if (database == null){
-            response.sendError(new MycatException("NO DATABASES SELECTED"));
-            return ;
+            return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
         String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name ->dataContext.resolveDatasourceTargetName(name)).orElse(null);
         if (targetName != null) {
-            response.proxySelect(targetName, ast.toString());
+            return response.proxySelect(targetName, ast.toString());
         } else {
-            response.proxySelectToPrototype(ast.toString());
+            return response.proxySelectToPrototype(ast.toString());
         }
 //        DDLManager.INSTANCE.updateTables();
 //        String sql = ShowStatementRewriter.rewriteShowTables(dataContext.getDefaultSchema(), request.getAst());
@@ -59,7 +59,6 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
 //            return ExecuteCode.PERFORMED;
 //        }
 //        response.proxyShow(ast);
-        return ;
     }
 
 //    private boolean WithDefaultTargetInfo(Response response, String sql, RowBaseIterator query, String schema) {

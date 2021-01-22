@@ -30,6 +30,8 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.Setter;
 
 import java.io.IOException;
@@ -303,9 +305,9 @@ public class MySQLClientSession extends
   /**
    * 把buffer写入通道
    */
-  public void writeToChannel() throws IOException {
+  public PromiseInternal<Void> writeToChannel() throws IOException {
     assert !isIdle();
-    writeProxyBufferToChannel();
+    return writeProxyBufferToChannel();
   }
 
 
@@ -324,7 +326,7 @@ public class MySQLClientSession extends
   /**
    * 最终把buffer写入通道的方法
    */
-  final void writeProxyBufferToChannel() throws IOException {
+  final PromiseInternal<Void>  writeProxyBufferToChannel() throws IOException {
     ProxyBuffer proxyBuffer = this.currentProxyBuffer();
     int oldIndex = proxyBuffer.channelWriteStartIndex();
     proxyBuffer.writeToChannel(this.channel());
@@ -332,6 +334,7 @@ public class MySQLClientSession extends
         proxyBuffer.channelWriteEndIndex());
     this.updateLastActiveTime();
     this.checkWriteFinished();
+    return VertxUtil.newSuccessPromise();
   }
 
   /**
@@ -377,10 +380,10 @@ public class MySQLClientSession extends
    * 把proxybuffer的内容写入通道,proxybuffer需要保证处于写入状态 即channelWriteStartIndex == 0 channelWriteSEndIndex
    * 为写入结束位置
    */
-  public void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
+  public PromiseInternal<Void> writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
     assert proxyBuffer.channelWriteStartIndex() == 0;
     this.setCurrentProxyBuffer(proxyBuffer);
-    this.writeToChannel();
+    return this.writeToChannel();
   }
 
   /**

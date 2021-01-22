@@ -11,6 +11,7 @@ import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 
 import java.util.Objects;
@@ -19,12 +20,12 @@ import java.util.Optional;
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+        return updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
     }
 
     @SneakyThrows
-    public static void updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
+    public static PromiseInternal<Void> updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
                 .map(i -> SQLUtils.normalize(i)).orElse(null);
         String tableName = SQLUtils.normalize(tableSource.getTableName());
@@ -34,11 +35,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         Optional<String> targetNameOptional = Optional.ofNullable(metadataManager.getPrototype());
         if (!handlerMapOptional.isPresent()) {
             if (targetNameOptional.isPresent()) {
-                receiver.proxyUpdate(targetNameOptional.get(), Objects.toString(sqlStatement));
-                return;
+                return receiver.proxyUpdate(targetNameOptional.get(), Objects.toString(sqlStatement));
             } else {
-                receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
-                return;
+                return receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
             }
         } else {
             NameMap< SchemaHandler> handlerMap = handlerMapOptional.get();
@@ -50,8 +49,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
                         return handlerMap.get(dataContext.getDefaultSchema());
                     });
             if (schemaHandler == null) {
-                receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
-                return;
+                return receiver.sendError(new MycatException("Unable to route:" + sqlStatement));
             }
         }
         String defaultTargetName = schemaHandler.defaultTargetName();
@@ -59,22 +57,20 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         TableHandler tableHandler = tableMap.get(tableName);
         ///////////////////////////////common///////////////////////////////
         if (tableHandler == null) {
-            receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
-            return;
+            return receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
         }
         switch (tableHandler.getType()) {
             case NORMAL:
                 HackRouter hackRouter = new HackRouter(sqlStatement, dataContext);
                 if(hackRouter.analyse()){
                     Pair<String, String> plan = hackRouter.getPlan();
-                    receiver.proxyUpdate(plan.getKey(),plan.getValue());
-                    return;
+                    return receiver.proxyUpdate(plan.getKey(),plan.getValue());
                 }
                 break;
             default:
                 break;
         }
         DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-        drdsRunner.runOnDrds(dataContext,sqlStatement,receiver);
+        return drdsRunner.runOnDrds(dataContext,sqlStatement,receiver);
     }
 }

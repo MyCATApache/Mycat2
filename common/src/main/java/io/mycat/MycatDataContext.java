@@ -4,8 +4,6 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.sqlrecorder.SqlRecord;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,15 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public interface MycatDataContext extends Wrapper, SessionOpt {
     static final Logger LOGGER = LoggerFactory.getLogger(MycatDataContext.class);
     long getSessionId();
-
+    @Override
     TransactionType transactionType();
-
+    @Override
     TransactionSession getTransactionSession();
-
-    Observable<Runnable> getObservable();
-
-    ObservableEmitter<Runnable> getEmitter();
-
+    @Override
     void setTransactionSession(TransactionSession transactionSession);
 
     void switchTransaction(TransactionType transactionSessionType);

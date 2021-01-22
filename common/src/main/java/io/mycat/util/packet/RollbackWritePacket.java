@@ -1,8 +1,8 @@
 package io.mycat.util.packet;
 
-public abstract class RollbackWritePacket extends AbstractSocketWritePacket {
+public abstract class RollbackWritePacket extends AbstractWritePacket {
     @Override
-    public Class<? extends AbstractSocketWritePacket> javaClass() {
+    public Class<? extends AbstractWritePacket> javaClass() {
         return RollbackWritePacket.class;
     }
 }

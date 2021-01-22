@@ -29,10 +29,12 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +68,8 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         }
     }
 
-    public void writeToMycatSession(MycatResponse response) {
+    @Override
+    public PromiseInternal<Void> writeToMycatSession(MycatResponse response) {
         TransactionSession transactionSession = session.getDataContext().getTransactionSession();
         boolean moreResultSet = !(this.count == 1);
         try{
@@ -74,18 +77,15 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                 switch (mycatResponse.getType()) {
                     case RRESULTSET: {
                         RowIterable rowIterable = (RowIterable) mycatResponse;
-                        sendResultSet(moreResultSet, rowIterable.get());
-                        return;
+                        return sendResultSet(moreResultSet, rowIterable.get());
                     }
                     case UPDATEOK: {
                         transactionSession.closeStatenmentState();
-                        session.writeOk(moreResultSet);
-                        return;
+                        return session.writeOk(moreResultSet);
                     }
                     case ERROR: {
                         transactionSession.closeStatenmentState();
-                        session.writeErrorEndPacketBySyncInProcessError();
-                        return;
+                        return session.writeErrorEndPacketBySyncInProcessError();
                     }
                     case PROXY: {
                         MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
@@ -94,10 +94,9 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
                             if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
                                 transactionSession.closeStatenmentState();
-                                MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
+                                return MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
                                         MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
                                         session.getIsolation());
-                                return;
                             }
                         }
 
@@ -106,23 +105,20 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             case QUERY:
                             case QUERY_MASTER:
                                 RowBaseIterator rowBaseIterator = connection.executeQuery(null, proxyResponse.getSql());
-                                sendResultSet(moreResultSet, rowBaseIterator);
-                                return;
+                                return sendResultSet(moreResultSet, rowBaseIterator);
                             case INSERT: {
                                 long[] res = connection.executeUpdate(proxyResponse.getSql(), true);
                                 session.setAffectedRows(res[0]);
                                 session.setLastInsertId(res[1]);
                                 transactionSession.closeStatenmentState();
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             case UPDATE: {
                                 long[] res = connection.executeUpdate(proxyResponse.getSql(), false);
                                 session.setAffectedRows(res[0]);
                                 session.setLastInsertId(res[1]);
                                 transactionSession.closeStatenmentState();
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             default:
                                 throw new IllegalStateException("Unexpected value: " + proxyResponse.getExecuteType());
@@ -135,26 +131,25 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             case PROXY_TRANSACTION_TYPE:
                                 if (moreResultSet) {
                                     session.setLastMessage("unsupported mixed rollback");
-                                    session.writeErrorEndPacketBySyncInProcessError();
-                                    return;
+                                    return session.writeErrorEndPacketBySyncInProcessError();
                                 }
                                 transactionSession.commit();
                                 transactionSession.closeStatenmentState();
                                 if (!session.isBindMySQLSession()) {
                                     LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
-                                    session.writeOk(false);
-                                    return;
+                                    return session.writeOk(false);
                                 } else {
-                                    receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
-                                    LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
-                                    return;
+                                    try {
+                                        return receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "COMMIT");
+                                    }finally {
+                                        LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
+                                    }
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.commit();
                                 transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             default:
                                 throw new IllegalStateException("Unexpected value: " + transactionType);
@@ -168,26 +163,28 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             case PROXY_TRANSACTION_TYPE:
                                 if (moreResultSet) {
                                     session.setLastMessage("unsupported mixed rollback");
-                                    session.writeErrorEndPacketBySyncInProcessError();
-                                    return;
+                                    return session.writeErrorEndPacketBySyncInProcessError();
                                 }
                                 transactionSession.rollback();
                                 transactionSession.closeStatenmentState();
                                 if (session.isBindMySQLSession()) {
-                                    receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
-                                    LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
-                                    return;
+                                    try {
+                                        return receiver.proxyUpdate(session.getMySQLSession().getDatasourceName(), "ROLLBACK");
+                                    }finally {
+                                        LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
+                                    }
                                 } else {
-                                    session.writeOk(false);
-                                    LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
-                                    return;
+                                    try {
+                                        return session.writeOk(false);
+                                    }finally {
+                                        LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
+                                    }
                                 }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.rollback();
                                 transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             default:
                                 throw new IllegalStateException("Unexpected value: " + transactionType);
@@ -201,15 +198,13 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                                 transactionSession.begin();
                                 transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             case JDBC_TRANSACTION_TYPE: {
                                 transactionSession.begin();
                                 transactionSession.closeStatenmentState();
                                 LOGGER.debug("session id:{} action: begin from xa", session.sessionId());
-                                session.writeOk(moreResultSet);
-                                return;
+                                return session.writeOk(moreResultSet);
                             }
                             default:
                                 throw new IllegalStateException("Unexpected value: " + transactionType);
@@ -219,14 +214,14 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         RowObservable rowObservable = (RowObservable) response;
                         ObserverWrite observerWrite = new ObserverWrite(rowObservable);
                         rowObservable.subscribe(observerWrite);
-                        break;
+                        return VertxUtil.newSuccessPromise();
                     }
                     default:
                         throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());
                 }
             } catch (Exception e) {
                 session.setLastMessage(e);
-                session.writeErrorEndPacketBySyncInProcessError();
+                return session.writeErrorEndPacketBySyncInProcessError();
             } finally {
                 this.count--;
             }
@@ -286,7 +281,8 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         }
     }
 
-    private void sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
+    private PromiseInternal<Void> sendResultSet(boolean moreResultSet, RowBaseIterator resultSet) {
+        // todo 异步未实现完全 wangzihaogithub
         MycatResultSetResponse currentResultSet;
         if (!binary) {
             if (resultSet instanceof JdbcRowBaseIterator){
@@ -311,6 +307,6 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         }
         currentResultSet.close();
         session.getDataContext().getTransactionSession().closeStatenmentState();
-        session.writeRowEndPacket(moreResultSet, false);
+        return session.writeRowEndPacket(moreResultSet, false);
     }
 }

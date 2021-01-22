@@ -8,6 +8,7 @@ import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import java.util.List;
 public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLCreateIndexStatement sqlCreateIndexStatement = request.getAst();
         SQLExprTableSource table = (SQLExprTableSource)sqlCreateIndexStatement.getTable();
         resolveSQLExprTableSource(table,dataContext);
@@ -34,7 +35,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
            createGlobalIndex(sqlCreateIndexStatement);
        }
 
-        response.sendOk();
+        return response.sendOk();
     }
 
     private void createGlobalIndex(SQLCreateIndexStatement sqlCreateIndexStatement) {

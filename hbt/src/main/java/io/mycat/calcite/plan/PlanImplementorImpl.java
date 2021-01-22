@@ -19,6 +19,7 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 
@@ -40,42 +41,40 @@ public class PlanImplementorImpl implements PlanImplementor {
     private final Response response;
 
     @Override
-    public void execute(MycatUpdateRel mycatUpdateRel) {
+    public PromiseInternal<Void>  execute(MycatUpdateRel mycatUpdateRel) {
         MycatUpdateExecutor updateExecutor;
         updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel,context,params);
 
         if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
             if (updateExecutor.isProxy()){
                 Pair<String, String> singleSql = updateExecutor.getSingleSql();
-                this.response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
-                return;
+                return this.response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
             }
         }
 
         updateExecutor.open();
-        this.response.sendOk(
+        return this.response.sendOk(
                 updateExecutor.getAffectedRow(),
                 updateExecutor.getLastInsertId()
         );
     }
 
     @Override
-    public void execute(MycatInsertRel logical) {
+    public PromiseInternal<Void>  execute(MycatInsertRel logical) {
         MycatInsertExecutor insertExecutor = MycatInsertExecutor.create(context, Objects.requireNonNull(logical), params);
         if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE){
             if(insertExecutor.isProxy()){
                 Pair<String, String> singleSql = insertExecutor.getSingleSql();
-                response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
-                return;
+                return response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
             }
         }
 
         insertExecutor.open();
-        response.sendOk(insertExecutor.getAffectedRow(),insertExecutor.getLastInsertId());
+        return response.sendOk(insertExecutor.getAffectedRow(),insertExecutor.getLastInsertId());
     }
 
     @Override
-    public void execute(Plan plan) {
+    public PromiseInternal<Void> execute(Plan plan) {
         if(context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE){
             RelNode physical = plan.getPhysical();
             if (physical instanceof MycatView){
@@ -84,13 +83,12 @@ public class PlanImplementorImpl implements PlanImplementor {
                     Map.Entry<String, SqlString> entry = expandToSql.entries().iterator().next();
                     String key = entry.getKey();
                     SqlString value = entry.getValue();
-                    response.proxySelect(context.resolveDatasourceTargetName(key),apply(value.getSql(),params));
-                    return;
+                    return response.proxySelect(context.resolveDatasourceTargetName(key),apply(value.getSql(),params));
                 }
             }
         }
         EnumeratorRowIterator enumeratorRowIterator = getEnumeratorRowIterator(plan, context, params);
-        response.sendResultSet(enumeratorRowIterator);
+        return response.sendResultSet(enumeratorRowIterator);
     }
 
 

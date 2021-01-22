@@ -210,8 +210,16 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     public void writeToChannel(SocketChannel channel) throws IOException {
         applyChannelWritingIndex();
         int oldIndex = channelWriteStartIndex();
-        if (channel.write(buffer) == -1) {
+        int remaining = buffer.remaining();
+        int write = channel.write(buffer);
+        if (write == -1) {
             throw new ClosedChannelException();
+        }
+        // 如果网卡写繁忙. 可以选择注册OP_WRITE等内核通知或自旋阻塞重试. 这里选择自旋重试.
+        int maxRetry = 20;
+        while (write == 0 && remaining > 0 && maxRetry-- != 0){
+            Thread.yield();
+            write = channel.write(buffer);
         }
         channelWriteStartIndex(buffer.position());
     }

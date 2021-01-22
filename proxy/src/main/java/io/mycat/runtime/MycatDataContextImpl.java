@@ -6,10 +6,9 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
-import io.reactivex.rxjava3.annotations.NonNull;
+import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -63,8 +62,8 @@ public class MycatDataContextImpl implements MycatDataContext {
     public static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
-    private ObservableEmitter<Runnable> emitter;
-    private volatile Observable<Runnable> observable;
+    private ObservableEmitter<AbstractWritePacket> emitter;
+    private volatile Observable<AbstractWritePacket> observable;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
@@ -85,18 +84,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public TransactionSession getTransactionSession() {
         return this.transactionSession;
-    }
-
-    @Override
-    public Observable<Runnable> getObservable() {
-        if(observable == null){
-            synchronized (this){
-                if(observable == null){
-                    observable = Observable.create(emitter -> MycatDataContextImpl.this.emitter = emitter);
-                }
-            }
-        }
-        return observable;
     }
 
     @Override
@@ -260,31 +247,31 @@ public class MycatDataContextImpl implements MycatDataContext {
     public boolean isWrapperFor(Class<?> iface) {
         return false;
     }
-
+    @Override
     public boolean isAutocommit() {
         return autoCommit == 1;
     }
-
+    @Override
     public void setAutoCommit(boolean autoCommit) {
         this.autoCommit = autoCommit ? 1 : 0;
     }
-
+    @Override
     public MySQLIsolation getIsolation() {
         return isolation;
     }
-
+    @Override
     public void setIsolation(MySQLIsolation isolation) {
         this.isolation = isolation;
     }
-
+    @Override
     public boolean isInTransaction() {
         return inTransaction;
     }
-
+    @Override
     public void setInTransaction(boolean inTransaction) {
         this.inTransaction = inTransaction;
     }
-
+    @Override
     public MycatUser getUser() {
         return user;
     }
@@ -351,7 +338,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 //        Objects.requireNonNull(connection);
 //        return connection.executeQuery(null,sql);
 //    }
-
+    @Override
     public String resolveDatasourceTargetName(String targetName) {
         return transactionSession.resolveFinalTargetName(targetName);
     }
@@ -413,7 +400,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void setServerStatus(int serverStatus) {
         this.serverStatus = serverStatus;
     }
-
+    @Override
     public void setLastInsertId(long lastInsertId) {
         this.lastInsertId = lastInsertId;
     }

@@ -19,6 +19,7 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,7 @@ public interface Session<T extends Session> extends Wrapper {
   /**
    * 把session内buffer写入通道
    */
-  void writeToChannel() throws IOException;
+  PromiseInternal<Void> writeToChannel() throws IOException;
 
   /**
    * 会话关闭时候的的动作，需要清理释放资源

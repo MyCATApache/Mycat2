@@ -6,6 +6,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 
 
 import java.sql.JDBCType;
@@ -19,7 +20,7 @@ import java.util.Arrays;
 public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 
@@ -36,6 +37,6 @@ public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesSt
         resultSetBuilder.addObjectRowPayload(Arrays.asList("Aria","YES","Crash-safe tables with MyISAM heritage"));
         resultSetBuilder.addObjectRowPayload(Arrays.asList("PERFORMANCE_SCHEMA","YES","Performance Schema"));
 
-        response.sendResultSet(()->resultSetBuilder.build());
+        return response.sendResultSet(()->resultSetBuilder.build());
     }
 }

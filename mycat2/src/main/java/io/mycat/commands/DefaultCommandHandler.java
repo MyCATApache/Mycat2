@@ -34,6 +34,7 @@ import io.mycat.config.UserConfig;
 import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ServerTransactionSessionRunner;
+import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
@@ -57,7 +58,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
     //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
-    Disposable disposable;
 
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
@@ -73,7 +73,6 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (userInfo != null) {
             session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
         }
-        disposable = subscribe(session.getDataContext().getObservable());
     }
 
 
@@ -311,12 +310,12 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         }
         preparedStatement.setBindValues(values);
     }
-    private Disposable subscribe(Observable<Runnable> observable) {
+    private Disposable subscribe(Observable<AbstractWritePacket> observable) {
         Disposable disposable = observable.subscribe(
                 // 收到数据
-                new Consumer<Runnable>() {
+                new Consumer<AbstractWritePacket>() {
                     @Override
-                    public void accept(Runnable runnable) throws Throwable {
+                    public void accept(AbstractWritePacket runnable) throws Throwable {
                         runnable.run();
                     }
                 }, new Consumer<Throwable>() {
