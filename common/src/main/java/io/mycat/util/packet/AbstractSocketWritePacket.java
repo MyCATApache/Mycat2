@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * @author wangzihaogithub 2021-01-21
  */
 public abstract class AbstractSocketWritePacket implements Runnable{
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(javaClass());
 
     @Override
     public final void run() {
@@ -23,13 +23,14 @@ public abstract class AbstractSocketWritePacket implements Runnable{
         writeToSocket();
         writeAfter();
     }
+    public abstract Class<? extends AbstractSocketWritePacket> javaClass();
 
     public void writeBefore(){
-        logger.debug("writeBefore");
+        logger.debug("writeBefore {}",getClass());
     }
 
     public void writeAfter(){
-        logger.debug("writeAfter");
+        logger.debug("writeAfter {}",getClass());
     }
 
     public abstract void writeToSocket();
