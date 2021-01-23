@@ -167,7 +167,7 @@ abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends C
     cmd.resultHandler().addProperty(MySQLClient.LAST_INSERTED_ID, lastInsertId);
     Collector<Row, ?, T> collector = cmd.collector();
     if(collector instanceof StreamMysqlCollector){
-      ((StreamMysqlCollector) collector).onFinish(serverStatusFlags, affectedRows, lastInsertId);
+      ((StreamMysqlCollector) collector).onFinish(sequenceId,serverStatusFlags, affectedRows, lastInsertId);
     }
   }
 

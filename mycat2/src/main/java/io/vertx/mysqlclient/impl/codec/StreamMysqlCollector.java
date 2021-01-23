@@ -20,7 +20,7 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     void onRow(Row row);
 
-    void onFinish(int serverStatusFlags,long affectedRows, long lastInsertId);
+    void onFinish(int sequenceId,int serverStatusFlags,long affectedRows, long lastInsertId);
 
     @Override
     default Supplier<Void> supplier() {
