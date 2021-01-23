@@ -71,8 +71,17 @@ public abstract class VertxResponse implements Response {
     @Override
     public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
         // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
+        return getPromiseInternal(new IterableTask(rowIterable) {
+            @Override
+            public void onCloseResource() {
+                dataContext.getTransactionSession().closeStatenmentState();
+            }
+        });
+    }
+
+    protected PromiseInternal getPromiseInternal(IterableTask iterableTask) {
+        RowBaseIterator resultSet = iterableTask.rowIterable.get();
         ++count;
-        RowBaseIterator resultSet = rowIterable.get();
         boolean moreResultSet = count < size;
         MycatResultSetResponse currentResultSet;
         if (!binary) {
@@ -97,8 +106,10 @@ public abstract class VertxResponse implements Response {
             session.writeBytes(row, false);
         }
         currentResultSet.close();
-        session.getDataContext().getTransactionSession().closeStatenmentState();
-        return session.writeRowEndPacket(moreResultSet, false);
+        iterableTask.onCloseResource();
+        PromiseInternal promiseInternal = session.writeRowEndPacket(moreResultSet, false);
+        iterableTask.onCloseResource();
+        return promiseInternal;
     }
 
     @Override
@@ -151,7 +162,7 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public PromiseInternal<Void>  sendOk() {
+    public PromiseInternal<Void> sendOk() {
         count++;
         MycatDataContext dataContext = session.getDataContext();
         dataContext.getTransactionSession().closeStatenmentState();
@@ -166,29 +177,48 @@ public abstract class VertxResponse implements Response {
     @Override
     public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
         count++;
-        rowIterable.subscribe(new ObserverWrite(rowIterable));
-        return VertxUtil.newSuccessPromise();
+        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
+        rowIterable.subscribe(new ObserverWrite(new ObserverTask(rowIterable) {
+            @Override
+            public void onCloseResource() {
+                dataContext.getTransactionSession().closeStatenmentState();
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                promise.fail(throwable);
+            }
+
+            @Override
+            public void onComplete() {
+                promise.complete();
+            }
+        }));
+        return promise;
     }
 
-    private class ObserverWrite implements Observer<Object[]> {
+
+    public class ObserverWrite implements Observer<Object[]> {
         private final RowObservable rowIterable;
+        private ObserverTask observerTask;
         boolean moreResultSet;
         Function<Object[], byte[]> convertor;
         Disposable disposable;
 
-        public ObserverWrite(RowObservable rowIterable) {
-            this.rowIterable = rowIterable;
+        public ObserverWrite(ObserverTask observerTask) {
+            this.rowIterable = observerTask.rowIterable;
+            this.observerTask = observerTask;
         }
 
         @Override
         public void onSubscribe(@NonNull Disposable d) {
             this.disposable = d;
             MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-            this. moreResultSet = count < size;
+            this.moreResultSet = count < size;
             session.writeColumnCount(rowMetaData.getColumnCount());
-            if(!binary){
+            if (!binary) {
                 this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-            }else {
+            } else {
                 this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
             }
             Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
@@ -200,21 +230,49 @@ public abstract class VertxResponse implements Response {
 
         @Override
         public void onNext(Object @NonNull [] objects) {
-            session.writeBytes(this.convertor.apply(objects), false);;
+            session.writeBytes(this.convertor.apply(objects), false);
+            ;
         }
 
         @Override
         public void onError(@NonNull Throwable e) {
             session.getDataContext().getTransactionSession().closeStatenmentState();
             disposable.dispose();
-            sendError(e);
+            this.observerTask.onCloseResource();
+            this.observerTask.onError(e);
         }
 
         @Override
         public void onComplete() {
-            session.getDataContext().getTransactionSession().closeStatenmentState();
             disposable.dispose();
+            this.observerTask.onCloseResource();
             session.writeRowEndPacket(moreResultSet, false);
+            this.observerTask.onComplete();
         }
+
+    }
+
+    public static abstract class ObserverTask {
+        private final RowObservable rowIterable;
+
+        public ObserverTask(RowObservable rowIterable) {
+            this.rowIterable = rowIterable;
+        }
+
+        public abstract void onCloseResource();
+
+        public abstract void onError(Throwable throwable);
+
+        public abstract void onComplete();
+    }
+
+    public static abstract class IterableTask {
+        private final RowIterable rowIterable;
+
+        public IterableTask(RowIterable rowIterable) {
+            this.rowIterable = rowIterable;
+        }
+
+        public abstract void onCloseResource();
     }
 }

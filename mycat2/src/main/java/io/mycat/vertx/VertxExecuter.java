@@ -251,7 +251,7 @@ public class VertxExecuter {
         };
     }
 
-    public static Future<long[]> runUpdate(String sql, Future<SqlConnection> sqlConnectionFuture) {
+    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture,String sql ) {
         return sqlConnectionFuture.flatMap(c -> c.query(sql).execute().map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
     }
 
