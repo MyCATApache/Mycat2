@@ -39,12 +39,15 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.JDBCType;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -86,12 +89,15 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             }
             NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
             mycatServer.getServerTransactionSessionRunner().run(session,
-                    () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
-                            (size) -> {
-                                return new ReceiverImpl(session, size, false);
-                            }));
-
-            return;
+                    () -> {
+                        PromiseInternal<Collection<AsyncResult<Void>>> promise =
+                                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+                                (size) -> new ReceiverImpl(session, size, false));
+                        promise.onFailure(o->{
+                            session.setLastMessage(o);
+                            session.writeErrorEndPacketBySyncInProcessError();
+                        });
+                    });
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
