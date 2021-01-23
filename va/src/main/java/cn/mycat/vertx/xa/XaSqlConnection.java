@@ -19,6 +19,7 @@ package cn.mycat.vertx.xa;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.function.Supplier;
@@ -36,37 +37,77 @@ public interface XaSqlConnection {
     public void begin(Handler<AsyncResult<Void>> handler);
 
 
+    default public Future<Void> begin() {
+        Promise<Void> promise = Promise.promise();
+        begin(promise);
+        return promise.future();
+    }
+
     public Future<SqlConnection> getConnection(String targetName);
 
     public void rollback(Handler<AsyncResult<Void>> handler);
 
+    default public Future<Void> rollback() {
+        Promise<Void> promise = Promise.promise();
+        rollback(promise);
+        return promise.future();
+    }
+
     public void commit(Handler<AsyncResult<Void>> handler);
 
-    /**inner interface
+    default public Future<Void> commit() {
+        Promise<Void> promise = Promise.promise();
+        commit(promise);
+        return promise.future();
+    }
+
+    /**
+     * inner interface
+     *
      * @param beforeCommit for the native connection commit or some exception test
-     * @param handler the callback handler
+     * @param handler      the callback handler
      */
     public void commitXa(Supplier<Future> beforeCommit, Handler<AsyncResult<Void>> handler);
 
-    public default void close() {
-        close(event -> {
-
-        });
+    public default Future<Void> commitXa(Supplier<Future> beforeCommit) {
+        Promise<Void> promise = Promise.promise();
+        commitXa(beforeCommit, promise);
+        return promise.future();
     }
 
     public void close(Handler<AsyncResult<Void>> handler);
 
+    default public Future<Void> close() {
+        Promise<Void> promise = Promise.promise();
+        close(promise);
+        return promise.future();
+    }
+
     /**
      * a sql runs before call it;
+     *
      * @param handler the callbackhandler
      */
     public void openStatementState(Handler<AsyncResult<Void>> handler);
 
+    default public Future<Void> openStatementState() {
+        Promise<Void> promise = Promise.promise();
+        openStatementState(promise);
+        return promise.future();
+    }
+
     /**
      * a sql runs after call it;
+     *
      * @param handler the callback handler
      */
     public void closeStatementState(Handler<AsyncResult<Void>> handler);
+
+    default public Future<Void> closeStatementState() {
+        Promise<Void> promise = Promise.promise();
+        closeStatementState(promise);
+        return promise.future();
+    }
 
     public void setAutocommit(boolean b);
 
