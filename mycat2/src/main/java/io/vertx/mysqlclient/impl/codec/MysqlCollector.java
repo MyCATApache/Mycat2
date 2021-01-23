@@ -4,6 +4,7 @@ import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.impl.RowSetCollector;
+import io.vertx.sqlclient.impl.command.QueryCommandBase;
 
 import java.util.Collections;
 import java.util.Set;
@@ -29,7 +30,7 @@ public interface MysqlCollector<LIST> extends Collector<io.vertx.sqlclient.Row, 
      * @param columnDefinitions 列定义
      * @return 列定义信息到达后， 需要返回row解析器
      */
-    default void onColumnDefinitions(MySQLRowDesc columnDefinitions) {
+    default void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
     }
 
     @Override
