@@ -11,8 +11,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class RowSetCollector<ELEMENT> implements MysqlCollector<RowSet<ELEMENT>,ELEMENT> {
-    private final Collector<Row, RowSet<ELEMENT>, ELEMENT> collector;
+public class RowSetCollector<ELEMENT> implements MysqlCollector<RowSet<ELEMENT>> {
+    private final Collector<Row, RowSet<ELEMENT>, RowSet<ELEMENT>> collector;
 
     public RowSetCollector(Function<Row, ELEMENT> mapper) {
         if(mapper == null){
@@ -38,7 +38,7 @@ public class RowSetCollector<ELEMENT> implements MysqlCollector<RowSet<ELEMENT>,
     }
 
     @Override
-    public Function<RowSet<ELEMENT>, ELEMENT> finisher() {
+    public Function<RowSet<ELEMENT>, RowSet<ELEMENT>> finisher() {
         return collector.finisher();
     }
 
