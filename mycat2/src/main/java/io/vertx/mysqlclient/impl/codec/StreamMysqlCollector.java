@@ -19,6 +19,8 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     void onRow(Row row);
 
+    void onFinish();
+
     @Override
     default Supplier<Void> supplier() {
         return ()-> null;
@@ -36,7 +38,10 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     @Override
     default Function<Void, Void> finisher() {
-        return o -> o;
+        return o -> {
+            onFinish();
+            return o;
+        };
     }
 
 }
