@@ -166,7 +166,6 @@ public enum MycatdbCommand {
                 promiseInternal.onComplete(o-> promise.tryComplete(Collections.singletonList(o)));
                 return promise;
             }
-            response.sendError(e);
             promise.tryFail(e);
             return promise;
         }
