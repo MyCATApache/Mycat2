@@ -325,13 +325,17 @@ public class VertxMySQLHandler {
                     assert false;
                 }
             }
+            promise.onComplete(o->{
+                if(o.failed()){
+                    mycatDataContext.setLastMessage(o.cause());
+                    this.session.writeErrorEndPacketBySyncInProcessError(0);
+                }
+                checkPendingMessages();
+            });
         } catch (Throwable throwable) {
             mycatDataContext.setLastMessage(throwable);
-            promise = this.session.writeErrorEndPacketBySyncInProcessError(0);
+            this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
-        promise.onComplete(o->{
-            checkPendingMessages();
-        });
     }
 
     private Disposable subscribe(Observable<AbstractWritePacket> observable){

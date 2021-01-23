@@ -145,12 +145,14 @@ public enum MycatdbCommand {
                     PromiseInternal<Void> execute = execute(dataContext, response, sqlStatement);
                     execute.onComplete(e->{
                         resultList.add(e);
-                        if(resultList.size() == totalCount){
+                        if(e.failed()){
+                            promise.tryFail(e.cause());
+                        }else if(resultList.size() == totalCount){
                             promise.tryComplete(resultList);
                         }
                     });
                 }catch (Exception e){
-                    resultList.add(VertxUtil.newFailResult(e));
+                    promise.tryFail(e);
                 }
             }
             if(resultList.size() == totalCount){
@@ -165,7 +167,7 @@ public enum MycatdbCommand {
                 return promise;
             }
             response.sendError(e);
-            promise.tryComplete(Collections.singletonList(VertxUtil.newFailResult(e)));
+            promise.tryFail(e);
             return promise;
         }
     }
