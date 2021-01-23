@@ -2,6 +2,7 @@ package io.vertx.mysqlclient.impl.codec;
 
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.impl.command.QueryCommandBase;
 
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -15,9 +16,11 @@ import java.util.function.Supplier;
 public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     @Override
-    void onColumnDefinitions(MySQLRowDesc columnDefinitions);
+    void onColumnDefinitions(MySQLRowDesc columnDefinitions,QueryCommandBase queryCommand);
 
     void onRow(Row row);
+
+    void onFinish(int sequenceId,int serverStatusFlags,long affectedRows, long lastInsertId);
 
     @Override
     default Supplier<Void> supplier() {

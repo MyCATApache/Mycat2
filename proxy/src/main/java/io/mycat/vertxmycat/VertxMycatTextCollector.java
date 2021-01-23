@@ -99,6 +99,11 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
 
     @Override
     public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
+        ByteBuf payload = Buffer.buffer(mySQLPacket.getBytes(startPos, endPos)).getByteBuf();
+        payload.skipBytes(1); // skip OK packet header
+        this.affectedRows = BufferUtils.readLengthEncodedInteger(payload);
+        this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
+        this.serverStatusFlags = payload.readUnsignedShortLE();
         this.res = collector.finisher().apply(c);
     }
 
