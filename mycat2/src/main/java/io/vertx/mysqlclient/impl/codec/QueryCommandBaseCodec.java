@@ -96,7 +96,7 @@ abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends C
     Collector<Row, ?, T> collector = cmd.collector();
     MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(columnDefinitions, format);
     if(collector instanceof MysqlCollector){
-      ((MysqlCollector) collector).onColumnDefinitions(mySQLRowDesc);
+      ((MysqlCollector) collector).onColumnDefinitions(mySQLRowDesc,cmd);
     }
     decoder = new RowResultDecoder<>(collector, /*cmd.isSingleton()*/ mySQLRowDesc);
   }
@@ -165,6 +165,10 @@ abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends C
     }
     cmd.resultHandler().handleResult((int) affectedRows, size, rowDesc, result, failure);
     cmd.resultHandler().addProperty(MySQLClient.LAST_INSERTED_ID, lastInsertId);
+    Collector<Row, ?, T> collector = cmd.collector();
+    if(collector instanceof StreamMysqlCollector){
+      ((StreamMysqlCollector) collector).onFinish(serverStatusFlags, affectedRows, lastInsertId);
+    }
   }
 
   protected void handleAllResultsetDecodingCompleted() {
