@@ -16,8 +16,8 @@
  */
 package org.apache.calcite.runtime;
 
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.MycatContext;
 import org.apache.calcite.linq4j.Enumerable;
 
 /**
@@ -43,4 +43,8 @@ public interface Bindable<T> {
     }
 
     Enumerable<T> bind(NewMycatDataContext dataContext);
+
+    default Observable<T> bindObservable(NewMycatDataContext dataContext) {
+        return null;
+    }
 }
