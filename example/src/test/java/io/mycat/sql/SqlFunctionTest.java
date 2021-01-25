@@ -295,7 +295,7 @@ public class SqlFunctionTest implements MycatTest {
                         DB1));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        DB1));
+                        DB2));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",
