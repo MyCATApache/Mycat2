@@ -15,18 +15,14 @@ import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.CodeExecuterContext;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
     private XaSqlConnection xaSqlConnection;
@@ -46,13 +42,14 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         PromiseInternal<Void> promise = VertxUtil.newPromise();
         Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel, params);
         future.onComplete(event -> {
+            PromiseInternal<Void> voidPromiseInternal;
             if (event.succeeded()) {
                 long[] result = event.result();
-                response.sendOk(result[0], result[1]).handle(promise);
+                voidPromiseInternal = response.sendOk(result[0], result[1]);
             } else {
-
-                response.sendError(event.cause()).handle(promise);
+                voidPromiseInternal = response.sendError(event.cause());
             }
+            voidPromiseInternal.future().onComplete(event1 -> promise.handle(event1));
         });
         return promise;
     }
@@ -64,10 +61,10 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
-                response.sendOk(result[0], result[1]).handle(promise);
+                response.sendOk(result[0], result[1]).future().onComplete(promise);
             } else {
 
-                response.sendError(event.cause()).handle(promise);
+                response.sendError(event.cause()).future().onComplete(promise);
             }
         });
         return promise;
@@ -100,6 +97,6 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 return calciteRowMetaData;
             }
         };
-       return response.sendResultSet(rowObservable);
+        return response.sendResultSet(rowObservable);
     }
 }
