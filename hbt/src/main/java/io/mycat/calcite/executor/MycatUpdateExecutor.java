@@ -1,13 +1,11 @@
 package io.mycat.calcite.executor;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
@@ -117,7 +115,7 @@ public class MycatUpdateExecutor implements Executor {
         for (SQL sql : reallySqlSet) {
             String k = context.resolveDatasourceTargetName(sql.getTarget());
             if (uniqueValues.add(k)) {
-                if (connections.put(sql.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(sql.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }

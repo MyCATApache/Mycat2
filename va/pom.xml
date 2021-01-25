@@ -54,11 +54,10 @@
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.22</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>4.0.0</version>
+            <groupId>io.mycat</groupId>
+            <artifactId>vertx</artifactId>
+            <version>1.14-release</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>

@@ -1,5 +1,12 @@
 package io.mycat.config;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.SimpleConfig;
+import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.impl.MySQLManagerImpl;
+import cn.mycat.vertx.xa.impl.XaLogImpl;
+import com.mysql.cj.conf.ConnectionUrlParser;
+import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -10,8 +17,7 @@ import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mycat.config.UpdateType.*;
@@ -30,6 +36,8 @@ public class ConfigPrepareExecuter {
 
     private String datasourceProvider;
     private SqlResultSetService sqlResultSetService;
+    private MySQLManagerImpl mySQLManager;
+    private XaLog xaLog;
 //    UpdateType updateType = UpdateType.FULL;
 
 
@@ -185,6 +193,26 @@ public class ConfigPrepareExecuter {
             this.sqlResultSetService.addIfNotPresent(sqlCacheConfig);
         }
 
+        
+        ////////////////////////////////////////////////////////
+
+        List<SimpleConfig> configList = new ArrayList<>();
+        for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
+            DatasourceConfig.DatasourceType datasourceType = datasource.computeType();
+                    ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
+                    HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+                    String name = datasource.getName();
+                    String host = hostInfo.getHost();
+                    int port = hostInfo.getPort();
+                    String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
+                    String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
+                    String database = hostInfo.getDatabase();
+                    int maxSize = datasource.getMaxCon();
+                    SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
+                    configList.add(simpleConfig);
+            }
+        this. mySQLManager = new MySQLManagerImpl(configList);
+        this. xaLog = XaLogImpl.createDemoRepository(mySQLManager);
     }
 
     private void clearSqlCache() {
@@ -281,6 +309,8 @@ public class ConfigPrepareExecuter {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
         PlanCache.INSTANCE.clear();
+        context.put(XaLog.class,xaLog);
+        context.put(MySQLManager.class,mySQLManager);
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }

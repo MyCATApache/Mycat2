@@ -340,7 +340,6 @@ public class MycatCalc extends Calc implements MycatRel {
                     implementor.getAllCorrelateVariablesFunction(), implementor.getConformance());
         }
         {
-            final BlockBuilder builder3 = new BlockBuilder();
             final SqlConformance conformance =
                     (SqlConformance) implementor.map.getOrDefault("_conformance",
                             SqlConformanceEnum.DEFAULT);
@@ -349,7 +348,7 @@ public class MycatCalc extends Calc implements MycatRel {
                             program,
                             typeFactory,
                             conformance,
-                            builder3,
+                            builder,
                             physType,
                             DataContext.ROOT,
                             new RexToLixTranslator.InputGetterImpl(

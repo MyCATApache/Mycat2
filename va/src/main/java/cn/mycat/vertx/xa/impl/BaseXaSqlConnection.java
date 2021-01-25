@@ -354,6 +354,11 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         }
     }
 
+    @Override
+    public String getXid() {
+        return xid;
+    }
+
     /**
      * before clear connections,it should check not be in transaction
      *

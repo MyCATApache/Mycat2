@@ -124,6 +124,11 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         }
     }
 
+    @Override
+    public String getXid() {
+        return null;
+    }
+
     private void clearConnections(Handler<AsyncResult<Void>> handler) {
         if (inTranscation) {
             executeAll(c -> {

@@ -115,4 +115,5 @@ public interface XaSqlConnection {
 
     public boolean isInTranscation();
 
+    String getXid();
 }

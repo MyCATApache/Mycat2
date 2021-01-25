@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -35,6 +36,7 @@ import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -612,8 +614,8 @@ public class DrdsRunner {
     public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>(2);
-        MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
-        ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
+        StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
+        ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementHybridRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
         if (log.isDebugEnabled()){
             log.debug("----------------------------------------code----------------------------------------");
@@ -825,11 +827,19 @@ public class DrdsRunner {
                           SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
-        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, drdsSql.getParams(), response);
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        List<Object> params = drdsSql.getParams();
+        PlanImplementor planImplementor;
+       if(transactionSession instanceof XaSqlConnection){
+           planImplementor = new ObservablePlanImplementorImpl((XaSqlConnection) transactionSession,
+                   dataContext,params, response);
+       }else {
+           planImplementor=  new PlanImplementorImpl(dataContext,params,response);
+       }
         return impl(plan, planImplementor);
     }
 
-    private PromiseInternal<Void> impl(Plan plan, PlanImplementorImpl planImplementor) {
+    private PromiseInternal<Void> impl(Plan plan, PlanImplementor planImplementor) {
         switch (plan.getType()) {
             case PHYSICAL:
                 return planImplementor.execute(plan);

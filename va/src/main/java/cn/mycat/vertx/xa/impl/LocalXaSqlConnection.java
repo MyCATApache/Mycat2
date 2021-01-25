@@ -110,7 +110,9 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             targetName = null;
             SqlConnection localSqlConnection = this.localSqlConnection;
             this.localSqlConnection = null;
-            localSqlConnection.close(event -> LocalXaSqlConnection.super.closeStatementState(handler));
+            if (localSqlConnection!=null){
+                localSqlConnection.close(event -> LocalXaSqlConnection.super.closeStatementState(handler));
+            }
             return;
         }
         super.closeStatementState(handler);

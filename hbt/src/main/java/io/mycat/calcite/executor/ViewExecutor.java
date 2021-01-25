@@ -85,7 +85,7 @@ public class ViewExecutor implements Executor {
         LinkedList<RowBaseIterator> iterators = new LinkedList<>();
         for (Map.Entry<String, SqlString> entry : expandToSql.entries()) {
             String target = transactionSession.resolveFinalTargetName(entry.getKey());
-            MycatConnection connection = transactionSession.getConnection(target);
+            MycatConnection connection = transactionSession.getJDBCConnection(target);
             long start = SqlRecord.now();
             SqlString sqlString = entry.getValue();
             try (RowBaseIterator rowIterator = executeQuery(connection.unwrap(Connection.class), connection, calciteRowMetaData, sqlString, params, new RowIteratorCloseCallback() {
