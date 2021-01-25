@@ -31,6 +31,7 @@ import io.vertx.sqlclient.SqlConnection;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -57,7 +58,11 @@ public class MySQLManagerImpl implements MySQLManager {
                 .setPassword(password);
         PoolOptions poolOptions = new PoolOptions()
                 .setMaxSize(maxSize);
-        return MySQLPool.pool(connectOptions, poolOptions);
+        Vertx owner = Optional.ofNullable(Vertx.currentContext()).map(i->i.owner()).orElse(null);
+        if (owner == null){
+            return MySQLPool.pool(connectOptions, poolOptions);
+        }
+        return MySQLPool.pool(owner,connectOptions, poolOptions);
     }
 
 

@@ -100,7 +100,7 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                             }
                         }
 
-                        MycatConnection connection = transactionSession.getConnection(proxyResponse.getTargetName());
+                        MycatConnection connection = transactionSession.getJDBCConnection(proxyResponse.getTargetName());
                         switch (proxyResponse.getExecuteType()) {
                             case QUERY:
                             case QUERY_MASTER:

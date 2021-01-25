@@ -84,4 +84,14 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
                 Collections.singletonList(Bindable.class),
                 memberDeclarations);
     }
+
+    @Override
+    public EnumerableRel.Result visitChild(EnumerableRel parent, int ordinal, EnumerableRel child, EnumerableRel.Prefer prefer) {
+        MycatRel rootRel = (MycatRel) parent;
+        MycatRel childRel = (MycatRel) child;
+        if (childRel.isSupportStream()){
+         return childRel.implementStream(this,prefer);
+        }
+        return super.visitChild(parent, ordinal, child, prefer);
+    }
 }

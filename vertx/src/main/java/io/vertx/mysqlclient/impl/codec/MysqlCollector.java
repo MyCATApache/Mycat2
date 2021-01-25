@@ -17,7 +17,7 @@ import java.util.stream.Collector;
  * @param <LIST> 集合
  * @author wangzihaogithub 2020-01-23
  */
-public interface MysqlCollector<LIST> extends Collector<Row, LIST, LIST> {
+public interface MysqlCollector<LIST> extends Collector<io.vertx.sqlclient.Row, LIST, LIST> {
     RowSetCollector<Row> ROW_COLLECTOR = new RowSetCollector<>(null);
 
     static <ELEMENT> MysqlCollector<RowSet<ELEMENT>> map(Function<Row, ELEMENT> mapper) {

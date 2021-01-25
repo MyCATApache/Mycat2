@@ -132,7 +132,7 @@ public abstract class VertxResponse implements Response {
                 break;
         }
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        MycatConnection connection = transactionSession.getConnection(target);
+        MycatConnection connection = transactionSession.getJDBCConnection(target);
         count++;
         switch (executeType) {
             case QUERY:
@@ -178,7 +178,8 @@ public abstract class VertxResponse implements Response {
     public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
         count++;
         PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
-        rowIterable.subscribe(new ObserverWrite(new ObserverTask(rowIterable) {
+        rowIterable.subscribe();
+        ObserverWrite observerWrite = new ObserverWrite(new ObserverTask(rowIterable) {
             @Override
             public void onCloseResource() {
                 dataContext.getTransactionSession().closeStatenmentState();
@@ -191,9 +192,10 @@ public abstract class VertxResponse implements Response {
 
             @Override
             public void onComplete() {
-                promise.complete();
+                promise.tryComplete();
             }
-        }));
+        });
+        rowIterable.subscribe(observerWrite);
         return promise;
     }
 

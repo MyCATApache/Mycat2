@@ -282,7 +282,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
                         }
                     }
                 }
-                promise.complete();
+                promise.tryComplete();
             } catch (Throwable throwable) {
                 promise.fail(throwable);
             }
@@ -327,7 +327,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
             @Override
             public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
                                    Object attr) {
-                promise.complete();
+                promise.tryComplete();
             }
 
             @Override

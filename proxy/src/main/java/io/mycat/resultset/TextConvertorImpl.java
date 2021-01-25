@@ -14,6 +14,8 @@
  */
 package io.mycat.resultset;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.Duration;
@@ -117,6 +119,11 @@ public enum TextConvertorImpl implements TextConvertor {
 
     @Override
     public byte[] convertDuration(Duration duration) {
+        return getBytes(duration);
+    }
+
+    @NotNull
+    public static byte[] getBytes(Duration duration) {
         long seconds = duration.getSeconds();
         int SECONDS_PER_HOUR = 60*60;
         int SECONDS_PER_MINUTE = 60;
@@ -132,6 +139,11 @@ public enum TextConvertorImpl implements TextConvertor {
 
     @Override
     public byte[] convertTime(LocalTime localTime) {
+        return getBytes(localTime);
+    }
+
+    @NotNull
+    public static byte[] getBytes(LocalTime localTime) {
         int hour = localTime.getHour();
         int minute = localTime.getMinute();
         int second = localTime.getSecond();
@@ -149,6 +161,11 @@ public enum TextConvertorImpl implements TextConvertor {
 
     @Override
     public byte[] convertTimeStamp(LocalDateTime value) {
+        return getBytes(value);
+    }
+
+    @NotNull
+    public static byte[] getBytes(LocalDateTime value) {
         int year = value.getYear();
         int monthValue = value.getMonthValue();
         int dayOfMonth = value.getDayOfMonth();

@@ -18,15 +18,13 @@ import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 
 public class MycatMysqlResponse extends VertxResponse {
-    final MycatMysqlSession mycatMysqlSession;
     private final XaSqlConnection xAConnection;
 
-    public MycatMysqlResponse(VertxSession session,
+    public MycatMysqlResponse(
                               int size,
                               boolean binary,
                               MycatMysqlSession mycatMysqlSession) {
-        super(session, size, binary);
-        this.mycatMysqlSession = mycatMysqlSession;
+        super(mycatMysqlSession, size, binary);
         this.xAConnection = mycatMysqlSession.getXaConnection();
     }
 
@@ -151,10 +149,10 @@ public class MycatMysqlResponse extends VertxResponse {
 
             @Override
             public void onComplete() {
-                promise.complete();
+                promise.tryComplete();
             }
         }));
-        return VertxUtil.newSuccessPromise();
+        return promise;
     }
 
     @Override

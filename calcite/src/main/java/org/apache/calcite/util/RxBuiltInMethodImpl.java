@@ -10,23 +10,22 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Predicate1;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class RxBuiltInMethodImpl {
 
-    public static   Observable<Object[]> select(Observable<Object[]> input, Function1<Object[], Object[]> map) {
-        return input.map(objects -> map.invoke(objects));
+    public static   Observable<Object[]> select(Observable<Object[]> input,  org.apache.calcite.linq4j.function.Function1<Object[], Object[]> map) {
+        return input.map(objects -> map.apply(objects));
     }
 
     public static  Observable<Object[]> filter(Observable<Object[]> input, Predicate1<Object[]> filter) {
         return input.filter(objects -> filter.apply(objects));
     }
 
-    public static Observable<Object[]> calc(Observable<Object[]> input, Function1<Object[], Object[]> map) {
-        return select(input, map);
-    }
 
     public static Observable<Object[]> unionAll(List<Observable<Object[]>> inputs) {
         return inputs.stream().reduce((observable, observable2) -> observable.concatWith(observable2)).orElse(Observable.empty());
@@ -76,5 +75,8 @@ public class RxBuiltInMethodImpl {
 
     public static Observable<Object[]> asObservable(Object[][] input) {
         return Observable.fromArray(input);
+    }
+    public static Observable<Object[]> asObservable(Object[] input) {
+        return Observable.fromIterable(()->Arrays.stream(input).map(i -> (Object[]) i).iterator());
     }
 }

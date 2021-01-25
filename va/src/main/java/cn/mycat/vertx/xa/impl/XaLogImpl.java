@@ -134,7 +134,7 @@ public class XaLogImpl implements XaLog {
         }
         CompositeFuture.all(list).onComplete(unused -> {
             logCommit(entry.getXid(), unused.succeeded());
-            res.complete();
+            res.tryComplete();
         });
     }
 
@@ -161,7 +161,7 @@ public class XaLogImpl implements XaLog {
             }
             CompositeFuture.all(list).onComplete(unused -> {
                 logRollback(entry.getXid(), unused.succeeded());
-                res.complete();
+                res.tryComplete();
             });
         }
     }

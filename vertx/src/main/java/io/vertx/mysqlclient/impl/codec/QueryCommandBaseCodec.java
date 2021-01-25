@@ -30,8 +30,7 @@ import io.vertx.sqlclient.impl.command.QueryCommandBase;
 
 import java.util.stream.Collector;
 
-import static io.vertx.mysqlclient.impl.protocol.Packets.OkPacket;
-import static io.vertx.mysqlclient.impl.protocol.Packets.ServerStatusFlags;
+import static io.vertx.mysqlclient.impl.protocol.Packets.*;
 
 abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends CommandCodec<Boolean, C> {
 

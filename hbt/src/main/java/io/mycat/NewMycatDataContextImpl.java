@@ -11,7 +11,6 @@ import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -26,9 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.executeQuery;
@@ -205,7 +201,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         List<List<Object[]>> res = new ArrayList<>();
         for (Map.Entry<String, SqlString> entry : mycatView.expandToSql(forUpdate, params).entries()) {
             String target = transactionSession.resolveFinalTargetName(entry.getKey());
-            MycatConnection connection = transactionSession.getConnection(target);
+            MycatConnection connection = transactionSession.getJDBCConnection(target);
             long start = SqlRecord.now();
             SqlString sqlString = entry.getValue();
 

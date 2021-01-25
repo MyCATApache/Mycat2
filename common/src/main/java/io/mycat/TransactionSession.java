@@ -15,6 +15,8 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 
 /**
  * @author Junwen Chen
@@ -27,11 +29,11 @@ public interface TransactionSession extends Dumpable {
 
     String name();
 
-    void begin();
+    Future<Void> begin();
 
-    void commit();
+    Future<Void> commit();
 
-    void rollback();
+    Future<Void> rollback();
 
     boolean isInTransaction();
 
@@ -39,7 +41,7 @@ public interface TransactionSession extends Dumpable {
 
     void setAutocommit(boolean autocommit);
 
-    MycatConnection getConnection(String targetName);
+    public MycatConnection getJDBCConnection(String targetName);
 
     public int getServerStatus();
 
@@ -53,9 +55,9 @@ public interface TransactionSession extends Dumpable {
 
     ThreadUsageEnum getThreadUsageEnum();
 
-    void closeStatenmentState();
+    Future<Void> closeStatenmentState();
 
-    void close();
+    Future<Void> close();
 
     String resolveFinalTargetName(String targetName);
 
@@ -66,7 +68,7 @@ public interface TransactionSession extends Dumpable {
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void openStatementState();
+    public     Future<Void> openStatementState();
 
     public void addCloseResource(AutoCloseable closeable);
 

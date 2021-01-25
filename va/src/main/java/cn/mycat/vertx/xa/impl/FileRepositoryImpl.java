@@ -80,7 +80,7 @@ public class FileRepositoryImpl implements Repository {
                     } catch (Throwable e) {
 
                     } finally {
-                        event1.complete();
+                        event1.tryComplete();
                     }
                 }));
     }

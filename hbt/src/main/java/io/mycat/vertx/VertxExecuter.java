@@ -15,11 +15,15 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.mysqlclient.impl.MySQLRowDesc;
+import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
+import io.vertx.sqlclient.impl.command.QueryCommandBase;
 
 import java.io.IOException;
 import java.util.*;
@@ -129,6 +133,11 @@ public class VertxExecuter {
                             this.observer = observer;
                             query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
                                 @Override
+                                public void onStart() {
+
+                                }
+
+                                @Override
                                 public void onRow(Row row) {
                                     int size = row.size();
                                     Object[] objects = new Object[size];
@@ -161,7 +170,6 @@ public class VertxExecuter {
                     Query<RowSet<Row>> query = connection.query(sql);
                     RowObservable observable = new RowObservable() {
                         private Observer observer;
-                        private ProcessMonitor processMonitor;
                         private MycatRowMetaData metaData;
 
                         @Override
@@ -180,7 +188,14 @@ public class VertxExecuter {
                         @Override
                         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
                             this.observer = observer;
-                            this.processMonitor = new ProcessMonitor() {
+                            query.collecting(new StreamMysqlCollector(){
+
+                                @Override
+                                public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+                                    metaData = extracted(columnDefinitions.columnDescriptor());
+                                    observer.onSubscribe(Disposable.disposed());
+                                }
+
                                 @Override
                                 public void onRow(Row row) {
                                     int size = row.size();
@@ -192,16 +207,10 @@ public class VertxExecuter {
                                 }
 
                                 @Override
-                                public void onFinish() {
+                                public void onFinish(int sequenceId, int serverStatusFlags, long affectedRows, long lastInsertId) {
                                     observer.onComplete();
                                 }
-
-                                @Override
-                                public void onThrowable(Throwable throwable) {
-                                    observer.onError(throwable);
-                                }
-                            };
-                            query.collecting(ProcessMonitor.getCollector(this.processMonitor)).execute().onSuccess(event -> metaData = extracted(event.columnDescriptors()));
+                            }).execute();
                         }
 
                     };
@@ -300,7 +309,7 @@ public class VertxExecuter {
     }
 
     private interface ProcessMonitor {
-
+        public void onStart();
         public void onRow(Row row);
 
         public void onFinish();
@@ -311,7 +320,10 @@ public class VertxExecuter {
             return new Collector<Row, Void, ProcessMonitor>() {
                 @Override
                 public Supplier<Void> supplier() {
-                    return () -> null;
+                    return () -> {
+                        monitor.onStart();
+                        return null;
+                    };
                 }
 
                 @Override
