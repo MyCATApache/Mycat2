@@ -13,9 +13,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.util.RxBuiltInMethod;
-import org.apache.calcite.util.RxBuiltInMethodImpl;
-
-import java.lang.reflect.Type;
 
 public class MycatMatierial extends SingleRel implements MycatRel {
 
@@ -67,7 +64,7 @@ public class MycatMatierial extends SingleRel implements MycatRel {
         Expression inputObservalbe = builder.append(
                 "inputObservalbe", result.block, false);
         builder.add( Expressions.call(inputObservalbe,
-                RxBuiltInMethod.OBSERVABLE_TO_ENUMERABLE.getMethodName(),inputObservalbe));
+                RxBuiltInMethod.TO_ENUMERABLE.getMethodName(),inputObservalbe));
         return implementor.result(physType, builder.toBlock());
     }
 }

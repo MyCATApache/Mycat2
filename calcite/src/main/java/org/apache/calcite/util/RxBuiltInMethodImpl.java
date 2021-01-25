@@ -49,12 +49,15 @@ public class RxBuiltInMethodImpl {
         return input.take(limit);
     }
 
-    public static Enumerable<Object[]> observableToEnumerable(Observable<Object[]> input) {
-        return Linq4j.asEnumerable(input.blockingIterable());
+    public static Enumerable<Object[]> toEnumerable(Object input) {
+        if (input instanceof Observable){
+            return Linq4j.asEnumerable(((Observable)input).blockingIterable());
+        }
+        return (Enumerable<Object[]>) input;
     }
 
-    public static Observable<Object[]> enumerableToObservable(Enumerable<Object[]> input) {
-        return Observable.fromIterable(input);
+    public static Observable<Object[]> toObservable(Object input) {
+        return Observable.fromIterable((Enumerable)input);
     }
 
     public static <T> Observable<T> mergeSort(List<Observable<T>> inputs,

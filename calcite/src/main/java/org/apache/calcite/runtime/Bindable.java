@@ -46,7 +46,7 @@ public interface Bindable<T> {
         return null;
     }
 
-    default Observable<T> bindObservable(NewMycatDataContext dataContext) {
+    default Object bindObservable(NewMycatDataContext dataContext) {
         return null;
     }
 }

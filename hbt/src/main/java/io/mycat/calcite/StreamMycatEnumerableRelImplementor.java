@@ -60,7 +60,7 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
         memberDeclarations.add(
                 Expressions.methodDecl(
                         Modifier.PUBLIC,
-                       Observable.class,
+                       Object.class,
                         "bindObservable",
                         Expressions.list(DataContext.ROOT),
                         block));
@@ -87,11 +87,12 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
 
     @Override
     public EnumerableRel.Result visitChild(EnumerableRel parent, int ordinal, EnumerableRel child, EnumerableRel.Prefer prefer) {
-        MycatRel rootRel = (MycatRel) parent;
-        MycatRel childRel = (MycatRel) child;
-        if (childRel.isSupportStream()){
-         return childRel.implementStream(this,prefer);
-        }
+       if (child instanceof MycatRel){
+           MycatRel childRel = (MycatRel) child;
+           if (childRel.isSupportStream()){
+               return childRel.implementStream(this,prefer);
+           }
+       }
         return super.visitChild(parent, ordinal, child, prefer);
     }
 }

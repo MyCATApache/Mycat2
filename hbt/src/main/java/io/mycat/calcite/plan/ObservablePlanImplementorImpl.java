@@ -17,6 +17,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.CodeExecuterContext;
 
@@ -86,11 +87,17 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
                 ArrayBindable bindable = codeExecuterContext.getBindable();
 
-                NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, Collections.emptyList(), false);
+                NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, false);
                 newMycatDataContext.allocateResource();
-                Observable<Object[]> observable = bindable.bindObservable(newMycatDataContext);
-                List<Object[]> objects = observable.cache().toList().blockingGet();
-                Observable.fromIterable(objects).subscribe(observer);
+                Object bindObservable = bindable.bindObservable(newMycatDataContext);
+                if (bindObservable instanceof Observable){
+                    Observable<Object[]> observable = (Observable)bindObservable;
+                    List<Object[]> objects = observable.cache().toList().blockingGet();
+                    Observable.fromIterable(objects).subscribe(observer);
+                }else {
+                    Enumerable<Object[]> observable = (Enumerable)bindObservable;
+                    Observable.fromIterable(observable).subscribe(observer);
+                }
             }
 
             @Override

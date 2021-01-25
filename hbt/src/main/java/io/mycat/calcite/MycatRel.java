@@ -17,8 +17,6 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.physical.MycatMatierial;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.linq4j.Enumerable;
@@ -33,6 +31,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -117,11 +116,11 @@ public interface MycatRel extends RelNode, EnumerableRel {
     @NotNull
     public default Expression toEnumerate(Expression input) {
         if (!isSupportStream()){
-            if (input.getType() instanceof Enumerable) {
-                input = Expressions.call(RxBuiltInMethod.OBSERVABLE_TO_ENUMERABLE.method, input);
+            Type type = input.getType();
+            if (!(type instanceof Enumerable)) {
+                input = Expressions.call(RxBuiltInMethod.TO_ENUMERABLE.method, input);
             }
-            final Expression childExp = input;
-            return childExp;
+            return input;
         }else {
             return input;
         }

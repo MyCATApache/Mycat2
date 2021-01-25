@@ -17,6 +17,7 @@ package io.mycat.calcite.physical;
 
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -123,6 +124,7 @@ public class MycatUnion extends Union implements MycatRel {
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         Expression unionExp = null;
+        boolean toEnumerate = false;
         for (Ord<RelNode> ord : Ord.zip(inputs)) {
             EnumerableRel input = (EnumerableRel) ord.e;
             final Result result = implementor.visitChild(this, ord.i, input, pref);
@@ -130,12 +132,15 @@ public class MycatUnion extends Union implements MycatRel {
                     builder.append(
                             "child" + ord.i,
                             result.block);
-
+            toEnumerate |=(!(childExp.getType() instanceof Observable));
             if (unionExp == null) {
                 unionExp = childExp;
             } else {
                 unionExp =  Expressions.call(unionExp,  RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
             }
+        }
+        if (toEnumerate){
+            return implement(implementor,pref);
         }
         builder.add(unionExp);
 
