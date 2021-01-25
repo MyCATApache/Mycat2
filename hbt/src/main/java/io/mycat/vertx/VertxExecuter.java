@@ -1,6 +1,7 @@
 package io.mycat.vertx;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
+import com.mchange.util.AssertException;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.api.collector.RowBaseIterator;
@@ -55,14 +56,18 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.addAll(runInsert(map, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
+            list.addAll(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
+        }
+        if (list.isEmpty()){
+            throw new AssertException();
         }
         return CompositeFuture.all((List) list)
-                .map(r ->
-                        list.stream().map(l -> l.result())
-                                .reduce((longs, longs2) ->
-                                        new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                                .orElse(new long[2]));
+                .map(r -> {
+                    return list.stream().map(l -> l.result())
+                            .reduce((longs, longs2) ->
+                                    new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                            .orElse(new long[2]);
+                });
 
     }
 
@@ -90,11 +95,13 @@ public class VertxExecuter {
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
         return CompositeFuture.all((List) res)
-                .map(r -> updateRel.isGlobal() ? res.get(0).result() :
-                        res.stream().map(l -> l.result())
-                                .reduce((longs, longs2) ->
-                                        new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                                .orElse(new long[2]));
+                .map(r -> {
+                    return updateRel.isGlobal() ? res.get(0).result() :
+                            res.stream().map(l -> l.result())
+                                    .reduce((longs, longs2) ->
+                                            new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                                    .orElse(new long[2]);
+                });
     }
 
 

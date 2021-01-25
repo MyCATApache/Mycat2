@@ -211,12 +211,15 @@ public class ConfigPrepareExecuter {
                     SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
                     configList.add(simpleConfig);
             }
-        configList.add(new SimpleConfig("ds0", "127.0.0.1", 3306, "root", "123456",
-                "mysql", 200));
-        configList.add(new SimpleConfig("ds1", "127.0.0.1", 3307, "root", "123456",
-                "mysql", 200));
-        this. mySQLManager = new MySQLManagerImpl(configList);
-        this. xaLog = XaLogImpl.createDemoRepository(mySQLManager);
+        if (this.mySQLManager==null){
+            configList.add(new SimpleConfig("ds0", "localhost", 3306, "root", "123456",
+                    "mysql", 200));
+            configList.add(new SimpleConfig("ds1", "localhost", 3307, "root", "123456",
+                    "mysql", 200));
+            this. mySQLManager = new MySQLManagerImpl(configList);
+            this. xaLog = XaLogImpl.createDemoRepository(mySQLManager);
+        }
+
     }
 
     private void clearSqlCache() {

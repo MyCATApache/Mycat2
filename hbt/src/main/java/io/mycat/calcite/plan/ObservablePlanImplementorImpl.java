@@ -89,7 +89,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, Collections.emptyList(), false);
                 newMycatDataContext.allocateResource();
                 Observable<Object[]> observable = bindable.bindObservable(newMycatDataContext);
-                observable.subscribe(observer);
+                List<Object[]> objects = observable.cache().toList().blockingGet();
+                Observable.fromIterable(objects).subscribe(observer);
             }
 
             @Override
