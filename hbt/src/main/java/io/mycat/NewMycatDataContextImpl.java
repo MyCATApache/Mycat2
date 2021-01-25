@@ -313,4 +313,9 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         return lists;
     }
 
+    @Override
+    public List<Observable<Object[]>> getMergeObservables(RelNode node) {
+        return getObservables(node).remove();
+    }
+
 }

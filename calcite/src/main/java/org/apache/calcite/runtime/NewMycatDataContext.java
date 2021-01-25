@@ -16,9 +16,11 @@ public interface NewMycatDataContext extends DataContext {
 
     List<Enumerable<Object[]>> getEnumerables(org.apache.calcite.rel.RelNode node);
 
-    io.reactivex.rxjava3.core.Observable <Object[]> getObservable(org.apache.calcite.rel.RelNode node);
+    io.reactivex.rxjava3.core.Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode node);
 
     Queue<List<Observable<Object[]>>> getObservables(RelNode node);
+
+    List<Observable<Object[]>> getMergeObservables(RelNode node);
 
     public Object getSessionVariable(String name);
 

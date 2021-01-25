@@ -44,7 +44,7 @@ public class VertxExecuter {
         Map<SQL, Group> groupMap = insertExecutor.getGroupMap();
         HashMap<String, List<List<Object>>> map = new HashMap<>();
         Map<String, List<Map.Entry<SQL, Group>>> map1 = groupMap.entrySet().stream().collect(Collectors.groupingBy(i -> i.getKey().getTarget()));
-
+        TransactionSession transactionSession = context.getTransactionSession();
         List<Future<long[]>> list = new LinkedList<>();
         for (Map.Entry<String, List<Map.Entry<SQL, Group>>> entry : map1.entrySet()) {
             List<Map.Entry<SQL, Group>> value = entry.getValue();
@@ -55,7 +55,7 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.addAll(runInsert(map, sqlConnection.getConnection(entry.getKey())));
+            list.addAll(runInsert(map, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
         }
         return CompositeFuture.all((List) list)
                 .map(r ->
