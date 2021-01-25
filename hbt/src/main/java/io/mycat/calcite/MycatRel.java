@@ -21,12 +21,17 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMatierial;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.RxBuiltInMethod;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -107,5 +112,18 @@ public interface MycatRel extends RelNode, EnumerableRel {
 
     default boolean isSupportStream() {
         return false;
+    }
+
+    @NotNull
+    public default Expression toEnumerate(Expression input) {
+        if (!isSupportStream()){
+            if (input.getType() instanceof Enumerable) {
+                input = Expressions.call(RxBuiltInMethod.OBSERVABLE_TO_ENUMERABLE.method, input);
+            }
+            final Expression childExp = input;
+            return childExp;
+        }else {
+            return input;
+        }
     }
 }

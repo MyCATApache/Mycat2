@@ -85,9 +85,9 @@ public class MycatIntersect
             EnumerableRel input = (EnumerableRel) ord.e;
             final Result result = implementor.visitChild(this, ord.i, input, pref);
             Expression childExp =
-                    builder.append(
+                    toEnumerate(builder.append(
                             "child" + ord.i,
-                            result.block);
+                            result.block));
 
             if (intersectExp == null) {
                 intersectExp = childExp;

@@ -105,13 +105,13 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
         final Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
         final Expression leftExpression =
-                builder.append("left", leftResult.block);
+                toEnumerate(builder.append("left", leftResult.block));
         final ParameterExpression left_ =
                 Expressions.parameter(leftResult.physType.getJavaRowType(), "left");
         final Result rightResult =
                 implementor.visitChild(this, 1, (EnumerableRel) right, pref);
         final Expression rightExpression =
-                builder.append("right", rightResult.block);
+                toEnumerate(builder.append("right", rightResult.block));
         final ParameterExpression right_ =
                 Expressions.parameter(rightResult.physType.getJavaRowType(), "right");
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();

@@ -161,7 +161,7 @@ public class MycatCalc extends Calc implements MycatRel {
         Expression input =
                 EnumUtils.convert(
                         Expressions.call(
-                                inputEnumerator,
+                                toEnumerate(inputEnumerator),
                                 BuiltInMethod.ENUMERATOR_CURRENT.method),
                         inputJavaType);
         if (!input.getType().equals(inputJavaType)) {

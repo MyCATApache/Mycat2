@@ -78,15 +78,15 @@ public enum PlanCache {
 
     public void put(String sql, List<SqlTypeName> types, Plan update) {
         AtomicReference<Plan> plans = computeIfAbsent(new Key(sql,types));
-        plans.updateAndGet(plan -> {
-            if (plan == null) {
-                return update;
-            }
-            if (plan.compareTo(update) <= 0) {
-                return plan;
-            }
-            return update;
-        });
+//        plans.updateAndGet(plan -> {
+//            if (plan == null) {
+//                return update;
+//            }
+//            if (plan.compareTo(update) <= 0) {
+//                return plan;
+//            }
+//            return update;
+//        });
     }
 
     public void clear() {

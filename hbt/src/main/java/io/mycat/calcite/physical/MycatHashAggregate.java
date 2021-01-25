@@ -92,9 +92,9 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
         final EnumerableRel child = (EnumerableRel) getInput();
         final Result result = implementor.visitChild(this, 0, child, pref);
         Expression childExp =
-                builder.append(
+                toEnumerate(builder.append(
                         "child",
-                        result.block);
+                        result.block));
 
         final PhysType physType =
                 PhysTypeImpl.of(
