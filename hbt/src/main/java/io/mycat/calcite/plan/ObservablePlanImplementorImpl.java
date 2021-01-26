@@ -62,10 +62,11 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
-                response.sendOk(result[0], result[1]).future().onComplete(promise);
+                promise.tryComplete();
+                response.sendOk(result[0], result[1]);
             } else {
-
-                response.sendError(event.cause()).future().onComplete(promise);
+                promise.fail(event.cause());
+                response.sendError(event.cause());
             }
         });
         return promise;
