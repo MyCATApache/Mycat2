@@ -187,7 +187,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         }
     }
 
-    public List<String> getTargets( List<Object> params) {
+    public List<String> getTargets(List<Object> params) {
         if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
             DataNode dataNode = distribution.getDataNodes().iterator().next();
             return ImmutableList.of(dataNode.getTargetName());

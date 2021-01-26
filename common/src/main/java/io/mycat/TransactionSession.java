@@ -73,4 +73,11 @@ public interface TransactionSession extends Dumpable {
     public void addCloseResource(AutoCloseable closeable);
 
     String getTxId();
+
+   default public void bindContext(){
+
+    }
+    default public void unBindContext(){
+
+    }
 }
