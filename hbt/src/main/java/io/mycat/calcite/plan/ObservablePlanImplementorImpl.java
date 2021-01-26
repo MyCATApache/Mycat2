@@ -22,7 +22,6 @@ import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.CodeExecuterContext;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
@@ -43,14 +42,14 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         PromiseInternal<Void> promise = VertxUtil.newPromise();
         Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel, params);
         future.onComplete(event -> {
-            PromiseInternal<Void> voidPromiseInternal;
             if (event.succeeded()) {
                 long[] result = event.result();
-                voidPromiseInternal = response.sendOk(result[0], result[1]);
+                promise.tryComplete();
+                response.sendOk(result[0], result[1]);
             } else {
-                voidPromiseInternal = response.sendError(event.cause());
+                promise.fail(event.cause());
+                response.sendError(event.cause());
             }
-            voidPromiseInternal.future().onComplete(event1 -> promise.handle(event1));
         });
         return promise;
     }
@@ -91,12 +90,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, false);
                 newMycatDataContext.allocateResource();
                 Object bindObservable = bindable.bindObservable(newMycatDataContext);
-                if (bindObservable instanceof Observable){
-                    Observable<Object[]> observable = (Observable)bindObservable;
+                if (bindObservable instanceof Observable) {
+                    Observable<Object[]> observable = (Observable) bindObservable;
                     List<Object[]> objects = observable.cache().toList().blockingGet();
                     Observable.fromIterable(objects).subscribe(observer);
-                }else {
-                    Enumerable<Object[]> observable = (Enumerable)bindObservable;
+                } else {
+                    Enumerable<Object[]> observable = (Enumerable) bindObservable;
                     Observable.fromIterable(observable).subscribe(observer);
                 }
             }
