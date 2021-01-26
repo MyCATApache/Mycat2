@@ -24,9 +24,7 @@ import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.*;
@@ -42,7 +40,6 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
@@ -185,6 +182,19 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
                 SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update, params);
                 builder.put(dataNode.getTargetName(), sql);
+            }
+            return builder.build();
+        }
+    }
+
+    public List<String> getTargets( List<Object> params) {
+        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
+            DataNode dataNode = distribution.getDataNodes().iterator().next();
+            return ImmutableList.of(dataNode.getTargetName());
+        } else {
+            ImmutableList.Builder<String> builder = ImmutableList.builder();
+            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
+                builder.add(dataNode.getTargetName());
             }
             return builder.build();
         }
