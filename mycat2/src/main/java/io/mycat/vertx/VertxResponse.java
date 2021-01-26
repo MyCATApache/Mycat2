@@ -14,6 +14,9 @@ import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Iterator;
@@ -50,9 +53,14 @@ public abstract class VertxResponse implements Response {
 
     @Override
     public PromiseInternal<Void> sendError(Throwable e) {
-        dataContext.getTransactionSession().closeStatenmentState();
-        dataContext.setLastMessage(e);
-        return session.writeErrorEndPacketBySyncInProcessError();
+        PromiseInternal<Void> newPromise = VertxUtil.newPromise();
+        dataContext.getTransactionSession().closeStatenmentState()
+                .onComplete(event -> {
+                    dataContext.setLastMessage(e);
+                    newPromise.tryComplete();
+                    session.writeErrorEndPacketBySyncInProcessError();
+                });
+        return newPromise;
     }
 
     @Override
@@ -164,9 +172,14 @@ public abstract class VertxResponse implements Response {
     @Override
     public PromiseInternal<Void> sendOk() {
         count++;
+        PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         MycatDataContext dataContext = session.getDataContext();
-        dataContext.getTransactionSession().closeStatenmentState();
-        return session.writeOk(count < size);
+        dataContext.getTransactionSession().closeStatenmentState()
+        .onComplete(event -> {
+            newPromise.tryComplete();
+            session.writeOk(count < size);
+        });
+        return newPromise;
     }
 
     @Override
