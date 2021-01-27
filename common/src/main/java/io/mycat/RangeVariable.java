@@ -35,7 +35,7 @@ public class RangeVariable {
         this.value = value;
     }
 
-    public RangeVariable(String columnName, RangeVariableType range, String begin, String end) {
+    public RangeVariable(String columnName, RangeVariableType range, Object begin, Object end) {
         this.columnName = columnName;
         this.operator = range;
         assert operator == RangeVariableType.RANGE;

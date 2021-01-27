@@ -29,7 +29,7 @@ public class DataMappingEvaluator {
         getRangeVariables(columnName).add(new RangeVariable(columnName, RangeVariableType.EQUAL, value));
     }
 
-    public void assignmentRange(String columnName, String begin, String end) {
+    public void assignmentRange(String columnName, Object begin, Object end) {
         getRangeVariables(columnName).add(new RangeVariable(columnName, RangeVariableType.RANGE, begin, end));
     }
 
