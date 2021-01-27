@@ -25,7 +25,7 @@ import java.util.*;
 public class DataMappingEvaluator {
     private final Map<String, Collection<RangeVariable>> columnMap = new HashMap<>();
 
-    public void assignment(String columnName, String value) {
+    public void assignment(String columnName, Object value) {
         getRangeVariables(columnName).add(new RangeVariable(columnName, RangeVariableType.EQUAL, value));
     }
 

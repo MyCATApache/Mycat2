@@ -214,8 +214,8 @@ public class CalciteUtls {
                                 RexNode start = unCastWrapper(((RexCall) left).getOperands().get(1));
                                 RexNode end = unCastWrapper(((RexCall) right).getOperands().get(1));
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
-                                    Object startValue = Optional.ofNullable((RexLiteral) start).map(k -> k.getValue2()).orElse(null);
-                                    Object endValue = Optional.ofNullable((RexLiteral) end).map(k -> k.getValue2()).orElse(null);
+                                    Object startValue = ((RexLiteral) start).getValue2();
+                                    Object endValue = ((RexLiteral) end).getValue2();
                                     evaluator.assignmentRange(rowOrder.get(index).getColumnName(), startValue, endValue);
                                     trueList[i] = trueList[i] || true;
                                     trueList[j] = trueList[j] || true;
@@ -245,9 +245,7 @@ public class CalciteUtls {
 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
-                Object value2 = ((RexLiteral) right).getValue2();
-                String value = Optional.ofNullable(value2).map(i -> i.toString()).orElse(null);
-                evaluator.assignment(rowOrder.get(index).getColumnName(), value);
+                evaluator.assignment(rowOrder.get(index).getColumnName(),  ((RexLiteral) right).getValue2());
                 return true;
             }
         } else if (filter.isA(SqlKind.GREATER_THAN) || filter.isA(SqlKind.LESS_THAN)
@@ -263,8 +261,7 @@ public class CalciteUtls {
 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
-                Object value2 = ((RexLiteral) right).getValue2();
-                String value = Optional.ofNullable(value2).map(i -> i.toString()).orElse(null);
+                Object value = ((RexLiteral) right).getValue2();
                 String columnName = rowOrder.get(index).getColumnName();
                 if (filter.isA(SqlKind.GREATER_THAN)) {
                     evaluator.assignmentRange(columnName, value, null);
