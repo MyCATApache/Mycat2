@@ -79,7 +79,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
                 if (transactionSession.isInTransaction()) {
                     onHeap(mycatView);
                 } else {
-                    onParellel(mycatView);
+                    onHeap(mycatView);
                 }
             } else if (relNode instanceof MycatTransientSQLTableScan) {
                 allocTransientTableScan(relNode);
