@@ -76,4 +76,8 @@ public abstract class CustomRuleFunction {
     }
 
     public abstract boolean isShardingKey(String name);
+
+    public  boolean isSameDistribution(CustomRuleFunction customRuleFunction){
+        return false;
+    }
 }
