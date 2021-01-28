@@ -14,9 +14,11 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
@@ -57,4 +59,22 @@ public class PartitionDirectBySubString extends Mycat1xSingleValueRuleFunction {
     return null;
   }
 
+  @Override
+  public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+    if (customRuleFunction == null) return false;
+    if (PartitionDirectBySubString.class.isAssignableFrom(customRuleFunction.getClass())) {
+      PartitionDirectBySubString ruleFunction = (PartitionDirectBySubString) customRuleFunction;
+
+       int startIndex = ruleFunction.startIndex;
+       int size = ruleFunction.size;
+       int partitionCount = ruleFunction.partitionCount;
+       int defaultNode = ruleFunction.defaultNode;
+       return Objects.equals(this.startIndex,startIndex)&&
+               Objects.equals(this.size,size)&&
+               Objects.equals(this.partitionCount,partitionCount)&&
+               Objects.equals(this.defaultNode,defaultNode);
+
+    }
+    return false;
+  }
 }
