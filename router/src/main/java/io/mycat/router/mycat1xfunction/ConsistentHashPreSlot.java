@@ -1,5 +1,6 @@
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
@@ -88,5 +89,23 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
                 }
             }
         }
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (customRuleFunction.getClass() == ConsistentHashPreSlot.class) {
+            ConsistentHashPreSlot customRuleFunction1 = (ConsistentHashPreSlot) customRuleFunction;
+            final int DEFAULT_SLOTS_NUM = customRuleFunction1.DEFAULT_SLOTS_NUM;
+            final int[] rangeMap2 = customRuleFunction1.rangeMap2;
+            final HashFunction hashFunction = customRuleFunction1.hashFunction;
+            List<List<NodeIndexRange>> longRanges = customRuleFunction1.longRanges;
+
+            return this.DEFAULT_SLOTS_NUM == DEFAULT_SLOTS_NUM &&
+                    Arrays.equals(this.rangeMap2, rangeMap2) &&
+                    Objects.equals(this.hashFunction,hashFunction) &&
+                    Objects.equals(this.longRanges,longRanges);
+        }
+        return false;
     }
 }
