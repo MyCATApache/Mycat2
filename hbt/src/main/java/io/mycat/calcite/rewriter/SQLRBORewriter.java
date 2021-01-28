@@ -507,11 +507,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 }
             }
         }
-
-        if (Arrays.stream(leftDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet())
-                .equals(Arrays.stream(rightDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet()))) {
-            return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-        }
+//
+//        if (Arrays.stream(leftDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet())
+//                .equals(Arrays.stream(rightDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet()))) {
+//            return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+//        }
 
         return null;
     }
