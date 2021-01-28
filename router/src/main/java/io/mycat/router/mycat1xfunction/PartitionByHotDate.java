@@ -14,8 +14,9 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -29,86 +30,104 @@ import java.util.Objects;
  */
 public class PartitionByHotDate extends Mycat1xSingleValueRuleFunction {
 
-  private long lastTime;
-  private long partionTime;
-  private long beginDate;
-  private DateTimeFormatter formatter;
+    private long lastTime;
+    private long partionTime;
+    private long beginDate;
+    private DateTimeFormatter formatter;
 
-  @Override
-  public String name() {
-    return "PartitionByHotDate";
-  }
-
-  @Override
-  public int calculateIndex(String columnValue) {
-    long targetTime = formatter.parse(columnValue).get(ChronoField.DAY_OF_YEAR);
-    return innerCaculate(targetTime);
-  }
-
-  private int innerCaculate(long targetTime) {
-    int targetPartition;
-    long nowTime = LocalDate.now().getDayOfYear();
-
-    beginDate = nowTime - lastTime;
-
-    long diffDays = (nowTime - targetTime);
-    if (diffDays - lastTime <= 0 || diffDays < 0) {
-      targetPartition = 0;
-    } else {
-      targetPartition = (int) ((beginDate - targetTime) / partionTime) + 1;
+    @Override
+    public String name() {
+        return "PartitionByHotDate";
     }
-    return targetPartition;
-  }
 
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    int[] targetPartition = null;
-    long startTime = formatter.parse(beginValue).get(ChronoField.DAY_OF_YEAR);
-    long endTime = formatter.parse(endValue).get(ChronoField.DAY_OF_YEAR);
-    Calendar now = Calendar.getInstance();
-    long nowTime = now.getTimeInMillis();
+    @Override
+    public int calculateIndex(String columnValue) {
+        long targetTime = formatter.parse(columnValue).get(ChronoField.DAY_OF_YEAR);
+        return innerCaculate(targetTime);
+    }
 
-    long limitDate = nowTime - lastTime;
-    long diffDays = (nowTime - startTime);
-    if (diffDays - lastTime <= 0 || diffDays < 0) {
-      int[] re = new int[1];
-      targetPartition = re;
-    } else {
-      int[] re = null;
-      int begin = 0, end = 0;
-      end = this.calculateIndex(beginValue);
-      boolean hasLimit = false;
-      if (endTime - limitDate > 0) {
-        endTime = limitDate;
-        hasLimit = true;
-      }
-      begin = this.innerCaculate(endTime);
-      if (end >= begin) {
-        int len = end - begin + 1;
-        if (hasLimit) {
-          re = new int[len + 1];
-          re[0] = 0;
-          for (int i = 0; i < len; i++) {
-            re[i + 1] = begin + i;
-          }
+    private int innerCaculate(long targetTime) {
+        int targetPartition;
+        long nowTime = LocalDate.now().getDayOfYear();
+
+        beginDate = nowTime - lastTime;
+
+        long diffDays = (nowTime - targetTime);
+        if (diffDays - lastTime <= 0 || diffDays < 0) {
+            targetPartition = 0;
         } else {
-          re = new int[len];
-          for (int i = 0; i < len; i++) {
-            re[i] = begin + i;
-          }
+            targetPartition = (int) ((beginDate - targetTime) / partionTime) + 1;
         }
-        return re;
-      } else {
-        return re;
-      }
+        return targetPartition;
     }
-    return targetPartition;
-  }
 
-  @Override
-  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
-    this.formatter = DateTimeFormatter.ofPattern( Objects.toString(prot.get("dateFormat")));
-    this.lastTime = Integer.parseInt( Objects.toString(prot.get("lastTime")));
-    this.partionTime = Integer.parseInt( Objects.toString(prot.get("partionTime")));
-  }
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        int[] targetPartition = null;
+        long startTime = formatter.parse(beginValue).get(ChronoField.DAY_OF_YEAR);
+        long endTime = formatter.parse(endValue).get(ChronoField.DAY_OF_YEAR);
+        Calendar now = Calendar.getInstance();
+        long nowTime = now.getTimeInMillis();
+
+        long limitDate = nowTime - lastTime;
+        long diffDays = (nowTime - startTime);
+        if (diffDays - lastTime <= 0 || diffDays < 0) {
+            int[] re = new int[1];
+            targetPartition = re;
+        } else {
+            int[] re = null;
+            int begin = 0, end = 0;
+            end = this.calculateIndex(beginValue);
+            boolean hasLimit = false;
+            if (endTime - limitDate > 0) {
+                endTime = limitDate;
+                hasLimit = true;
+            }
+            begin = this.innerCaculate(endTime);
+            if (end >= begin) {
+                int len = end - begin + 1;
+                if (hasLimit) {
+                    re = new int[len + 1];
+                    re[0] = 0;
+                    for (int i = 0; i < len; i++) {
+                        re[i + 1] = begin + i;
+                    }
+                } else {
+                    re = new int[len];
+                    for (int i = 0; i < len; i++) {
+                        re[i] = begin + i;
+                    }
+                }
+                return re;
+            } else {
+                return re;
+            }
+        }
+        return targetPartition;
+    }
+
+    @Override
+    public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+        this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
+        this.lastTime = Integer.parseInt(Objects.toString(prot.get("lastTime")));
+        this.partionTime = Integer.parseInt(Objects.toString(prot.get("partionTime")));
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionByHotDate.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionByHotDate ruleFunction = (PartitionByHotDate) customRuleFunction;
+            long lastTime = ruleFunction.lastTime;
+            long partionTime = ruleFunction.partionTime;
+            long beginDate = ruleFunction.beginDate;
+            DateTimeFormatter formatter = ruleFunction.formatter;
+            return this.lastTime == lastTime &&
+                    this.partionTime == partionTime &&
+                    this.beginDate == beginDate &&
+                    Objects.equals(this.formatter, formatter);
+
+        }
+        return false;
+    }
 }
