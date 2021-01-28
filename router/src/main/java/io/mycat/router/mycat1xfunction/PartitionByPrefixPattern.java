@@ -14,6 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
@@ -64,5 +65,22 @@ public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
     return null;
   }
 
+  @Override
+  public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+    if (customRuleFunction == null) return false;
+    if (PartitionByPrefixPattern.class.isAssignableFrom(customRuleFunction.getClass())) {
+      PartitionByPrefixPattern ruleFunction = (PartitionByPrefixPattern) customRuleFunction;
 
+       int patternValue = ruleFunction.patternValue;
+       int prefixLength= ruleFunction.prefixLength;
+       List<NodeIndexRange> longRongs = ruleFunction.longRongs;
+       int nPartition = ruleFunction.nPartition;
+
+      return Objects.equals(this.patternValue, patternValue) &&
+              Objects.equals(this.prefixLength, prefixLength) &&
+              Objects.equals(this.longRongs, longRongs) &&
+              Objects.equals(this.nPartition, nPartition);
+    }
+    return false;
+  }
 }
