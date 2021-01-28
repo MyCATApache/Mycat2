@@ -178,8 +178,7 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
             case GLOBAL:
                 GlobalTableHandler globalTableHandler = (GlobalTableHandler) this.table;
                 List<DataNode> globalDataNode = globalTableHandler.getGlobalDataNode();
-                int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
-                return Distribution.of(ImmutableList.of(globalDataNode.get(i)), false, Distribution.Type.BroadCast);
+                return Distribution.of(ImmutableList.of(globalDataNode.get(0)), false, Distribution.Type.BroadCast);
             case NORMAL:
                 DataNode dataNode = ((NormalTableHandler) table).getDataNode();
                 return Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY);

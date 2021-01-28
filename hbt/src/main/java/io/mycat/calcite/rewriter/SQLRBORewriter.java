@@ -45,8 +45,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -495,15 +497,22 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
             }
         }
+        DataNode[] leftDataNodes = Iterables.toArray(ldistribution.getDataNodes(), DataNode.class);
+        DataNode[] rightDataNodes = Iterables.toArray(rdistribution.getDataNodes(), DataNode.class);
+
         if (ldistribution.isPhy() && rdistribution.isPhy()) {
-            DataNode[] leftDataNodes = Iterables.toArray(ldistribution.getDataNodes(), DataNode.class);
-            DataNode[] rightDataNodes = Iterables.toArray(rdistribution.getDataNodes(), DataNode.class);
             if (leftDataNodes.length == rightDataNodes.length) {
                 if (leftDataNodes.length == 1) {
                     return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
                 }
             }
         }
+
+        if (Arrays.stream(leftDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet())
+                .equals(Arrays.stream(rightDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet()))) {
+            return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+        }
+
         return null;
     }
 
