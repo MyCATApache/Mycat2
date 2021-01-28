@@ -138,6 +138,11 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
         return this.columnName.equals(name);
     }
 
+    @Override
+    public String getUniqueID() {
+        return defaultDataNode+tablePrefix+beginIndex+endIndex+segmentQuery;
+    }
+
     private DataNode getDataNode(String tableName) {
         return new DataNode() {
             @Override
@@ -155,5 +160,25 @@ public class MergeSubTablesFunction extends CustomRuleFunction {
                 return tableName;
             }
         };
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction==null)return false;
+        if (MergeSubTablesFunction.class.isAssignableFrom(customRuleFunction.getClass())){
+            MergeSubTablesFunction tablesFunction = (MergeSubTablesFunction)customRuleFunction;
+            DataNode defaultDataNode  = tablesFunction.defaultDataNode;
+            String tablePrefix = tablesFunction.tablePrefix;
+            int beginIndex = tablesFunction.beginIndex;
+            int endIndex = tablesFunction.endIndex;
+            boolean segmentQuery = tablesFunction.segmentQuery;
+            return Objects.equals(this.defaultDataNode,defaultDataNode)&&
+                    Objects.equals(this.tablePrefix,tablePrefix)&&
+                    Objects.equals(this.beginIndex,beginIndex)&&
+                    Objects.equals(this.endIndex,endIndex)&&
+                    Objects.equals(this.segmentQuery,segmentQuery);
+        }
+
+        return super.isSameDistribution(customRuleFunction);
     }
 }
