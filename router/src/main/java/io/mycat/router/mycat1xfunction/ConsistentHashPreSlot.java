@@ -12,9 +12,7 @@ import io.mycat.router.migrate.MigrateUtils;
 import java.util.*;
 
 /**
- *
  * jamie12221
- *
  */
 public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
 
@@ -49,18 +47,18 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
         return null;
     }
 
-    public ConsistentHashBalanceExpandResult balanceExpand(ShardingTableHandler table,List<String> oldDataNodes, List<String> newDataNodes) {
+    public ConsistentHashBalanceExpandResult balanceExpand(ShardingTableHandler table, List<String> oldDataNodes, List<String> newDataNodes) {
         List<List<NodeIndexRange>> copy = MigrateUtils.copy(longRanges);
         SortedMap<String, List<MigrateTask>> stringListSortedMap = MigrateUtils.balanceExpand(copy, oldDataNodes, newDataNodes, DEFAULT_SLOTS_NUM);
         MigrateUtils.merge(copy, stringListSortedMap);
         ConsistentHashPreSlot consistentHash = new ConsistentHashPreSlot(name, DEFAULT_SLOTS_NUM, hashFunction);
-        consistentHash.init(table,Collections.emptyMap(), (Map)NodeIndexRange.from(copy));
+        consistentHash.init(table, Collections.emptyMap(), (Map) NodeIndexRange.from(copy));
         return new ConsistentHashBalanceExpandResult(stringListSortedMap, consistentHash);
     }
 
 
     @Override
-    protected void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
+    protected void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
         this.table = table;
         this.properties = prot;
         this.ranges = ranges;
@@ -94,7 +92,7 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
     @Override
     public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
         if (customRuleFunction == null) return false;
-        if (customRuleFunction.getClass() == ConsistentHashPreSlot.class) {
+        if (ConsistentHashPreSlot.class.isAssignableFrom(customRuleFunction.getClass())) {
             ConsistentHashPreSlot customRuleFunction1 = (ConsistentHashPreSlot) customRuleFunction;
             final int DEFAULT_SLOTS_NUM = customRuleFunction1.DEFAULT_SLOTS_NUM;
             final int[] rangeMap2 = customRuleFunction1.rangeMap2;
@@ -103,8 +101,8 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
 
             return this.DEFAULT_SLOTS_NUM == DEFAULT_SLOTS_NUM &&
                     Arrays.equals(this.rangeMap2, rangeMap2) &&
-                    Objects.equals(this.hashFunction,hashFunction) &&
-                    Objects.equals(this.longRanges,longRanges);
+                    Objects.equals(this.hashFunction, hashFunction) &&
+                    Objects.equals(this.longRanges, longRanges);
         }
         return false;
     }

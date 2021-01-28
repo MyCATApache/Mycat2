@@ -70,11 +70,6 @@ public abstract class CustomRuleFunction {
         return table;
     }
 
-
-    public boolean isSameRule(CustomRuleFunction other) {
-        return false;
-    }
-
     public abstract boolean isShardingKey(String name);
 
     public  boolean isSameDistribution(CustomRuleFunction customRuleFunction){
