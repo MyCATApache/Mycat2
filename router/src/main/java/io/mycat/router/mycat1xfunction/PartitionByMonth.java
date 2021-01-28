@@ -15,6 +15,7 @@
 package io.mycat.router.mycat1xfunction;
 
 import io.mycat.MycatException;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.util.StringUtil;
@@ -145,5 +146,25 @@ public class PartitionByMonth extends Mycat1xSingleValueRuleFunction {
 
   enum Type {
     DEFAULT, UNLIMITED,
+  }
+  @Override
+  public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+    if (customRuleFunction == null) return false;
+    if (PartitionByMonth.class.isAssignableFrom(customRuleFunction.getClass())) {
+      PartitionByMonth ruleFunction = (PartitionByMonth) customRuleFunction;
+
+       int partition = ruleFunction.partition;
+       Type type = ruleFunction.type;
+       DateTimeFormatter formatter = ruleFunction.formatter;
+       LocalDate beginDate = ruleFunction.beginDate;
+       LocalDate endDate = ruleFunction.endDate;
+
+      return Objects.equals(this.partition, partition)&&
+              Objects.equals(this.type, type)&&
+              Objects.equals(this.formatter, formatter)&&
+              Objects.equals(this.beginDate, beginDate)&&
+              Objects.equals(this.endDate, endDate);
+    }
+    return false;
   }
 }
