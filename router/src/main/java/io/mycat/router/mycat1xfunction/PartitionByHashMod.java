@@ -14,6 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 
@@ -23,53 +24,65 @@ import java.util.Objects;
 
 public class PartitionByHashMod extends Mycat1xSingleValueRuleFunction {
 
-  private int count;
-  private boolean watch;
+    private int count;
+    private boolean watch;
 
-  @Override
-  public String name() {
-    return "PartitionByHashMod";
-  }
-
-  @Override
-  public int calculateIndex(String columnValue) {
-    BigInteger bigNum = BigInteger.valueOf(hash(columnValue.hashCode())).abs();
-    if (watch) {
-      return bigNum.intValue() & (count - 1);
+    @Override
+    public String name() {
+        return "PartitionByHashMod";
     }
-    return (bigNum.mod(BigInteger.valueOf(count))).intValue();
-  }
 
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    return null;
-  }
-
-
-  @Override
-  public void init(ShardingTableHandler tableHandler,Map<String, Object> prot, Map<String, Object> ranges) {
-    this.watch = false;
-    this.count = Integer.parseInt( Objects.toString(prot.get("count")));
-
-    if ((count & (count - 1)) == 0) {
-      watch = true;
+    @Override
+    public int calculateIndex(String columnValue) {
+        BigInteger bigNum = BigInteger.valueOf(hash(columnValue.hashCode())).abs();
+        if (watch) {
+            return bigNum.intValue() & (count - 1);
+        }
+        return (bigNum.mod(BigInteger.valueOf(count))).intValue();
     }
-  }
 
-  /**
-   * Using Wang/Jenkins Hash
-   *
-   * @return hash value
-   */
-  protected int hash(int key) {
-    key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-    key = key ^ (key >> 24);
-    key = (key + (key << 3)) + (key << 8); // key * 265
-    key = key ^ (key >> 14);
-    key = (key + (key << 2)) + (key << 4); // key * 21
-    key = key ^ (key >> 28);
-    key = key + (key << 31);
-    return key;
-  }
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        return null;
+    }
+
+
+    @Override
+    public void init(ShardingTableHandler tableHandler, Map<String, Object> prot, Map<String, Object> ranges) {
+        this.watch = false;
+        this.count = Integer.parseInt(Objects.toString(prot.get("count")));
+
+        if ((count & (count - 1)) == 0) {
+            watch = true;
+        }
+    }
+
+    /**
+     * Using Wang/Jenkins Hash
+     *
+     * @return hash value
+     */
+    protected int hash(int key) {
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key = key ^ (key >> 24);
+        key = (key + (key << 3)) + (key << 8); // key * 265
+        key = key ^ (key >> 14);
+        key = (key + (key << 2)) + (key << 4); // key * 21
+        key = key ^ (key >> 28);
+        key = key + (key << 31);
+        return key;
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionByHashMod.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionByHashMod partitionByHashMod = (PartitionByHashMod) customRuleFunction;
+            int count = partitionByHashMod.count;
+            boolean watch = partitionByHashMod.watch;
+            return this.count == count && this.watch == watch;
+        }
+        return false;
+    }
 
 }
