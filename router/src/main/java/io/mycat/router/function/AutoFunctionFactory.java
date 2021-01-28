@@ -525,73 +525,7 @@ public class AutoFunctionFactory {
         Set<String> keys = new HashSet<>(dbShardingKeys);
         keys.addAll(tableShardingKeys);
 
-        return new CustomRuleFunction() {
-            @Override
-            public String name() {
-                return MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3}",
-                        dbNum, tableNum, dbMethod, tableMethod);
-            }
-
-            @Override
-            public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-                return Objects.requireNonNull(function.apply(values));
-            }
-
-            @Override
-            protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
-
-            }
-
-            @Override
-            public boolean isShardingKey(String name) {
-                return keys.contains(SQLUtils.normalize(name));
-            }
-        };
-    }
-
-    @NotNull
-    private static CustomRuleFunction createDoubleFunction(List<IndexDataNode> datanodes, String dbShardingKey, Set<String> shardingKeys, ToIntFunction<Object> function) {
-        return new CustomRuleFunction() {
-            @Override
-            public String name() {
-                return null;
-            }
-
-            @Override
-            public List<DataNode> calculate(Map<String, Collection<RangeVariable>> values) {
-                for (Map.Entry<String, Collection<RangeVariable>> e : values.entrySet()) {
-                    if (SQLUtils.nameEquals(e.getKey(), dbShardingKey)) {
-                        Collection<RangeVariable> rangeVariables = e.getValue();
-                        if (rangeVariables != null && !rangeVariables.isEmpty()) {
-                            for (RangeVariable rangeVariable : rangeVariables) {
-                                switch (rangeVariable.getOperator()) {
-                                    case EQUAL:
-                                        Object value = rangeVariable.getValue();
-                                        int i = function.applyAsInt(value);
-                                        return Collections.singletonList(datanodes.get(i));
-                                }
-                            }
-                        }
-                    }
-                }
-                return (List) datanodes;
-            }
-
-            @Override
-            protected void init(ShardingTableHandler tableHandler, Map<String, Object> properties, Map<String, Object> ranges) {
-
-            }
-
-            @Override
-            public boolean isShardingKey(String name) {
-                for (String shardingKey : shardingKeys) {
-                    if (shardingKey.equalsIgnoreCase(name)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
+        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod,keys,function);
     }
 
     @NotNull
