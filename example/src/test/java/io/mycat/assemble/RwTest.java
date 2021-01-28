@@ -5,6 +5,7 @@ import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
 import io.mycat.hint.CreateDataSourceHint;
+import io.mycat.hint.CreateSchemaHint;
 import io.mycat.hint.CreateTableHint;
 import io.mycat.hint.ShowDataNodeHint;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
@@ -185,4 +186,18 @@ public class RwTest implements MycatTest {
         }
     }
 
+    @Test
+    public void testAddSchema() throws Exception {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
+            execute(mycat, RESET_CONFIG);
+
+            execute(mycat, CreateDataSourceHint
+                    .create("dw0", DB2));
+
+            execute(mycat,
+                    CreateSchemaHint.create("mysql","dw0"));
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("mysql", "role_edges"));
+            Assert.assertTrue(maps.toString().contains("dw0"));
+        }
+    }
 }

@@ -199,7 +199,7 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(schemaName);
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName,schemaName);
                 Map<String, NormalTableConfig> normalTables = value.getNormalTables();
                 for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
                     normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
@@ -269,7 +269,7 @@ public class MetadataManager implements MysqlVariableService {
 
 
         Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
-        normalTables.put(tableName, NormalTableConfig.create(schemaName, tableName,
+        normalTables.putIfAbsent(tableName, NormalTableConfig.create(schemaName, tableName,
                 "CREATE TABLE `mysql`.`proc` (\n" +
                         "  `db` varchar(64) DEFAULT NULL,\n" +
                         "  `name` varchar(64) DEFAULT NULL,\n" +
@@ -313,9 +313,9 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private Map<String, NormalTableConfig> getDefaultNormalTable(String schemaName) {
+    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName,String schemaName) {
         Set<String> tables = new HashSet<>();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
@@ -323,11 +323,11 @@ public class MetadataManager implements MysqlVariableService {
         }
         Map<String, NormalTableConfig> res = new HashMap<>();
         for (String tableName : tables) {
-            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(prototype, schemaName, tableName);
+            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(targetName, schemaName, tableName);
             try {
                 res.put(tableName, (new NormalTableConfig(
                         getCreateTableSQLByJDBC(schemaName, tableName,
-                                Collections.singletonList(new BackendTableInfo(prototype, schemaName, tableName))),
+                                Collections.singletonList(new BackendTableInfo(targetName, schemaName, tableName))),
                         normalBackEndTableInfoConfig)));
             } catch (Throwable e) {
                 LOGGER.warn("", e);
