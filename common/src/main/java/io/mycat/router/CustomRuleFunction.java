@@ -75,4 +75,6 @@ public abstract class CustomRuleFunction {
     public  boolean isSameDistribution(CustomRuleFunction customRuleFunction){
         return false;
     }
+
+    public abstract String getUniqueID();
 }

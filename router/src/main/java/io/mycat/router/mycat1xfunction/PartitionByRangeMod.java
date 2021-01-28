@@ -82,4 +82,8 @@ public class PartitionByRangeMod extends Mycat1xSingleValueRuleFunction {
     }
     return false;
   }
+  @Override
+  public String getUniqueID() {
+    return "" + Arrays.toString(longRanges) + defaultNode + partitionCount;
+  }
 }

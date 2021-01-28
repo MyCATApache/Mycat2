@@ -64,4 +64,9 @@ public class PartitionByMod extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
+
+    @Override
+    public String getUniqueID() {
+        return "" + count;
+    }
 }

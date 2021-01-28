@@ -15,8 +15,8 @@
 package io.mycat.router.mycat1xfunction;
 
 import io.mycat.router.CustomRuleFunction;
-import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.util.StringUtil;
 
 import java.time.LocalDate;
@@ -138,5 +138,10 @@ public class PartitionByMonthAndHistory extends Mycat1xSingleValueRuleFunction {
               Objects.equals(this.endDate, endDate);
     }
     return false;
+  }
+
+  @Override
+  public String getUniqueID() {
+    return "" + partition + formatter + beginDate + endDate;
   }
 }

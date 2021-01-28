@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.function.Function;
 
 public class AutoFunction extends CustomRuleFunction {
+    String name;
     int dbNum;
     int tableNum;
     Object dbMethod;
@@ -30,12 +31,13 @@ public class AutoFunction extends CustomRuleFunction {
         this.tableMethod = tableMethod;
         this.keys = keys;
         this.function = function;
+        this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3}",
+                dbNum, tableNum, dbMethod, tableMethod);
     }
 
     @Override
     public String name() {
-        return MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3}",
-                dbNum, tableNum, dbMethod, tableMethod);
+        return name;
     }
 
     @Override
@@ -68,5 +70,10 @@ public class AutoFunction extends CustomRuleFunction {
                     Objects.equals(this.tableMethod, tableMethod);
         }
         return false;
+    }
+
+    @Override
+    public String getUniqueID() {
+        return name;
     }
 }

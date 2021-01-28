@@ -89,4 +89,8 @@ public class PartitionByJumpConsistentHash extends Mycat1xSingleValueRuleFunctio
         }
         return false;
     }
+    @Override
+    public String getUniqueID() {
+        return "" + totalBuckets;
+    }
 }

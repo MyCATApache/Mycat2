@@ -130,4 +130,8 @@ public class PartitionByHotDate extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
+    @Override
+    public String getUniqueID() {
+        return "" + lastTime + partionTime+beginDate+formatter;
+    }
 }

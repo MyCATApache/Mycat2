@@ -106,6 +106,9 @@ public class PartitionByString extends Mycat1xSingleValueRuleFunction {
     }
     return false;
   }
-
+  @Override
+  public String getUniqueID() {
+    return "" + hashSliceStart + hashSliceEnd + partitionUtil;
+  }
 
 }

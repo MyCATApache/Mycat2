@@ -90,5 +90,8 @@ public class PartitionByPattern extends Mycat1xSingleValueRuleFunction {
     }
     return false;
   }
-
+  @Override
+  public String getUniqueID() {
+    return "" + patternValue + longRanges+nPartition+defaultNode;
+  }
 }

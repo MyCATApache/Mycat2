@@ -84,5 +84,8 @@ public class PartitionByHashMod extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
-
+    @Override
+    public String getUniqueID() {
+        return "" + count + watch;
+    }
 }

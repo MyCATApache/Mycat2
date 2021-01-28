@@ -145,4 +145,8 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
+    @Override
+    public String getUniqueID() {
+        return "" + app2Partition + type + partitionNum + defaultNode;
+    }
 }

@@ -120,4 +120,9 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
         }
         return false;
     }
+
+    @Override
+    public String getUniqueID() {
+        return "" + beginDate + partionTime + endDate + nCount + formatter;
+    }
 }
