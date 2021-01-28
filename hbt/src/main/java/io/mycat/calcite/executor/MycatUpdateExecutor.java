@@ -115,7 +115,7 @@ public class MycatUpdateExecutor implements Executor {
         Map<String, MycatConnection> connections = new HashMap<>(3);
         Set<String> uniqueValues = new HashSet<>();
         for (SQL sql : reallySqlSet) {
-            String k = context.resolveDatasourceTargetName(sql.getTarget());
+            String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
             if (uniqueValues.add(k)) {
                 if (connections.put(sql.getTarget(), transactionSession.getConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");

@@ -224,7 +224,7 @@ public class MycatInsertExecutor implements Executor {
         Map<String, MycatConnection> connections = new HashMap<>();
         Set<String> uniqueValues = new HashSet<>();
         for (SQL target : group.keySet()) {
-            String k = transactionSession.resolveFinalTargetName(target.getTarget());
+            String k = transactionSession.resolveFinalTargetName(target.getTarget(),true);
             if (uniqueValues.add(k)) {
                 if (connections.put(target.getTarget(), transactionSession.getConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
