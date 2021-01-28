@@ -33,10 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -58,7 +55,7 @@ public class CalciteUtls {
             String targetName = backendTableInfo.getTargetName();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE
                     .getSqlDialectByTargetName(targetName);
-            String backendTaskSQL = getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, backendTableInfo);
+            String backendTaskSQL = getBackendTaskSQL(dialect, filters, rawColumnList, projectColumnList, backendTableInfo);
             QueryBackendTask queryBackendTask = new QueryBackendTask(backendTableInfo.getTargetName(), backendTaskSQL);
             list.add(queryBackendTask);
         }
@@ -68,9 +65,9 @@ public class CalciteUtls {
 
     public static void collect(Union e, List<RelNode> unions) {
         for (RelNode input : e.getInputs()) {
-            if (input instanceof Union){
-                collect((Union)input,unions);
-            }else {
+            if (input instanceof Union) {
+                collect((Union) input, unions);
+            } else {
                 unions.add(input);
             }
         }
@@ -100,26 +97,26 @@ public class CalciteUtls {
         String targetSchema = backendTableInfo.getSchema();
         String targetTable = backendTableInfo.getTable();
         String targetSchemaTable = backendTableInfo.getTargetSchemaTable();
-        return getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
+        return getBackendTaskSQL(dialect, filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL( SqlDialect dialect,ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+    public static String getBackendTaskSQL(SqlDialect dialect, ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
         List<SimpleColumnInfo> rawColumnList = table.getColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
-        return getBackendTaskSQL(dialect,filters, rawColumnList, projectColumnList, backendTableInfo);
+        return getBackendTaskSQL(dialect, filters, rawColumnList, projectColumnList, backendTableInfo);
     }
 
     public static String getBackendTaskSQL(
             SqlDialect dialect,
             List<RexNode> filters, List<SimpleColumnInfo> rawColumnList,
-                                           List<SimpleColumnInfo> projectColumnList,
-                                           String targetSchema,
-                                           String targetTable,
-                                           String targetSchemaTable) {
+            List<SimpleColumnInfo> projectColumnList,
+            String targetSchema,
+            String targetTable,
+            String targetSchemaTable) {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
         sqlBuilder.append(MessageFormat.format("select {0} from {1} ", selectItems, targetSchemaTable));
-        sqlBuilder.append(getFilterSQLText(dialect,rawColumnList, targetSchema, targetTable, filters));
+        sqlBuilder.append(getFilterSQLText(dialect, rawColumnList, targetSchema, targetTable, filters));
         return sqlBuilder.toString();
     }
 
@@ -185,13 +182,14 @@ public class CalciteUtls {
      * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 2;
      * SELECT * FROM travelrecord WHERE id BETWEEN 1 and 15;
      * SELECT * FROM travelrecord WHERE
-     *   (id < 10 AND (id = 3 or true)) OR
-     *   (id = 15 AND false) OR
-     *   (id = 15 AND true);
+     * (id < 10 AND (id = 3 or true)) OR
+     * (id = 15 AND false) OR
+     * (id = 15 AND true);
      * SELECT * FROM travelrecord WHERE
-     *   (id < 10 AND ((id/2) =0 OR id = 3)) OR
-     *   (id < 100 AND days = 1) OR
-     *   (id < 100 AND traveldate = '2020-08-22');
+     * (id < 10 AND ((id/2) =0 OR id = 3)) OR
+     * (id < 100 AND days = 1) OR
+     * (id < 100 AND traveldate = '2020-08-22');
+     *
      * @param table
      * @param evaluator
      * @param filter
@@ -216,8 +214,8 @@ public class CalciteUtls {
                                 RexNode start = unCastWrapper(((RexCall) left).getOperands().get(1));
                                 RexNode end = unCastWrapper(((RexCall) right).getOperands().get(1));
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
-                                    String startValue = ((RexLiteral) start).getValue2().toString();
-                                    String endValue = ((RexLiteral) end).getValue2().toString();
+                                    Object startValue = ((RexLiteral) start).getValue2();
+                                    Object endValue = ((RexLiteral) end).getValue2();
                                     evaluator.assignmentRange(rowOrder.get(index).getColumnName(), startValue, endValue);
                                     trueList[i] = trueList[i] || true;
                                     trueList[j] = trueList[j] || true;
@@ -247,8 +245,7 @@ public class CalciteUtls {
 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
-                String value = ((RexLiteral) right).getValue2().toString();
-                evaluator.assignment( rowOrder.get(index).getColumnName(), value);
+                evaluator.assignment(rowOrder.get(index).getColumnName(),  ((RexLiteral) right).getValue2());
                 return true;
             }
         } else if (filter.isA(SqlKind.GREATER_THAN) || filter.isA(SqlKind.LESS_THAN)
@@ -264,28 +261,28 @@ public class CalciteUtls {
 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
-                String value = ((RexLiteral) right).getValue2().toString();
+                Object value = ((RexLiteral) right).getValue2();
                 String columnName = rowOrder.get(index).getColumnName();
-                if(filter.isA(SqlKind.GREATER_THAN)){
-                    evaluator.assignmentRange(columnName , value,null);
+                if (filter.isA(SqlKind.GREATER_THAN)) {
+                    evaluator.assignmentRange(columnName, value, null);
                     return true;
-                }else if(filter.isA(SqlKind.LESS_THAN)){
-                    evaluator.assignmentRange(columnName , null,value);
+                } else if (filter.isA(SqlKind.LESS_THAN)) {
+                    evaluator.assignmentRange(columnName, null, value);
                     return true;
-                }else if(filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)){
-                    evaluator.assignmentRange(columnName , value,null);
-                    evaluator.assignment(columnName , value);
+                } else if (filter.isA(SqlKind.GREATER_THAN_OR_EQUAL)) {
+                    evaluator.assignmentRange(columnName, value, null);
+                    evaluator.assignment(columnName, value);
                     return true;
-                }else if(filter.isA(SqlKind.LESS_THAN_OR_EQUAL)){
-                    evaluator.assignmentRange(columnName , null,value);
-                    evaluator.assignment(columnName , value);
+                } else if (filter.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
+                    evaluator.assignmentRange(columnName, null, value);
+                    evaluator.assignment(columnName, value);
                     return true;
                 }
             }
         } else if (filter.isA(SqlKind.OR)) {
             //这里处理IN的情况，IN会转成多个OR. 例如： id in(1,2,3) 等同于 OR id = 1 or id = 2 or id = 3;
             return addOrRootFilter(table, evaluator, filter);
-        }else {
+        } else {
             return false;
         }
         return false;

@@ -80,7 +80,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
                 if (transactionSession.isInTransaction()) {
                     onHeap(mycatView);
                 } else {
-                    onParellel(mycatView);
+                    onHeap(mycatView);
                 }
             } else if (relNode instanceof MycatTransientSQLTableScan) {
                 allocTransientTableScan(relNode);
@@ -135,63 +135,73 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(mycatView.getRowType().getFieldList());
         ImmutableMultimap<String, SqlString> expandToSqls = mycatView.expandToSql(forUpdate, params);
-            for (Map.Entry<String, SqlString> entry : expandToSqls.entries()) {
-                res.add(new AbstractEnumerable(){
+        for (Map.Entry<String, SqlString> entry : expandToSqls.entries()) {
+            res.add(new AbstractEnumerable() {
+                private DefaultConnection mycatConnection;
+                private int columnCount;
+                RowBaseIterator rowBaseIterator;
 
-                    @Override
-                    @SneakyThrows
-                    public Enumerator enumerator() {
-                        Enumerator<Object[]> enumerator = new Enumerator<Object[]>() {
-                            private DefaultConnection mycatConnection;
-                            private int columnCount;
-                            RowBaseIterator rowBaseIterator;
-                            @Override
-                            public Object[] current() {
-                                Object[] row = new Object[columnCount];
-                                for (int i = 0; i < columnCount; i++) {
-                                    row[i] = rowBaseIterator.getObject(i);
-                                }
-                                return row;
+                public void AbstractEnumerable() {
+
+                }
+
+                @Override
+                @SneakyThrows
+                public Enumerator enumerator() {
+                    String target = entry.getKey();
+                    if (this.mycatConnection == null) {
+                        this.mycatConnection = jdbcConnectionManager.getConnection(target);
+                        transactionSession.addCloseResource(mycatConnection);
+                    }
+                    SqlRecord sqlRecord = dataContext.currentSqlRecord();
+                    Connection connection = mycatConnection.unwrap(Connection.class);
+                    if (connection.isClosed()) {
+                        LOGGER.error("mycatConnection:{} has closed but still using", mycatConnection);
+                    }
+                    long start = SqlRecord.now();
+                    SqlString sqlString = entry.getValue();
+                    this.rowBaseIterator = executeQuery(connection, mycatConnection, calciteRowMetaData, sqlString, params,
+                            rowCount -> sqlRecord.addSubRecord(sqlString, start, SqlRecord.now(), target, rowCount)
+                    );
+                    this.columnCount = rowBaseIterator.getMetaData().getColumnCount();
+                    Enumerator<Object[]> enumerator = new Enumerator<Object[]>() {
+
+
+                        @Override
+                        public Object[] current() {
+                            Object[] row = new Object[columnCount];
+                            for (int i = 0; i < columnCount; i++) {
+                                row[i] = rowBaseIterator.getObject(i);
+                            }
+                            return row;
+                        }
+
+                        @Override
+                        public boolean moveNext() {
+                            return rowBaseIterator.next();
+                        }
+
+                        @Override
+                        @SneakyThrows
+                        public void reset() {
+
+                        }
+
+                        @Override
+                        public void close() {
+                            if (mycatConnection != null) {
+                                mycatConnection.close();
+                                mycatConnection = null;
                             }
 
-                            @Override
-                            public boolean moveNext() {
-                                return rowBaseIterator.next();
-                            }
-
-                            @Override
-                            @SneakyThrows
-                            public void reset() {
-                                SqlRecord sqlRecord = dataContext.currentSqlRecord();
-                                String target = entry.getKey();
-                                this. mycatConnection = jdbcConnectionManager.getConnection(target);
-                                Connection connection = mycatConnection.unwrap(Connection.class);
-                                transactionSession.addCloseResource(mycatConnection);
-                                if (connection.isClosed()) {
-                                    LOGGER.error("mycatConnection:{} has closed but still using", mycatConnection);
-                                }
-                                long start = SqlRecord.now();
-                                SqlString sqlString = entry.getValue();
-                                this.rowBaseIterator = executeQuery(connection, mycatConnection, calciteRowMetaData, sqlString, params,
-                                        rowCount -> sqlRecord.addSubRecord(sqlString, start, SqlRecord.now(), target, rowCount)
-                                );
-                                this. columnCount = rowBaseIterator.getMetaData().getColumnCount();
-                            }
-
-                            @Override
-                            public void close() {
-                                if (mycatConnection!=null){
-                                    mycatConnection.close();
-                                    mycatConnection = null;
-                                }
-
-                            }
-                        };
-                        enumerator.reset();
-                        return enumerator;
+                        }
                     };
-                });
-            }
+                    return enumerator;
+                }
+
+                ;
+            });
+        }
     }
 
     private void onHeap(MycatView mycatView) {
@@ -234,15 +244,17 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         Queue<List<Enumerable<Object[]>>> lists = viewMap.get(node);
         return lists.remove();
     }
+
     private Queue<List<Enumerable<Object[]>>> getEnumerableList(RelNode mycatView) {
         Queue<List<Enumerable<Object[]>>> list;
-        if(!viewMap.containsKey(mycatView)){
-            viewMap.put(mycatView,list =new LinkedList<>());
-        }else {
+        if (!viewMap.containsKey(mycatView)) {
+            viewMap.put(mycatView, list = new LinkedList<>());
+        } else {
             list = viewMap.get(mycatView);
         }
         return list;
     }
+
     public Enumerable<Object[]> getEnumerable(RelNode node) {
         Queue<List<Enumerable<Object[]>>> lists = viewMap.get(node);
         List<Enumerable<Object[]>> remove = Objects.requireNonNull(lists.remove());
