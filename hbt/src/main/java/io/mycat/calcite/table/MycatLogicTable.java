@@ -20,7 +20,6 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.SimpleColumnInfo;
 import io.mycat.TableHandler;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.ShardingInfo;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.LazyRexDistribution;
 import io.mycat.gsi.GSIService;
@@ -55,12 +54,10 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
     final TableHandler table;
     final Statistic statistic;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatLogicTable.class);
-    private final ShardingInfo shardingInfo;
 
     public MycatLogicTable(TableHandler t) {
         this.table = t;
         this.statistic = Statistics.createStatistic(table.getSchemaName(), table.getTableName(), table.getColumns());
-        this.shardingInfo = ShardingInfo.create(t);
     }
 
     @Override
@@ -188,11 +185,6 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                 return Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY);
         }
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ShardingInfo getShardingInfo() {
-        return shardingInfo;
     }
 
     @Override

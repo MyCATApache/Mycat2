@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
 import io.mycat.TableHandler;
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.ShardingInfo;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -67,11 +66,6 @@ public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatT
     @Override
     public Distribution computeDataNode() {
         return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
-    }
-
-    @Override
-    public ShardingInfo getShardingInfo() {
-        return logicTable.getShardingInfo();
     }
 
     @Override
