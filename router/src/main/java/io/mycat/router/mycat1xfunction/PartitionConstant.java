@@ -14,9 +14,11 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
@@ -47,6 +49,21 @@ public class PartitionConstant extends Mycat1xSingleValueRuleFunction {
     @Override
     public int[] calculateIndexRange(String beginValue, String endValue) {
         return nodes;
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionConstant.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionConstant ruleFunction = (PartitionConstant) customRuleFunction;
+
+             int defaultNode = ruleFunction.defaultNode;
+             int[] nodes = ruleFunction.nodes;
+
+            return Objects.equals(this.defaultNode, defaultNode) &&
+                    Arrays.equals(this.nodes, nodes);
+        }
+        return false;
     }
 
 }
