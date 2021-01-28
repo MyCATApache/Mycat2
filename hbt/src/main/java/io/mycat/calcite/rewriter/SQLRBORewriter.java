@@ -15,15 +15,15 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
+import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.table.AbstractMycatTable;
-import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.table.AbstractMycatTable;
 import io.mycat.calcite.table.CustomTableHandlerWrapper;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.QueryBuilder;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,7 +44,9 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -204,8 +206,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode right = inputs.get(1).accept(this);
         boolean lr = RelMdSqlViews.join(left);
         boolean rr = RelMdSqlViews.join(right);
-        if (lr&& rr) {
-            return join(params,left, right, join);
+        if (lr && rr) {
+            return join(params, left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         }
@@ -430,6 +432,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
         return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
     }
+
     public static RelNode join(List<Object> params,
                                RelNode left,
                                RelNode right,
@@ -492,8 +495,14 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
             }
         }
-        if (ldistribution.isPhy() && rdistribution.isPhy() && ldistribution.getDataNodes().equals(rdistribution.getDataNodes())) {
-            return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+        if (ldistribution.isPhy() && rdistribution.isPhy()) {
+            DataNode[] leftDataNodes = Iterables.toArray(ldistribution.getDataNodes(), DataNode.class);
+            DataNode[] rightDataNodes = Iterables.toArray(rdistribution.getDataNodes(), DataNode.class);
+            if (leftDataNodes.length == rightDataNodes.length) {
+                if (leftDataNodes.length == 1) {
+                    return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+                }
+            }
         }
         return null;
     }
