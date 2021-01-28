@@ -14,6 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 
@@ -23,35 +24,44 @@ import java.util.Objects;
 
 public class PartitionByMod extends Mycat1xSingleValueRuleFunction {
 
-  private BigInteger count;
+    private BigInteger count;
 
-  @Override
-  public String name() {
-    return "PartitionByMod";
-  }
-
-  @Override
-  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
-    String count = Objects.toString(prot.get("count"));
-    Objects.requireNonNull(count);
-    this.count = new BigInteger(count);
-  }
-
-  @Override
-  public int calculateIndex(String columnValue) {
-    try {
-      BigInteger bigNum = new BigInteger(columnValue).abs();
-      return (bigNum.mod(count)).intValue();
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException(
-          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
-          e);
+    @Override
+    public String name() {
+        return "PartitionByMod";
     }
-  }
 
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    return null;
-  }
+    @Override
+    public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+        String count = Objects.toString(prot.get("count"));
+        Objects.requireNonNull(count);
+        this.count = new BigInteger(count);
+    }
 
+    @Override
+    public int calculateIndex(String columnValue) {
+        try {
+            BigInteger bigNum = new BigInteger(columnValue).abs();
+            return (bigNum.mod(count)).intValue();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
+                    e);
+        }
+    }
+
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        return null;
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionByMod.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionByMod ruleFunction = (PartitionByMod) customRuleFunction;
+            return Objects.equals(this.count, ruleFunction.count);
+        }
+        return false;
+    }
 }
