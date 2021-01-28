@@ -14,6 +14,7 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
@@ -23,43 +24,62 @@ import java.util.Map;
 
 public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
 
-  private List<NodeIndexRange> longRanges;
-  private int defaultNode = -1;
-  private int partitionCount;
+    private List<NodeIndexRange> longRanges;
+    private int defaultNode = -1;
+    private int partitionCount;
 
-  @Override
-  public String name() {
-    return "AutoPartitionByLong";
-  }
-
-  @Override
-  public void init(ShardingTableHandler tableHandler, Map<String, Object> prot, Map<String, Object> ranges) {
-    this.defaultNode = Integer.parseInt(prot.get("defaultNode").toString());
-    this.longRanges = NodeIndexRange.getLongRanges(ranges);
-    this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
-  }
-
-
-  @Override
-  public int calculateIndex(String columnValue) {
-    try {
-      long value = Long.parseLong(columnValue);
-      for (NodeIndexRange longRang : this.longRanges) {
-        if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-          return longRang.nodeIndex;
-        }
-      }
-      return defaultNode;
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException(
-          "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
-          e);
+    @Override
+    public String name() {
+        return "AutoPartitionByLong";
     }
-  }
 
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    return calculateSequenceRange(this, beginValue, endValue);
-  }
+    @Override
+    public void init(ShardingTableHandler tableHandler, Map<String, Object> prot, Map<String, Object> ranges) {
+        this.defaultNode = Integer.parseInt(prot.get("defaultNode").toString());
+        this.longRanges = NodeIndexRange.getLongRanges(ranges);
+        this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
+    }
 
+
+    @Override
+    public int calculateIndex(String columnValue) {
+        try {
+            long value = Long.parseLong(columnValue);
+            for (NodeIndexRange longRang : this.longRanges) {
+                if (value <= longRang.valueEnd && value >= longRang.valueStart) {
+                    return longRang.nodeIndex;
+                }
+            }
+            return defaultNode;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "columnValue:" + columnValue + " Please eliminate any quote and non number within it.",
+                    e);
+        }
+    }
+
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        return calculateSequenceRange(this, beginValue, endValue);
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (customRuleFunction.getClass() == AutoPartitionByLong.class) {
+
+            AutoPartitionByLong customRuleFunction1 = (AutoPartitionByLong) customRuleFunction;
+            List<NodeIndexRange> longRanges = customRuleFunction1.longRanges;
+            int defaultNode = customRuleFunction1.defaultNode;
+            int partitionCount = customRuleFunction1.partitionCount;
+
+            return this.longRanges.equals(longRanges)
+                    &&
+                    this.defaultNode == defaultNode
+                    &&
+                    this.partitionCount == partitionCount;
+
+        }
+        return false;
+    }
 }
