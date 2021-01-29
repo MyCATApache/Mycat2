@@ -1795,7 +1795,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "LOCALTIME":
             case "CURRENT_TIMESTAMP":
             case "NOW": {
-                this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                if(argNodes == null||argNodes.isEmpty()){
+                    this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                }else {
+                    this.sqlNode = NowNoArgFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                }
                 return false;
             }
             case "MAKEDATE": {
