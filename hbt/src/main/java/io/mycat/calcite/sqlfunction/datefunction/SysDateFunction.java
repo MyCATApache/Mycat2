@@ -18,7 +18,6 @@ package io.mycat.calcite.sqlfunction.datefunction;
 
 
 import org.apache.calcite.linq4j.function.Parameter;
-import org.apache.calcite.mycat.MycatBuiltInMethodImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
@@ -26,11 +25,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.temporal.Temporal;
-import java.util.concurrent.TimeUnit;
 
 
 public class SysDateFunction extends MycatDateFunction {

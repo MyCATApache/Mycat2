@@ -402,6 +402,11 @@ public enum MycatCalciteSupport implements Context {
                     build.put("CURTIME", CurTimeFunction.INSTANCE);
                     build.put("CURRENT_TIME", CurTimeFunction.INSTANCE);
 
+                    build.put("NOW", NowNoArgFunction.INSTANCE);
+                    build.put("CURRENT_TIMESTAMP", NowNoArgFunction.INSTANCE);
+                    build.put("LOCALTIME", NowNoArgFunction.INSTANCE);
+                    build.put("LOCALTIMESTAMP", NowNoArgFunction.INSTANCE);
+
                     build.put("NOW", NowFunction.INSTANCE);
                     build.put("CURRENT_TIMESTAMP", NowFunction.INSTANCE);
                     build.put("LOCALTIME", NowFunction.INSTANCE);
@@ -669,7 +674,7 @@ public enum MycatCalciteSupport implements Context {
                 .withAlwaysUseParentheses(true)
                 .withSelectListItemsOnSeparateLines(false)
                 .withUpdateSetListNewline(false)
-                .withQuoteAllIdentifiers(true);//mysql fun name should not wrapper quote
+                .withQuoteAllIdentifiers(false);//mysql fun name should not wrapper quote
         SqlPrettyWriter writer = new SqlPrettyWriter(config) {
             @Override
             public void dynamicParam(int index) {
