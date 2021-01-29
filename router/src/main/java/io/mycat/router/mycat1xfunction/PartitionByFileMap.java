@@ -146,7 +146,7 @@ public class PartitionByFileMap extends Mycat1xSingleValueRuleFunction {
         return false;
     }
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + app2Partition + type + partitionNum + defaultNode;
     }
 }

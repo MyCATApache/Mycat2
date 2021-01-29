@@ -17,6 +17,7 @@ package io.mycat.calcite;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
@@ -660,11 +661,15 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        return convertToSql(input, dialect, forUpdate, Collections.emptyList());
+        return convertToSql(input, dialect,Collections.emptyMap(), forUpdate, Collections.emptyList());
     }
 
-    public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate, List<Object> params) {
-        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params);
+    public SqlString convertToSql(RelNode input,
+                                  SqlDialect dialect,
+                                  Map<String, DataNode> map,
+                                  boolean forUpdate,
+                                  List<Object> params) {
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params, map);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         if (forUpdate) {

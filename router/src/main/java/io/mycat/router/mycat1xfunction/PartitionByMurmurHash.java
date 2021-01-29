@@ -101,7 +101,7 @@ public class PartitionByMurmurHash extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + bucketMap + count;
     }
 }

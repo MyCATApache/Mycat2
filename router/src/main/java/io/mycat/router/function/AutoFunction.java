@@ -16,20 +16,23 @@ public class AutoFunction extends CustomRuleFunction {
     int tableNum;
     Object dbMethod;
     Object tableMethod;
-    Set<String> keys;
+    private Set<String> dbKeys;
+    private Set<String> tableKeys;
     Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function;
 
     public AutoFunction(int dbNum,
                         int tableNum,
                         Object dbMethod,
                         Object tableMethod,
-                        Set<String> keys,
-                        Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function) {
+                        Set<String> dbKeys,
+                        Set<String> tableKeys,
+                        Function<Map<String, Collection<RangeVariable>>, List<DataNode>> function, String erUniqueName) {
         this.dbNum = dbNum;
         this.tableNum = tableNum;
         this.dbMethod = dbMethod;
         this.tableMethod = tableMethod;
-        this.keys = keys;
+        this.dbKeys = dbKeys;
+        this.tableKeys = tableKeys;
         this.function = function;
         this.name = MessageFormat.format("dbNum:{0} tableNum:{1} dbMethod:{2} tableMethod:{3}",
                 dbNum, tableNum, dbMethod, tableMethod);
@@ -52,7 +55,20 @@ public class AutoFunction extends CustomRuleFunction {
 
     @Override
     public boolean isShardingKey(String name) {
-        return keys.contains(SQLUtils.normalize(name));
+        name = SQLUtils.normalize(name);
+        return dbKeys.contains(name) || tableKeys.contains(name);
+    }
+
+    @Override
+    public boolean isShardingDbKey(String name) {
+        name = SQLUtils.normalize(name);
+        return dbKeys.contains(name);
+    }
+
+    @Override
+    public boolean isShardingTableKey(String name) {
+        name = SQLUtils.normalize(name);
+        return tableKeys.contains(name);
     }
 
     @Override
@@ -60,20 +76,13 @@ public class AutoFunction extends CustomRuleFunction {
         if (customRuleFunction == null) return false;
         if (AutoFunction.class.isAssignableFrom(customRuleFunction.getClass())) {
             AutoFunction ruleFunction = (AutoFunction) customRuleFunction;
-            int dbNum = ruleFunction.dbNum;
-            int tableNum = ruleFunction.tableNum;
-            Object dbMethod = ruleFunction.dbMethod;
-            Object tableMethod = ruleFunction.tableMethod;
-            return Objects.equals(this.dbNum, dbNum) &&
-                    Objects.equals(this.tableNum, tableNum) &&
-                    Objects.equals(this.dbMethod, dbMethod) &&
-                    Objects.equals(this.tableMethod, tableMethod);
+            return Objects.equals(this.name, ruleFunction.name);
         }
         return false;
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return name;
     }
 }

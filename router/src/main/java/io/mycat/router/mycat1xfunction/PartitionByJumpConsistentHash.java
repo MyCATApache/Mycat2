@@ -90,7 +90,7 @@ public class PartitionByJumpConsistentHash extends Mycat1xSingleValueRuleFunctio
         return false;
     }
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + totalBuckets;
     }
 }

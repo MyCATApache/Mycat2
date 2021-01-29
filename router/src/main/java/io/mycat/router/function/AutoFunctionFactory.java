@@ -76,6 +76,9 @@ public class AutoFunctionFactory {
         SQLMethodInvokeExpr tableMethod = converyToMethodExpr((String) properties.get("tableMethod"));
         SQLMethodInvokeExpr dbMethod = converyToMethodExpr((String) properties.get("dbMethod"));
         String sep = "/";
+        String erUniqueName = Optional.ofNullable(dbMethod).map(i->i.getMethodName()).orElse("")
+                +Optional.ofNullable(tableMethod).map(i->i.getMethodName()).orElse("")
+                +" storeNum:"+storeNum+" storeDbNum:"+storeDbNum+" dbNum:"+dbNum+" tableNum:"+tableNum;
         String mappingFormat = (String) properties.getOrDefault("mappingFormat",
                 String.join(sep, "c${targetIndex}",
                         tableHandler.getSchemaName() + "_${dbIndex}",
@@ -522,10 +525,9 @@ public class AutoFunctionFactory {
                 return datanodes.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
             }
         };
-        Set<String> keys = new HashSet<>(dbShardingKeys);
-        keys.addAll(tableShardingKeys);
 
-        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod,keys,function);
+
+        return new AutoFunction(dbNum, tableNum, dbMethod, tableMethod,dbShardingKeys,tableShardingKeys,function,erUniqueName);
     }
 
     @NotNull

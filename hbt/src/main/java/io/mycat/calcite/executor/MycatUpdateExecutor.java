@@ -1,13 +1,11 @@
 package io.mycat.calcite.executor;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
@@ -35,6 +33,7 @@ import static io.mycat.calcite.executor.MycatPreparedStatementUtil.apply;
 public class MycatUpdateExecutor implements Executor {
 
     private final MycatDataContext context;
+    private final MycatUpdateRel mycatUpdateRel;
     private final Distribution distribution;
     /**
      * 逻辑语法树（用户在前端写的SQL语句）
@@ -53,32 +52,33 @@ public class MycatUpdateExecutor implements Executor {
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
-    public MycatUpdateExecutor(MycatDataContext context, Distribution distribution,
+    public MycatUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel, Distribution distribution,
                                SQLStatement logicStatement,
                                List<Object> parameters) {
         this.context = context;
+        this.mycatUpdateRel = mycatUpdateRel;
 
         this.distribution = distribution;
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
 
-        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(distribution,logicStatement,parameters));
+        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(mycatUpdateRel,distribution,logicStatement,parameters));
     }
 
-    public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
+    public static MycatUpdateExecutor create(MycatDataContext context, MycatUpdateRel mycatUpdateRel,Distribution values,
                                              SQLStatement sqlStatement,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(context, values, sqlStatement, parameters);
+        return new MycatUpdateExecutor(context,mycatUpdateRel, values, sqlStatement, parameters);
     }
 
     public static MycatUpdateExecutor create(MycatUpdateRel mycatUpdateRel,MycatDataContext dataContext,List<Object> params) {
         MycatUpdateExecutor updateExecutor;
         if (mycatUpdateRel.isGlobal()) {
-            updateExecutor = new MycatGlobalUpdateExecutor(dataContext, mycatUpdateRel.getValues(),
+            updateExecutor = new MycatGlobalUpdateExecutor(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
                     params);
         } else {
-            updateExecutor = MycatUpdateExecutor.create(dataContext, mycatUpdateRel.getValues(),
+            updateExecutor = MycatUpdateExecutor.create(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
                     params
             );
@@ -199,10 +199,10 @@ public class MycatUpdateExecutor implements Executor {
                 primaryKeyList,sql.getTarget());
     }
 
-    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+    private static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
-        Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
+        Iterable<DataNode> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
         for (DataNode dataNode : dataNodes) {

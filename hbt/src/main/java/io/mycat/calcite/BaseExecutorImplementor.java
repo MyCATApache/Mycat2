@@ -17,13 +17,12 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
-import io.mycat.DataNode;
-import io.mycat.calcite.physical.*;
-import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.executor.*;
 import io.mycat.calcite.executor.aggfunction.MycatHashAggExecutor;
 import io.mycat.calcite.executor.aggfunction.MycatSortAggExecutor;
+import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.physical.*;
+import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.mpp.Row;
 import lombok.SneakyThrows;
 import org.apache.calcite.MycatContext;
@@ -61,7 +60,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public abstract class BaseExecutorImplementor implements ExecutorImplementor {
-   private final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
+    private final static Logger log = LoggerFactory.getLogger(BaseExecutorImplementor.class);
 
     final Map<String, RexToLixTranslator.InputGetter> ref = new HashMap<>();
     final Map<String, Cor[]> refValue = new HashMap<>();
@@ -73,11 +72,11 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         return !ref.isEmpty();
     }
 
-    public void setForUpdate(boolean update){
+    public void setForUpdate(boolean update) {
         this.forUpdate = update;
     }
 
-    public BaseExecutorImplementor( TempResultSetFactory tempResultSetFactory) {
+    public BaseExecutorImplementor(TempResultSetFactory tempResultSetFactory) {
         this.tempResultSetFactory = tempResultSetFactory;
     }
 
@@ -97,9 +96,9 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         Executor rightSource = executors[1];
         MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(
                 condition),
-                combinedRowType(mycatJoin.getInputs()),params
+                combinedRowType(mycatJoin.getInputs()), params
         );
-        if (log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("-------------------complie----------------");
         }
         final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
@@ -127,11 +126,11 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         RelDataType inputRowType = mycatProject.getInput().getRowType();
         List<RexNode> childExps = mycatProject.getProjects();
         int outputSize = childExps.size();
-        if (log.isDebugEnabled()){
-            log.debug("-------------------complie:" +mycatProject+
+        if (log.isDebugEnabled()) {
+            log.debug("-------------------complie:" + mycatProject +
                     "----------------");
         }
-        MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput,params);
+        MycatScalar scalar = MycatRexCompiler.compile(childExps, inputRowType, this::refInput, params);
         MycatContext context = new MycatContext();
         return MycatProjectExecutor.create((input) -> {
             context.values = input.values;
@@ -154,14 +153,14 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         if (log.isDebugEnabled()) {
             log.debug("-------------------complie----------------");
         }
-        MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput,params);
+        MycatScalar scalar = MycatRexCompiler.compile(conditions, inputRowType, this::refInput, params);
         MycatContext context = new MycatContext();
         Predicate<Row> predicate = row -> {
             try {
                 context.values = row.values;
                 return scalar.execute(context) == Boolean.TRUE;
-            }catch (Throwable throwable){
-                log.error(mycatFilter.toString(),throwable);
+            } catch (Throwable throwable) {
+                log.error(mycatFilter.toString(), throwable);
                 throw throwable;
             }
         };
@@ -210,7 +209,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             nodes.addAll(tuple);
         }
         int fieldCount = mycatValues.getRowType().getFieldCount();
-        final MycatScalar scalar = MycatRexCompiler.compile(nodes, null,params);
+        final MycatScalar scalar = MycatRexCompiler.compile(nodes, null, params);
         final Object[] values = new Object[nodes.size()];
         MycatContext context = new MycatContext();
         scalar.execute(context, values);
@@ -257,20 +256,17 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     ? Long.MAX_VALUE
                     : ((RexLiteral) fetch).getValueAs(Long.class);
         }
-
+        mergeSort = false;
         if (mergeSort) {
             RelNode input = mycatSort.getInput();
             if (input instanceof MycatView) {
                 MycatView input1 = (MycatView) input;
-                Distribution distribution = input1.getDistribution();
-                if (!distribution.isSingle()){
-                    ArrayList<Executor> executors = new  ArrayList<>();
-                    for (DataNode dataNode : distribution.getDataNodes(params)) {
-                        RelNode relNode = input1.applyDataNode(dataNode);
-                        MycatView of = MycatView.of(relNode, Distribution.of(ImmutableList.of(dataNode), false, Distribution.Type.PHY));
-                        executors.add(implement(of));
-                    }
 
+                //
+                if (input1.getDistribution().type() == Distribution.Type.Sharding) {
+                    ArrayList<Executor> executors = new ArrayList<>();
+                    Executor executor = implement(input1);
+                    executors.add(executor);
                     if (comparator == null) {
                         comparator = Comparator.naturalOrder();
                     }
@@ -280,10 +276,10 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
                     } else {
                         return mycatMergeSortExecutor;
                     }
-                }else {
+                } else {
                     return implement(input1);
                 }
-            }else {
+            } else {
                 throw new UnsupportedOperationException();
             }
         }
@@ -309,7 +305,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
             Object o = params.get(dynamicParam.getIndex());
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
-            return  rexBuilder.makeLiteral(o,dynamicParam.getType(),true);
+            return rexBuilder.makeLiteral(o, dynamicParam.getType(), true);
         }
         return node;
     }
@@ -450,7 +446,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
         this.ref.remove(correlVariable);
 
         Enumerable<Row> leftEnumerable = Linq4j.asEnumerable(Linq4j.asEnumerable(leftExecutor));
-        Cor[] cors = this.refValue.computeIfAbsent(correlVariable, (Function <String, Cor[]>) input -> new Cor[requiredColumns.length]);
+        Cor[] cors = this.refValue.computeIfAbsent(correlVariable, (Function<String, Cor[]>) input -> new Cor[requiredColumns.length]);
         final Function1<Row, Enumerable<Row>> inner = a0 -> {
             int index = 0;
             for (int requiredColumn : requiredColumns) {
@@ -585,7 +581,7 @@ public abstract class BaseExecutorImplementor implements ExecutorImplementor {
 
             MycatScalar scalar = MycatRexCompiler.compile(ImmutableList.of(
                     mycatBatchNestedLoopJoin.getCondition()),
-                    combinedRowType(mycatBatchNestedLoopJoin.getInputs()),params
+                    combinedRowType(mycatBatchNestedLoopJoin.getInputs()), params
             );
             final Function2<Row, Row, Row> resultSelector = Row.composeJoinRow(leftFieldCount, rightFieldCount);
             MycatContext context = new MycatContext();

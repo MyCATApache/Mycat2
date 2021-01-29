@@ -141,7 +141,7 @@ public class PartitionByMonthAndHistory extends Mycat1xSingleValueRuleFunction {
   }
 
   @Override
-  public String getUniqueID() {
+  public String getErUniqueID() {
     return "" + partition + formatter + beginDate + endDate;
   }
 }

@@ -16,6 +16,8 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.DataNode;
+import io.mycat.TableHandler;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.*;
@@ -32,6 +34,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Junwen Chen
@@ -39,13 +42,23 @@ import java.util.List;
 public class MycatImplementor extends RelToSqlConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
     private final List<Object> params;
+    private final Map<String, DataNode> each;
 
     @Override
     public Result visit(TableScan e) {
         try {
-            MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
-            if (physicalTable != null) {
-                DataNode backendTableInfo = physicalTable.getDataNode();
+            MycatLogicTable logicTable = e.getTable().unwrap(MycatLogicTable.class);
+            DataNode backendTableInfo = null;
+            if (logicTable != null && each != null) {
+                TableHandler tableHandler = logicTable.logicTable();
+                backendTableInfo = each.get(tableHandler.getUniqueName());
+            } else {
+                MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
+                if (physicalTable != null) {
+                    backendTableInfo = physicalTable.getDataNode();
+                }
+            }
+            if (backendTableInfo != null) {
                 SqlIdentifier identifier;
                 if (backendTableInfo.getSchema() == null) {
                     identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);
@@ -53,9 +66,9 @@ public class MycatImplementor extends RelToSqlConverter {
                     identifier = new SqlIdentifier(Arrays.asList(backendTableInfo.getSchema(), backendTableInfo.getTable()), SqlParserPos.ZERO);
                 }
                 return result(identifier, ImmutableList.of(Clause.FROM), e, null);
-            } else {
-                return super.visit(e);
             }
+            return super.visit(e);
+
         } catch (Throwable e1) {
             LOGGER.error("", e1);
             return null;
@@ -63,9 +76,10 @@ public class MycatImplementor extends RelToSqlConverter {
 
     }
 
-    public MycatImplementor(SqlDialect dialect, List<Object> params) {
+    public MycatImplementor(SqlDialect dialect, List<Object> params, Map<String, DataNode> each) {
         super(dialect);
         this.params = params;
+        this.each = each;
     }
 
 
@@ -85,7 +99,7 @@ public class MycatImplementor extends RelToSqlConverter {
             Result x = visitChild(0, e.getInput());
             final Builder builder =
                     x.builder(e, Clause.SELECT);
-            builder.setSelect(new SqlNodeList(Collections.singleton(SqlLiteral.createApproxNumeric("1",POS)), POS));
+            builder.setSelect(new SqlNodeList(Collections.singleton(SqlLiteral.createApproxNumeric("1", POS)), POS));
             return builder.result();
         }
         return super.visit(e);

@@ -78,7 +78,7 @@ public class PartitionDirectBySubString extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + startIndex + size + partitionCount + defaultNode;
     }
 
