@@ -399,7 +399,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 }
                 if (canPushDown) {
                     input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-                    return MycatView.of(input, dataNodeInfo );
+                    return MycatView.of(input, dataNodeInfo);
                 }
             }
 
@@ -480,10 +480,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
             ColumnMapping rightColumnMapping = new ColumnMapping();
             left.getRelNode().accept(leftColumnMapping);
             right.getRelNode().accept(rightColumnMapping);
-            if (leftColumnMapping.hasRes()&&rightColumnMapping.hasRes()){
+            if (leftColumnMapping.hasRes() && rightColumnMapping.hasRes()) {
                 MycatLogicTable leftRelNode = leftColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
                 MycatLogicTable rightRelNode = rightColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
-                if (leftRelNode.isSharding()&&rightRelNode.isSharding()){
+                if (leftRelNode.isSharding() && rightRelNode.isSharding()) {
                     ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
                     ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
                     if (leftTableHandler.getShardingFuntion().isSameDistribution(rightTableHandler.getShardingFuntion())) {
@@ -520,17 +520,15 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution rdistribution = right.getDistribution();
         Distribution.Type lType = ldistribution.type();
         Distribution.Type rType = rdistribution.type();
-        switch (lType) {
-            case PHY:
-            case BroadCast:
-                switch (rType) {
-                    case PHY:
-                    case BroadCast:
-                        return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
-                                join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
-                                distribution));
-                }
-            default:
+        if (lType != Distribution.Type.Sharding && rType != Distribution.Type.Sharding) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
+        }
+        if (lType == Distribution.Type.BroadCast || rType == Distribution.Type.BroadCast) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
         }
         return Optional.empty();
     }
