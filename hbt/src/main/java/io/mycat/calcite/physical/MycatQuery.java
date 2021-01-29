@@ -52,4 +52,8 @@ public class MycatQuery extends AbstractRelNode implements MycatRel {
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq).multiplyBy(0.1);
     }
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

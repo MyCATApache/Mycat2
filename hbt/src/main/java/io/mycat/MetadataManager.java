@@ -917,11 +917,11 @@ public class MetadataManager implements MysqlVariableService {
                 }
             }
         }
-        if (tables.values().isEmpty() && tableNames.size() == 1) {
-            Pair<String, String> next = tableNames.iterator().next();
-            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
-            targets.add(prototype);
-        }
+//        if (tables.values().isEmpty() && tableNames.size() == 1) {
+//            Pair<String, String> next = tableNames.iterator().next();
+//            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
+//            targets.add(prototype);
+//        }
         return targets.size() == 1;
     }
 

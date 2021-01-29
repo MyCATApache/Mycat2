@@ -222,4 +222,8 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
 
         return implementor.result(physType, builder.toBlock());
     }
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
 }

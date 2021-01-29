@@ -8,10 +8,11 @@ import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.impl.future.PromiseInternal;
 
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     @Override
-    protected void onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLDropIndexStatement sqlDropIndexStatement = request.getAst();
         SQLName indexName = sqlDropIndexStatement.getIndexName();
         resolveSQLExprTableSource(sqlDropIndexStatement.getTableName(), dataContext);
@@ -25,7 +26,6 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
         TableHandler table = metadataManager.getTable(schema, tableName);
         executeOnPrototype(sqlDropIndexStatement,jdbcConnectionManager);
         executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager,getDataNodes(table),tableSource);
-        response.sendOk();
-        return;
+        return response.sendOk();
     }
 }

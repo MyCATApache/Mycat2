@@ -1,7 +1,8 @@
 package io.mycat.commands;
 
 import io.mycat.beans.resultset.MycatResponse;
+import io.vertx.core.impl.future.PromiseInternal;
 
 public interface SQLExecuterWriterHandler {
-    public void writeToMycatSession(MycatResponse response)throws Exception;
+    public PromiseInternal<Void> writeToMycatSession(MycatResponse response)throws Exception;
 }

@@ -34,12 +34,20 @@ import io.mycat.config.UserConfig;
 import io.mycat.proxy.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ServerTransactionSessionRunner;
+import io.mycat.util.packet.AbstractWritePacket;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.JDBCType;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -70,6 +78,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         }
     }
 
+
+
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
         try {
@@ -79,12 +89,15 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             }
             NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
             mycatServer.getServerTransactionSessionRunner().run(session,
-                    () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
-                            (size) -> {
-                return new ReceiverImpl(session, size, false);
-            }));
-
-            return;
+                    () -> {
+                        PromiseInternal<Collection<AsyncResult<Void>>> promise =
+                                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+                                (size) -> new ReceiverImpl(session, size, false));
+                        promise.onFailure(o->{
+                            session.setLastMessage(o);
+                            session.writeErrorEndPacketBySyncInProcessError();
+                        });
+                    });
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
@@ -302,5 +315,29 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             return;
         }
         preparedStatement.setBindValues(values);
+    }
+    private Disposable subscribe(Observable<AbstractWritePacket> observable) {
+        Disposable disposable = observable.subscribe(
+                // 收到数据
+                new Consumer<AbstractWritePacket>() {
+                    @Override
+                    public void accept(AbstractWritePacket runnable) throws Throwable {
+                        runnable.run();
+                    }
+                }, new Consumer<Throwable>() {
+                    // 异常
+                    @Override
+                    public void accept(Throwable throwable) throws Throwable {
+
+                    }
+                }, new Action() {
+                    // 完毕
+                    @Override
+                    public void run() throws Throwable {
+                        // check if handle set handleIng gap
+
+                    }
+                });
+        return disposable;
     }
 }

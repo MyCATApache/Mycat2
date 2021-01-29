@@ -12,6 +12,8 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +28,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
     }
 
     @Override
-    protected void onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLSetStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         List<SQLAssignItem> items = request.getAst().getItems();
         if (items == null) {
             items = Collections.emptyList();
@@ -74,28 +76,23 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                         if (i == 0) {
                             if (dataContext.isInTransaction()) {
                                 dataContext.setAutoCommit(false);
-                                response.sendOk();
-                                return;
+                                return response.sendOk();
                             } else {
                                 dataContext.setAutoCommit(false);
-                                response.sendOk();
-                                return;
+                                return response.sendOk();
                             }
                         } else if (i == 1) {
                             if (dataContext.isInTransaction()) {
                                 dataContext.setAutoCommit(true);
-                                response.commit();
-                                return;
+                                return response.commit();
                             } else {
                                 dataContext.setAutoCommit(true);
-                                response.sendOk();
-                                return;
+                                return response.sendOk();
                             }
                         }
                     }
                     dataContext.setVariable(name, item.getValue());
-                    response.sendOk();
-                    break;
+                    return response.sendOk();
                 }
                 case USER:
                 case GLOABL:
@@ -103,6 +100,8 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                     throw new IllegalStateException("Unexpected value: " + varType);
             }
         }
+        // todo 异步未实现完全 wangzihaogithub
+        return VertxUtil.newSuccessPromise();
     }
 
     public SetSQLHandler() {

@@ -36,6 +36,8 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.PartialType;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.ToString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,20 +54,20 @@ import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSIO
 public class MySQLTaskUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLTaskUtil.class);
 
-    public static void proxyBackendByDatasourceName(MycatSession mycat,
-                                                    String datasourceName ,
-                                                    String sql,
-                                                    TransactionSyncType transaction,
-                                                    MySQLIsolation isolation) {
+    public static PromiseInternal<Void> proxyBackendByDatasourceName(MycatSession mycat,
+                                                                     String datasourceName ,
+                                                                     String sql,
+                                                                     TransactionSyncType transaction,
+                                                                     MySQLIsolation isolation) {
         //todo fix the log
-        proxyBackendByDataSource(mycat,
+        return proxyBackendByDataSource(mycat,
                 MySQLPacketUtil.generateComQueryPacket(sql),
                 datasourceName,
                 DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
                 transaction, isolation);
     }
 
-    public static void proxyBackendByDataSource(MycatSession mycat,
+    public static PromiseInternal<Void> proxyBackendByDataSource(MycatSession mycat,
                                                 byte[] packetData,
                                                 String datasourceName,
                                                 MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
@@ -73,6 +75,7 @@ public class MySQLTaskUtil {
                                                 MySQLIsolation isolation) {
         Objects.requireNonNull(datasourceName);
         mycat.switchProxyWriteHandler();
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
         mycat.getIOThread().addNIOJob(new NIOJob() {
             @Override
             public void run(ReactorEnvThread reactor2) throws Exception {
@@ -102,11 +105,14 @@ public class MySQLTaskUtil {
                         SessionCallBack<MySQLClientSession> sessionCallBack = new SessionCallBack<MySQLClientSession>() {
                             @Override
                             public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                                MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
+                                PromiseInternal<Void> proxyBackend = MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
+                                // todo 异步未实现完全 wangzihaogithub
+                                proxyBackend.onComplete(o-> promise.tryComplete());
                             }
 
                             @Override
                             public void onException(Exception exception, Object sender, Object attr) {
+                                promise.tryFail(exception);
                                 finallyCallBack.onRequestMySQLException(mycat, exception, null);
                             }
                         };
@@ -119,6 +125,7 @@ public class MySQLTaskUtil {
 
                     @Override
                     public void onException(Exception exception, Object sender, Object attr) {
+                        promise.tryFail(exception);
                         finallyCallBack.onRequestMySQLException(mycat, exception, attr);
                     }
                 });
@@ -127,7 +134,9 @@ public class MySQLTaskUtil {
             @Override
             public void stop(ReactorEnvThread reactor, Exception reason) {
                 mycat.setLastMessage(reason);
-                mycat.writeErrorEndPacketBySyncInProcessError();
+                // todo 异步未实现完全 wangzihaogithub
+                PromiseInternal<Void> proxyBackend = mycat.writeErrorEndPacketBySyncInProcessError();
+                promise.tryFail(reason);
             }
 
             @Override
@@ -136,6 +145,8 @@ public class MySQLTaskUtil {
             }
         });
 
+        // todo 异步未实现完全 wangzihaogithub
+        return promise;
     }
 
     @ToString

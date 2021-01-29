@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>3.0.6</version>
+        </dependency>
+        <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
             <version>1.14-release</version>
@@ -40,6 +45,11 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.22</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <version>4.0.0</version>
         </dependency>
     </dependencies>
 

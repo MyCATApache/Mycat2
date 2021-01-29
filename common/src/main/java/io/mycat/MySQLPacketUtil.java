@@ -23,6 +23,8 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -117,6 +119,18 @@ public class MySQLPacketUtil {
         }
     }
 
+    public static final Iterable<byte[]> generateAllColumnDefPayload(MycatRowMetaData metaData) {
+        List<byte[]> list = new ArrayList<>(metaData.getColumnCount());
+        final int count = metaData.getColumnCount();
+        for (int index = 0; index < count; index++) {
+            list.add(MySQLPacketUtil
+                    .generateColumnDefPayload(
+                            metaData,
+                            index++));
+        }
+        return list;
+    }
+
     public static final byte[] generateColumnDefPayload(MycatRowMetaData metaData, int columnIndex) {
         try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
             ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
@@ -147,7 +161,7 @@ public class MySQLPacketUtil {
             writer.writeLenencInt(lastInsertId);
             writer.writeFixInt(2, serverStatus);
             writer.writeFixInt(2, warningCount);
-            if (message == null){
+            if (message == null) {
                 message = "";
             }
             writer.writeEOFString(message);

@@ -6,7 +6,12 @@ import io.mycat.TransactionSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
 import io.mycat.runtime.MycatDataContextImpl;
+import io.mycat.util.VertxUtil;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.ProgressivePromise;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.net.NetSocket;
 
 import java.nio.charset.Charset;
@@ -104,7 +109,7 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public void writeBytes(byte[] payload, boolean end) {
+    public PromiseInternal<Void> writeBytes(byte[] payload, boolean end) {
         if (end) {
             if (mycatDataContext!=null){
                 TransactionSession transactionSession = mycatDataContext.getTransactionSession();
@@ -113,15 +118,16 @@ public class VertxSessionImpl implements VertxSession {
                 }
             }
         }
-        socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
+        Future<Void> future = socket.write(Buffer.buffer(MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload)));
         if (end) {
             this.socket.resume();
         }
+        return VertxUtil.castPromise(future);
     }
 
     @Override
-    public void writeErrorEndPacketBySyncInProcessError() {
-        writeBytes(MySQLPacketUtil.generateError(
+    public PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError() {
+        return writeBytes(MySQLPacketUtil.generateError(
                 mycatDataContext.getLastErrorCode(),
                 mycatDataContext.getLastMessage(),
                 getCapabilities()
@@ -129,8 +135,8 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public void writeErrorEndPacketBySyncInProcessError(int errorCode) {
-        writeBytes(MySQLPacketUtil.generateError(
+    public PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError(int errorCode) {
+        return writeBytes(MySQLPacketUtil.generateError(
                 errorCode,
                 mycatDataContext.getLastMessage(),
                 getCapabilities()
@@ -143,9 +149,10 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
-    public void close() {
+    public PromiseInternal<Void>  close() {
         mycatDataContext.close();
-        socket.close();
+        Future<Void> future = socket.close();
+        return VertxUtil.castPromise(future);
     }
 
     @Override

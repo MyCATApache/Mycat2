@@ -137,4 +137,8 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
                                 Expressions.constant(EnumUtils.toLinq4jJoinType(joinType))))
                         .toBlock());
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

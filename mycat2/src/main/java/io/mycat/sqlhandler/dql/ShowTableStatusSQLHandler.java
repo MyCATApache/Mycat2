@@ -13,6 +13,7 @@ import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 
         MySqlShowTableStatusStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
@@ -35,18 +36,16 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
         }
         SQLName database = ast.getDatabase();
         if (database == null){
-            response.sendError(new MycatException("NO DATABASES SELECTED"));
-            return ;
+            return response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         Optional<SchemaHandler> schemaHandler = Optional.ofNullable(metadataManager.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
         String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> dataContext.resolveDatasourceTargetName(name)).orElse(null);
         if (targetName != null) {
-            response.proxySelect(targetName, ast.toString());
+            return response.proxySelect(targetName, ast.toString());
         } else {
-            response.proxySelectToPrototype(ast.toString());
+            return response.proxySelectToPrototype(ast.toString());
         }
-        return ;
 //        MySqlShowTableStatusStatement ast = request.getAst();
 //        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
 //            ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));

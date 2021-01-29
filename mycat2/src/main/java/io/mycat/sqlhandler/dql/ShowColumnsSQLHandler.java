@@ -5,7 +5,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-
+import io.vertx.core.impl.future.PromiseInternal;
 
 
 /**
@@ -15,9 +15,9 @@ import io.mycat.Response;
 public class ShowColumnsSQLHandler extends AbstractSQLHandler<SQLShowColumnsStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLShowColumnsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLShowColumnsStatement ast = request.getAst();
-        response.proxySelectToPrototype(ast.toString());
+        return response.proxySelectToPrototype(ast.toString());
 //        response.proxyShow(ast);
 //        return ExecuteCode.PERFORMED;
 //        String defaultSchema = dataContext.getDefaultSchema();

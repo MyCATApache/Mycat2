@@ -90,4 +90,8 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
         MycatNestedLoopJoin mycatNestedLoopJoin = MycatNestedLoopJoin.create(getTraitSet(), getLeft(), getRight(), getCondition(), joinType);
         return mycatNestedLoopJoin.implement(implementor, pref);
     }
+    @Override
+    public boolean isSupportStream() {
+        return false;
+    }
 }

@@ -16,11 +16,12 @@ package io.mycat.calcite.physical;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.*;
-import io.mycat.util.CalciteConvertors;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -34,20 +35,23 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.RxBuiltInMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.*;
-import static org.apache.calcite.adapter.enumerable.EnumUtils.NO_PARAMS;
 
 /**
  * Calc operator implemented in Mycat convention.
@@ -61,7 +65,7 @@ public class MycatCalc extends Calc implements MycatRel {
                         RelTraitSet traitSet,
                         RelNode input,
                         RexProgram program) {
-        super(cluster, traitSet, input,program);
+        super(cluster, traitSet, input, program);
         assert getConvention() instanceof MycatConvention;
         this.program = program;
         this.rowType = program.getOutputRowType();
@@ -160,10 +164,10 @@ public class MycatCalc extends Calc implements MycatRel {
                                 inputEnumerator,
                                 BuiltInMethod.ENUMERATOR_CURRENT.method),
                         inputJavaType);
-        if (!input.getType() .equals(inputJavaType)){
-            input  = Expressions.convert_(input, inputJavaType);
-            if(LOGGER.isDebugEnabled()){
-                LOGGER.debug("cast {} to {} fail",input,inputJavaType);
+        if (!input.getType().equals(inputJavaType)) {
+            input = Expressions.convert_(input, inputJavaType);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("cast {} to {} fail", input, inputJavaType);
             }
         }
 
@@ -290,5 +294,85 @@ public class MycatCalc extends Calc implements MycatRel {
         return implementor.result(physType, builder.toBlock());
     }
 
+    @Override
+    public boolean isSupportStream() {
+        return this.getCorrelVariable() == null;
+    }
 
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        final JavaTypeFactory typeFactory = implementor.getTypeFactory();
+        final BlockBuilder builder = new BlockBuilder();
+        final EnumerableRel child = (EnumerableRel) getInput();
+
+        final Result result =
+                implementor.visitChild(this, 0, child, pref);
+
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        typeFactory, getRowType(), pref.prefer(result.format));
+
+        Type inputJavaType = result.physType.getJavaRowType();
+
+        Expression inputObservalbe = builder.append(
+                        "inputObservalbe", result.block, false);
+
+        final RexBuilder rexBuilder = getCluster().getRexBuilder();
+        final RelMetadataQuery mq = getCluster().getMetadataQuery();
+        final RelOptPredicateList predicates = mq.getPulledUpPredicates(child);
+        final RexSimplify simplify =
+                new RexSimplify(rexBuilder, predicates, RexUtil.EXECUTOR);
+        final RexProgram program = this.program.normalize(rexBuilder, simplify);
+        Expression condition = null;
+        Expression  project = null;
+        ParameterExpression rowParameter = Expressions.parameter(inputJavaType, "row");
+
+        ParameterExpression input = Expressions.parameter(inputJavaType, "row");
+        final BlockBuilder builder2 = new BlockBuilder();
+        if (program.getCondition() != null) {
+            condition = RexToLixTranslator.translateCondition(
+                    program,
+                    typeFactory,
+                    builder2,
+                    new RexToLixTranslator.InputGetterImpl(
+                            Collections.singletonList(
+                                    Pair.of(input, result.physType))),
+                    implementor.getAllCorrelateVariablesFunction(), implementor.getConformance());
+        }
+        {
+            final BlockBuilder builder3 = new BlockBuilder();
+            final SqlConformance conformance =
+                    (SqlConformance) implementor.map.getOrDefault("_conformance",
+                            SqlConformanceEnum.DEFAULT);
+            List<Expression> expressions =
+                    RexToLixTranslator.translateProjects(
+                            program,
+                            typeFactory,
+                            conformance,
+                            builder3,
+                            physType,
+                            DataContext.ROOT,
+                            new RexToLixTranslator.InputGetterImpl(
+                                    Collections.singletonList(
+                                            Pair.of(input, result.physType))),
+                            implementor.getAllCorrelateVariablesFunction());
+            project= physType.record(expressions);
+        }
+
+        if (condition!=null){
+            FunctionExpression<Function<?>> lambda = Expressions.lambda(condition, input);
+            inputObservalbe = Expressions.call(RxBuiltInMethod.OBSERVABLE_FILTER.method,
+                    inputObservalbe,
+                    lambda
+            );
+        }
+        FunctionExpression<Function<?>> lambda = Expressions.lambda(project, input);
+        builder.add(Expressions.call(RxBuiltInMethod.OBSERVABLE_SELECT.method,
+                inputObservalbe,
+                lambda
+        ));
+        Expressions.lambda(EnumUtils.convert(rowParameter,inputJavaType),rowParameter);
+
+        return implementor.result(physType, builder.toBlock());
+    }
 }

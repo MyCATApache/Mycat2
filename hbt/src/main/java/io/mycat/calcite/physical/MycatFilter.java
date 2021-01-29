@@ -29,6 +29,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Implementation of {@link Filter} in
@@ -74,6 +75,13 @@ public class MycatFilter extends Filter implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        final MycatCalc calc = toMycatCalc();
+
+        return calc.implement(implementor,pref);
+    }
+
+    @NotNull
+    private MycatCalc toMycatCalc() {
         final Filter filter = this;
         final RelNode rel = filter.getInput();
 
@@ -87,7 +95,16 @@ public class MycatFilter extends Filter implements MycatRel {
         final RexProgram program = programBuilder.getProgram();
 
         final MycatCalc calc =  MycatCalc.create(getTraitSet(), input, program);
+        return calc;
+    }
 
-        return calc.implement(implementor,pref);
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        MycatCalc mycatCalc = toMycatCalc();
+        return mycatCalc.implementStream(implementor,pref);
+    }
+    @Override
+    public boolean isSupportStream() {
+        return this.getCorrelVariable() == null;
     }
 }

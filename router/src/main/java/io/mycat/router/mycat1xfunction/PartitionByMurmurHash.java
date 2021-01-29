@@ -79,9 +79,9 @@ public class PartitionByMurmurHash extends Mycat1xSingleValueRuleFunction {
 
     hash = Hashing.murmur3_32(seed);//计算一致性哈希的对象
     for (int i = 0; i < count; i++) {//构造一致性哈希环，用TreeMap表示
-      StringBuilder hashName = new StringBuilder("SHARD-").append(i);
+      String prefix = "SHARD-" + i + "-NODE-";
       for (int n = 0, shard = virtualBucketTimes * getWeight(weightMap, i); n < shard; n++) {
-        bucketMap.put(hash.hashUnencodedChars(hashName.append("-NODE-").append(n)).asInt(), i);
+        bucketMap.put(hash.hashUnencodedChars(prefix + n).asInt(), i);
       }
     }
   }
