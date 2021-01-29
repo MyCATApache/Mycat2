@@ -484,29 +484,29 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Nullable
     private static RelNode pushDownJoinByNormalTableOrGlobalTable(LogicalJoin join, MycatView leftView, MycatView rightView) {
-        Distribution ldistribution = leftView.getDistribution();
-        Distribution rdistribution = rightView.getDistribution();
-        if (ldistribution.isBroadCast() || rdistribution.isBroadCast()) {
-            if (!ldistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-            }
-            if (!rdistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), rdistribution);
-            }
-            if (ldistribution.isBroadCast() && rdistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-            }
-        }
-        DataNode[] leftDataNodes = Iterables.toArray(ldistribution.getDataNodes(), DataNode.class);
-        DataNode[] rightDataNodes = Iterables.toArray(rdistribution.getDataNodes(), DataNode.class);
-
-        if (ldistribution.isPhy() && rdistribution.isPhy()) {
-            if (leftDataNodes.length == rightDataNodes.length) {
-                if (leftDataNodes.length == 1) {
-                    return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-                }
-            }
-        }
+//        Distribution ldistribution = leftView.getDistribution();
+//        Distribution rdistribution = rightView.getDistribution();
+//        if (ldistribution.isBroadCast() || rdistribution.isBroadCast()) {
+//            if (!ldistribution.isBroadCast()) {
+//                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+//            }
+//            if (!rdistribution.isBroadCast()) {
+//                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), rdistribution);
+//            }
+//            if (ldistribution.isBroadCast() && rdistribution.isBroadCast()) {
+//                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+//            }
+//        }
+//        DataNode[] leftDataNodes = Iterables.toArray(ldistribution.getDataNodes(), DataNode.class);
+//        DataNode[] rightDataNodes = Iterables.toArray(rdistribution.getDataNodes(), DataNode.class);
+//
+//        if (ldistribution.isPhy() && rdistribution.isPhy()) {
+//            if (leftDataNodes.length == rightDataNodes.length) {
+//                if (leftDataNodes.length == 1) {
+//                    return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+//                }
+//            }
+//        }
 //
 //        if (Arrays.stream(leftDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet())
 //                .equals(Arrays.stream(rightDataNodes).map(i -> i.getTargetName()).collect(Collectors.toSet()))) {
