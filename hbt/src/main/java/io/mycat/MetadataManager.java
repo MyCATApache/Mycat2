@@ -60,6 +60,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -79,6 +80,7 @@ public class MetadataManager implements MysqlVariableService {
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
+    private final Map<String, List<ShardingTable>> tableGroup;
 
 
     public void removeSchema(String schemaName) {
@@ -249,6 +251,10 @@ public class MetadataManager implements MysqlVariableService {
                 );
             }
         }
+        Stream<TableHandler> tableHandlerStream = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream());
+        Stream<ShardingTable> customRuleFunctionStream = tableHandlerStream.filter(i -> i.getType() == LogicTableType.SHARDING)
+                .map(i -> (ShardingTable) i);
+        this.tableGroup = customRuleFunctionStream.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getUniqueID()));
     }
 
     private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {

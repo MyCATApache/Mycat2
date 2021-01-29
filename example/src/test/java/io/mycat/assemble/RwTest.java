@@ -4,10 +4,7 @@ import io.mycat.config.GlobalBackEndTableInfoConfig;
 import io.mycat.config.NormalTableConfig;
 import io.mycat.config.ShardingBackEndTableInfoConfig;
 import io.mycat.config.ShardingFuntion;
-import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.hint.CreateSchemaHint;
-import io.mycat.hint.CreateTableHint;
-import io.mycat.hint.ShowDataNodeHint;
+import io.mycat.hint.*;
 import io.mycat.router.mycat1xfunction.PartitionByRangeMod;
 import org.apache.groovy.util.Maps;
 import org.junit.Assert;
@@ -17,6 +14,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -185,7 +183,35 @@ public class RwTest implements MycatTest {
            Assert.assertTrue(maps.toString().contains("dw0"));
         }
     }
+    @Test
+    public void testGlobalTable() throws Exception {
+        try (Connection mycat = getMySQLConnection(DB_MYCAT);
+             Connection mysql3306 = getMySQLConnection(DB1);
+             Connection mysql3307 = getMySQLConnection(DB2)) {
+            execute(mycat, RESET_CONFIG);
+            execute(mysql3306, "drop database if exists db1");
+            execute(mysql3307, "drop database if exists db1");
+            execute(mycat, CreateDataSourceHint
+                    .create("dw0", DB2));
+            execute(mycat, CreateDataSourceHint
+                    .create("dw1", DB1));
+            execute(mycat,
+                    CreateClusterHint.create("c0",Arrays.asList("dw0"), Collections.emptyList()));
+            execute(mycat,
+                    CreateClusterHint.create("c1",Arrays.asList("dw1"), Collections.emptyList()));
 
+            execute(mycat,"create database db1");
+            execute(mycat, "CREATE TABLE db1.`BROADCAST` (\n" +
+                    "  `id` bigint) ENGINE=InnoDB  DEFAULT CHARSET=utf8 BROADCAST;");
+            List<Map<String, Object>> maps = executeQuery(mycat, ShowDataNodeHint.create("db1", "BROADCAST"));
+            Assert.assertTrue(maps.toString().contains("c0"));
+            Assert.assertTrue(maps.toString().contains("c1"));
+            execute(mycat, "insert db1.`BROADCAST` (`id`) values (1);");
+            Assert.assertTrue(hasData(mysql3307,"db1","BROADCAST"));
+            Assert.assertTrue(hasData(mysql3306,"db1","BROADCAST"));
+            Assert.assertTrue(executeQuery(mycat, "select * from db1.BROADCAST").size()==1);
+        }
+    }
     @Test
     public void testAddSchema() throws Exception {
         try (Connection mycat = getMySQLConnection(DB_MYCAT);) {
