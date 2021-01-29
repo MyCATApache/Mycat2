@@ -8,13 +8,10 @@ import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.calcite.util.mapping.Mappings;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class ColumnMapping extends RelShuttleImpl {
 
-    final List<TableScan> tableScanList = new ArrayList<>();
     TableScan tableScan;
     Map<Integer, Integer> map;
 
@@ -23,28 +20,26 @@ public class ColumnMapping extends RelShuttleImpl {
     }
 
     public boolean hasRes() {
-        return tableScan != null;
+        return tableScan != null && map != null;
     }
 
     public int mapping(int index) {
-        return map.get(index);
+            return map.get(index);
     }
 
     private void updateMapping(Mappings.TargetMapping permutation) {
-        if (tableScan != null) {
+        if (tableScan != null && permutation != null) {
             ImmutableMap.Builder<Integer, Integer> builder = ImmutableMap.builder();
             for (IntPair intPair : permutation) {
-                builder.put(intPair.source, intPair.target);
+                builder.put(intPair.target, intPair.source);
             }
-            ImmutableMap<Integer, Integer> build = builder.build();
-            map = (build);
+            map = (builder.build());
         }
     }
 
     private void reset() {
-        map.clear();
+        map = null;
         tableScan = null;
-        tableScanList.clear();
     }
 
 

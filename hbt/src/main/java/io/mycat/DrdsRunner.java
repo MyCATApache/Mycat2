@@ -155,8 +155,18 @@ public class DrdsRunner {
             public RelNode visit(TableScan scan) {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
                 if (table != null) {
-                    return MycatView.of(scan, table.createDistribution());
-
+                    if (table instanceof MycatPhysicalTable){
+                        DataNode dataNode = ((MycatPhysicalTable) table).getDataNode();
+                        MycatPhysicalTable mycatPhysicalTable = (MycatPhysicalTable) table;
+                        return new MycatTransientSQLTableScan(cluster,
+                                mycatPhysicalTable.getRowType(),
+                                dataNode.getTargetName(),
+                                MycatCalciteSupport.INSTANCE.convertToSql(
+                                        scan,
+                                        MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName()),
+                                        false
+                                ).getSql());
+                    }
                 }
                 return super.visit(scan);
             }
