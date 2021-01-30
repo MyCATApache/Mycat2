@@ -1,9 +1,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.MycatDataContext;
-import io.mycat.NewMycatDataContextImpl;
-import io.mycat.Response;
+import io.mycat.*;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.physical.MycatInsertRel;
@@ -19,7 +17,7 @@ import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.runtime.ArrayBindable;
-import org.apache.calcite.runtime.CodeExecuterContext;
+import io.mycat.calcite.CodeExecuterContext;
 
 import java.io.IOException;
 import java.util.List;
@@ -73,7 +71,6 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public PromiseInternal<Void> execute(Plan plan) {
-
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(plan.getPhysical().getRowType().getFieldList());
         RowObservable rowObservable = new RowObservable() {
 
@@ -87,8 +84,9 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
                 ArrayBindable bindable = codeExecuterContext.getBindable();
 
-                NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, false);
-                newMycatDataContext.allocateResource();
+
+                        AsyncMycatDataContextImplImpl newMycatDataContext =
+                                new AsyncMycatDataContextImplImpl(context, codeExecuterContext,params, false);
                 Object bindObservable = bindable.bindObservable(newMycatDataContext);
                 if (bindObservable instanceof Observable) {
                     Observable<Object[]> observable = (Observable) bindObservable;

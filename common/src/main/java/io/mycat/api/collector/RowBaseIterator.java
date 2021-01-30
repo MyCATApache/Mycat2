@@ -57,6 +57,14 @@ public interface RowBaseIterator extends Closeable, BaseIterator {
 
     Object getObject(int columnIndex);
 
+    default Object[] getObjects(int count) {
+        Object[] objects = new Object[count];
+        for (int i = 0; i < count; i++) {
+            objects[i] = getObject(i);
+        }
+        return objects;
+    }
+
     BigDecimal getBigDecimal(int columnIndex);
 
     public default List<Map<String, Object>> getResultSetMap() {

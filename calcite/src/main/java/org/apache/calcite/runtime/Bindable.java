@@ -49,4 +49,7 @@ public interface Bindable<T> {
     default Object bindObservable(NewMycatDataContext dataContext) {
         return null;
     }
+    default boolean isObservable(){
+        return false;
+    }
 }

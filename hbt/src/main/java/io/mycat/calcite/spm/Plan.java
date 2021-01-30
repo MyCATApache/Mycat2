@@ -16,9 +16,10 @@ package io.mycat.calcite.spm;
 
 import io.mycat.DrdsSql;
 import io.mycat.MycatDataContext;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.runtime.CodeExecuterContext;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ public interface Plan extends Comparable<Plan> {
     RelOptCost getRelOptCost();
 
     public Type getType();
+
     public CodeExecuterContext getCodeExecuterContext();
 
     public RelNode getPhysical();
@@ -39,5 +41,9 @@ public interface Plan extends Comparable<Plan> {
         PHYSICAL,
         UPDATE,
         INSERT
+    }
+
+    public default CalciteRowMetaData getMetaData() {
+        return new CalciteRowMetaData(getPhysical().getRowType().getFieldList());
     }
 }

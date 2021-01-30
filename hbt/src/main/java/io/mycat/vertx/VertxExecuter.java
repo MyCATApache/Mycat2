@@ -108,13 +108,13 @@ public class VertxExecuter {
     public static CompositeFuture runMutliQuery(Future<SqlConnection> sqlConnectionFuture, List<String> sqls, List<Object> values) {
         ArrayList<Future> resList = new ArrayList<>();
         for (String sql : sqls) {
-            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture, values, sql);
+            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture,  sql,values);
             resList.add(observableFuture);
         }
         return CompositeFuture.all(resList);
     }
 
-    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture, List<Object> values, String sql) {
+    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture,String sql, List<Object> values ) {
         Future<RowObservable> observableFuture = sqlConnectionFuture
                 .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
                     PreparedQuery<RowSet<Row>> query = preparedStatement.query();

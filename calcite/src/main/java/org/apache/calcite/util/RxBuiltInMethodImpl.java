@@ -93,8 +93,8 @@ public class RxBuiltInMethodImpl {
         if (input instanceof Enumerable) {
             Enumerable input1 = (Enumerable) input;
             return Linq4j.asEnumerable(() -> StreamSupport.stream(input1.spliterator(), true).iterator());
-        }else {
-          return   asGather(toEnumerable(input));
+        } else {
+            return asGather(toEnumerable(input));
         }
     }
 }

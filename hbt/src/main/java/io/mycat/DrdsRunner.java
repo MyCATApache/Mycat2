@@ -29,6 +29,8 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowObservable;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.*;
@@ -42,13 +44,16 @@ import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.MatierialRewriter;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
-import io.mycat.calcite.rules.*;
+import io.mycat.calcite.rules.MycatTablePhyViewRule;
+import io.mycat.calcite.rules.MycatViewToIndexViewRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanCache;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -58,6 +63,9 @@ import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.VertxUtil;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.ObservableConverter;
+import io.reactivex.rxjava3.core.Observer;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
@@ -88,7 +96,10 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.runtime.*;
+import org.apache.calcite.runtime.ArrayBindable;
+import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.runtime.NewMycatDataContext;
+import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.*;
@@ -113,11 +124,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class DrdsRunner {
@@ -224,7 +237,7 @@ public class DrdsRunner {
                                      MycatDataContext dataContext,
                                      OptimizationContext optimizationContext) {
         MycatRel rel;
-        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(), drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
                 case PHYSICAL:
@@ -428,7 +441,9 @@ public class DrdsRunner {
         } else {
             rboInCbo = Collections.emptyList();
         }
-        return optimizeWithCBO(rboLogPlan, rboInCbo);
+        MycatRel mycatRel = optimizeWithCBO(rboLogPlan, rboInCbo);
+        mycatRel = (MycatRel) mycatRel.accept(new MatierialRewriter());
+        return mycatRel;
     }
 
     private RelNode getRelRoot(String defaultSchemaName,
@@ -592,7 +607,7 @@ public class DrdsRunner {
     }
 
     public Plan convertToExecuter(DrdsSql drdsSql, MycatDataContext dataContext, OptimizationContext optimizationContext) {
-        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(), drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
                 case PHYSICAL:
@@ -606,24 +621,24 @@ public class DrdsRunner {
         } else if (mycatRel instanceof MycatInsertRel) {
             return new PlanImpl((MycatInsertRel) mycatRel);
         }
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel));
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel), drdsSql.isForUpdate());
         return new PlanImpl(mycatRel, codeExecuterContext, drdsSql.isForUpdate());
     }
 
     @NotNull
-    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
+    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode, boolean forUpdate) {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementHybridRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
-        if (log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("----------------------------------------code----------------------------------------");
             log.debug(code);
         }
-        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(),context,
+        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(), context,
                 asObjectArray(getBindable(classDeclaration, code, fieldCount)),
-                code);
+                code, forUpdate);
     }
 
     @NotNull
@@ -823,19 +838,19 @@ public class DrdsRunner {
 
 
     @SneakyThrows
-    public PromiseInternal<Void>  runOnDrds(MycatDataContext dataContext,
-                          SQLStatement statement, Response response) {
+    public PromiseInternal<Void> runOnDrds(MycatDataContext dataContext,
+                                           SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
         TransactionSession transactionSession = dataContext.getTransactionSession();
         List<Object> params = drdsSql.getParams();
         PlanImplementor planImplementor;
-       if(transactionSession instanceof XaSqlConnection){
-           planImplementor = new ObservablePlanImplementorImpl((XaSqlConnection) transactionSession,
-                   dataContext,params, response);
-       }else {
-           planImplementor=  new PlanImplementorImpl(dataContext,params,response);
-       }
+        if (transactionSession instanceof XaSqlConnection) {
+            planImplementor = new ObservablePlanImplementorImpl((XaSqlConnection) transactionSession,
+                    dataContext, params, response);
+        } else {
+            planImplementor = new PlanImplementorImpl(dataContext, params, response);
+        }
         return impl(plan, planImplementor);
     }
 
@@ -844,11 +859,11 @@ public class DrdsRunner {
             case PHYSICAL:
                 return planImplementor.execute(plan);
             case UPDATE:
-                return planImplementor.execute((MycatUpdateRel)Objects.requireNonNull(plan.getPhysical()));
+                return planImplementor.execute((MycatUpdateRel) Objects.requireNonNull(plan.getPhysical()));
             case INSERT:
-                return planImplementor.execute((MycatInsertRel)Objects.requireNonNull(plan.getPhysical()));
-            default:{
-                return VertxUtil.newFailPromise(new MycatException(MySQLErrorCode.ER_NOT_SUPPORTED_YET,"不支持的执行计划"));
+                return planImplementor.execute((MycatInsertRel) Objects.requireNonNull(plan.getPhysical()));
+            default: {
+                return VertxUtil.newFailPromise(new MycatException(MySQLErrorCode.ER_NOT_SUPPORTED_YET, "不支持的执行计划"));
             }
         }
     }
@@ -857,34 +872,62 @@ public class DrdsRunner {
     public Plan getPlan(MycatDataContext dataContext, DrdsSql drdsSql) {
         OptimizationContext optimizationContext = new OptimizationContext();
         Plan plan = this.convertToExecuter(drdsSql, dataContext, optimizationContext);
-        getPlanCache().put(drdsSql.getParameterizedString(),drdsSql.getTypes(), plan);
+        getPlanCache().put(drdsSql.getParameterizedString(), drdsSql.getTypes(), plan);
         return plan;
     }
 
-    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+    public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
         PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, Collections.emptyList(), response);
         return runHbtOnDrds(dataContext, statement, planImplementor);
     }
 
-    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
+    public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
         DrdsRunner drdsRunners = this;
         MycatRel mycatRel = drdsRunners.doHbt(statement);
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
         return planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
     }
 
     @NotNull
-    public static EnumeratorRowIterator getEnumeratorRowIterator(Plan plan, MycatDataContext context, List<Object> params) {
+    public static CompletableFuture<Object> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeTargetConnection(context, params, codeExecuterContext);
+        CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
+        return collect.thenCompose(map -> {
+            JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
+            ArrayBindable bindable = codeExecuterContext.getBindable();
+            Object bindObservable = bindable.bindObservable(jdbcMycatDataContext);
+            CalciteRowMetaData metaData = plan.getMetaData();
+            if (bindObservable instanceof Enumerable){
+                Enumerable enumerable = (Enumerable) bindObservable;
+               return CompletableFuture.completedFuture(new EnumeratorRowIterator(metaData,enumerable.enumerator()));
+            }else {
+                io.reactivex.rxjava3.core.Observable<Object[]> bindObservable1 = (io.reactivex.rxjava3.core.Observable<Object[]>) bindObservable;
+                RowObservable rowObservable =new RowObservable() {
+                    private Observer<? super Object[]> observer;
 
-        NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, plan.forUpdate());
-        newMycatDataContext.allocateResource();
-        ArrayBindable bindable = codeExecuterContext.getBindable();
-        Enumerable enumerable = bindable.bind(newMycatDataContext);
-        Enumerator enumerator = enumerable.enumerator();
-        RelNode physical = plan.getPhysical();
-        return new EnumeratorRowIterator(new CalciteRowMetaData(physical.getRowType().getFieldList()), enumerator);
+                    @Override
+                    public MycatRowMetaData getRowMetaData() {
+                        return metaData;
+                    }
+
+                    @Override
+                    protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
+                        this.observer = observer;
+                        bindObservable1.subscribe(observer);
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+
+                    }
+                };
+                return CompletableFuture.completedFuture(rowObservable);
+            }
+        });
     }
+
+
 
 
 }

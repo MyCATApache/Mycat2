@@ -9,14 +9,14 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.calcite.executor.MycatGlobalUpdateExecutor;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -26,8 +26,10 @@ import org.apache.calcite.sql.util.SqlString;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import static io.mycat.DrdsRunner.getEnumeratorRowIterator;
+import static io.mycat.DrdsRunner.getJdbcExecuter;
 
 public class PlanImplementorImpl implements PlanImplementor {
     public PlanImplementorImpl(MycatDataContext context,List<Object> params, final Response response) {
@@ -87,8 +89,18 @@ public class PlanImplementorImpl implements PlanImplementor {
                 }
             }
         }
-        EnumeratorRowIterator enumeratorRowIterator = getEnumeratorRowIterator(plan, context, params);
-        return response.sendResultSet(enumeratorRowIterator);
+        CompletableFuture<Object> jdbcExecuter = getJdbcExecuter(plan, context, params);
+        Object o = null;
+        try {
+            o = jdbcExecuter.get(1, TimeUnit.SECONDS);
+        } catch (Throwable e) {
+            return response.sendError(e);
+        }
+        if (o instanceof RowBaseIterator){
+            return response.sendResultSet((RowBaseIterator)o);
+        }else {
+            return response.sendResultSet((RowObservable) o);
+        }
     }
 
 

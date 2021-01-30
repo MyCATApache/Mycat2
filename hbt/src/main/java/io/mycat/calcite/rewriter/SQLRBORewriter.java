@@ -15,15 +15,15 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
 import io.mycat.DataNode;
 import io.mycat.calcite.MycatCalciteSupport;
-import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.table.AbstractMycatTable;
-import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
+import io.mycat.calcite.table.AbstractMycatTable;
 import io.mycat.calcite.table.CustomTableHandlerWrapper;
+import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.QueryBuilder;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,7 +44,9 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class SQLRBORewriter extends RelShuttleImpl {
     final static NextConvertor nextConvertor = new NextConvertor();
@@ -111,7 +113,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalCalc calc) {
-        return null;
+        return calc.copy(calc.getTraitSet(), ImmutableList.of(calc.getInput().accept(this)));
     }
 
     @Override
@@ -168,6 +170,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             if (operator instanceof SqlFunction) {
                 containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
             }
+            if (operator == MycatSessionValueFunction.INSTANCE) {
+                containsUsedDefinedFunction = true;
+            }
             return super.visitCall(call);
         }
     }
@@ -204,8 +209,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
         RelNode right = inputs.get(1).accept(this);
         boolean lr = RelMdSqlViews.join(left);
         boolean rr = RelMdSqlViews.join(right);
-        if (lr&& rr) {
-            return join(params,left, right, join);
+        if (lr && rr) {
+            return join(params, left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         }
@@ -235,16 +240,21 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalIntersect intersect) {
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
         for (RelNode input : intersect.getInputs()) {
-            RelNode accept = input.accept(this);
+            builder.add(input.accept(this));
         }
 
-        return intersect;
+        return intersect.copy(intersect.getTraitSet(), builder.build());
     }
 
     @Override
     public RelNode visit(LogicalMinus minus) {
-        return null;
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
+        for (RelNode input : minus.getInputs()) {
+            builder.add(input.accept(this));
+        }
+        return minus.copy(minus.getTraitSet(), builder.build());
     }
 
     @Override
@@ -259,7 +269,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalMatch match) {
-        return null;
+        return match;
     }
 
     @Override
@@ -279,7 +289,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalTableModify modify) {
-        return null;
+        RelNode relNode = modify.getInput().accept(this);
+        return modify.copy(modify.getTraitSet(), ImmutableList.of(relNode));
     }
 
     @Override
@@ -334,10 +345,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 input = LogicalSort.create(input, sort.getCollation()
                         , null
                         , null);
-                input = MycatView.of(input, dataNodeInfo);
                 return MycatMergeSort.create(
                         input.getTraitSet().replace(MycatConvention.INSTANCE),
-                        input,
+                        MycatView.of(input, dataNodeInfo),
                         sort.collation, sort.offset, sort.fetch);
             }
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
@@ -358,10 +368,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexNode);
-            input = MycatView.of(input, dataNodeInfo);
             return MycatMergeSort.create(
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
-                    input,
+                    MycatView.of(input, dataNodeInfo),
                     sort.collation, sort.offset, sort.fetch);
         }
     }
@@ -430,6 +439,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     public static RelNode correlate(RelNode left, RelNode right, LogicalCorrelate correlate) {
         return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
     }
+
     public static RelNode join(List<Object> params,
                                RelNode left,
                                RelNode right,

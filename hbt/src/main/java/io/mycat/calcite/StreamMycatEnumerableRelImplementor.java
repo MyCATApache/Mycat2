@@ -31,7 +31,6 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
             }else {
                 result = rootRel.implement(this, prefer);
             }
-
         } catch (RuntimeException e) {
             IllegalStateException ex = new IllegalStateException("Unable to implement "
                     + RelOptUtil.toString(rootRel, SqlExplainLevel.ALL_ATTRIBUTES));
@@ -70,7 +69,7 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
                         ImmutableList.of(),
                         Blocks.toFunctionBlock(
                                 Expressions.return_(null,
-                                        Expressions.constant(true)))));
+                                        Expressions.constant(block.getType() instanceof Observable)))));
         memberDeclarations.add(
                 Expressions.methodDecl(Modifier.PUBLIC, Class.class,
                         BuiltInMethod.TYPED_GET_ELEMENT_TYPE.method.getName(),
