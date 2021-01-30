@@ -81,7 +81,6 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -161,8 +160,18 @@ public class DrdsRunner {
             public RelNode visit(TableScan scan) {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
                 if (table != null) {
-                    return MycatView.of(scan, table.computeDataNode());
-
+                    if (table instanceof MycatPhysicalTable){
+                        DataNode dataNode = ((MycatPhysicalTable) table).getDataNode();
+                        MycatPhysicalTable mycatPhysicalTable = (MycatPhysicalTable) table;
+                        return new MycatTransientSQLTableScan(cluster,
+                                mycatPhysicalTable.getRowType(),
+                                dataNode.getTargetName(),
+                                MycatCalciteSupport.INSTANCE.convertToSql(
+                                        scan,
+                                        MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName()),
+                                        false
+                                ).getSql());
+                    }
                 }
                 return super.visit(scan);
             }
@@ -262,9 +271,9 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileInsert((ShardingTable) logicTable, dataContext, drdsSql, optimizationContext);
                 case GLOBAL:
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 case NORMAL:
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 case CUSTOM:
                     throw new UnsupportedOperationException();
             }
@@ -277,10 +286,10 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileUpdate(logicTable, dataContext, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
                 case NORMAL: {
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 }
                 case CUSTOM:
                     throw new UnsupportedOperationException();
@@ -294,10 +303,10 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileDelete(logicTable, dataContext, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
                 case NORMAL: {
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 }
                 case CUSTOM:
                     throw new UnsupportedOperationException();
@@ -307,18 +316,16 @@ public class DrdsRunner {
     }
 
     @NotNull
-    private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTableHandler logicTable) {
-        GlobalTableHandler globalTableHandler = logicTable;
-        Distribution distribution = Distribution.of(globalTableHandler.getGlobalDataNode(), false, Distribution.Type.BroadCast);
+    private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
+        Distribution distribution = Distribution.of(logicTable);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, true);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
     @NotNull
-    private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTableHandler logicTable) {
-        NormalTableHandler normalTableHandler = logicTable;
-        Distribution distribution = Distribution.of(ImmutableList.of(normalTableHandler.getDataNode()), false, Distribution.Type.PHY);
+    private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTable logicTable) {
+        Distribution distribution = Distribution.of(logicTable);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, false);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
@@ -568,27 +575,21 @@ public class DrdsRunner {
         if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
             AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
             RexNode condition = ((Filter) input).getCondition();
-            Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(condition));
-            MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
+            Distribution distribution = mycatTable.createDistribution();
+            MycatUpdateRel mycatUpdateRel = MycatUpdateRel.create(tableModify.getCluster(),
                     distribution,
-                    drdsSql.getSqlStatement(), mycatTable.isBroadCast());
+                    Collections.singletonList(condition),
+                    drdsSql.getSqlStatement());
             optimizationContext.saveParameterized();
             return mycatUpdateRel;
         }
         AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
-        Distribution distribution = mycatTable.computeDataNode();
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
+        Distribution distribution = mycatTable.createDistribution();
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(
                 distribution,
                 drdsSql.getSqlStatement(), mycatTable.isBroadCast());
         optimizationContext.saveAlways();
         return mycatUpdateRel;
-    }
-
-    static boolean isComplex(RelNode logPlan) {
-        ComplexJudged complexJudged = new ComplexJudged();
-        logPlan.accept(complexJudged);
-        return complexJudged.c;
-
     }
 
     public Plan convertToExecuter(DrdsSql drdsSql, MycatDataContext dataContext, OptimizationContext optimizationContext) {
@@ -666,32 +667,6 @@ public class DrdsRunner {
             cbe.setDebuggingInformation(true, true, true);
         }
         return (ArrayBindable) cbe.createInstance(new StringReader(s));
-    }
-
-    static class ComplexJudged extends RelShuttleImpl {
-        boolean c = false;
-
-        @Override
-        public RelNode visit(LogicalJoin join) {
-            RelNode left = join.getLeft();
-            RelNode right = join.getRight();
-            RelOptTable leftTable = left.getTable();
-            RelOptTable rightTable = right.getTable();
-            if (leftTable != null && rightTable != null) {
-                AbstractMycatTable leftT = leftTable.unwrap(AbstractMycatTable.class);
-                AbstractMycatTable rightT = rightTable.unwrap(AbstractMycatTable.class);
-                if (leftT != null && rightT != null) {
-                    if (!leftT.computeDataNode().isSingle() && !rightT.computeDataNode().isSingle()) {
-                        c = true;
-                    }
-                } else {
-                    c = true;
-                }
-            } else {
-                c = true;
-            }
-            return super.visit(join);
-        }
     }
 
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {

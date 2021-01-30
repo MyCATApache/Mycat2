@@ -170,25 +170,26 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             datasourceConfig.setName("prototypeDs");
             datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306/mysql");
             routerConfig.getDatasources().add(datasourceConfig);
-        }
-        if (routerConfig.getClusters().isEmpty()) {
-            ClusterConfig clusterConfig = new ClusterConfig();
-            clusterConfig.setName("prototype");
-            clusterConfig.setMasters(Lists.newArrayList("prototypeDs"));
-            clusterConfig.setMaxCon(200);
-            clusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
-            clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
-            routerConfig.getClusters().add(clusterConfig);
+
+            if (routerConfig.getClusters().isEmpty()) {
+                ClusterConfig clusterConfig = new ClusterConfig();
+                clusterConfig.setName("prototype");
+                clusterConfig.setMasters(Lists.newArrayList("prototypeDs"));
+                clusterConfig.setMaxCon(200);
+                clusterConfig.setClusterType(ReplicaType.MASTER_SLAVE.name());
+                clusterConfig.setSwitchType(ReplicaSwitchType.SWITCH.name());
+                routerConfig.getClusters().add(clusterConfig);
+            }
         }
     }
 
     @Override
     @SneakyThrows
-   public void start() {
+    public void start() {
         try (ConfigOps configOps = startOps()) {
             configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
-        }catch (Exception e){
-           throw  MycatErrorCode.createMycatException(MycatErrorCode.ERR_INIT_CONFIG,"start FileMetadataStorageManager fail",e);
+        } catch (Exception e) {
+            throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_INIT_CONFIG, "start FileMetadataStorageManager fail", e);
         }
     }
 
@@ -320,8 +321,8 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             Path filePath = sqlcaches.resolve(fileName);
             writeFile(t, filePath);
         }
-        State state =  new State();
-        ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(()->MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
+        State state = new State();
+        ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
         state.replica.putAll(replicaSelector.getState());
         prepare.commit();
         Path statePath = baseDirectory.resolve("state.json");
@@ -343,7 +344,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @SneakyThrows
     public void cleanDirectory(Path path) {
-        if (Files.exists(path)){
+        if (Files.exists(path)) {
             org.apache.commons.io.FileUtils.cleanDirectory(path.toFile());
         }
     }

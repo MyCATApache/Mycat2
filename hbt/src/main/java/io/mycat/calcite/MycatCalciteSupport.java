@@ -17,6 +17,7 @@ package io.mycat.calcite;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
@@ -402,6 +403,11 @@ public enum MycatCalciteSupport implements Context {
                     build.put("CURTIME", CurTimeFunction.INSTANCE);
                     build.put("CURRENT_TIME", CurTimeFunction.INSTANCE);
 
+                    build.put("NOW", NowNoArgFunction.INSTANCE);
+                    build.put("CURRENT_TIMESTAMP", NowNoArgFunction.INSTANCE);
+                    build.put("LOCALTIME", NowNoArgFunction.INSTANCE);
+                    build.put("LOCALTIMESTAMP", NowNoArgFunction.INSTANCE);
+
                     build.put("NOW", NowFunction.INSTANCE);
                     build.put("CURRENT_TIMESTAMP", NowFunction.INSTANCE);
                     build.put("LOCALTIME", NowFunction.INSTANCE);
@@ -655,11 +661,15 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        return convertToSql(input, dialect, forUpdate, Collections.emptyList());
+        return convertToSql(input, dialect,Collections.emptyMap(), forUpdate, Collections.emptyList());
     }
 
-    public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate, List<Object> params) {
-        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params);
+    public SqlString convertToSql(RelNode input,
+                                  SqlDialect dialect,
+                                  Map<String, DataNode> map,
+                                  boolean forUpdate,
+                                  List<Object> params) {
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params, map);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         if (forUpdate) {
@@ -669,7 +679,7 @@ public enum MycatCalciteSupport implements Context {
                 .withAlwaysUseParentheses(true)
                 .withSelectListItemsOnSeparateLines(false)
                 .withUpdateSetListNewline(false)
-                .withQuoteAllIdentifiers(true);//mysql fun name should not wrapper quote
+                .withQuoteAllIdentifiers(false);//mysql fun name should not wrapper quote
         SqlPrettyWriter writer = new SqlPrettyWriter(config) {
             @Override
             public void dynamicParam(int index) {

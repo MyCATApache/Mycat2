@@ -104,7 +104,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
                                 String sql = transientSQLTableScan.getSql();
                                 DefaultConnection mycatConnection = jdbcConnectionManager.getConnection(targetName);
                                 dataContext.getTransactionSession().addCloseResource(mycatConnection);
-                                RowBaseIterator rowBaseIterator = mycatConnection.executeQuery(sql);
+                                RowBaseIterator rowBaseIterator = mycatConnection.executeQuery(new CalciteRowMetaData(transientSQLTableScan.getRowType().getFieldList()),sql);
                                 int columnCount = rowBaseIterator.getMetaData().getColumnCount();
                                 return new Iterator<Object[]>() {
 

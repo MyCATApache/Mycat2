@@ -15,17 +15,11 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.rewriter.Distribution;
-import org.apache.calcite.rex.RexNode;
-
-import java.util.List;
 
 //@Getter
 public interface AbstractMycatTable {
-    public abstract Distribution computeDataNode(List<RexNode> conditions);
 
-    public abstract boolean isSingle(List<RexNode> conditions);
-
-    public abstract Distribution computeDataNode();
+    public abstract Distribution createDistribution();
 
     public default boolean isBroadCast() {
         return false;
@@ -42,6 +36,4 @@ public interface AbstractMycatTable {
     public default boolean isCustom() {
         return false;
     }
-
-    boolean isPartial(List<RexNode> conditions);
 }

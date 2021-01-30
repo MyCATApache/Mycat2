@@ -14,8 +14,9 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.util.StringUtil;
 
 import java.time.format.DateTimeFormatter;
@@ -28,77 +29,100 @@ import java.util.Objects;
 
 public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
 
-  private static final long ONE_DAY = 86400000;
-  private long beginDate;
-  private long partionTime;
-  private long endDate;
-  private int nCount;
-  private DateTimeFormatter formatter;
+    private static final long ONE_DAY = 86400000;
+    private long beginDate;
+    private long partionTime;
+    private long endDate;
+    private int nCount;
+    private DateTimeFormatter formatter;
 
-  @Override
-  public String name() {
-    return "PartitionByDate";
-  }
-
-  @Override
-  public void init(ShardingTableHandler tableHandler,Map<String, Object> prot, Map<String, Object> ranges) {
-    this.table = tableHandler;
-    this.properties = prot;
-    this.ranges = ranges;
-
-    String startBeginDate = Objects.toString(prot.get("beginDate"));
-    String startEndDate = (String) (prot.get("endDate"));
-    String startPartionDay = Objects.toString(prot.get("partionDay"));
-    String dateFormat = Objects.toString(prot.get("dateFormat"));
-    formatter = DateTimeFormatter.ofPattern(dateFormat);
-    beginDate = getTime(startBeginDate);
-    endDate = 0L;
-    nCount = 0;
-    partionTime = Long.parseLong(startPartionDay) * ONE_DAY;
-    if (!StringUtil.isEmpty(startEndDate)) {
-      endDate = getTime(startEndDate);
-      nCount = (int) ((endDate - beginDate) / partionTime) + 1;
+    @Override
+    public String name() {
+        return "PartitionByDate";
     }
 
-  }
+    @Override
+    public void init(ShardingTableHandler tableHandler, Map<String, Object> prot, Map<String, Object> ranges) {
+        this.table = tableHandler;
+        this.properties = prot;
+        this.ranges = ranges;
 
-  private long getTime(String startBeginDate) {
-    try {
-      return formatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR)* ONE_DAY;
-    } catch (DateTimeParseException e) {
-      throw new IllegalArgumentException(
-          "columnValue:" + startBeginDate + " Please check if the format satisfied.", e);
+        String startBeginDate = Objects.toString(prot.get("beginDate"));
+        String startEndDate = (String) (prot.get("endDate"));
+        String startPartionDay = Objects.toString(prot.get("partionDay"));
+        String dateFormat = Objects.toString(prot.get("dateFormat"));
+        formatter = DateTimeFormatter.ofPattern(dateFormat);
+        beginDate = getTime(startBeginDate);
+        endDate = 0L;
+        nCount = 0;
+        partionTime = Long.parseLong(startPartionDay) * ONE_DAY;
+        if (!StringUtil.isEmpty(startEndDate)) {
+            endDate = getTime(startEndDate);
+            nCount = (int) ((endDate - beginDate) / partionTime) + 1;
+        }
+
     }
-  }
 
-  @Override
-  public int calculateIndex(String columnValue) {
-    long targetTime = getTime(columnValue);
-    return innerCalculate(targetTime);
-  }
-
-  private int innerCalculate(long targetTime) {
-    int targetPartition = (int) ((targetTime - beginDate) / partionTime);
-    if (targetTime > endDate && nCount != 0) {
-      targetPartition = targetPartition % nCount;
+    private long getTime(String startBeginDate) {
+        try {
+            return formatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR) * ONE_DAY;
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException(
+                    "columnValue:" + startBeginDate + " Please check if the format satisfied.", e);
+        }
     }
-    return targetPartition;
-  }
 
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    long beginDate = getTime(beginValue);
-    long endDate = getTime(endValue);
-    ArrayList<Integer> list = new ArrayList<>();
-    while (beginDate <= endDate) {
-      int nodeValue = innerCalculate(beginDate);
-      if (Collections.frequency(list, nodeValue) < 1) {
-        list.add(nodeValue);
-      }
-      beginDate += ONE_DAY;
+    @Override
+    public int calculateIndex(String columnValue) {
+        long targetTime = getTime(columnValue);
+        return innerCalculate(targetTime);
     }
-    return ints(list);
-  }
 
+    private int innerCalculate(long targetTime) {
+        int targetPartition = (int) ((targetTime - beginDate) / partionTime);
+        if (targetTime > endDate && nCount != 0) {
+            targetPartition = targetPartition % nCount;
+        }
+        return targetPartition;
+    }
 
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        long beginDate = getTime(beginValue);
+        long endDate = getTime(endValue);
+        ArrayList<Integer> list = new ArrayList<>();
+        while (beginDate <= endDate) {
+            int nodeValue = innerCalculate(beginDate);
+            if (Collections.frequency(list, nodeValue) < 1) {
+                list.add(nodeValue);
+            }
+            beginDate += ONE_DAY;
+        }
+        return ints(list);
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionByDate.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionByDate partitionByDate = (PartitionByDate) customRuleFunction;
+            long beginDate = partitionByDate.beginDate;
+            long partionTime = partitionByDate.partionTime;
+            long endDate = partitionByDate.endDate;
+            int nCount = partitionByDate.nCount;
+            DateTimeFormatter formatter = partitionByDate.formatter;
+
+            return this.beginDate == beginDate &&
+                    this.partionTime == partionTime &&
+                    this.endDate == endDate &&
+                    this.nCount == nCount &&
+                    Objects.equals(this.formatter, formatter);
+        }
+        return false;
+    }
+
+    @Override
+    public String getErUniqueID() {
+        return "" + beginDate + partionTime + endDate + nCount + formatter;
+    }
 }

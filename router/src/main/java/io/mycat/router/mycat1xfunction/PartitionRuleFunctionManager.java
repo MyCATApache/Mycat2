@@ -50,4 +50,5 @@ public enum PartitionRuleFunctionManager {
         }
         return AutoFunctionFactory.getTableFunction(tableHandler,funtion);
     }
+
 }
