@@ -21,6 +21,7 @@ import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.table.*;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -495,19 +496,22 @@ public class SQLRBORewriter extends RelShuttleImpl {
                             SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(lindex);
                             int rindex = rightFieldList.get(rightColumnMapping.mapping(pair.target)).getIndex();
                             SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rindex);
-                            if (leftTableHandler.getShardingFuntion()
-                                    .isShardingDbKey(lColumn.getColumnName())
-                                    ==
-                                    rightTableHandler.getShardingFuntion()
-                                            .isShardingTableKey(rColumn.getColumnName())) {
+                            CustomRuleFunction lFuntion = leftTableHandler.getShardingFuntion();
+                            CustomRuleFunction rFuntion = rightTableHandler.getShardingFuntion();
+                            if (lFuntion.isShardingDbKey(lColumn.getColumnName())
+                                            ==
+                                            rFuntion.isShardingDbKey(rColumn.getColumnName())
+                                            &&
+                                            lFuntion.isShardingTableKey(lColumn.getColumnName())
+                                                    ==
+                                                    rFuntion.isShardingTableKey(rColumn.getColumnName())) {
                                 return left.getDistribution().join(right.getDistribution())
-                                        .map(distribution -> MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(left, right)), distribution));
+                                        .map(distribution -> MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution));
                             }
                         }
                     }
                 }
             }
-
         }
         return Optional.empty();
     }
