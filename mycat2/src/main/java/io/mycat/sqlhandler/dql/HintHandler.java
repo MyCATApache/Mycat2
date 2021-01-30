@@ -32,6 +32,7 @@ import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.sql.JDBCType;
 import java.sql.Timestamp;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlHintStatement ast = request.getAst();
         List<SQLCommentHint> hints = ast.getHints();
         if (hints.size() == 1) {
@@ -76,14 +77,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     String dbType = (String) map.get("dialect");
                     UserConfig userInfo = authenticator.getUserInfo(username);
                     if (userInfo == null) {
-                        response.sendError("unknown username:" + username, MySQLErrorCode.ER_UNKNOWN_ERROR);
-                        return;
+                        return response.sendError("unknown username:" + username, MySQLErrorCode.ER_UNKNOWN_ERROR);
                     }
                     userInfo.setDialect(dbType);
                     ops.putUser(userInfo);
                     ops.commit();
-                    response.sendOk();
-                    return;
+                    return response.sendOk();
                 }
                 if ("showSlowSql".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
@@ -114,8 +113,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 Objects.toString(r.getTarget())
                         ));
                     });
-                    response.sendResultSet(resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(resultSetBuilder.build());
                 }
                 if ("showDataNodes".equalsIgnoreCase(cmd)) {
                     Map map = JsonUtil.from(body, Map.class);
@@ -150,22 +148,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         resultSetBuilder.addObjectRowPayload(
                                 Arrays.asList(targetName, schemaName, tableName));
                     }
-                    response.sendResultSet(resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(resultSetBuilder.build());
                 }
                 if ("resetConfig".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     ops.reset();
                     ops.commit();
-                    response.sendOk();
-                    return;
+                    return response.sendOk();
                 }
                 if ("run".equalsIgnoreCase(cmd)) {
                     Map<String, Object> map = JsonUtil.from(body, Map.class);
                     String hbt = Objects.toString(map.get("hbt"));
                     DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                    drdsRunner.runHbtOnDrds(dataContext, hbt, response);
-                    return;
+                    return drdsRunner.runHbtOnDrds(dataContext, hbt, response);
                 }
                 if ("createSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
@@ -186,8 +181,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
                     }
 
-                    MycatdbCommand.execute(dataContext, response, sqlStatement);
-                    return;
+                    return MycatdbCommand.execute(dataContext, response, sqlStatement);
                 }
                 if ("showSqlCaches".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
@@ -197,20 +191,17 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         sqlResultSetService.snapshot().toStringList()
                                 .forEach(c -> resultSetBuilder.addObjectRowPayload(Arrays.asList(c)));
                     }
-                    response.sendResultSet(resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(resultSetBuilder.build());
                 }
                 if ("dropSqlCache".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     SqlCacheConfig sqlCacheConfig = JsonUtil.from(body, SqlCacheConfig.class);
                     ops.removeSqlCache(sqlCacheConfig.getName());
                     ops.commit();
-                    response.sendOk();
-                    return;
+                    return response.sendOk();
                 }
                 if ("showBufferUsage".equalsIgnoreCase(cmd)) {
-                    response.sendResultSet(mycatServer.showBufferUsage(dataContext.getSessionId()));
-                    return;
+                    return response.sendResultSet(mycatServer.showBufferUsage(dataContext.getSessionId()));
                 }
                 if ("showUsers".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
@@ -228,8 +219,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 userConfig.getDialect()
                         ));
                     }
-                    response.sendResultSet(() -> builder.build());
-                    return;
+                    return response.sendResultSet(() -> builder.build());
                 }
 
                 if ("showSchemas".equalsIgnoreCase(cmd)) {
@@ -253,8 +243,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         String TABLE_NAMES = String.join(",", value.logicTables().keySet());
                         builder.addObjectRowPayload(Arrays.asList(SCHEMA_NAME, DEFAULT_TARGET_NAME, TABLE_NAMES));
                     }
-                    response.sendResultSet(() -> builder.build());
-                    return;
+                    return response.sendResultSet(() -> builder.build());
                 }
 
                 if ("showTables".equalsIgnoreCase(cmd)) {
@@ -317,20 +306,17 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 .map(i -> i.toString()).orElse(null);
                         builder.addObjectRowPayload(Arrays.asList(SCHEMA_NAME, TABLE_NAME, CREATE_TABLE_SQL, TYPE, COLUMNS, CONFIG));
                     });
-                    response.sendResultSet(() -> builder.build());
-                    return;
+                    return response.sendResultSet(() -> builder.build());
                 }
 
                 if ("showClusters".equalsIgnoreCase(cmd)) {
                     Map map = JsonUtil.from(body, Map.class);
                     String clusterName = (String) map.get("name");
                     RowBaseIterator rowBaseIterator = showClusters(clusterName);
-                    response.sendResultSet(rowBaseIterator);
-                    return;
+                    return response.sendResultSet(rowBaseIterator);
                 }
                 if ("showNativeDataSources".equalsIgnoreCase(cmd)) {
-                    response.sendResultSet(mycatServer.showNativeDataSources());
-                    return;
+                    return response.sendResultSet(mycatServer.showNativeDataSources());
                 }
                 if ("showDataSources".equalsIgnoreCase(cmd)) {
 
@@ -388,8 +374,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 IDLE_TIMEOUT, DRIVER, TYPE, IS_MYSQL));
                     }
 
-                    response.sendResultSet(() -> resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(() -> resultSetBuilder.build());
                 }
                 if ("showHeartbeats".equalsIgnoreCase(cmd)) {
                     Map<String, DatasourceConfig> dataSourceConfig = routerConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -479,8 +464,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         LAST_RECEIVED_QUERY_TIME
                                 ));
                     }
-                    response.sendResultSet(resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(resultSetBuilder.build());
                 }
                 if ("showHeartbeatStatus".equalsIgnoreCase(cmd)) {
                     Map<String, HeartbeatFlow> heartbeatDetectorMap = replicaSelectorRuntime.getHeartbeatDetectorMap();
@@ -495,8 +479,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 Objects.toString(key),
                                 Objects.toString(value.getDsStatus())
                         ));
-                        response.sendResultSet(() -> builder.build());
-                        return;
+                        return response.sendResultSet(() -> builder.build());
                     }
                 }
                 if ("showInstances".equalsIgnoreCase(cmd)) {
@@ -538,13 +521,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         replicaDataSourceSelectorList
                                 ));
                     }
-                    response.sendResultSet(resultSetBuilder.build());
-                    return;
+                    return response.sendResultSet(resultSetBuilder.build());
                 }
                 if ("showReactors".equalsIgnoreCase(cmd)) {
                     MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                    response.sendResultSet(server.showReactors());
-                    return;
+                    return response.sendResultSet(server.showReactors());
                 }
                 if ("showThreadPools".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
@@ -568,18 +549,15 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 w.getCompletedTaskCount(),
                                 w.getTaskCount()));
                     }
-                    response.sendResultSet(() -> builder.build());
-                    return;
+                    return response.sendResultSet(() -> builder.build());
                 }
                 if ("showNativeBackends".equalsIgnoreCase(cmd)) {
                     MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                    response.sendResultSet(server.showNativeBackends());
-                    return;
+                    return response.sendResultSet(server.showNativeBackends());
                 }
                 if ("showConnections".equalsIgnoreCase(cmd)) {
                     MycatServer server = MetaClusterCurrent.wrapper(MycatServer.class);
-                    response.sendResultSet(server.showConnections());
-                    return;
+                    return response.sendResultSet(server.showConnections());
                 }
                 if ("showSchedules".equalsIgnoreCase(cmd)) {
                     ResultSetBuilder builder = ResultSetBuilder.create();
@@ -593,15 +571,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             .addColumnInfo("IS_SHUTDOWN", JDBCType.BOOLEAN)
                             .addColumnInfo("SCHEDULE_COUNT", JDBCType.BIGINT);
                     builder.addObjectRowPayload(Arrays.asList(NAME, IS_TERMINATED, IS_SHUTDOWN, SCHEDULE_COUNT));
-                    response.sendResultSet(() -> builder.build());
-                    return;
+                    return response.sendResultSet(() -> builder.build());
                 }
                 mycatDmlHandler(cmd, body, ast);
-                response.sendOk();
-                return;
+                return response.sendOk();
             }
         }
-        response.sendOk();
+        return  response.sendOk();
     }
 
     public static RowBaseIterator showClusters(String clusterName) {

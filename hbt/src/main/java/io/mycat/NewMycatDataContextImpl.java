@@ -11,6 +11,7 @@ import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.*;
@@ -210,7 +211,7 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
         List<List<Object[]>> res = new ArrayList<>();
         for (Map.Entry<String, SqlString> entry : mycatView.expandToSql(forUpdate, params).entries()) {
             String target = transactionSession.resolveFinalTargetName(entry.getKey());
-            MycatConnection connection = transactionSession.getConnection(target);
+            MycatConnection connection = transactionSession.getJDBCConnection(target);
             long start = SqlRecord.now();
             SqlString sqlString = entry.getValue();
 
@@ -307,4 +308,26 @@ public class NewMycatDataContextImpl implements NewMycatDataContext {
     public boolean isForUpdate() {
         return forUpdate;
     }
+
+
+    @Override
+    public io.reactivex.rxjava3.core.Observable <Object[]> getObservable(RelNode node) {
+        return  io.reactivex.rxjava3.core.Observable.fromIterable(getEnumerable(node));
+    }
+
+    @Override
+    public Queue<List<io.reactivex.rxjava3.core.Observable<Object[]>>> getObservables(RelNode node) {
+        Queue<List<Enumerable<Object[]>>> enumerableList = getEnumerableList(node);
+        LinkedList<List<io.reactivex.rxjava3.core.Observable<Object[]>>> lists = new LinkedList<>();
+        for (List<Enumerable<Object[]>> enumerables : enumerableList) {
+            lists.add(enumerables.stream().map(i-> Observable.fromIterable(i)).collect(Collectors.toList()));
+        }
+        return lists;
+    }
+
+    @Override
+    public List<Observable<Object[]>> getMergeObservables(RelNode node) {
+        return getObservables(node).remove();
+    }
+
 }

@@ -17,16 +17,21 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.physical.MycatMatierial;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.RxBuiltInMethod;
+import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -79,32 +84,45 @@ public interface MycatRel extends RelNode, EnumerableRel {
         throw new UnsupportedOperationException();
     }
 
-    default Result implementHybrid(MycatRel input, StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        boolean thisSupportStream = isSupportStream();
-        MycatRel subMycatRel = (MycatRel) input;
-        if (thisSupportStream) {
-            boolean subSupportStream = subMycatRel.isSupportStream();
-            if (subSupportStream) {
-                return input.implementStream(implementor, pref);
-            } else {
-                return input.implement(implementor, pref);
-            }
-        } else {
-            if (input.isSupportStream()) {
-                MycatMatierial mycatMatierial = MycatMatierial.create(getCluster(),
-                        getCluster().traitSetOf(MycatConvention.INSTANCE), subMycatRel);
-                return mycatMatierial.implementStream(implementor, pref);
-            } else {
-                return input.implement(implementor, pref);
-            }
-        }
-    }
+//    default Result implementHybrid(MycatRel input, StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+//        boolean thisSupportStream = isSupportStream();
+//        MycatRel subMycatRel = (MycatRel) input;
+//        if (thisSupportStream) {
+//            boolean subSupportStream = subMycatRel.isSupportStream();
+//            if (subSupportStream) {
+//                return input.implementStream(implementor, pref);
+//            } else {
+//                return input.implement(implementor, pref);
+//            }
+//        } else {
+//            if (input.isSupportStream()) {
+//                MycatMatierial mycatMatierial = MycatMatierial.create(getCluster(),
+//                        getCluster().traitSetOf(MycatConvention.INSTANCE), subMycatRel);
+//                return mycatMatierial.implementStream(implementor, pref);
+//            } else {
+//                return input.implement(implementor, pref);
+//            }
+//        }
+//    }
 
-    default Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+   default Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
         throw new UnsupportedOperationException();
     }
 
     default boolean isSupportStream() {
         return false;
+    }
+
+    @NotNull
+    public default Expression toEnumerate(Expression input) {
+        if (!isSupportStream()){
+            Type type = input.getType();
+            if (!(type instanceof Enumerable)) {
+                input = Expressions.call(RxBuiltInMethod.TO_ENUMERABLE.method, input);
+            }
+            return input;
+        }else {
+            return input;
+        }
     }
 }

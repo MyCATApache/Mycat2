@@ -1,5 +1,7 @@
 package io.mycat.proxy.session;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.XaLog;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
@@ -20,7 +22,9 @@ public class TranscationSwitch {
         this(new HashMap<>(Maps.of(TransactionType.PROXY_TRANSACTION_TYPE,
                 mycatDataContext -> {
                     JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    return new ProxyTransactionSession(connection.getDatasourceProvider().createSession(mycatDataContext));
+                    MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+                    XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+                    return new ProxyTransactionSession(mySQLManager,xaLog,connection.getDatasourceProvider().createSession(mycatDataContext));
                 },
                 TransactionType.JDBC_TRANSACTION_TYPE,
                 mycatDataContext -> {

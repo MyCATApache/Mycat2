@@ -11,6 +11,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +21,7 @@ import java.util.List;
 public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         MySqlRenameTableStatement mySqlRenameTableStatement = request.getAst();
         for (MySqlRenameTableStatement.Item item : mySqlRenameTableStatement.getItems()) {
             SQLName name = item.getName();
@@ -54,7 +55,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
         }
 
 
-        response.sendOk();
+        return response.sendOk();
     }
 
     private MySqlRenameTableStatement clone(MySqlRenameTableStatement mySqlRenameTableStatement) {

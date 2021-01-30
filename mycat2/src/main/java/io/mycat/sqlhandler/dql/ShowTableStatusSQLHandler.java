@@ -9,6 +9,8 @@ import io.mycat.Response;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,57 +24,18 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
 
         MySqlShowTableStatusStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
         }
         SQLName database = ast.getDatabase();
+
         if (database == null) {
-            response.sendError(new MycatException("NO DATABASES SELECTED"));
-            return;
+          return  response.sendError(new MycatException("NO DATABASES SELECTED"));
         }
-
-        response.proxySelectToPrototype(ast.toString());
-        return;
-//        MySqlShowTableStatusStatement ast = request.getAst();
-//        if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
-//            ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));
-//        }
-//        SQLName database = ast.getDatabase();
-//        if (database == null){
-//            response.sendError(new MycatException("NO DATABASES SELECTED"));
-//            return ExecuteCode.PERFORMED;
-//        }
-//        Optional<SchemaHandler> schemaHandler = Optional.ofNullable(MetadataManager.INSTANCE.getSchemaMap()).map(i -> i.get(SQLUtils.normalize(ast.getDatabase().toString())));
-//        String targetName = schemaHandler.map(i -> i.defaultTargetName()).map(name -> ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(name, true, null)).orElse(null);
-//        if (targetName != null) {
-//            response.proxySelect(targetName, ast.toString());
-//        } else {
-//            response.proxyShow(ast);
-//        }
-
-//        try {
-//            DDLManager.INSTANCE.updateTables();
-//            String databaseName = ast.getDatabase() == null ? dataContext.getDefaultSchema() :
-//                    SQLUtils.normalize(ast.getDatabase().getSimpleName());
-//
-//            String tableName = ast.getTableGroup() == null ? null
-//                    : SQLUtils.normalize(ast.getTableGroup().getSimpleName());
-//
-//            String sql = ShowStatementRewriter.showTableStatus(ast, databaseName, tableName);
-//
-//            try (RowBaseIterator query = MycatDBs.createClient(dataContext).query(sql)) {
-//                response.sendResultSet(() -> query, () -> {
-//                    throw new UnsupportedOperationException();
-//                });
-//            }
-//        }catch (Exception e){
-//            LOGGER.error("",e);
-//            response.sendError(e);
-//        }
-//        return ExecuteCode.PERFORMED;
+       return response.proxySelectToPrototype(ast.toString());
     }
 
     private void addColumns(ResultSetBuilder resultSetBuilder) {

@@ -37,6 +37,7 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -100,7 +101,17 @@ public class MycatProject
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        MycatCalc mycatCalc = toMycatCacl();
+        return mycatCalc.implement(implementor,pref);
+    }
 
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        return toMycatCacl().implementStream(implementor,pref);
+    }
+
+    @NotNull
+    private MycatCalc toMycatCacl() {
         final Project project = this;
         final RelNode input = project.getInput();
         final RexProgram program =
@@ -111,8 +122,9 @@ public class MycatProject
                         project.getRowType(),
                         project.getCluster().getRexBuilder());
         MycatCalc mycatCalc = MycatCalc.create(getTraitSet(), input, program);
-        return mycatCalc.implement(implementor,pref);
+        return mycatCalc;
     }
+
     @Override
     public boolean isSupportStream() {
         return this.getCorrelVariable() == null;

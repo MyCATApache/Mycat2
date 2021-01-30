@@ -11,6 +11,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.List;
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLAlterTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLAlterTableStatement sqlAlterTableStatement = request.getAst();
         SQLExprTableSource tableSource = sqlAlterTableStatement.getTableSource();
         resolveSQLExprTableSource(tableSource,dataContext);
@@ -37,7 +38,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
             executeOnDataNodes(sqlAlterTableStatement, connectionManager, dataNodes);
             CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),schema,tableName,createTableStatement);
         }
-        response.sendOk();
+        return response.sendOk();
     }
 
 

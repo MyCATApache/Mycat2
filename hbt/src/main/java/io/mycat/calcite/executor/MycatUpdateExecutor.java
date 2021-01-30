@@ -117,7 +117,7 @@ public class MycatUpdateExecutor implements Executor {
         for (SQL sql : reallySqlSet) {
             String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
             if (uniqueValues.add(k)) {
-                if (connections.put(sql.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(sql.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }
@@ -198,6 +198,7 @@ public class MycatUpdateExecutor implements Executor {
                 sql.getSetColumnMap(),
                 primaryKeyList,sql.getTarget());
     }
+
 
     private static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);

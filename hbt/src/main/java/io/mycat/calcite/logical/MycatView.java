@@ -26,7 +26,6 @@ import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -193,6 +192,19 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return builder.build();
     }
 
+    public List<String> getTargets(List<Object> params) {
+        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
+            DataNode dataNode = distribution.getDataNodes().iterator().next();
+            return ImmutableList.of(dataNode.getTargetName());
+        } else {
+            ImmutableList.Builder<String> builder = ImmutableList.builder();
+            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
+                builder.add(dataNode.getTargetName());
+            }
+            return builder.build();
+        }
+    }
+
     public RelNode applyDataNode(DataNode dataNode) {
         return this.relNode.accept(new RelShuttleImpl() {
             @Override
@@ -224,10 +236,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         ParameterExpression root = implementor.getRootExpression();
         Expression mycatViewStash = implementor.stash(this, RelNode.class);
         Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class);
-        final Expression expression2 = toEnumerable(
-                Expressions.call(root, getEnumerable, mycatViewStash));
-        assert Types.isAssignableFrom(Enumerable.class, expression2.getType());
-        builder.add(toRows(physType, expression2, getRowType().getFieldCount()));
+        builder.add(Expressions.call(root, getEnumerable, mycatViewStash));
         return implementor.result(physType, builder.toBlock());
     }
 
@@ -272,33 +281,29 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public static Expression fieldExpression(ParameterExpression row_, int i,
-                                             PhysType physType, JavaRowFormat format) {
-        final Expression e =
-                format.field(row_, i, null, physType.getJavaFieldType(i));
-        final RelDataType relFieldType =
-                physType.getRowType().getFieldList().get(i).getType();
-        switch (relFieldType.getSqlTypeName()) {
-            case ARRAY:
-            case MULTISET:
-                final RelDataType fieldType = relFieldType.getComponentType();
-                if (fieldType.isStruct()) {
-                    // We can't represent a multiset or array as a List<Employee>, because
-                    // the consumer does not know the element type.
-                    // The standard element type is List.
-                    // We need to convert to a List<List>.
-                    final JavaTypeFactory typeFactory = MycatCalciteSupport.TypeFactory;
-                    final PhysType elementPhysType = PhysTypeImpl.of(
-                            typeFactory, fieldType, JavaRowFormat.CUSTOM);
-                    final MethodCallExpression e2 =
-                            Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
-                    final Expression e3 = elementPhysType.convertTo(e2, JavaRowFormat.LIST);
-                    return Expressions.call(e3, BuiltInMethod.ENUMERABLE_TO_LIST.method);
-                } else {
-                    return e;
-                }
-            default:
-                return e;
-        }
+                                       PhysType physType, JavaRowFormat format) {
+        return format.field(row_, i, null, physType.getJavaFieldType(i));
     }
 
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
+
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        implementor.collectLeafRelNode(this);
+        final BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        ParameterExpression root = implementor.getRootExpression();
+        Expression mycatViewStash = implementor.stash(this, RelNode.class);
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class);
+        final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash);
+        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        return implementor.result(physType, builder.toBlock());
+    }
 }

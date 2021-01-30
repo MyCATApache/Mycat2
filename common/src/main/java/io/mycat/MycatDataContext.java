@@ -16,12 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public interface MycatDataContext extends Wrapper, SessionOpt {
     static final Logger LOGGER = LoggerFactory.getLogger(MycatDataContext.class);
     long getSessionId();
-
+    @Override
     TransactionType transactionType();
-
+    @Override
     TransactionSession getTransactionSession();
-
-
+    @Override
     void setTransactionSession(TransactionSession transactionSession);
 
     void switchTransaction(TransactionType transactionSessionType);

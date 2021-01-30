@@ -1,16 +1,24 @@
 package io.mycat.runtime;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.XaSqlConnection;
+import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import io.mycat.MycatConnection;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.util.Dumper;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 
-public class ProxyTransactionSession implements TransactionSession {
+public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
     private TransactionSession parent;
-
-    public ProxyTransactionSession(TransactionSession parent) {
+    private XaSqlConnection connection;
+    public ProxyTransactionSession(MySQLManager mySQLManager, XaLog xaLog,TransactionSession parent) {
+        super(mySQLManager,xaLog);
         this.parent = parent;
+        this.connection = new BaseXaSqlConnection(mySQLManager,xaLog);
     }
 
     @Override
@@ -24,18 +32,18 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void begin() {
-        parent.begin();
+    public Future<Void> begin() {
+        return (Future)CompositeFuture.all(parent.begin(),connection.begin());
     }
 
     @Override
-    public void commit() {
-        parent.commit();
+    public Future<Void> commit() {
+        return (Future)CompositeFuture.all(parent.commit(),connection.commit());
     }
 
     @Override
-    public void rollback() {
-        parent.rollback();
+    public Future<Void> rollback() {
+        return (Future)CompositeFuture.all(parent.rollback(),connection.rollback());
     }
 
     @Override
@@ -54,8 +62,8 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public MycatConnection getConnection(String targetName) {
-        return parent.getConnection(targetName);
+    public MycatConnection getJDBCConnection(String targetName) {
+        return parent.getJDBCConnection(targetName);
     }
 
     @Override
@@ -84,13 +92,13 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void closeStatenmentState() {
-        parent.closeStatenmentState();
+    public Future<Void> closeStatenmentState() {
+        return parent.closeStatenmentState();
     }
 
     @Override
-    public void close() {
-        parent.close();
+    public Future<Void> close() {
+        return parent.close();
     }
 
     @Override
@@ -109,8 +117,8 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void openStatementState() {
-        parent.openStatementState();
+    public Future<Void> openStatementState() {
+        return (Future)CompositeFuture.all(parent.openStatementState(),connection.openStatementState());
     }
 
     @Override
@@ -120,7 +128,7 @@ public class ProxyTransactionSession implements TransactionSession {
 
     @Override
     public String getTxId() {
-        return parent.getTxId();
+        return connection.getXid();
     }
 
     @Override

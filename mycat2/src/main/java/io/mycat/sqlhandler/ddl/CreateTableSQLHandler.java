@@ -10,6 +10,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     public static final CreateTableSQLHandler INSTANCE = new CreateTableSQLHandler();
 
     @Override
-    protected void onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
                 .map(i -> i.get(0))
                 .map(i -> i.getText())
@@ -41,15 +42,13 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
         String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
         String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
         if (tableName == null) {
-            response.sendError(new MycatException("CreateTableSQL need tableName"));
-            return;
+            return response.sendError(new MycatException("CreateTableSQL need tableName"));
         }
         if (schemaName == null) {
-            response.sendError("No database selected", 1046);
-            return;
+            return response.sendError("No database selected", 1046);
         }
         createTable(hint, schemaName, tableName, ast);
-        response.sendOk();
+        return response.sendOk();
     }
 
     public void createTable(Map hint,

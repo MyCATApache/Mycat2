@@ -13,6 +13,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
     private static final Logger LOGGER = LoggerFactory.getLogger(DropTableSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
         SQLDropTableStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = ast.getTableSources();
         if (tableSources.size() != 1) {
@@ -41,7 +42,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
             ops.removeTable(schema, tableName);
             ops.commit();
             onPhysics(schema, tableName);
-            response.sendOk();
+            return response.sendOk();
         }
     }
 

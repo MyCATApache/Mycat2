@@ -8,6 +8,7 @@ import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,7 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
 
 
     @Override
-    protected void onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected PromiseInternal<Void> onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         SQLTruncateStatement truncateStatement = request.getAst();
 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
@@ -40,7 +41,7 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
             executeOnPrototype(eachTruncateStatement,jdbcConnectionManager);
             executeOnDataNodes(eachTruncateStatement,jdbcConnectionManager,dataNodes);
         }
-        response.sendOk();
+        return response.sendOk();
     }
 
     private SQLTruncateStatement clone(SQLTruncateStatement truncateStatement) {

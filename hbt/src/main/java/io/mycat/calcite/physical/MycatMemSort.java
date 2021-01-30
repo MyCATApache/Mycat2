@@ -19,6 +19,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -35,6 +36,8 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.RxBuiltInMethod;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Sort operator implemented in Mycat convention.
@@ -94,11 +97,13 @@ public class MycatMemSort
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableRel child = (EnumerableRel) this.getInput();
         final Result result = implementor.visitChild(this, 0, child, pref);
+
         final PhysType physType = PhysTypeImpl.of(
                 implementor.getTypeFactory(),
                 this.getRowType(),
                 result.format);
-        final Expression childExp = builder.append("child", result.block);
+        Expression input = builder.append("child", result.block);
+        final Expression childExp = toEnumerate(input);
 
         final PhysType inputPhysType = result.physType;
         final Pair<Expression, Expression> pair =
@@ -131,7 +136,9 @@ public class MycatMemSort
         return implementor.result(physType, builder.toBlock());
     }
 
-   public static Expression getExpression(RexNode rexNode) {
+
+
+    public static Expression getExpression(RexNode rexNode) {
         if (rexNode instanceof RexDynamicParam) {
             final RexDynamicParam param = (RexDynamicParam) rexNode;
             return Expressions.convert_(
@@ -143,6 +150,7 @@ public class MycatMemSort
             return Expressions.constant(RexLiteral.intValue(rexNode));
         }
     }
+
     @Override
     public boolean isSupportStream() {
         return false;

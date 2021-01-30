@@ -13,7 +13,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.*;
-import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
@@ -27,7 +26,6 @@ import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.calcite.MycatContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.setParams;
 
@@ -226,7 +223,7 @@ public class MycatInsertExecutor implements Executor {
         for (SQL target : group.keySet()) {
             String k = transactionSession.resolveFinalTargetName(target.getTarget(),true);
             if (uniqueValues.add(k)) {
-                if (connections.put(target.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(target.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }

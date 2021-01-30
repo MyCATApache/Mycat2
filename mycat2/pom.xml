@@ -154,9 +154,14 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-mysql-client</artifactId>
-            <version>4.0.1-SNAPSHOT</version>
+            <groupId>io.mycat</groupId>
+            <artifactId>va</artifactId>
+            <version>1.14-release</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>vertx</artifactId>
+            <version>1.14-release</version>
         </dependency>
     </dependencies>
     <build>

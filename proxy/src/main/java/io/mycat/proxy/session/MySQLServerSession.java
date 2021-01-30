@@ -19,6 +19,8 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.MySQLPacketUtil;
+import io.vertx.core.Future;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.nio.charset.Charset;
 
@@ -93,49 +95,49 @@ public interface MySQLServerSession<T> {
   /**
    * 写入文本结果集行
    */
-  default void writeTextRowPacket(byte[][] row) {
+  default PromiseInternal<Void> writeTextRowPacket(byte[][] row) {
     byte[] bytes = MySQLPacketUtil.generateTextRow(row);
-    writeBytes(bytes,false);
+    return writeBytes(bytes,false);
   }
   /**
    * 写入二进制结果集行
    */
-  default void writeBinaryRowPacket(byte[][] row) {
+  default PromiseInternal<Void> writeBinaryRowPacket(byte[][] row) {
     byte[] bytes = MySQLPacketUtil.generateBinaryRow(row);
-    writeBytes(bytes,false);
+    return writeBytes(bytes,false);
   }
 
   /**
    * 写入字段数
    */
-  default void writeColumnCount(int count) {
+  default PromiseInternal<Void> writeColumnCount(int count) {
     byte[] bytes = MySQLPacketUtil.generateResultSetCount(count);
-    writeBytes(bytes,false);
+    return writeBytes(bytes,false);
   }
 
 
   /**
    * 写入字段
    */
-  default void writeColumnDef(String columnName, int type) {
+  default PromiseInternal<Void> writeColumnDef(String columnName, int type) {
     byte[] bytes = MySQLPacketUtil
         .generateColumnDefPayload(columnName, type, charsetIndex(), charset());
-    writeBytes(bytes,false);
+    return writeBytes(bytes,false);
   }
 
-  default void writeColumnDef(ColumnDefPacketImpl columnDefPacket) {
+  default PromiseInternal<Void> writeColumnDef(ColumnDefPacketImpl columnDefPacket) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(64)) {
       columnDefPacket.writePayload(writer);
-      writeBytes(writer.toByteArray(), false);
+      return writeBytes(writer.toByteArray(), false);
     }
   }
 
-  void writeBytes(byte[] payload,boolean end);
+  PromiseInternal<Void> writeBytes(byte[] payload, boolean end);
 
   /**
    * 写入ok包,调用该方法,就指定响应已经结束
    */
-  default void writeOkEndPacket() {
+  default PromiseInternal<Void> writeOkEndPacket() {
     byte[] bytes = MySQLPacketUtil
         .generateOk(0, getWarningCount(), getServerStatusValue(), affectedRows(),
             getLastInsertId(),
@@ -144,9 +146,9 @@ public interface MySQLServerSession<T> {
                 MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
 
         );
-    writeBytes(bytes,true);
+    return writeBytes(bytes,true);
   }
-  default void writeOk(boolean hasMoreResult) {
+  default PromiseInternal<Void> writeOk(boolean hasMoreResult) {
     int serverStatus = getServerStatusValue();
     if (hasMoreResult) {
       serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
@@ -159,24 +161,24 @@ public interface MySQLServerSession<T> {
                 MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
 
         );
-    writeBytes(bytes, !hasMoreResult);
+    return writeBytes(bytes, !hasMoreResult);
   }
 
   /**
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
    */
-  default void writeColumnEndPacket() {
-    if (false) {
-    } else {
-      byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
-      writeBytes(bytes,false);
-    }
+  default PromiseInternal<Void> writeColumnEndPacket() {
+//    if (false) {
+//    } else {
+//    }
+    byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
+    return writeBytes(bytes,false);
   }
 
   /**
    * 结果集结束写入该报文,需要指定是否有后续的结果集和是否有游标
    */
-  default void writeRowEndPacket(boolean hasMoreResult, boolean hasCursor) {
+  default PromiseInternal<Void> writeRowEndPacket(boolean hasMoreResult, boolean hasCursor) {
     byte[] bytes;
     int serverStatus = getServerStatusValue();
     if (hasMoreResult) {
@@ -196,7 +198,7 @@ public interface MySQLServerSession<T> {
     } else {
       bytes = MySQLPacketUtil.generateEof(getWarningCount(), serverStatus);
     }
-    writeBytes(bytes, !hasMoreResult);
+    return writeBytes(bytes, !hasMoreResult);
   }
 
   /**
@@ -222,9 +224,9 @@ public interface MySQLServerSession<T> {
 //    }
 //  }
 
-  void writeErrorEndPacketBySyncInProcessError();
+  PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError();
 
-  void writeErrorEndPacketBySyncInProcessError(int errorCode);
+  PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError(int errorCode);
 
 
 }

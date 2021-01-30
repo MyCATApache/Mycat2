@@ -25,12 +25,18 @@ import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.Response;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 
 /**
@@ -118,9 +124,10 @@ public enum MycatdbCommand {
 
     }
 
-    public void executeQuery(String text,
-                             MycatDataContext dataContext,
-                             IntFunction<Response> responseFactory) {
+    public PromiseInternal<Collection<AsyncResult<Void>>> executeQuery(String text,
+                                                                 MycatDataContext dataContext,
+                                                                 IntFunction<Response> responseFactory) {
+        PromiseInternal<Collection<AsyncResult<Void>> > promise = VertxUtil.newPromise();
         try {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
@@ -128,22 +135,40 @@ public enum MycatdbCommand {
             LinkedList<SQLStatement> statements = parse(text);
             Response response = responseFactory.apply(statements.size());
 
+            Collection<AsyncResult<Void>> resultList = new ConcurrentLinkedQueue<>();
+            int totalCount = statements.size();
             for (SQLStatement sqlStatement : statements) {
-                SqlRecord sqlRecord = dataContext.startSqlRecord();
-                sqlRecord.setTarget(dataContext.getUser().getHost());
-                sqlRecord.setSql(sqlStatement);
-                execute(dataContext, response, sqlStatement);
+                try {
+                    SqlRecord sqlRecord = dataContext.startSqlRecord();
+                    sqlRecord.setTarget(dataContext.getUser().getHost());
+                    sqlRecord.setSql(sqlStatement);
+                    PromiseInternal<Void> execute = execute(dataContext, response, sqlStatement);
+                    execute.onComplete(e->{
+                        resultList.add(e);
+                        if(e.failed()){
+                            promise.tryFail(e.cause());
+                        }else if(resultList.size() == totalCount){
+                            promise.tryComplete(resultList);
+                        }
+                    });
+                }catch (Exception e){
+                    promise.tryFail(e);
+                }
             }
+            if(resultList.size() == totalCount){
+                promise.tryComplete(resultList);
+            }
+            return promise;
         } catch (Throwable e) {
             Response response = responseFactory.apply(1);
             if (isNavicatClientStatusQuery(text)) {
-                response.sendOk();
-                return;
+                PromiseInternal<Void> promiseInternal = response.sendOk();
+                promiseInternal.onComplete(o-> promise.tryComplete(Collections.singletonList(o)));
+                return promise;
             }
-            response.sendError(e);
-            return;
+            promise.tryFail(e);
+            return promise;
         }
-
     }
 
     private static boolean isNavicatClientStatusQuery(String text) {
@@ -155,7 +180,7 @@ public enum MycatdbCommand {
         return false;
     }
 
-    public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
+    public static PromiseInternal<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
 
         //////////////////////////////////apply transaction///////////////////////////////////
@@ -166,17 +191,16 @@ public enum MycatdbCommand {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
             Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
             if (baseIteratorOptional.isPresent()) {
-                receiver.sendResultSet(baseIteratorOptional.get());
-                return;
+                return receiver.sendResultSet(baseIteratorOptional.get());
             }
         }
         SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
         Class aClass = sqlStatement.getClass();
         SQLHandler instance = sqlHandlerMap.getInstance(aClass);
         if (instance != null) {
-            instance.execute(request, dataContext, receiver);
+            return instance.execute(request, dataContext, receiver);
         } else {
-            receiver.proxySelectToPrototype(sqlStatement.toString());
+            return receiver.proxySelectToPrototype(sqlStatement.toString());
         }
     }
 

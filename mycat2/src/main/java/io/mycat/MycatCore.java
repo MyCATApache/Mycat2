@@ -9,6 +9,7 @@ import io.mycat.proxy.NativeMycatServer;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
 import lombok.SneakyThrows;
+import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -56,6 +57,7 @@ public class MycatCore {
 
     @SneakyThrows
     public MycatCore() {
+        RxBuiltInMethod[] values = RxBuiltInMethod.values();
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
         boolean enableGSI = false;
