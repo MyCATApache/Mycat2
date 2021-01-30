@@ -15,16 +15,13 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.DataNode;
+import io.mycat.SimpleColumnInfo;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
-import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
-import io.mycat.calcite.table.AbstractMycatTable;
-import io.mycat.calcite.table.CustomTableHandlerWrapper;
-import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.calcite.table.QueryBuilder;
+import io.mycat.calcite.table.*;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -36,12 +33,14 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.jetbrains.annotations.Nullable;
+import org.apache.calcite.util.mapping.IntPair;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -85,7 +84,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 queryBuilder.setRowType(scan.getRowType());
                 return queryBuilder;
             }
-            return MycatView.of(scan, abstractMycatTable.computeDataNode());
+            return MycatView.of(scan, abstractMycatTable.createDistribution());
         }
         return scan;
     }
@@ -113,7 +112,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalCalc calc) {
-        return calc.copy(calc.getTraitSet(), ImmutableList.of(calc.getInput().accept(this)));
+        return null;
     }
 
     @Override
@@ -170,9 +169,6 @@ public class SQLRBORewriter extends RelShuttleImpl {
             if (operator instanceof SqlFunction) {
                 containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
             }
-            if (operator == MycatSessionValueFunction.INSTANCE) {
-                containsUsedDefinedFunction = true;
-            }
             return super.visitCall(call);
         }
     }
@@ -210,7 +206,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         boolean lr = RelMdSqlViews.join(left);
         boolean rr = RelMdSqlViews.join(right);
         if (lr && rr) {
-            return join(params, left, right, join);
+            return join(left, right, join);
         } else {
             return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         }
@@ -240,21 +236,16 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalIntersect intersect) {
-        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
         for (RelNode input : intersect.getInputs()) {
-            builder.add(input.accept(this));
+            RelNode accept = input.accept(this);
         }
 
-        return intersect.copy(intersect.getTraitSet(), builder.build());
+        return intersect;
     }
 
     @Override
     public RelNode visit(LogicalMinus minus) {
-        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
-        for (RelNode input : minus.getInputs()) {
-            builder.add(input.accept(this));
-        }
-        return minus.copy(minus.getTraitSet(), builder.build());
+        return null;
     }
 
     @Override
@@ -269,7 +260,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalMatch match) {
-        return match;
+        return null;
     }
 
     @Override
@@ -289,8 +280,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalTableModify modify) {
-        RelNode relNode = modify.getInput().accept(this);
-        return modify.copy(modify.getTraitSet(), ImmutableList.of(relNode));
+        return null;
     }
 
     @Override
@@ -337,7 +327,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     sort.copy(sort.getTraitSet()
                             .replace(MycatConvention.INSTANCE), mycatCustomTable, collation);
         }
-        if (dataNodeInfo.isSingle()) {
+        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
             return MycatView.of(input, dataNodeInfo);
         } else {
@@ -345,9 +335,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 input = LogicalSort.create(input, sort.getCollation()
                         , null
                         , null);
+                input = MycatView.of(input, dataNodeInfo);
                 return MycatMergeSort.create(
                         input.getTraitSet().replace(MycatConvention.INSTANCE),
-                        MycatView.of(input, dataNodeInfo),
+                        input,
                         sort.collation, sort.offset, sort.fetch);
             }
             RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
@@ -368,9 +359,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexNode);
+            input = MycatView.of(input, dataNodeInfo);
             return MycatMergeSort.create(
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
-                    MycatView.of(input, dataNodeInfo),
+                    input,
                     sort.collation, sort.offset, sort.fetch);
         }
     }
@@ -387,10 +379,31 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return input;
         }
-        if (dataNodeInfo.isSingle()) {
+        if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return MycatView.of(input, dataNodeInfo);
         } else {
+            ColumnMapping columnMapping = new ColumnMapping();
+            input.accept(columnMapping);
+            if (columnMapping.hasRes()) {
+                MycatLogicTable shardingTable = columnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
+                List<SimpleColumnInfo> columns = shardingTable.getTable().getColumns();
+                ImmutableBitSet groupSet = aggregate.getGroupSet();
+                boolean canPushDown = false;
+                for (Integer integer : groupSet) {
+                    int mapping = columnMapping.mapping(integer);
+                    SimpleColumnInfo simpleColumnInfo = columns.get(mapping);
+                    if (simpleColumnInfo.isShardingKey()) {
+                        canPushDown = true;
+                        break;
+                    }
+                }
+                if (canPushDown) {
+                    input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
+                    return MycatView.of(input, dataNodeInfo);
+                }
+            }
+
             RelNode backup = input;
             if (!(input instanceof Union)) {
                 input = LogicalUnion.create(ImmutableList.of(input, input), true);
@@ -440,84 +453,92 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return correlate.copy(correlate.getTraitSet(), ImmutableList.of(left, right));
     }
 
-    public static RelNode join(List<Object> params,
-                               RelNode left,
-                               RelNode right,
-                               LogicalJoin join) {
-        if (left instanceof MycatView && right instanceof MycatView) {
-            MycatView leftView = (MycatView) left;
-            MycatView rightView = (MycatView) right;
-
-            RelNode res = pushDownJoinByNormalTableOrGlobalTable(join, leftView, rightView);
-            if (res != null) return res;
-
-            if (params != null) {
-                return pushDownJoinByDataNode(join,
-                        leftView,
-                        rightView,
-                        leftView.getDistribution().getDataNodes(params),
-                        rightView.getDistribution().getDataNodes(params));
-            }
-            return pushDownJoinByDataNode(join,
-                    leftView,
-                    rightView,
-                    leftView.getDistribution().getDataNodes(),
-                    rightView.getDistribution().getDataNodes());
-        }
-        return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
-    }
 
     public static RelNode join(RelNode left,
                                RelNode right,
                                LogicalJoin join) {
         if (left instanceof MycatView && right instanceof MycatView) {
-            MycatView leftView = (MycatView) left;
-            MycatView rightView = (MycatView) right;
-
-            RelNode res = pushDownJoinByNormalTableOrGlobalTable(join, leftView, rightView);
-
-            if (res != null) return res;
-
-            return pushDownJoinByDataNode(join,
-                    leftView,
-                    rightView,
-                    leftView.getDistribution().getDataNodes(),
-                    rightView.getDistribution().getDataNodes());
+            Optional<RelNode> relNodeOptional = pushDownJoinByNormalTableOrGlobalTable(join,
+                    (MycatView) left,
+                    (MycatView) right);
+            if (relNodeOptional.isPresent()) {
+                return relNodeOptional.get();
+            }
+            relNodeOptional = pushDownERTable(join, (MycatView) left, (MycatView) right);
+            if (relNodeOptional.isPresent()) {
+                return relNodeOptional.get();
+            }
         }
         return join.copy(join.getTraitSet(), ImmutableList.of(left, right));
     }
 
-    @Nullable
-    private static RelNode pushDownJoinByNormalTableOrGlobalTable(LogicalJoin join, MycatView leftView, MycatView rightView) {
-        Distribution ldistribution = leftView.getDistribution();
-        Distribution rdistribution = rightView.getDistribution();
-        if (ldistribution.isBroadCast() || rdistribution.isBroadCast()) {
-            if (!ldistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-            }
-            if (!rdistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), rdistribution);
-            }
-            if (ldistribution.isBroadCast() && rdistribution.isBroadCast()) {
-                return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
+    private static Optional<RelNode> pushDownERTable(LogicalJoin join,
+                                                     MycatView left,
+                                                     MycatView right) {
+        JoinInfo joinInfo = join.analyzeCondition();
+        if (joinInfo.isEqui()) {
+            ColumnMapping leftColumnMapping = new ColumnMapping();
+            ColumnMapping rightColumnMapping = new ColumnMapping();
+            left.getRelNode().accept(leftColumnMapping);
+            right.getRelNode().accept(rightColumnMapping);
+            if (leftColumnMapping.hasRes() && rightColumnMapping.hasRes()) {
+                MycatLogicTable leftRelNode = leftColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
+                MycatLogicTable rightRelNode = rightColumnMapping.tableScan.getTable().unwrap(MycatLogicTable.class);
+                if (leftRelNode.isSharding() && rightRelNode.isSharding()) {
+                    ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();
+                    ShardingTable rightTableHandler = (ShardingTable) rightRelNode.logicTable();
+                    if (leftTableHandler.getShardingFuntion().isSameDistribution(rightTableHandler.getShardingFuntion())) {
+                        List<RelDataTypeField> leftFieldList = left.getRowType().getFieldList();
+                        List<RelDataTypeField> rightFieldList = right.getRowType().getFieldList();
+                        List<IntPair> pairs = joinInfo.pairs();
+                        for (IntPair pair : pairs) {
+                            int lindex = leftFieldList.get(leftColumnMapping.mapping(pair.source)).getIndex();
+                            SimpleColumnInfo lColumn = leftTableHandler.getColumns().get(lindex);
+                            int rindex = rightFieldList.get(rightColumnMapping.mapping(pair.target)).getIndex();
+                            SimpleColumnInfo rColumn = rightTableHandler.getColumns().get(rindex);
+                            CustomRuleFunction lFuntion = leftTableHandler.getShardingFuntion();
+                            CustomRuleFunction rFuntion = rightTableHandler.getShardingFuntion();
+                            if (lFuntion.isShardingDbKey(lColumn.getColumnName())
+                                            ==
+                                            rFuntion.isShardingDbKey(rColumn.getColumnName())
+                                            &&
+                                            lFuntion.isShardingTableKey(lColumn.getColumnName())
+                                                    ==
+                                                    rFuntion.isShardingTableKey(rColumn.getColumnName())) {
+                                return left.getDistribution().join(right.getDistribution())
+                                        .map(distribution -> MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution));
+                            }
+                        }
+                    }
+                }
             }
         }
-        if (ldistribution.isPhy() && rdistribution.isPhy() && ldistribution.getDataNodes().equals(rdistribution.getDataNodes())) {
-            return MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(leftView.getRelNode(), rightView.getRelNode())), ldistribution);
-        }
-        return null;
+        return Optional.empty();
     }
 
 
-    private static RelNode pushDownJoinByDataNode(LogicalJoin join,
-                                                  MycatView leftView,
-                                                  MycatView rightView,
-                                                  Iterable<DataNode> leftDataNodes,
-                                                  Iterable<DataNode> rightDataNodes) {
-        return join.copy(join.getTraitSet(), ImmutableList.of(leftView, rightView));
+    private static Optional<RelNode> pushDownJoinByNormalTableOrGlobalTable(LogicalJoin join,
+                                                                            MycatView left,
+                                                                            MycatView right) {
+        Distribution ldistribution = left.getDistribution();
+        Distribution rdistribution = right.getDistribution();
+        Distribution.Type lType = ldistribution.type();
+        Distribution.Type rType = rdistribution.type();
+        if (lType != Distribution.Type.Sharding && rType != Distribution.Type.Sharding) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
+        }
+        if (lType == Distribution.Type.BroadCast || rType == Distribution.Type.BroadCast) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
+        }
+        return Optional.empty();
     }
 
-    public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext optimizationContext) {
+    public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext
+            optimizationContext) {
         Distribution dataNodeInfo = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
@@ -528,10 +549,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RexNode condition = filter.getCondition();
             RelOptTable table = input.getTable();
             AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
-            Distribution distribution = nodes.computeDataNode(ImmutableList.of(condition));
-            if (optimizationContext != null && distribution.isPartial()) {
-                optimizationContext.setPredicateOnView(true);
-            }
+            Distribution distribution = nodes.createDistribution();
             return MycatView.of(filter.copy(filter.getTraitSet(), (input), condition), distribution);
         }
         if (input instanceof QueryBuilder) {

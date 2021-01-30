@@ -67,6 +67,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.builder;
 import static io.mycat.hbt.ast.HBTOp.*;
@@ -206,8 +207,8 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         relBuilder.clear();
         MycatLogicTable mycatTable = table.unwrap(MycatLogicTable.class);
-        Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(build.getCondition()));
-        Iterable<DataNode> dataNodes = distribution.getDataNodes(Collections.emptyList());
+        Distribution distribution = mycatTable.createDistribution();
+        Iterable<DataNode> dataNodes = distribution.getDataNodes().flatMap(i->i.values().stream()).collect(Collectors.toList());
         return build.copy(build.getTraitSet(), ImmutableList.of(toPhyTable(mycatTable, dataNodes)));
     }
 
@@ -446,8 +447,8 @@ public class HBTQueryConvertor {
         //消除逻辑表,变成物理表
         if (mycatLogicTable != null) {
             relBuilder.clear();
-            Iterable<DataNode> dataNodes = mycatLogicTable.computeDataNode().getDataNodes();
-            return toPhyTable(mycatLogicTable, dataNodes);
+            Stream<Map<String, DataNode>> dataNodes = mycatLogicTable.createDistribution().getDataNodes();
+            return toPhyTable(mycatLogicTable, dataNodes.flatMap(i->i.values().stream()).collect(Collectors.toList()));
         }
 
         return build;
