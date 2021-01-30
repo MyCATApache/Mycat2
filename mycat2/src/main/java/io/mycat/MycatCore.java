@@ -7,7 +7,6 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.proxy.NativeMycatServer;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
-import io.mycat.taskmanager.Taskmanager;
 import io.mycat.vertx.VertxMycatServer;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
@@ -72,7 +71,6 @@ public class MycatCore {
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
-        context.put(Taskmanager.class,new Taskmanager());
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);

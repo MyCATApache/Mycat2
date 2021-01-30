@@ -192,18 +192,19 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return builder.build();
     }
 
-    public List<String> getTargets(List<Object> params) {
-        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
-            DataNode dataNode = distribution.getDataNodes().iterator().next();
-            return ImmutableList.of(dataNode.getTargetName());
-        } else {
-            ImmutableList.Builder<String> builder = ImmutableList.builder();
-            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
-                builder.add(dataNode.getTargetName());
-            }
-            return builder.build();
-        }
-    }
+//    public List<String> getTargets(List<Object> params) {
+//        distribution.
+//        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
+//            DataNode dataNode = distribution.getDataNodes().iterator().next();
+//            return ImmutableList.of(dataNode.getTargetName());
+//        } else {
+//            ImmutableList.Builder<String> builder = ImmutableList.builder();
+//            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
+//                builder.add(dataNode.getTargetName());
+//            }
+//            return builder.build();
+//        }
+//    }
 
     public RelNode applyDataNode(DataNode dataNode) {
         return this.relNode.accept(new RelShuttleImpl() {

@@ -29,20 +29,16 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowObservable;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
-import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.MatierialRewriter;
 import io.mycat.calcite.rewriter.OptimizationContext;
@@ -63,9 +59,6 @@ import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.VertxUtil;
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.ObservableConverter;
-import io.reactivex.rxjava3.core.Observer;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
@@ -74,7 +67,6 @@ import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.*;
@@ -123,7 +115,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -173,7 +164,7 @@ public class DrdsRunner {
             public RelNode visit(TableScan scan) {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
                 if (table != null) {
-                    if (table instanceof MycatPhysicalTable){
+                    if (table instanceof MycatPhysicalTable) {
                         DataNode dataNode = ((MycatPhysicalTable) table).getDataNode();
                         MycatPhysicalTable mycatPhysicalTable = (MycatPhysicalTable) table;
                         return new MycatTransientSQLTableScan(cluster,
@@ -863,46 +854,20 @@ public class DrdsRunner {
         return planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
     }
 
+
     @NotNull
-    public static CompletableFuture<Object> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
+    public static CompletableFuture<Enumerable<Object[]>> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
         JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeTargetConnection(context, params, codeExecuterContext);
         CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
         return collect.thenCompose(map -> {
             JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
             ArrayBindable bindable = codeExecuterContext.getBindable();
-            Object bindObservable = bindable.bindObservable(jdbcMycatDataContext);
+            Enumerable<Object[]> bindObservable = bindable.bind(jdbcMycatDataContext);
             CalciteRowMetaData metaData = plan.getMetaData();
-            if (bindObservable instanceof Enumerable){
-                Enumerable enumerable = (Enumerable) bindObservable;
-               return CompletableFuture.completedFuture(new EnumeratorRowIterator(metaData,enumerable.enumerator()));
-            }else {
-                io.reactivex.rxjava3.core.Observable<Object[]> bindObservable1 = (io.reactivex.rxjava3.core.Observable<Object[]>) bindObservable;
-                RowObservable rowObservable =new RowObservable() {
-                    private Observer<? super Object[]> observer;
-
-                    @Override
-                    public MycatRowMetaData getRowMetaData() {
-                        return metaData;
-                    }
-
-                    @Override
-                    protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                        this.observer = observer;
-                        bindObservable1.subscribe(observer);
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-
-                    }
-                };
-                return CompletableFuture.completedFuture(rowObservable);
-            }
+            return CompletableFuture.completedFuture(bindObservable);
         });
     }
-
-
 
 
 }

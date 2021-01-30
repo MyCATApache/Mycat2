@@ -17,9 +17,13 @@ import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
+import io.mycat.util.VertxUtil;
 import io.vertx.core.impl.future.PromiseInternal;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
 
@@ -27,7 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.mycat.DrdsRunner.getJdbcExecuter;
 
@@ -89,18 +97,18 @@ public class PlanImplementorImpl implements PlanImplementor {
                 }
             }
         }
-        CompletableFuture<Object> jdbcExecuter = getJdbcExecuter(plan, context, params);
-        Object o = null;
-        try {
-            o = jdbcExecuter.get(1, TimeUnit.SECONDS);
-        } catch (Throwable e) {
-            return response.sendError(e);
-        }
-        if (o instanceof RowBaseIterator){
-            return response.sendResultSet((RowBaseIterator)o);
-        }else {
-            return response.sendResultSet((RowObservable) o);
-        }
+        PromiseInternal<Void> newPromise = VertxUtil.newPromise();
+        CompletableFuture<Enumerable<Object[]>> jdbcExecuter = getJdbcExecuter(plan, context, params);
+        jdbcExecuter.handle((BiFunction<Enumerable<Object[]>, Throwable, Object>) (objects, throwable) -> {
+            if (throwable != null) {
+                newPromise.fail(throwable);
+                return response.sendError(throwable);
+            } else {
+                newPromise.tryComplete();
+                return response.sendResultSet(new EnumeratorRowIterator((plan.getMetaData()), objects.enumerator()));
+            }
+        });
+        return newPromise;
     }
 
 

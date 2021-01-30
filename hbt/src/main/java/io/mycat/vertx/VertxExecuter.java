@@ -73,7 +73,7 @@ public class VertxExecuter {
 
 
     public static Future<long[]> runMycatUpdateRel(XaSqlConnection sqlConnection, MycatDataContext context, MycatUpdateRel updateRel, List<Object> params) {
-        final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel.getValues(),
+        final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel,updateRel.getValues(),
                 updateRel.getSqlStatement(),
                 params);
         TransactionSession transactionSession = context.getTransactionSession();

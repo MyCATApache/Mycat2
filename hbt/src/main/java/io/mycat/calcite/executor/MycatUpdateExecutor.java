@@ -200,7 +200,7 @@ public class MycatUpdateExecutor implements Executor {
     }
 
 
-    private static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+    public static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
         Iterable<DataNode> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);

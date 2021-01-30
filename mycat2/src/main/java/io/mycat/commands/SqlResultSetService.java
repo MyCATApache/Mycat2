@@ -12,14 +12,16 @@ import io.mycat.beans.mycat.CopyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.config.ServerConfig;
 import io.mycat.config.SqlCacheConfig;
+import io.mycat.config.ThreadPoolExecutorConfig;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.calcite.linq4j.Enumerable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +160,7 @@ public class SqlResultSetService implements Closeable, Dumpable {
     }
 
     @SneakyThrows
-    private Object[] loadResultSet(SQLSelectStatement sqlSelectStatement) {
+    private Object[] loadResultSet( SQLSelectStatement sqlSelectStatement) {
         return cache.get(sqlSelectStatement, new Callable<Object[]>() {
             @Override
             public Object[] call() throws Exception {
@@ -171,15 +173,20 @@ public class SqlResultSetService implements Closeable, Dumpable {
                     DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
                     DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
                     Plan plan = drdsRunner.getPlan(context, drdsSql);
-                    EnumeratorRowIterator enumeratorRowIterator = DrdsRunner.getEnumeratorRowIterator(plan, context, drdsSql.getParams());
+                    ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+                    ThreadPoolExecutorConfig workerPool = serverConfig.getWorkerPool();
+                    CompletableFuture<Enumerable<Object[]>> jdbcExecuter = DrdsRunner.getJdbcExecuter(plan, context, drdsSql.getParams());
+                    Enumerable<Object[]> objects = jdbcExecuter.get(workerPool.getTaskTimeout(),TimeUnit.valueOf(workerPool.getTimeUnit()));
                     MycatRowMetaData metaData = new CalciteRowMetaData(plan.getPhysical().getRowType().getFieldList());
                     CopyMycatRowMetaData mycatRowMetaData = new CopyMycatRowMetaData(metaData);
                     int columnCount = metaData.getColumnCount();
                     ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
-                    while (enumeratorRowIterator.next()) {
+                    Iterator<Object[]> iterator = objects.iterator();
+                    while (iterator.hasNext()) {
                         Object[] row = new Object[columnCount];
+                        Object[] input = iterator.next();
                         for (int i = 0; i < columnCount; i++) {
-                            row[i] = enumeratorRowIterator.getObject(i);
+                            row[i] = input[i];
                         }
                         builder.add(row);
                     }
