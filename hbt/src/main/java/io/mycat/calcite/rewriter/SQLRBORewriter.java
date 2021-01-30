@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatConvention;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
+import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
@@ -38,8 +39,10 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.IntPair;
 
 import java.math.BigDecimal;
@@ -112,7 +115,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalCalc calc) {
-        return null;
+        final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =
+                calc.getProgram().split();
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(calc.getCluster(), null);
+        relBuilder.filter(projectFilter.right);
+        relBuilder.project(projectFilter.left, calc.getRowType().getFieldNames());
+        RelNode relNode = relBuilder.build();
+        return relNode.accept(this);
     }
 
     @Override
@@ -168,6 +177,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             String name = operator.getName();
             if (operator instanceof SqlFunction) {
                 containsUsedDefinedFunction |= Information_Functions.containsKey(name, false);
+            }
+            if (operator == MycatSessionValueFunction.INSTANCE) {
+                containsUsedDefinedFunction = true;
             }
             return super.visitCall(call);
         }
@@ -236,16 +248,20 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalIntersect intersect) {
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
         for (RelNode input : intersect.getInputs()) {
-            RelNode accept = input.accept(this);
+            builder.add(input.accept(this));
         }
-
-        return intersect;
+        return intersect.copy(intersect.getTraitSet(), builder.build());
     }
 
     @Override
     public RelNode visit(LogicalMinus minus) {
-        return null;
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
+        for (RelNode input : minus.getInputs()) {
+            builder.add(input.accept(this));
+        }
+        return minus.copy(minus.getTraitSet(), builder.build());
     }
 
     @Override
@@ -260,7 +276,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalMatch match) {
-        return null;
+        return match;
     }
 
     @Override
@@ -275,12 +291,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(LogicalExchange exchange) {
-        return null;
+        return exchange.copy(exchange.getTraitSet(), ImmutableList.of(exchange.getInput().accept(this)));
     }
 
     @Override
     public RelNode visit(LogicalTableModify modify) {
-        return null;
+        RelNode relNode = modify.getInput().accept(this);
+        return modify.copy(modify.getTraitSet(), ImmutableList.of(relNode));
     }
 
     @Override
@@ -499,12 +516,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                             CustomRuleFunction lFuntion = leftTableHandler.getShardingFuntion();
                             CustomRuleFunction rFuntion = rightTableHandler.getShardingFuntion();
                             if (lFuntion.isShardingDbKey(lColumn.getColumnName())
+                                    ==
+                                    rFuntion.isShardingDbKey(rColumn.getColumnName())
+                                    &&
+                                    lFuntion.isShardingTableKey(lColumn.getColumnName())
                                             ==
-                                            rFuntion.isShardingDbKey(rColumn.getColumnName())
-                                            &&
-                                            lFuntion.isShardingTableKey(lColumn.getColumnName())
-                                                    ==
-                                                    rFuntion.isShardingTableKey(rColumn.getColumnName())) {
+                                            rFuntion.isShardingTableKey(rColumn.getColumnName())) {
                                 return left.getDistribution().join(right.getDistribution())
                                         .map(distribution -> MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution));
                             }

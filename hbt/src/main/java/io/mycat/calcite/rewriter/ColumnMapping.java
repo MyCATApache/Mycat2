@@ -87,7 +87,7 @@ public class ColumnMapping extends RelShuttleImpl {
     @Override
     public RelNode visit(LogicalCalc calc) {
         RelNode visit = super.visit(calc);
-        updateMapping(calc.getProgram().getPermutation());
+        updateMapping(calc.getProgram().getPartialMapping(calc.getInput().getRowType().getFieldCount()));
         return visit;
     }
 
