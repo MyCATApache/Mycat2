@@ -33,7 +33,8 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
   private long partionTime;
   private long endDate;
   private int nCount;
-  private DateTimeFormatter formatter;
+  private DateTimeFormatter[] formatter;
+  private String dateFormat;
 
   @Override
   public String name() {
@@ -49,8 +50,12 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
     String startBeginDate = Objects.toString(prot.get("beginDate"));
     String startEndDate = (String) (prot.get("endDate"));
     String startPartionDay = Objects.toString(prot.get("partionDay"));
-    String dateFormat = Objects.toString(prot.get("dateFormat"));
-    formatter = DateTimeFormatter.ofPattern(dateFormat);
+    dateFormat = Objects.toString(prot.get("dateFormat"));
+    String[] split = dateFormat.split(",");
+    formatter = new DateTimeFormatter[split.length];
+    for (int i = 0; i < split.length; i++) {
+      formatter[i] = DateTimeFormatter.ofPattern(split[i]);
+    }
     beginDate = getTime(startBeginDate);
     endDate = 0L;
     nCount = 0;
@@ -63,12 +68,15 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
   }
 
   private long getTime(String startBeginDate) {
-    try {
-      return formatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR)* ONE_DAY;
-    } catch (DateTimeParseException e) {
+      for (DateTimeFormatter dateTimeFormatter : formatter) {
+        try {
+          return dateTimeFormatter.parse(startBeginDate).getLong(ChronoField.DAY_OF_YEAR) * ONE_DAY;
+        } catch (DateTimeParseException e) {
+          //skip
+        }
+      }
       throw new IllegalArgumentException(
-          "columnValue:" + startBeginDate + " Please check if the format satisfied.", e);
-    }
+              "columnValue:" + startBeginDate + " Please check if the format satisfied."+dateFormat);
   }
 
   @Override
