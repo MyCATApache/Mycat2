@@ -23,6 +23,7 @@ import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
@@ -48,6 +49,7 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.zookeeper.Op;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -60,13 +62,13 @@ import java.util.stream.Stream;
 public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
-    final List<RexNode> conditions;
+    final RexNode conditions;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
-        this(relTrait, input, dataNode, Collections.emptyList());
+        this(relTrait, input, dataNode,null);
     }
 
-    public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, List<RexNode> conditions) {
+    public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
         super(input.getCluster(), relTrait);
         this.distribution = Objects.requireNonNull(dataNode);
         this.conditions = conditions;
@@ -75,16 +77,16 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.traitSet = relTrait;
     }
 
-    public static MycatView of(RelNode input, Distribution dataNodeInfo) {
-        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
-    }
-
-    public static MycatView of(RelNode input, Distribution dataNodeInfo, List<RexNode> conditions) {
+    public static MycatView ofCondition(RelNode input,
+                                        Distribution dataNodeInfo,
+                                        RexNode conditions) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, conditions);
     }
-
-    public static MycatView of(RelTraitSet relTrait, RelNode input, Distribution dataNodeInfo) {
-        return new MycatView(relTrait.replace(MycatConvention.INSTANCE), input, dataNodeInfo);
+    public  MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo,this.conditions);
+    }
+    public static MycatView ofBottom( RelNode input, Distribution dataNodeInfo) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
     }
 
 
@@ -165,7 +167,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public Stream<Map<String, DataNode>> assignParams(List<Object> params) {
-        return distribution.getDataNodes(table -> PredicateAnalyzer.analyze(table, conditions, params));
+        return distribution.getDataNodes(table -> PredicateAnalyzer.analyze(table, conditions==null?
+                ImmutableList.of():ImmutableList.of(conditions), params));
     }
 
 
@@ -306,5 +309,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash);
         builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
         return implementor.result(physType, builder.toBlock());
+    }
+
+    public Optional<RexNode> getConditions() {
+        return Optional.of(conditions);
     }
 }

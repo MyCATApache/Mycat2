@@ -24,7 +24,6 @@ import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
@@ -44,6 +43,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.zookeeper.Op;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 queryBuilder.setRowType(scan.getRowType());
                 return queryBuilder;
             }
-            return MycatView.of(scan, abstractMycatTable.createDistribution());
+            return MycatView.ofBottom(scan, abstractMycatTable.createDistribution());
         }
         return scan;
     }
@@ -305,10 +305,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
         return other;
     }
 
-    public static RelNode sort(RelNode input, LogicalSort sort) {
+    public static RelNode sort(RelNode original, LogicalSort sort) {
+        RelNode input = original;
+        MycatView view = null;
         Distribution dataNodeInfo = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
+            view =(MycatView) original;
             input = ((MycatView) input).getRelNode();
         }
         if (dataNodeInfo == null) {
@@ -346,13 +349,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
         }
         if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = sort.copy(input.getTraitSet(), ImmutableList.of(input));
-            return MycatView.of(input, dataNodeInfo);
+            return view.changeTo(input, dataNodeInfo);
         } else {
             if (sort.offset == null && sort.fetch == null) {
                 input = LogicalSort.create(input, sort.getCollation()
                         , null
                         , null);
-                input = MycatView.of(input, dataNodeInfo);
+                input = view.changeTo(input, dataNodeInfo);
                 return MycatMergeSort.create(
                         input.getTraitSet().replace(MycatConvention.INSTANCE),
                         input,
@@ -376,7 +379,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = LogicalSort.create(input, sort.getCollation()
                     , rexBuilder.makeExactLiteral(BigDecimal.ZERO)
                     , rexNode);
-            input = MycatView.of(input, dataNodeInfo);
+            input = view.changeTo(input, dataNodeInfo);
             return MycatMergeSort.create(
                     input.getTraitSet().replace(MycatConvention.INSTANCE),
                     input,
@@ -385,11 +388,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
 
-    public static RelNode aggregate(RelNode input, LogicalAggregate aggregate) {
-        RelOptCluster cluster = input.getCluster();
+    public static RelNode aggregate(RelNode original, LogicalAggregate aggregate) {
+        RelNode input = original;
         Distribution dataNodeInfo = null;
+        MycatView view = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
+            view = (MycatView) original;
             input = ((MycatView) input).getRelNode();
         }
         if (dataNodeInfo == null) {
@@ -398,7 +403,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         }
         if (dataNodeInfo.type() == Distribution.Type.PHY || dataNodeInfo.type() == Distribution.Type.BroadCast) {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-            return MycatView.of(input, dataNodeInfo);
+            return view.changeTo(input, dataNodeInfo);
         } else {
             ColumnMapping columnMapping = new ColumnMapping();
             input.accept(columnMapping);
@@ -417,7 +422,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 }
                 if (canPushDown) {
                     input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
-                    return MycatView.of(input, dataNodeInfo);
+                    return view.changeTo(input, dataNodeInfo);
                 }
             }
 
@@ -433,12 +438,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
             planner.setRoot(input);
             RelNode bestExp = planner.findBestExp();
             if (bestExp instanceof Aggregate && ((Aggregate) bestExp).getInput() instanceof Union) {
-                MycatView multiView = MycatView.of(
+                MycatView multiView = view.changeTo(
                         bestExp.getInput(0).getInput(0),
                         dataNodeInfo);
                 return bestExp.copy(aggregate.getTraitSet(), ImmutableList.of(multiView));
             } else {
-                return MycatView.of(
+                return view.changeTo(
                         backup,
                         dataNodeInfo);
             }
@@ -492,6 +497,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
     private static Optional<RelNode> pushDownERTable(LogicalJoin join,
                                                      MycatView left,
                                                      MycatView right) {
+        Optional<RexNode> conditions = left.getConditions();
+        if (!conditions.isPresent()){
+            return Optional.empty();
+        }
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
             ColumnMapping leftColumnMapping = new ColumnMapping();
@@ -523,7 +532,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                             ==
                                             rFuntion.isShardingTableKey(rColumn.getColumnName())) {
                                 return left.getDistribution().join(right.getDistribution())
-                                        .map(distribution -> MycatView.of(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution));
+                                        .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,conditions.get()));
                             }
                         }
                     }
@@ -542,23 +551,26 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Distribution.Type lType = ldistribution.type();
         Distribution.Type rType = rdistribution.type();
         if (lType != Distribution.Type.Sharding && rType != Distribution.Type.Sharding) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
         }
         if (lType == Distribution.Type.BroadCast || rType == Distribution.Type.BroadCast) {
-            return ldistribution.join(rdistribution).map(distribution -> MycatView.of(
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
         }
         return Optional.empty();
     }
 
-    public static RelNode filter(RelNode input, LogicalFilter filter, OptimizationContext
+    public static RelNode filter(RelNode original, LogicalFilter filter, OptimizationContext
             optimizationContext) {
+        RelNode input = original;
         Distribution dataNodeInfo = null;
+        MycatView view = null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
+            view = (MycatView) original;
             input = ((MycatView) input).getRelNode();
         }
 
@@ -567,7 +579,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             RelOptTable table = input.getTable();
             AbstractMycatTable nodes = table.unwrap(AbstractMycatTable.class);
             Distribution distribution = nodes.createDistribution();
-            return MycatView.of(filter.copy(filter.getTraitSet(), (input), condition), distribution);
+            return MycatView.ofCondition(filter.copy(filter.getTraitSet(), input, condition), distribution,(condition));
         }
         if (input instanceof QueryBuilder) {
             QueryBuilder queryBuilder = (QueryBuilder) input;
@@ -580,17 +592,20 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
         }
         filter = (LogicalFilter) filter.copy(filter.getTraitSet(), ImmutableList.of(input));
-        if (dataNodeInfo != null) {
-            return MycatView.of(filter, dataNodeInfo);
+        if (view != null) {
+            return view.changeTo(filter, dataNodeInfo);
         } else {
             return filter;
         }
     }
 
-    public static RelNode project(RelNode input, LogicalProject project) {
+    public static RelNode project(RelNode original, LogicalProject project) {
         Distribution dataNodeInfo = null;
+        RelNode input = original;
+        MycatView mycatView  =null;
         if (input instanceof MycatView) {
             dataNodeInfo = ((MycatView) input).getDistribution();
+            mycatView = (MycatView)original;
             input = ((MycatView) input).getRelNode();
         }
         if (input instanceof QueryBuilder) {
@@ -606,10 +621,10 @@ public class SQLRBORewriter extends RelShuttleImpl {
             return project.copy(project.getTraitSet(), ImmutableList.of(queryBuilder));
         }
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
-        if (dataNodeInfo == null) {
-            return input;
+        if (mycatView != null) {
+            return mycatView.changeTo(input, dataNodeInfo);
         } else {
-            return MycatView.of(input, dataNodeInfo);
+            return input;
         }
     }
 

@@ -24,7 +24,7 @@ public class MycatPhyTableViewRule extends RelOptRule {
         AbstractMycatTable mycatTable = table.unwrap(AbstractMycatTable.class);
         if (mycatTable != null) {
             partInfo = mycatTable.createDistribution();
-            call.transformTo(MycatView.of(rel, partInfo));
+            call.transformTo(MycatView.ofBottom(rel, partInfo));
         }
     }
 }

@@ -9,15 +9,12 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
@@ -31,16 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static io.mycat.DrdsRunner.getJdbcExecuter;
 
 public class PlanImplementorImpl implements PlanImplementor {
-    public PlanImplementorImpl(MycatDataContext context,List<Object> params, final Response response) {
+    public PlanImplementorImpl(MycatDataContext context, List<Object> params, final Response response) {
         this.context = context;
         this.params = params;
         this.response = response;
@@ -51,14 +44,14 @@ public class PlanImplementorImpl implements PlanImplementor {
     private final Response response;
 
     @Override
-    public PromiseInternal<Void>  execute(MycatUpdateRel mycatUpdateRel) {
+    public PromiseInternal<Void> execute(MycatUpdateRel mycatUpdateRel) {
         MycatUpdateExecutor updateExecutor;
-        updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel,context,params);
+        updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel, context, params);
 
         if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
-            if (updateExecutor.isProxy()){
+            if (updateExecutor.isProxy()) {
                 Pair<String, String> singleSql = updateExecutor.getSingleSql();
-                return this.response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
+                return this.response.proxyUpdate(singleSql.getKey(), singleSql.getValue());
             }
         }
 
@@ -70,30 +63,30 @@ public class PlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public PromiseInternal<Void>  execute(MycatInsertRel logical) {
+    public PromiseInternal<Void> execute(MycatInsertRel logical) {
         MycatInsertExecutor insertExecutor = MycatInsertExecutor.create(context, Objects.requireNonNull(logical), params);
-        if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE){
-            if(insertExecutor.isProxy()){
+        if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
+            if (insertExecutor.isProxy()) {
                 Pair<String, String> singleSql = insertExecutor.getSingleSql();
-                return response.proxyUpdate(singleSql.getKey(),singleSql.getValue());
+                return response.proxyUpdate(singleSql.getKey(), singleSql.getValue());
             }
         }
 
         insertExecutor.open();
-        return response.sendOk(insertExecutor.getAffectedRow(),insertExecutor.getLastInsertId());
+        return response.sendOk(insertExecutor.getAffectedRow(), insertExecutor.getLastInsertId());
     }
 
     @Override
     public PromiseInternal<Void> execute(Plan plan) {
-        if(context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE){
+        if (context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
             RelNode physical = plan.getPhysical();
-            if (physical instanceof MycatView){
+            if (physical instanceof MycatView) {
                 ImmutableMultimap<String, SqlString> expandToSql = ((MycatView) physical).expandToSql(plan.forUpdate(), params);
-                if(expandToSql.size() == 1){
+                if (expandToSql.size() == 1) {
                     Map.Entry<String, SqlString> entry = expandToSql.entries().iterator().next();
                     String key = entry.getKey();
                     SqlString value = entry.getValue();
-                    return response.proxySelect(context.resolveDatasourceTargetName(key),apply(value.getSql(),params));
+                    return response.proxySelect(context.resolveDatasourceTargetName(key), apply(value.getSql(), params));
                 }
             }
         }

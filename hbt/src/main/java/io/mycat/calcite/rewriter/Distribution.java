@@ -175,19 +175,38 @@ public class Distribution {
                     globalbuilder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
                 ImmutableMap<String, DataNode> globalMap = globalbuilder.build();
+                ShardingTable shardingTable = this.shardingTables.get(0);
+                String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
+                List<DataNode> primaryTableFilterDataNodes = function.apply(shardingTable);
                 Map<String, List<DataNode>> collect = this.shardingTables.stream()
-                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> function.apply(v)));
+                        .collect(Collectors.toMap(k -> k.getUniqueName(), v ->v.getShardingFuntion().calculate(Collections.emptyMap())));
                 List<Map<String, DataNode>> res = new ArrayList<>();
-                int size = collect.values().stream().findFirst().get().size();
+                int size =primaryTableFilterDataNodes.size();
                 for (int i = 0; i < size; i++) {
                     res.add(new HashMap<>(globalMap));
                 }
-                for (Map.Entry<String, List<DataNode>> e : collect.entrySet()) {
-                    String key = e.getKey();
-                    List<DataNode> dataNodes = e.getValue();
-                    for (int i = 0; i < dataNodes.size(); i++) {
-                        Map<String, DataNode> stringDataNodeMap = res.get(i);
-                        stringDataNodeMap.put(key, dataNodes.get(i));
+                List<Integer> mappingIndex = new ArrayList<>();
+                Set<String> allDataNodeUniqueNames =  collect.get(primaryTableUniqueName).stream().map(i->i.getUniqueName()).collect(Collectors.toSet());
+                {
+                    int index = 0;
+                    for (DataNode filterDataNode : primaryTableFilterDataNodes) {
+                        boolean find = allDataNodeUniqueNames.contains(filterDataNode.getUniqueName());
+                        if (find) {
+                            mappingIndex.add(index);
+                        }
+                        index++;
+                    }
+                }
+                {
+                    for (Map.Entry<String, List<DataNode>> e : collect.entrySet()) {
+                        String key = e.getKey();
+                        List<DataNode> dataNodes = e.getValue();
+                        int index = 0;
+                        for (Integer integer : mappingIndex) {
+                            Map<String, DataNode> stringDataNodeMap = res.get(integer);
+                            stringDataNodeMap.put(key, dataNodes.get(index));
+                            index++;
+                        }
                     }
                 }
                 return res.stream();
