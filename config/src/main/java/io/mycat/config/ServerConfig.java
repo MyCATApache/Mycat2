@@ -34,6 +34,7 @@ public class ServerConfig {
     private String ip = "127.0.0.1";
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();
+    private boolean proxy = false;
     private ThreadPoolExecutorConfig workerPool = ThreadPoolExecutorConfig
             .builder()
             .corePoolSize(Runtime.getRuntime().availableProcessors())
