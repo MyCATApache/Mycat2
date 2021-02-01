@@ -858,7 +858,7 @@ public class DrdsRunner {
     @NotNull
     public static CompletableFuture<Enumerable<Object[]>> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
         CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeTargetConnection(context, params, codeExecuterContext);
+        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeJdbcTargetConnection(context, params, codeExecuterContext);
         CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
         return collect.thenCompose(map -> {
             JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());

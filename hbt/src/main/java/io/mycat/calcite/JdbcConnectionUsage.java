@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.executeQuery;
@@ -30,7 +31,10 @@ import static io.mycat.calcite.executor.MycatPreparedStatementUtil.executeQuery;
 public  class JdbcConnectionUsage {
     private final  MycatDataContext context;
     private final List<SQLKey> targets;
-    public static JdbcConnectionUsage computeTargetConnection(MycatDataContext context, List<Object> params, CodeExecuterContext executerContext) {
+    public static <T> T computeTargetConnection(MycatDataContext context,
+                                                              List<Object> params,
+                                                              CodeExecuterContext executerContext,
+                                                              BiFunction<MycatDataContext,List<SQLKey>,T> function) {
         List<SQLKey> sqlKeys = new ArrayList<>();
         List<RelNode> mycatViews = executerContext.getMycatViews();
         for (RelNode mycatView : mycatViews) {
@@ -55,9 +59,18 @@ public  class JdbcConnectionUsage {
                 throw new UnsupportedOperationException();
             }
         }
-        return new JdbcConnectionUsage(context, sqlKeys);
+        return function.apply(context, sqlKeys);
     }
-
+    public static JdbcConnectionUsage computeJdbcTargetConnection(MycatDataContext context,
+                                                List<Object> params,
+                                                CodeExecuterContext executerContext){
+        return computeTargetConnection(context,params,executerContext,(dataContext,keys)->new JdbcConnectionUsage(dataContext,keys));
+    }
+    public static ProxyConnectionUsage computeProxyTargetConnection(MycatDataContext context,
+                                                                  List<Object> params,
+                                                                  CodeExecuterContext executerContext){
+        return computeTargetConnection(context,params,executerContext,(dataContext,keys)->new ProxyConnectionUsage(dataContext,keys));
+    }
     public JdbcConnectionUsage(MycatDataContext context,
                                List<SQLKey> map) {
         this.context = context;

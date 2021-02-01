@@ -1,9 +1,14 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.*;
+import io.mycat.AsyncMycatDataContextImplImpl;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.JdbcConnectionUsage;
+import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
@@ -16,11 +21,13 @@ import io.reactivex.rxjava3.core.Observer;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
-import io.mycat.calcite.CodeExecuterContext;
 
 import java.io.IOException;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.function.Function;
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
     private XaSqlConnection xaSqlConnection;
@@ -84,18 +91,22 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
                 ArrayBindable bindable = codeExecuterContext.getBindable();
 
-
-                        AsyncMycatDataContextImplImpl newMycatDataContext =
-                                new AsyncMycatDataContextImplImpl(context, codeExecuterContext,params, false);
-                Object bindObservable = bindable.bindObservable(newMycatDataContext);
-                if (bindObservable instanceof Observable) {
-                    Observable<Object[]> observable = (Observable) bindObservable;
-                    List<Object[]> objects = observable.cache().toList().blockingGet();
-                    Observable.fromIterable(objects).subscribe(observer);
-                } else {
-                    Enumerable<Object[]> observable = (Enumerable) bindObservable;
-                    Observable.fromIterable(observable).subscribe(observer);
-                }
+                ProxyConnectionUsage proxyConnectionUsage = JdbcConnectionUsage.computeProxyTargetConnection(context, params, codeExecuterContext);
+                Future<IdentityHashMap<RelNode, List<RowObservable>>> collect = proxyConnectionUsage.collect(xaSqlConnection, params);
+                collect.map(relNodeListIdentityHashMap -> {
+                    AsyncMycatDataContextImplImpl newMycatDataContext =
+                            new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
+                    Object bindObservable = bindable.bindObservable(newMycatDataContext);
+                    if (bindObservable instanceof Observable) {
+                        Observable<Object[]> observable = (Observable) bindObservable;
+                        List<Object[]> objects = observable.cache().toList().blockingGet();
+                        Observable.fromIterable(objects).subscribe(observer);
+                    } else {
+                        Enumerable<Object[]> observable = (Enumerable) bindObservable;
+                        Observable.fromIterable(observable).subscribe(observer);
+                    }
+                    return null;
+                }).onFailure(event -> observer.onError(event));
             }
 
             @Override

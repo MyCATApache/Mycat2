@@ -14,9 +14,6 @@ import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Iterator;
@@ -175,10 +172,10 @@ public abstract class VertxResponse implements Response {
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         MycatDataContext dataContext = session.getDataContext();
         dataContext.getTransactionSession().closeStatenmentState()
-        .onComplete(event -> {
-            newPromise.tryComplete();
-            session.writeOk(count < size);
-        });
+                .onComplete(event -> {
+                    newPromise.tryComplete();
+                    session.writeOk(count < size);
+                });
         return newPromise;
     }
 
@@ -252,7 +249,9 @@ public abstract class VertxResponse implements Response {
         @Override
         public void onError(@NonNull Throwable e) {
             session.getDataContext().getTransactionSession().closeStatenmentState();
-            disposable.dispose();
+            if (disposable != null) {
+                disposable.dispose();
+            }
             this.observerTask.onCloseResource();
             this.observerTask.onError(e);
         }

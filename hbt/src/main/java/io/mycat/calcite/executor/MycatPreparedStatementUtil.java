@@ -19,6 +19,7 @@ import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,15 +209,24 @@ public class MycatPreparedStatementUtil {
             }
             PreparedStatement preparedStatement = mycatConnection.prepareStatement(sql);
             ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
-            if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
-                MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
-            }
+            List<Object> outoutParams = extractParams(params, dynamicParameters);
+            MycatPreparedStatementUtil.setParams(preparedStatement, outoutParams);
             ResultSet resultSet = preparedStatement.executeQuery();
             return new JdbcRowBaseIterator(calciteRowMetaData, connection, preparedStatement, resultSet, closeCallback, sql);
         } catch (Throwable throwable) {
             LOGGER.error("sql:{} {}", sql, (params).toString(), throwable);
             throw throwable;
         }
+    }
+
+    public static List<Object> extractParams(List<Object> params, ImmutableList<Integer> dynamicParameters) {
+        List<Object> outoutParams;
+        if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
+            outoutParams = dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList());
+        }else {
+            outoutParams = Collections.emptyList();
+        }
+        return outoutParams;
     }
 
 }
