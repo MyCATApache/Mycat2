@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -201,7 +202,7 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName,schemaName);
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName);
                 Map<String, NormalTableConfig> normalTables = value.getNormalTables();
                 for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
                     normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
@@ -210,7 +211,7 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 NormalTableConfig tableConfigEntry = e.getValue();
                 try {
                     addNormalTable(schemaName, tableName,
@@ -223,7 +224,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 GlobalTableConfig tableConfigEntry = e.getValue();
                 List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                 addGlobalTable(schemaName, tableName,
@@ -234,7 +235,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 ShardingTableConfig tableConfigEntry = e.getValue();
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
@@ -244,7 +245,7 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 CustomTableConfig tableConfigEntry = e.getValue();
                 addCustomTable(schemaName, tableName,
                         tableConfigEntry
@@ -319,7 +320,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName,String schemaName) {
+    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName, String schemaName) {
         Set<String> tables = new HashSet<>();
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
@@ -904,18 +905,28 @@ public class MetadataManager implements MysqlVariableService {
                 if (logicTables != null) {
                     tableHandler = logicTables.get(SQLUtils.normalize(tableName.getValue()), false);
                     if (tableHandler != null) {
-                        if (tableHandler.getType() == LogicTableType.NORMAL) {
-                            NormalTable tableHandler1 = (NormalTable) tableHandler;
-                            DataNode dataNode = tableHandler1.getDataNode();
+                        if (tableHandler.getType() == LogicTableType.NORMAL
+                                ||
+                                tableHandler.getType() == LogicTableType.GLOBAL) {
+                            DataNode dataNode = null;
+                            if (tableHandler.getType() == LogicTableType.NORMAL) {
+                                NormalTable tableHandler1 = (NormalTable) tableHandler;
+                                dataNode = tableHandler1.getDataNode();
+                            } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
+                                GlobalTable tableHandler1 = (GlobalTable) tableHandler;
+                                int i = ThreadLocalRandom.current().nextInt(0, tableHandler1.getGlobalDataNode().size());
+                                dataNode = tableHandler1.getGlobalDataNode().get(i);
+                            }else {
+                                throw new IllegalArgumentException("unsupported table type:"+tableHandler.getType());
+                            }
                             tables.put(tableHandler.getTableName(),
                                     new SimpleRoute(tableName.getKey(), tableName.getValue(), dataNode.getTargetName()));
-                            if (dataNode != null) {
-                                if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
+                            if (targets.add(dataNode.getTargetName())) {
+                                if (targets.size() > 1) {
                                     return false;
                                 }
-                                continue;
                             }
-                            return false;
+                            continue;
                         } else {
                             return false;
                         }
