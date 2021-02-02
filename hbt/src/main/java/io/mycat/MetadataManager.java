@@ -898,11 +898,11 @@ public class MetadataManager implements MysqlVariableService {
         Set<String> targets = new HashSet<>();
         TableHandler tableHandler = null;
         for (Pair<String, String> tableName : tableNames) {
-            SchemaHandler schemaHandler = schemaMap1.get(tableName.getKey(), false);
+            SchemaHandler schemaHandler = schemaMap1.get(SQLUtils.normalize(tableName.getKey()), false);
             if (schemaHandler != null) {
                 NameMap<TableHandler> logicTables = schemaHandler.logicTables();
                 if (logicTables != null) {
-                    tableHandler = logicTables.get(tableName.getValue(), false);
+                    tableHandler = logicTables.get(SQLUtils.normalize(tableName.getValue()), false);
                     if (tableHandler != null) {
                         if (tableHandler.getType() == LogicTableType.NORMAL) {
                             NormalTable tableHandler1 = (NormalTable) tableHandler;
