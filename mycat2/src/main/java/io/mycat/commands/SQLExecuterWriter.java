@@ -89,17 +89,6 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                     }
                     case PROXY: {
                         MycatProxyResponse proxyResponse = (MycatProxyResponse) mycatResponse;
-
-                        if (this.count == 1 && transactionSession.transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
-                            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-                            if (mycatServer.getDatasource(proxyResponse.getTargetName()) != null) {
-                                transactionSession.closeStatenmentState();
-                                return MySQLTaskUtil.proxyBackendByDatasourceName(session, proxyResponse.getTargetName(), proxyResponse.getSql(),
-                                        MySQLTaskUtil.TransactionSyncType.create(session.isAutocommit(), session.isInTransaction()),
-                                        session.getIsolation());
-                            }
-                        }
-
                         MycatConnection connection = transactionSession.getJDBCConnection(proxyResponse.getTargetName());
                         switch (proxyResponse.getExecuteType()) {
                             case QUERY:
@@ -211,10 +200,23 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
                         }
                     }
                     case OBSERVER_RRESULTSET: {
+                        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newSuccessPromise();
                         RowObservable rowObservable = (RowObservable) response;
-                        ObserverWrite observerWrite = new ObserverWrite(rowObservable);
+                        ObserverWrite observerWrite = new ObserverWrite(rowObservable){
+                            @Override
+                            public void onError(@NonNull Throwable e) {
+                                super.onError(e);
+                                voidPromiseInternal.tryFail(e);
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                super.onComplete();
+                                voidPromiseInternal.tryComplete();
+                            }
+                        };
                         rowObservable.subscribe(observerWrite);
-                        return VertxUtil.newSuccessPromise();
+                        return voidPromiseInternal;
                     }
                     default:
                         throw new IllegalStateException("Unexpected value: " + mycatResponse.getType());
@@ -239,13 +241,14 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
 
         public ObserverWrite(RowObservable rowIterable) {
             this.rowIterable = rowIterable;
+            this. moreResultSet = count !=1;
         }
 
         @Override
         public void onSubscribe(@NonNull Disposable d) {
             this.disposable = d;
             MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-            this. moreResultSet = count !=0;
+
             session.writeColumnCount(rowMetaData.getColumnCount());
             if(!binary){
                 this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
@@ -267,7 +270,10 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         @Override
         public void onError(@NonNull Throwable e) {
             session.getDataContext().getTransactionSession().closeStatenmentState();
-            disposable.dispose();
+            if (disposable!=null) {
+                disposable.dispose();
+            }
+
             session.setLastMessage(e);
             session.writeErrorEndPacketBySyncInProcessError();
             return;

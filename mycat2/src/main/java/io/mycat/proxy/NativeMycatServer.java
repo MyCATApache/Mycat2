@@ -165,11 +165,12 @@ public class NativeMycatServer implements MycatServer {
 
     public MySQLDatasource getDatasource(String name) {
         MySQLDatasource datasource = datasourceMap.get(name);
+
         if (datasource != null) {
             return datasource;
         }
         DatasourceConfig datasourceConfig = Objects.requireNonNull(datasourceConfigProvider.get()).get(name);
-        if (datasourceConfig != null && datasourceConfig.computeType().isNative()) {
+        if (datasourceConfig != null && "mysql".equalsIgnoreCase(datasourceConfig.getDbType())) {
             return datasourceMap.computeIfAbsent(name, s -> {
                 MySQLDatasource mySQLDatasource = new MySQLDatasource(datasourceConfig) {
                     @Override

@@ -12,13 +12,15 @@ import io.mycat.util.Dumper;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 
+import java.util.function.Supplier;
+
 public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
     private TransactionSession parent;
     private XaSqlConnection connection;
-    public ProxyTransactionSession(MySQLManager mySQLManager, XaLog xaLog,TransactionSession parent) {
-        super(mySQLManager,xaLog);
+    public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
+        super(mySQLManagerSupplier,xaLog);
         this.parent = parent;
-        this.connection = new BaseXaSqlConnection(mySQLManager,xaLog);
+        this.connection = new BaseXaSqlConnection(mySQLManagerSupplier,xaLog);
     }
 
     @Override

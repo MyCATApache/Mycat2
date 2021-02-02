@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
-public abstract class AbstractMySqlPreparedQuery implements PreparedQuery<RowSet<Row>> {
+public abstract class AbstractMySqlPreparedQuery<T> implements PreparedQuery<T> {
     @Override
-    public void execute(Tuple tuple, Handler<AsyncResult<RowSet<Row>>> handler) {
-        Future<RowSet<Row>> future = execute();
+    public void execute(Tuple tuple, Handler<AsyncResult<T>> handler) {
+        Future<T> future = execute();
         if (future!=null){
             future.onComplete(handler);
         }
@@ -20,8 +20,8 @@ public abstract class AbstractMySqlPreparedQuery implements PreparedQuery<RowSet
 
 
     @Override
-    public void executeBatch(List<Tuple> batch, Handler<AsyncResult<RowSet<Row>>> handler) {
-        Future<RowSet<Row>> future = executeBatch(batch);
+    public void executeBatch(List<Tuple> batch, Handler<AsyncResult<T>> handler) {
+        Future<T> future = executeBatch(batch);
         if (future!=null){
             future.onComplete(handler);
         }
@@ -30,8 +30,8 @@ public abstract class AbstractMySqlPreparedQuery implements PreparedQuery<RowSet
 
 
     @Override
-    public void execute(Handler<AsyncResult<RowSet<Row>>> handler) {
-        Future<RowSet<Row>>  future = execute();
+    public void execute(Handler<AsyncResult<T>> handler) {
+        Future<T>  future = execute();
         if (future!=null){
             future.onComplete(handler);
         }

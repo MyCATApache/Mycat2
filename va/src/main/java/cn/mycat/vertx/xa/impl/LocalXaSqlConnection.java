@@ -24,13 +24,15 @@ import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.util.function.Supplier;
+
 public class LocalXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalXaSqlConnection.class);
     volatile SqlConnection localSqlConnection = null;
     volatile String targetName;
 
-    public LocalXaSqlConnection(MySQLManager mySQLManager, XaLog xaLog) {
-        super(mySQLManager, xaLog);
+    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+        super(mySQLManagerSupplier, xaLog);
     }
 
     @Override
@@ -72,6 +74,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<SqlConnection> getConnection(String targetName) {
+        MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
             if (this.targetName == null && localSqlConnection == null) {
                 LocalXaSqlConnection.this.targetName = targetName;

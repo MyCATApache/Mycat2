@@ -9,14 +9,18 @@ import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.calcite.spm.PlanCache;
+import io.mycat.commands.MycatMySQLManager;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.sqlclient.SqlConnection;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,9 +220,14 @@ public class ConfigPrepareExecuter {
                 SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
                 configList.add(simpleConfig);
             }
+            if (!MetaClusterCurrent.exist(MySQLManager.class)){
+                this.mySQLManager = new MycatMySQLManager();
+            }else {
+                this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+            }
+            this.xaLog = XaLogImpl.createDemoRepository(mySQLManager);
         }
-        this.mySQLManager = new MySQLManagerImpl(configList);
-        this.xaLog = XaLogImpl.createDemoRepository(mySQLManager);
+
     }
 
     private void clearSqlCache() {
@@ -327,18 +336,9 @@ public class ConfigPrepareExecuter {
             context.put(XaLog.class, xaLog);
         }
         if (mySQLManager != null) {
-
             if (MetaClusterCurrent.exist(MySQLManager.class)) {
-                CountDownLatch countDownLatch = new CountDownLatch(1);
                 MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-                mySQLManager.close(event -> {
-                    countDownLatch.countDown();
-                });
-                try {
-                    countDownLatch.await(30, TimeUnit.SECONDS);
-                }catch (Throwable throwable){
-                    LOGGER.error("",throwable);
-                }
+                //close......but meet bug
             }
 
             context.put(MySQLManager.class, mySQLManager);

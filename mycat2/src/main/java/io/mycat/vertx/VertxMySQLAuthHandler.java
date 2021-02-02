@@ -122,9 +122,8 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         }
 
         mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
-        MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
         MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket,
-                new LocalXaSqlConnection(mySQLManager,XaLogImpl.createDemoRepository(mySQLManager)));
+                new LocalXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),XaLogImpl.createDemoRepository( MetaClusterCurrent.wrapper(MySQLManager.class))));
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);
@@ -134,7 +133,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         TransactionSession session = connection.getDatasourceProvider().createSession(mycatDataContext);
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         mycatDataContext.setTransactionSession(
-                new ProxyTransactionSession(mySQLManager,xaLog,connection.getDatasourceProvider().createSession(mycatDataContext)));
+                new ProxyTransactionSession(()-> MetaClusterCurrent.wrapper(MySQLManager.class),xaLog,connection.getDatasourceProvider().createSession(mycatDataContext)));
 
         socket.handler(new VertxMySQLPacketResolver(socket, new MycatMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);

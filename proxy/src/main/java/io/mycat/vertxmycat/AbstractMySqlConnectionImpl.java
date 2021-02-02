@@ -1,5 +1,11 @@
 package io.mycat.vertxmycat;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -20,6 +26,7 @@ import io.vertx.sqlclient.desc.ColumnDescriptor;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -38,7 +45,32 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Future<PreparedStatement> prepare(String sql) {
-        return null;
+        return Future.succeededFuture(new PreparedStatement() {
+            @Override
+            public PreparedQuery<RowSet<Row>> query() {
+                return AbstractMySqlConnectionImpl.this.preparedQuery(sql);
+            }
+
+            @Override
+            public Cursor cursor(Tuple args) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public RowStream<Row> createStream(int fetch, Tuple args) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Future<Void> close() {
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public void close(Handler<AsyncResult<Void>> completionHandler) {
+
+            }
+        });
     }
 
     @Override
@@ -84,131 +116,96 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Query<RowSet<Row>> query(String sql) {
-        return new Query<RowSet<Row>>() {
-            ColumnDefinition[] columnDefinitionList;
+        return new RowSetQuery(sql);
+    }
+
+    public static String apply(String parameterizedSql, List<Object> parameters) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(parameterizedSql);
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
+            @Override
+            public void endVisit(SQLVariantRefExpr x) {
+                SQLReplaceable parent = (SQLReplaceable) x.getParent();
+                parent.replace(x, SQLExprUtils.fromJavaObject(parameters.get(x.getIndex())));
+            }
+        });
+        return sqlStatement.toString();
+    }
+
+    @Override
+    public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
+        return new AbstractMySqlPreparedQuery<RowSet<Row>>() {
 
             @Override
-            public void execute(Handler<AsyncResult<RowSet<Row>>> handler) {
-                Future<RowSet<Row>> future = execute();
-                if (future != null) {
-                    future.onComplete(handler);
+            public Future<RowSet<Row>> execute(Tuple tuple) {
+                int size = tuple.size();
+                List<Object> list = new ArrayList<>(size);
+                for (int i = 0; i < tuple.size(); i++) {
+                    list.add(tuple.getValue(i));
                 }
+                Query<RowSet<Row>> query = query(apply(sql, list));
+                return query.execute();
             }
 
             @Override
-            public Future<RowSet<Row>> execute() {
-                Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
-                Promise<RowSet<Row>> rowSetPromise = runTextQuery(sql, mySQLClientSession, consumer,
-                        (Collector)VertxRowSetImpl.collector(row -> row));
-                return rowSetPromise.future();
+            public Future<RowSet<Row>> executeBatch(List<Tuple> batch) {
+                return Future.succeededFuture();
             }
 
             @Override
-            public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collectorArg) {
-                return new Query<SqlResult<R>>() {
+            public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
+
+                return new AbstractMySqlPreparedQuery<SqlResult<R>>() {
+
                     @Override
-                    public void execute(Handler<AsyncResult<SqlResult<R>>> handler) {
-                        Future<SqlResult<R>> future = execute();
-                        if (future!=null){
-                            future.onComplete(handler);
-                        }
+                    public Future<SqlResult<R>> execute(Tuple tuple) {
+                        RowSetQuery rowSetQuery = new RowSetQuery(apply(sql, toObjects(tuple)));
+                        return rowSetQuery.collecting(collector).execute();
+
                     }
 
                     @Override
-                    public Future<SqlResult<R>> execute() {
-                        Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
-                        Promise<VertxMycatTextCollector> promise = runTextQuery(sql, mySQLClientSession, consumer,
-                                (Collector<Row, Object, Object>) collectorArg);
-                        return promise.future().map(s->new SqlResult<R>() {
-                            @Override
-                            public int rowCount() {
-                                return (int)s.getAffectedRows();
-                            }
-
-                            @Override
-                            public List<String> columnsNames() {
-                                return Arrays.stream(columnDefinitionList).map(i->i.name()).collect(Collectors.toList());
-                            }
-
-                            @Override
-                            public List<ColumnDescriptor> columnDescriptors() {
-                                return Arrays.asList(columnDefinitionList);
-                            }
-
-                            @Override
-                            public int size() {
-                                return (int) s.getRowCount();
-                            }
-
-                            @Override
-                            public <V> V property(PropertyKind<V> propertyKind) {
-                                if (propertyKind == MySQLClient.LAST_INSERTED_ID){
-                                    Object lastInsertId = s.getLastInsertId();
-                                    return (V)lastInsertId;
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            public R value() {
-                                return (R)s.getRes();
-                            }
-
-                            @Override
-                            public SqlResult<R> next() {
-                                throw  new UnsupportedOperationException();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
+                    public Future<SqlResult<R>> executeBatch(List<Tuple> batch) {
                         throw new UnsupportedOperationException();
                     }
 
                     @Override
-                    public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
+                    public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public <U> PreparedQuery<RowSet<U>> mapping(Function<Row, U> mapper) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public Future<SqlResult<R>> execute() {
                         throw new UnsupportedOperationException();
                     }
                 };
             }
 
             @Override
-            public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
+            public <U> PreparedQuery<RowSet<U>> mapping(Function<Row, U> mapper) {
                 throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    @Override
-    public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new AbstractMySqlPreparedQuery() {
-
-            @Override
-            public Future<RowSet<Row>> execute(Tuple tuple) {
-                return null;
-            }
-
-            @Override
-            public Future<RowSet<Row>> executeBatch(List<Tuple> batch) {
-                return null;
             }
 
             @Override
             public Future<RowSet<Row>> execute() {
-                return null;
+                return query(sql).execute();
             }
 
-            @Override
-            public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
-                return null;
-            }
-
-            @Override
-            public <U> PreparedQuery<RowSet<U>> mapping(Function<Row, U> mapper) {
-                return null;
-            }
         };
+    }
+
+    @NotNull
+    private List<Object> toObjects(Tuple tuple) {
+        int size = tuple.size();
+        ArrayList<Object> objects = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            objects.add(tuple.getValue(i));
+        }
+        return objects;
     }
 
     @NotNull
@@ -336,5 +333,114 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
                 promise.fail(new MycatException(errorPacket.getErrorCode(), errorPacket.getErrorMessageString()));
             }
         };
+    }
+
+    private class RowSetQuery implements Query<RowSet<Row>> {
+        private final String sql;
+        ColumnDefinition[] columnDefinitionList;
+
+        public RowSetQuery(String sql) {
+            this.sql = sql;
+        }
+
+        @Override
+        public void execute(Handler<AsyncResult<RowSet<Row>>> handler) {
+            Future<RowSet<Row>> future = execute();
+            if (future != null) {
+                future.onComplete(handler);
+            }
+        }
+
+        @Override
+        public Future<RowSet<Row>> execute() {
+            Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
+            VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
+            Collector<Object, Object, Object> aNew = Collector.of(
+                    VertxRowSetImpl::new,
+                    (set, row) -> {
+                        vertxRowSet.list.add((Row) row);
+                    },
+                    (set1, set2) -> null, // Shall not be invoked as this is sequential
+                    (set) -> set
+            );
+            Promise<VertxMycatTextCollector> rowSetPromise = runTextQuery(sql, mySQLClientSession, consumer,
+                    (Collector)aNew );
+            return (Future)rowSetPromise.future().map(i->vertxRowSet);
+        }
+
+        @Override
+        public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collectorArg) {
+            return new Query<SqlResult<R>>() {
+                @Override
+                public void execute(Handler<AsyncResult<SqlResult<R>>> handler) {
+                    Future<SqlResult<R>> future = execute();
+                    if (future != null) {
+                        future.onComplete(handler);
+                    }
+                }
+
+                @Override
+                public Future<SqlResult<R>> execute() {
+                    Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
+                    Promise<VertxMycatTextCollector> promise = runTextQuery(sql, mySQLClientSession, consumer,
+                            (Collector<Row, Object, Object>) collectorArg);
+                    return promise.future().map(s -> new SqlResult<R>() {
+                        @Override
+                        public int rowCount() {
+                            return (int) s.getAffectedRows();
+                        }
+
+                        @Override
+                        public List<String> columnsNames() {
+                            return Arrays.stream(columnDefinitionList).map(i -> i.name()).collect(Collectors.toList());
+                        }
+
+                        @Override
+                        public List<ColumnDescriptor> columnDescriptors() {
+                            return Arrays.asList(columnDefinitionList);
+                        }
+
+                        @Override
+                        public int size() {
+                            return (int) s.getRowCount();
+                        }
+
+                        @Override
+                        public <V> V property(PropertyKind<V> propertyKind) {
+                            if (propertyKind == MySQLClient.LAST_INSERTED_ID) {
+                                Object lastInsertId = s.getLastInsertId();
+                                return (V) lastInsertId;
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public R value() {
+                            return (R) s.getRes();
+                        }
+
+                        @Override
+                        public SqlResult<R> next() {
+                            throw new UnsupportedOperationException();
+                        }
+                    });
+                }
+
+                @Override
+                public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Override
+        public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -27,10 +27,12 @@ import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.util.function.Supplier;
+
 public class OnePhaseXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(OnePhaseXaSqlConnection.class);
-    public OnePhaseXaSqlConnection(MySQLManager mySQLManager, XaLog xaLog) {
-        super(mySQLManager,xaLog);
+    public OnePhaseXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+        super(mySQLManagerSupplier,xaLog);
     }
 
     @Override

@@ -138,7 +138,7 @@ public class VertxExecuter {
                         @Override
                         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
                             this.observer = observer;
-                            query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
+                            PreparedQuery<SqlResult<ProcessMonitor>> collecting = query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
                                 @Override
                                 public void onStart() {
 
@@ -163,7 +163,9 @@ public class VertxExecuter {
                                 public void onThrowable(Throwable throwable) {
                                     observer.onError(throwable);
                                 }
-                            })).execute(Tuple.tuple(values)).onSuccess(event -> metaData = extracted(event.columnDescriptors()));
+                            }));
+                            Future<SqlResult<ProcessMonitor>> execute = collecting.execute(Tuple.tuple(values));
+                            execute.onSuccess(event -> metaData = extracted(event.columnDescriptors()));
                         }
                     };
                     return Future.succeededFuture(observable);
@@ -301,15 +303,26 @@ public class VertxExecuter {
         for (Map.Entry<String, List<List<Object>>> e : insertMap.entrySet()) {
             String sql = e.getKey();
             List<List<Object>> values = e.getValue();
-            Future<long[]> future = sqlConnectionFuture.flatMap(connection -> connection.prepare(sql).flatMap(preparedStatement -> {
-                Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(u -> Tuple.from(u)).collect(Collectors.toList()));
-                return rowSetFuture.map(rows -> {
-                    int affectedRow = rows.rowCount();
-                    long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
-                            .orElse(0L);
-                    return (new long[]{affectedRow, lastInsertId});
+            Future<long[]> future = sqlConnectionFuture.flatMap(connection -> {
+                return connection.prepare(sql).flatMap(preparedStatement -> {
+                    List<Tuple> collect = values.stream().map(new Function<List<Object>, Tuple>() {
+                        @Override
+                        public Tuple apply(List<Object> u) {
+                            return Tuple.from(u);
+                        }
+                    }).collect(Collectors.toList());
+                    Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
+                    return rowSetFuture.map(new Function<RowSet<Row>, long[]>() {
+                        @Override
+                        public long[] apply(RowSet<Row> rows) {
+                            int affectedRow = rows.rowCount();
+                            long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
+                                    .orElse(0L);
+                            return (new long[]{affectedRow, lastInsertId});
+                        }
+                    });
                 });
-            }));
+            });
             list.add(future);
         }
         return list;

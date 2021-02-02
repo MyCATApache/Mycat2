@@ -44,20 +44,19 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     private final static Logger LOGGER = LoggerFactory.getLogger(BaseXaSqlConnection.class);
     protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
     protected final Map<SqlConnection, State> connectionState = Collections.synchronizedMap(new IdentityHashMap<>());
-    protected final MySQLManager mySQLManager;
+    private final Supplier<MySQLManager> mySQLManagerSupplier;
     protected volatile String xid;
 
 
-    public BaseXaSqlConnection(MySQLManager mySQLManager, XaLog xaLog) {
+    public BaseXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
         super(xaLog);
-        this.mySQLManager = mySQLManager;
+        this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 
-    public BaseXaSqlConnection(String xid, MySQLManager mySQLManager, XaLog xaLog) {
-        super(xaLog);
-        this.xid = xid;
-        this.mySQLManager = mySQLManager;
+    protected MySQLManager mySQLManager(){
+        return mySQLManagerSupplier.get();
     }
+
 
     private String getDatasourceName(SqlConnection connection) {
         return map.entrySet().stream().filter(p -> p.getValue() == connection).map(e -> e.getKey())
@@ -84,6 +83,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
 
     public Future<SqlConnection> getConnection(String targetName) {
+        MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
             if (map.containsKey(targetName)) {
                 return Future.succeededFuture(map.get(targetName));
@@ -153,13 +153,13 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      * @param function
      */
     private void retryRollback(Handler<AsyncResult<Void>> handler, Function<SqlConnection, Future<Object>> function) {
-
+        MySQLManager mySQLManager = mySQLManager();
         List<Future<Object>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager.getConnection(c).flatMap(function)).collect(Collectors.toList());
         CompositeFuture.all((List) collect)
                 .onComplete(event -> {
                     log.logRollback(xid, event.succeeded());
                     if (event.failed()) {
-                        mySQLManager.getVertx().setTimer(log.retryDelay(), event1 -> retryRollback(handler, function));
+                        mySQLManager.setTimer(log.retryDelay(), () -> retryRollback(handler, function));
                         return;
                     }
                     inTranscation = false;
@@ -289,6 +289,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
      * @param handler
      */
     private void retryCommit(Handler<AsyncResult<Void>> handler) {
+        MySQLManager mySQLManager = mySQLManager();
         CompositeFuture all = CompositeFuture.all(computePrepareCommittedTargets().stream()
                 .map(s -> mySQLManager.getConnection(s)
                         .compose(c -> {
@@ -308,7 +309,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             clearConnections(event2 -> handler.handle(Future.succeededFuture()));
         });
         all.onFailure(event -> {
-            mySQLManager.getVertx().setTimer(log.retryDelay(), event1 -> retryCommit(handler));
+            mySQLManager.setTimer(log.retryDelay(), () -> retryCommit(handler));
         });
     }
 

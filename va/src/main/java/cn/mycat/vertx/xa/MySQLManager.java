@@ -20,6 +20,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.util.List;
+
 
 public interface MySQLManager {
 
@@ -27,5 +29,5 @@ public interface MySQLManager {
 
     void close(Handler<Future> handler);
 
-    Vertx getVertx();
+    void setTimer(long delay, Runnable handler);
 }

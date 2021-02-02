@@ -54,7 +54,7 @@ public class VertxRowSetImpl<R> extends SqlResultBase<RowSet<R>> implements RowS
     return rs -> (VertxRowSetImpl) rs;
   };
 
-  private ArrayList<R> list = new ArrayList<>();
+  public ArrayList<R> list = new ArrayList<>();
 
   @Override
   public RowSet<R> value() {

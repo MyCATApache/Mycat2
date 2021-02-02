@@ -22,9 +22,8 @@ public class TranscationSwitch {
         this(new HashMap<>(Maps.of(TransactionType.PROXY_TRANSACTION_TYPE,
                 mycatDataContext -> {
                     JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                    MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
                     XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-                    return new ProxyTransactionSession(mySQLManager,xaLog,connection.getDatasourceProvider().createSession(mycatDataContext));
+                    return new ProxyTransactionSession(()->MetaClusterCurrent.wrapper(MySQLManager.class),xaLog,connection.getDatasourceProvider().createSession(mycatDataContext));
                 },
                 TransactionType.JDBC_TRANSACTION_TYPE,
                 mycatDataContext -> {
@@ -41,23 +40,10 @@ public class TranscationSwitch {
     public TransactionSession ensureTranscation(MycatDataContext dataContext) {
         TransactionSession transactionSession = dataContext.getTransactionSession();
         if (transactionSession == null) {
-            TransactionType transactionType = dataContext.transactionType();
-            Objects.requireNonNull(transactionType);
-            dataContext.setTransactionSession(transactionSession = map.get(transactionType).apply(dataContext));
+            XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+               dataContext.setTransactionSession(transactionSession =new ProxyTransactionSession(()->MetaClusterCurrent.wrapper(MySQLManager.class),xaLog,map.get(TransactionType.PROXY_TRANSACTION_TYPE).apply(dataContext)));
         } else {
-            if (!transactionSession.name().equals(dataContext.transactionType().getName())) {
-                if (transactionSession.isInTransaction()) {
-                    throw new IllegalArgumentException("正在处于事务状态,不能切换事务模式");
-                } else {
-                    //
-                    Function<MycatDataContext, TransactionSession> transactionSessionFunction =
-                            Objects.requireNonNull(map.get(dataContext.transactionType()));
-                    TransactionSession newTransactionSession = transactionSessionFunction.apply(dataContext);
 
-                    setTranscation(dataContext, transactionSession, newTransactionSession);
-                    transactionSession = newTransactionSession;
-                }
-            }
         }
         return transactionSession;
     }
