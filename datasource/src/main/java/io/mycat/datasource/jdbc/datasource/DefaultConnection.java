@@ -25,6 +25,7 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -60,14 +61,17 @@ public class DefaultConnection implements MycatConnection {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql,
                     needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-            long lastInsertId = 0;
+            BigDecimal lastInsertId = BigDecimal.ZERO;
             if (needGeneratedKeys) {
                 ResultSet generatedKeys = statement.getGeneratedKeys();
                 if (generatedKeys!=null&&generatedKeys.next()){
-                    lastInsertId =Math.max(lastInsertId,  generatedKeys.getLong(1));
+                    BigDecimal decimal = generatedKeys.getBigDecimal(1);
+                    if (decimal.compareTo(lastInsertId)>0){
+                        lastInsertId = decimal;
+                    }
                 }
             }
-            return new long[]{statement.getUpdateCount(), lastInsertId};
+            return new long[]{statement.getUpdateCount(), lastInsertId.longValue()};
         } catch (Exception e) {
             throw new MycatException(e);
         }
