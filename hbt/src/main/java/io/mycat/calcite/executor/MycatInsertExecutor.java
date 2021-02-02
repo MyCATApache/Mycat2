@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -232,7 +233,7 @@ public class MycatInsertExecutor implements Executor {
             }
         }
 
-        long lastInsertId = 0;
+        long lastInsertId =0;
         long affected = 0;
         SqlRecord sqlRecord = context.currentSqlRecord();
         if (group.size() == 1) {
@@ -251,8 +252,7 @@ public class MycatInsertExecutor implements Executor {
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 if (generatedKeys != null) {
                     if (generatedKeys.next()) {
-                        lastInsertId = generatedKeys.getLong(1);
-
+                        lastInsertId = generatedKeys.getBigDecimal(1).longValue();
                     }
                 }
                 String targetName = connections.keySet().iterator().next();
@@ -272,7 +272,7 @@ public class MycatInsertExecutor implements Executor {
                 long startTime = SqlRecord.now();
 
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
-                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
+                lastInsertId =Math.max(lastInsertId,res.getLastInsertId());
 
                 affected += res.getAffected();
 
