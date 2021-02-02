@@ -99,6 +99,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(plan.getPhysical().getRowType().getFieldList());
         RowObservable rowObservable = new RowObservable() {
 
+
             @Override
             public void close() throws IOException {
 

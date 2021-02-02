@@ -282,7 +282,9 @@ public class SQLExecuterWriter implements SQLExecuterWriterHandler {
         @Override
         public void onComplete() {
             session.getDataContext().getTransactionSession().closeStatenmentState();
-            disposable.dispose();
+            if (disposable!=null){
+                disposable.dispose();
+            }
             session.writeRowEndPacket(moreResultSet, false);
         }
     }

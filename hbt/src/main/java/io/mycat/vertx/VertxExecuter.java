@@ -14,28 +14,35 @@ import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
+import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.internal.subscriptions.AsyncSubscription;
+import io.reactivex.rxjava3.processors.AsyncProcessor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.command.QueryCommandBase;
+import org.reactivestreams.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class VertxExecuter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VertxExecuter.class);
 
     public static Future<long[]> runMycatInsertRel(XaSqlConnection sqlConnection,
                                                    MycatDataContext context,
@@ -58,7 +65,7 @@ public class VertxExecuter {
             }
             list.addAll(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
         }
-        if (list.isEmpty()){
+        if (list.isEmpty()) {
             throw new AssertException();
         }
         return CompositeFuture.all((List) list)
@@ -73,7 +80,7 @@ public class VertxExecuter {
 
 
     public static Future<long[]> runMycatUpdateRel(XaSqlConnection sqlConnection, MycatDataContext context, MycatUpdateRel updateRel, List<Object> params) {
-        final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel,updateRel.getValues(),
+        final Set<SQL> reallySqlSet = MycatUpdateExecutor.buildReallySqlList(updateRel, updateRel.getValues(),
                 updateRel.getSqlStatement(),
                 params);
         TransactionSession transactionSession = context.getTransactionSession();
@@ -108,123 +115,84 @@ public class VertxExecuter {
     public static CompositeFuture runMutliQuery(Future<SqlConnection> sqlConnectionFuture, List<String> sqls, List<Object> values) {
         ArrayList<Future> resList = new ArrayList<>();
         for (String sql : sqls) {
-            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture,  sql,values);
+            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture, sql, values);
             resList.add(observableFuture);
         }
         return CompositeFuture.all(resList);
     }
 
-    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture,String sql, List<Object> values ) {
-        Future<RowObservable> observableFuture = sqlConnectionFuture
+    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
+        PromiseInternal<RowObservable> promise = VertxUtil.newPromise();
+        Future compose = sqlConnectionFuture
                 .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
                     PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                    RowObservable observable = new RowObservable() {
-                        private Observer<? super Object[]> observer;
+                    PreparedQuery<SqlResult<Void>> collecting = query.collecting(new C(promise));
+                    return collecting.execute(Tuple.tuple(values));
+                }).onFailure(event -> promise.tryFail(event));
+        return promise;
+    }
+    static class C extends RowObservable implements StreamMysqlCollector{
+        MycatRowMetaData metaData;
+        private Observer<? super Object[]> observer;
+        private PromiseInternal<RowObservable> promiseInternal;
 
-                        @Override
-                        public void close() throws IOException {
-                            if (observer != null) {
-                                observer.onComplete();
-                            }
-                        }
+        public C(PromiseInternal<RowObservable> promiseInternal) {
+            this.promiseInternal = promiseInternal;
+        }
 
-                        @Override
-                        public MycatRowMetaData getRowMetaData() {
-                            return metaData;
-                        }
+        @Override
+        public MycatRowMetaData getRowMetaData() {
+            return metaData;
+        }
 
-                        MycatRowMetaData metaData;
+        @Override
+        protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
+            this.observer = observer;
+            this.observer.onSubscribe(Disposable.disposed());
+        }
 
-                        @Override
-                        protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                            this.observer = observer;
-                            PreparedQuery<SqlResult<ProcessMonitor>> collecting = query.collecting(ProcessMonitor.getCollector(new ProcessMonitor() {
-                                @Override
-                                public void onStart() {
+        @Override
+        public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+            this.metaData = extracted(columnDefinitions.columnDescriptor());
+            promiseInternal.tryComplete(this);
+        }
 
-                                }
+        @Override
+        public void onRow(Row row) {
+            int size = row.size();
+            Object[] objects = new Object[size];
+            for (int i = 0; i < size; i++) {
+                objects[i] = row.getValue(i);
+            }
+            observer.onNext(objects);
+        }
 
-                                @Override
-                                public void onRow(Row row) {
-                                    int size = row.size();
-                                    Object[] objects = new Object[size];
-                                    for (int i = 0; i < size; i++) {
-                                        objects[i] = row.getValue(i);
-                                    }
-                                    observer.onNext(objects);
-                                }
+        @Override
+        public void onFinish(int sequenceId, int serverStatusFlags, long affectedRows, long lastInsertId) {
+            this.observer.onComplete();
+        }
 
-                                @Override
-                                public void onFinish() {
-                                    observer.onComplete();
-                                }
+        @Override
+        public void close() throws IOException {
 
-                                @Override
-                                public void onThrowable(Throwable throwable) {
-                                    observer.onError(throwable);
-                                }
-                            }));
-                            Future<SqlResult<ProcessMonitor>> execute = collecting.execute(Tuple.tuple(values));
-                            execute.onSuccess(event -> metaData = extracted(event.columnDescriptors()));
-                        }
-                    };
-                    return Future.succeededFuture(observable);
-                });
-        return observableFuture;
+        }
     }
 
-    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture, String sql) {
-        return sqlConnectionFuture
+    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture,
+                                                 String sql) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("runQuery");
+        }
+        PromiseInternal<RowObservable> promise = VertxUtil.newPromise();
+        sqlConnectionFuture
                 .flatMap(connection -> {
                     Query<RowSet<Row>> query = connection.query(sql);
-                    RowObservable observable = new RowObservable() {
-                        private Observer observer;
-                        private MycatRowMetaData metaData;
-
-                        @Override
-                        public void close() throws IOException {
-                            if (observer != null) {
-                                observer.onComplete();
-                            }
-                        }
-
-                        @Override
-                        public MycatRowMetaData getRowMetaData() {
-                            return metaData;
-                        }
-
-
-                        @Override
-                        protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                            this.observer = observer;
-                            query.collecting(new StreamMysqlCollector(){
-
-                                @Override
-                                public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
-                                    metaData = extracted(columnDefinitions.columnDescriptor());
-                                    observer.onSubscribe(Disposable.disposed());
-                                }
-
-                                @Override
-                                public void onRow(Row row) {
-                                    int size = row.size();
-                                    Object[] objects = new Object[size];
-                                    for (int i = 0; i < size; i++) {
-                                        objects[i] = row.getValue(i);
-                                    }
-                                    observer.onNext(objects);
-                                }
-
-                                @Override
-                                public void onFinish(int sequenceId, int serverStatusFlags, long affectedRows, long lastInsertId) {
-                                    observer.onComplete();
-                                }
-                            }).execute();
-                        }
-
-                    };
-                    return Future.succeededFuture(observable);
-                });
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("subscribeActual");
+                    }
+                    return query.collecting(new C(promise)).execute();
+                }).onFailure(event -> promise.fail(event));
+        return promise;
     }
 
     private static MycatRowMetaData extracted(List<ColumnDescriptor> event) {
@@ -269,7 +237,7 @@ public class VertxExecuter {
         };
     }
 
-    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture,String sql ) {
+    public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
         return sqlConnectionFuture.flatMap(c -> c.query(sql).execute().map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
     }
 
@@ -328,47 +296,48 @@ public class VertxExecuter {
         return list;
     }
 
-    private interface ProcessMonitor {
-        public void onStart();
-        public void onRow(Row row);
+private interface ProcessMonitor {
+    public void onStart();
 
-        public void onFinish();
+    public void onRow(Row row);
 
-        public void onThrowable(Throwable throwable);
+    public void onFinish();
 
-        public static Collector<Row, Void, ProcessMonitor> getCollector(ProcessMonitor monitor) {
-            return new Collector<Row, Void, ProcessMonitor>() {
-                @Override
-                public Supplier<Void> supplier() {
-                    return () -> {
-                        monitor.onStart();
-                        return null;
-                    };
-                }
+    public void onThrowable(Throwable throwable);
 
-                @Override
-                public BiConsumer<Void, Row> accumulator() {
-                    return (aVoid, row) -> monitor.onRow(row);
-                }
+    public static Collector<Row, Void, ProcessMonitor> getCollector(ProcessMonitor monitor) {
+        return new Collector<Row, Void, ProcessMonitor>() {
+            @Override
+            public Supplier<Void> supplier() {
+                return () -> {
+                    monitor.onStart();
+                    return null;
+                };
+            }
 
-                @Override
-                public BinaryOperator<Void> combiner() {
-                    return (aVoid, aVoid2) -> null;
-                }
+            @Override
+            public BiConsumer<Void, Row> accumulator() {
+                return (aVoid, row) -> monitor.onRow(row);
+            }
 
-                @Override
-                public Function<Void, ProcessMonitor> finisher() {
-                    return aVoid -> {
-                        monitor.onFinish();
-                        return monitor;
-                    };
-                }
+            @Override
+            public BinaryOperator<Void> combiner() {
+                return (aVoid, aVoid2) -> null;
+            }
 
-                @Override
-                public Set<Characteristics> characteristics() {
-                    return Collections.emptySet();
-                }
-            };
-        }
+            @Override
+            public Function<Void, ProcessMonitor> finisher() {
+                return aVoid -> {
+                    monitor.onFinish();
+                    return monitor;
+                };
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Collections.emptySet();
+            }
+        };
     }
+}
 }

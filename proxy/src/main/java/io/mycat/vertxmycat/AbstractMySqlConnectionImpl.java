@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -211,11 +210,11 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
     @NotNull
     private static Promise<VertxMycatTextCollector> runTextQuery(String curSql,
                                                                  MySQLClientSession mySQLClientSession,
-                                                                 Consumer<ColumnDefinition[]> consumer,
                                                                  Collector<Row, Object, Object> collectorArg) {
         Promise<VertxMycatTextCollector> promise = Promise.promise();
         if (mySQLClientSession.getIOThread() == Thread.currentThread()) {
-            VertxMycatTextCollector<Object, Object> resultSetHandler = new VertxMycatTextCollector<Object, Object>(consumer, (Collector) collectorArg);
+
+            VertxMycatTextCollector<Object, Object> resultSetHandler = new VertxMycatTextCollector<Object, Object>( (Collector) collectorArg);
             resultSetHandler.request(mySQLClientSession, MySQLCommandType.COM_QUERY, curSql.getBytes(),
                     new ResultSetCallBack<MySQLClientSession>() {
                         @Override
@@ -245,7 +244,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
             mySQLClientSession.getIOThread().addNIOJob(new NIOJob() {
                 @Override
                 public void run(ReactorEnvThread reactor) throws Exception {
-                    Promise<VertxMycatTextCollector> objectPromise = runTextQuery(curSql, mySQLClientSession, consumer, collectorArg);
+                    Promise<VertxMycatTextCollector> objectPromise = runTextQuery(curSql, mySQLClientSession, collectorArg);
                     objectPromise.handle(promise.future());
                 }
 
@@ -353,7 +352,6 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
         @Override
         public Future<RowSet<Row>> execute() {
-            Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
             VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
             Collector<Object, Object, Object> aNew = Collector.of(
                     VertxRowSetImpl::new,
@@ -363,7 +361,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
                     (set1, set2) -> null, // Shall not be invoked as this is sequential
                     (set) -> set
             );
-            Promise<VertxMycatTextCollector> rowSetPromise = runTextQuery(sql, mySQLClientSession, consumer,
+            Promise<VertxMycatTextCollector> rowSetPromise = runTextQuery(sql, mySQLClientSession,
                     (Collector)aNew );
             return (Future)rowSetPromise.future().map(i->vertxRowSet);
         }
@@ -381,48 +379,49 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
                 @Override
                 public Future<SqlResult<R>> execute() {
-                    Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
-                    Promise<VertxMycatTextCollector> promise = runTextQuery(sql, mySQLClientSession, consumer,
+                    Promise<VertxMycatTextCollector> promise = runTextQuery(sql, mySQLClientSession,
                             (Collector<Row, Object, Object>) collectorArg);
-                    return promise.future().map(s -> new SqlResult<R>() {
-                        @Override
-                        public int rowCount() {
-                            return (int) s.getAffectedRows();
-                        }
-
-                        @Override
-                        public List<String> columnsNames() {
-                            return Arrays.stream(columnDefinitionList).map(i -> i.name()).collect(Collectors.toList());
-                        }
-
-                        @Override
-                        public List<ColumnDescriptor> columnDescriptors() {
-                            return Arrays.asList(columnDefinitionList);
-                        }
-
-                        @Override
-                        public int size() {
-                            return (int) s.getRowCount();
-                        }
-
-                        @Override
-                        public <V> V property(PropertyKind<V> propertyKind) {
-                            if (propertyKind == MySQLClient.LAST_INSERTED_ID) {
-                                Object lastInsertId = s.getLastInsertId();
-                                return (V) lastInsertId;
+                    return promise.future().map(s -> {
+                        return new SqlResult<R>() {
+                            @Override
+                            public int rowCount() {
+                                return (int) s.getAffectedRows();
                             }
-                            return null;
-                        }
 
-                        @Override
-                        public R value() {
-                            return (R) s.getRes();
-                        }
+                            @Override
+                            public List<String> columnsNames() {
+                                return Arrays.stream(columnDefinitionList).map(i -> i.name()).collect(Collectors.toList());
+                            }
 
-                        @Override
-                        public SqlResult<R> next() {
-                            throw new UnsupportedOperationException();
-                        }
+                            @Override
+                            public List<ColumnDescriptor> columnDescriptors() {
+                                return Arrays.asList(columnDefinitionList);
+                            }
+
+                            @Override
+                            public int size() {
+                                return (int) s.getRowCount();
+                            }
+
+                            @Override
+                            public <V> V property(PropertyKind<V> propertyKind) {
+                                if (propertyKind == MySQLClient.LAST_INSERTED_ID) {
+                                    Object lastInsertId = s.getLastInsertId();
+                                    return (V) lastInsertId;
+                                }
+                                return null;
+                            }
+
+                            @Override
+                            public R value() {
+                                return (R) s.getRes();
+                            }
+
+                            @Override
+                            public SqlResult<R> next() {
+                                throw new UnsupportedOperationException();
+                            }
+                        };
                     });
                 }
 

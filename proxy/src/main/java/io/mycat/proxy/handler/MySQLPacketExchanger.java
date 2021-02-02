@@ -365,11 +365,9 @@ public enum MySQLPacketExchanger {
                     case BINARY_ROW:
                         callback.onBinaryRow(mySQLPacket, sIndex, eIndex);
                         break;
-                    case ROW_EOF:
-                        callback.onRowEof(mySQLPacket, sIndex, eIndex);
-                        break;
 //          case ROW_FINISHED:
 //            break;
+                    case ROW_EOF:
                     case ROW_OK: {
                         callback.onRowOk(mySQLPacket, sIndex, eIndex);
                         break;
