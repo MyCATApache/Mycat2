@@ -104,7 +104,7 @@ public class MycatMergeSort extends Sort implements MycatRel {
                     "getEnumerables", org.apache.calcite.rel.RelNode.class);
     final static Method GET_OBSERVABLES =
             Types.lookupMethod(NewMycatDataContext.class,
-                    "getMergeObservables", org.apache.calcite.rel.RelNode.class);
+                    "getObservables", org.apache.calcite.rel.RelNode.class);
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
