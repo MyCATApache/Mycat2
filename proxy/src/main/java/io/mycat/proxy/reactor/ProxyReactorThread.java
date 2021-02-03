@@ -146,7 +146,8 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     protected void processReadKey(SelectionKey curKey) throws IOException {
         T session = (T) curKey.attachment();
         setCurSession(session);
-        session.getCurNIOHandler().onSocketRead(session);
+        NIOHandler curNIOHandler = Objects.requireNonNull(session.getCurNIOHandler());
+        curNIOHandler.onSocketRead(session);
     }
 
     @SuppressWarnings("unchecked")

@@ -81,7 +81,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
 
     @Override
     public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatException {
-        Row row = rowResultDecoder.decodeRow(endPos - startPos, Buffer.buffer(mySQLPacket.getBytes(startPos, endPos)).getByteBuf());
+        Row row = rowResultDecoder.decodeRow(currentColumnDefList.length, Buffer.buffer(mySQLPacket.getBytes(startPos, endPos-startPos)).getByteBuf());
         rowCount++;
         this.accumulator.accept(this.c, row);
     }

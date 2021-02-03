@@ -16,14 +16,10 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
 import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.internal.subscriptions.AsyncSubscription;
-import io.reactivex.rxjava3.processors.AsyncProcessor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
@@ -31,13 +27,15 @@ import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.command.QueryCommandBase;
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -112,32 +110,30 @@ public class VertxExecuter {
     }
 
 
-    public static CompositeFuture runMutliQuery(Future<SqlConnection> sqlConnectionFuture, List<String> sqls, List<Object> values) {
-        ArrayList<Future> resList = new ArrayList<>();
-        for (String sql : sqls) {
-            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture, sql, values);
-            resList.add(observableFuture);
-        }
-        return CompositeFuture.all(resList);
+//    public static CompositeFuture runMutliQuery(Future<SqlConnection> sqlConnectionFuture, List<String> sqls, List<Object> values) {
+//        ArrayList<Future> resList = new ArrayList<>();
+//        for (String sql : sqls) {
+//            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture, sql, values);
+//            resList.add(observableFuture);
+//        }
+//        return CompositeFuture.all(resList);
+//    }
+
+    public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
+        return new C(sqlConnectionFuture, sql, values);
     }
 
-    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
-        PromiseInternal<RowObservable> promise = VertxUtil.newPromise();
-        Future compose = sqlConnectionFuture
-                .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
-                    PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                    PreparedQuery<SqlResult<Void>> collecting = query.collecting(new C(promise));
-                    return collecting.execute(Tuple.tuple(values));
-                }).onFailure(event -> promise.tryFail(event));
-        return promise;
-    }
-    static class C extends RowObservable implements StreamMysqlCollector{
+    static class C extends RowObservable implements StreamMysqlCollector {
         MycatRowMetaData metaData;
         private Observer<? super Object[]> observer;
-        private PromiseInternal<RowObservable> promiseInternal;
+        private final Future<SqlConnection> sqlConnectionFuture;
+        private final String sql;
+        private final List<Object> values;
 
-        public C(PromiseInternal<RowObservable> promiseInternal) {
-            this.promiseInternal = promiseInternal;
+        public C(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
+            this.sqlConnectionFuture = sqlConnectionFuture;
+            this.sql = sql;
+            this.values = values;
         }
 
         @Override
@@ -149,12 +145,18 @@ public class VertxExecuter {
         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
             this.observer = observer;
             this.observer.onSubscribe(Disposable.disposed());
+            Future compose = sqlConnectionFuture
+                    .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
+                        PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+
+                        PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
+                        return collecting.execute(Tuple.tuple(values));
+                    }).onFailure(event -> this.observer.onError(event));
         }
 
         @Override
         public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
             this.metaData = extracted(columnDefinitions.columnDescriptor());
-            promiseInternal.tryComplete(this);
         }
 
         @Override
@@ -178,21 +180,12 @@ public class VertxExecuter {
         }
     }
 
-    public static Future<RowObservable> runQuery(Future<SqlConnection> sqlConnectionFuture,
+    public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture,
                                                  String sql) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("runQuery");
         }
-        PromiseInternal<RowObservable> promise = VertxUtil.newPromise();
-        sqlConnectionFuture
-                .flatMap(connection -> {
-                    Query<RowSet<Row>> query = connection.query(sql);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("subscribeActual");
-                    }
-                    return query.collecting(new C(promise)).execute();
-                }).onFailure(event -> promise.fail(event));
-        return promise;
+        return new C(sqlConnectionFuture, sql, Collections.emptyList());
     }
 
     private static MycatRowMetaData extracted(List<ColumnDescriptor> event) {
@@ -296,48 +289,48 @@ public class VertxExecuter {
         return list;
     }
 
-private interface ProcessMonitor {
-    public void onStart();
+    private interface ProcessMonitor {
+        public void onStart();
 
-    public void onRow(Row row);
+        public void onRow(Row row);
 
-    public void onFinish();
+        public void onFinish();
 
-    public void onThrowable(Throwable throwable);
+        public void onThrowable(Throwable throwable);
 
-    public static Collector<Row, Void, ProcessMonitor> getCollector(ProcessMonitor monitor) {
-        return new Collector<Row, Void, ProcessMonitor>() {
-            @Override
-            public Supplier<Void> supplier() {
-                return () -> {
-                    monitor.onStart();
-                    return null;
-                };
-            }
+        public static Collector<Row, Void, ProcessMonitor> getCollector(ProcessMonitor monitor) {
+            return new Collector<Row, Void, ProcessMonitor>() {
+                @Override
+                public Supplier<Void> supplier() {
+                    return () -> {
+                        monitor.onStart();
+                        return null;
+                    };
+                }
 
-            @Override
-            public BiConsumer<Void, Row> accumulator() {
-                return (aVoid, row) -> monitor.onRow(row);
-            }
+                @Override
+                public BiConsumer<Void, Row> accumulator() {
+                    return (aVoid, row) -> monitor.onRow(row);
+                }
 
-            @Override
-            public BinaryOperator<Void> combiner() {
-                return (aVoid, aVoid2) -> null;
-            }
+                @Override
+                public BinaryOperator<Void> combiner() {
+                    return (aVoid, aVoid2) -> null;
+                }
 
-            @Override
-            public Function<Void, ProcessMonitor> finisher() {
-                return aVoid -> {
-                    monitor.onFinish();
-                    return monitor;
-                };
-            }
+                @Override
+                public Function<Void, ProcessMonitor> finisher() {
+                    return aVoid -> {
+                        monitor.onFinish();
+                        return monitor;
+                    };
+                }
 
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Collections.emptySet();
-            }
-        };
+                @Override
+                public Set<Characteristics> characteristics() {
+                    return Collections.emptySet();
+                }
+            };
+        }
     }
-}
 }

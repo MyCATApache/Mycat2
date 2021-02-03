@@ -124,7 +124,9 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                         Observable.fromIterable(observable).subscribe(observer);
                     }
                     return null;
-                }).onFailure(event -> observer.onError(event));
+                }).onFailure(event -> {
+                    observer.onError(event);
+                });
             }
 
             @Override

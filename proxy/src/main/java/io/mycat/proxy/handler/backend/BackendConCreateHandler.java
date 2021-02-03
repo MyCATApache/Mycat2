@@ -144,7 +144,11 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         if (payloadType == MySQLPayloadType.FIRST_OK) {
             mysql.resetPacket();
             mysql.getBackendPacketResolver().setIsClientLoginRequest(false);
-            callback.onFinishedOk(mysql.getBackendPacketResolver().getServerStatus(), mysql, null, null);
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("successful create mysql backend connection:{}",mysql.sessionId());
+            }
+            int serverStatus = mysql.getBackendPacketResolver().getServerStatus();
+            callback.onFinishedOk(serverStatus, mysql, null, null);
             return;
         }
 

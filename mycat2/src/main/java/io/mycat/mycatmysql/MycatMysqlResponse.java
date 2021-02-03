@@ -101,7 +101,9 @@ public class MycatMysqlResponse extends VertxResponse {
         switch (executeType) {
             case QUERY:
             case QUERY_MASTER:
-                Future<RowObservable> rowObservableFuture = VertxExecuter.runQuery(connection, sql);
+                Future<RowObservable> rowObservableFuture =Future.succeededFuture(
+                        VertxExecuter.runQuery(connection, sql)
+                );
                 Future<PromiseInternal<Void>> map = rowObservableFuture.map(this::sendResultSet);
                 map.onSuccess(event -> promise.tryComplete()).onFailure(throwable -> promise.fail(throwable));
                 break;
