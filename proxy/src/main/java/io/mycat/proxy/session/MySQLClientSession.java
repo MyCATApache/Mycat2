@@ -414,7 +414,7 @@ public class MySQLClientSession extends
     public void switchNioHandler(NIOHandler nioHandler) {
         this.nioHandler = nioHandler;
         if (nioHandler == null && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("switchNioHandler:{}", nioHandler);
+            LOGGER.debug("switchNioHandler:{} sessionId:{}", nioHandler,sessionId(),new Throwable());
         }
     }
 
@@ -443,7 +443,7 @@ public class MySQLClientSession extends
         ProxyBuffer proxyBuffer = this.proxyBuffer;
         MycatMonitor
                 .onBackendRead(this, proxyBuffer.currentByteBuffer(), proxyBuffer.channelReadStartIndex(),
-                        proxyBuffer.channelReadEndIndex()
+                        proxyBuffer.channelReadEndIndex()-proxyBuffer.channelReadStartIndex()
                 );
         return b;
     }

@@ -811,13 +811,13 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
     }
-    if (clientDeprecateEof()) {
+//    if (clientDeprecateEof()) {
       setServerStatus(okPacketReadServerStatus(mySQLPacket));
       setMySQLPayloadType(ROW_OK);
-    } else {
-      setServerStatus(eofPacketReadStatus(mySQLPacket));
-      setMySQLPayloadType(ROW_EOF);
-    }
+//    } else {
+//      setServerStatus(eofPacketReadStatus(mySQLPacket));
+//      setMySQLPayloadType(ROW_EOF);
+//    }
     int startPos = getStartPos();
     int endPos = getEndPos();
     if (hasMoreResult(getServerStatus())) {

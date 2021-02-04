@@ -31,7 +31,7 @@ import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
  **/
 public final class MycatMonitor {
 
-  static MycatMonitorCallback callback = EMPTY;
+  static MycatMonitorCallback callback = new MycatMonitorLogCallback();
 
   public final static void onOrginSQL(Session session, String sql) {
     Objects.requireNonNull(session);

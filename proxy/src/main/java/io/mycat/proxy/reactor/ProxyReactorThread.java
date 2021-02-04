@@ -20,12 +20,14 @@ import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import io.mycat.util.ByteUtil;
 import io.mycat.util.nio.SelectorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -146,8 +148,17 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     protected void processReadKey(SelectionKey curKey) throws IOException {
         T session = (T) curKey.attachment();
         setCurSession(session);
-        NIOHandler curNIOHandler = Objects.requireNonNull(session.getCurNIOHandler());
-        curNIOHandler.onSocketRead(session);
+        NIOHandler curNIOHandler = session.getCurNIOHandler();
+        if (curNIOHandler!=null){
+            curNIOHandler.onSocketRead(session);
+        }else {
+            ByteBuffer allocate = ByteBuffer.allocate(8192);
+            int read = session.channel().read(allocate);
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug(ByteUtil.dump(allocate.array(),0,allocate.position()));
+                LOGGER.debug("processReadKey bug sessionId:{}",session.sessionId());
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

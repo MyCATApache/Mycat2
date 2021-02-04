@@ -3,6 +3,7 @@ package io.mycat.vertx;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.mchange.util.AssertException;
 import io.mycat.MycatDataContext;
+import io.mycat.MycatException;
 import io.mycat.TransactionSession;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowObservable;
@@ -14,13 +15,11 @@ import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
-import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
@@ -30,13 +29,8 @@ import io.vertx.sqlclient.impl.command.QueryCommandBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class VertxExecuter {
@@ -61,7 +55,7 @@ public class VertxExecuter {
                 List<List<Object>> lists = insertMap.computeIfAbsent(parameterizedSql, s -> new LinkedList<>());
                 lists.addAll(e.getValue().getArgs());
             }
-            list.addAll(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
+            list.add(runInsert(insertMap, sqlConnection.getConnection(transactionSession.resolveFinalTargetName(entry.getKey()))));
         }
         if (list.isEmpty()) {
             throw new AssertException();
@@ -95,7 +89,7 @@ public class VertxExecuter {
         Map<String, List<SQL>> targets = reallySqlSet.stream().collect(Collectors.groupingBy(k -> k.getTarget()));
         List<Future<long[]>> res = new LinkedList<>();
         for (Map.Entry<String, List<SQL>> e : targets.entrySet()) {
-            res.addAll(runUpdate(e.getValue().stream().collect(Collectors.toMap(SQL::getParameterizedSql, SQL::getParameters,
+            res.add(runUpdate(e.getValue().stream().collect(Collectors.toMap(SQL::getParameterizedSql, SQL::getParameters,
                     (a, b) -> b)),
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
@@ -109,28 +103,18 @@ public class VertxExecuter {
                 });
     }
 
-
-//    public static CompositeFuture runMutliQuery(Future<SqlConnection> sqlConnectionFuture, List<String> sqls, List<Object> values) {
-//        ArrayList<Future> resList = new ArrayList<>();
-//        for (String sql : sqls) {
-//            Future<RowObservable> observableFuture = runQuery(sqlConnectionFuture, sql, values);
-//            resList.add(observableFuture);
-//        }
-//        return CompositeFuture.all(resList);
-//    }
-
     public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
-        return new C(sqlConnectionFuture, sql, values);
+        return new RowObservableImpl(sqlConnectionFuture, sql, values);
     }
 
-    static class C extends RowObservable implements StreamMysqlCollector {
+    static class RowObservableImpl extends RowObservable implements StreamMysqlCollector {
         MycatRowMetaData metaData;
         private Observer<? super Object[]> observer;
         private final Future<SqlConnection> sqlConnectionFuture;
         private final String sql;
         private final List<Object> values;
 
-        public C(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
+        public RowObservableImpl(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
             this.sqlConnectionFuture = sqlConnectionFuture;
             this.sql = sql;
             this.values = values;
@@ -144,19 +128,18 @@ public class VertxExecuter {
         @Override
         protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
             this.observer = observer;
-            this.observer.onSubscribe(Disposable.disposed());
-            Future compose = sqlConnectionFuture
+            sqlConnectionFuture
                     .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
-                        PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-
-                        PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
-                        return collecting.execute(Tuple.tuple(values));
-                    }).onFailure(event -> this.observer.onError(event));
+                PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+                PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
+                return collecting.execute(Tuple.tuple(values));
+            }).onFailure(event -> this.observer.onError(event));
         }
 
         @Override
         public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
-            this.metaData = extracted(columnDefinitions.columnDescriptor());
+            this.metaData = toColumnMetaData(columnDefinitions.columnDescriptor());
+            this.observer.onSubscribe(Disposable.disposed());
         }
 
         @Override
@@ -175,20 +158,20 @@ public class VertxExecuter {
         }
 
         @Override
-        public void close() throws IOException {
-
+        public void onError(int error, String errorMessage) {
+            this.observer.onError(new MycatException(error, errorMessage));
         }
     }
 
     public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture,
-                                                 String sql) {
+                                         String sql) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("runQuery");
         }
-        return new C(sqlConnectionFuture, sql, Collections.emptyList());
+        return new RowObservableImpl(sqlConnectionFuture, sql, Collections.emptyList());
     }
 
-    private static MycatRowMetaData extracted(List<ColumnDescriptor> event) {
+    private static MycatRowMetaData toColumnMetaData(List<ColumnDescriptor> event) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
         for (ColumnDescriptor columnDescriptor : event) {
             resultSetBuilder.addColumnInfo(columnDescriptor.name(),
@@ -198,139 +181,72 @@ public class VertxExecuter {
         return build.getMetaData();
     }
 
-    private Collector<Row, Observer, Observer> getCollector(ProcessMonitor monitor, Observer<Object[]> observer) {
-        return new Collector<Row, Observer, Observer>() {
-            @Override
-            public Supplier<Observer> supplier() {
-                return () -> observer;
-            }
-
-            @Override
-            public BiConsumer<Observer, Row> accumulator() {
-                return (aVoid, row) -> aVoid.onNext(row);
-            }
-
-            @Override
-            public BinaryOperator<Observer> combiner() {
-                return (aVoid, aVoid2) -> null;
-            }
-
-            @Override
-            public Function<Observer, Observer> finisher() {
-                return aVoid -> {
-                    monitor.onFinish();
-                    return null;
-                };
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Collections.emptySet();
-            }
-        };
-    }
-
     public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
         return sqlConnectionFuture.flatMap(c -> c.query(sql).execute().map(r -> new long[]{r.rowCount(), Optional.ofNullable(r.property(MySQLClient.LAST_INSERTED_ID)).orElse(0L)}));
     }
 
-    public static List<Future<long[]>> runUpdate(Map<String, List<Object>> updateMap, Future<SqlConnection> sqlConnectionFuture) {
-        List<Future<long[]>> list = new ArrayList<>();
+    public static Future<long[]> runUpdate(Map<String, List<Object>> updateMap,
+                                           Future<SqlConnection> sqlConnectionFuture) {
+        List<long[]> list = Collections.synchronizedList(new ArrayList<>());
+        Future future = Future.succeededFuture();
         for (Map.Entry<String, List<Object>> e : updateMap.entrySet()) {
             String sql = e.getKey();
             List<Object> values = e.getValue();
-            Future<long[]> future = sqlConnectionFuture.flatMap(connection -> connection.prepare(sql).flatMap(preparedStatement -> {
-                Future<RowSet<Row>> rowSetFuture;
-                if (!values.isEmpty() && values.get(0) instanceof List) {
-                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
-                } else {
-                    rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
-                }
-                return rowSetFuture.map(rows -> {
-                    int affectedRow = rows.rowCount();
-                    long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
-                            .orElse(0L);
-                    return (new long[]{affectedRow, lastInsertId});
-                });
-            }));
-            list.add(future);
-        }
-        return list;
-    }
-
-    public static List<Future<long[]>> runInsert(
-            Map<String, List<List<Object>>> insertMap, Future<SqlConnection> sqlConnectionFuture) {
-        List<Future<long[]>> list = new ArrayList<>();
-        for (Map.Entry<String, List<List<Object>>> e : insertMap.entrySet()) {
-            String sql = e.getKey();
-            List<List<Object>> values = e.getValue();
-            Future<long[]> future = sqlConnectionFuture.flatMap(connection -> {
-                return connection.prepare(sql).flatMap(preparedStatement -> {
-                    List<Tuple> collect = values.stream().map(new Function<List<Object>, Tuple>() {
-                        @Override
-                        public Tuple apply(List<Object> u) {
-                            return Tuple.from(u);
+            future = future.flatMap(unused -> sqlConnectionFuture
+                    .flatMap(connection -> connection.prepare(sql).flatMap(preparedStatement -> {
+                        Future<RowSet<Row>> rowSetFuture;
+                        if (!values.isEmpty() && values.get(0) instanceof List) {
+                            rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
+                        } else {
+                            rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
                         }
-                    }).collect(Collectors.toList());
-                    Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
-                    return rowSetFuture.map(new Function<RowSet<Row>, long[]>() {
-                        @Override
-                        public long[] apply(RowSet<Row> rows) {
+                        return rowSetFuture.map(rows -> {
                             int affectedRow = rows.rowCount();
                             long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
                                     .orElse(0L);
-                            return (new long[]{affectedRow, lastInsertId});
-                        }
-                    });
-                });
-            });
-            list.add(future);
+                            list.add(new long[]{affectedRow, lastInsertId});
+                            return null;
+                        });
+                    })));
         }
-        return list;
+        return future.map((Function<long[], long[]>)
+                longs -> list.stream()
+                        .reduce(new long[]{0, 0},
+                                (longs1, longs2) ->
+                                        new long[]{longs1[0] + longs2[0],
+                                                Math.max(longs1[1], longs2[1])}));
     }
 
-    private interface ProcessMonitor {
-        public void onStart();
-
-        public void onRow(Row row);
-
-        public void onFinish();
-
-        public void onThrowable(Throwable throwable);
-
-        public static Collector<Row, Void, ProcessMonitor> getCollector(ProcessMonitor monitor) {
-            return new Collector<Row, Void, ProcessMonitor>() {
-                @Override
-                public Supplier<Void> supplier() {
-                    return () -> {
-                        monitor.onStart();
-                        return null;
-                    };
-                }
-
-                @Override
-                public BiConsumer<Void, Row> accumulator() {
-                    return (aVoid, row) -> monitor.onRow(row);
-                }
-
-                @Override
-                public BinaryOperator<Void> combiner() {
-                    return (aVoid, aVoid2) -> null;
-                }
-
-                @Override
-                public Function<Void, ProcessMonitor> finisher() {
-                    return aVoid -> {
-                        monitor.onFinish();
-                        return monitor;
-                    };
-                }
-
-                @Override
-                public Set<Characteristics> characteristics() {
-                    return Collections.emptySet();
-                }
-            };
+    public static Future<long[]> runInsert(
+            Map<String, List<List<Object>>> insertMap, Future<SqlConnection> sqlConnectionFuture) {
+        List<long[]> list = Collections.synchronizedList(new ArrayList<>());
+        Future<Void> future = Future.succeededFuture();
+        for (Map.Entry<String, List<List<Object>>> e : insertMap.entrySet()) {
+            String sql = e.getKey();
+            List<List<Object>> values = e.getValue();
+            future= future.flatMap(unused -> {
+                return sqlConnectionFuture
+                        .flatMap(connection -> {
+                            Future<Void> future2 = connection.prepare(sql).flatMap(preparedStatement -> {
+                                List<Tuple> collect = values.stream().map(u -> Tuple.from(u)).collect(Collectors.toList());
+                                Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
+                                Future<Void> map = rowSetFuture.map(rows -> {
+                                    int affectedRow = rows.rowCount();
+                                    long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
+                                            .orElse(0L);
+                                    list.add(new long[]{affectedRow, lastInsertId});
+                                    return null;
+                                });
+                                return map;
+                            });
+                            return future2;
+                        });
+            });
         }
+       return future.map(unused -> list.stream()
+               .reduce(new long[]{0, 0},
+                       (longs1, longs2) ->
+                               new long[]{longs1[0] + longs2[0],
+                                       Math.max(longs1[1], longs2[1])}));
     }
 }

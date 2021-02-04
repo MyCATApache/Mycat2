@@ -6,17 +6,23 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.api.collector.SimpleRowObservable;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.rel.RelNode;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,15 +54,15 @@ public class ProxyConnectionUsage {
         return executorService;
     }
 
-    public Future<IdentityHashMap<RelNode, List<RowObservable>>> collect(XaSqlConnection connection, List<Object> params) {
+    public Future<IdentityHashMap<RelNode, List<RowObservable>>> collect(XaSqlConnection xaconnection, List<Object> params) {
         IdentityHashMap<RelNode, List<RowObservable>> finalResMap = new IdentityHashMap<>();
         Map<RelNode, List<RowObservable>> resMap = Collections.synchronizedMap(finalResMap);
         if (context.isInTransaction()) {
-            return getConnectionWhenTranscation(connection).flatMap(stringListMap -> {
+            return getConnectionWhenTranscation(xaconnection).flatMap(stringListMap -> {
                 ArrayList<Map.Entry<String, List<SQLKey>>> entries = new ArrayList<>(stringListMap.entrySet());
                 ArrayList<Future> resList = new ArrayList<>();
                 for (Map.Entry<String, List<SQLKey>> stringListEntry : entries) {
-                    Future<SqlConnection> connection1 = connection.getConnection(
+                    Future<SqlConnection> connection1 = xaconnection.getConnection(
                             context.resolveDatasourceTargetName(stringListEntry.getKey(), true));
                     resList.add(connection1.flatMap(connection2 -> {
                         return extracted(resMap, connection2, stringListEntry.getValue(), params);
@@ -65,7 +71,7 @@ public class ProxyConnectionUsage {
                 return CompositeFuture.all(resList).map(compositeFuture -> finalResMap);
             });
         } else {
-            return getConnection(connection).flatMap(stringLinkedListMap -> {
+            return getConnection(xaconnection).flatMap(stringLinkedListMap -> {
                 ArrayList<Future> objects = new ArrayList<>();
                 for (SQLKey target : targets) {
                     LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
@@ -75,7 +81,7 @@ public class ProxyConnectionUsage {
                     objects.add(future.map(rowObservable -> {
                         synchronized (resMap) {
                             List<RowObservable> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
-                            rowObservables.add(rowObservable);
+                            rowObservables.add(wrapAsAutoCloseConnectionRowObservale(sqlConnection, rowObservable));
                         }
                         return null;
                     }));
@@ -83,6 +89,42 @@ public class ProxyConnectionUsage {
                 return CompositeFuture.all(objects).map(compositeFuture -> finalResMap);
             });
         }
+    }
+
+    @NotNull
+    public static RowObservable wrapAsAutoCloseConnectionRowObservale(SqlConnection sqlConnection, RowObservable rowObservable) {
+        return new RowObservable() {
+            @Override
+            public MycatRowMetaData getRowMetaData() {
+                return rowObservable.getRowMetaData();
+            }
+
+            @Override
+            protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
+                rowObservable.subscribe(new Observer<Object[]>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+                        observer.onSubscribe(d);
+                    }
+
+                    @Override
+                    public void onNext(Object @NonNull [] objects) {
+                        observer.onNext(objects);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+                        observer.onError(e);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        sqlConnection.close();
+                        observer.onComplete();
+                    }
+                });
+            }
+        };
     }
 
     private Future<Void> extracted(Map<RelNode, List<RowObservable>> resMap,

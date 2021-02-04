@@ -42,4 +42,6 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
         return o -> o;
     }
 
+    void onError(int error,String errorMessage);
+
 }

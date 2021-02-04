@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
     private TransactionSession parent;
     private XaSqlConnection connection;
+
     public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
         super(mySQLManagerSupplier,xaLog);
         this.parent = parent;
@@ -95,7 +96,9 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> closeStatenmentState() {
-        return parent.closeStatenmentState();
+        parent.closeStatenmentState();
+        connection.closeStatementState();
+        return Future.succeededFuture();
     }
 
     @Override
@@ -120,7 +123,9 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> openStatementState() {
-        return (Future)CompositeFuture.all(parent.openStatementState(),connection.openStatementState());
+        parent.openStatementState();
+        connection.openStatementState();
+        return Future.succeededFuture();
     }
 
     @Override

@@ -4,6 +4,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
@@ -34,6 +35,9 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
 
     public VertxMycatTextCollector(Collector<Row, C, R> collector) {
         this.collector = collector;
+        if (!(this.collector instanceof StreamMysqlCollector)){
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
@@ -100,10 +104,6 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
         this.serverStatusFlags = payload.readUnsignedShortLE();
         this.res = collector.finisher().apply(c);
-
-        if(collector instanceof StreamMysqlCollector){
-            ((StreamMysqlCollector) collector).onFinish(0,serverStatusFlags, affectedRows, lastInsertId);
-        }
     }
 
     public MycatVertxRowResultDecoder getRowResultDecoder() {
@@ -121,10 +121,11 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         this.affectedRows = BufferUtils.readLengthEncodedInteger(payload);
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
         this.serverStatusFlags = payload.readUnsignedShortLE();
+    }
 
-        if(collector instanceof StreamMysqlCollector){
-            ((StreamMysqlCollector) collector).onFinish(0,serverStatusFlags, affectedRows, lastInsertId);
-        }
+    @Override
+    public void onFinishedCollect(MySQLClientSession mysql) {
+
     }
 
     public long getRowCount() {

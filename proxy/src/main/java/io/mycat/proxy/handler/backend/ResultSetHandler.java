@@ -30,6 +30,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
@@ -278,6 +279,12 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         mySQLPacket.packetReadStartIndex(packetResolver.getEndPos());
       }
       if (isResponseFinished) {
+        ByteBuffer allocate = ByteBuffer.allocate(1);
+        if(mysql.channel().read(allocate)>0){
+          throw new IllegalArgumentException();
+        }
+        boolean responseFinished = mysql.isResponseFinished();
+        mysql.getBackendPacketResolver().setState(MySQLPacketResolver.ComQueryState.QUERY_PACKET);
         ResultSetCallBack callBackAndReset = mysql.getCallBack();
         mysql.setCallBack(null);
         onFinishedCollect(mysql);

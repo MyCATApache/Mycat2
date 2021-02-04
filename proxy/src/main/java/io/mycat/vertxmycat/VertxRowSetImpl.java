@@ -16,45 +16,61 @@
  */
 package io.mycat.vertxmycat;
 
+import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.sqlclient.PropertyKind;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.SqlResultBase;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
-public class VertxRowSetImpl<R> extends SqlResultBase<RowSet<R>> implements RowSet<R> {
+public class VertxRowSetImpl<R>  implements RowSet<R> {
 
-  static Collector<Row, VertxRowSetImpl<Row>, RowSet<Row>> COLLECTOR = Collector.of(
-    VertxRowSetImpl::new,
-    (set, row) -> {
-      set.list.add(row);
-    },
-    (set1, set2) -> null, // Shall not be invoked as this is sequential
-    (set) -> set
-  );
+  public List<R> list = new LinkedList<>();
+   List<ColumnDescriptor> columnDescriptor;
+  long affectRow;
+  long lastInsertId;
 
-  public static <U> Collector<Row, VertxRowSetImpl<U>, RowSet<U>> collector(Function<Row, U> mapper) {
-    return Collector.of(
-      VertxRowSetImpl::new,
-      (set, row) -> {
-        set.list.add(mapper.apply(row));
-      },
-      (set1, set2) -> null, // Shall not be invoked as this is sequential
-      (set) -> set
-    );
+  public VertxRowSetImpl() {
+
   }
 
-  public static Function<RowSet<Row>, VertxRowSetImpl<Row>> FACTORY = rs -> (VertxRowSetImpl) rs;
+  @Override
+  public int rowCount() {
+    return (int)affectRow;
+  }
 
-  public static <U> Function<RowSet<U>, VertxRowSetImpl<U>> factory() {
-    return rs -> (VertxRowSetImpl) rs;
-  };
+  @Override
+  public List<String> columnsNames() {
+    return  this.columnDescriptor.stream().map(i->i.name()).collect(Collectors.toList());
+  }
 
-  public ArrayList<R> list = new ArrayList<>();
+  @Override
+  public List<ColumnDescriptor> columnDescriptors() {
+    return this.columnDescriptor;
+  }
+
+  @Override
+  public int size() {
+    return list.size();
+  }
+
+  @Override
+  public <V> V property(PropertyKind<V> propertyKind) {
+    if (propertyKind == MySQLClient.LAST_INSERTED_ID){
+      Long lastInsertId = this.lastInsertId;
+      return (V)lastInsertId;
+    }
+    return null;
+  }
 
   @Override
   public RowSet<R> value() {
@@ -78,6 +94,22 @@ public class VertxRowSetImpl<R> extends SqlResultBase<RowSet<R>> implements RowS
 
   @Override
   public VertxRowSetImpl<R> next() {
-    return (VertxRowSetImpl<R>) super.next();
+    return null;
+  }
+
+  public void setAffectRow(long affectRow) {
+    this.affectRow = affectRow;
+  }
+
+  public void setLastInsertId(long lastInsertId) {
+    this.lastInsertId = lastInsertId;
+  }
+
+  public List<ColumnDescriptor> getColumnDescriptor() {
+    return columnDescriptor;
+  }
+
+  public void setColumnDescriptor(List<ColumnDescriptor> columnDescriptor) {
+    this.columnDescriptor = columnDescriptor;
   }
 }

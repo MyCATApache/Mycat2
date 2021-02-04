@@ -45,7 +45,7 @@ public class MycatMySQLManager implements MySQLManager {
                         if (event.succeeded()){
                             promise.tryComplete(event.result());
                         }else {
-                            promise.fail(event.cause());
+                            promise.tryFail(event.cause());
                         }
                     });
                 }

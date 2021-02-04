@@ -67,6 +67,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         this.datasource = datasource;
         this.callback = callback;
         MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(), datasource, this, sessionManager);
+        mysql.switchNioHandler(this);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {

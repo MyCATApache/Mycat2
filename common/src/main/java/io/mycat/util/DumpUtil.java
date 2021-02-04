@@ -132,7 +132,7 @@ public final class DumpUtil {
     }
 
     public final static void printAsHex(final ByteBuffer buffer, final int offset, final int length) {
-        System.out.println(dumpAsHex(buffer, offset, length));
+       LOGGER.debug(dumpAsHex(buffer, offset, length));
     }
 
     public final static boolean isEmpty(String str) {

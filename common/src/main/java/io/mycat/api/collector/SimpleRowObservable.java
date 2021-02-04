@@ -28,8 +28,4 @@ public class SimpleRowObservable extends RowObservable {
     protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
         observable.subscribe(observer);
     }
-
-    @Override
-    public void close() throws IOException {
-    }
 }
