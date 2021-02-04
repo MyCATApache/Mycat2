@@ -718,6 +718,7 @@ public class DrdsRunner {
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.SORT_JOIN_TRANSPOSE,
             CoreRules.FILTER_CORRELATE,
+            CoreRules.PROJECT_CORRELATE_TRANSPOSE,
             CoreRules.FILTER_AGGREGATE_TRANSPOSE,
             CoreRules.FILTER_MULTI_JOIN_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
