@@ -711,10 +711,8 @@ public class DrdsRunner {
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
-            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
-            CoreRules.JOIN_EXTRACT_FILTER,
             CoreRules.FILTER_INTO_JOIN,
-            CoreRules.FILTER_INTO_JOIN_DUMB,
+//            CoreRules.FILTER_INTO_JOIN_DUMB,
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.SORT_JOIN_TRANSPOSE,
             CoreRules.FILTER_CORRELATE,
@@ -722,7 +720,6 @@ public class DrdsRunner {
             CoreRules.FILTER_AGGREGATE_TRANSPOSE,
             CoreRules.FILTER_MULTI_JOIN_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
-            CoreRules.FILTER_EXPAND_IS_NOT_DISTINCT_FROM,
             CoreRules.FILTER_SET_OP_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.SEMI_JOIN_FILTER_TRANSPOSE,
