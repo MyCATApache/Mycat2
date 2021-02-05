@@ -254,7 +254,8 @@ public class MycatInsertExecutor implements Executor {
                     ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                     if (generatedKeys != null) {
                         if (generatedKeys.next()) {
-                            lastInsertId = generatedKeys.getBigDecimal(1).longValue();
+                            lastInsertId = Math.max(generatedKeys.getBigDecimal(1).longValue(),
+                                    lastInsertId);
                         }
                     }
                     sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
