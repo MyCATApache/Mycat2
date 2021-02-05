@@ -20,8 +20,6 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     void onRow(Row row);
 
-    void onFinish(int sequenceId,int serverStatusFlags,long affectedRows, long lastInsertId);
-
     @Override
     default Supplier<Void> supplier() {
         return ()-> null;
@@ -41,7 +39,5 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
     default Function<Void, Void> finisher() {
         return o -> o;
     }
-
-    void onError(int error,String errorMessage);
 
 }

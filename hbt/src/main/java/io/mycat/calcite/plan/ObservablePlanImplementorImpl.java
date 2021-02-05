@@ -1,9 +1,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.AsyncMycatDataContextImplImpl;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
+import io.mycat.*;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.CodeExecuterContext;
@@ -109,14 +107,22 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 collect.map(relNodeListIdentityHashMap -> {
                     AsyncMycatDataContextImplImpl newMycatDataContext =
                             new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
-                    Object bindObservable = bindable.bindObservable(newMycatDataContext);
-                    if (bindObservable instanceof Observable) {
-                        Observable<Object[]> observable = (Observable) bindObservable;
-                        observable.subscribe(observer);
-                    } else {
-                        Enumerable<Object[]> observable = (Enumerable) bindObservable;
-                        Observable.fromIterable(observable).subscribe(observer);
-                    }
+                    MycatWorkerProcessor processor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+                    processor.getMycatWorker().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            Object bindObservable = bindable.bindObservable(newMycatDataContext);
+                            if (bindObservable instanceof Observable) {
+                                Observable<Object[]> observable = (Observable) bindObservable;
+                                observable.subscribe(observer);
+                            } else {
+                                Enumerable<Object[]> observable = (Enumerable) bindObservable;
+                                Observable<Object[]> observable1 = Observable.fromIterable(observable);
+                                observable1.subscribe(observer);
+                            }
+                        }
+                    });
+
                     return null;
                 }).onFailure(event -> {
                     observer.onError(event);

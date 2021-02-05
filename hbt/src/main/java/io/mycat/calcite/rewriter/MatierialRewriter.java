@@ -7,6 +7,8 @@ import io.mycat.calcite.physical.*;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 
@@ -14,10 +16,13 @@ import java.util.Collections;
 import java.util.List;
 
 public class MatierialRewriter extends RelShuttleImpl {
-
     @Override
-    protected RelNode visitChild(RelNode parent, int i, RelNode child) {
-        RelNode relNode = super.visitChild(parent, i, child);
+    public RelNode visit(RelNode other) {
+        RelNode relNode = super.visit(other);
+      return   matierial(relNode);
+    }
+
+    public static RelNode matierial(RelNode parent) {
         if (parent instanceof MycatCorrelate) {
             MycatCorrelate mycatCorrelate = (MycatCorrelate) parent;
             return matierial(mycatCorrelate);
@@ -54,10 +59,10 @@ public class MatierialRewriter extends RelShuttleImpl {
                 return calc;
             }
         }
-        return relNode;
+        return parent;
     }
 
-    private boolean hasCorVal(List<RexNode> rexNodeList) {
+    private static boolean hasCorVal(List<RexNode> rexNodeList) {
         final RelOptUtil.VariableUsedVisitor vuv =
                 new RelOptUtil.VariableUsedVisitor(null);
         for (RexNode expr : rexNodeList) {
@@ -66,7 +71,7 @@ public class MatierialRewriter extends RelShuttleImpl {
         return !vuv.variables.isEmpty();
     }
 
-    private RelNode matierial(MycatCalc calc) {
+    private static RelNode matierial(MycatCalc calc) {
         MatierialDetector matierialDetector = new MatierialDetector();
         calc.getInput().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -77,7 +82,7 @@ public class MatierialRewriter extends RelShuttleImpl {
             return calc;
         }
     }
-    private RelNode matierial(MycatFilter calc) {
+    private static RelNode matierial(MycatFilter calc) {
         MatierialDetector matierialDetector = new MatierialDetector();
         calc.getInput().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -88,7 +93,7 @@ public class MatierialRewriter extends RelShuttleImpl {
             return calc;
         }
     }
-    private RelNode matierial(MycatProject calc) {
+    private  static RelNode matierial(MycatProject calc) {
         MatierialDetector matierialDetector = new MatierialDetector();
         calc.getInput().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -99,7 +104,7 @@ public class MatierialRewriter extends RelShuttleImpl {
             return calc;
         }
     }
-    private RelNode matierial(MycatBatchNestedLoopJoin mycatBatchNestedLoopJoin) {
+    private  static RelNode matierial(MycatBatchNestedLoopJoin mycatBatchNestedLoopJoin) {
         MatierialDetector matierialDetector = new MatierialDetector();
         mycatBatchNestedLoopJoin.getRight().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -111,7 +116,7 @@ public class MatierialRewriter extends RelShuttleImpl {
         }
     }
 
-    private RelNode matierial(MycatNestedLoopSemiJoin mycatNestedLoopSemiJoin) {
+    private static RelNode matierial(MycatNestedLoopSemiJoin mycatNestedLoopSemiJoin) {
         MatierialDetector matierialDetector = new MatierialDetector();
         mycatNestedLoopSemiJoin.getRight().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -123,7 +128,7 @@ public class MatierialRewriter extends RelShuttleImpl {
         }
     }
 
-    private RelNode matierial(MycatCorrelate mycatCorrelate) {
+    private static RelNode matierial(MycatCorrelate mycatCorrelate) {
         MatierialDetector matierialDetector = new MatierialDetector();
         mycatCorrelate.getRight().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -135,19 +140,20 @@ public class MatierialRewriter extends RelShuttleImpl {
         }
     }
 
-    private RelNode matierial(MycatNestedLoopJoin nestedLoopJoin) {
+    private static RelNode matierial(MycatNestedLoopJoin nestedLoopJoin) {
         MatierialDetector matierialDetector = new MatierialDetector();
         nestedLoopJoin.getRight().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
-            return nestedLoopJoin.copy(nestedLoopJoin.getTraitSet(),
+            Join copy = nestedLoopJoin.copy(nestedLoopJoin.getTraitSet(),
                     ImmutableList.of(nestedLoopJoin.getLeft(),
                             MycatMatierial.create((MycatRel) nestedLoopJoin.getRight())));
+            return copy;
         } else {
             return nestedLoopJoin;
         }
     }
 
-    private RelNode matierial(MycatHashJoin mycatHashJoin) {
+    private static RelNode matierial(MycatHashJoin mycatHashJoin) {
         MatierialDetector matierialDetector = new MatierialDetector();
         mycatHashJoin.getRight().accept(matierialDetector);
         if (!matierialDetector.isMatierial()) {
@@ -159,7 +165,7 @@ public class MatierialRewriter extends RelShuttleImpl {
         }
     }
 
-    public class MatierialDetector extends RelShuttleImpl {
+    public static class MatierialDetector extends RelShuttleImpl {
         boolean matierial = false;
 
         @Override

@@ -3,7 +3,6 @@ package io.mycat.vertx;
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.mchange.util.AssertException;
 import io.mycat.MycatDataContext;
-import io.mycat.MycatException;
 import io.mycat.TransactionSession;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowObservable;
@@ -20,6 +19,7 @@ import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
@@ -42,13 +42,11 @@ public class VertxExecuter {
                                                    List<Object> params) {
         MycatInsertExecutor insertExecutor = MycatInsertExecutor.create(context, insertRel, params);
         Map<SQL, Group> groupMap = insertExecutor.getGroupMap();
-        HashMap<String, List<List<Object>>> map = new HashMap<>();
         Map<String, List<Map.Entry<SQL, Group>>> map1 = groupMap.entrySet().stream().collect(Collectors.groupingBy(i -> i.getKey().getTarget()));
         TransactionSession transactionSession = context.getTransactionSession();
         List<Future<long[]>> list = new LinkedList<>();
         for (Map.Entry<String, List<Map.Entry<SQL, Group>>> entry : map1.entrySet()) {
             List<Map.Entry<SQL, Group>> value = entry.getValue();
-
             HashMap<String, List<List<Object>>> insertMap = new HashMap<>();
             for (Map.Entry<SQL, Group> e : value) {
                 String parameterizedSql = e.getKey().getParameterizedSql();
@@ -60,13 +58,7 @@ public class VertxExecuter {
         if (list.isEmpty()) {
             throw new AssertException();
         }
-        return CompositeFuture.all((List) list)
-                .map(r -> {
-                    return list.stream().map(l -> l.result())
-                            .reduce((longs, longs2) ->
-                                    new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                            .orElse(new long[2]);
-                });
+        return CompositeFuture.all((List) list).map(new SumInsertResult(list));
 
     }
 
@@ -93,14 +85,7 @@ public class VertxExecuter {
                     (a, b) -> b)),
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
-        return CompositeFuture.all((List) res)
-                .map(r -> {
-                    return updateRel.isGlobal() ? res.get(0).result() :
-                            res.stream().map(l -> l.result())
-                                    .reduce((longs, longs2) ->
-                                            new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                                    .orElse(new long[2]);
-                });
+        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel, res));
     }
 
     public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
@@ -118,6 +103,8 @@ public class VertxExecuter {
             this.sqlConnectionFuture = sqlConnectionFuture;
             this.sql = sql;
             this.values = values;
+
+
         }
 
         @Override
@@ -131,9 +118,25 @@ public class VertxExecuter {
             sqlConnectionFuture
                     .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
                 PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+                if(LOGGER.isDebugEnabled()){
+                    LOGGER.debug("RowObservableImpl sql:{} connection:{}",sql,sqlConnectionFuture.result());
+                }
                 PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
                 return collecting.execute(Tuple.tuple(values));
-            }).onFailure(event -> this.observer.onError(event));
+            }).onSuccess(new Handler<SqlResult<Void>>() {
+                @Override
+                public void handle(SqlResult<Void> event) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql,sqlConnectionFuture.result());
+                    }
+                    observer.onComplete();
+                }
+            }).onFailure(event -> {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.error("subscribeActual error sql:{}", sql);
+                }
+                this.observer.onError(event);
+            });
         }
 
         @Override
@@ -150,16 +153,6 @@ public class VertxExecuter {
                 objects[i] = row.getValue(i);
             }
             observer.onNext(objects);
-        }
-
-        @Override
-        public void onFinish(int sequenceId, int serverStatusFlags, long affectedRows, long lastInsertId) {
-            this.observer.onComplete();
-        }
-
-        @Override
-        public void onError(int error, String errorMessage) {
-            this.observer.onError(new MycatException(error, errorMessage));
         }
     }
 
@@ -192,29 +185,9 @@ public class VertxExecuter {
         for (Map.Entry<String, List<Object>> e : updateMap.entrySet()) {
             String sql = e.getKey();
             List<Object> values = e.getValue();
-            future = future.flatMap(unused -> sqlConnectionFuture
-                    .flatMap(connection -> connection.prepare(sql).flatMap(preparedStatement -> {
-                        Future<RowSet<Row>> rowSetFuture;
-                        if (!values.isEmpty() && values.get(0) instanceof List) {
-                            rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
-                        } else {
-                            rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
-                        }
-                        return rowSetFuture.map(rows -> {
-                            int affectedRow = rows.rowCount();
-                            long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
-                                    .orElse(0L);
-                            list.add(new long[]{affectedRow, lastInsertId});
-                            return null;
-                        });
-                    })));
+            future = future.flatMap(new UpdateByConnection(sqlConnectionFuture, sql, values, list));
         }
-        return future.map((Function<long[], long[]>)
-                longs -> list.stream()
-                        .reduce(new long[]{0, 0},
-                                (longs1, longs2) ->
-                                        new long[]{longs1[0] + longs2[0],
-                                                Math.max(longs1[1], longs2[1])}));
+        return future.map(new SimpleSumUpdateResult(list));
     }
 
     public static Future<long[]> runInsert(
@@ -224,29 +197,137 @@ public class VertxExecuter {
         for (Map.Entry<String, List<List<Object>>> e : insertMap.entrySet()) {
             String sql = e.getKey();
             List<List<Object>> values = e.getValue();
-            future= future.flatMap(unused -> {
+            future = future.flatMap(unused -> {
                 return sqlConnectionFuture
-                        .flatMap(connection -> {
-                            Future<Void> future2 = connection.prepare(sql).flatMap(preparedStatement -> {
-                                List<Tuple> collect = values.stream().map(u -> Tuple.from(u)).collect(Collectors.toList());
-                                Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
-                                Future<Void> map = rowSetFuture.map(rows -> {
-                                    int affectedRow = rows.rowCount();
-                                    long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
-                                            .orElse(0L);
-                                    list.add(new long[]{affectedRow, lastInsertId});
-                                    return null;
+                        .flatMap(new Function<SqlConnection, Future<Void>>() {
+                            @Override
+                            public Future<Void> apply(SqlConnection connection) {
+                                Future<Void> future2 = connection.prepare(sql).flatMap(preparedStatement -> {
+                                    List<Tuple> collect = values.stream().map(u -> Tuple.from(u)).collect(Collectors.toList());
+                                    Future<RowSet<Row>> rowSetFuture = preparedStatement.query().executeBatch(collect);
+                                    Future<Void> map = rowSetFuture.map(rows -> {
+                                        int affectedRow = rows.rowCount();
+                                        long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
+                                                .orElse(0L);
+                                        list.add(new long[]{affectedRow, lastInsertId});
+                                        return null;
+                                    });
+                                    return map;
                                 });
-                                return map;
-                            });
-                            return future2;
+                                return future2;
+                            }
                         });
             });
         }
-       return future.map(unused -> list.stream()
-               .reduce(new long[]{0, 0},
-                       (longs1, longs2) ->
-                               new long[]{longs1[0] + longs2[0],
-                                       Math.max(longs1[1], longs2[1])}));
+        return future.map(new SimpleSumInsertResult(list));
+    }
+
+    private static class SumInsertResult implements Function<CompositeFuture, long[]> {
+        private final List<Future<long[]>> list;
+
+        public SumInsertResult(List<Future<long[]>> list) {
+            this.list = list;
+        }
+
+        @Override
+        public long[] apply(CompositeFuture r) {
+            return list.stream().map(l -> l.result())
+                    .reduce((longs, longs2) ->
+                            new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                    .orElse(new long[2]);
+        }
+    }
+
+    private static class SumUpdateResult implements Function<CompositeFuture, long[]> {
+        private final MycatUpdateRel updateRel;
+        private final List<Future<long[]>> res;
+
+        public SumUpdateResult(MycatUpdateRel updateRel, List<Future<long[]>> res) {
+            this.updateRel = updateRel;
+            this.res = res;
+        }
+
+        @Override
+        public long[] apply(CompositeFuture r) {
+            return updateRel.isGlobal() ? res.get(0).result() :
+                    res.stream().map(l -> l.result())
+                            .reduce((longs, longs2) ->
+                                    new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                            .orElse(new long[2]);
+        }
+    }
+
+    private static class SimpleSumUpdateResult implements Function<long[], long[]> {
+        private final List<long[]> list;
+
+        public SimpleSumUpdateResult(List<long[]> list) {
+            this.list = list;
+        }
+
+        @Override
+        public long[] apply(long[] longs) {
+            return list.stream()
+                    .reduce(new long[]{0, 0},
+                            (longs1, longs2) ->
+                                    new long[]{longs1[0] + longs2[0],
+                                            Math.max(longs1[1], longs2[1])});
+        }
+    }
+
+    private static class SimpleSumInsertResult implements Function<Void, long[]> {
+        private final List<long[]> list;
+
+        public SimpleSumInsertResult(List<long[]> list) {
+            this.list = list;
+        }
+
+        @Override
+        public long[] apply(Void unused) {
+            return list.stream()
+                    .reduce(new long[]{0, 0},
+                            (longs1, longs2) ->
+                                    new long[]{longs1[0] + longs2[0],
+                                            Math.max(longs1[1], longs2[1])});
+        }
+    }
+
+    private static class UpdateByConnection implements Function {
+        private final Future<SqlConnection> sqlConnectionFuture;
+        private final String sql;
+        private final List<Object> values;
+        private final List<long[]> list;
+
+        public UpdateByConnection(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values, List<long[]> list) {
+            this.sqlConnectionFuture = sqlConnectionFuture;
+            this.sql = sql;
+            this.values = values;
+            this.list = list;
+        }
+
+        @Override
+        public Object apply(Object unused) {
+            return sqlConnectionFuture
+                    .flatMap(connection -> connection.prepare(sql)
+                            .flatMap(preparedStatement -> {
+                                Future<RowSet<Row>> rowSetFuture;
+                                if (!values.isEmpty() && values.get(0) instanceof List) {
+                                    rowSetFuture = preparedStatement.query().executeBatch(values.stream().map(i -> Tuple.from((List<Object>) i)).collect(Collectors.toList()));
+                                } else {
+                                    rowSetFuture = preparedStatement.query().execute(Tuple.from(values));
+                                }
+                                return rowSetFuture.map(new UpdateResultCollector());
+                            }));
+        }
+
+        private class UpdateResultCollector implements Function<RowSet<Row>, Object> {
+            @Override
+            public Object apply(RowSet<Row> rows) {
+                int affectedRow = rows.rowCount();
+                long lastInsertId = Optional.ofNullable(rows.property(MySQLClient.LAST_INSERTED_ID))
+                        .orElse(0L);
+                list.add(new long[]{affectedRow, lastInsertId});
+                return null;
+            }
+        }
     }
 }

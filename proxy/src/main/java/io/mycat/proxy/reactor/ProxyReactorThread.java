@@ -150,6 +150,9 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
         setCurSession(session);
         NIOHandler curNIOHandler = session.getCurNIOHandler();
         if (curNIOHandler!=null){
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("processReadKey sessionId:{}",session.sessionId());
+            }
             curNIOHandler.onSocketRead(session);
         }else {
             ByteBuffer allocate = ByteBuffer.allocate(8192);

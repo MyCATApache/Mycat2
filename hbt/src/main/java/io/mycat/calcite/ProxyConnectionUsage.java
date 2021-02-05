@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,35 +57,28 @@ public class ProxyConnectionUsage {
         IdentityHashMap<RelNode, List<RowObservable>> finalResMap = new IdentityHashMap<>();
         Map<RelNode, List<RowObservable>> resMap = Collections.synchronizedMap(finalResMap);
         if (context.isInTransaction()) {
-            return getConnectionWhenTranscation(xaconnection).flatMap(stringListMap -> {
-                ArrayList<Map.Entry<String, List<SQLKey>>> entries = new ArrayList<>(stringListMap.entrySet());
-                ArrayList<Future> resList = new ArrayList<>();
-                for (Map.Entry<String, List<SQLKey>> stringListEntry : entries) {
-                    Future<SqlConnection> connection1 = xaconnection.getConnection(
-                            context.resolveDatasourceTargetName(stringListEntry.getKey(), true));
-                    resList.add(connection1.flatMap(connection2 -> {
-                        return extracted(resMap, connection2, stringListEntry.getValue(), params);
-                    }));
-                }
-                return CompositeFuture.all(resList).map(compositeFuture -> finalResMap);
-            });
+            return getConnectionWhenTranscation(xaconnection)
+                    .flatMap(new QueryResultSetInTranscation(xaconnection, resMap, params, finalResMap));
         } else {
-            return getConnection(xaconnection).flatMap(stringLinkedListMap -> {
-                ArrayList<Future> objects = new ArrayList<>();
-                for (SQLKey target : targets) {
-                    LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
-                    SqlConnection sqlConnection = sqlConnections.pop();
-                    Future<RowObservable> future = Future.succeededFuture(VertxExecuter.runQuery(Future.succeededFuture(sqlConnection), target.getSql().getSql(),
-                            MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters())));
-                    objects.add(future.map(rowObservable -> {
-                        synchronized (resMap) {
-                            List<RowObservable> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
-                            rowObservables.add(wrapAsAutoCloseConnectionRowObservale(sqlConnection, rowObservable));
-                        }
-                        return null;
-                    }));
+            return getConnection(xaconnection).flatMap(new Function<Map<String, LinkedList<SqlConnection>>, Future<IdentityHashMap<RelNode, List<RowObservable>>>>() {
+                @Override
+                public Future<IdentityHashMap<RelNode, List<RowObservable>>> apply(Map<String, LinkedList<SqlConnection>> stringLinkedListMap) {
+                    ArrayList<Future> objects = new ArrayList<>();
+                    for (SQLKey target : targets) {
+                        LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
+                        SqlConnection sqlConnection = sqlConnections.pop();
+                        Future<RowObservable> future = Future.succeededFuture(VertxExecuter.runQuery(Future.succeededFuture(sqlConnection), target.getSql().getSql(),
+                                MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters())));
+                        objects.add(future.map(rowObservable -> {
+                            synchronized (resMap) {
+                                List<RowObservable> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
+                                rowObservables.add(wrapAsAutoCloseConnectionRowObservale(sqlConnection, rowObservable));
+                            }
+                            return null;
+                        }));
+                    }
+                    return CompositeFuture.all(objects).map(compositeFuture -> finalResMap);
                 }
-                return CompositeFuture.all(objects).map(compositeFuture -> finalResMap);
             });
         }
     }
@@ -127,51 +119,17 @@ public class ProxyConnectionUsage {
         };
     }
 
-    private Future<Void> extracted(Map<RelNode, List<RowObservable>> resMap,
-                                   SqlConnection connection2,
-                                   List<SQLKey> res,
-                                   List<Object> params) {
+    private Future<Void> getResultSet(Map<RelNode, List<RowObservable>> resMap,
+                                      SqlConnection connection2,
+                                      List<SQLKey> res,
+                                      List<Object> params) {
         Future<Void> future = Future.succeededFuture();
         if (res.size() > 1) {
             for (SQLKey sqlKey : res.subList(1, res.size())) {
-                future = future.flatMap(unused -> {
-                    Future<RowObservable> rowObservableFuture = Future.succeededFuture(VertxExecuter.runQuery(
-                            Future.succeededFuture(connection2),
-                            sqlKey.getSql().getSql(),
-                            MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())
-                    ));
-                    return rowObservableFuture.flatMap(rowObservable -> {
-                        PromiseInternal<Void> promise = VertxUtil.newPromise();
-                        ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
-                        rowObservable.subscribe(objects -> builder.add(objects),
-                                throwable -> promise.fail(throwable),
-                                () -> {
-                                    RowObservable observable = SimpleRowObservable.of(rowObservable.getRowMetaData(), builder.build());
-                                    synchronized (resMap) {
-                                        List<RowObservable> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
-                                        rowObservables.add(observable);
-                                    }
-                                    promise.complete();
-                                });
-                        return promise.future();
-                    });
-                });
+                future = future.flatMap(new GetResultSetAndCache(connection2, sqlKey, params, resMap));
             }
         }
-        return future.flatMap(unused -> {
-            SQLKey sqlKey = res.get(0);
-            Future<RowObservable> rowObservableFuture =Future.succeededFuture(VertxExecuter.runQuery(
-                    Future.succeededFuture(connection2),
-                    sqlKey.getSql().getSql(),
-                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())));
-            return rowObservableFuture.map(rowObservable -> {
-                synchronized (ProxyConnectionUsage.this) {
-                    List<RowObservable> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
-                    rowObservables.add(rowObservable);
-                }
-                return null;
-            });
-        });
+        return future.flatMap(new GetResultSetEnd(res, connection2, params, resMap));
     }
 
     private Future<Map<String, LinkedList<SqlConnection>>> getConnection(XaSqlConnection connection) {
@@ -181,7 +139,7 @@ public class ProxyConnectionUsage {
         Map<String, LinkedList<SqlConnection>> map = new ConcurrentHashMap<>();
 
         PromiseInternal<Map<String, LinkedList<SqlConnection>>> promise = VertxUtil.newPromise();
-        java.util.concurrent.Future<Future<?>> submit = getTrxExecutorService().submit(new SequenceTask(strings, connection, map, promise));
+         getTrxExecutorService().submit(new SequenceTask(strings, connection, map, promise));
         return promise.future();
     }
 
@@ -190,17 +148,36 @@ public class ProxyConnectionUsage {
                 context.resolveDatasourceTargetName(i.getTargetName(), context.isInTransaction())));
         TransactionSession transactionSession = context.getTransactionSession();
         PromiseInternal<Map<String, List<SQLKey>>> promise = VertxUtil.newPromise();
-        getTrxExecutorService().submit(() -> {
+        getTrxExecutorService().submit(new SequenceTranscationTask(map, connection, transactionSession, promise));
+        return promise;
+    }
+
+    private static class SequenceTranscationTask implements Callable<Future<? extends Object>> {
+        private final Map<String, List<SQLKey>> map;
+        private final XaSqlConnection connection;
+        private final TransactionSession transactionSession;
+        private final PromiseInternal<Map<String, List<SQLKey>>> promise;
+
+        public SequenceTranscationTask(Map<String, List<SQLKey>> map, XaSqlConnection connection, TransactionSession transactionSession, PromiseInternal<Map<String, List<SQLKey>>> promise) {
+            this.map = map;
+            this.connection = connection;
+            this.transactionSession = transactionSession;
+            this.promise = promise;
+        }
+
+        @Override
+        public Future<? extends Object> call() throws Exception {
             try {
                 Future<Void> future = Future.succeededFuture();
                 for (String s : map.keySet()) {
                     future = future
-                            .flatMap(unused ->
-                                    (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true)));
+                            .flatMap(unused -> {
+                                return (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true));
+                            });
                 }
                 return future.onComplete(event -> {
                     if (event.succeeded()) {
-                        if(LOGGER.isDebugEnabled()){
+                        if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("get getConnectionWhenTranscation");
                         }
                         promise.tryComplete(map);
@@ -209,11 +186,48 @@ public class ProxyConnectionUsage {
                     }
                 });
             } catch (Throwable throwable) {
-                promise.fail(throwable);
+                promise.tryFail(throwable);
             }
             return promise;
-        });
-        return promise;
+        }
+    }
+
+    private static class GetResultSetAndCache implements Function<Void, Future<Void>> {
+        private final SqlConnection connection2;
+        private final SQLKey sqlKey;
+        private final List<Object> params;
+        private final Map<RelNode, List<RowObservable>> resMap;
+
+        public GetResultSetAndCache(SqlConnection connection2, SQLKey sqlKey, List<Object> params, Map<RelNode, List<RowObservable>> resMap) {
+            this.connection2 = connection2;
+            this.sqlKey = sqlKey;
+            this.params = params;
+            this.resMap = resMap;
+        }
+
+        @Override
+        public Future<Void> apply(Void unused) {
+            Future<RowObservable> rowObservableFuture = Future.succeededFuture(VertxExecuter.runQuery(
+                    Future.succeededFuture(connection2),
+                    sqlKey.getSql().getSql(),
+                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())
+            ));
+            return rowObservableFuture.flatMap(rowObservable -> {
+                PromiseInternal<Void> promise = VertxUtil.newPromise();
+                ImmutableList.Builder<Object[]> builder = ImmutableList.builder();
+                rowObservable.subscribe(objects -> builder.add(objects),
+                        throwable -> promise.tryFail(throwable),
+                        () -> {
+                            RowObservable observable = SimpleRowObservable.of(rowObservable.getRowMetaData(), builder.build());
+                            synchronized (resMap) {
+                                List<RowObservable> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
+                                rowObservables.add(observable);
+                            }
+                            promise.tryComplete();
+                        });
+                return promise.future();
+            });
+        }
     }
 
     private  class SequenceTask implements Callable<Future<?>> {
@@ -278,6 +292,64 @@ public class ProxyConnectionUsage {
                 }
                 return null;
             }
+        }
+    }
+
+    private class QueryResultSetInTranscation implements Function<Map<String, List<SQLKey>>, Future<IdentityHashMap<RelNode, List<RowObservable>>>> {
+        private final XaSqlConnection xaconnection;
+        private final Map<RelNode, List<RowObservable>> resMap;
+        private final List<Object> params;
+        private final IdentityHashMap<RelNode, List<RowObservable>> finalResMap;
+
+        public QueryResultSetInTranscation(XaSqlConnection xaconnection, Map<RelNode, List<RowObservable>> resMap, List<Object> params, IdentityHashMap<RelNode, List<RowObservable>> finalResMap) {
+            this.xaconnection = xaconnection;
+            this.resMap = resMap;
+            this.params = params;
+            this.finalResMap = finalResMap;
+        }
+
+        @Override
+        public Future<IdentityHashMap<RelNode, List<RowObservable>>> apply(Map<String, List<SQLKey>> stringListMap) {
+            ArrayList<Map.Entry<String, List<SQLKey>>> entries = new ArrayList<>(stringListMap.entrySet());
+            ArrayList<Future> resList = new ArrayList<>();
+            for (Map.Entry<String, List<SQLKey>> stringListEntry : entries) {
+                Future<SqlConnection> connection1 = xaconnection.getConnection(
+                        context.resolveDatasourceTargetName(stringListEntry.getKey(), true));
+                resList.add(connection1.flatMap(connection2 -> {
+                    return ProxyConnectionUsage.this.getResultSet(resMap, connection2, stringListEntry.getValue(), params);
+                }));
+            }
+            return CompositeFuture.all(resList).map(compositeFuture -> finalResMap);
+        }
+    }
+
+    private class GetResultSetEnd implements Function<Void, Future<Void>> {
+        private final List<SQLKey> res;
+        private final SqlConnection connection2;
+        private final List<Object> params;
+        private final Map<RelNode, List<RowObservable>> resMap;
+
+        public GetResultSetEnd(List<SQLKey> res, SqlConnection connection2, List<Object> params, Map<RelNode, List<RowObservable>> resMap) {
+            this.res = res;
+            this.connection2 = connection2;
+            this.params = params;
+            this.resMap = resMap;
+        }
+
+        @Override
+        public Future<Void> apply(Void unused) {
+            SQLKey sqlKey = res.get(0);
+            Future<RowObservable> rowObservableFuture = Future.succeededFuture(VertxExecuter.runQuery(
+                    Future.succeededFuture(connection2),
+                    sqlKey.getSql().getSql(),
+                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())));
+            return rowObservableFuture.map(rowObservable -> {
+                synchronized (ProxyConnectionUsage.this) {
+                    List<RowObservable> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
+                    rowObservables.add(rowObservable);
+                }
+                return null;
+            });
         }
     }
 }

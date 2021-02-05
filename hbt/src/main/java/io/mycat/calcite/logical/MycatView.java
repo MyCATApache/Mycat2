@@ -312,6 +312,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public Optional<RexNode> getConditions() {
-        return Optional.of(conditions);
+        return Optional.ofNullable(conditions);
     }
 }

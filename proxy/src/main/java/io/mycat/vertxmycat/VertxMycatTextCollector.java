@@ -28,7 +28,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
     private BiConsumer<C, Row> accumulator;
     private C c;
     private R res;
-    private long rowCount = 0;
+    private int rowCount = 0;
     private long affectedRows;
     private long lastInsertId;
     private int serverStatusFlags;
@@ -128,7 +128,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
 
     }
 
-    public long getRowCount() {
+    public int getRowCount() {
         return rowCount;
     }
 

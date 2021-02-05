@@ -80,6 +80,9 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       mysql.setRequestSuccess(false);
       mysql.prepareReveiceResponse();
       mysql.writeCurrentProxyPacket(mySQLPacket, packetId);
+      if(LOGGER.isDebugEnabled()){
+
+      }
     } catch (Exception e) {
       MycatMonitor.onResultSetWriteException(mysql, e);
       onException(mysql, e);
@@ -186,7 +189,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
       boolean isResponseFinished = false;
       ErrorPacketImpl errorPacket = null;
-      while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
+      while (mysql.readProxyPayloadFully()) {
         MySQLPayloadType type = mysql.getBackendPacketResolver().getMySQLPayloadType();
         isResponseFinished = mysql.isResponseFinished();
         MySQLPacket payload = mysql.currentProxyPayload();

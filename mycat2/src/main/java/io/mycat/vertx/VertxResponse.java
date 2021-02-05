@@ -187,7 +187,7 @@ public abstract class VertxResponse implements Response {
     @Override
     public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
         rowIterable.subscribe();
         ObserverWrite observerWrite = new ObserverWrite(new ObserverTask(rowIterable) {
             @Override

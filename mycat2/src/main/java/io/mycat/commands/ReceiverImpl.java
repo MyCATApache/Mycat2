@@ -1,14 +1,11 @@
 package io.mycat.commands;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatProxyResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.proxy.session.MycatSession;
@@ -27,7 +24,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
-import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +81,7 @@ public class ReceiverImpl implements Response {
     public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
         session.setLastMessage(errorMessage);
         session.setLastErrorCode(errorCode);
-        return VertxUtil.newFailPromise(new MycatException(errorCode,errorMessage));
+        return VertxUtil.newFailPromise(new MycatException(errorCode, errorMessage));
     }
 
     @Override
@@ -141,51 +137,41 @@ public class ReceiverImpl implements Response {
     @Override
     public PromiseInternal<Void> rollback() {
         count++;
-        boolean hasMoreResultSet = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        Future<Void> commit = transactionSession.rollback();
-        commit.onComplete(event -> transactionSession.closeStatenmentState().onComplete(unused -> {
-            if (!event.succeeded()) {
-                promise.tryFail(event.cause());
-            } else {
-                session.writeOk(hasMoreResultSet)
-                        .onComplete(event1 -> promise.tryComplete());
+        class RollbackSendOk extends AsyncSendOk {
+            public RollbackSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
             }
-        }));
+        }
+        transactionSession.rollback()
+                .onComplete(new RollbackSendOk(promise, hasMoreResultSet()));
         return promise;
     }
 
     @Override
     public PromiseInternal<Void> begin() {
         count++;
-        boolean hasMoreResultSet = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        Future<Void> commit = transactionSession.begin();
-        commit.onComplete(event -> transactionSession.closeStatenmentState().onComplete(unused -> {
-            if (!event.succeeded()) {
-                promise.tryFail(event.cause());
-            } else {
-                session.writeOk(hasMoreResultSet)
-                        .onComplete(event1 -> promise.tryComplete());
+        class BeginSendOk extends AsyncSendOk {
+            public BeginSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
             }
-        }));
+        }
+        transactionSession.begin().onComplete(new BeginSendOk(promise, hasMoreResultSet()));
         return promise;
     }
 
     @Override
     public PromiseInternal<Void> commit() {
         count++;
-        boolean hasMoreResultSet = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        Future<Void> commit = transactionSession.commit();
-        commit.onComplete(event -> transactionSession.closeStatenmentState().onComplete(unused -> {
-            if (!event.succeeded()) {
-                promise.tryFail(event.cause());
-            } else {
-                session.writeOk(hasMoreResultSet)
-                        .onComplete(event1 -> promise.tryComplete());
+        class CommitSendOk extends AsyncSendOk {
+            public CommitSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
             }
-        }));
+        }
+        transactionSession.commit()
+                .onComplete(new CommitSendOk(promise, hasMoreResultSet()));
         return promise;
     }
 
@@ -225,10 +211,10 @@ public class ReceiverImpl implements Response {
             case INSERT:
                 Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
                 future1.onComplete(event -> {
-                    if (event.succeeded()){
+                    if (event.succeeded()) {
                         long[] result = event.result();
-                        sendOk(result[0],result[1]).onComplete(result1 -> promise.tryComplete());
-                    }else {
+                        sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());
+                    } else {
                         promise.tryFail(event.cause());
                     }
 
@@ -242,16 +228,8 @@ public class ReceiverImpl implements Response {
     @Override
     public PromiseInternal<Void> sendOk() {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        transactionSession.closeStatenmentState().onComplete(event -> {
-            session.writeOk(hasMoreResultSet()).onComplete(event1 -> {
-                if (event1.succeeded()) {
-                    promise.tryComplete();
-                } else {
-                    promise.tryFail(event1.cause());
-                }
-            });
-        });
+        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
+        new AsyncSendOk(promise, hasMoreResultSet());
         return promise;
     }
 
@@ -271,7 +249,7 @@ public class ReceiverImpl implements Response {
     public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
-        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newSuccessPromise();
+        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();
         ObserverWrite observerWrite = new ObserverWrite(rowIterable, hasMoreResultSet, voidPromiseInternal);
         rowIterable.subscribe(observerWrite);
         return voidPromiseInternal;
@@ -335,16 +313,35 @@ public class ReceiverImpl implements Response {
                 disposable.dispose();
                 disposable = null;
             }
-            if (!end){
-                end = true;
-                session.getDataContext().getTransactionSession()
-                        .closeStatenmentState()
-                        .onComplete(event -> session.writeRowEndPacket(moreResultSet, false)
-                                .onComplete(event1 -> promise.tryComplete()));
-            }else {
-                LOGGER.debug("bug");
-            }
+            end = true;
+            session.getDataContext().getTransactionSession()
+                    .closeStatenmentState()
+                    .onComplete(event -> session.writeRowEndPacket(moreResultSet, false)
+                            .onComplete(event1 -> promise.tryComplete()));
 
+        }
+    }
+
+    private class AsyncSendOk implements Handler<AsyncResult<Void>> {
+        private final PromiseInternal<Void> promise;
+        private final boolean hasMoreResultSet;
+
+        public AsyncSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+            this.promise = promise;
+            this.hasMoreResultSet = hasMoreResultSet;
+            promise.onComplete(this);
+        }
+
+        @Override
+        public void handle(AsyncResult<Void> event) {
+            transactionSession.closeStatenmentState().onComplete(unused -> {
+                if (!event.succeeded()) {
+                    promise.tryFail(event.cause());
+                } else {
+                    session.writeOk(hasMoreResultSet)
+                            .onComplete(event1 -> promise.tryComplete());
+                }
+            });
         }
     }
 }

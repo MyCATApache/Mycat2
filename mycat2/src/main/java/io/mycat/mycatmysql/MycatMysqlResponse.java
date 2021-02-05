@@ -134,7 +134,7 @@ public class MycatMysqlResponse extends VertxResponse {
     @Override
     public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
         rowIterable.subscribe(new ObserverWrite(new ObserverTask(rowIterable) {
 
             @Override

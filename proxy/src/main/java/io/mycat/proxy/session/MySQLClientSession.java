@@ -337,6 +337,10 @@ public class MySQLClientSession extends
                 proxyBuffer.channelWriteEndIndex());
         this.updateLastActiveTime();
         this.checkWriteFinished();
+        getChannelKey().selector().wakeup();
+        if(LOGGER.isDebugEnabled()){
+            LOGGER.debug("sessionId:{} writeProxyBufferToChannel successfully",sessionId());
+        }
         return VertxUtil.newSuccessPromise();
     }
 

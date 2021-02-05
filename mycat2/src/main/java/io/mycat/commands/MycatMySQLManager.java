@@ -1,9 +1,7 @@
 package io.mycat.commands;
 
 import cn.mycat.vertx.xa.MySQLManager;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatServer;
-import io.mycat.ScheduleUtil;
+import io.mycat.*;
 import io.mycat.api.MySQLAPI;
 import io.mycat.ext.MySQLAPIImpl;
 import io.mycat.proxy.NativeMycatServer;
@@ -34,6 +32,8 @@ public class MycatMySQLManager implements MySQLManager {
     public Future<SqlConnection> getConnection(String targetName) {
         PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();
         Thread thread = Thread.currentThread();
+        MycatWorkerProcessor workerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+        NameableExecutor mycatWorker = workerProcessor.getMycatWorker();
         if (!(thread instanceof ReactorEnvThread)){
             MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
             NativeMycatServer mycatServer1 = (NativeMycatServer) mycatServer;
@@ -42,11 +42,13 @@ public class MycatMySQLManager implements MySQLManager {
                 public void run(ReactorEnvThread reactor) throws Exception {
                     Future<SqlConnection> connection = getConnection(targetName);
                     connection.onComplete(event -> {
-                        if (event.succeeded()){
-                            promise.tryComplete(event.result());
-                        }else {
-                            promise.tryFail(event.cause());
-                        }
+                        mycatWorker.execute(()->{
+                            if (event.succeeded()){
+                                promise.tryComplete(event.result());
+                            }else {
+                                promise.tryFail(event.cause());
+                            }
+                        });
                     });
                 }
 
@@ -68,12 +70,14 @@ public class MycatMySQLManager implements MySQLManager {
                         LOGGER.debug("MycatMySQLManager getConnection successfully");
                     }
                     AbstractMySqlConnectionImpl abstractMySqlConnection = new AbstractMySqlConnectionImpl(session);
-                    promise.tryComplete(abstractMySqlConnection);
+                    mycatWorker.execute(()->{
+                            promise.tryComplete(abstractMySqlConnection);
+                    });
                 }
 
                 @Override
                 public void onException(Exception exception, Object sender, Object attr) {
-                    promise.fail(exception);
+                    promise.tryFail(exception);
                 }
             });
         }
