@@ -143,7 +143,7 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
         if (0 <= i && i < size) {
             return shardingBackends.get(i);
         } else {
-            String message = MessageFormat.format("{0}.{1} 分片算法越界 {3} 分片值:{4}",
+            String message = MessageFormat.format("{0}.{1} 分片算法越界 分片值:{4}",
                     table.getSchemaName(), table.getTableName(), columnValue);
             throw new MycatException(message);
         }
