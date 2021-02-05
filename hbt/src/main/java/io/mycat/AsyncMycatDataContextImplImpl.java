@@ -25,7 +25,7 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
 
     @Override
     public Enumerable<Object[]> getEnumerable(RelNode node) {
-        return Linq4j.asEnumerable(Observable.concat(getObservables(node)).blockingIterable());
+        return Linq4j.asEnumerable(Observable.merge(getObservables(node)).blockingIterable());
     }
 
     @Override
@@ -35,7 +35,11 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
 
     @Override
     public Observable<Object[]> getObservable(RelNode node) {
-        return (Observable<Object[]>) viewMap.get(node).get(0);
+        List<Observable<Object[]>> observables = viewMap.get(node);
+        if (observables.size()==1){
+            return observables.get(0);
+        }
+        return  Observable.merge(observables);
     }
 
     @Override

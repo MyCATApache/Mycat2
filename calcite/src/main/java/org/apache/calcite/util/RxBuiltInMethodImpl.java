@@ -27,11 +27,11 @@ public class RxBuiltInMethodImpl {
 
 
     public static Observable<Object[]> unionAll(List<Observable<Object[]>> inputs) {
-        return inputs.stream().reduce((observable, observable2) -> observable.concatWith(observable2)).orElse(Observable.empty());
+        return Observable.merge(inputs);
     }
 
     public static Observable<Object[]> unionAll(Observable<Object[]> left, Observable<Object[]> right) {
-        return left.concatWith(right);
+        return Observable.merge(left,right);
     }
 
     public static Observable<Object[]> topN(Observable<Object[]> input, Comparator<Object[]> sortFunction, long skip, long limit) {

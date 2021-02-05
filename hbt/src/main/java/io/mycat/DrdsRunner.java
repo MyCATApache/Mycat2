@@ -33,7 +33,9 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
+import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
@@ -622,6 +624,17 @@ public class DrdsRunner {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
+        relNode.accept(new RelShuttleImpl(){
+            @Override
+            public RelNode visit(RelNode other) {
+                if (other instanceof MycatView){
+                    mycatEnumerableRelImplementor.collectLeafRelNode(other);
+                }else if (other instanceof MycatTransientSQLTableScan){
+                    mycatEnumerableRelImplementor.collectLeafRelNode(other);
+                }
+                return super.visit(other);
+            }
+        });
         ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementHybridRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
         if (log.isDebugEnabled()) {

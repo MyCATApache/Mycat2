@@ -77,7 +77,9 @@ public class ProxyConnectionUsage {
                             return null;
                         }));
                     }
-                    return CompositeFuture.all(objects).map(compositeFuture -> finalResMap);
+                    return CompositeFuture.all(objects).map(compositeFuture -> {
+                        return finalResMap;
+                    });
                 }
             });
         }
@@ -101,6 +103,10 @@ public class ProxyConnectionUsage {
 
                     @Override
                     public void onNext(Object @NonNull [] objects) {
+                        LOGGER.debug(Arrays.stream(objects).filter(i->i!=null).map(i->i.getClass().toString())
+                                .collect(Collectors.joining(",")));
+                        LOGGER.debug(Arrays.toString(objects));
+
                         observer.onNext(objects);
                     }
 

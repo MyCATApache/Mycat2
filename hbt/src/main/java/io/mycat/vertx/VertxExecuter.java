@@ -20,15 +20,18 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
+import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.command.QueryCommandBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -98,6 +101,7 @@ public class VertxExecuter {
         private final Future<SqlConnection> sqlConnectionFuture;
         private final String sql;
         private final List<Object> values;
+        private ColumnDefinition[] columnDefinitions;
 
         public RowObservableImpl(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
             this.sqlConnectionFuture = sqlConnectionFuture;
@@ -118,8 +122,8 @@ public class VertxExecuter {
             sqlConnectionFuture
                     .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
                 PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                if(LOGGER.isDebugEnabled()){
-                    LOGGER.debug("RowObservableImpl sql:{} connection:{}",sql,sqlConnectionFuture.result());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("RowObservableImpl sql:{} connection:{}", sql, sqlConnectionFuture.result());
                 }
                 PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
                 return collecting.execute(Tuple.tuple(values));
@@ -127,7 +131,7 @@ public class VertxExecuter {
                 @Override
                 public void handle(SqlResult<Void> event) {
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql,sqlConnectionFuture.result());
+                        LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql, sqlConnectionFuture.result());
                     }
                     observer.onComplete();
                 }
@@ -141,16 +145,75 @@ public class VertxExecuter {
 
         @Override
         public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+            this.columnDefinitions = columnDefinitions.columnDefinitions();
             this.metaData = toColumnMetaData(columnDefinitions.columnDescriptor());
             this.observer.onSubscribe(Disposable.disposed());
         }
 
         @Override
         public void onRow(Row row) {
-            int size = row.size();
+            int size = this.columnDefinitions.length;
             Object[] objects = new Object[size];
             for (int i = 0; i < size; i++) {
-                objects[i] = row.getValue(i);
+                switch (this.columnDefinitions[i].type()) {
+                    case INT1:
+                    case INT2:
+                    case INT3:
+                    case INT4:
+                        objects[i] = row.getLong(i);
+                        break;
+                    case NUMERIC:
+                    case INT8:
+                        objects[i] = row.getBigDecimal(i);
+                        break;
+                    case DOUBLE:
+                    case FLOAT:
+                        objects[i] = row.getDouble(i);
+                        break;
+                    case STRING:
+                    case VARSTRING:
+                        objects[i] = row.getString(i);
+                        break;
+                    case LONGBLOB:
+                    case MEDIUMBLOB:
+                    case BLOB:
+                    case TINYBLOB:
+                        Buffer buffer = row.getBuffer(i);
+                        if (buffer == null) {
+                            objects[i] = null;
+                        } else {
+                            objects[i] = buffer.getBytes();
+                        }
+                        break;
+                    case DATE:
+                        objects[i] = row.getLocalDate(i);
+                        break;
+                    case TIME:
+                        objects[i] = (Duration) row.getValue(i);
+                        break;
+                    case DATETIME:
+                        objects[i] = row.getLocalDateTime(i);
+                        break;
+                    case YEAR:
+                        objects[i] = row.getShort(i);
+                        break;
+                    case TIMESTAMP:
+                        objects[i] = row.getLocalDateTime(i);
+                        break;
+                    case BIT:
+                        objects[i] = row.getBoolean(i);
+                        break;
+                    case JSON:
+                        objects[i] = row.getString(i);
+                        break;
+                    case NULL:
+                        objects[i] = null;
+                        break;
+                    case UNBIND:
+                    case GEOMETRY:
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + this.columnDefinitions[i].type());
+                }
             }
             observer.onNext(objects);
         }

@@ -230,7 +230,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(
@@ -296,7 +295,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(
