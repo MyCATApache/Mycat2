@@ -240,25 +240,27 @@ public class MycatInsertExecutor implements Executor {
             Map.Entry<SQL, Group> keyGroupEntry = group.entrySet().iterator().next();
             String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
             LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
+            String targetName = connections.keySet().iterator().next();
             Connection connection = connections.values().iterator().next().unwrap(Connection.class);
             try (PreparedStatement preparedStatement = connection.
                     prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
-                List<Object> objects = args.get(0);
-                setParams(preparedStatement, objects);
+                for (List<Object> arg : args) {
+                    List<Object> objects = arg;
+                    setParams(preparedStatement, objects);
 
-                long startTime = SqlRecord.now();
+                    long startTime = SqlRecord.now();
 
-                affected = preparedStatement.executeUpdate();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                if (generatedKeys != null) {
-                    if (generatedKeys.next()) {
-                        lastInsertId = generatedKeys.getBigDecimal(1).longValue();
+                    affected += preparedStatement.executeUpdate();
+                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                    if (generatedKeys != null) {
+                        if (generatedKeys.next()) {
+                            lastInsertId = generatedKeys.getBigDecimal(1).longValue();
+                        }
                     }
-                }
-                String targetName = connections.keySet().iterator().next();
-                sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    }
                 }
             }
         } else {
