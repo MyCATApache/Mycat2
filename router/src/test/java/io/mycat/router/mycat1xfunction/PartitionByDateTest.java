@@ -4,6 +4,7 @@ import io.mycat.router.ShardingTableHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,5 +78,28 @@ public class PartitionByDateTest {
         Assert.assertEquals(true, 10 == partition.calculateIndex("2014-01-11"));
         Assert.assertEquals(true, 0 == partition.calculateIndex("2014-02-01"));
         System.out.println(partition.calculate("2014-02-19"));
+
+        //测试默认1
+        Assert.assertEquals(true, 0 == partition.calculateIndex("2014-01-01"));
+        Assert.assertEquals(true, 9 == partition.calculateIndex("2014-01-10"));
+        Assert.assertEquals(true, 10 == partition.calculateIndex("2014-01-11"));
+
+
+        Assert.assertArrayEquals(new int[]{
+                0,1,2,3,4,5,6,7,8,9,10,
+                11,12,13,14,15,16,17,18,19,20,
+                21,22,23,24,25,26,27,28,29,30},partition.calculateIndexRange("2014-01-01","2014-02-10"));
+        Assert.assertArrayEquals(new int[]{
+                1,2,3,4,5,6,7,8,9,10,
+                11,12,13,14,15,16,17,18,19,20,
+                21,22,23,24,25,26,27,28,29,30},partition.calculateIndexRange("2014-01-02",null));
+        Assert.assertArrayEquals(new int[]{
+                0,1,2,3,4,5,6,7,8,9,10,
+                11,12,13,14,15,16,17,18,19,20},partition.calculateIndexRange(null,"2014-01-21"));
+        Assert.assertArrayEquals(new int[]{
+                0,1,2,3,4,5,6,7,8,9,10,
+                11,12,13,14,15,16,17,18,19,20,
+                21,22,23,24,25,26,27,28,29,30},partition.calculateIndexRange("2014-01-01","null"));
+        Assert.assertArrayEquals(new int[]{0},partition.calculateIndexRange("null","2014-01-01"));
     }
 }

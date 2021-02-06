@@ -25,6 +25,7 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -60,14 +61,14 @@ public class DefaultConnection implements MycatConnection {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql,
                     needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-            long lastInsertId = 0;
             if (needGeneratedKeys) {
                 ResultSet generatedKeys = statement.getGeneratedKeys();
-                if (generatedKeys!=null&&generatedKeys.next()){
-                    lastInsertId =Math.max(lastInsertId,  generatedKeys.getLong(1));
+                if (generatedKeys != null && generatedKeys.next()) {
+                    BigDecimal decimal = generatedKeys.getBigDecimal(1);
+                    return new long[]{statement.getUpdateCount(), decimal.longValue()};
                 }
             }
-            return new long[]{statement.getUpdateCount(), lastInsertId};
+            return new long[]{statement.getUpdateCount(), 0};
         } catch (Exception e) {
             throw new MycatException(e);
         }
@@ -79,7 +80,7 @@ public class DefaultConnection implements MycatConnection {
             Statement statement = connection.createStatement();
             statement.setFetchSize(1);
             ResultSet resultSet = statement.executeQuery(sql);
-            return new JdbcRowBaseIterator(null,this, statement, resultSet, new RowIteratorCloseCallback() {
+            return new JdbcRowBaseIterator(null, this, statement, resultSet, new RowIteratorCloseCallback() {
 
                 @Override
                 public void onClose(long rowCount) {
@@ -150,7 +151,7 @@ public class DefaultConnection implements MycatConnection {
 
     @Override
     @SneakyThrows
-    public <T> T unwrap(Class<T> iface)  {
+    public <T> T unwrap(Class<T> iface) {
         if (Connection.class == iface) {
             return (T) connection;
         }

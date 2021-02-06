@@ -1,0 +1,73 @@
+package io.vertx;
+
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@Slf4j
+public class TraceLogFileThread extends Thread {
+    private final Map<Trace, OutputStream> map = new LinkedHashMap<>();
+
+    public TraceLogFileThread() {
+    }
+
+    public TraceLogFileThread(String name) {
+        super(name);
+    }
+
+    public TraceLogFileThread(Runnable target) {
+        super(target);
+    }
+
+    @SneakyThrows
+    @Override
+    public void run() {
+        try {
+            init();
+            while (!isInterrupted()) {
+                writeFile();
+                Thread.sleep(50);
+            }
+        } finally {
+            log.info("trace stop");
+            for (OutputStream stream : map.values()) {
+                stream.close();
+            }
+        }
+    }
+
+    private void init() throws IOException {
+        for (Trace value : Trace.values()) {
+            String fileName = System.getProperty("user.dir") + "/" + value.name().toLowerCase() + ".dump";
+
+            File file = new File(fileName);
+            File parentFile = file.getParentFile();
+            if (parentFile != null) {
+                parentFile.mkdirs();
+            }
+            if (file.exists()) {
+                file.delete();
+            }
+            file.createNewFile();
+            map.put(value, new BufferedOutputStream(new FileOutputStream(file), 8096));
+        }
+    }
+
+    public void writeFile() throws IOException {
+        for (Map.Entry<Trace, OutputStream> entry : map.entrySet()) {
+            Trace trace = entry.getKey();
+            OutputStream outputStream = entry.getValue();
+            TraceSpan span;
+            while ((span = trace.getQueue().poll()) != null) {
+                byte[] bytes = span.toString().getBytes(StandardCharsets.UTF_8);
+                outputStream.write(bytes);
+            }
+            outputStream.flush();
+        }
+    }
+
+}

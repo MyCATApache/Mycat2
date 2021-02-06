@@ -3,7 +3,6 @@ package io.mycat.sqlhandler;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
@@ -19,7 +18,7 @@ import java.util.Set;
 public class HackRouter {
     SQLStatement selectStatement;
     private MycatDataContext dataContext;
-    private  NameMap<MetadataManager.SimpleRoute>  normalTables;
+    private  NameMap<MetadataManager.SimpleRoute> singleTables;
 
     public HackRouter(SQLStatement selectStatement, MycatDataContext context) {
         this.selectStatement = selectStatement;
@@ -42,8 +41,8 @@ public class HackRouter {
             }
         });
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        this. normalTables = new NameMap<>();
-        boolean singleTarget = metadataManager.checkVaildNormalRoute(tableNames, normalTables);
+        this.singleTables = new NameMap<>();
+        boolean singleTarget = metadataManager.checkVaildNormalRoute(tableNames, singleTables);
         return singleTarget;
     }
 
@@ -55,7 +54,7 @@ public class HackRouter {
                 String tableName = x.getTableName();
                 if (tableName != null) {
                     tableName = SQLUtils.normalize(tableName);
-                    MetadataManager.SimpleRoute normalTable = normalTables.get(tableName);
+                    MetadataManager.SimpleRoute normalTable = singleTables.get(tableName);
                     if (normalTable != null) {
                         String schema = Optional.ofNullable(x.getSchema()).orElse(dataContext.getDefaultSchema());
                         if (normalTable.getSchemaName().equalsIgnoreCase(schema)) {
