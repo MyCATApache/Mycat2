@@ -150,6 +150,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
     private static boolean userDefinedFunctionInFilter(Filter filter) {
         CheckingUserDefinedAndConvertFunctionVisitor visitor = new CheckingUserDefinedAndConvertFunctionVisitor();
         RexNode condition = filter.getCondition();
+
         condition.accept(visitor);
         return filter.containsOver() || visitor.containsUserDefinedFunction();
     }
@@ -182,6 +183,12 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 containsUsedDefinedFunction = true;
             }
             return super.visitCall(call);
+        }
+
+        @Override
+        public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
+            containsUsedDefinedFunction = true;
+            return super.visitCorrelVariable(correlVariable);
         }
     }
 

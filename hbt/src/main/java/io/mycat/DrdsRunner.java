@@ -710,6 +710,9 @@ public class DrdsRunner {
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+            CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
+            CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
             CoreRules.FILTER_INTO_JOIN,
 //            CoreRules.FILTER_INTO_JOIN_DUMB,
             CoreRules.JOIN_CONDITION_PUSH,
@@ -727,6 +730,14 @@ public class DrdsRunner {
             CoreRules.JOIN_REDUCE_EXPRESSIONS,
             CoreRules.PROJECT_REDUCE_EXPRESSIONS,
             CoreRules.FILTER_MERGE
+
+//            CoreRules.PROJECT_CALC_MERGE,
+//            CoreRules.FILTER_CALC_MERGE,
+//            CoreRules.FILTER_TO_CALC,
+//            CoreRules.PROJECT_TO_CALC,
+//            CoreRules.CALC_REMOVE,
+//            CoreRules.CALC_MERGE
+
     );
 
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {

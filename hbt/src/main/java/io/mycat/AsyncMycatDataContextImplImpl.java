@@ -2,6 +2,7 @@ package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.observables.ConnectableObservable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.RelNode;
@@ -25,12 +26,9 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
         IdentityHashMap<RelNode, Integer> mycatViews = codeExecuterContext.getMycatViews();
         for (Map.Entry<RelNode, List<Observable<Object[]>>> entry : map.entrySet()) {
             RelNode key = entry.getKey();
-            List<Observable<Object[]>> observableList = entry.getValue().stream().map(i -> i.cache()).map(i -> {
-                if (mycatViews.get(key) > 1) {
-                    return (Observable.fromIterable(i.toList().blockingGet()));
-                } else {
-                    return i;
-                }
+            List<Observable<Object[]>> observableList = entry.getValue().stream().map(i -> {
+                ConnectableObservable<Object[]> replay = i.replay();
+                return replay.autoConnect();
             }).collect(Collectors.toList());
             this.viewMap.put(key, observableList);
         }

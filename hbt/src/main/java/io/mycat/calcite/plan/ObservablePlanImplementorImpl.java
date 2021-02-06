@@ -116,11 +116,11 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                             AsyncMycatDataContextImplImpl newMycatDataContext =
                                     new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
                             Object bindObservable;
-                            if(codeExecuterContext.getCode().contains("hashJoin(org")){
-                                bindObservable = bindObservable(newMycatDataContext);
-                            }else {
+//                            if(codeExecuterContext.getCode().contains("hashJoin(org")){
+//                                bindObservable = bindObservable(newMycatDataContext);
+//                            }else {
                                 bindObservable = bindable.bindObservable(newMycatDataContext);
-                            }
+//                            }
                             if (bindObservable instanceof Observable) {
                                 Observable<Object[]> observable = (Observable) bindObservable;
                                 observable.subscribe(observer);

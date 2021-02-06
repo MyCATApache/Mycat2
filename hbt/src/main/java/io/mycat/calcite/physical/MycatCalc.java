@@ -106,7 +106,7 @@ public class MycatCalc extends Calc implements MycatRel {
 
     @Override
     public Calc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {
-        return new MycatCalc(getCluster(), traitSet, getInput(), program);
+        return MycatCalc.create(traitSet,  child, program);
     }
 
 
