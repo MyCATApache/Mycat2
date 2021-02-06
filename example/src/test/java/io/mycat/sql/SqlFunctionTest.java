@@ -322,6 +322,7 @@ public class SqlFunctionTest implements MycatTest {
         execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT\n," +
                 "  `user_id` varchar(100) DEFAULT NULL" +
+                " , PRIMARY KEY (`id`) "+
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
         execute(mysql3306, "CREATE TABLE if not exists `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
