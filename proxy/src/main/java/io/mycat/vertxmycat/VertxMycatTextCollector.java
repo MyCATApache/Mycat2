@@ -122,7 +122,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
         this.serverStatusFlags = payload.readUnsignedShortLE();
         if (collector instanceof StreamMysqlCollector){
-            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
+//            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
             ((StreamMysqlCollector) collector).onFinish(0,serverStatusFlags,affectedRows,lastInsertId);
         }
     }
