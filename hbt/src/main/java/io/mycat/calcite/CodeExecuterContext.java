@@ -9,19 +9,18 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.util.SqlString;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 public class CodeExecuterContext {
-    private List<RelNode> mycatViews;
+    private IdentityHashMap<RelNode,Integer> mycatViews;
     final Map<String, Object> context;
     final ArrayBindable bindable;
     final String code;
     final boolean forUpdate;
 
-    public CodeExecuterContext(List<RelNode> mycatViews, Map<String, Object> context, ArrayBindable bindable, String code, boolean forUpdate) {
+
+    public CodeExecuterContext(IdentityHashMap<RelNode,Integer> mycatViews, Map<String, Object> context, ArrayBindable bindable, String code, boolean forUpdate) {
         this.mycatViews = mycatViews;
         this.context = context;
         this.bindable = bindable;
@@ -29,7 +28,7 @@ public class CodeExecuterContext {
         this.forUpdate = forUpdate;
     }
 
-    public static final CodeExecuterContext of(List<RelNode> mycatViews, Map<String, Object> context,
+    public static final CodeExecuterContext of(IdentityHashMap<RelNode,Integer> mycatViews, Map<String, Object> context,
                                                ArrayBindable bindable,
                                                String code, boolean forUpdate) {
         return new CodeExecuterContext(mycatViews, context, bindable, code, forUpdate);

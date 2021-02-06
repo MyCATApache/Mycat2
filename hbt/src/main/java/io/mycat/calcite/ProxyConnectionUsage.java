@@ -104,7 +104,7 @@ public class ProxyConnectionUsage {
                     @Override
                     public void onNext(Object @NonNull [] objects) {
                         LOGGER.debug(Arrays.stream(objects).filter(i->i!=null).map(i->i.getClass().toString())
-                                .collect(Collectors.joining(",")));
+                                .collect(Collectors.toList()).toString());
                         LOGGER.debug(Arrays.toString(objects));
 
                         observer.onNext(objects);

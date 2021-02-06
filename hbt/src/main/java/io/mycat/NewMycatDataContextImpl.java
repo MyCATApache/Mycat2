@@ -1,6 +1,7 @@
 package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
+import io.vertx.core.Future;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -95,7 +96,5 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
     public boolean isForUpdate() {
         return forUpdate;
     }
-
-
 
 }

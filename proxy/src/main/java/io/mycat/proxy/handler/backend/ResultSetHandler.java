@@ -282,7 +282,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         mySQLPacket.packetReadStartIndex(packetResolver.getEndPos());
       }
       if (isResponseFinished) {
-        ByteBuffer allocate = ByteBuffer.allocate(1);
+        ByteBuffer allocate = ByteBuffer.allocate(8192);
         if(mysql.channel().read(allocate)>0){
           throw new IllegalArgumentException();
         }

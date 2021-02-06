@@ -8,6 +8,7 @@ import org.apache.calcite.rel.RelNode;
 
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
@@ -19,13 +20,28 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
                                          List<Object> params,
                                          boolean forUpdate) {
         super(dataContext, context, params, forUpdate);
-        this.viewMap = map;
+
+        this.viewMap = new IdentityHashMap<>();
+        IdentityHashMap<RelNode, Integer> mycatViews = codeExecuterContext.getMycatViews();
+        for (Map.Entry<RelNode, List<Observable<Object[]>>> entry : map.entrySet()) {
+            RelNode key = entry.getKey();
+            List<Observable<Object[]>> observableList = entry.getValue().stream().map(i -> i.cache()).map(i -> {
+                if (mycatViews.get(key) > 1) {
+                    return (Observable.fromIterable(i.toList().blockingGet()));
+                } else {
+                    return i;
+                }
+            }).collect(Collectors.toList());
+            this.viewMap.put(key, observableList);
+        }
     }
 
 
     @Override
     public Enumerable<Object[]> getEnumerable(RelNode node) {
-        return Linq4j.asEnumerable(Observable.merge(getObservables(node)).blockingIterable());
+        Observable<Object[]> observable = getObservable(node);
+        Iterable<Object[]> iterable = observable.blockingIterable();
+        return Linq4j.asEnumerable(iterable);
     }
 
     @Override
@@ -35,15 +51,15 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
 
     @Override
     public Observable<Object[]> getObservable(RelNode node) {
-        List<Observable<Object[]>> observables = viewMap.get(node);
-        if (observables.size()==1){
+        List<Observable<Object[]>> observables = getObservables(node);
+        if (observables.size() == 1) {
             return observables.get(0);
         }
-        return  Observable.merge(observables);
+        return Observable.merge(observables);
     }
 
     @Override
     public List<Observable<Object[]>> getObservables(RelNode node) {
-        return (List) viewMap.get(node);
+        return viewMap.get(node);
     }
 }

@@ -36,8 +36,9 @@ public  class JdbcConnectionUsage {
                                                               CodeExecuterContext executerContext,
                                                               BiFunction<MycatDataContext,List<SQLKey>,T> function) {
         List<SQLKey> sqlKeys = new ArrayList<>();
-        List<RelNode> mycatViews = executerContext.getMycatViews();
-        for (RelNode mycatView : mycatViews) {
+        Map<RelNode, Integer> mycatViews = executerContext.getMycatViews();
+        for (Map.Entry<RelNode, Integer> e : mycatViews.entrySet()) {
+            RelNode mycatView = e.getKey();
             if (mycatView instanceof MycatView) {
                 MycatView mycatView1 = (MycatView) mycatView;
                 ImmutableMultimap<String, SqlString> multimap = mycatView1.expandToSql(executerContext.isForUpdate(), params);

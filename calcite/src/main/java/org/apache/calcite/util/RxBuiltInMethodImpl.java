@@ -52,7 +52,7 @@ public class RxBuiltInMethodImpl {
 
     public static Enumerable<Object[]> toEnumerable(Object input) {
         if (input instanceof Observable) {
-            return Linq4j.asEnumerable(((Observable) input).blockingIterable());
+            return Linq4j.asEnumerable(((Observable) input).cache().blockingIterable());
         }
         return (Enumerable<Object[]>) input;
     }
@@ -71,10 +71,6 @@ public class RxBuiltInMethodImpl {
         Flowable<T> flowable = Flowables.orderedMerge(inputs.stream().map(i -> i.toFlowable(BackpressureStrategy.BUFFER)).collect(Collectors.toList()),
                 sortFunction);
         return flowable.toObservable();
-    }
-
-    public static Observable<Object[]> matierial(Observable<Object[]> input) {
-        return input.cache();
     }
 
     public static Enumerable<Object[]> matierial(Enumerable<Object[]> input) {
