@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -229,33 +230,35 @@ public class MycatInsertExecutor implements Executor {
             }
         }
 
-        long lastInsertId = 0;
+        long lastInsertId =0;
         long affected = 0;
         SqlRecord sqlRecord = context.currentSqlRecord();
         if (group.size() == 1) {
             Map.Entry<SQL, Group> keyGroupEntry = group.entrySet().iterator().next();
             String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
             LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
+            String targetName = connections.keySet().iterator().next();
             Connection connection = connections.values().iterator().next().unwrap(Connection.class);
             try (PreparedStatement preparedStatement = connection.
                     prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
-                List<Object> objects = args.get(0);
-                setParams(preparedStatement, objects);
+                for (List<Object> arg : args) {
+                    List<Object> objects = arg;
+                    setParams(preparedStatement, objects);
 
-                long startTime = SqlRecord.now();
+                    long startTime = SqlRecord.now();
 
-                affected = preparedStatement.executeUpdate();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                if (generatedKeys != null) {
-                    if (generatedKeys.next()) {
-                        lastInsertId = generatedKeys.getLong(1);
-
+                    affected += preparedStatement.executeUpdate();
+                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                    if (generatedKeys != null) {
+                        if (generatedKeys.next()) {
+                            lastInsertId = Math.max(generatedKeys.getBigDecimal(1).longValue(),
+                                    lastInsertId);
+                        }
                     }
-                }
-                String targetName = connections.keySet().iterator().next();
-                sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    }
                 }
             }
         } else {
@@ -269,7 +272,7 @@ public class MycatInsertExecutor implements Executor {
                 long startTime = SqlRecord.now();
 
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
-                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
+                lastInsertId =Math.max(lastInsertId,res.getLastInsertId());
 
                 affected += res.getAffected();
 

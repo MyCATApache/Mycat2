@@ -284,7 +284,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 if (selectItem.getExpr() instanceof SQLAllColumnExpr){
 
                 }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
-                    selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                    if(!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())){
+                        selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                    }
                 }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
                     selectItem.setAlias(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
                 }else{

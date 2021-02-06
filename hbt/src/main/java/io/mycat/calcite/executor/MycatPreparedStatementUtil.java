@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -161,11 +162,11 @@ public class MycatPreparedStatementUtil {
                 }
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 while (generatedKeys.next()) {
-                    long aLong = generatedKeys.getLong(1);
+                    BigDecimal aLong = generatedKeys.getBigDecimal(1);
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("batch parameterizedSql:{} args:{} lastInsertId:{}", sql, value.args, aLong);
                     }
-                    lastInsertId = aLong;
+                    lastInsertId = aLong.longValue();
                 }
             } catch (Exception e) {
                 throw e;
