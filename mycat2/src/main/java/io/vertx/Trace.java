@@ -26,7 +26,7 @@ public enum Trace {
 
     private final AtomicLong traceIdIncr = new AtomicLong();
     @Getter
-    private final Queue<TraceSpan> traceSpanQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<TraceSpan> queue = new ConcurrentLinkedQueue<>();
 
     private final ExpiryLRUMap<Long, TraceTimeoutSpan> expiryLRUMap = new ExpiryLRUMap<>();
     private final Consumer<TraceTimeoutSpan> onCloseTimeout = span -> {
@@ -60,7 +60,7 @@ public enum Trace {
             TraceTimeoutSpan span = node.getData();
             span.setCreateTimestamp(node.getCreateTimestamp());
             span.setExpiryTimestamp(node.getExpiryTimestamp());
-            traceSpanQueue.offer(span);
+            queue.offer(span);
         });
     }
 
@@ -110,7 +110,7 @@ public enum Trace {
         if (isEnable()) {
             StackTraceElement[] stackTrace = stackTrace();
             TraceSpan span = new TraceSpan(currentThread(), traceId(), Arrays.copyOfRange(stackTrace, 2, stackTrace.length));
-            traceSpanQueue.offer(span);
+            queue.offer(span);
             return span;
         } else {
             return TraceSpan.EMPTY;
