@@ -13,6 +13,7 @@ package io.vertx.core.impl.future;
 
 import io.vertx.Trace;
 import io.vertx.TraceSpan;
+import io.vertx.TraceTimeoutSpan;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.impl.ContextInternal;
@@ -25,6 +26,7 @@ import lombok.AllArgsConstructor;
  */
 public final class PromiseImpl<T> extends FutureImpl<T> implements PromiseInternal<T>, Listener<T> {
     private final TraceSpan traceSpan = Trace.GLOBAL.span();
+    private final TraceTimeoutSpan traceTimeoutSpan = Trace.TIMEOUT.spanTimeoutPromise(this);
 
     /**
      * Create a promise that hasn't completed yet
@@ -84,6 +86,19 @@ public final class PromiseImpl<T> extends FutureImpl<T> implements PromiseIntern
         } else {
             onFailure(ar.cause());
         }
+    }
+
+
+    @Override
+    public boolean tryComplete(T result) {
+        traceTimeoutSpan.close();
+        return super.tryComplete(result);
+    }
+
+    @Override
+    public boolean tryFail(Throwable cause) {
+        traceTimeoutSpan.close();
+        return super.tryFail(cause);
     }
 
     @Override

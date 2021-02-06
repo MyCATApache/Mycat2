@@ -9,13 +9,13 @@ import java.util.StringJoiner;
 @Getter
 @AllArgsConstructor
 public class TraceSpan {
-    private final Thread createBy;
-    private final long traceId;
-    private final StackTraceElement[] stackTrace;
+    protected final Thread createBy;
+    protected final long traceId;
+    protected final StackTraceElement[] stackTrace;
 
     @Override
     public String toString() {
-        return "traceId=" + traceId + ",createBy=" + createBy + "," + stackTrace[2];
+        return "traceId=" + traceId + ",createBy=" + createBy.getName() + "," + stackTrace[2];
     }
 
     public String toLogString() {
@@ -30,7 +30,7 @@ public class TraceSpan {
                 "\t" + stackTraceJoiner;
     }
 
-    private String fixLength(String str, int length) {
+    protected String fixLength(String str, int length) {
         StringBuilder createByName = new StringBuilder(str);
         while (createByName.length() < length) {
             createByName.append(" ");

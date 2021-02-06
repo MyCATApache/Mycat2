@@ -63,7 +63,7 @@ public class TraceLogFileThread extends Thread {
             Trace trace = entry.getKey();
             OutputStream outputStream = entry.getValue();
             TraceSpan span;
-            while ((span = trace.getQueue().poll()) != null) {
+            while ((span = trace.getTraceSpanQueue().poll()) != null) {
                 byte[] bytes = span.toLogString().getBytes(StandardCharsets.UTF_8);
                 outputStream.write(bytes);
                 outputStream.write(newLine);
