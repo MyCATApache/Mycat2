@@ -27,9 +27,9 @@ public class TraceLogFileThread extends Thread {
     @Override
     public void run() {
         try {
-            init();
+            init(map);
             while (!isInterrupted()) {
-                writeFile();
+                writeFile(map);
                 Thread.sleep(50);
             }
         } finally {
@@ -40,9 +40,9 @@ public class TraceLogFileThread extends Thread {
         }
     }
 
-    private void init() throws IOException {
+    private static void init(Map<Trace, OutputStream> map) throws IOException {
         for (Trace value : Trace.values()) {
-            String fileName = System.getProperty("user.dir") + "/" + value.name().toLowerCase() + ".dump";
+            String fileName = System.getProperty("user.dir") + "/.trace/" + value.name().toLowerCase() + ".txt";
 
             File file = new File(fileName);
             File parentFile = file.getParentFile();
@@ -57,14 +57,16 @@ public class TraceLogFileThread extends Thread {
         }
     }
 
-    public void writeFile() throws IOException {
+    public static void writeFile(Map<Trace, OutputStream> map) throws IOException {
+        byte[] newLine = "\r\n".getBytes();
         for (Map.Entry<Trace, OutputStream> entry : map.entrySet()) {
             Trace trace = entry.getKey();
             OutputStream outputStream = entry.getValue();
             TraceSpan span;
             while ((span = trace.getQueue().poll()) != null) {
-                byte[] bytes = span.toString().getBytes(StandardCharsets.UTF_8);
+                byte[] bytes = span.toLogString().getBytes(StandardCharsets.UTF_8);
                 outputStream.write(bytes);
+                outputStream.write(newLine);
             }
             outputStream.flush();
         }

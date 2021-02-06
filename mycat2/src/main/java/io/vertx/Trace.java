@@ -4,6 +4,7 @@ import io.netty.util.concurrent.FastThreadLocal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,7 +34,8 @@ public enum Trace {
     }
 
     public static boolean isEnable() {
-        return ENABLE;
+        return true;
+//        return ENABLE;
     }
 
     static {
@@ -46,7 +48,8 @@ public enum Trace {
 
     public TraceSpan span() {
         if (isEnable()) {
-            TraceSpan span = new TraceSpan(currentThread(), traceId(), stackTrace());
+            StackTraceElement[] stackTrace = stackTrace();
+            TraceSpan span = new TraceSpan(currentThread(), traceId(), Arrays.copyOfRange(stackTrace,2,stackTrace.length));
             queue.offer(span);
             return span;
         } else {
@@ -58,7 +61,7 @@ public enum Trace {
         if (isEnable()) {
             return Thread.currentThread();
         } else {
-            return null;
+            return TraceSpan.EMPTY.getCreateBy();
         }
     }
 
@@ -66,7 +69,7 @@ public enum Trace {
         if (isEnable()) {
             return traceIdIncr.getAndIncrement();
         } else {
-            return 0;
+            return TraceSpan.EMPTY.getTraceId();
         }
     }
 
@@ -74,7 +77,7 @@ public enum Trace {
         if (isEnable()) {
             return new Throwable().getStackTrace();
         } else {
-            return null;
+            return TraceSpan.EMPTY.getStackTrace();
         }
     }
 

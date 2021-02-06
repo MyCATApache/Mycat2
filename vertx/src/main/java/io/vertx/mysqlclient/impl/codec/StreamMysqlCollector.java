@@ -20,6 +20,10 @@ public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
     void onRow(Row row);
 
+    default void onFinish(int sequenceId,int serverStatusFlags,long affectedRows, long lastInsertId){
+
+    }
+
     @Override
     default Supplier<Void> supplier() {
         return ()-> null;
