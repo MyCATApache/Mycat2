@@ -1,6 +1,7 @@
 package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.RelNode;
@@ -8,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JdbcMycatDataContextImpl extends NewMycatDataContextImpl {
     private final IdentityHashMap<RelNode, List<Enumerable<Object[]>>> viewMap;
@@ -19,7 +22,19 @@ public class JdbcMycatDataContextImpl extends NewMycatDataContextImpl {
                                     List<Object> params,
                                     boolean forUpdate) {
         super(dataContext, context, params, forUpdate);
-        this.viewMap = viewMap;
+        this.viewMap = new IdentityHashMap<>();
+        IdentityHashMap<RelNode, Integer> mycatViews = codeExecuterContext.getMycatViews();
+        for (Map.Entry<RelNode, List<Enumerable<Object[]>>> entry : viewMap.entrySet()) {
+            RelNode key = entry.getKey();
+            List<Enumerable<Object[]>> observableList = entry.getValue().stream().map(i -> {
+                if (mycatViews.get(key) > 1) {
+                    return Linq4j.asEnumerable(i.toList());
+                } else {
+                    return i;
+                }
+            }).collect(Collectors.toList());
+            this.viewMap.put(key, observableList);
+        }
     }
 
     /**

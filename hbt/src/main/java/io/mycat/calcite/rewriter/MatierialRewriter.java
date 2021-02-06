@@ -154,15 +154,15 @@ public class MatierialRewriter extends RelShuttleImpl {
     }
 
     private static RelNode matierial(MycatHashJoin mycatHashJoin) {
-        MatierialDetector matierialDetector = new MatierialDetector();
-        mycatHashJoin.getRight().accept(matierialDetector);
-        if (!matierialDetector.isMatierial()) {
-            return mycatHashJoin.copy(mycatHashJoin.getTraitSet(),
-                    ImmutableList.of(mycatHashJoin.getLeft(),
-                            MycatMatierial.create((MycatRel) mycatHashJoin.getRight())));
-        } else {
+//        MatierialDetector matierialDetector = new MatierialDetector();
+//        mycatHashJoin.getRight().accept(matierialDetector);
+//        if (!matierialDetector.isMatierial()) {
+//            return mycatHashJoin.copy(mycatHashJoin.getTraitSet(),
+//                    ImmutableList.of(mycatHashJoin.getLeft(),
+//                            MycatMatierial.create((MycatRel) mycatHashJoin.getRight())));
+//        } else {
             return mycatHashJoin;
-        }
+//        }
     }
 
     public static class MatierialDetector extends RelShuttleImpl {
