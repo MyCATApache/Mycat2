@@ -17,6 +17,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.util.Collections;
+
 public class MycatMysqlResponse extends VertxResponse {
     private final XaSqlConnection xAConnection;
 
@@ -102,7 +104,7 @@ public class MycatMysqlResponse extends VertxResponse {
             case QUERY:
             case QUERY_MASTER:
                 Future<RowObservable> rowObservableFuture =Future.succeededFuture(
-                        VertxExecuter.runQuery(connection, sql)
+                        VertxExecuter.runQuery(connection, sql, Collections.emptyList(),null)
                 );
                 Future<PromiseInternal<Void>> map = rowObservableFuture.map(this::sendResultSet);
                 map.onSuccess(event -> promise.tryComplete()).onFailure(throwable -> promise.fail(throwable));

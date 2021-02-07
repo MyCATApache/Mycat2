@@ -141,21 +141,24 @@ public class Distribution {
         builder.addAll(right);
         return builder.build();
     }
-    public Stream<Map<String, DataNode>> getDataNodes(){
-       return getDataNodes(table -> table.dataNodes());
+
+    public Stream<Map<String, DataNode>> getDataNodes() {
+        return getDataNodes(table -> table.dataNodes());
     }
-    public Iterable<DataNode> getDataNodesAsSingleTableUpdate(List<RexNode> conditions,List<Object> readOnlyParameters){
-        if (normalTables.size() == 1){
+
+    public Iterable<DataNode> getDataNodesAsSingleTableUpdate(List<RexNode> conditions, List<Object> readOnlyParameters) {
+        if (normalTables.size() == 1) {
             return Collections.singletonList(normalTables.get(0).getDataNode());
         }
-        if (globalTables.size() == 1){
+        if (globalTables.size() == 1) {
             return ImmutableList.copyOf(globalTables.get(0).getGlobalDataNode());
         }
-        if (shardingTables.size() == 1){
-            return PredicateAnalyzer.analyze(shardingTables.get(0),conditions,readOnlyParameters);
+        if (shardingTables.size() == 1) {
+            return PredicateAnalyzer.analyze(shardingTables.get(0), conditions, readOnlyParameters);
         }
         throw new UnsupportedOperationException();
     }
+
     public Stream<Map<String, DataNode>> getDataNodes(Function<ShardingTable, List<DataNode>> function) {
         switch (this.type()) {
             case BroadCast:
@@ -179,37 +182,37 @@ public class Distribution {
                 String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
                 List<DataNode> primaryTableFilterDataNodes = function.apply(shardingTable);
                 Map<String, List<DataNode>> collect = this.shardingTables.stream()
-                        .collect(Collectors.toMap(k -> k.getUniqueName(), v ->v.getShardingFuntion().calculate(Collections.emptyMap())));
-                List<Map<String, DataNode>> res = new ArrayList<>();
-                int size =primaryTableFilterDataNodes.size();
-                for (int i = 0; i < size; i++) {
-                    res.add(new HashMap<>(globalMap));
-                }
+                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
+
                 List<Integer> mappingIndex = new ArrayList<>();
-                Set<String> allDataNodeUniqueNames =  collect.get(primaryTableUniqueName).stream().map(i->i.getUniqueName()).collect(Collectors.toSet());
+                Set<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().map(i -> i.getUniqueName()).collect(Collectors.toSet());
                 {
-                    int index = 0;
+
                     for (DataNode filterDataNode : primaryTableFilterDataNodes) {
-                        boolean find = allDataNodeUniqueNames.contains(filterDataNode.getUniqueName());
-                        if (find) {
-                            mappingIndex.add(index);
+                        int index = 0;
+                        for (String allDataNodeUniqueName : allDataNodeUniqueNames) {
+                            if (allDataNodeUniqueName.equals(filterDataNode.getUniqueName())) {
+                                mappingIndex.add(index);
+                                break;
+                            }
+                            index++;
                         }
-                        index++;
+
                     }
                 }
+                TreeMap<Integer,Map<String, DataNode>> res = new TreeMap<>();
                 {
                     for (Map.Entry<String, List<DataNode>> e : collect.entrySet()) {
                         String key = e.getKey();
                         List<DataNode> dataNodes = e.getValue();
-                        int index = 0;
                         for (Integer integer : mappingIndex) {
-                            Map<String, DataNode> stringDataNodeMap = res.get(integer);
-                            stringDataNodeMap.put(key, dataNodes.get(index));
-                            index++;
+                            Map<String, DataNode> stringDataNodeMap = res.computeIfAbsent(integer, integer1 -> new HashMap<>());
+                            stringDataNodeMap.put(key, dataNodes.get(integer));
+                            stringDataNodeMap.putAll(globalMap);
                         }
                     }
                 }
-                return res.stream();
+                return res.values().stream();
             }
             default:
                 throw new IllegalStateException("Unexpected value: " + this.type());

@@ -27,6 +27,7 @@ import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
@@ -190,7 +191,7 @@ public class ReceiverImpl implements Response {
             case QUERY_MASTER: {
                 Future<Void> future = connectionFuture.flatMap(connection -> {
                     RowObservable rowObservable = VertxExecuter.runQuery(Future.succeededFuture(
-                            connection), sql);
+                            connection), sql, Collections.emptyList(),null);
                     if (!inTransaction) {
                         return sendResultSet(ProxyConnectionUsage.wrapAsAutoCloseConnectionRowObservale(
                                 connection, rowObservable));

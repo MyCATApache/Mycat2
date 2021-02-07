@@ -1,5 +1,8 @@
 package io.mycat.calcite;
 
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.util.MycatRowMetaDataImpl;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
@@ -16,5 +19,8 @@ public  class SQLKey {
         this.mycatView = mycatView;
         this.targetName = targetName;
         this.sql = value;
+    }
+     public MycatRowMetaData getRowMetaData(){
+        return new CalciteRowMetaData(mycatView.getRowType().getFieldList());
     }
 }

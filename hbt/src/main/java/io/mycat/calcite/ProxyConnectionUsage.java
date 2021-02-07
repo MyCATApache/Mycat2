@@ -68,7 +68,8 @@ public class ProxyConnectionUsage {
                         LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
                         SqlConnection sqlConnection = sqlConnections.pop();
                         Future<RowObservable> future = Future.succeededFuture(VertxExecuter.runQuery(Future.succeededFuture(sqlConnection), target.getSql().getSql(),
-                                MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters())));
+                                MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters()),
+                                target.getRowMetaData()));
                         objects.add(future.map(rowObservable -> {
                             synchronized (resMap) {
                                 List<RowObservable> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
@@ -94,6 +95,11 @@ public class ProxyConnectionUsage {
             }
 
             @Override
+            public void setRowMetaData(MycatRowMetaData metaData) {
+                rowObservable.setRowMetaData(metaData);
+            }
+
+            @Override
             protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
                 rowObservable.subscribe(new Observer<Object[]>() {
                     @Override
@@ -105,6 +111,11 @@ public class ProxyConnectionUsage {
                     public void onNext(Object @NonNull [] objects) {
                         LOGGER.debug(Arrays.stream(objects).filter(i->i!=null).map(i->i.getClass().toString())
                                 .collect(Collectors.toList()).toString());
+                        String s = Arrays.stream(objects).filter(i -> i != null).map(i -> i.getClass().toString())
+                                .collect(Collectors.toList()).toString();
+                        if (s.contains("Integer")){
+                            throw new UnsupportedOperationException();
+                        }
                         LOGGER.debug(Arrays.toString(objects));
 
                         observer.onNext(objects);
@@ -216,7 +227,8 @@ public class ProxyConnectionUsage {
             Future<RowObservable> rowObservableFuture = Future.succeededFuture(VertxExecuter.runQuery(
                     Future.succeededFuture(connection2),
                     sqlKey.getSql().getSql(),
-                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())
+                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters()),
+                    sqlKey.getRowMetaData()
             ));
             return rowObservableFuture.flatMap(rowObservable -> {
                 PromiseInternal<Void> promise = VertxUtil.newPromise();
@@ -348,7 +360,8 @@ public class ProxyConnectionUsage {
             Future<RowObservable> rowObservableFuture = Future.succeededFuture(VertxExecuter.runQuery(
                     Future.succeededFuture(connection2),
                     sqlKey.getSql().getSql(),
-                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters())));
+                    MycatPreparedStatementUtil.extractParams(params, sqlKey.getSql().getDynamicParameters()),
+                    sqlKey.getRowMetaData()));
             return rowObservableFuture.map(rowObservable -> {
                 synchronized (ProxyConnectionUsage.this) {
                     List<RowObservable> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());

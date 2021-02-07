@@ -113,23 +113,28 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     processor.getMycatWorker().execute(new Runnable() {
                         @Override
                         public void run() {
-                            AsyncMycatDataContextImplImpl newMycatDataContext =
-                                    new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
-                            Object bindObservable;
+                            try {
+                                AsyncMycatDataContextImplImpl newMycatDataContext =
+                                        new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
+                                Object bindObservable;
 //                            if(codeExecuterContext.getCode().contains("hashJoin(org")){
 //                                bindObservable = bindObservable(newMycatDataContext);
 //                            }else {
                                 bindObservable = bindable.bindObservable(newMycatDataContext);
 //                            }
-                            if (bindObservable instanceof Observable) {
-                                Observable<Object[]> observable = (Observable) bindObservable;
-                                observable.subscribe(observer);
-                            } else {
-                                Enumerable<Object[]> observable = (Enumerable) bindObservable;
-                                List<Object[]> objects = observable.toList();
-                                Observable<Object[]> observable1 = Observable.fromIterable(objects);
-                                observable1.subscribe(observer);
+                                if (bindObservable instanceof Observable) {
+                                    Observable<Object[]> observable = (Observable) bindObservable;
+                                    observable.subscribe(observer);
+                                } else {
+                                    Enumerable<Object[]> observable = (Enumerable) bindObservable;
+                                    List<Object[]> objects = observable.toList();
+                                    Observable<Object[]> observable1 = Observable.fromIterable(objects);
+                                    observable1.subscribe(observer);
+                                }
+                            }catch (Throwable throwable){
+                                observer.onError(throwable);
                             }
+
                         }
                     });
 

@@ -418,7 +418,7 @@ public class MySQLClientSession extends
     public void switchNioHandler(NIOHandler nioHandler) {
         this.nioHandler = nioHandler;
         if (nioHandler == null && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("switchNioHandler:{} sessionId:{}", nioHandler,sessionId(),new Throwable());
+            LOGGER.debug("switchNioHandler:{} sessionId:{}", nioHandler,sessionId());
         }
     }
 

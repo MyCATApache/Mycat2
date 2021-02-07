@@ -38,7 +38,7 @@ public class RowSetQuery implements Query<RowSet<Row>> {
         this.sql = sql;
         this.mySQLClientSession = mySQLClientSession;
         if (LOGGER.isDebugEnabled()){
-            LOGGER.debug("RowSetQuery sessionId:{}",mySQLClientSession.mySQLClientSession.sessionId(),new Throwable());
+            LOGGER.debug("RowSetQuery sessionId:{}",mySQLClientSession.mySQLClientSession.sessionId());
         }
     }
 

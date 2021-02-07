@@ -4,34 +4,25 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.mchange.util.AssertException;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
-import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.executor.Group;
 import io.mycat.calcite.executor.MycatInsertExecutor;
 import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.mysqlclient.MySQLClient;
-import io.vertx.mysqlclient.impl.MySQLRowDesc;
-import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
-import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
-import io.vertx.sqlclient.*;
-import io.vertx.sqlclient.desc.ColumnDescriptor;
-import io.vertx.sqlclient.impl.command.QueryCommandBase;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Tuple;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -61,8 +52,11 @@ public class VertxExecuter {
         if (list.isEmpty()) {
             throw new AssertException();
         }
-        return CompositeFuture.all((List) list).map(new SumInsertResult(list));
-
+        return CompositeFuture.all((List) list)
+                .map(compositeFuture -> list.stream().map(l -> l.result())
+                   .reduce((longs, longs2) ->
+                           new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                   .orElse(new long[2]));
     }
 
 
@@ -88,153 +82,14 @@ public class VertxExecuter {
                     (a, b) -> b)),
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
-        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel, res));
-    }
-
-    public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
-        return new RowObservableImpl(sqlConnectionFuture, sql, values);
-    }
-
-    static class RowObservableImpl extends RowObservable implements StreamMysqlCollector {
-        MycatRowMetaData metaData;
-        private Observer<? super Object[]> observer;
-        private final Future<SqlConnection> sqlConnectionFuture;
-        private final String sql;
-        private final List<Object> values;
-        private ColumnDefinition[] columnDefinitions;
-
-        public RowObservableImpl(Future<SqlConnection> sqlConnectionFuture, String sql, List<Object> values) {
-            this.sqlConnectionFuture = sqlConnectionFuture;
-            this.sql = sql;
-            this.values = values;
-
-
-        }
-
-        @Override
-        public MycatRowMetaData getRowMetaData() {
-            return metaData;
-        }
-
-        @Override
-        protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-            this.observer = observer;
-            sqlConnectionFuture
-                    .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
-                PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("RowObservableImpl sql:{} connection:{}", sql, sqlConnectionFuture.result());
-                }
-                PreparedQuery<SqlResult<Void>> collecting = query.collecting(this);
-                return collecting.execute(Tuple.tuple(values));
-            }).onSuccess(new Handler<SqlResult<Void>>() {
-                @Override
-                public void handle(SqlResult<Void> event) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("subscribeActual successful sql:{} connection:{}", sql, sqlConnectionFuture.result());
-                    }
-                    observer.onComplete();
-                }
-            }).onFailure(event -> {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.error("subscribeActual error sql:{}", sql);
-                }
-                this.observer.onError(event);
-            });
-        }
-
-        @Override
-        public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
-            this.columnDefinitions = columnDefinitions.columnDefinitions();
-            this.metaData = toColumnMetaData(columnDefinitions.columnDescriptor());
-            this.observer.onSubscribe(Disposable.disposed());
-        }
-
-        @Override
-        public void onRow(Row row) {
-            int size = this.columnDefinitions.length;
-            Object[] objects = new Object[size];
-            for (int i = 0; i < size; i++) {
-                switch (this.columnDefinitions[i].type()) {
-                    case INT1:
-                    case INT2:
-                    case INT3:
-                    case INT4:
-                        objects[i] = row.getLong(i);
-                        break;
-                    case NUMERIC:
-                    case INT8:
-                        objects[i] = row.getBigDecimal(i);
-                        break;
-                    case DOUBLE:
-                    case FLOAT:
-                        objects[i] = row.getDouble(i);
-                        break;
-                    case STRING:
-                    case VARSTRING:
-                        objects[i] = row.getString(i);
-                        break;
-                    case LONGBLOB:
-                    case MEDIUMBLOB:
-                    case BLOB:
-                    case TINYBLOB:
-                        Buffer buffer = row.getBuffer(i);
-                        if (buffer == null) {
-                            objects[i] = null;
-                        } else {
-                            objects[i] = buffer.getBytes();
-                        }
-                        break;
-                    case DATE:
-                        objects[i] = row.getLocalDate(i);
-                        break;
-                    case TIME:
-                        objects[i] = (Duration) row.getValue(i);
-                        break;
-                    case DATETIME:
-                        objects[i] = row.getLocalDateTime(i);
-                        break;
-                    case YEAR:
-                        objects[i] = row.getShort(i);
-                        break;
-                    case TIMESTAMP:
-                        objects[i] = row.getLocalDateTime(i);
-                        break;
-                    case BIT:
-                        objects[i] = row.getBoolean(i);
-                        break;
-                    case JSON:
-                        objects[i] = row.getString(i);
-                        break;
-                    case NULL:
-                        objects[i] = null;
-                        break;
-                    case UNBIND:
-                    case GEOMETRY:
-                    default:
-                        throw new IllegalStateException("Unexpected value: " + this.columnDefinitions[i].type());
-                }
-            }
-            observer.onNext(objects);
-        }
+        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res));
     }
 
     public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture,
-                                         String sql) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("runQuery");
-        }
-        return new RowObservableImpl(sqlConnectionFuture, sql, Collections.emptyList());
-    }
-
-    private static MycatRowMetaData toColumnMetaData(List<ColumnDescriptor> event) {
-        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-        for (ColumnDescriptor columnDescriptor : event) {
-            resultSetBuilder.addColumnInfo(columnDescriptor.name(),
-                    columnDescriptor.jdbcType());
-        }
-        RowBaseIterator build = resultSetBuilder.build();
-        return build.getMetaData();
+                                         String sql,
+                                         List<Object> values,
+                                         MycatRowMetaData rowMetaData) {
+        return new BaseRowObservable(sqlConnectionFuture, sql, values,rowMetaData);
     }
 
     public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
@@ -244,13 +99,13 @@ public class VertxExecuter {
     public static Future<long[]> runUpdate(Map<String, List<Object>> updateMap,
                                            Future<SqlConnection> sqlConnectionFuture) {
         List<long[]> list = Collections.synchronizedList(new ArrayList<>());
-        Future future = Future.succeededFuture();
+        Future<Void> future = Future.succeededFuture();
         for (Map.Entry<String, List<Object>> e : updateMap.entrySet()) {
             String sql = e.getKey();
             List<Object> values = e.getValue();
             future = future.flatMap(new UpdateByConnection(sqlConnectionFuture, sql, values, list));
         }
-        return future.map(new SimpleSumUpdateResult(list));
+        return future.map(sumUpdateResult(list));
     }
 
     public static Future<long[]> runInsert(
@@ -282,75 +137,34 @@ public class VertxExecuter {
                         });
             });
         }
-        return future.map(new SimpleSumInsertResult(list));
+        return future.map(sumUpdateResult(list));
     }
 
-    private static class SumInsertResult implements Function<CompositeFuture, long[]> {
-        private final List<Future<long[]>> list;
-
-        public SumInsertResult(List<Future<long[]>> list) {
-            this.list = list;
-        }
-
-        @Override
-        public long[] apply(CompositeFuture r) {
-            return list.stream().map(l -> l.result())
-                    .reduce((longs, longs2) ->
-                            new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                    .orElse(new long[2]);
-        }
+    @NotNull
+    private static Function<Void, long[]> sumUpdateResult(List<long[]> list) {
+        return unused -> list.stream()
+                .reduce(new long[]{0, 0},
+                        (longs1, longs2) ->
+                                new long[]{longs1[0] + longs2[0],
+                                        Math.max(longs1[1], longs2[1])});
     }
 
     private static class SumUpdateResult implements Function<CompositeFuture, long[]> {
-        private final MycatUpdateRel updateRel;
+        private final boolean global;
         private final List<Future<long[]>> res;
 
-        public SumUpdateResult(MycatUpdateRel updateRel, List<Future<long[]>> res) {
-            this.updateRel = updateRel;
+        public SumUpdateResult(boolean global, List<Future<long[]>> res) {
+            this.global = global;
             this.res = res;
         }
 
         @Override
         public long[] apply(CompositeFuture r) {
-            return updateRel.isGlobal() ? res.get(0).result() :
+            return this.global ? res.get(0).result() :
                     res.stream().map(l -> l.result())
                             .reduce((longs, longs2) ->
                                     new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
                             .orElse(new long[2]);
-        }
-    }
-
-    private static class SimpleSumUpdateResult implements Function<long[], long[]> {
-        private final List<long[]> list;
-
-        public SimpleSumUpdateResult(List<long[]> list) {
-            this.list = list;
-        }
-
-        @Override
-        public long[] apply(long[] longs) {
-            return list.stream()
-                    .reduce(new long[]{0, 0},
-                            (longs1, longs2) ->
-                                    new long[]{longs1[0] + longs2[0],
-                                            Math.max(longs1[1], longs2[1])});
-        }
-    }
-
-    private static class SimpleSumInsertResult implements Function<Void, long[]> {
-        private final List<long[]> list;
-
-        public SimpleSumInsertResult(List<long[]> list) {
-            this.list = list;
-        }
-
-        @Override
-        public long[] apply(Void unused) {
-            return list.stream()
-                    .reduce(new long[]{0, 0},
-                            (longs1, longs2) ->
-                                    new long[]{longs1[0] + longs2[0],
-                                            Math.max(longs1[1], longs2[1])});
         }
     }
 
