@@ -10,11 +10,13 @@ import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxResponse;
 import io.mycat.vertx.VertxSession;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.Collections;
@@ -103,11 +105,12 @@ public class MycatMysqlResponse extends VertxResponse {
         switch (executeType) {
             case QUERY:
             case QUERY_MASTER:
-                Future<RowObservable> rowObservableFuture =Future.succeededFuture(
-                        VertxExecuter.runQuery(connection, sql, Collections.emptyList(),null)
-                );
-                Future<PromiseInternal<Void>> map = rowObservableFuture.map(this::sendResultSet);
-                map.onSuccess(event -> promise.tryComplete()).onFailure(throwable -> promise.fail(throwable));
+                Observable<MysqlPacket> mysqlPacketObservable = VertxExecuter.runQuery(connection, sql, Collections.emptyList(), null);
+//                Future<PromiseInternal<Void>> map = rowObservableFuture.map(this::sendResultSet);
+//                map.onSuccess(event -> promise.tryComplete()).onFailure(throwable -> promise.fail(throwable));
+                sendResultSet(mysqlPacketObservable)
+                        .onSuccess(promise::tryComplete)
+                        .onFailure(promise::tryFail);
                 break;
             case INSERT:
             case UPDATE:
@@ -134,7 +137,7 @@ public class MycatMysqlResponse extends VertxResponse {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
         count++;
         PromiseInternal<Void> promise = VertxUtil.newPromise();
         rowIterable.subscribe(new ObserverWrite(new ObserverTask(rowIterable) {
@@ -159,14 +162,14 @@ public class MycatMysqlResponse extends VertxResponse {
         return promise;
     }
 
-    @Override
-    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
-        return getPromiseInternal(new IterableTask(rowIterable) {
-            @Override
-            public void onCloseResource() {
-                dataContext.getTransactionSession().closeStatenmentState();
-                xAConnection.closeStatementState();
-            }
-        });
+//    @Override
+//    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
+//        return getPromiseInternal(new IterableTask(rowIterable) {
+//            @Override
+//            public void onCloseResource() {
+//                dataContext.getTransactionSession().closeStatenmentState();
+//                xAConnection.closeStatementState();
+//            }
+//        });
     }
 }

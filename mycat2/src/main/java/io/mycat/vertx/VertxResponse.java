@@ -12,9 +12,14 @@ import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.mysqlclient.impl.codec.MySQLColumnDef;
+import io.vertx.mysqlclient.impl.codec.MysqlEnd;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
+import io.vertx.mysqlclient.impl.codec.MysqlRow;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -73,16 +78,16 @@ public abstract class VertxResponse implements Response {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    @Override
-    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
-        // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
-        return getPromiseInternal(new IterableTask(rowIterable) {
-            @Override
-            public void onCloseResource() {
-                dataContext.getTransactionSession().closeStatenmentState();
-            }
-        });
-    }
+//    @Override
+//    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
+//        // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
+//        return getPromiseInternal(new IterableTask(rowIterable) {
+//            @Override
+//            public void onCloseResource() {
+//                dataContext.getTransactionSession().closeStatenmentState();
+//            }
+//        });
+//    }
 
     protected PromiseInternal getPromiseInternal(IterableTask iterableTask) {
         RowBaseIterator resultSet = iterableTask.rowIterable.get();
@@ -185,28 +190,73 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
         count++;
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        rowIterable.subscribe();
-        ObserverWrite observerWrite = new ObserverWrite(new ObserverTask(rowIterable) {
-            @Override
-            public void onCloseResource() {
-                dataContext.getTransactionSession().closeStatenmentState();
-            }
+        mysqlPacketObservable.subscribe(new Observer<MysqlPacket>() {
+                    private Disposable disposable;
 
-            @Override
-            public void onError(Throwable throwable) {
-                promise.fail(throwable);
-            }
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+                        this.disposable = d;
+                    }
 
-            @Override
-            public void onComplete() {
-                promise.tryComplete();
-            }
-        });
-        rowIterable.subscribe(observerWrite);
+                    @Override
+                    public void onNext(@NonNull MysqlPacket next) {
+                        if (next instanceof MySQLColumnDef) {
+                            session.writeBytes(next.toBytes(), false);
+                        } else if (next instanceof MysqlRow) {
+                            session.writeBytes(next.toBytes(), false);
+                        } else if (next instanceof MysqlEnd) {
+                            session.writeColumnEndPacket();
+                        } else {
+                            disposable.dispose();
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable throwable) {
+                        promise.tryFail(throwable);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        promise.tryComplete();
+                    }
+                });
         return promise;
+
+//        MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
+//        this.moreResultSet = count < size;
+//        session.writeColumnCount(rowMetaData.getColumnCount());
+//        if (!binary) {
+//            this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+//        } else {
+//            this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+//        }
+//        Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+//        while (columnIterator.hasNext()) {
+//            session.writeBytes(columnIterator.next(), false);
+//        }
+//        session.writeColumnEndPacket();
+//        ObserverWrite observerWrite = new ObserverWrite(new ObserverTask(rowIterable) {
+//            @Override
+//            public void onCloseResource() {
+//                dataContext.getTransactionSession().closeStatenmentState();
+//            }
+//
+//            @Override
+//            public void onError(Throwable throwable) {
+//                promise.fail(throwable);
+//            }
+//
+//            @Override
+//            public void onComplete() {
+//                promise.tryComplete();
+//            }
+//        });
+//        rowIterable.subscribe(observerWrite);
+//        return promise;
     }
 
 

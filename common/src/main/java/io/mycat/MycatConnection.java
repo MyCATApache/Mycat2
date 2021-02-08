@@ -2,6 +2,8 @@ package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.reactivex.rxjava3.core.Observable;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
 
 public interface MycatConnection extends AutoCloseable, Wrapper {
 
@@ -11,5 +13,5 @@ public interface MycatConnection extends AutoCloseable, Wrapper {
 
     public boolean isClosed();
 
-    public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql);
+    public Observable<MysqlPacket> executeQuery(MycatRowMetaData mycatRowMetaData, String sql);
 }

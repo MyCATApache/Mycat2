@@ -17,12 +17,14 @@ import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +88,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
@@ -190,13 +192,13 @@ public class ReceiverImpl implements Response {
             case QUERY:
             case QUERY_MASTER: {
                 Future<Void> future = connectionFuture.flatMap(connection -> {
-                    RowObservable rowObservable = VertxExecuter.runQuery(Future.succeededFuture(
+                    Observable<MysqlPacket> mysqlPacketObservable = VertxExecuter.runQuery(Future.succeededFuture(
                             connection), sql, Collections.emptyList(),null);
                     if (!inTransaction) {
                         return sendResultSet(ProxyConnectionUsage.wrapAsAutoCloseConnectionRowObservale(
-                                connection, rowObservable));
+                                connection, mysqlPacketObservable));
                     } else {
-                        return sendResultSet(rowObservable);
+                        return sendResultSet(mysqlPacketObservable);
                     }
                 });
                 future.onComplete(event -> {
@@ -247,7 +249,7 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
         count++;
         boolean hasMoreResultSet = hasMoreResultSet();
         PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();

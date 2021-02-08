@@ -3,7 +3,9 @@ package io.mycat;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIterable;
 import io.mycat.api.collector.RowObservable;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
 
 import java.util.function.Supplier;
 
@@ -19,18 +21,18 @@ public interface Response {
 
     PromiseInternal<Void> sendError(String errorMessage, int errorCode);
 
-    PromiseInternal<Void> sendResultSet(RowIterable rowIterable);
+//    PromiseInternal<Void> sendResultSet(RowIterable rowIterable);
 
-    default PromiseInternal<Void> sendResultSet(Supplier<RowBaseIterator> rowBaseIteratorSupplier) {
+    default PromiseInternal<Void> sendResultSet(Supplier<Observable<MysqlPacket>> rowBaseIteratorSupplier) {
         return sendResultSet(rowBaseIteratorSupplier.get());
     }
+//
+//    default PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
+//        return sendResultSet(RowIterable.create(rowBaseIterator));
+//    }
 
-    default PromiseInternal<Void> sendResultSet(RowBaseIterator rowBaseIterator) {
-        return sendResultSet(RowIterable.create(rowBaseIterator));
-    }
 
-
-    default PromiseInternal<Void> sendResultSet(RowObservable rowIterable){
+    default PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable){
         throw new UnsupportedOperationException();
     }
 

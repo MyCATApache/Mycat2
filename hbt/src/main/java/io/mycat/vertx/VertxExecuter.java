@@ -12,13 +12,12 @@ import io.mycat.calcite.executor.MycatUpdateExecutor;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLClient;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Tuple;
+import io.vertx.mysqlclient.impl.codec.MysqlPacket;
+import io.vertx.sqlclient.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,11 +84,38 @@ public class VertxExecuter {
         return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res));
     }
 
-    public static RowObservable runQuery(Future<SqlConnection> sqlConnectionFuture,
-                                         String sql,
-                                         List<Object> values,
-                                         MycatRowMetaData rowMetaData) {
-        return new BaseRowObservable(sqlConnectionFuture, sql, values,rowMetaData);
+    public static Observable<MysqlPacket> runQuery(Future<SqlConnection> connectionFuture,
+                                                   String sql,
+                                                   List<Object> values,
+                                                   MycatRowMetaData rowMetaData) {
+        return Observable.create(emitter -> {
+            // 连接到达
+            connectionFuture.onSuccess(connection->{
+                // 预编译到达
+                connection.prepare(sql)
+                        .onSuccess(preparedStatement->{
+                            // 查询结果到达
+                            PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+                            query.collecting(new EmitterStreamMysqlCollector(emitter)).execute(Tuple.tuple(values));
+                        })
+                        .onFailure(throwable -> {
+                            System.out.println("throwable = " + throwable);
+                        });
+            }).onFailure(throwable -> {
+                System.out.println("throwable = " + throwable);
+            });
+        });
+//
+//        connectionFuture
+//                .flatMap(connection -> connection.prepare(sql)).compose(preparedStatement -> {
+//            PreparedQuery<RowSet<Row>> query = preparedStatement.query();
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("RowObservableImpl sql:{} connection:{}", sql, connectionFuture.result());
+//            }
+//            PreparedQuery<SqlResult<Void>> collecting = query.collecting(new StreamMysqlCollector);
+//            return collecting.execute(Tuple.tuple(values));
+//        }).
+//        return new BaseRowObservable(connectionFuture, sql, values,rowMetaData);
     }
 
     public static Future<long[]> runUpdate(Future<SqlConnection> sqlConnectionFuture, String sql) {
