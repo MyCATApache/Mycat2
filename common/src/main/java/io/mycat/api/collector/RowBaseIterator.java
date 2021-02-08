@@ -17,7 +17,7 @@ import java.util.Map;
  * date 2019-05-22 01:17
  * a simple proxy collector as map
  **/
-public interface RowBaseIterator extends Closeable, BaseIterator {
+public interface RowBaseIterator extends Closeable, BaseIterator{
 
     MycatRowMetaData getMetaData();
 
@@ -57,6 +57,10 @@ public interface RowBaseIterator extends Closeable, BaseIterator {
 
     Object getObject(int columnIndex);
 
+    default Object[] getObjects() {
+        return getObjects(getMetaData().getColumnCount());
+    }
+
     default Object[] getObjects(int count) {
         Object[] objects = new Object[count];
         for (int i = 0; i < count; i++) {
@@ -84,5 +88,4 @@ public interface RowBaseIterator extends Closeable, BaseIterator {
         }
         return resultList;
     }
-
 }
