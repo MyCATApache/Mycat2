@@ -20,6 +20,7 @@ import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.command.QueryCommandBase;
 import org.apache.calcite.rel.type.RelDataType;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ import java.util.List;
 
 import static java.sql.Types.*;
 
-public class BaseRowObservable extends RowObservable implements StreamMysqlCollector {
+public class  BaseRowObservable extends RowObservable implements StreamMysqlCollector {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseRowObservable.class);
     protected MycatRowMetaData metaData;
     protected Observer<? super Object[]> observer;
@@ -76,7 +77,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
     }
 
     @Override
-    public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+    public void onColumnDefinitions(MySQLRowDesc columnDefinitions) {
         this.columnDefinitions = columnDefinitions.columnDefinitions();
         if (this.metaData == null) {
             this.metaData = toColumnMetaData(columnDefinitions.columnDescriptor());
@@ -88,8 +89,14 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
     public void onRow(Row row) {
         MycatRowMetaData metaData = this.metaData;
         int columnCount = this.metaData.getColumnCount();
-        Object[] objects = new Object[columnCount];
-        for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+        Object[] objects = getObjects(row, metaData);
+        observer.onNext(objects);
+    }
+
+    @NotNull
+    public static Object[] getObjects(Row row, MycatRowMetaData metaData) {
+        Object[] objects = new Object[metaData.getColumnCount()];
+        for (int columnIndex = 0; columnIndex < objects.length; columnIndex++) {
             int columnType = metaData.getColumnType(columnIndex);
             Object value = null;
             switch (columnType) {
@@ -192,7 +199,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
             }
             objects[columnIndex] = value;
         }
-        observer.onNext(objects);
+        return objects;
     }
 
 

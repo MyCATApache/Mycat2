@@ -55,7 +55,7 @@ public class RowSetQuery implements Query<RowSet<Row>> {
         VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
         StreamMysqlCollector streamMysqlCollector = new StreamMysqlCollector() {
             @Override
-            public void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+            public void onColumnDefinitions(MySQLRowDesc columnDefinitions) {
                 vertxRowSet.setColumnDescriptor(columnDefinitions.columnDescriptor());
             }
 

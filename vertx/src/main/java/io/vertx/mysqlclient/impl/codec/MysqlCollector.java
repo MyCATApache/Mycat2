@@ -30,7 +30,7 @@ public interface MysqlCollector<LIST> extends Collector<io.vertx.sqlclient.Row, 
      * @param columnDefinitions 列定义
      * @return 列定义信息到达后， 需要返回row解析器
      */
-    default void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
+    default void onColumnDefinitions(MySQLRowDesc columnDefinitions) {
     }
 
     @Override

@@ -2,7 +2,6 @@ package io.mycat.commands;
 
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowIterable;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
@@ -16,15 +15,17 @@ import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
+import io.mycat.vertx.VertxResponse;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.mysqlclient.impl.codec.MysqlPacket;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,51 +89,12 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         count++;
-        boolean hasMoreResultSet = hasMoreResultSet();
+        boolean hasMoreResult = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        Future<Void> future = Future.future(event -> {
-            RowBaseIterator resultSet = rowIterable.get();
-            try {
-                MycatResultSetResponse currentResultSet;
-                if (!binary) {
-                    if (resultSet instanceof JdbcRowBaseIterator) {
-                        currentResultSet = new DirectTextResultSetResponse((resultSet));
-                    } else {
-                        currentResultSet = new TextResultSetResponse(resultSet);
-                    }
-                } else {
-                    currentResultSet = new BinaryResultSetResponse(resultSet);
-                }
-                session.writeColumnCount(currentResultSet.columnCount());
-                Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                        .columnDefIterator();
-                while (columnDefPayloadsIterator.hasNext()) {
-                    session.writeBytes(columnDefPayloadsIterator.next(), false);
-                }
-                session.writeColumnEndPacket();
-                Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-                while (rowIterator.hasNext()) {
-                    byte[] row = rowIterator.next();
-                    session.writeBytes(row, false);
-                }
-
-            } catch (Throwable throwable) {
-                event.tryFail(throwable);
-            } finally {
-                resultSet.close();
-            }
-            event.tryComplete();
-        });
-        future.flatMap(unused -> session.getDataContext().getTransactionSession().closeStatenmentState()
-                .flatMap(unused2 -> session.writeRowEndPacket(hasMoreResultSet, false)
-                        .onComplete(event -> promise.tryComplete())))
-                .recover(throwable -> session.getDataContext().getTransactionSession().closeStatenmentState()
-                        .flatMap(unused3 -> {
-                            ;
-                            return sendError(throwable);
-                        }).onComplete(event -> promise.tryFail(throwable)));
+        mysqlPacketObservable.subscribe(
+                new VertxResponse.MysqlPayloadObjectObserver(promise,hasMoreResult,binary,session));
         return promise;
     }
 
@@ -180,7 +142,6 @@ public class ReceiverImpl implements Response {
 
     @Override
     public PromiseInternal<Void> execute(ExplainDetail detail) {
-        count++;
         boolean directPacket = false;
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
         String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
@@ -192,11 +153,10 @@ public class ReceiverImpl implements Response {
             case QUERY:
             case QUERY_MASTER: {
                 Future<Void> future = connectionFuture.flatMap(connection -> {
-                    Observable<MysqlPacket> mysqlPacketObservable = VertxExecuter.runQuery(Future.succeededFuture(
-                            connection), sql, Collections.emptyList(),null);
+                    Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
+                            connection), sql, Collections.emptyList());
                     if (!inTransaction) {
-                        return sendResultSet(ProxyConnectionUsage.wrapAsAutoCloseConnectionRowObservale(
-                                connection, mysqlPacketObservable));
+                        return sendResultSet( mysqlPacketObservable.doOnTerminate(() -> connection.close()));
                     } else {
                         return sendResultSet(mysqlPacketObservable);
                     }
@@ -212,6 +172,7 @@ public class ReceiverImpl implements Response {
             }
             case UPDATE:
             case INSERT:
+                count++;
                 Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
                 future1.onComplete(event -> {
                     if (event.succeeded()) {
@@ -248,81 +209,18 @@ public class ReceiverImpl implements Response {
         return null;
     }
 
-    @Override
-    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
-        count++;
-        boolean hasMoreResultSet = hasMoreResultSet();
-        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();
-        ObserverWrite observerWrite = new ObserverWrite(rowIterable, hasMoreResultSet, voidPromiseInternal);
-        rowIterable.subscribe(observerWrite);
-        return voidPromiseInternal;
-    }
+//    @Override
+//    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
+//        count++;
+//        boolean hasMoreResultSet = hasMoreResultSet();
+//        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();
+//        mysqlPacketObservable.subscribe(
+//                new VertxResponse.MysqlPayloadObjectObserver(voidPromiseInternal,hasMoreResultSet,binary,session));
+//        return voidPromiseInternal;
+//    }
 
     protected boolean hasMoreResultSet() {
         return count < this.stmtSize;
-    }
-
-
-    private class ObserverWrite implements Observer<Object[]> {
-        private final RowObservable rowIterable;
-        private PromiseInternal<Void> promise;
-        boolean moreResultSet;
-        Function<Object[], byte[]> convertor;
-        Disposable disposable;
-        boolean end = false;
-
-        public ObserverWrite(RowObservable rowIterable, boolean hasMoreResultSet, PromiseInternal<Void> promise) {
-            this.rowIterable = rowIterable;
-            this.promise = promise;
-            this.moreResultSet = hasMoreResultSet;
-        }
-
-        @Override
-        public void onSubscribe(@NonNull Disposable d) {
-            this.disposable = d;
-            MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-            int columnCount = rowMetaData.getColumnCount();
-            session.writeColumnCount(columnCount);
-            if (!binary) {
-                this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-            } else {
-                this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
-            }
-            Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-            while (columnIterator.hasNext()) {
-                session.writeBytes(columnIterator.next(), false);
-            }
-            session.writeColumnEndPacket();
-        }
-
-        @Override
-        public void onNext(Object @NonNull [] objects) {
-            session.writeBytes(this.convertor.apply(objects), false);
-        }
-
-        @Override
-        public void onError(@NonNull Throwable e) {
-            if (disposable != null) {
-                disposable.dispose();
-            }
-            session.getDataContext().getTransactionSession()
-                    .closeStatenmentState().onComplete(event -> promise.tryFail(e));
-            return;
-        }
-
-        @Override
-        public void onComplete() {
-            if (disposable != null) {
-                disposable.dispose();
-                disposable = null;
-            }
-            end = true;
-            session.getDataContext().getTransactionSession()
-                    .closeStatenmentState()
-                    .onComplete(event -> session.writeRowEndPacket(moreResultSet, false)
-                            .onComplete(event1 -> promise.tryComplete()));
-
-        }
     }
 
     private class AsyncSendOk implements Handler<AsyncResult<Void>> {

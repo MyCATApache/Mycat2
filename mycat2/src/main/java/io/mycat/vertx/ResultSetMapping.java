@@ -28,6 +28,7 @@ public class ResultSetMapping {
                     switch (columnType) {
                         case Types.VARBINARY:
                         case Types.LONGVARBINARY:
+                        case 2004://blob
                         case Types.BINARY: {
                             Object o = objects[columnIndex];
                             byte[] bytes = null;

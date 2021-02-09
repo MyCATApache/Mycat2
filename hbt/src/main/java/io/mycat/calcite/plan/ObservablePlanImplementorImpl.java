@@ -2,25 +2,22 @@ package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.*;
-import io.mycat.api.collector.RowObservable;
-import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.api.collector.MySQLColumnDef;
+import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.MysqlRow;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.JdbcConnectionUsage;
 import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.util.CalciteConvertors;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Observer;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -28,12 +25,8 @@ import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.function.Function;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
@@ -58,13 +51,13 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             if (event.succeeded()) {
                 long[] result = event.result();
                 promise.tryComplete();
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.info("sendOk "+ Arrays.toString(result));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.info("sendOk " + Arrays.toString(result));
                 }
                 response.sendOk(result[0], result[1]);
             } else {
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.error("sendError ",event.cause());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.error("sendError ", event.cause());
                 }
                 promise.fail(event.cause());
                 response.sendError(event.cause());
@@ -81,13 +74,13 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             if (event.succeeded()) {
                 long[] result = event.result();
                 promise.tryComplete();
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.info("sendOk "+ Arrays.toString(result));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.info("sendOk " + Arrays.toString(result));
                 }
                 response.sendOk(result[0], result[1]);
             } else {
-                if (LOGGER.isDebugEnabled()){
-                    LOGGER.error("sendError ",event.cause());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.error("sendError ", event.cause());
                 }
                 promise.fail(event.cause());
                 response.sendError(event.cause());
@@ -98,59 +91,44 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public PromiseInternal<Void> execute(Plan plan) {
-        CalciteRowMetaData calciteRowMetaData = new CalciteRowMetaData(plan.getPhysical().getRowType().getFieldList());
-        RowObservable rowObservable = new RowObservable() {
+        Observable<MysqlPayloadObject> rowObservable = Observable.<MysqlPayloadObject>create(emitter -> {
+            emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
+            CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+            ArrayBindable bindable = codeExecuterContext.getBindable();
+            ProxyConnectionUsage proxyConnectionUsage = JdbcConnectionUsage.computeProxyTargetConnection(context, params, codeExecuterContext);
+            Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> future = proxyConnectionUsage.collect(xaSqlConnection, params);
+            future.onSuccess(relNodeListIdentityHashMap -> {
 
-            @Override
-            protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-                ArrayBindable bindable = codeExecuterContext.getBindable();
-
-                ProxyConnectionUsage proxyConnectionUsage = JdbcConnectionUsage.computeProxyTargetConnection(context, params, codeExecuterContext);
-                Future<IdentityHashMap<RelNode, List<RowObservable>>> collect = proxyConnectionUsage.collect(xaSqlConnection, params);
-                collect.map(relNodeListIdentityHashMap -> {
-                       MycatWorkerProcessor processor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                    processor.getMycatWorker().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                AsyncMycatDataContextImplImpl newMycatDataContext =
-                                        new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) relNodeListIdentityHashMap, params, plan.forUpdate());
-                                Object bindObservable;
+                    MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
+                    mycatWorkerProcessor.getMycatWorker()
+                            .execute(()->{
+                                try {
+                                    IdentityHashMap<RelNode, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
+                                    AsyncMycatDataContextImplImpl newMycatDataContext =
+                                            new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
+                                    Object bindObservable;
 //                            if(codeExecuterContext.getCode().contains("hashJoin(org")){
 //                                bindObservable = bindObservable(newMycatDataContext);
 //                            }else {
-                                bindObservable = bindable.bindObservable(newMycatDataContext);
+                                    bindObservable = bindable.bindObservable(newMycatDataContext);
 //                            }
-                                if (bindObservable instanceof Observable) {
-                                    Observable<Object[]> observable = (Observable) bindObservable;
-                                    observable.subscribe(observer);
-                                } else {
-                                    Enumerable<Object[]> observable = (Enumerable) bindObservable;
-                                    List<Object[]> objects = observable.toList();
-                                    Observable<Object[]> observable1 = Observable.fromIterable(objects);
-                                    observable1.subscribe(observer);
+                                    Observable<Object[]> observable;
+                                    if (bindObservable instanceof Observable) {
+                                        observable = (Observable) bindObservable;
+                                    } else {
+                                        observable = Observable.fromIterable((Enumerable) bindObservable);
+                                    }
+                                    observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
+                                            throwable -> emitter.onError(throwable), () -> emitter.onComplete());
+                                }catch (Throwable throwable){
+                                    emitter.onError(throwable);
                                 }
-                            }catch (Throwable throwable){
-                                observer.onError(throwable);
-                            }
-
-                        }
-                    });
-
-                    return null;
-                }).onFailure(event -> {
-                    observer.onError(event);
-                });
-            }
-
-            @Override
-            public MycatRowMetaData getRowMetaData() {
-                return calciteRowMetaData;
-            }
-        };
+                            });
+          }).onFailure(event -> emitter.onError(event));
+        });
         return response.sendResultSet(rowObservable);
     }
+
     public Object bindObservable(final org.apache.calcite.runtime.NewMycatDataContext root) {
         final org.apache.calcite.rel.RelNode v1stashed = (org.apache.calcite.rel.RelNode) root.get("v1stashed");
         final org.apache.calcite.rel.RelNode v0stashed = (org.apache.calcite.rel.RelNode) root.get("v0stashed");
@@ -158,11 +136,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 root.getObservable(v0stashed)).toList());
         Enumerable<Object[]> objects2 = Linq4j.asEnumerable(RxBuiltInMethodImpl.toEnumerable(root.getObservable(v1stashed)).toList());
         final org.apache.calcite.linq4j.Enumerable _inputEnumerable = objects1.hashJoin(
-                objects2 ,
+                objects2,
                 new org.apache.calcite.linq4j.function.Function1() {
                     public java.math.BigDecimal apply(Object[] v1) {
                         return v1[0] == null ? (java.math.BigDecimal) null : org.apache.calcite.runtime.SqlFunctions.toBigDecimal(v1[0]);
                     }
+
                     public Object apply(Object v1) {
                         return apply(
                                 (Object[]) v1);
@@ -172,6 +151,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     public java.math.BigDecimal apply(Object[] v1) {
                         return v1[3] == null ? (java.math.BigDecimal) null : org.apache.calcite.runtime.SqlFunctions.toBigDecimal(v1[3]);
                     }
+
                     public Object apply(Object v1) {
                         return apply(
                                 (Object[]) v1);
@@ -179,7 +159,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 }
                 , new org.apache.calcite.linq4j.function.Function2() {
                     public Object[] apply(Object[] left, Object[] right) {
-                        return new Object[] {
+                        return new Object[]{
                                 left[0],
                                 left[1],
                                 left[2],
@@ -191,6 +171,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                 right == null ? null : right[2],
                                 right == null ? null : right[3]};
                     }
+
                     public Object[] apply(Object left, Object right) {
                         return apply(
                                 (Object[]) left,
@@ -198,10 +179,11 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     }
                 }
                 , null, false, true, null);
-        final org.apache.calcite.linq4j.AbstractEnumerable left = new org.apache.calcite.linq4j.AbstractEnumerable(){
+        final org.apache.calcite.linq4j.AbstractEnumerable left = new org.apache.calcite.linq4j.AbstractEnumerable() {
             public org.apache.calcite.linq4j.Enumerator enumerator() {
-                return new org.apache.calcite.linq4j.Enumerator(){
+                return new org.apache.calcite.linq4j.Enumerator() {
                     public final org.apache.calcite.linq4j.Enumerator inputEnumerator = _inputEnumerable.enumerator();
+
                     public void reset() {
                         inputEnumerator.reset();
                     }
@@ -225,7 +207,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                         final Object input_value5 = current[6];
                         final Object input_value6 = current[7];
                         final Object input_value7 = current[8];
-                        return new Object[] {
+                        return new Object[]{
                                 input_value,
                                 input_value0,
                                 input_value1,
@@ -245,6 +227,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     public java.math.BigDecimal apply(Object[] v1) {
                         return v1[0] == null ? (java.math.BigDecimal) null : org.apache.calcite.runtime.SqlFunctions.toBigDecimal(v1[0]);
                     }
+
                     public Object apply(Object v1) {
                         return apply(
                                 (Object[]) v1);
@@ -254,6 +237,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     public java.math.BigDecimal apply(Object[] v1) {
                         return v1[3] == null ? (java.math.BigDecimal) null : org.apache.calcite.runtime.SqlFunctions.toBigDecimal(v1[3]);
                     }
+
                     public Object apply(Object v1) {
                         return apply(
                                 (Object[]) v1);
@@ -261,7 +245,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                 }
                 , new org.apache.calcite.linq4j.function.Function2() {
                     public Object[] apply(Object[] left, Object[] right) {
-                        return new Object[] {
+                        return new Object[]{
                                 left[0],
                                 left[1],
                                 left[2],
@@ -276,6 +260,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                 right == null ? null : right[2],
                                 right == null ? null : right[3]};
                     }
+
                     public Object[] apply(Object left, Object right) {
                         return apply(
                                 (Object[]) left,
@@ -283,10 +268,11 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     }
                 }
                 , null, false, true, null);
-        final org.apache.calcite.linq4j.AbstractEnumerable child = new org.apache.calcite.linq4j.AbstractEnumerable(){
+        final org.apache.calcite.linq4j.AbstractEnumerable child = new org.apache.calcite.linq4j.AbstractEnumerable() {
             public org.apache.calcite.linq4j.Enumerator enumerator() {
-                return new org.apache.calcite.linq4j.Enumerator(){
+                return new org.apache.calcite.linq4j.Enumerator() {
                     public final org.apache.calcite.linq4j.Enumerator inputEnumerator = _inputEnumerable0.enumerator();
+
                     public void reset() {
                         inputEnumerator.reset();
                     }
@@ -313,7 +299,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                         final Object input_value8 = current[9];
                         final Object input_value9 = current[10];
                         final Object input_value10 = current[11];
-                        return new Object[] {
+                        return new Object[]{
                                 input_value,
                                 input_value0,
                                 input_value1,
@@ -336,12 +322,13 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                     public java.math.BigDecimal apply(Object[] v) {
                         return v[0] == null ? (java.math.BigDecimal) null : org.apache.calcite.runtime.SqlFunctions.toBigDecimal(v[0]);
                     }
+
                     public Object apply(Object v) {
                         return apply(
                                 (Object[]) v);
                     }
                 }
-                , (Comparator)org.apache.calcite.linq4j.function.Functions.nullsComparator(false, false), 0, 2147483647);
+                , (Comparator) org.apache.calcite.linq4j.function.Functions.nullsComparator(false, false), 0, 2147483647);
     }
 
 }

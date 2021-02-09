@@ -79,7 +79,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         this.accumulator = collector.accumulator();
         if (collector instanceof StreamMysqlCollector){
             MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
-            ((StreamMysqlCollector) collector).onColumnDefinitions(mySQLRowDesc,null);
+            ((StreamMysqlCollector) collector).onColumnDefinitions(mySQLRowDesc);
         }
     }
 
@@ -121,10 +121,10 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         this.affectedRows = BufferUtils.readLengthEncodedInteger(payload);
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
         this.serverStatusFlags = payload.readUnsignedShortLE();
-        if (collector instanceof StreamMysqlCollector){
-//            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
-            ((StreamMysqlCollector) collector).onFinish(0,serverStatusFlags,affectedRows,lastInsertId);
-        }
+//        if (collector instanceof StreamMysqlCollector){
+////            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
+//            ((StreamMysqlCollector) collector).onFinish(serverStatusFlags,affectedRows,lastInsertId);
+//        }
     }
 
     @Override

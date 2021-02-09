@@ -4,19 +4,16 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.ExecuteType;
 import io.mycat.ExplainDetail;
 import io.mycat.MycatDataContext;
-import io.mycat.api.collector.RowIterable;
-import io.mycat.api.collector.RowObservable;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxResponse;
-import io.mycat.vertx.VertxSession;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.mysqlclient.impl.codec.MysqlPacket;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.Collections;
@@ -105,7 +102,7 @@ public class MycatMysqlResponse extends VertxResponse {
         switch (executeType) {
             case QUERY:
             case QUERY_MASTER:
-                Observable<MysqlPacket> mysqlPacketObservable = VertxExecuter.runQuery(connection, sql, Collections.emptyList(), null);
+                Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(connection, sql, Collections.emptyList());
 //                Future<PromiseInternal<Void>> map = rowObservableFuture.map(this::sendResultSet);
 //                map.onSuccess(event -> promise.tryComplete()).onFailure(throwable -> promise.fail(throwable));
                 sendResultSet(mysqlPacketObservable)
@@ -137,39 +134,12 @@ public class MycatMysqlResponse extends VertxResponse {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         count++;
+        boolean hasMoreResult =  count < size;
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        rowIterable.subscribe(new ObserverWrite(new ObserverTask(rowIterable) {
-
-            @Override
-            public void onCloseResource() {
-                dataContext.getTransactionSession().closeStatenmentState();
-                xAConnection.closeStatementState();
-                closeStatementState();
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                promise.fail(throwable);
-            }
-
-            @Override
-            public void onComplete() {
-                promise.tryComplete();
-            }
-        }));
+        mysqlPacketObservable.subscribe(
+                new MysqlPayloadObjectObserver(promise,hasMoreResult,binary,session));
         return promise;
-    }
-
-//    @Override
-//    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
-//        return getPromiseInternal(new IterableTask(rowIterable) {
-//            @Override
-//            public void onCloseResource() {
-//                dataContext.getTransactionSession().closeStatenmentState();
-//                xAConnection.closeStatementState();
-//            }
-//        });
     }
 }

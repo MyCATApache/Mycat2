@@ -17,11 +17,13 @@ package io.mycat.datasource.jdbc.datasource;
 import io.mycat.ConnectionManager;
 import io.mycat.MycatConnection;
 import io.mycat.MycatException;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowIteratorCloseCallback;
+import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.SneakyThrows;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,13 +142,20 @@ public class DefaultConnection implements MycatConnection {
         return connection;
     }
 
-    public RowBaseIterator executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
-        try {
-            Statement statement = connection.createStatement();
-            return new JdbcRowBaseIterator(mycatRowMetaData, this, statement, statement.executeQuery(sql), null, sql);
-        } catch (Exception e) {
-            throw new MycatException(e);
-        }
+    public Observable<MysqlPayloadObject> executeQuery(MycatRowMetaData mycatRowMetaData, String sql) {
+            return (Observable.create(emitter -> {
+                try (Statement statement = connection.createStatement();
+                     RowBaseIterator rowBaseIterator = new JdbcRowBaseIterator(mycatRowMetaData, DefaultConnection.this, statement, statement.executeQuery(sql), null, sql);) {
+                    MycatRowMetaData metaData = rowBaseIterator.getMetaData();
+                    emitter.onNext(new MySQLColumnDef(metaData));
+                    while (rowBaseIterator.next()) {
+                        emitter.onNext(new MysqlRow(rowBaseIterator.getObjects()));
+                    }
+                    emitter.onComplete();
+                } catch (Throwable throwable) {
+                    emitter.onError(throwable);
+                }
+            }));
     }
 
     @Override

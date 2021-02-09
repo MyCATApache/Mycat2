@@ -1,12 +1,11 @@
 package io.mycat.vertx;
 
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowIterable;
-import io.mycat.api.collector.RowObservable;
+import io.mycat.api.collector.*;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.DirectTextResultSetResponse;
 import io.mycat.resultset.TextResultSetResponse;
@@ -15,11 +14,9 @@ import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.vertx.mysqlclient.impl.codec.MySQLColumnDef;
-import io.vertx.mysqlclient.impl.codec.MysqlEnd;
-import io.vertx.mysqlclient.impl.codec.MysqlPacket;
-import io.vertx.mysqlclient.impl.codec.MysqlRow;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -75,52 +72,9 @@ public abstract class VertxResponse implements Response {
     public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
         dataContext.getTransactionSession().closeStatenmentState();
         dataContext.setLastMessage(errorMessage);
-        return session.writeErrorEndPacketBySyncInProcessError();
-    }
+        return VertxUtil.newFailPromise(new MycatException(errorCode,errorMessage));
+    };
 
-//    @Override
-//    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
-//        // todo 异步未实现完全 wangzihaogithub 这里需要改成 write write flush
-//        return getPromiseInternal(new IterableTask(rowIterable) {
-//            @Override
-//            public void onCloseResource() {
-//                dataContext.getTransactionSession().closeStatenmentState();
-//            }
-//        });
-//    }
-
-    protected PromiseInternal getPromiseInternal(IterableTask iterableTask) {
-        RowBaseIterator resultSet = iterableTask.rowIterable.get();
-        ++count;
-        boolean moreResultSet = count < size;
-        MycatResultSetResponse currentResultSet;
-        if (!binary) {
-            if (resultSet instanceof JdbcRowBaseIterator) {
-                currentResultSet = new DirectTextResultSetResponse((resultSet));
-            } else {
-                currentResultSet = new TextResultSetResponse(resultSet);
-            }
-        } else {
-            currentResultSet = new BinaryResultSetResponse(resultSet);
-        }
-        session.writeColumnCount(currentResultSet.columnCount());
-        Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                .columnDefIterator();
-        while (columnDefPayloadsIterator.hasNext()) {
-            session.writeBytes(columnDefPayloadsIterator.next(), false);
-        }
-        session.writeColumnEndPacket();
-        Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-        while (rowIterator.hasNext()) {
-            byte[] row = rowIterator.next();
-            session.writeBytes(row, false);
-        }
-        currentResultSet.close();
-        iterableTask.onCloseResource();
-        PromiseInternal promiseInternal = session.writeRowEndPacket(moreResultSet, false);
-        iterableTask.onCloseResource();
-        return promiseInternal;
-    }
 
     @Override
     public PromiseInternal<Void> execute(ExplainDetail detail) {
@@ -190,153 +144,70 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(Observable<MysqlPacket> mysqlPacketObservable) {
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         count++;
+        boolean moreResultSet = count < size;
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        mysqlPacketObservable.subscribe(new Observer<MysqlPacket>() {
-                    private Disposable disposable;
-
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        this.disposable = d;
-                    }
-
-                    @Override
-                    public void onNext(@NonNull MysqlPacket next) {
-                        if (next instanceof MySQLColumnDef) {
-                            session.writeBytes(next.toBytes(), false);
-                        } else if (next instanceof MysqlRow) {
-                            session.writeBytes(next.toBytes(), false);
-                        } else if (next instanceof MysqlEnd) {
-                            session.writeColumnEndPacket();
-                        } else {
-                            disposable.dispose();
-                        }
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable throwable) {
-                        promise.tryFail(throwable);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        promise.tryComplete();
-                    }
-                });
+        mysqlPacketObservable.subscribe(
+                new MysqlPayloadObjectObserver(promise, moreResultSet,binary,session));
         return promise;
-
-//        MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-//        this.moreResultSet = count < size;
-//        session.writeColumnCount(rowMetaData.getColumnCount());
-//        if (!binary) {
-//            this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-//        } else {
-//            this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
-//        }
-//        Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-//        while (columnIterator.hasNext()) {
-//            session.writeBytes(columnIterator.next(), false);
-//        }
-//        session.writeColumnEndPacket();
-//        ObserverWrite observerWrite = new ObserverWrite(new ObserverTask(rowIterable) {
-//            @Override
-//            public void onCloseResource() {
-//                dataContext.getTransactionSession().closeStatenmentState();
-//            }
-//
-//            @Override
-//            public void onError(Throwable throwable) {
-//                promise.fail(throwable);
-//            }
-//
-//            @Override
-//            public void onComplete() {
-//                promise.tryComplete();
-//            }
-//        });
-//        rowIterable.subscribe(observerWrite);
-//        return promise;
     }
 
-
-    public class ObserverWrite implements Observer<Object[]> {
-        private final RowObservable rowIterable;
-        private ObserverTask observerTask;
-        boolean moreResultSet;
+    public   static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
+        private final PromiseInternal<Void> promise;
+        private final boolean moreResultSet;
+        private boolean binary;
+        private MySQLServerSession session;
+        private Disposable disposable;
         Function<Object[], byte[]> convertor;
-        Disposable disposable;
 
-        public ObserverWrite(ObserverTask observerTask) {
-            this.rowIterable = observerTask.rowIterable;
-            this.observerTask = observerTask;
+        public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
+                                          boolean moreResultSet,boolean binary, MySQLServerSession session) {
+            this.promise = promise;
+            this.moreResultSet = moreResultSet;
+            this.binary = binary;
+            this.session = session;
         }
 
         @Override
         public void onSubscribe(@NonNull Disposable d) {
             this.disposable = d;
-            MycatRowMetaData rowMetaData = rowIterable.getRowMetaData();
-            this.moreResultSet = count < size;
-            session.writeColumnCount(rowMetaData.getColumnCount());
-            if (!binary) {
-                this.convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
-            } else {
-                this.convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
-            }
-            Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
-            while (columnIterator.hasNext()) {
-                session.writeBytes(columnIterator.next(), false);
-            }
-            session.writeColumnEndPacket();
         }
 
         @Override
-        public void onNext(Object @NonNull [] objects) {
-            session.writeBytes(this.convertor.apply(objects), false);
-            ;
+        public void onNext(@NonNull MysqlPayloadObject next) {
+            if (next instanceof MysqlRow) {
+                session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
+            } else if (next instanceof MySQLColumnDef) {
+                MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
+                session.writeColumnCount(rowMetaData.getColumnCount());
+                if (!binary) {
+                    convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+                } else {
+                    convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+                }
+                Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+                while (columnIterator.hasNext()) {
+                    session.writeBytes(columnIterator.next(), false);
+                }
+                session.writeColumnEndPacket();
+            }
         }
 
         @Override
-        public void onError(@NonNull Throwable e) {
-            session.getDataContext().getTransactionSession().closeStatenmentState();
-            if (disposable != null) {
-                disposable.dispose();
-            }
-            this.observerTask.onCloseResource();
-            this.observerTask.onError(e);
+        public void onError(@NonNull Throwable throwable) {
+            disposable.dispose();
+            promise.tryFail(throwable);
         }
 
         @Override
         public void onComplete() {
             disposable.dispose();
-            this.observerTask.onCloseResource();
-            session.writeRowEndPacket(moreResultSet, false);
-            this.observerTask.onComplete();
+            session.getDataContext().getTransactionSession().closeStatenmentState()
+                    .onComplete(event -> {
+                        session.writeRowEndPacket(moreResultSet, false)
+                        .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
+                    });
         }
-
-    }
-
-    public static abstract class ObserverTask {
-        private final RowObservable rowIterable;
-
-        public ObserverTask(RowObservable rowIterable) {
-            this.rowIterable = rowIterable;
-        }
-
-        public abstract void onCloseResource();
-
-        public abstract void onError(Throwable throwable);
-
-        public abstract void onComplete();
-    }
-
-    public static abstract class IterableTask {
-        private final RowIterable rowIterable;
-
-        public IterableTask(RowIterable rowIterable) {
-            this.rowIterable = rowIterable;
-        }
-
-        public abstract void onCloseResource();
     }
 }
