@@ -12,6 +12,7 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.util.SQL;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -56,7 +57,7 @@ public class VertxExecuter {
                 .map(compositeFuture -> list.stream().map(l -> l.result())
                    .reduce((longs, longs2) ->
                            new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                   .orElse(new long[2]));
+                   .orElse(new long[2])).onComplete(event -> sqlConnection.closeStatementState());
     }
 
 
@@ -82,7 +83,13 @@ public class VertxExecuter {
                     (a, b) -> b)),
                     sqlConnection.getConnection(targetMap.get(e.getKey()))));
         }
-        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res));
+        return CompositeFuture.all((List) res).map(new SumUpdateResult(updateRel.isGlobal(), res))
+                .onComplete(new Handler<AsyncResult<long[]>>() {
+                    @Override
+                    public void handle(AsyncResult<long[]> event) {
+                        sqlConnection.close();
+                    }
+                });
     }
 
     public static Observable<MysqlPayloadObject> runQueryOutputAsMysqlPayloadObject(Future<SqlConnection> connectionFuture,

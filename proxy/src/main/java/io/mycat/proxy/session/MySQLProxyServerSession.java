@@ -67,6 +67,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             byte[] bytes = MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload);
             byteBuffers.offer(writeBufferPool().allocate(bytes));
             change2WriteOpts();
+
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             getIOThread().wakeup();
             return VertxUtil.newSuccessPromise();

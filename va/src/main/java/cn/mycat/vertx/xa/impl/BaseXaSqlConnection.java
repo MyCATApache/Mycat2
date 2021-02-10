@@ -98,7 +98,11 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 });
             }
         }
-        return mySQLManager.getConnection(targetName);
+        Future<SqlConnection> connection = mySQLManager.getConnection(targetName);
+       return connection.map(connection1 -> {
+           map.put(targetName, connection1);
+           return connection1;
+       });
     }
 
     /**

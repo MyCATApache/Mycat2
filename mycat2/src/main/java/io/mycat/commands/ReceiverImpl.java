@@ -1,39 +1,23 @@
 package io.mycat.commands;
 
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowObservable;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.calcite.ProxyConnectionUsage;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.resultset.BinaryResultSetResponse;
-import io.mycat.resultset.DirectTextResultSetResponse;
-import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.VertxUtil;
-import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
 import io.mycat.vertx.VertxResponse;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
-import io.mycat.api.collector.MysqlPayloadObject;
 import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static io.mycat.ExecuteType.*;
 
@@ -94,7 +78,7 @@ public class ReceiverImpl implements Response {
         boolean hasMoreResult = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
         mysqlPacketObservable.subscribe(
-                new VertxResponse.MysqlPayloadObjectObserver(promise,hasMoreResult,binary,session));
+                new VertxResponse.MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
         return promise;
     }
 
@@ -156,7 +140,7 @@ public class ReceiverImpl implements Response {
                     Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
                             connection), sql, Collections.emptyList());
                     if (!inTransaction) {
-                        return sendResultSet( mysqlPacketObservable.doOnTerminate(() -> connection.close()));
+                        return sendResultSet(mysqlPacketObservable.doOnTerminate(() -> connection.close()));
                     } else {
                         return sendResultSet(mysqlPacketObservable);
                     }
@@ -175,6 +159,9 @@ public class ReceiverImpl implements Response {
                 count++;
                 Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
                 future1.onComplete(event -> {
+                    if (!inTransaction) {
+                        connectionFuture.result().close();
+                    }
                     if (event.succeeded()) {
                         long[] result = event.result();
                         sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());
@@ -193,7 +180,7 @@ public class ReceiverImpl implements Response {
     public PromiseInternal<Void> sendOk() {
         count++;
         PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
-        new AsyncSendOk(promise, hasMoreResultSet());
+        new AsyncSendOk(promise, hasMoreResultSet()).handle(VertxUtil.newSuccessPromise());
         return promise;
     }
 
@@ -230,7 +217,6 @@ public class ReceiverImpl implements Response {
         public AsyncSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
             this.promise = promise;
             this.hasMoreResultSet = hasMoreResultSet;
-            promise.onComplete(this);
         }
 
         @Override
