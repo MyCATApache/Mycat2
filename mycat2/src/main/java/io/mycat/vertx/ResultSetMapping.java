@@ -4,8 +4,6 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextConvertorImpl;
-import io.mycat.resultset.TextResultSetResponse;
-import kotlin.jvm.functions.Function1;
 import org.apache.calcite.avatica.util.ByteString;
 
 import java.sql.Types;
@@ -16,7 +14,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public class ResultSetMapping {
-    public static Function<Object[],byte[]> concertToDirectTextResultSet(MycatRowMetaData rowMetaData){
+    public static Function<Object[], byte[]> concertToDirectTextResultSet(MycatRowMetaData rowMetaData) {
         int columnCount = rowMetaData.getColumnCount();
         return new Function<Object[], byte[]>() {
             @Override
@@ -44,13 +42,13 @@ public class ResultSetMapping {
                         }
                         case Types.TIME: {
                             Object o = objects[columnIndex];
-                            if (o == null){
+                            if (o == null) {
                                 row[rowIndex] = null;
-                            }else if (o instanceof Duration){
+                            } else if (o instanceof Duration) {
                                 row[rowIndex] = TextConvertorImpl.getBytes((Duration) o);
-                            }else if (o instanceof LocalTime){
+                            } else if (o instanceof LocalTime) {
                                 row[rowIndex] = TextConvertorImpl.getBytes((LocalTime) o);
-                            }else {
+                            } else {
                                 throw new UnsupportedOperationException();
                             }
                             break;
@@ -58,16 +56,35 @@ public class ResultSetMapping {
                         case Types.TIMESTAMP_WITH_TIMEZONE:
                         case Types.TIMESTAMP: {
                             Object o = objects[columnIndex];
-                            if (o == null){
+                            if (o == null) {
                                 row[rowIndex] = null;
-                            }else if (o instanceof LocalDateTime){
+                            } else if (o instanceof LocalDateTime) {
                                 row[rowIndex] = TextConvertorImpl.getBytes((LocalDateTime) o);
+                            }else {
+                                throw new UnsupportedOperationException();
                             }
                             break;
                         }
+                        case Types.BOOLEAN: {
+                            Object o = objects[columnIndex];
+                            if (o == null) {
+                                row[rowIndex] = null;
+                            } else if (o instanceof Boolean) {
+                                row[rowIndex] = TextConvertorImpl.INSTANCE.convertBoolean((Boolean) o);
+                            } else if (o instanceof Number) {
+                                long l = ((Number) o).longValue();
+                                if ((l == -1 || l > 0)) {
+                                    row[rowIndex] = TextConvertorImpl.ONE;
+                                } else {
+                                    row[rowIndex] = TextConvertorImpl.ZERO;
+                                }
+                            }else {
+                                throw new UnsupportedOperationException();
+                            }
+                        }
                         default:
                             Object object = objects[columnIndex];
-                            row[rowIndex] =(object==null?null: Objects.toString(object).getBytes());
+                            row[rowIndex] = (object == null ? null : Objects.toString(object).getBytes());
                             break;
                     }
 
@@ -76,14 +93,15 @@ public class ResultSetMapping {
             }
         };
     }
-    public static Function<Object[],byte[]> concertToDirectBinaryResultSet(MycatRowMetaData rowMetaData){
+
+    public static Function<Object[], byte[]> concertToDirectBinaryResultSet(MycatRowMetaData rowMetaData) {
         return objects -> {
             byte[][] bytes = new byte[objects.length][];
             for (int i = 0; i < objects.length; i++) {
-                if (objects[i]==null){
-                    bytes[i]=null;
-                }else {
-                    bytes[i]=BinaryResultSetResponse.getBytes(rowMetaData.getColumnType(i),objects[i]);
+                if (objects[i] == null) {
+                    bytes[i] = null;
+                } else {
+                    bytes[i] = BinaryResultSetResponse.getBytes(rowMetaData.getColumnType(i), objects[i]);
                 }
             }
             return MySQLPacketUtil.generateBinaryRow(bytes);

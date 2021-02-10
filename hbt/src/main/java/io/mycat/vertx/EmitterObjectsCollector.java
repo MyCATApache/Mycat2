@@ -29,6 +29,7 @@ public class EmitterObjectsCollector implements StreamMysqlCollector {
 
     @Override
     public void onRow(Row row) {
+        System.out.println(row);
         currentRowCount++;
         emitter.onNext(BaseRowObservable.getObjects(row, rowMetaData));
     }

@@ -38,7 +38,7 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
     @Override
     public Enumerable<Object[]> getEnumerable(RelNode node) {
         Observable<Object[]> observable = getObservable(node);
-        Iterable<Object[]> iterable = observable.blockingIterable();
+        Iterable<Object[]> iterable = observable.toList().blockingGet();
         return Linq4j.asEnumerable(iterable);
     }
 

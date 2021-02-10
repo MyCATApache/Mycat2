@@ -35,7 +35,6 @@ import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
@@ -624,12 +623,12 @@ public class DrdsRunner {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>(2);
         StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
-        relNode.accept(new RelShuttleImpl(){
+        relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
-                if (other instanceof MycatView){
+                if (other instanceof MycatView) {
                     mycatEnumerableRelImplementor.collectLeafRelNode(other);
-                }else if (other instanceof MycatTransientSQLTableScan){
+                } else if (other instanceof MycatTransientSQLTableScan) {
                     mycatEnumerableRelImplementor.collectLeafRelNode(other);
                 }
                 return super.visit(other);
@@ -830,15 +829,11 @@ public class DrdsRunner {
                                            SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
-        TransactionSession transactionSession = dataContext.getTransactionSession();
+        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
         List<Object> params = drdsSql.getParams();
-        PlanImplementor planImplementor;
-        if (transactionSession instanceof XaSqlConnection) {
-            planImplementor = new ObservablePlanImplementorImpl((XaSqlConnection) transactionSession,
-                    dataContext, params, response);
-        } else {
-            planImplementor = new PlanImplementorImpl(dataContext, params, response);
-        }
+        PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
+                transactionSession,
+                dataContext, params, response);
         return impl(plan, planImplementor);
     }
 
@@ -865,15 +860,20 @@ public class DrdsRunner {
     }
 
     public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
-        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, Collections.emptyList(), response);
-        return runHbtOnDrds(dataContext, statement, planImplementor);
+        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+        List<Object> params =Collections.emptyList();
+        PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
+                transactionSession,
+                dataContext, params, response);
+        PlanImpl hbtPlan = getHbtPlan(dataContext, statement);
+        return planImplementor.execute(hbtPlan);
     }
 
-    public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
+    public PlanImpl getHbtPlan(MycatDataContext dataContext, String statement) {
         DrdsRunner drdsRunners = this;
         MycatRel mycatRel = drdsRunners.doHbt(statement);
         CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
-        return planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
+        return new PlanImpl(mycatRel, codeExecuterContext, false);
     }
 
 

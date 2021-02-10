@@ -127,7 +127,7 @@ public class MycatHashJoin extends Join implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        return implement(implementor,pref);
+        return implement((EnumerableRelImplementor)implementor,pref);
     }
 
     @Override public Result implement(EnumerableRelImplementor implementor, Prefer pref) {

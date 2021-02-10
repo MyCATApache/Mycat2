@@ -78,7 +78,8 @@ public  class JdbcConnectionUsage {
         this.targets = map;
     }
 
-    public CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect(JdbcConnectionManager connectionManager, List<Object> params) {
+    public CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>>
+    collect(JdbcConnectionManager connectionManager, List<Object> params) {
         Map<String, List<SQLKey>> map = Collections.emptyMap();
         Map<String, LinkedList<DefaultConnection>> list = Collections.emptyMap();
         if (context.isInTransaction()) {

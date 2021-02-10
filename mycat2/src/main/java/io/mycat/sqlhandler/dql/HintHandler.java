@@ -343,7 +343,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     resultSetBuilder.addColumnInfo("IDLE_TIMEOUT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("DRIVER", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
-                    resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.VARCHAR);
 
                     for (JdbcDataSource jdbcDataSource : jdbcDataSources) {
                         DatasourceConfig config = jdbcDataSource.getConfig();
@@ -383,24 +383,24 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
                     resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
-                    resultSetBuilder.addColumnInfo("READABLE", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("READABLE", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("SESSION_COUNT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("WEIGHT", JDBCType.BIGINT);
-                    resultSetBuilder.addColumnInfo("ALIVE", JDBCType.BOOLEAN);
-                    resultSetBuilder.addColumnInfo("MASTER", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("ALIVE", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("MASTER", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("LIMIT_SESSION_COUNT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("REPLICA", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("SLAVE_THRESHOLD", JDBCType.BIGINT);
-                    resultSetBuilder.addColumnInfo("IS_HEARTBEAT_TIMEOUT", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("IS_HEARTBEAT_TIMEOUT", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("HB_ERROR_COUNT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("HB_LAST_SWITCH_TIME", JDBCType.TIMESTAMP);
                     resultSetBuilder.addColumnInfo("HB_MAX_RETRY", JDBCType.BIGINT);
-                    resultSetBuilder.addColumnInfo("IS_CHECKING", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("IS_CHECKING", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("MIN_SWITCH_TIME_INTERVAL", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("HEARTBEAT_TIMEOUT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("SYNC_DS_STATUS", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("HB_DS_STATUS", JDBCType.VARCHAR);
-                    resultSetBuilder.addColumnInfo("IS_SLAVE_BEHIND_MASTER", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("IS_SLAVE_BEHIND_MASTER", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("LAST_SEND_QUERY_TIME", JDBCType.TIMESTAMP);
                     resultSetBuilder.addColumnInfo("LAST_RECEIVED_QUERY_TIME", JDBCType.TIMESTAMP);
 
@@ -486,13 +486,13 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
                     resultSetBuilder.addColumnInfo("NAME", JDBCType.VARCHAR);
 
-                    resultSetBuilder.addColumnInfo("ALIVE", JDBCType.BOOLEAN);
-                    resultSetBuilder.addColumnInfo("READABLE", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("ALIVE", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("READABLE", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("SESSION_COUNT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("WEIGHT", JDBCType.BIGINT);
 
-                    resultSetBuilder.addColumnInfo("MASTER", JDBCType.BOOLEAN);
+                    resultSetBuilder.addColumnInfo("MASTER", JDBCType.VARCHAR);
                     resultSetBuilder.addColumnInfo("LIMIT_SESSION_COUNT", JDBCType.BIGINT);
                     resultSetBuilder.addColumnInfo("REPLICA", JDBCType.VARCHAR);
                     Collection<PhysicsInstance> values =
@@ -567,8 +567,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     boolean IS_SHUTDOWN = timer.isShutdown();
                     int SCHEDULE_COUNT = ScheduleUtil.getScheduleCount();
                     builder.addColumnInfo("NAME", JDBCType.VARCHAR)
-                            .addColumnInfo("IS_TERMINATED", JDBCType.BOOLEAN)
-                            .addColumnInfo("IS_SHUTDOWN", JDBCType.BOOLEAN)
+                            .addColumnInfo("IS_TERMINATED", JDBCType.VARCHAR)
+                            .addColumnInfo("IS_SHUTDOWN", JDBCType.VARCHAR)
                             .addColumnInfo("SCHEDULE_COUNT", JDBCType.BIGINT);
                     builder.addObjectRowPayload(Arrays.asList(NAME, IS_TERMINATED, IS_SHUTDOWN, SCHEDULE_COUNT));
                     return response.sendResultSet(() -> builder.build());
@@ -591,7 +591,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         resultSetBuilder.addColumnInfo("READ_DS", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("WRITE_L", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("READ_L", JDBCType.VARCHAR);
-        resultSetBuilder.addColumnInfo("AVAILABLE", JDBCType.BOOLEAN);
+        resultSetBuilder.addColumnInfo("AVAILABLE", JDBCType.VARCHAR);
         Collection<ReplicaDataSourceSelector> values = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class).getReplicaMap().values();
 
         Map<String, ClusterConfig> clusterConfigMap = routerConfig.getClusters().stream()
@@ -617,7 +617,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             String READ_DS = (value.getReadDataSource()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
             String WL = Optional.ofNullable(value.getDefaultWriteLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
             String RL = Optional.ofNullable(value.getDefaultReadLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
-            boolean AVAILABLE = ((List<PhysicsInstance>) value.getWriteDataSource()).stream().anyMatch(PhysicsInstance::isAlive);
+            String AVAILABLE = Boolean.toString(((List<PhysicsInstance>) value.getWriteDataSource()).stream().anyMatch(PhysicsInstance::isAlive));
 
             resultSetBuilder.addObjectRowPayload(
                     Arrays.asList(NAME, SWITCH_TYPE, MAX_REQUEST_COUNT, TYPE,

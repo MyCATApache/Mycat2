@@ -14,6 +14,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.sqlclient.Query;
@@ -66,7 +67,11 @@ public class RowSetQuery implements Query<RowSet<Row>> {
 
         };
         return runTextQuery(sql, mySQLClientSession.mySQLClientSession, streamMysqlCollector)
-                .map(voidSqlResult -> vertxRowSet);
+                .map(voidSqlResult -> {
+                    vertxRowSet.setAffectRow(voidSqlResult.rowCount());
+                    vertxRowSet.setLastInsertId(voidSqlResult.property(MySQLClient.LAST_INSERTED_ID));
+                    return vertxRowSet;
+                });
     }
 
 

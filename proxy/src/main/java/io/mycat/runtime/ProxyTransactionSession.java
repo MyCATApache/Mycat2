@@ -96,9 +96,8 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> closeStatenmentState() {
-        parent.closeStatenmentState();
-        connection.closeStatementState();
-        return Future.succeededFuture();
+        CompositeFuture all = CompositeFuture.all(parent.closeStatenmentState(), connection.closeStatementState());
+        return (Future) all;
     }
 
     @Override
@@ -123,9 +122,8 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> openStatementState() {
-        parent.openStatementState();
-        connection.openStatementState();
-        return Future.succeededFuture();
+        CompositeFuture all = CompositeFuture.all(parent.openStatementState(), connection.openStatementState());
+        return (Future) all;
     }
 
     @Override

@@ -60,10 +60,10 @@ public class SimpleColumnInfo {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
+            case BIGINT:
                 jdbcType = JDBCType.BIGINT;
                 break;
             case NUMERIC:
-            case BIGINT:
                 jdbcType = JDBCType.DECIMAL;
                 break;
             case FLOAT:

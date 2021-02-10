@@ -352,6 +352,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         if (!inTranscation) {
             xid = null;
             clearConnections(handler);
+        }else {
+            handler.handle(Future.succeededFuture());
         }
     }
 

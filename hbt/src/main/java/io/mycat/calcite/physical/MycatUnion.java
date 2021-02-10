@@ -135,7 +135,7 @@ public class MycatUnion extends Union implements MycatRel {
             toEnumerate |=(!(childExp.getType() instanceof Observable));
             if (unionExp == null) {
                 unionExp = childExp;
-            } else {
+            } else if (!toEnumerate){
                 unionExp =  Expressions.call(unionExp,  RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
             }
         }

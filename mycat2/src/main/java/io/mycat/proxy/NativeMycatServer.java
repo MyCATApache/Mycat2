@@ -235,7 +235,7 @@ public class NativeMycatServer implements MycatServer {
         resultSetBuilder.addColumnInfo("IDLE_TIMEOUT", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("DRIVER", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
-        resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.BOOLEAN);
+        resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.VARCHAR);
 
         Map<String, Long> map = Optional
                 .ofNullable(getReactorManager()).map(i -> i.getList())
@@ -290,11 +290,11 @@ public class NativeMycatServer implements MycatServer {
         builder.addColumnInfo("HOST", JDBCType.VARCHAR);
         builder.addColumnInfo("SCHEMA", JDBCType.VARCHAR);
         builder.addColumnInfo("AFFECTED_ROWS", JDBCType.BIGINT);
-        builder.addColumnInfo("AUTOCOMMIT", JDBCType.BOOLEAN);
-        builder.addColumnInfo("IN_TRANSACTION", JDBCType.BOOLEAN);
+        builder.addColumnInfo("AUTOCOMMIT", JDBCType.VARCHAR);
+        builder.addColumnInfo("IN_TRANSACTION", JDBCType.VARCHAR);
         builder.addColumnInfo("CHARSET", JDBCType.VARCHAR);
         builder.addColumnInfo("CHARSET_INDEX", JDBCType.BIGINT);
-        builder.addColumnInfo("OPEN", JDBCType.BOOLEAN);
+        builder.addColumnInfo("OPEN", JDBCType.VARCHAR);
         builder.addColumnInfo("SERVER_CAPABILITIES", JDBCType.BIGINT);
         builder.addColumnInfo("ISOLATION", JDBCType.VARCHAR);
         builder.addColumnInfo("LAST_ERROR_CODE", JDBCType.BIGINT);
@@ -305,7 +305,7 @@ public class NativeMycatServer implements MycatServer {
         builder.addColumnInfo("MYSQL_SESSION_ID", JDBCType.BIGINT);
         builder.addColumnInfo("TRANSACTION_TYPE", JDBCType.VARCHAR);
         builder.addColumnInfo("TRANSCATION_SNAPSHOT", JDBCType.VARCHAR);
-        builder.addColumnInfo("CANCEL_FLAG", JDBCType.BOOLEAN);
+        builder.addColumnInfo("CANCEL_FLAG", JDBCType.VARCHAR);
 
         for (MycatSession session : sessions) {
             long ID = session.sessionId();
@@ -369,7 +369,7 @@ public class NativeMycatServer implements MycatServer {
         resultSetBuilder.addColumnInfo("THREAD_NAME", JDBCType.VARCHAR)
                 .addColumnInfo("THREAD_ID", JDBCType.BIGINT)
                 .addColumnInfo("CUR_SESSION_ID", JDBCType.BIGINT)
-                .addColumnInfo("PREPARE_STOP", JDBCType.BOOLEAN)
+                .addColumnInfo("PREPARE_STOP", JDBCType.VARCHAR)
                 .addColumnInfo("BUFFER_POOL_SNAPSHOT", JDBCType.VARCHAR)
                 .addColumnInfo("LAST_ACTIVE_TIME", JDBCType.TIMESTAMP);
         for (MycatReactorThread mycatReactorThread : getReactorManager().getList()) {
@@ -420,14 +420,14 @@ public class NativeMycatServer implements MycatServer {
                 .addColumnInfo("DS_NAME", JDBCType.VARCHAR)
                 .addColumnInfo("LAST_MESSAGE", JDBCType.VARCHAR)
                 .addColumnInfo("MYCAT_SESSION_ID", JDBCType.BIGINT)
-                .addColumnInfo("IS_IDLE", JDBCType.BOOLEAN)
+                .addColumnInfo("IS_IDLE", JDBCType.VARCHAR)
                 .addColumnInfo("SELECT_LIMIT", JDBCType.BIGINT)
-                .addColumnInfo("IS_AUTOCOMMIT", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_RESPONSE_FINISHED", JDBCType.BOOLEAN)
+                .addColumnInfo("IS_AUTOCOMMIT", JDBCType.VARCHAR)
+                .addColumnInfo("IS_RESPONSE_FINISHED", JDBCType.VARCHAR)
                 .addColumnInfo("RESPONSE_TYPE", JDBCType.VARCHAR)
-                .addColumnInfo("IS_IN_TRANSACTION", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_REQUEST_SUCCESS", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_READ_ONLY", JDBCType.BOOLEAN);
+                .addColumnInfo("IS_IN_TRANSACTION", JDBCType.VARCHAR)
+                .addColumnInfo("IS_REQUEST_SUCCESS", JDBCType.VARCHAR)
+                .addColumnInfo("IS_READ_ONLY", JDBCType.VARCHAR);
         for (MycatReactorThread i : getReactorManager().getList()) {
             MySQLSessionManager c = i.getMySQLSessionManager();
             for (MySQLClientSession session : c.getAllSessions()) {
