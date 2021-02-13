@@ -65,7 +65,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
     if (!this.dsStatus.equals(currentDatasourceStatus)) {
       //设置状态给 dataSource
       this.dsStatus = currentDatasourceStatus;
-      LOGGER.error("{} heartStatus {}", datasouceName, dsStatus);
+      LOGGER.info("{} heartStatus {}", datasouceName, dsStatus);
     }
     replicaSelector
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),

@@ -17,6 +17,7 @@ package io.mycat.replica.heartbeat.strategy;
 import io.mycat.GlobalConst;
 import io.mycat.replica.heartbeat.DatasourceEnum;
 import io.mycat.replica.heartbeat.DatasourceStatus;
+import io.mycat.replica.heartbeat.DbSynEnum;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,18 +54,14 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       if ("ON".equals(wsrep_connected)
           && "ON".equals(wsrep_ready)
           && "Primary".equals(wsrep_cluster_status)) {
-        datasourceStatus.setDbSynStatus(DatasourceEnum.DB_SYN_NORMAL);
-        datasourceStatus.setStatus(DatasourceEnum.OK_STATUS);
-        return;
+        datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
       } else {
         LOGGER.info("found MySQL  cluster status err !!! "
             + " wsrep_cluster_status: " + wsrep_cluster_status
             + " wsrep_connected: " + wsrep_connected
             + " wsrep_ready: " + wsrep_ready
         );
-        datasourceStatus.setDbSynStatus(DatasourceEnum.DB_SYN_ERROR);
-        datasourceStatus.setStatus(DatasourceEnum.ERROR_STATUS);
-        return;
+        datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_ERROR);
       }
     }
     heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
