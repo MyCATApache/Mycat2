@@ -1,13 +1,11 @@
 package io.mycat.calcite.executor;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
@@ -18,6 +16,7 @@ import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
+import io.mycat.util.StringUtil;
 import io.mycat.util.UpdateSQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -62,7 +61,7 @@ public class MycatUpdateExecutor implements Executor {
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
 
-        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(distribution,logicStatement,parameters));
+        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(context, distribution,logicStatement,parameters));
     }
 
     public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
@@ -199,7 +198,8 @@ public class MycatUpdateExecutor implements Executor {
                 primaryKeyList,sql.getTarget());
     }
 
-    private static Set<SQL> buildReallySqlList(Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+    public static Set<SQL> buildReallySqlList(MycatDataContext context,
+        Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
         Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
@@ -210,7 +210,12 @@ public class MycatUpdateExecutor implements Executor {
             SQLExprTableSource tableSource = FastSqlUtils.getTableSource(currentStatement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-            SQL sql = SQL.of(currentStatement.toString(),dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
+
+            SQLStatement orgStatement = FastSqlUtils.clone(orginalStatement);
+            SQLExprTableSource orgTableSource = FastSqlUtils.getTableSource(orgStatement);
+            String orgSchema = StringUtil.isEmpty(orgTableSource.getSchema())? context.getDefaultSchema(): orgTableSource.getSchema();
+            orgTableSource.setSchema(orgSchema);
+            SQL sql = SQL.of(currentStatement.toString(), dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){
                 LOGGER.debug("remove exist sql = {}",exist);
