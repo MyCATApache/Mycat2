@@ -41,21 +41,17 @@ public class OnePhaseXaSqlConnection extends BaseXaSqlConnection {
         return Future.future(promise -> {
             if (map.size() == 1) {
                 SqlConnection sqlConnection = map.values().iterator().next();
-                CompositeFuture xaEnd = executeAll(connection ->
-                        connection.query(String.format(XA_END, xid)).execute());
-                xaEnd.onFailure(event14 -> {
-                    promise.fail(event14);
-                });
+                Future<Void> xaEnd = executeAll(connection ->
+                        connection.query(String.format(XA_END, xid)).execute().mapEmpty());
+                xaEnd.onFailure(promise::fail);
                 xaEnd.onSuccess(event -> {
                     changeTo(sqlConnection, State.XA_ENDED);
-                    executeAll(connection -> {
-                        return connection.query(String.format(XA_COMMIT_ONE_PHASE, xid)).execute();
-                    }).onComplete(event1 -> {
+                    executeAll(connection -> connection.query(String.format(XA_COMMIT_ONE_PHASE, xid)).execute().mapEmpty()).onComplete(event1 -> {
                         if (event1.succeeded()) {
                             changeTo(sqlConnection, State.XA_COMMITED);
                             inTranscation = false;
                         }
-                        promise.handle((AsyncResult) event1);
+                        promise.handle(event1);
                     });
                 });
             } else {

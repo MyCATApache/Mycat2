@@ -104,7 +104,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
         return Future.future(promise -> {
             super.closeStatementState()
                     .onComplete(event -> {
-                        if (!isInTranscation()) {
+                        if (!isInTransaction()) {
                             targetName = null;
                             SqlConnection localSqlConnection = this.localSqlConnection;
                             this.localSqlConnection = null;

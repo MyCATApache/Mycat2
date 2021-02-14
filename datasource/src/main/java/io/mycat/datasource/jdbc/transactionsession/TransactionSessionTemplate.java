@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new ConcurrentHashMap<>();
@@ -94,7 +93,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
      * 模拟autocommit = 0 时候自动开启事务
      */
     public Future<Void> openStatementState() {
-        Future<Void> future = closeStatenmentState();
+        Future<Void> future = closeStatementState();
       return   future.flatMap(unused -> {
           if (!isAutocommit()) {
               return begin();
@@ -130,7 +129,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public synchronized Future<Void> close() {
-        Future<Void> voidFuture = closeStatenmentState();
+        Future<Void> voidFuture = closeStatementState();
         try {
             for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
                 DefaultConnection value = stringDefaultConnectionEntry.getValue();
@@ -157,7 +156,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     @SneakyThrows
-    public  Future<Void> closeStatenmentState() {
+    public  Future<Void> closeStatementState() {
         try {
             if (!isInTransaction()) {
                 Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();

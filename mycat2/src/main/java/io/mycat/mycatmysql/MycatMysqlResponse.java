@@ -45,7 +45,7 @@ public class MycatMysqlResponse extends VertxResponse {
 
     private void syncState() {
         dataContext.setAutoCommit(xAConnection.isAutocommit());
-        dataContext.setInTransaction(xAConnection.isInTranscation());
+        dataContext.setInTransaction(xAConnection.isInTransaction());
     }
 
     @Override
@@ -129,7 +129,7 @@ public class MycatMysqlResponse extends VertxResponse {
 
     Future closeStatementState() {
         return CompositeFuture.all(xAConnection.closeStatementState(),
-                Future.future((Handler<Promise<Void>>) event -> dataContext.getTransactionSession().closeStatenmentState()));
+                Future.future((Handler<Promise<Void>>) event -> dataContext.getTransactionSession().closeStatementState()));
 
     }
 

@@ -111,7 +111,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     }
 
     @Override
-    public String getTxId() {
+    public String getXid() {
         return null;
     }
 }

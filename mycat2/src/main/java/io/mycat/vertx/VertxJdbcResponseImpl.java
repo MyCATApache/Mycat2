@@ -16,7 +16,7 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         TransactionSession transactionSession = dataContext.getTransactionSession();
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         transactionSession.rollback()
-                .eventually(unused -> transactionSession.closeStatenmentState())
+                .eventually(unused -> transactionSession.closeStatementState())
                 .onComplete(event -> {
                     if (event.succeeded()) {
                         newPromise.tryComplete();
@@ -35,7 +35,7 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         TransactionSession transactionSession = dataContext.getTransactionSession();
         transactionSession.begin()
-                .eventually(unused -> transactionSession.closeStatenmentState())
+                .eventually(unused -> transactionSession.closeStatementState())
                 .onComplete(event -> {
                     if (event.succeeded()) {
                         newPromise.tryComplete();
@@ -53,7 +53,7 @@ public class VertxJdbcResponseImpl extends VertxResponse {
         count++;
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.commit().eventually(unused -> transactionSession.closeStatenmentState())
+        transactionSession.commit().eventually(unused -> transactionSession.closeStatementState())
                 .onComplete(event -> {
                     if (event.succeeded()) {
                         newPromise.tryComplete();

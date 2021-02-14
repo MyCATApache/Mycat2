@@ -55,7 +55,7 @@ public interface TransactionSession extends Dumpable {
 
     ThreadUsageEnum getThreadUsageEnum();
 
-    Future<Void> closeStatenmentState();
+    Future<Void> closeStatementState();
 
     Future<Void> close();
 
@@ -72,7 +72,7 @@ public interface TransactionSession extends Dumpable {
 
     public void addCloseResource(AutoCloseable closeable);
 
-    String getTxId();
+    String getXid();
 
    default public void bindContext(){
 

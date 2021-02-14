@@ -95,6 +95,9 @@ public class RowSetQuery implements Query<RowSet<Row>> {
     public static PromiseInternal<SqlResult<Void>> runTextQuery(String curSql,
                                                                 MySQLClientSession mySQLClientSession,
                                                                 StreamMysqlCollector collectorArg) {
+       if (mySQLClientSession.getCurNIOHandler()!=null){
+           throw new IllegalArgumentException();
+       }
         PromiseInternal<SqlResult<Void>> promise = VertxUtil.newPromise();
         if (mySQLClientSession.getIOThread() == Thread.currentThread()) {
             VertxMycatTextCollector<Object, Object> resultSetHandler = new VertxMycatTextCollector<Object, Object>((Collector) collectorArg);

@@ -7,8 +7,6 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.session.ProcessState;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.VertxUtil;
-import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.ProgressivePromise;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -114,7 +112,7 @@ public class VertxSessionImpl implements VertxSession {
             if (mycatDataContext!=null){
                 TransactionSession transactionSession = mycatDataContext.getTransactionSession();
                 if (transactionSession!=null){
-                    transactionSession.closeStatenmentState();
+                    transactionSession.closeStatementState();
                 }
             }
         }

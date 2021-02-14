@@ -41,7 +41,8 @@ public class TranscationSwitch {
         TransactionSession transactionSession = dataContext.getTransactionSession();
         if (transactionSession == null) {
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-               dataContext.setTransactionSession(transactionSession =new ProxyTransactionSession(()->MetaClusterCurrent.wrapper(MySQLManager.class),xaLog,map.get(TransactionType.PROXY_TRANSACTION_TYPE).apply(dataContext)));
+               dataContext.setTransactionSession(
+                       transactionSession =map.get(TransactionType.PROXY_TRANSACTION_TYPE).apply(dataContext));
         } else {
 
         }

@@ -121,7 +121,7 @@ public interface XaSqlConnection {
 
     public boolean isAutocommit();
 
-    public boolean isInTranscation();
+    public boolean isInTransaction();
 
     String getXid();
 

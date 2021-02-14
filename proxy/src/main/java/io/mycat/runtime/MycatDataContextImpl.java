@@ -1,9 +1,12 @@
 package io.mycat.runtime;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.XaLog;
 import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.packet.AbstractWritePacket;
@@ -67,7 +70,12 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
+        JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         switchTransaction(TransactionType.DEFAULT);
+
+        ProxyTransactionSession proxyTransactionSession = new ProxyTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), xaLog, connection.getDatasourceProvider().createSession(this));
+        setTransactionSession(proxyTransactionSession);
     }
 
 
@@ -249,15 +257,11 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
     @Override
     public boolean isAutocommit() {
-        return autoCommit == 1;
+        return transactionSession.isAutocommit();
     }
     @Override
     public void setAutoCommit(boolean autoCommit) {
-        this.autoCommit = autoCommit ? 1 : 0;
-        if(transactionSession!=null){
             transactionSession.setAutocommit(autoCommit);
-        }
-
     }
     @Override
     public MySQLIsolation getIsolation() {
@@ -269,7 +273,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
     @Override
     public boolean isInTransaction() {
-        return inTransaction;
+        return transactionSession.isInTransaction();
     }
     @Override
     public void setInTransaction(boolean inTransaction) {
@@ -385,7 +389,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void close() {
         if (transactionSession != null) {
-            transactionSession.closeStatenmentState();
+            transactionSession.closeStatementState();
             transactionSession.close();
         }
         cancelFlag.set(true);

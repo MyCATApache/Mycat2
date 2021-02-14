@@ -17,12 +17,10 @@ import java.util.function.Supplier;
 
 public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
     private TransactionSession parent;
-    private XaSqlConnection connection;
 
     public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
         super(mySQLManagerSupplier,xaLog);
         this.parent = parent;
-        this.connection = new BaseXaSqlConnection(mySQLManagerSupplier,xaLog);
     }
 
     @Override
@@ -35,35 +33,7 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
         parent.setTransactionIsolation(transactionIsolation);
     }
 
-    @Override
-    public Future<Void> begin() {
-        return (Future)CompositeFuture.all(parent.begin(),connection.begin());
-    }
 
-    @Override
-    public Future<Void> commit() {
-        return (Future)CompositeFuture.all(parent.commit(),connection.commit());
-    }
-
-    @Override
-    public Future<Void> rollback() {
-        return (Future)CompositeFuture.all(parent.rollback(),connection.rollback());
-    }
-
-    @Override
-    public boolean isInTransaction() {
-        return parent.isInTransaction();
-    }
-
-    @Override
-    public void setAutocommit(boolean autocommit) {
-        parent.setAutocommit(autocommit);
-    }
-
-    @Override
-    public boolean isAutocommit() {
-        return parent.isAutocommit();
-    }
 
     @Override
     public MycatConnection getJDBCConnection(String targetName) {
@@ -95,16 +65,6 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
         return ThreadUsageEnum.MULTI_THREADING;
     }
 
-    @Override
-    public Future<Void> closeStatenmentState() {
-       return parent.closeStatenmentState()
-               .flatMap(unused -> connection.closeStatementState());
-    }
-
-    @Override
-    public Future<Void> close() {
-        return parent.close().flatMap(unused -> connection.close());
-    }
 
     @Override
     public String resolveFinalTargetName(String targetName) {
@@ -122,21 +82,8 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
     }
 
     @Override
-    public Future<Void> openStatementState() {
-        Future<Void> future = dealCloseConnections();
-        return closeStatenmentState()
-               .flatMap(unused -> parent.openStatementState())
-               .flatMap(unused -> connection.openStatementState());
-    }
-
-    @Override
     public void addCloseResource(AutoCloseable closeable) {
         parent.addCloseResource(closeable);
-    }
-
-    @Override
-    public String getTxId() {
-        return connection.getXid();
     }
 
     @Override

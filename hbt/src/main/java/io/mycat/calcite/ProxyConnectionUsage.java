@@ -4,23 +4,15 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableList;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
-import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.RowObservable;
-import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.rel.RelNode;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +50,9 @@ public class ProxyConnectionUsage {
     public Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> collect(XaSqlConnection xaconnection, List<Object> params) {
         IdentityHashMap<RelNode, List<Observable<Object[]>>> finalResMap = new IdentityHashMap<>();
         Map<RelNode, List<Observable<Object[]>>> resMap = Collections.synchronizedMap(finalResMap);
+        if (context.isInTransaction()!=context.getTransactionSession().isInTransaction()){
+            System.out.println();
+        }
         if (context.isInTransaction()) {
             if (context.isInTransaction()!=context.getTransactionSession().isInTransaction()){
                 System.out.println();
@@ -260,7 +255,7 @@ public class ProxyConnectionUsage {
                 synchronized (ProxyConnectionUsage.this) {
                     LinkedList<SqlConnection> defaultConnections = map.computeIfAbsent(string, s -> new LinkedList<>());
                     defaultConnections.add(i);
-                    if (!connection.isInTranscation()){
+                    if (!connection.isInTransaction()){
                         connection.addCloseConnection(i);
                     }
                 }

@@ -192,7 +192,7 @@ public class MycatUpdateExecutor implements Executor {
         // 更新索引
         // todo 更新语句包含limit或者order by的情况处理，等实现了全局索引再考虑实现。 wangzihaogithub 2020-12-29
         TableHandler table = sql.getTable();
-        gsiService.updateByPrimaryKey(transactionSession.getTxId(),
+        gsiService.updateByPrimaryKey(transactionSession.getXid(),
                 table.getSchemaName(),
                 table.getTableName(),
                 sql.getSetColumnMap(),

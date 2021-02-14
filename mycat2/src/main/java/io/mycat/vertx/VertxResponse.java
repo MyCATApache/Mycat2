@@ -2,13 +2,8 @@ package io.mycat.vertx;
 
 import io.mycat.*;
 import io.mycat.api.collector.*;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.resultset.BinaryResultSetResponse;
-import io.mycat.resultset.DirectTextResultSetResponse;
-import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.util.VertxUtil;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
@@ -53,7 +48,7 @@ public abstract class VertxResponse implements Response {
     @Override
     public PromiseInternal<Void> sendError(Throwable e) {
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
-        dataContext.getTransactionSession().closeStatenmentState()
+        dataContext.getTransactionSession().closeStatementState()
                 .onComplete(event -> {
                     dataContext.setLastMessage(e);
                     newPromise.tryComplete();
@@ -70,7 +65,7 @@ public abstract class VertxResponse implements Response {
 
     @Override
     public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
-        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.getTransactionSession().closeStatementState();
         dataContext.setLastMessage(errorMessage);
         return VertxUtil.newFailPromise(new MycatException(errorCode,errorMessage));
     };
@@ -106,7 +101,7 @@ public abstract class VertxResponse implements Response {
             case INSERT:
             case UPDATE:
                 long[] longs = connection.executeUpdate(sql, true);
-                transactionSession.closeStatenmentState();
+                transactionSession.closeStatementState();
                 promise = sendOk(longs[0], longs[1]);
                 break;
             default:
@@ -119,7 +114,7 @@ public abstract class VertxResponse implements Response {
     public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
         count++;
         MycatDataContext dataContext = session.getDataContext();
-        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.getTransactionSession().closeStatementState();
         dataContext.setLastInsertId(lastInsertId);
         dataContext.setAffectedRows(affectedRow);
         return session.writeOk(count < size);
@@ -130,7 +125,7 @@ public abstract class VertxResponse implements Response {
         count++;
         PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         MycatDataContext dataContext = session.getDataContext();
-        dataContext.getTransactionSession().closeStatenmentState()
+        dataContext.getTransactionSession().closeStatementState()
                 .onComplete(event -> {
                     newPromise.tryComplete();
                     session.writeOk(count < size);
@@ -203,7 +198,7 @@ public abstract class VertxResponse implements Response {
         @Override
         public void onComplete() {
             disposable.dispose();
-            session.getDataContext().getTransactionSession().closeStatenmentState()
+            session.getDataContext().getTransactionSession().closeStatementState()
                     .onComplete(event -> {
                         session.writeRowEndPacket(moreResultSet, false)
                         .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());

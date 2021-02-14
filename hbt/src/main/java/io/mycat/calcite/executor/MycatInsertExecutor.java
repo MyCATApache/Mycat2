@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -347,7 +346,7 @@ public class MycatInsertExecutor implements Executor {
         GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
         MycatDataContext mycatDataContext = this.context;
         TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-        String txId = transactionSession.getTxId();
+        String txId = transactionSession.getXid();
 
         String[] columnNames = mycatInsertRel.getColumnNames();
         SimpleColumnInfo[] columns = new SimpleColumnInfo[columnNames.length];

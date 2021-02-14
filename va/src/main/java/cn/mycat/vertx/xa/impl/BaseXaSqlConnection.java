@@ -131,8 +131,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                 }
                 return future;
             };
-            executeAll((Function) function)
-                    .onComplete(event -> {
+            Future<Void> future = executeAll((Function) function);
+            future .onComplete(event -> {
                         log.logRollback(xid, event.succeeded());
                         if (event.succeeded()) {
                             inTranscation = false;
@@ -203,7 +203,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> commitXa(Supplier<Future> beforeCommit) {
         return Future.future((Promise<Void> promsie) -> {
             logParticipants();
-            CompositeFuture xaEnd = executeAll(connection -> {
+            Future<Void> xaEnd = executeAll(connection -> {
                 Future future = Future.succeededFuture();
                 switch (connectionState.get(connection)) {
                     case XA_INITED:
@@ -217,14 +217,14 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                     case XA_ENDED:
                     default:
                 }
-                return future;
+                return future.mapEmpty();
             });
             xaEnd.onFailure(throwable -> promsie.tryFail(throwable));
             xaEnd.onSuccess(event -> {
                 executeAll(connection -> {
                     if (connectionState.get(connection) != State.XA_PREPARED) {
                         return connection.query(String.format(XA_PREPARE, xid)).execute()
-                                .map(c -> changeTo(connection, State.XA_PREPARED));
+                                .map(c -> changeTo(connection, State.XA_PREPARED)).mapEmpty();
                     }
                     return Future.succeededFuture();
                 })
@@ -235,7 +235,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                         })
                         .onSuccess(compositeFuture -> {
                             log.logPrepare(xid, true);
-                            Future future;
+                            Future<Void> future;
                             try {
                                 /**
                                  * if log commit fail ,occur exception,other transcations rollback.
@@ -261,7 +261,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                             future.onSuccess(event16 -> {
                                 executeAll(connection -> {
                                     return connection.query(String.format(XA_COMMIT, xid)).execute()
-                                            .map(c -> changeTo(connection, State.XA_COMMITED));
+                                            .map(c -> changeTo(connection, State.XA_COMMITED)).mapEmpty();
                                 })
                                         .onFailure(ignored -> {
 
@@ -325,12 +325,15 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         return collect;
     }
 
-    public CompositeFuture executeAll(Function<SqlConnection, Future> connectionFutureFunction) {
+    public Future<Void> executeAll(Function<SqlConnection, Future<Void>> connectionFutureFunction) {
         if (map.isEmpty()) {
-            return CompositeFuture.any(Future.succeededFuture(), Future.succeededFuture());
+            return Future.succeededFuture();
         }
-        List<Future> futures = map.values().stream().map(connectionFutureFunction).collect(Collectors.toList());
-        return CompositeFuture.all(futures);
+        Future<Void> future = Future.succeededFuture();
+        for (SqlConnection value : map.values()) {
+            future= future.flatMap((u)->connectionFutureFunction.apply(value));
+        }
+        return future;
     }
 
     /**

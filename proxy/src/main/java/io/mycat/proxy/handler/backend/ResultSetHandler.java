@@ -353,6 +353,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         mysql.resetPacket();
         mysql.switchNioHandler(null);
         mysql.setCallBack(null);
+        mysql.switchNioHandler(null);
         MycatMonitor.onResultSetClear(mysql);
     }
 

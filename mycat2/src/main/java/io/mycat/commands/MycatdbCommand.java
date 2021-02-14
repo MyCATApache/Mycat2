@@ -5,17 +5,12 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.calcite.DefaultDatasourceFactory;
-import io.mycat.calcite.ExecutorImplementor;
-import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.calcite.executor.TempResultSetFactoryImpl;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
@@ -27,16 +22,14 @@ import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.Response;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
-import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 
 /**
@@ -144,7 +137,7 @@ public enum MycatdbCommand {
                     sqlRecord.setSql(sqlStatement);
                     PromiseInternal<Void> execute = execute(dataContext, response, sqlStatement);
                     execute.onComplete(e->{
-                        dataContext.getTransactionSession().closeStatenmentState();
+                        dataContext.getTransactionSession().closeStatementState();
                         resultList.add(e);
                         if(e.failed()){
                             promise.tryFail(e.cause());
@@ -186,7 +179,12 @@ public enum MycatdbCommand {
 
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.openStatementState();
+        transactionSession.openStatementState().onComplete(new Handler<AsyncResult<Void>>() {
+            @Override
+            public void handle(AsyncResult<Void> event) {
+                System.out.println();
+            }
+        });
         //////////////////////////////////////////////////////////////////////////////////////
         if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);

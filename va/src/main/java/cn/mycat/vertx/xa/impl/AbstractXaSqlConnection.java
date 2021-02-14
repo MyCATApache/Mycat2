@@ -67,7 +67,7 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
 
     public Future<Void> openStatementState() {
         if (!isAutocommit()) {
-            if (!isInTranscation()) {
+            if (!isInTransaction()) {
                 return begin();
             }
         }
@@ -75,7 +75,7 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     }
 
     @Override
-    public boolean isInTranscation() {
+    public boolean isInTransaction() {
         return inTranscation;
     }
 
