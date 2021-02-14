@@ -31,7 +31,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
-import io.mycat.proxy.NativeMycatServer;
+import io.mycat.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ServerTransactionSessionRunner;
 import io.mycat.util.packet.AbstractWritePacket;

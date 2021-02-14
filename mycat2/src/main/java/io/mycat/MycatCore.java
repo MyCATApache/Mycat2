@@ -5,7 +5,6 @@ import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.proxy.NativeMycatServer;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
 import lombok.SneakyThrows;
@@ -18,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Optional;
 
 /**
  * @author cjw
@@ -65,7 +65,7 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
-        String datasourceProvider = serverConfig.getDatasourceProvider();
+        String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
         this.mycatServer = newMycatServer(serverConfig);

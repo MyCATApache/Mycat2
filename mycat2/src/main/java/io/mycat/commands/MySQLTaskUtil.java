@@ -17,7 +17,8 @@ package io.mycat.commands;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MySQLPacketUtil;
 import io.mycat.MycatException;
-import io.mycat.proxy.NativeMycatServer;
+import io.mycat.proxy.MySQLDatasourcePool;
+import io.mycat.NativeMycatServer;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;
@@ -31,9 +32,7 @@ import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.util.VertxUtil;
@@ -53,101 +52,102 @@ import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSIO
  **/
 public class MySQLTaskUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLTaskUtil.class);
-
-    public static PromiseInternal<Void> proxyBackendByDatasourceName(MycatSession mycat,
-                                                                     String datasourceName ,
-                                                                     String sql,
-                                                                     TransactionSyncType transaction,
-                                                                     MySQLIsolation isolation) {
-        //todo fix the log
-        return proxyBackendByDataSource(mycat,
-                MySQLPacketUtil.generateComQueryPacket(sql),
-                datasourceName,
-                DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
-                transaction, isolation);
-    }
-
-    public static PromiseInternal<Void> proxyBackendByDataSource(MycatSession mycat,
-                                                byte[] packetData,
-                                                String datasourceName,
-                                                MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
-                                                TransactionSyncType transactionType,
-                                                MySQLIsolation isolation) {
-        Objects.requireNonNull(datasourceName);
-        mycat.switchProxyWriteHandler();
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        mycat.getIOThread().addNIOJob(new NIOJob() {
-            @Override
-            public void run(ReactorEnvThread reactor2) throws Exception {
-                MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
-                MySQLSessionManager mySQLSessionManager = reactor.getMySQLSessionManager();
-                BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
-                    if (mycat.isBindMySQLSession()) {
-                        MySQLClientSession mySQLSession = mycat.getMySQLSession();
-                        String currentDataSource = mySQLSession.getDatasourceName();
-                        if (datasourceName.equals( currentDataSource)&& mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
-                            mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
-                            return;
-                        } else {
-                            mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
-                            return;
-                        }
-                    } else {
-                        mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
-                    }
-                };
-                NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-                MySQLDatasource datasource = mycatServer.getDatasource(datasourceName);
-                getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
-                    @Override
-                    public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                        MycatMonitor.onRouteResult(mycat, datasource.getName(), datasource.getName(), datasource.getName(), packetData);
-                        SessionCallBack<MySQLClientSession> sessionCallBack = new SessionCallBack<MySQLClientSession>() {
-                            @Override
-                            public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                                PromiseInternal<Void> proxyBackend = MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
-                                // todo 异步未实现完全 wangzihaogithub
-                                proxyBackend.onComplete(o-> promise.tryComplete());
-                            }
-
-                            @Override
-                            public void onException(Exception exception, Object sender, Object attr) {
-                                promise.tryFail(exception);
-                                finallyCallBack.onRequestMySQLException(mycat, exception, null);
-                            }
-                        };
-                        if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
-                            sessionCallBack.onSession(session, this, null);
-                        } else {
-                            syncState(session, transactionType, isolation, sessionCallBack);
-                        }
-                    }
-
-                    @Override
-                    public void onException(Exception exception, Object sender, Object attr) {
-                        promise.tryFail(exception);
-                        finallyCallBack.onRequestMySQLException(mycat, exception, attr);
-                    }
-                });
-            }
-
-            @Override
-            public void stop(ReactorEnvThread reactor, Exception reason) {
-                mycat.setLastMessage(reason);
-                // todo 异步未实现完全 wangzihaogithub
-                PromiseInternal<Void> proxyBackend = mycat.writeErrorEndPacketBySyncInProcessError();
-                promise.tryFail(reason);
-            }
-
-            @Override
-            public String message() {
-                return "proxyBackendByDataSource";
-            }
-        });
-
-        // todo 异步未实现完全 wangzihaogithub
-        return promise;
-    }
+//
+//    public static PromiseInternal<Void> proxyBackendByDatasourceName(MycatSession mycat,
+//                                                                     String datasourceName ,
+//                                                                     String sql,
+//                                                                     TransactionSyncType transaction,
+//                                                                     MySQLIsolation isolation) {
+//        //todo fix the log
+//        return proxyBackendByDataSource(mycat,
+//                MySQLPacketUtil.generateComQueryPacket(sql),
+//                datasourceName,
+//                DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
+//                transaction, isolation);
+//    }
+//
+//    public static PromiseInternal<Void> proxyBackendByDataSource(MycatSession mycat,
+//                                                byte[] packetData,
+//                                                String datasourceName,
+//                                                MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
+//                                                TransactionSyncType transactionType,
+//                                                MySQLIsolation isolation) {
+//        Objects.requireNonNull(datasourceName);
+//        mycat.switchProxyWriteHandler();
+//        PromiseInternal<Void> promise = VertxUtil.newPromise();
+//        MySQLDatasourcePool mySQLDatasourcePool = MetaClusterCurrent.wrapper(MySQLDatasourcePool.class);
+//        mySQLDatasourcePool.createSession();
+//        mycat.getIOThread().addNIOJob(new NIOJob() {
+//            @Override
+//            public void run(MycatReactorThread reactor2) throws Exception {
+//                BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
+//                    if (mycat.isBindMySQLSession()) {
+//                        MySQLClientSession mySQLSession = mycat.getMySQLSession();
+//                        String currentDataSource = mySQLSession.getDatasourceName();
+//                        if (datasourceName.equals( currentDataSource)&& mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
+//                            mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
+//                            return;
+//                        } else {
+//                            mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
+//                            return;
+//                        }
+//                    } else {
+//                        reactor2.
+//                        mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
+//                    }
+//                };
+//                NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+//                MySQLDatasource datasource = mycatServer.getDatasource(datasourceName);
+//                getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
+//                    @Override
+//                    public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//                        MycatMonitor.onRouteResult(mycat, datasource.getName(), datasource.getName(), datasource.getName(), packetData);
+//                        SessionCallBack<MySQLClientSession> sessionCallBack = new SessionCallBack<MySQLClientSession>() {
+//                            @Override
+//                            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//                                PromiseInternal<Void> proxyBackend = MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
+//                                // todo 异步未实现完全 wangzihaogithub
+//                                proxyBackend.onComplete(o-> promise.tryComplete());
+//                            }
+//
+//                            @Override
+//                            public void onException(Exception exception, Object sender, Object attr) {
+//                                promise.tryFail(exception);
+//                                finallyCallBack.onRequestMySQLException(mycat, exception, null);
+//                            }
+//                        };
+//                        if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+//                            sessionCallBack.onSession(session, this, null);
+//                        } else {
+//                            syncState(session, transactionType, isolation, sessionCallBack);
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onException(Exception exception, Object sender, Object attr) {
+//                        promise.tryFail(exception);
+//                        finallyCallBack.onRequestMySQLException(mycat, exception, attr);
+//                    }
+//                });
+//            }
+//
+//            @Override
+//            public void stop(MycatReactorThread reactor, Exception reason) {
+//                mycat.setLastMessage(reason);
+//                // todo 异步未实现完全 wangzihaogithub
+//                PromiseInternal<Void> proxyBackend = mycat.writeErrorEndPacketBySyncInProcessError();
+//                promise.tryFail(reason);
+//            }
+//
+//            @Override
+//            public String message() {
+//                return "proxyBackendByDataSource";
+//            }
+//        });
+//
+//        // todo 异步未实现完全 wangzihaogithub
+//        return promise;
+//    }
 
     @ToString
     public enum TransactionSyncType {
@@ -223,24 +223,6 @@ public class MySQLTaskUtil {
                 callBack.onException(new MycatException(message), sender, attr);
             }
         });
-    }
-
-
-    public static void getMySQLSessionForTryConnect(String datasource,
-                                                    SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-        Objects.requireNonNull(datasource);
-        Objects.requireNonNull(asynTaskCallBack);
-        Thread thread = Thread.currentThread();
-        if (thread instanceof MycatReactorThread) {
-            MySQLSessionManager manager = ((MycatReactorThread) thread)
-                    .getMySQLSessionManager();
-            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-            manager.getIdleSessionsOfIdsOrPartial(
-                    mycatServer.getDatasource(datasource), null, PartialType.SMALL_ID
-                    , asynTaskCallBack);
-        } else {
-            throw new MycatException("Replica must running in MycatReactorThread");
-        }
     }
 
 

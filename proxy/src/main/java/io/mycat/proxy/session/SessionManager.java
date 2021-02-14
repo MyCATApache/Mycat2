@@ -16,6 +16,7 @@ package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.callback.SessionCallBack;
+import io.vertx.core.Future;
 
 import java.io.IOException;
 import java.nio.channels.Selector;
@@ -48,7 +49,7 @@ public interface SessionManager<T extends Session> {
   /**
    * 从管理器中移除Session
    */
-  void removeSession(T session, boolean normal, String reason);
+  Future<Void> removeSession(T session, boolean normal, String reason);
 
   /**
    * 前端session管理器,前端session管理器,收到的通道就是已经连接的

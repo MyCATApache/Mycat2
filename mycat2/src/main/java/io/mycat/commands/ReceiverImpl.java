@@ -140,7 +140,7 @@ public class ReceiverImpl implements Response {
                     Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
                             connection), sql, Collections.emptyList());
                     if (!inTransaction) {
-                        return sendResultSet(mysqlPacketObservable.doOnTerminate(() -> connection.close()));
+                        return sendResultSet(mysqlPacketObservable.doOnTerminate(() -> transactionSession.closeStatenmentState()));
                     } else {
                         return sendResultSet(mysqlPacketObservable);
                     }
@@ -159,9 +159,6 @@ public class ReceiverImpl implements Response {
                 count++;
                 Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
                 future1.onComplete(event -> {
-                    if (!inTransaction) {
-                        connectionFuture.result().close();
-                    }
                     if (event.succeeded()) {
                         long[] result = event.result();
                         sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());

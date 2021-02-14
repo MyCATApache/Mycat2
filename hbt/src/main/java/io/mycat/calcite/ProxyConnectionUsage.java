@@ -59,6 +59,9 @@ public class ProxyConnectionUsage {
         IdentityHashMap<RelNode, List<Observable<Object[]>>> finalResMap = new IdentityHashMap<>();
         Map<RelNode, List<Observable<Object[]>>> resMap = Collections.synchronizedMap(finalResMap);
         if (context.isInTransaction()) {
+            if (context.isInTransaction()!=context.getTransactionSession().isInTransaction()){
+                System.out.println();
+            }
             return getConnectionWhenTranscation(xaconnection)
                     .flatMap(new QueryResultSetInTranscation(xaconnection, resMap, params, finalResMap));
         } else {
@@ -73,7 +76,7 @@ public class ProxyConnectionUsage {
                                target.getRowMetaData());
                        synchronized (resMap) {
                            List<Observable<Object[]>> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
-                           rowObservables.add(observable.doOnTerminate(() -> sqlConnection.close()));
+                           rowObservables.add(observable);
                        }
                    }
                }catch (Throwable throwable){
@@ -82,56 +85,6 @@ public class ProxyConnectionUsage {
                return Future.succeededFuture(finalResMap);
             });
         }
-    }
-
-    @NotNull
-    public static RowObservable wrapAsAutoCloseConnectionRowObservale(SqlConnection sqlConnection, RowObservable rowObservable) {
-        return new RowObservable() {
-            @Override
-            public MycatRowMetaData getRowMetaData() {
-                return rowObservable.getRowMetaData();
-            }
-
-            @Override
-            public void setRowMetaData(MycatRowMetaData metaData) {
-                rowObservable.setRowMetaData(metaData);
-            }
-
-            @Override
-            protected void subscribeActual(@NonNull Observer<? super Object[]> observer) {
-                rowObservable.subscribe(new Observer<Object[]>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        observer.onSubscribe(d);
-                    }
-
-                    @Override
-                    public void onNext(Object @NonNull [] objects) {
-                        LOGGER.debug(Arrays.stream(objects).filter(i -> i != null).map(i -> i.getClass().toString())
-                                .collect(Collectors.toList()).toString());
-                        String s = Arrays.stream(objects).filter(i -> i != null).map(i -> i.getClass().toString())
-                                .collect(Collectors.toList()).toString();
-                        if (s.contains("Integer")) {
-                            throw new UnsupportedOperationException();
-                        }
-                        LOGGER.debug(Arrays.toString(objects));
-
-                        observer.onNext(objects);
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        observer.onError(e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        sqlConnection.close();
-                        observer.onComplete();
-                    }
-                });
-            }
-        };
     }
 
     private Future<Void> getResultSet(Map<RelNode, List<Observable<Object[]>>> resMap,
@@ -187,7 +140,7 @@ public class ProxyConnectionUsage {
                 for (String s : map.keySet()) {
                     future = future
                             .flatMap(unused -> {
-                                return (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true));
+                                return (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true)).mapEmpty();
                             });
                 }
                 return future.onComplete(event -> {
@@ -272,7 +225,7 @@ public class ProxyConnectionUsage {
                 for (String string : strings) {
                     future = future.flatMap(unused -> {
                         Future<SqlConnection> connection1 = connection.getConnection(string);
-                        return connection1.map(new AddConnection(string));
+                        return connection1.map(new AddConnection(string,   this.connection));
                     });
                 }
                 return future.onComplete(event -> {
@@ -294,7 +247,7 @@ public class ProxyConnectionUsage {
         private class AddConnection implements Function<SqlConnection, Void> {
             private final String string;
 
-            public AddConnection(String string) {
+            public AddConnection(String string, XaSqlConnection connection) {
                 this.string = string;
 
             }
@@ -307,6 +260,9 @@ public class ProxyConnectionUsage {
                 synchronized (ProxyConnectionUsage.this) {
                     LinkedList<SqlConnection> defaultConnections = map.computeIfAbsent(string, s -> new LinkedList<>());
                     defaultConnections.add(i);
+                    if (!connection.isInTranscation()){
+                        connection.addCloseConnection(i);
+                    }
                 }
                 return null;
             }

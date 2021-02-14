@@ -144,6 +144,7 @@ public enum MycatdbCommand {
                     sqlRecord.setSql(sqlStatement);
                     PromiseInternal<Void> execute = execute(dataContext, response, sqlStatement);
                     execute.onComplete(e->{
+                        dataContext.getTransactionSession().closeStatenmentState();
                         resultList.add(e);
                         if(e.failed()){
                             promise.tryFail(e.cause());

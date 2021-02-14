@@ -12,6 +12,7 @@ import io.mycat.util.Dumper;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
@@ -96,13 +97,13 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> closeStatenmentState() {
-        CompositeFuture all = CompositeFuture.all(parent.closeStatenmentState(), connection.closeStatementState());
-        return (Future) all;
+       return parent.closeStatenmentState()
+               .flatMap(unused -> connection.closeStatementState());
     }
 
     @Override
     public Future<Void> close() {
-        return parent.close();
+        return parent.close().flatMap(unused -> connection.close());
     }
 
     @Override
@@ -122,8 +123,10 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
 
     @Override
     public Future<Void> openStatementState() {
-        CompositeFuture all = CompositeFuture.all(parent.openStatementState(), connection.openStatementState());
-        return (Future) all;
+        Future<Void> future = dealCloseConnections();
+        return closeStatenmentState()
+               .flatMap(unused -> parent.openStatementState())
+               .flatMap(unused -> connection.openStatementState());
     }
 
     @Override

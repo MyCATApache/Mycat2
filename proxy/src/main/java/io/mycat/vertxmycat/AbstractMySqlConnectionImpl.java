@@ -9,12 +9,12 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
-import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.sqlclient.*;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +29,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
     static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
     volatile Handler<Throwable> exceptionHandler;
     volatile Handler<Void> closeHandler;
-    final MySQLClientSession mySQLClientSession;
+    volatile MySQLClientSession mySQLClientSession;
 
     public AbstractMySqlConnectionImpl(MySQLClientSession mySQLClientSession) {
         this.mySQLClientSession = mySQLClientSession;
@@ -37,7 +37,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Future<PreparedStatement> prepare(String sql) {
-        return Future.succeededFuture(new MycatVertxPreparedStatement(sql,this));
+        return Future.succeededFuture(new MycatVertxPreparedStatement(sql, this));
     }
 
     @Override
@@ -83,7 +83,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Query<RowSet<Row>> query(String sql) {
-        return new RowSetQuery(sql,this);
+        return new RowSetQuery(sql, this);
     }
 
     public static String apply(String parameterizedSql, List<Object> parameters) {
@@ -100,7 +100,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetMySqlPreparedQuery(sql,this);
+        return new RowSetMySqlPreparedQuery(sql, this);
     }
 
     @NotNull
@@ -114,14 +114,15 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
     }
 
 
-
     @Override
     public Future<Void> close() {
-        Promise<Void> promise = Promise.promise();
-        Thread thread = Thread.currentThread();
-        if (thread instanceof ReactorEnvThread) {
-            try {
-                mySQLClientSession.getSessionManager().addIdleSession(mySQLClientSession);
+        if (mySQLClientSession == null) {
+            return VertxUtil.newSuccessPromise();
+        } else {
+            Promise<Void> promise = Promise.promise();
+            PromiseInternal<Void> close = mySQLClientSession.close(true, "close");
+            mySQLClientSession = null;
+            close.onComplete(event -> {
                 if (closeHandler != null) {
                     try {
                         closeHandler.handle(null);
@@ -132,33 +133,9 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
                     }
                 }
                 promise.tryComplete();
-            } catch (Throwable throwable) {
-                promise.fail(throwable);
-            }
-        } else {
-            mySQLClientSession.getIOThread()
-                    .addNIOJob(new NIOJob() {
-                        @Override
-                        public void run(ReactorEnvThread reactor) throws Exception {
-                            Future<Void> close = close();
-                            close.onComplete(event -> {
-                                promise.tryComplete();
-                            });
-                        }
-
-                        @Override
-                        public void stop(ReactorEnvThread reactor, Exception reason) {
-                            Future<Void> close = close();
-                            close.onComplete(event -> promise.tryComplete());
-                        }
-
-                        @Override
-                        public String message() {
-                            return "closing " + mySQLClientSession;
-                        }
-                    });
+            });
+            return promise.future();
         }
-        return promise.future();
     }
 
     @NotNull

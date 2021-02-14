@@ -27,7 +27,7 @@ public interface MySQLManager {
 
     Future<SqlConnection> getConnection(String targetName);
 
-    void close(Handler<Future> handler);
+    Future<Void> close();
 
     void setTimer(long delay, Runnable handler);
 }

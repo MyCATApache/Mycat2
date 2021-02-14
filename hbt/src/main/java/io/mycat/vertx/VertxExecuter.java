@@ -171,7 +171,8 @@ public class VertxExecuter {
     }
 
     public static Future<long[]> runInsert(
-            Map<String, List<List<Object>>> insertMap, Future<SqlConnection> sqlConnectionFuture) {
+            Map<String, List<List<Object>>> insertMap,
+            Future<SqlConnection> sqlConnectionFuture) {
         List<long[]> list = Collections.synchronizedList(new ArrayList<>());
         Future<Void> future = Future.succeededFuture();
         for (Map.Entry<String, List<List<Object>>> e : insertMap.entrySet()) {

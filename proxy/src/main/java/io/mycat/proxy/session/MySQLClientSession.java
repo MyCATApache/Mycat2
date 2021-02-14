@@ -23,6 +23,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.handler.ResponseType;
@@ -53,7 +54,7 @@ public class MySQLClientSession extends
     /**
      * mysql session的源配置信息
      */
-    private final MySQLDatasource datasource;
+    private final MySQLDatasourcePool datasource;
     protected ProxyBuffer proxyBuffer;
 
     /**
@@ -89,10 +90,10 @@ public class MySQLClientSession extends
     /**
      * 构造函数
      */
-    public MySQLClientSession(int sessionId, MySQLDatasource datasource,
-                              NIOHandler nioHandler, SessionManager<MySQLClientSession> sessionManager
+    public MySQLClientSession(int sessionId, MySQLDatasourcePool datasource,
+                              NIOHandler nioHandler
     ) {
-        super(sessionId, nioHandler, sessionManager);
+        super(sessionId, nioHandler, datasource);
         Objects.requireNonNull(datasource);
         this.datasource = datasource;
     }
@@ -117,18 +118,15 @@ public class MySQLClientSession extends
      */
     @Override
     public synchronized PromiseInternal<Void> close(boolean normal, String hint) {
-        if (hasClosed) {
+        if (!checkOpen()) {
             return VertxUtil.newSuccessPromise();
         }
         resetPacket();
-        hasClosed = true;
-//    getDatasource().decrementUsedCounter();
-        try {
-            getSessionManager().removeSession(this, normal, hint);
-            return VertxUtil.newSuccessPromise();
-        } catch (Exception e) {
-            LOGGER.error("channel close occur exception:{}", e);
-            return VertxUtil.newFailPromise(e);
+        if (normal) {
+            return VertxUtil.castPromise(datasource.addIdleSession(this));
+        } else {
+            hasClosed = true;
+            return VertxUtil.castPromise(datasource.removeSession(this, false, hint));
         }
     }
 
@@ -338,8 +336,8 @@ public class MySQLClientSession extends
         this.updateLastActiveTime();
         this.checkWriteFinished();
         getChannelKey().selector().wakeup();
-        if(LOGGER.isDebugEnabled()){
-            LOGGER.debug("sessionId:{} writeProxyBufferToChannel successfully",sessionId());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("sessionId:{} writeProxyBufferToChannel successfully", sessionId());
         }
         return VertxUtil.newSuccessPromise();
     }
@@ -416,15 +414,18 @@ public class MySQLClientSession extends
      */
     @Override
     public void switchNioHandler(NIOHandler nioHandler) {
+        if (this.nioHandler!=null&&nioHandler!=null){
+            System.out.println();
+        }
         this.nioHandler = nioHandler;
         if (nioHandler == null && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("switchNioHandler:{} sessionId:{}", nioHandler,sessionId());
+            LOGGER.debug("switchNioHandler:{} sessionId:{}", nioHandler, sessionId());
         }
     }
 
     @Override
-    public MySQLSessionManager getSessionManager() {
-        return (MySQLSessionManager) sessionManager;
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 
     /**
@@ -447,7 +448,7 @@ public class MySQLClientSession extends
         ProxyBuffer proxyBuffer = this.proxyBuffer;
         MycatMonitor
                 .onBackendRead(this, proxyBuffer.currentByteBuffer(), proxyBuffer.channelReadStartIndex(),
-                        proxyBuffer.channelReadEndIndex()-proxyBuffer.channelReadStartIndex()
+                        proxyBuffer.channelReadEndIndex() - proxyBuffer.channelReadStartIndex()
                 );
         return b;
     }

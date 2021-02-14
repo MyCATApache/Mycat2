@@ -19,13 +19,12 @@ import cn.mycat.vertx.xa.ImmutableParticipantLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.State;
 import cn.mycat.vertx.xa.XaLog;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
@@ -53,7 +52,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 
-    protected MySQLManager mySQLManager(){
+    protected MySQLManager mySQLManager() {
         return mySQLManagerSupplier.get();
     }
 
@@ -67,18 +66,16 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     /**
      * 1.not allow Nested transaction,double begin.
      * 2.alloc unique xid
-     *
-     * @param handler the callback handler
      */
-    public void begin(Handler<AsyncResult<Void>> handler) {
+    @Override
+    public Future<Void> begin() {
         if (inTranscation) {
-            handler.handle(Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
-            return;
+            return (Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
         }
         inTranscation = true;
         xid = log.nextXid();
         log.beginXa(xid);
-        handler.handle(Future.succeededFuture());
+        return Future.succeededFuture();
     }
 
 
@@ -99,28 +96,25 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             }
         }
         Future<SqlConnection> connection = mySQLManager.getConnection(targetName);
-       return connection.map(connection1 -> {
-           map.put(targetName, connection1);
-           return connection1;
-       });
+        return connection.map(connection1 -> {
+            addCloseConnection(connection1);
+            return connection1;
+        });
     }
 
     /**
-     *
      * <p>
      * XA_START to XA_END to XA_ROLLBACK
      * XA_ENDED to XA_ROLLBACK
      * XA_PREPARED to XA_ROLLBACK
      * <p>
      * client blocks until rollback successfully
-     *
-     * @param handler the callback handler
      */
-    public void rollback(Handler<AsyncResult<Void>> handler) {
-        logParticipants();
-        Function<SqlConnection, Future<Object>> function = new Function<SqlConnection, Future<Object>>() {
-            @Override
-            public Future apply(SqlConnection c) {
+    @Override
+    public Future<Void> rollback() {
+        return Future.future((Promise<Void> promise) -> {
+            logParticipants();
+            Function<SqlConnection, Future<Object>> function = c -> {
                 Future future = Future.succeededFuture();
                 switch (connectionState.get(c)) {
                     case XA_INITED:
@@ -136,39 +130,39 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                                 .map(u -> changeTo(c, State.XA_ROLLBACKED));
                 }
                 return future;
-            }
-        };
-        executeAll((Function) function)
-                .onComplete(event -> {
-                    log.logRollback(xid, event.succeeded());
-                    if (event.succeeded()) {
-                        inTranscation = false;
-                        clearConnections((Handler) handler);
-                    } else {
-                        retryRollback(handler, function);
-                    }
-                });
+            };
+            executeAll((Function) function)
+                    .onComplete(event -> {
+                        log.logRollback(xid, event.succeeded());
+                        if (event.succeeded()) {
+                            inTranscation = false;
+                            clearConnections().onComplete(promise);
+                        } else {
+                            retryRollback(function).onComplete(promise);
+                        }
+                    });
+        });
     }
 
     /**
      * retry has a delay time for datasource need duration to recover
-     *
-     * @param handler
-     * @param function
      */
-    private void retryRollback(Handler<AsyncResult<Void>> handler, Function<SqlConnection, Future<Object>> function) {
-        MySQLManager mySQLManager = mySQLManager();
-        List<Future<Object>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager.getConnection(c).flatMap(function)).collect(Collectors.toList());
-        CompositeFuture.all((List) collect)
-                .onComplete(event -> {
-                    log.logRollback(xid, event.succeeded());
-                    if (event.failed()) {
-                        mySQLManager.setTimer(log.retryDelay(), () -> retryRollback(handler, function));
-                        return;
-                    }
-                    inTranscation = false;
-                    clearConnections(handler);
-                });
+    private Future<Void> retryRollback(Function<SqlConnection, Future<Object>> function) {
+        return Future.future(promise -> {
+            List<Future<Object>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager().getConnection(c).flatMap(function)).collect(Collectors.toList());
+            CompositeFuture.all((List) collect)
+                    .onComplete(event -> {
+                        log.logRollback(xid, event.succeeded());
+                        if (event.failed()) {
+                            mySQLManager().setTimer(log.retryDelay(),
+                                    () -> retryRollback(function).onComplete(promise));
+                            return;
+                        }
+                        inTranscation = false;
+                        clearConnections().onComplete(promise);
+                    });
+        });
+
     }
 
     /**
@@ -197,19 +191,19 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         log.log(xid, c, state);
     }
 
-    public void commit(Handler<AsyncResult<Void>> handler) {
-        commitXa(() -> Future.succeededFuture(), handler);
+
+    @Override
+    public Future<Void> commit() {
+        return commitXa(() -> Future.succeededFuture());
     }
 
     /**
      * @param beforeCommit for the native connection commit or some exception test
-     * @param handler the callback handler
      */
-    public void commitXa(Supplier<Future> beforeCommit, Handler<AsyncResult<Void>> handler) {
-        logParticipants();
-        CompositeFuture xaEnd = executeAll(new Function<SqlConnection, Future>() {
-            @Override
-            public Future apply(SqlConnection connection) {
+    public Future<Void> commitXa(Supplier<Future> beforeCommit) {
+        return Future.future((Promise<Void> promsie) -> {
+            logParticipants();
+            CompositeFuture xaEnd = executeAll(connection -> {
                 Future future = Future.succeededFuture();
                 switch (connectionState.get(connection)) {
                     case XA_INITED:
@@ -224,96 +218,94 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                     default:
                 }
                 return future;
-            }
-
-        });
-        xaEnd.onFailure(throwable -> handler.handle(Future.failedFuture(throwable)));
-        xaEnd.onSuccess(event -> {
-            executeAll(connection -> {
-                if (connectionState.get(connection) != State.XA_PREPARED) {
-                    return connection.query(String.format(XA_PREPARE, xid)).execute()
-                            .map(c -> changeTo(connection, State.XA_PREPARED));
-                }
-                return Future.succeededFuture();
-            })
-                    .onFailure(throwable -> {
-                        log.logPrepare(xid, false);
-                        //客户端触发回滚
-                        handler.handle(Future.failedFuture(throwable));
-                    })
-                    .onSuccess(compositeFuture -> {
-                        log.logPrepare(xid, true);
-                        Future future;
-                        try {
-                            /**
-                             * if log commit fail ,occur exception,other transcations rollback.
-                             */
-                            log.logCommitBeforeXaCommit(xid);
-                            /**
-                             * if native connection has inner commited,
-                             * but it didn't received the commit response.
-                             * should check the by manually.
-                             */
-                            future = beforeCommit.get();
-                        } catch (Throwable throwable) {
-                            future = Future.failedFuture(throwable);
-                        }
-                        future.onFailure((Handler<Throwable>) throwable -> {
-                            log.logCancelCommitBeforeXaCommit(xid);
+            });
+            xaEnd.onFailure(throwable -> promsie.tryFail(throwable));
+            xaEnd.onSuccess(event -> {
+                executeAll(connection -> {
+                    if (connectionState.get(connection) != State.XA_PREPARED) {
+                        return connection.query(String.format(XA_PREPARE, xid)).execute()
+                                .map(c -> changeTo(connection, State.XA_PREPARED));
+                    }
+                    return Future.succeededFuture();
+                })
+                        .onFailure(throwable -> {
+                            log.logPrepare(xid, false);
                             //客户端触发回滚
-                            /**
-                             * the client received exception ,it must  rollback.
-                             */
-                            handler.handle(Future.failedFuture(throwable));
-                        });
-                        future.onSuccess(event16 -> {
-                            executeAll(connection -> {
-                                return connection.query(String.format(XA_COMMIT, xid)).execute()
-                                        .map(c -> changeTo(connection, State.XA_COMMITED));
-                            })
-                                    .onFailure(ignored -> {
+                            promsie.tryFail(throwable);
+                        })
+                        .onSuccess(compositeFuture -> {
+                            log.logPrepare(xid, true);
+                            Future future;
+                            try {
+                                /**
+                                 * if log commit fail ,occur exception,other transcations rollback.
+                                 */
+                                log.logCommitBeforeXaCommit(xid);
+                                /**
+                                 * if native connection has inner commited,
+                                 * but it didn't received the commit response.
+                                 * should check the by manually.
+                                 */
+                                future = beforeCommit.get();
+                            } catch (Throwable throwable) {
+                                future = Future.failedFuture(throwable);
+                            }
+                            future.onFailure((Handler<Throwable>) throwable -> {
+                                log.logCancelCommitBeforeXaCommit(xid);
+                                //客户端触发回滚
+                                /**
+                                 * the client received exception ,it must  rollback.
+                                 */
+                                promsie.fail(throwable);
+                            });
+                            future.onSuccess(event16 -> {
+                                executeAll(connection -> {
+                                    return connection.query(String.format(XA_COMMIT, xid)).execute()
+                                            .map(c -> changeTo(connection, State.XA_COMMITED));
+                                })
+                                        .onFailure(ignored -> {
 
-                                        log.logCommit(xid, false);
-                                        //retry
-                                        retryCommit(handler);
-                                    })
-                                    .onSuccess(ignored -> {
-                                        inTranscation = false;
-                                        log.logCommit(xid, true);
-                                        clearConnections(result -> handler.handle(((AsyncResult) result)));
-                                    });
+                                            log.logCommit(xid, false);
+                                            //retry
+                                            retryCommit().onComplete(promsie);
+                                        })
+                                        .onSuccess(ignored -> {
+                                            inTranscation = false;
+                                            log.logCommit(xid, true);
+                                            clearConnections().onComplete(promsie);
+                                        });
+                            });
                         });
-                    });
+            });
         });
+
     }
+
 
     /**
      * use new connection to retry the connection.
-     *
-     * @param handler
      */
-    private void retryCommit(Handler<AsyncResult<Void>> handler) {
-        MySQLManager mySQLManager = mySQLManager();
-        CompositeFuture all = CompositeFuture.all(computePrepareCommittedTargets().stream()
-                .map(s -> mySQLManager.getConnection(s)
-                        .compose(c -> {
-                            return c.query(String.format(XA_COMMIT, xid))
-                                    .execute().compose(rows -> {
-                                        changeTo(s, State.XA_COMMITED);
-                                        c.close();
-                                        return Future.succeededFuture();
-                                    }, throwable -> {
-                                        c.close();
-                                        return Future.failedFuture(throwable);
-                                    });
-                        })).collect(Collectors.toList()));
-        all.onSuccess(event -> {
-            inTranscation = false;
-            log.logCommit(xid, true);
-            clearConnections(event2 -> handler.handle(Future.succeededFuture()));
-        });
-        all.onFailure(event -> {
-            mySQLManager.setTimer(log.retryDelay(), () -> retryCommit(handler));
+    private Future<Void> retryCommit() {
+        return Future.future((Promise<Void> promise) -> {
+            CompositeFuture all = CompositeFuture.all(computePrepareCommittedTargets().stream()
+                    .map(s -> mySQLManager().getConnection(s)
+                            .compose(c -> {
+                                return c.query(String.format(XA_COMMIT, xid))
+                                        .execute().compose(rows -> {
+                                            changeTo(s, State.XA_COMMITED);
+                                            return c.close();
+                                        }, throwable -> {
+                                            return c.close();
+                                        });
+                            })).collect(Collectors.toList()));
+            all.onSuccess(event -> {
+                inTranscation = false;
+                log.logCommit(xid, true);
+                clearConnections().onComplete(promise);
+            });
+            all.onFailure(event -> {
+                mySQLManager().setTimer(log.retryDelay(), () -> retryCommit().onComplete(promise));
+            });
         });
     }
 
@@ -342,23 +334,27 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     }
 
     /**
-     * @param handler close and call handler
+     *
      */
-    public void close(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> close() {
         if (inTranscation) {
-            rollback(ignored -> clearConnections(event -> handler.handle(Future.succeededFuture())));
+            return rollback().flatMap(unused -> clearConnections());
         } else {
-            clearConnections(event -> handler.handle(Future.succeededFuture()));
+            return clearConnections();
         }
     }
 
-    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
-        if (!inTranscation) {
-            xid = null;
-            clearConnections(handler);
-        }else {
-            handler.handle(Future.succeededFuture());
-        }
+
+    @Override
+    public Future<Void> closeStatementState() {
+        return super.closeStatementState().flatMap(unused -> {
+            if (!inTranscation) {
+                xid = null;
+                return clearConnections();
+            } else {
+                return Future.succeededFuture();
+            }
+        });
     }
 
     @Override
@@ -368,32 +364,19 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
     /**
      * before clear connections,it should check not be in transaction
-     *
-     * @param handler
      */
-    private void clearConnections(Handler<AsyncResult<Void>> handler) {
-        Future future;
+    public Future<Void> clearConnections() {
+        dealCloseConnections();
         if (inTranscation) {
-            future = executeAll(c -> {
-                Future objectFuture;
-                if (c instanceof MySQLConnection) {
-                    MySQLConnection c1 = (MySQLConnection) c;
-                    objectFuture = c1.resetConnection();
-                } else {
-                    objectFuture = Future.succeededFuture();
-                }
-                return objectFuture.onComplete(ignored -> c.close());
-            });
+            return Future.succeededFuture();
         } else {
-            future = executeAll(c -> {
+            return executeAll(c -> {
                 return c.close();
-            });
+            }).onComplete(c -> {
+                map.clear();
+                connectionState.clear();
+            }).mapEmpty();
         }
-
-        inTranscation = false;
-        map.clear();
-        connectionState.clear();
-        handler.handle((Future) Future.succeededFuture());
     }
 }
 

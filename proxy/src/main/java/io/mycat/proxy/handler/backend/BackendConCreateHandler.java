@@ -18,8 +18,8 @@ import io.mycat.GlobalConst;
 import io.mycat.MycatException;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.*;
+import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -27,11 +27,11 @@ import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.SessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+import io.vertx.core.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +43,12 @@ import java.util.Objects;
 
 /**
  * @author jamie12221
- *  date 2019-05-10 22:24 向mysql服务器创建连接
+ * date 2019-05-10 22:24 向mysql服务器创建连接
  **/
 public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackendConCreateHandler.class);
-    final CommandCallBack callback;
+    final Promise<MySQLClientSession> callback;
     final String STR_CACHING_AUTH_STAGE = "FULL_AUTH";
     final MySQLDatasource datasource;
     boolean welcomePkgReceived = false;
@@ -59,27 +59,26 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     int charsetIndex;
 
     //todo
-    public BackendConCreateHandler(MySQLDatasource datasource, MySQLSessionManager sessionManager,
-                                   MycatReactorThread curThread, CommandCallBack callback) {
+    public BackendConCreateHandler(MySQLDatasourcePool datasource,
+                                   Promise<MySQLClientSession> promise) {
+        MycatReactorThread curThread=   (MycatReactorThread) Thread.currentThread();
+        datasource.tryIncrementSessionCounter();
         Objects.requireNonNull(datasource);
-        Objects.requireNonNull(sessionManager);
-        Objects.requireNonNull(callback);
+        Objects.requireNonNull(promise);
         this.datasource = datasource;
-        this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(), datasource, this, sessionManager);
-        mysql.switchNioHandler(this);
-        mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-        SocketChannel channel = null;
+        this.callback = promise;
+        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(), datasource, this);
         try {
+            mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+            SocketChannel channel = null;
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
             InetSocketAddress inetSocketAddress = new InetSocketAddress(datasource.getIp(), datasource.getPort());
             channel.connect(inetSocketAddress);
-            LOGGER.info("inetSocketAddress:{} ",inetSocketAddress);
+            LOGGER.info("inetSocketAddress:{} ", inetSocketAddress);
         } catch (Exception e) {
             onException(mysql, e);
-            callback.onFinishedException(null, e, null);
             return;
         }
     }
@@ -92,7 +91,6 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         } else {
             MycatMonitor.onBackendConCreateConnectException(mysql, e);
             onException(mysql, e);
-            callback.onFinishedException(e, this, null);
         }
     }
 
@@ -105,12 +103,11 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
                 return;
             }
             handle(mysql);
-
         } catch (Exception e) {
             LOGGER.error("create mysql connection error {} {}", datasource, e.getMessage());
             MycatMonitor.onBackendConCreateReadException(mysql, e);
             onException(mysql, e);
-            callback.onFinishedException(e, this, null);
+            return;
         }
     }
 
@@ -143,13 +140,13 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         }
         //验证成功
         if (payloadType == MySQLPayloadType.FIRST_OK) {
+            mysql.switchNioHandler(null);
             mysql.resetPacket();
             mysql.getBackendPacketResolver().setIsClientLoginRequest(false);
-            if(LOGGER.isDebugEnabled()){
-                LOGGER.debug("successful create mysql backend connection:{}",mysql.sessionId());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("successful create mysql backend connection:{}", mysql.sessionId());
             }
-            int serverStatus = mysql.getBackendPacketResolver().getServerStatus();
-            callback.onFinishedOk(serverStatus, mysql, null, null);
+            callback.complete(mysql);
             return;
         }
 
@@ -157,7 +154,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         //用公钥进行密码加密
         if (STR_CACHING_AUTH_STAGE.equals(stage) && authPluginName
                 .equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)) {
-            LOGGER.info("authPluginName:{} ",authPluginName);
+            LOGGER.info("authPluginName:{} ", authPluginName);
             String publicKeyString = mySQLPacket.readEOFString();
             byte[] payload = CachingSha2PasswordPlugin
                     .encrypt(mysqlVersion, publicKeyString, datasource.getPassword(), seed,
@@ -196,12 +193,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         //连接不上
         ErrorPacketImpl errorPacket = new ErrorPacketImpl();
         errorPacket.readPayload(mySQLPacket);
-        String message = new String(errorPacket.getErrorMessage());
-        LOGGER.error(message);
-        mysql.resetCurrentProxyPayload();
-        callback.onFinishedErrorPacket(errorPacket, mysql.getBackendPacketResolver().getServerStatus(),
-                mysql, this, null);
-        mysql.getBackendPacketResolver().setIsClientLoginRequest(false);
+        onException(mysql, new MycatException(errorPacket.getErrorCode(), errorPacket.getErrorMessageString()));
     }
 
     public void writeClientAuth(MySQLClientSession mysql) throws IOException {
@@ -213,12 +205,9 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             ErrorPacketImpl errorPacket = new ErrorPacketImpl();
             errorPacket.readPayload(payload);
             String errorMessage = new String(errorPacket.getErrorMessage());
-            LOGGER.error(" {} {}",this.datasource.getName(),errorMessage);
+            LOGGER.error(" {} {}", this.datasource.getName(), errorMessage);
             mysql.setLastMessage(errorMessage);
-            onClear(mysql);
-            mysql.close(false, errorMessage);
-            callback.onFinishedErrorPacket(errorPacket, mysql.getBackendPacketResolver().getServerStatus(),
-                    mysql, this, null);
+            onException(mysql, new MycatException(errorPacket.getErrorCode(), errorMessage));
             return;
         }
 
@@ -233,10 +222,10 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         packet.setUsername(datasource.getUsername());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
 
-        LOGGER.info("backend mysql authPluginName:{} ",hs.getAuthPluginName());
+        LOGGER.info("backend mysql authPluginName:{} ", hs.getAuthPluginName());
         //加密密码
         this.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;//hs.getAuthPluginName();
-        LOGGER.info("mycat set authPluginName:{} ",authPluginName);
+        LOGGER.info("mycat set authPluginName:{} ", authPluginName);
         packet.setPassword(generatePassword(authPluginName, seed));
 //        print(packet.getPassword());
         packet.setAuthPluginName(hs.getAuthPluginName());
@@ -267,7 +256,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
      */
     public byte[] generatePassword(
             String authPluginName, String seed) {
-        LOGGER.info("authPluginName:{} ",authPluginName);
+        LOGGER.info("authPluginName:{} ", authPluginName);
         if (MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME.equals(authPluginName)) {
             return MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),
                     seed);
@@ -286,7 +275,6 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             session.writeToChannel();
         } catch (Exception e) {
             onException(session, e);
-            callback.onFinishedException(e, this, null);
         }
     }
 
@@ -299,14 +287,16 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     public void onException(MySQLClientSession session, Exception e) {
         MycatMonitor.onBackendConCreateException(session, e);
         LOGGER.error("", e);
-        onClear(session);
-        session.close(false, e);
-    }
-
-    public void onClear(MySQLClientSession session) {
+        if (session.channel().isOpen()) {
+            try {
+                session.channel().close();
+            } catch (IOException ioException) {
+                LOGGER.error("", ioException);
+            }
+        }
         session.resetPacket();
         session.setCallBack(null);
-        MycatMonitor.onBackendConCreateClear(session);
+        this.datasource.decrementSessionCounter();
+        callback.tryFail(e);
     }
-
 }

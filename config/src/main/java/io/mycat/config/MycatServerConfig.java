@@ -1,6 +1,5 @@
 package io.mycat.config;
 
-import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.util.JsonUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +13,7 @@ public class MycatServerConfig {
     LoadBalance loadBalance = new LoadBalance();
     ServerConfig server = new io.mycat.config.ServerConfig ();
     String mode = "local";
-    String datasourceProvider = DruidDatasourceProvider.class.getCanonicalName();
+    String datasourceProvider = null;
     Map<String, Object> properties = new HashMap<>();
 
     public static void main(String[] args) {

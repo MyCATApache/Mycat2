@@ -39,7 +39,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     protected long startTime;
     protected long lastActiveTime;
     protected NIOHandler nioHandler;
-    protected boolean hasClosed = false;
+    protected volatile boolean hasClosed = false;
     private final MycatReactorThread ioThread;
     private final long timeout = TimeUnit.SECONDS.toMillis(5);
 

@@ -84,18 +84,13 @@ public class MySQLManagerImpl implements MySQLManager {
     }
 
     @Override
-    public void close(Handler<Future> handler) {
-        CompositeFuture.all(nameMap.values().stream().map(i -> i.close()).collect(Collectors.toList()))
-                .onComplete(event -> handler.handle(event.result()));
+    public Future<Void> close() {
+        return CompositeFuture.all(nameMap.values().stream().map(i -> i.close()).collect(Collectors.toList())).mapEmpty();
     }
 
     @Override
     public void setTimer(long delay, Runnable handler) {
         Vertx.currentContext().owner().setTimer(delay, event -> handler.run());
-    }
-
-    public void setTimer(long delay, Handler<Long> handler){
-
     }
 
 }

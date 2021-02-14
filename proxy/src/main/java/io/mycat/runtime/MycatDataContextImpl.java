@@ -254,6 +254,10 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void setAutoCommit(boolean autoCommit) {
         this.autoCommit = autoCommit ? 1 : 0;
+        if(transactionSession!=null){
+            transactionSession.setAutocommit(autoCommit);
+        }
+
     }
     @Override
     public MySQLIsolation getIsolation() {

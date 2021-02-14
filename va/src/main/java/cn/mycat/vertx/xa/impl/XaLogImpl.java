@@ -346,7 +346,6 @@ public class XaLogImpl implements XaLog {
     @Override
     public void close() throws IOException {
         xaRepository.close();
-        mySQLManager.close((h) -> {
-        });
+        mySQLManager.close();
     }
 }
