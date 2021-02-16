@@ -19,6 +19,8 @@ package cn.mycat.vertx.xa;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.function.Supplier;
@@ -128,4 +130,6 @@ public interface XaSqlConnection {
     void addCloseConnection(SqlConnection sqlConnection);
 
     Future<Void> clearConnections();
+
+    void addCloseFuture(Future<?> future);
 }

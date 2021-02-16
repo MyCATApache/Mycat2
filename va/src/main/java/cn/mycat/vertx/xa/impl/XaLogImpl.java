@@ -38,7 +38,7 @@ public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
     private final String name;
     private final Repository xaRepository;
-    private final AtomicLong xaIdSeq = new AtomicLong();
+    private  static final AtomicLong xaIdSeq = new AtomicLong();
     private final MySQLManager mySQLManager;
 
 

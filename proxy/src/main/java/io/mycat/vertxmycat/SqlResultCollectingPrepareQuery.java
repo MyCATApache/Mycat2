@@ -15,11 +15,11 @@ import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.toObjects;
 public class SqlResultCollectingPrepareQuery<R> implements AbstractMySqlPreparedQuery<SqlResult<R>> {
 
     private final String sql;
-    private final AbstractMySqlConnectionImpl connection;
+    private final AbstractMySqlConnection connection;
     private final Collector<Row, Object, R> collector;
 
     public SqlResultCollectingPrepareQuery(String sql,
-                                               AbstractMySqlConnectionImpl connection,
+                                               AbstractMySqlConnection connection,
                                                Collector<Row, Object, R> collector) {
         this.sql = sql;
         this.connection = connection;

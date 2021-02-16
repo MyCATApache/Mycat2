@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.impl.future.PromiseInternal;
@@ -106,7 +107,7 @@ public class MycatMySQLHandler {
     public void handle0(int packetId, Buffer event, NetSocket socket) {
         session.setPacketId(packetId);
         ReadView readView = new ReadView(event);
-        PromiseInternal<?> promise;
+        Future<?> promise;
         try {
             switch (readView.readByte()) {
                 case MySQLCommandType.COM_SLEEP: {
@@ -541,7 +542,7 @@ public class MycatMySQLHandler {
     }
 
 
-    public PromiseInternal<Collection<AsyncResult<Void>>> handleQuery(String sql, MycatMysqlSession session) throws Exception {
+    public Future<Void> handleQuery(String sql, MycatMysqlSession session) throws Exception {
         return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
                 new MycatMysqlResponse( size, false,session));
     }

@@ -9,7 +9,10 @@ import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import io.mycat.*;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
+import io.mycat.TransactionSession;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -19,17 +22,17 @@ import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
-import io.mycat.Response;
-import io.mycat.util.VertxUtil;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 /**
@@ -117,51 +120,35 @@ public enum MycatdbCommand {
 
     }
 
-    public PromiseInternal<Collection<AsyncResult<Void>>> executeQuery(String text,
-                                                                 MycatDataContext dataContext,
-                                                                 IntFunction<Response> responseFactory) {
-        PromiseInternal<Collection<AsyncResult<Void>> > promise = VertxUtil.newPromise();
+    public Future<Void> executeQuery(String text,
+                                     MycatDataContext dataContext,
+                                     IntFunction<Response> responseFactory) {
         try {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
             Response response = responseFactory.apply(statements.size());
-
-            Collection<AsyncResult<Void>> resultList = new ConcurrentLinkedQueue<>();
-            int totalCount = statements.size();
+            Future<Void> future = Future.succeededFuture();
             for (SQLStatement sqlStatement : statements) {
-                try {
-                    SqlRecord sqlRecord = dataContext.startSqlRecord();
-                    sqlRecord.setTarget(dataContext.getUser().getHost());
-                    sqlRecord.setSql(sqlStatement);
-                    PromiseInternal<Void> execute = execute(dataContext, response, sqlStatement);
-                    execute.onComplete(e->{
-                        dataContext.getTransactionSession().closeStatementState();
-                        resultList.add(e);
-                        if(e.failed()){
-                            promise.tryFail(e.cause());
-                        }else if(resultList.size() == totalCount){
-                            promise.tryComplete(resultList);
-                        }
-                    });
-                }catch (Exception e){
-                    promise.tryFail(e);
-                }
+                future = future.flatMap(new Function<Void, Future<Void>>() {
+                    @Override
+                    @SneakyThrows
+                    public Future<Void> apply(Void unused) {
+                        SqlRecord sqlRecord = dataContext.startSqlRecord();
+                        sqlRecord.setTarget(dataContext.getUser().getHost());
+                        sqlRecord.setSql(sqlStatement);
+                        return execute(dataContext, response, sqlStatement).future();
+                    }
+                });
             }
-            if(resultList.size() == totalCount){
-                promise.tryComplete(resultList);
-            }
-            return promise;
+            return future;
         } catch (Throwable e) {
             Response response = responseFactory.apply(1);
             if (isNavicatClientStatusQuery(text)) {
-                PromiseInternal<Void> promiseInternal = response.sendOk();
-                promiseInternal.onComplete(o-> promise.tryComplete(Collections.singletonList(o)));
-                return promise;
+                return response.sendOk();
             }
-            promise.tryFail(e);
-            return promise;
+            return Future.failedFuture(e);
         }
     }
 
@@ -226,7 +213,7 @@ public enum MycatdbCommand {
                 text = text.substring(1);
             }
             text = text.trim();
-            if (text.isEmpty()){
+            if (text.isEmpty()) {
                 return resStatementList;
             }
         }
@@ -234,7 +221,7 @@ public enum MycatdbCommand {
     }
 
     @NotNull
-    private String convertSql(String text,DbType type) {
+    private String convertSql(String text, DbType type) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, type, true);
         List<SQLStatement> sqlStatements = parser.parseStatementList();
         StringBuilder out = new StringBuilder();

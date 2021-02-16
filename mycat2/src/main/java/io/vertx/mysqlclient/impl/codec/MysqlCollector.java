@@ -24,15 +24,6 @@ public interface MysqlCollector<LIST> extends Collector<Row, LIST, LIST> {
         return new RowSetCollector<>(mapper);
     }
 
-    /**
-     * 列定义信息到达 (改方法在IO线程回掉，不要阻塞。 Thread.currentThread() == eventloop-thread )
-     *
-     * @param columnDefinitions 列定义
-     * @return 列定义信息到达后， 需要返回row解析器
-     */
-    default void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
-    }
-
     @Override
     default Set<Characteristics> characteristics() {
         return Collections.emptySet();

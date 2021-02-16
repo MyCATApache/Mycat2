@@ -22,9 +22,9 @@ import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.toObjects;
 public class RowSetMySqlPreparedQuery implements AbstractMySqlPreparedQuery<RowSet<Row>> {
 
     private final String sql;
-    private final AbstractMySqlConnectionImpl connection;
+    private final AbstractMySqlConnection connection;
 
-    public RowSetMySqlPreparedQuery(String sql, AbstractMySqlConnectionImpl connection) {
+    public RowSetMySqlPreparedQuery(String sql, AbstractMySqlConnection connection) {
         this.sql = sql;
         this.connection = connection;
     }
@@ -70,7 +70,7 @@ public class RowSetMySqlPreparedQuery implements AbstractMySqlPreparedQuery<RowS
 
     @Override
     public Future<RowSet<Row>> execute() {
-        return new RowSetQuery(sql,connection).execute();
+        return new RowSetQuery(sql,(AbstractMySqlConnectionImpl) connection).execute();
     }
 
 }

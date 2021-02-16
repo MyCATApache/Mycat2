@@ -80,13 +80,17 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
 
     public Future<SqlConnection> getConnection(String targetName) {
+//        for (Map.Entry<String, SqlConnection> stringSqlConnectionEntry : map.entrySet()) {
+//            AbstractMySqlConnectionImpl value = (AbstractMySqlConnectionImpl) stringSqlConnectionEntry.getValue();
+//            value
+//        }
+
         MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
             if (map.containsKey(targetName)) {
                 return Future.succeededFuture(map.get(targetName));
             } else {
                 Future<SqlConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
-
                 return sqlConnectionFuture.compose(connection -> {
                     map.put(targetName, connection);
                     changeTo(connection, State.XA_INITED);
@@ -114,24 +118,24 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     public Future<Void> rollback() {
         return Future.future((Promise<Void> promise) -> {
             logParticipants();
-            Function<SqlConnection, Future<Object>> function = c -> {
-                Future future = Future.succeededFuture();
+            Function<SqlConnection, Future<Void>> function = c -> {
+                Future<Void> future = Future.succeededFuture();
                 switch (connectionState.get(c)) {
                     case XA_INITED:
                         return future;
                     case XA_STARTED:
-                        future = future.compose(unused -> {
+                        future = future.flatMap(unused -> {
                             return c.query(String.format(XA_END, xid)).execute()
-                                    .map(u -> changeTo(c, State.XA_ENDED));
+                                    .map(u -> changeTo(c, State.XA_ENDED)).mapEmpty();
                         });
                     case XA_ENDED:
                     case XA_PREPARED:
-                        future = future.compose(unuse -> c.query(String.format(XA_ROLLBACK, xid)).execute())
-                                .map(u -> changeTo(c, State.XA_ROLLBACKED));
+                        future = future.flatMap(unuse -> c.query(String.format(XA_ROLLBACK, xid))
+                                .execute().map(i->changeTo(c, State.XA_ROLLBACKED))).mapEmpty();
                 }
                 return future;
             };
-            Future<Void> future = executeAll((Function) function);
+            Future<Void> future = executeAll(function);
             future .onComplete(event -> {
                         log.logRollback(xid, event.succeeded());
                         if (event.succeeded()) {
@@ -147,9 +151,9 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     /**
      * retry has a delay time for datasource need duration to recover
      */
-    private Future<Void> retryRollback(Function<SqlConnection, Future<Object>> function) {
+    private Future<Void> retryRollback(Function<SqlConnection, Future<Void>> function) {
         return Future.future(promise -> {
-            List<Future<Object>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager().getConnection(c).flatMap(function)).collect(Collectors.toList());
+            List<Future<Void>> collect = computePrepareRollbackTargets().stream().map(c -> mySQLManager().getConnection(c).flatMap(function)).collect(Collectors.toList());
             CompositeFuture.all((List) collect)
                     .onComplete(event -> {
                         log.logRollback(xid, event.succeeded());
@@ -204,16 +208,16 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         return Future.future((Promise<Void> promsie) -> {
             logParticipants();
             Future<Void> xaEnd = executeAll(connection -> {
-                Future future = Future.succeededFuture();
+                Future<Void> future = Future.succeededFuture();
                 switch (connectionState.get(connection)) {
                     case XA_INITED:
                         future = future
-                                .compose(unuse -> connection.query(String.format(XA_START, xid)).execute())
-                                .map(u -> changeTo(connection, State.XA_STARTED));
+                                .flatMap(unuse -> connection.query(String.format(XA_START, xid)).execute())
+                                .map(u -> changeTo(connection, State.XA_STARTED)).mapEmpty();
                     case XA_STARTED:
                         future = future
-                                .compose(unuse -> connection.query(String.format(XA_END, xid)).execute())
-                                .map(u -> changeTo(connection, State.XA_ENDED));
+                                .flatMap(unuse -> connection.query(String.format(XA_END, xid)).execute())
+                                .map(u -> changeTo(connection, State.XA_ENDED)).mapEmpty();
                     case XA_ENDED:
                     default:
                 }
@@ -329,11 +333,8 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
         if (map.isEmpty()) {
             return Future.succeededFuture();
         }
-        Future<Void> future = Future.succeededFuture();
-        for (SqlConnection value : map.values()) {
-            future= future.flatMap((u)->connectionFutureFunction.apply(value));
-        }
-        return future;
+        List<Future> futures = map.values().stream().map(connectionFutureFunction).collect(Collectors.toList());
+        return CompositeFuture.all(futures).mapEmpty();
     }
 
     /**

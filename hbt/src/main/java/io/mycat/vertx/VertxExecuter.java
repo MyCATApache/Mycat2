@@ -87,7 +87,7 @@ public class VertxExecuter {
                 .onComplete(new Handler<AsyncResult<long[]>>() {
                     @Override
                     public void handle(AsyncResult<long[]> event) {
-                        sqlConnection.close();
+                        sqlConnection.closeStatementState();
                     }
                 });
     }

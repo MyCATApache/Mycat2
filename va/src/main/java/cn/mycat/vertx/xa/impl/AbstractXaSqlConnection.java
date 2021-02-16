@@ -37,6 +37,8 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     protected final XaLog log;
     protected List<SqlConnection> closeConnections = Collections.synchronizedList(
             new ArrayList<>());
+    protected List<Future> closeFutureList = Collections.synchronizedList(
+            new ArrayList<>());
 
     public AbstractXaSqlConnection(XaLog xaLog) {
         this.log = xaLog;
@@ -66,6 +68,7 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     }
 
     public Future<Void> openStatementState() {
+
         if (!isAutocommit()) {
             if (!isInTransaction()) {
                 return begin();
@@ -88,17 +91,26 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
 
     @Override
     public Future<Void> closeStatementState() {
-        return dealCloseConnections();
+        return CompositeFuture.all(closeFutureList)
+                .onComplete(event -> closeFutureList.clear()).flatMap(compositeFuture -> {
+                    return dealCloseConnections();
+                });
     }
 
     @Override
     public void addCloseConnection(SqlConnection sqlConnection) {
         closeConnections.add(sqlConnection);
     }
-    public void closeStatementState(Handler<AsyncResult<Void>> handler){
+
+    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = closeStatementState();
-        if (handler!=null){
+        if (handler != null) {
             future.onComplete(handler);
         }
+    }
+
+    @Override
+    public void addCloseFuture(Future<?> future) {
+        closeFutureList.add(future);
     }
 }

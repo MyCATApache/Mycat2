@@ -140,7 +140,7 @@ public class ReceiverImpl implements Response {
                     Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
                             connection), sql, Collections.emptyList());
                     if (!inTransaction) {
-                        return sendResultSet(mysqlPacketObservable.doOnTerminate(() -> transactionSession.closeStatementState()));
+                        return sendResultSet(mysqlPacketObservable);
                     } else {
                         return sendResultSet(mysqlPacketObservable);
                     }
