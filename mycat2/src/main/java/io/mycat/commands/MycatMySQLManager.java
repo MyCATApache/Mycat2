@@ -22,19 +22,20 @@ import io.vertx.mysqlclient.impl.datatype.DataFormat;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.PreparedStatement;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.RowDesc;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -44,6 +45,7 @@ import static io.vertx.core.Future.succeededFuture;
 
 public class MycatMySQLManager implements MySQLManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatMySQLManager.class);
+    private static final ExecutorService IO_EXECUTOR =Executors.newCachedThreadPool() ;
 
     public MycatMySQLManager() {
 
@@ -99,13 +101,23 @@ public class MycatMySQLManager implements MySQLManager {
                     @Override
                     @SneakyThrows
                     public Future<RowSet<Row>> execute() {
-                        if (sql.equals("XA START 'x.2';")){
-                            System.out.println();
-                        }
+                        return Future.future(event -> {
+                            IO_EXECUTOR.submit(()->{
+                                try {
+                                    event.complete( innerExecute());
+                                }catch (Throwable throwable){
+                                    event.tryFail(throwable);
+                                }
+                            });
+                        });
+                    }
+
+                    @NotNull
+                    private RowSet<Row> innerExecute() throws SQLException {
                         Connection rawConnection = connection.getRawConnection();
                         Statement statement = rawConnection.createStatement();
                         LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
-                        if (!statement.execute(sql,Statement.RETURN_GENERATED_KEYS)) {
+                        if (!statement.execute(sql, Statement.RETURN_GENERATED_KEYS)) {
                             VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
                             vertxRowSet.setAffectRow(statement.getUpdateCount());
                             ResultSet generatedKeys = statement.getGeneratedKeys();
@@ -117,7 +129,7 @@ public class MycatMySQLManager implements MySQLManager {
                                     }
                                 }
                             }
-                            return Future.succeededFuture(vertxRowSet);
+                            return (vertxRowSet);
                         }
                         ResultSet resultSet = statement.getResultSet();
                         JdbcRowMetaData metaData = new JdbcRowMetaData(
@@ -152,7 +164,7 @@ public class MycatMySQLManager implements MySQLManager {
                             }
                             vertxRowSet.list.add(jdbcRow);
                         }
-                        return Future.succeededFuture(vertxRowSet);
+                        return (vertxRowSet);
                     }
 
                     @Override
@@ -170,18 +182,17 @@ public class MycatMySQLManager implements MySQLManager {
                             @SneakyThrows
                             public Future<SqlResult<R>> execute() {
                                 Connection rawConnection = connection.getRawConnection();
-                                MycatWorkerProcessor workerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                                 return Future.future(new Handler<Promise<SqlResult<R>>>() {
                                     @Override
                                     public void handle(Promise<SqlResult<R>> promise) {
-                                            extracted(promise);
+                                        IO_EXECUTOR.submit(()-> extracted(promise));
                                     }
 
                                     @SneakyThrows
                                     private void extracted(Promise<SqlResult<R>> promise) {
                                         try (Statement statement = rawConnection.createStatement()) {
 
-                                                LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
+                                            LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
 
                                             statement.execute(sql);
                                             ResultSet resultSet = statement.getResultSet();
@@ -244,7 +255,7 @@ public class MycatMySQLManager implements MySQLManager {
                                                                     decimals
                                                             );
                                                             return columnDefinition;
-                                                        }).toArray(n->new ColumnDefinition[n]),DataFormat.TEXT);
+                                                        }).toArray(n -> new ColumnDefinition[n]), DataFormat.TEXT);
                                                 ((StreamMysqlCollector) collector)
                                                         .onColumnDefinitions(mySQLRowDesc);
                                             }
@@ -256,7 +267,7 @@ public class MycatMySQLManager implements MySQLManager {
                                                 while (resultSet.next()) {
                                                     JDBCRow jdbcRow = new JDBCRow(rowDesc);
                                                     for (int i = 0; i < columnCount; i++) {
-                                                        jdbcRow.addValue(resultSet.getObject(i+1));
+                                                        jdbcRow.addValue(resultSet.getObject(i + 1));
                                                     }
                                                     count++;
                                                     accumulator.accept(supplier, jdbcRow);
