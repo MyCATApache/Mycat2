@@ -1,5 +1,6 @@
 package io.mycat.calcite.sqlfunction.infofunction;
 
+import io.mycat.beans.mysql.MySQLVersion;
 import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
 import org.apache.calcite.sql.SqlFunctionCategory;
@@ -20,6 +21,6 @@ public class MycatVersionFunction extends MycatSqlDefinedFunction {
     }
 
     public static String version(){
-        return "8.19";
+        return MySQLVersion.SERVER_VERSION_STRING;
     }
 }
