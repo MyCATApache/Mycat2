@@ -2,8 +2,6 @@ package io.mycat.calcite;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableList;
-import com.mysql.cj.protocol.a.NativeServerSession;
-import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
@@ -21,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,10 +39,10 @@ public class ProxyConnectionUsage {
         if (executorService == null) {
             synchronized (ProxyConnectionUsage.class) {
                 if (executorService == null) {
-                    executorService =new java.util.concurrent.Executor(){
+                    executorService = new java.util.concurrent.Executor() {
 
                         @Override
-                        public void execute(@NotNull Runnable command) {
+                        public synchronized void execute(@NotNull Runnable command) {
                             command.run();
                         }
                     };
@@ -74,14 +69,14 @@ public class ProxyConnectionUsage {
                 try {
                     for (SQLKey target : targets) {
                         LinkedList<SqlConnection> sqlConnections = stringLinkedListMap.get(context.resolveDatasourceTargetName(target.getTargetName()));
-                        SqlConnection sqlConnection= sqlConnections.pop();
+                        SqlConnection sqlConnection = sqlConnections.pop();
                         Promise<SqlConnection> closePromise = VertxUtil.newPromise();
                         xaconnection.addCloseFuture(closePromise.future());
                         Observable<Object[]> observable = VertxExecuter.runQuery(Future.succeededFuture(sqlConnection),
                                 target.getSql().getSql(),
                                 MycatPreparedStatementUtil.extractParams(params, target.getSql().getDynamicParameters()),
                                 target.getRowMetaData())
-                                .doOnTerminate(()->closePromise.tryComplete(sqlConnection));
+                                .doOnTerminate(() -> closePromise.tryComplete(sqlConnection));
                         synchronized (resMap) {
                             List<Observable<Object[]>> rowObservables = resMap.computeIfAbsent(target.getMycatView(), node -> new LinkedList<>());
                             rowObservables.add(observable);
@@ -105,7 +100,7 @@ public class ProxyConnectionUsage {
                 future = future.flatMap(new GetResultSetAndCache(xaconnection, sqlConnection, sqlKey, params, resMap));
             }
         }
-        return future.flatMap(new GetResultSetEnd(res.get(0),xaconnection, sqlConnection, params, resMap));
+        return future.flatMap(new GetResultSetEnd(res.get(0), xaconnection, sqlConnection, params, resMap));
     }
 
     private Future<Map<String, LinkedList<SqlConnection>>> getConnection(XaSqlConnection connection) {
@@ -153,7 +148,7 @@ public class ProxyConnectionUsage {
                                 return (Future) connection.getConnection(transactionSession.resolveFinalTargetName(s, true)).mapEmpty();
                             });
                 }
-                 future.onComplete(event -> {
+                future.onComplete(event -> {
                     if (event.succeeded()) {
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("get getConnectionWhenTranscation");
@@ -233,6 +228,7 @@ public class ProxyConnectionUsage {
             this.map = map;
             this.promise = promise;
         }
+
         @Override
         public void run() {
             try {
@@ -243,7 +239,7 @@ public class ProxyConnectionUsage {
                         return connection1.map(new AddConnection(string, this.connection));
                     });
                 }
-                 future.onComplete(event -> {
+                future.onComplete(event -> {
                     if (event.succeeded()) {
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("SequenceTask finished");
@@ -346,7 +342,7 @@ public class ProxyConnectionUsage {
                 xaconnection.addCloseFuture(closePromise.future());
                 synchronized (ProxyConnectionUsage.this) {
                     List<Observable<Object[]>> rowObservables = resMap.computeIfAbsent(sqlKey.getMycatView(), node -> new ArrayList<>());
-                    rowObservables.add(rowObservable.doOnTerminate(()->closePromise.tryComplete(sqlConnection)));
+                    rowObservables.add(rowObservable.doOnTerminate(() -> closePromise.tryComplete(sqlConnection)));
                 }
                 return null;
             });

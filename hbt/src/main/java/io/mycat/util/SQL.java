@@ -45,13 +45,20 @@ public class SQL<T extends SQLStatement> {
     }
 
     public static <T extends SQLStatement> SQL<T> of(String parameterizedSql,
-                                                     DataNode dataNode, T statement, List<Object> parameters){
+        DataNode dataNode, T statement, T originStatement,  List<Object> parameters){
         SQL sql;
         if(statement instanceof SQLUpdateStatement){
-            sql = new UpdateSQL<>(parameterizedSql,dataNode,(SQLUpdateStatement)statement,parameters);
+            sql = new UpdateSQL<>(parameterizedSql,dataNode,(SQLUpdateStatement)statement, (SQLUpdateStatement)originStatement,parameters);
         }else {
             sql = new SQL<>(parameterizedSql,dataNode,statement,parameters);
         }
+        return sql;
+    }
+
+    public static <T extends SQLStatement> SQL<T> of(String parameterizedSql,
+                                                     DataNode dataNode, T statement, List<Object> parameters){
+        SQL sql;
+            sql = new SQL<>(parameterizedSql,dataNode,statement,parameters);
         return sql;
     }
 

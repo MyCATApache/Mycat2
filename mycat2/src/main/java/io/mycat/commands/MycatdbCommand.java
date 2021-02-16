@@ -13,6 +13,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
 import io.mycat.TransactionSession;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -22,6 +23,7 @@ import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -169,13 +171,13 @@ public enum MycatdbCommand {
         transactionSession.openStatementState().onComplete(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
-                System.out.println();
+
             }
         });
         //////////////////////////////////////////////////////////////////////////////////////
         if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-            Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+            Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
             if (baseIteratorOptional.isPresent()) {
                 return receiver.sendResultSet(baseIteratorOptional.get());
             }

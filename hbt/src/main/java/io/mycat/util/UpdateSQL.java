@@ -41,7 +41,7 @@ public class UpdateSQL<T extends SQLUpdateStatement> extends SQL<T> {
      */
     private final List<OrGroup> whereColumnList = new ArrayList<>();
 
-    public UpdateSQL(String parameterizedSql, DataNode dataNode,T statement, List<Object> parameters) {
+    public UpdateSQL(String parameterizedSql, DataNode dataNode,T statement,T originStatement, List<Object> parameters) {
         super(parameterizedSql, dataNode, statement, parameters);
         this.tableSource = (SQLExprTableSource) statement.getTableSource();
         /**
@@ -51,14 +51,14 @@ public class UpdateSQL<T extends SQLUpdateStatement> extends SQL<T> {
          *
          * 2. 用于初始化条件列 {@link #setColumnMap}
          */
-        statement.accept(new AttributeVisitor());
+        originStatement.accept(new AttributeVisitor());
 
         /**
          * 根据OR关键词分割 WHERE条件, 初始化 {@link #whereColumnList}
          * 分隔后的结构为: (ID=1 AND O_ID != 1) OR (ID = 2)
          */
         WhereVisitor whereVisitor = new WhereVisitor();
-        statement.getWhere().accept(whereVisitor);
+        originStatement.getWhere().accept(whereVisitor);
         whereVisitor.end();
     }
 

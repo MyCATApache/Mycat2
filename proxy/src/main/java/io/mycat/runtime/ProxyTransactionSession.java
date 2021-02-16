@@ -2,24 +2,25 @@ package io.mycat.runtime;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
-import cn.mycat.vertx.xa.XaSqlConnection;
 import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import io.mycat.MycatConnection;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.util.Dumper;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession{
+public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession {
     private TransactionSession parent;
 
     public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
-        super(mySQLManagerSupplier,xaLog);
+        super(mySQLManagerSupplier, xaLog);
         this.parent = parent;
     }
 
@@ -32,7 +33,6 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
     public void setTransactionIsolation(int transactionIsolation) {
         parent.setTransactionIsolation(transactionIsolation);
     }
-
 
 
     @Override
@@ -89,5 +89,12 @@ public class ProxyTransactionSession extends BaseXaSqlConnection implements Tran
     @Override
     public Dumper snapshot() {
         return parent.snapshot().addText("proxy");
+    }
+
+
+    @Override
+    public Future<Void> closeStatementState() {
+        return CompositeFuture.all(
+                parent.closeStatementState(),super.closeStatementState()).mapEmpty();
     }
 }

@@ -29,6 +29,7 @@ public class GlobalConst {
 
 
     public static final String SINGLE_NODE_HEARTBEAT_SQL = "select 1";
+    public static final String MASTER_SLAVE_HEARTBEAT_MASTER_SQL = "show master status";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";
     public static final String GARELA_CLUSTER_HEARTBEAT_SQL = "show status like 'wsrep%'";
     public static final String GROUP_REPLICATION_HEARTBEAT_SQL = "show slave status";
