@@ -74,7 +74,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
-            InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved(datasource.getIp(), datasource.getPort());
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(datasource.getIp(), datasource.getPort());
             channel.connect(inetSocketAddress);
             LOGGER.info("inetSocketAddress:{} ", inetSocketAddress);
         } catch (Exception e) {
