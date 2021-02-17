@@ -13,7 +13,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.*;
-import io.mycat.calcite.DataSourceFactory;
 import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
@@ -27,7 +26,6 @@ import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.calcite.MycatContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.setParams;
 
@@ -224,41 +221,43 @@ public class MycatInsertExecutor implements Executor {
         Map<String, MycatConnection> connections = new HashMap<>();
         Set<String> uniqueValues = new HashSet<>();
         for (SQL target : group.keySet()) {
-            String k = transactionSession.resolveFinalTargetName(target.getTarget());
+            String k = transactionSession.resolveFinalTargetName(target.getTarget(),true);
             if (uniqueValues.add(k)) {
-                if (connections.put(target.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(target.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }
         }
 
-        long lastInsertId = 0;
+        long lastInsertId =0;
         long affected = 0;
         SqlRecord sqlRecord = context.currentSqlRecord();
         if (group.size() == 1) {
             Map.Entry<SQL, Group> keyGroupEntry = group.entrySet().iterator().next();
             String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
             LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
+            String targetName = connections.keySet().iterator().next();
             Connection connection = connections.values().iterator().next().unwrap(Connection.class);
             try (PreparedStatement preparedStatement = connection.
                     prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
-                List<Object> objects = args.get(0);
-                setParams(preparedStatement, objects);
+                for (List<Object> arg : args) {
+                    List<Object> objects = arg;
+                    setParams(preparedStatement, objects);
 
-                long startTime = SqlRecord.now();
+                    long startTime = SqlRecord.now();
 
-                affected = preparedStatement.executeUpdate();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                if (generatedKeys != null) {
-                    if (generatedKeys.next()) {
-                        lastInsertId = generatedKeys.getLong(1);
-
+                    affected += preparedStatement.executeUpdate();
+                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                    if (generatedKeys != null) {
+                        if (generatedKeys.next()) {
+                            lastInsertId = Math.max(generatedKeys.getBigDecimal(1).longValue(),
+                                    lastInsertId);
+                        }
                     }
-                }
-                String targetName = connections.keySet().iterator().next();
-                sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
+                    }
                 }
             }
         } else {
@@ -272,7 +271,7 @@ public class MycatInsertExecutor implements Executor {
                 long startTime = SqlRecord.now();
 
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
-                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
+                lastInsertId =Math.max(lastInsertId,res.getLastInsertId());
 
                 affected += res.getAffected();
 
@@ -347,7 +346,7 @@ public class MycatInsertExecutor implements Executor {
         GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);
         MycatDataContext mycatDataContext = this.context;
         TransactionSession transactionSession = mycatDataContext.getTransactionSession();
-        String txId = transactionSession.getTxId();
+        String txId = transactionSession.getXid();
 
         String[] columnNames = mycatInsertRel.getColumnNames();
         SimpleColumnInfo[] columns = new SimpleColumnInfo[columnNames.length];

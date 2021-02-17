@@ -15,36 +15,25 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.rewriter.Distribution;
-import io.mycat.calcite.ShardingInfo;
-import org.apache.calcite.rex.RexNode;
-
-import java.util.List;
 
 //@Getter
 public interface AbstractMycatTable {
-    public abstract Distribution computeDataNode(List<RexNode> conditions);
 
-    public abstract boolean isSingle(List<RexNode> conditions);
-
-    public abstract Distribution computeDataNode();
-
-    public abstract ShardingInfo getShardingInfo();
+    public abstract Distribution createDistribution();
 
     public default boolean isBroadCast() {
-        return getShardingInfo().getType() == ShardingInfo.Type.broadCast;
+        return false;
     }
 
     public default boolean isNormal() {
-        return getShardingInfo().getType() == ShardingInfo.Type.normal;
+        return false;
     }
 
     public default boolean isSharding() {
-        return getShardingInfo().getType() == ShardingInfo.Type.sharding;
+        return false;
     }
 
     public default boolean isCustom() {
-        return getShardingInfo().getType() == ShardingInfo.Type.custom;
+        return false;
     }
-
-    boolean isPartial(List<RexNode> conditions);
 }

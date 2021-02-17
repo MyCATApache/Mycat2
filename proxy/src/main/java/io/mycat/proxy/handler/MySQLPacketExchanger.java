@@ -85,7 +85,7 @@ public enum MySQLPacketExchanger {
             MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);
             mysql.switchNioHandler(null);
 //            mysql.getDatasource().decrementUsedCounter();
-            mysql.getSessionManager().addIdleSession(mysql);
+            mysql.close(true,"exchanger end");
         }
         mycatSession.onHandlerFinishedClear();
         MycatMonitor.onPacketExchangerClear(mycatSession);
@@ -365,11 +365,9 @@ public enum MySQLPacketExchanger {
                     case BINARY_ROW:
                         callback.onBinaryRow(mySQLPacket, sIndex, eIndex);
                         break;
-                    case ROW_EOF:
-                        callback.onRowEof(mySQLPacket, sIndex, eIndex);
-                        break;
 //          case ROW_FINISHED:
 //            break;
+                    case ROW_EOF:
                     case ROW_OK: {
                         callback.onRowOk(mySQLPacket, sIndex, eIndex);
                         break;

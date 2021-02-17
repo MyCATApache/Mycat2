@@ -295,7 +295,7 @@ public class SqlFunctionTest implements MycatTest {
                         DB1));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        DB1));
+                        DB2));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",
@@ -322,6 +322,7 @@ public class SqlFunctionTest implements MycatTest {
         execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT\n," +
                 "  `user_id` varchar(100) DEFAULT NULL" +
+                " , PRIMARY KEY (`id`) "+
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
         execute(mysql3306, "CREATE TABLE if not exists `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
@@ -353,6 +354,9 @@ public class SqlFunctionTest implements MycatTest {
     @Test
     public void testComplexQuery() throws Exception {
         initShardingTable();
+
+        checkValue("select t.* from db1.travelrecord t order by t.id");
+
         checkValue("SELECT * FROM `travelrecord` WHERE (ISNULL(`id`)) AND (`user_id`='3') AND (`traveldate`='2020-12-25') AND (`fee`='333') AND (`days`='111') AND (`blob`='张三') LIMIT 1", "");
         checkValue("select * from db1.travelrecord as t,db1.company as c  where t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
         checkValue("select * from db1.travelrecord as t INNER JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");

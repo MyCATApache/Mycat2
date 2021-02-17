@@ -17,7 +17,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
     @Override
     protected PromiseInternal<Void> onExecute(SQLRequest<SQLSelectStatement> request, MycatDataContext dataContext, Response response) throws Exception {
         HackRouter hackRouter = new HackRouter(request.getAst(), dataContext);
-        if (hackRouter.analyse()) {
+        if (false) {
             Pair<String, String> plan = hackRouter.getPlan();
             return response.proxySelect(plan.getKey(),plan.getValue());
         } else {

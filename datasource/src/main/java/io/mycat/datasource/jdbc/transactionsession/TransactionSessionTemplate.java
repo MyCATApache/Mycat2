@@ -6,6 +6,8 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.DataSourceNearnessImpl;
 import io.mycat.util.Dumper;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,11 +34,10 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @SneakyThrows
     public void setAutocommit(boolean autocommit) {
-        dataContext.setAutoCommit(autocommit);
         for (DefaultConnection c : updateConnectionMap.values()) {
             c.getRawConnection().setAutoCommit(autocommit);
         }
-        if (autocommit){
+        if (autocommit) {
             for (DefaultConnection value : updateConnectionMap.values()) {
                 value.close();
             }
@@ -49,41 +50,56 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         return dataContext.isAutocommit();
     }
 
-    public void begin() {
+    public Future<Void> begin() {
         if (!isInTransaction() && !updateConnectionMap.isEmpty()) {
-            throw new IllegalArgumentException("存在连接泄漏");
+            return Future.failedFuture(new IllegalArgumentException("存在连接泄漏"));
         }
         if (!isInTransaction()) {
             callBackBegin();
         }
         dataContext.setInTransaction(true);
+        return Future.succeededFuture();
     }
 
-    public void commit() {
-        if (isInTransaction() && !updateConnectionMap.isEmpty()) {//真正开启事务才提交
-            callBackCommit();
+    public Future<Void> commit() {
+        try{
+            if (isInTransaction() && !updateConnectionMap.isEmpty()) {//真正开启事务才提交
+                callBackCommit();
+            }
+            setInTranscation(false);
+            updateConnectionMap.forEach((key, value) -> value.close());
+            updateConnectionMap.clear();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-        setInTranscation(false);
-        updateConnectionMap.forEach((key, value) -> value.close());
-        updateConnectionMap.clear();
+        return Future.succeededFuture();
     }
 
-    public void rollback() {
-        if (isInTransaction() && !updateConnectionMap.isEmpty()) {
-            callBackRollback();
+    public Future<Void> rollback() {
+        try {
+            if (isInTransaction() && !updateConnectionMap.isEmpty()) {
+                callBackRollback();
+            }
+            setInTranscation(false);
+            updateConnectionMap.forEach((key, value) -> value.close());
+            updateConnectionMap.clear();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-        setInTranscation(false);
-        updateConnectionMap.forEach((key, value) -> value.close());
-        updateConnectionMap.clear();
+        return Future.succeededFuture();
     }
 
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void openStatementState() {
-        if (!isAutocommit()) {
-            begin();
-        }
+    public Future<Void> openStatementState() {
+        Future<Void> future = closeStatementState();
+      return   future.flatMap(unused -> {
+          if (!isAutocommit()) {
+              return begin();
+          }
+          return Future.succeededFuture();
+      });
     }
 
     abstract protected void callBackBegin();
@@ -112,21 +128,26 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.dataContext.setInTransaction(inTranscation);
     }
 
-    public synchronized void close() {
-        closeStatenmentState();
-        for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
-            DefaultConnection value = stringDefaultConnectionEntry.getValue();
-            if (value != null) {
-                value.close();
+    public synchronized Future<Void> close() {
+        Future<Void> voidFuture = closeStatementState();
+        try {
+            for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
+                DefaultConnection value = stringDefaultConnectionEntry.getValue();
+                if (value != null) {
+                    value.close();
+                }
             }
+            updateConnectionMap.clear();
+            dataSourceNearness.clear();
+        }catch (Throwable throwable){
+            return (Future)CompositeFuture.all(voidFuture, Future.failedFuture(throwable));
         }
-        updateConnectionMap.clear();
-        dataSourceNearness.clear();
+        return voidFuture;
     }
 
     @Override
     public String resolveFinalTargetName(String targetName) {
-         return dataSourceNearness.getDataSourceByTargetName(targetName);
+        return dataSourceNearness.getDataSourceByTargetName(targetName);
     }
 
     public int getTransactionIsolation() {
@@ -135,23 +156,28 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     @SneakyThrows
-    public void closeStatenmentState() {
-        if (!isInTransaction()) {
-            Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
-            for (Map.Entry<String, DefaultConnection> entry : entries) {
-                DefaultConnection value = entry.getValue();
-                if (value != null) {
-                    value.close();
+    public  Future<Void> closeStatementState() {
+        try {
+            if (!isInTransaction()) {
+                Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
+                for (Map.Entry<String, DefaultConnection> entry : entries) {
+                    DefaultConnection value = entry.getValue();
+                    if (value != null) {
+                        value.close();
+                    }
                 }
+                updateConnectionMap.clear();
+                dataSourceNearness.clear();
             }
-            updateConnectionMap.clear();
-            dataSourceNearness.clear();
+            Iterator<AutoCloseable> iterator = closeResourceQueue.iterator();
+            while (iterator.hasNext()) {
+                iterator.next().close();
+                iterator.remove();
+            }
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-        Iterator<AutoCloseable> iterator = closeResourceQueue.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().close();
-            iterator.remove();
-        }
+        return Future.succeededFuture();
     }
 
     public void setTransactionIsolation(int transactionIsolation) {

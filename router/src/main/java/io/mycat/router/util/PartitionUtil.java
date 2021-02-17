@@ -24,11 +24,14 @@
 package io.mycat.router.util;
 
 
+import lombok.EqualsAndHashCode;
+
 /**
  * 数据分区工具
  * 
  * @author mycat
  */
+@EqualsAndHashCode
 public final class PartitionUtil {
 
     // 分区长度:数据段分布定义，其中取模的数一定要是2^n， 因为这里使用x % 2^n == x & (2^n - 1)等式，来优化性能。

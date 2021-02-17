@@ -59,11 +59,6 @@ public class BinaryResultSetHandler implements ResultSetHandler {
   }
 
   @Override
-  public void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onResultSetEnd();
-  }
-
-  @Override
   public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
     collector.onResultSetEnd();
   }

@@ -1,14 +1,13 @@
-package io.mycat.proxy;
+package io.mycat;
 
-import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.buffer.DefaultReactorBufferPool;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.commands.DefaultCommandHandler;
 import io.mycat.config.*;
+import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.*;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
 public class NativeMycatServer implements MycatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeMycatServer.class);
 
-    private final ConcurrentHashMap<String, MySQLDatasource> datasourceMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MySQLDatasourcePool> datasourceMap = new ConcurrentHashMap<>();
 
     private final MycatServerConfig serverConfig;
 
@@ -73,18 +72,12 @@ public class NativeMycatServer implements MycatServer {
 
 
     private void startProxy(io.mycat.config.ServerConfig serverConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
-
-        String handlerConstructorText = (DefaultCommandHandler.class.getName());
-
-
+        String handlerConstructorText = "io.mycat.commands.DefaultCommandHandler";
         DefaultReactorBufferPool defaultReactorBufferPool = new DefaultReactorBufferPool(Optional
                 .ofNullable(serverConfig).map(i -> i.getBufferPool()).map(i -> i.getArgs()).orElse(BufferPoolConfig.defaultValue()));
-
         Constructor<?> handlerConstructor = getConstructor(handlerConstructorText);
-
         int reactorNumber = Optional.ofNullable(serverConfig).map(i -> i.getReactorNumber()).orElse(1);
         List<MycatReactorThread> list = new ArrayList<>(reactorNumber);
-
         for (int i = 0; i < reactorNumber; i++) {
             Function<MycatSession, CommandDispatcher> function = session -> {
                 try {
@@ -101,87 +94,21 @@ public class NativeMycatServer implements MycatServer {
         }
 
         this.reactorManager = new ReactorThreadManager(list);
-        idleConnectCheck(serverConfig.getIdleTimer(), reactorManager);
-
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
-
         acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
-        initFrontSessionChecker(serverConfig.getIdleTimer(), reactorManager);
-
         LOGGER.info("mycat starts successful");
     }
 
-    private void initFrontSessionChecker(TimerConfig frontSessionChecker, ReactorThreadManager reactorManager) {
-        if (frontSessionChecker.getPeriod() > 0) {
-            ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
-                try {
-                    for (MycatReactorThread thread : reactorManager.getList()) {
-                        thread.addNIOJob(new NIOJob() {
-                            @Override
-                            public void run(ReactorEnvThread reactor) throws Exception {
-                                thread.getFrontManager().check();
-                            }
+    public MySQLDatasourcePool getDatasource(String name) {
+        MySQLDatasourcePool datasource = datasourceMap.get(name);
 
-                            @Override
-                            public void stop(ReactorEnvThread reactor, Exception reason) {
-
-                            }
-
-                            @Override
-                            public String message() {
-                                return "frontSessionChecker";
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("", e);
-                }
-            }, frontSessionChecker.getInitialDelay(), frontSessionChecker.getPeriod(), TimeUnit.valueOf(frontSessionChecker.getTimeUnit()));
-        }
-    }
-
-    private void idleConnectCheck(TimerConfig timer, ReactorThreadManager reactorManager) {
-        ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
-            for (MycatReactorThread thread : reactorManager.getList()) {
-                thread.addNIOJob(new NIOJob() {
-                    @Override
-                    public void run(ReactorEnvThread reactor) throws Exception {
-                        thread.getMySQLSessionManager().idleConnectCheck();
-                    }
-
-                    @Override
-                    public void stop(ReactorEnvThread reactor, Exception reason) {
-
-                    }
-
-                    @Override
-                    public String message() {
-                        return "idleConnectCheck";
-                    }
-                });
-            }
-        }, timer.getInitialDelay(), timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
-    }
-
-    public MySQLDatasource getDatasource(String name) {
-        MySQLDatasource datasource = datasourceMap.get(name);
         if (datasource != null) {
             return datasource;
         }
         DatasourceConfig datasourceConfig = Objects.requireNonNull(datasourceConfigProvider.get()).get(name);
-        if (datasourceConfig != null && datasourceConfig.computeType().isNative()) {
+        if (datasourceConfig != null && "mysql".equalsIgnoreCase(datasourceConfig.getDbType())) {
             return datasourceMap.computeIfAbsent(name, s -> {
-                MySQLDatasource mySQLDatasource = new MySQLDatasource(datasourceConfig) {
-                    @Override
-                    public boolean isValid() {
-                        MySQLDatasource datasource = datasourceMap.get(this.getName());
-                        if (datasource != null && this == datasource) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                };
+                MySQLDatasourcePool mySQLDatasource = new MySQLDatasourcePool(name,datasourceConfigProvider,this);
                 return mySQLDatasource;
             });
         }
@@ -234,13 +161,9 @@ public class NativeMycatServer implements MycatServer {
         resultSetBuilder.addColumnInfo("IDLE_TIMEOUT", JDBCType.BIGINT);
         resultSetBuilder.addColumnInfo("DRIVER", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("TYPE", JDBCType.VARCHAR);
-        resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.BOOLEAN);
+        resultSetBuilder.addColumnInfo("IS_MYSQL", JDBCType.VARCHAR);
 
-        Map<String, Long> map = Optional
-                .ofNullable(getReactorManager()).map(i -> i.getList())
-                .orElse(Collections.emptyList()).stream().flatMap(i -> i.getMySQLSessionManager().getAllSessions().stream())
-                .filter(i -> !i.isIdle())
-                .collect(Collectors.groupingBy(k -> k.getDatasourceName(), Collectors.counting()));
+        Map<String, Integer> map =getDatasourceMap().values().stream().collect(Collectors.toMap(k->k.getName(),v->v.getAllSessions().size()));
         for (MySQLDatasource value : getDatasourceMap().values()) {
             String NAME = value.getName();
             Optional<DatasourceConfig> e = Optional.ofNullable(datasourceConfigMap.get(NAME));
@@ -251,7 +174,7 @@ public class NativeMycatServer implements MycatServer {
             String PASSWORD = value.getPassword();
             int MAX_CON = value.getSessionLimitCount();
             int MIN_CON = value.getSessionMinCount();
-            long USED_CON = map.getOrDefault(NAME, -1L);
+            long USED_CON = map.getOrDefault(NAME, -1);
             int EXIST_CON = value.getConnectionCounter();
             int MAX_RETRY_COUNT = value.gerMaxRetry();
             long MAX_CONNECT_TIMEOUT = value.getMaxConnectTimeout();
@@ -289,11 +212,11 @@ public class NativeMycatServer implements MycatServer {
         builder.addColumnInfo("HOST", JDBCType.VARCHAR);
         builder.addColumnInfo("SCHEMA", JDBCType.VARCHAR);
         builder.addColumnInfo("AFFECTED_ROWS", JDBCType.BIGINT);
-        builder.addColumnInfo("AUTOCOMMIT", JDBCType.BOOLEAN);
-        builder.addColumnInfo("IN_TRANSACTION", JDBCType.BOOLEAN);
+        builder.addColumnInfo("AUTOCOMMIT", JDBCType.VARCHAR);
+        builder.addColumnInfo("IN_TRANSACTION", JDBCType.VARCHAR);
         builder.addColumnInfo("CHARSET", JDBCType.VARCHAR);
         builder.addColumnInfo("CHARSET_INDEX", JDBCType.BIGINT);
-        builder.addColumnInfo("OPEN", JDBCType.BOOLEAN);
+        builder.addColumnInfo("OPEN", JDBCType.VARCHAR);
         builder.addColumnInfo("SERVER_CAPABILITIES", JDBCType.BIGINT);
         builder.addColumnInfo("ISOLATION", JDBCType.VARCHAR);
         builder.addColumnInfo("LAST_ERROR_CODE", JDBCType.BIGINT);
@@ -304,7 +227,7 @@ public class NativeMycatServer implements MycatServer {
         builder.addColumnInfo("MYSQL_SESSION_ID", JDBCType.BIGINT);
         builder.addColumnInfo("TRANSACTION_TYPE", JDBCType.VARCHAR);
         builder.addColumnInfo("TRANSCATION_SNAPSHOT", JDBCType.VARCHAR);
-        builder.addColumnInfo("CANCEL_FLAG", JDBCType.BOOLEAN);
+        builder.addColumnInfo("CANCEL_FLAG", JDBCType.VARCHAR);
 
         for (MycatSession session : sessions) {
             long ID = session.sessionId();
@@ -368,7 +291,7 @@ public class NativeMycatServer implements MycatServer {
         resultSetBuilder.addColumnInfo("THREAD_NAME", JDBCType.VARCHAR)
                 .addColumnInfo("THREAD_ID", JDBCType.BIGINT)
                 .addColumnInfo("CUR_SESSION_ID", JDBCType.BIGINT)
-                .addColumnInfo("PREPARE_STOP", JDBCType.BOOLEAN)
+                .addColumnInfo("PREPARE_STOP", JDBCType.VARCHAR)
                 .addColumnInfo("BUFFER_POOL_SNAPSHOT", JDBCType.VARCHAR)
                 .addColumnInfo("LAST_ACTIVE_TIME", JDBCType.TIMESTAMP);
         for (MycatReactorThread mycatReactorThread : getReactorManager().getList()) {
@@ -419,17 +342,17 @@ public class NativeMycatServer implements MycatServer {
                 .addColumnInfo("DS_NAME", JDBCType.VARCHAR)
                 .addColumnInfo("LAST_MESSAGE", JDBCType.VARCHAR)
                 .addColumnInfo("MYCAT_SESSION_ID", JDBCType.BIGINT)
-                .addColumnInfo("IS_IDLE", JDBCType.BOOLEAN)
+                .addColumnInfo("IS_IDLE", JDBCType.VARCHAR)
                 .addColumnInfo("SELECT_LIMIT", JDBCType.BIGINT)
-                .addColumnInfo("IS_AUTOCOMMIT", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_RESPONSE_FINISHED", JDBCType.BOOLEAN)
+                .addColumnInfo("IS_AUTOCOMMIT", JDBCType.VARCHAR)
+                .addColumnInfo("IS_RESPONSE_FINISHED", JDBCType.VARCHAR)
                 .addColumnInfo("RESPONSE_TYPE", JDBCType.VARCHAR)
-                .addColumnInfo("IS_IN_TRANSACTION", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_REQUEST_SUCCESS", JDBCType.BOOLEAN)
-                .addColumnInfo("IS_READ_ONLY", JDBCType.BOOLEAN);
+                .addColumnInfo("IS_IN_TRANSACTION", JDBCType.VARCHAR)
+                .addColumnInfo("IS_REQUEST_SUCCESS", JDBCType.VARCHAR)
+                .addColumnInfo("IS_READ_ONLY", JDBCType.VARCHAR);
         for (MycatReactorThread i : getReactorManager().getList()) {
-            MySQLSessionManager c = i.getMySQLSessionManager();
-            for (MySQLClientSession session : c.getAllSessions()) {
+            List<MySQLClientSession> sqlClientSessions = datasourceMap.values().stream().flatMap(s -> s.getAllSessions().stream()).collect(Collectors.toList());
+            for (MySQLClientSession session : sqlClientSessions) {
 
                 long SESSION_ID = session.sessionId();
                 String THREAD_NAME = i.getName();

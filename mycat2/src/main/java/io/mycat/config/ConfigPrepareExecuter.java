@@ -1,22 +1,37 @@
 package io.mycat.config;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.SimpleConfig;
+import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.impl.MySQLManagerImpl;
+import cn.mycat.vertx.xa.impl.XaLogImpl;
+import com.mysql.cj.conf.ConnectionUrlParser;
+import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
+import io.mycat.calcite.spm.PlanCache;
+import io.mycat.commands.MycatMySQLManager;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.calcite.spm.PlanCache;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.sqlclient.SqlConnection;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static io.mycat.config.UpdateType.*;
-
 public class ConfigPrepareExecuter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPrepareExecuter.class);
     private final MycatRouterConfigOps ops;
     ////////////////////////////////////////////////////////////////////////////////////
     private ReplicaSelectorRuntime replicaSelector;
@@ -30,6 +45,8 @@ public class ConfigPrepareExecuter {
 
     private String datasourceProvider;
     private SqlResultSetService sqlResultSetService;
+    private MySQLManager mySQLManager;
+    private XaLog xaLog;
 //    UpdateType updateType = UpdateType.FULL;
 
 
@@ -141,7 +158,7 @@ public class ConfigPrepareExecuter {
 
     @NotNull
     private MetadataManager createMetaData() {
-        return  MetadataManager.createMetadataManager(ops.getSchemas(),
+        return MetadataManager.createMetadataManager(ops.getSchemas(),
                 MetaClusterCurrent.wrapper(LoadBalanceManager.class),
                 MetaClusterCurrent.wrapper(SequenceGenerator.class),
                 MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
@@ -150,10 +167,7 @@ public class ConfigPrepareExecuter {
     }
 
     public void fullInitBy(MycatRouterConfig mycatRouterConfig) {
-        if (MetaClusterCurrent.exist(ReplicaSelectorRuntime.class)) {
-            ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
-            replicaSelectorRuntime.close();
-        }
+
         LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -174,7 +188,7 @@ public class ConfigPrepareExecuter {
         ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
         this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), mycatRouterConfig.getSequences());
         this.authenticator = new AuthenticatorImpl(mycatRouterConfig.getUsers().stream().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
-        this.metadataManager =  MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
+        this.metadataManager = MetadataManager.createMetadataManager(mycatRouterConfig.getSchemas(), loadBalanceManager, sequenceGenerator, replicaSelector, jdbcConnectionManager, mycatRouterConfig.getPrototype());
 
         if (MetaClusterCurrent.exist(SqlResultSetService.class)) {
             SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
@@ -183,6 +197,35 @@ public class ConfigPrepareExecuter {
         this.sqlResultSetService = new SqlResultSetService();
         for (SqlCacheConfig sqlCacheConfig : mycatRouterConfig.getSqlCacheConfigs()) {
             this.sqlResultSetService.addIfNotPresent(sqlCacheConfig);
+        }
+
+
+        ////////////////////////////////////////////////////////
+
+        List<SimpleConfig> configList = new ArrayList<>();
+        if (serverConfig.isProxy()) {
+            for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
+                if (!"mysql".equalsIgnoreCase(datasource.getDbType())) {
+                    throw new IllegalArgumentException(datasource.toString() + "  \n is not mysql type");
+                }
+                ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
+                HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+                String name = datasource.getName();
+                String host = hostInfo.getHost();
+                int port = hostInfo.getPort();
+                String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
+                String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
+                String database = hostInfo.getDatabase();
+                int maxSize = datasource.getMaxCon();
+                SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
+                configList.add(simpleConfig);
+            }
+            if (!MetaClusterCurrent.exist(MySQLManager.class)){
+                this.mySQLManager = new MycatMySQLManager();
+            }else {
+                this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+            }
+            this.xaLog = XaLogImpl.createDemoRepository(mySQLManager);
         }
 
     }
@@ -231,6 +274,7 @@ public class ConfigPrepareExecuter {
     }
 
     public void commit() {
+
         ReplicaSelectorRuntime replicaSelector = this.replicaSelector;
         JdbcConnectionManager jdbcConnectionManager = this.jdbcConnectionManager;
         MetadataManager metadataManager = this.metadataManager;
@@ -250,10 +294,17 @@ public class ConfigPrepareExecuter {
         }
 
         if (replicaSelector != null) {
-            context.put(replicaSelector.getClass(), replicaSelector);
+            if (MetaClusterCurrent.exist(ReplicaSelectorRuntime.class)) {
+                ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+                replicaSelectorRuntime.close();
+            }
+            context.put(ReplicaSelectorRuntime.class, replicaSelector);
         }
         if (jdbcConnectionManager != null) {
-            context.put(jdbcConnectionManager.getClass(), jdbcConnectionManager);
+            if (MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
+                JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            }
+            context.put(JdbcConnectionManager.class, jdbcConnectionManager);
         }
         if (metadataManager != null) {
             context.put(metadataManager.getClass(), metadataManager);
@@ -277,10 +328,23 @@ public class ConfigPrepareExecuter {
         if (mycatRouterConfig != null) {
             context.put(MycatRouterConfig.class, mycatRouterConfig);
         }
-        if (sqlResultSetService !=null){
+        if (sqlResultSetService != null) {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
         PlanCache.INSTANCE.clear();
+        if (xaLog != null) {
+            context.put(XaLog.class, xaLog);
+        }
+        if (mySQLManager != null) {
+            if (MetaClusterCurrent.exist(MySQLManager.class)) {
+                MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+                //close......but meet bug
+            }
+
+            context.put(MySQLManager.class, mySQLManager);
+            mySQLManager = null;
+        }
+
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }

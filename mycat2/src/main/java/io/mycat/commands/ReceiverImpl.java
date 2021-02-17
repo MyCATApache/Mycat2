@@ -1,43 +1,50 @@
 package io.mycat.commands;
 
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowIterable;
-import io.mycat.api.collector.RowObservable;
-import io.mycat.beans.resultset.*;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.runtime.ProxyTransactionSession;
+import io.mycat.util.VertxUtil;
+import io.mycat.vertx.VertxExecuter;
+import io.mycat.vertx.VertxResponse;
+import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.sqlclient.SqlConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Objects;
 
-import static io.mycat.ExecuteType.QUERY;
-import static io.mycat.ExecuteType.UPDATE;
+import static io.mycat.ExecuteType.*;
 
 
 public class ReceiverImpl implements Response {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReceiverImpl.class);
 
     protected final MycatSession session;
-    protected final SQLExecuterWriter sqlExecuterWriter;
     protected final MycatDataContext dataContext;
+    protected final ProxyTransactionSession transactionSession;
+    private final int stmtSize;
+    private final boolean binary;
+    protected int count = 0;
 
     public ReceiverImpl(MycatSession session, int stmtSize, boolean binary) {
-        this.sqlExecuterWriter = new SQLExecuterWriter(stmtSize, binary, session, this);
+        this.stmtSize = stmtSize;
+        this.binary = binary;
         this.session = session;
         this.dataContext = this.session.getDataContext();
+        this.transactionSession = (ProxyTransactionSession) this.dataContext.getTransactionSession();
     }
 
 
     @Override
     public PromiseInternal<Void> sendError(Throwable e) {
         session.setLastMessage(e);
-        return sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
+        return VertxUtil.newFailPromise(new RuntimeException(e));
     }
 
     @Override
@@ -53,22 +60,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public PromiseInternal<Void> proxySelectToPrototype(String statement) {
-        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        List<String> infos = new ArrayList<>();
-        List<String> keySet = new ArrayList<>();
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        keySet.add(metadataManager.getPrototype());
-        for (String datasourceName : keySet) {
-            try (DefaultConnection connection = connectionManager.getConnection(datasourceName)) {
-                RowBaseIterator rowBaseIterator = connection.executeQuery(statement);
-                return sendResultSet(RowIterable.create(rowBaseIterator));
-            } catch (Throwable e) {
-                infos.add("数据源:" + datasourceName + " : " + e + "");
-            }
-        }
-        MycatException mycatException = new MycatException("物理分片不存在能够正确处理:\n" + statement + " \n" + String.join(",\n", infos));
-        LOGGER.error("", mycatException);
-        return sendError(mycatException);
+        return execute(ExplainDetail.create(QUERY_MASTER, Objects.requireNonNull(metadataManager.getPrototype()), statement, null));
     }
 
 
@@ -76,62 +69,163 @@ public class ReceiverImpl implements Response {
     public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
         session.setLastMessage(errorMessage);
         session.setLastErrorCode(errorCode);
-        return sqlExecuterWriter.writeToMycatSession(MycatErrorResponse.INSTANCE);
+        return VertxUtil.newFailPromise(new MycatException(errorCode, errorMessage));
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(RowIterable rowIterable) {
-        return sqlExecuterWriter.writeToMycatSession(rowIterable);
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
+        count++;
+        boolean hasMoreResult = hasMoreResultSet();
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        mysqlPacketObservable.subscribe(
+                new VertxResponse.MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
+        return promise;
     }
 
 
     @Override
     public PromiseInternal<Void> rollback() {
-        return sqlExecuterWriter.writeToMycatSession(MycatRollbackResponse.INSTANCE);
+        count++;
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        class RollbackSendOk extends AsyncSendOk {
+            public RollbackSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
+            }
+        }
+        transactionSession.rollback()
+                .onComplete(new RollbackSendOk(promise, hasMoreResultSet()));
+        return promise;
     }
 
     @Override
     public PromiseInternal<Void> begin() {
-        return sqlExecuterWriter.writeToMycatSession(MycatBeginResponse.INSTANCE);
+        count++;
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        class BeginSendOk extends AsyncSendOk {
+            public BeginSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
+            }
+        }
+        transactionSession.begin().onComplete(new BeginSendOk(promise, hasMoreResultSet()));
+        return promise;
     }
 
     @Override
     public PromiseInternal<Void> commit() {
-        return sqlExecuterWriter.writeToMycatSession(MycatCommitResponse.INSTANCE);
+        count++;
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        class CommitSendOk extends AsyncSendOk {
+            public CommitSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+                super(promise, hasMoreResultSet);
+            }
+        }
+        transactionSession.commit()
+                .onComplete(new CommitSendOk(promise, hasMoreResultSet()));
+        return promise;
     }
 
     @Override
     public PromiseInternal<Void> execute(ExplainDetail detail) {
+        boolean directPacket = false;
         boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
         String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
-        return sqlExecuterWriter.writeToMycatSession(MycatProxyResponse.create(detail.getExecuteType(), datasource, detail.getSql()));
+        String sql = detail.getSql();
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        boolean inTransaction = session.isInTransaction();
+        Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
+        switch (detail.getExecuteType()) {
+            case QUERY:
+            case QUERY_MASTER: {
+                Future<Void> future = connectionFuture.flatMap(connection -> {
+                    Observable<MysqlPayloadObject> mysqlPacketObservable = VertxExecuter.runQueryOutputAsMysqlPayloadObject(Future.succeededFuture(
+                            connection), sql, Collections.emptyList());
+                    if (!inTransaction) {
+                        return sendResultSet(mysqlPacketObservable);
+                    } else {
+                        return sendResultSet(mysqlPacketObservable);
+                    }
+                });
+                future.onComplete(event -> {
+                    if (event.succeeded()) {
+                        promise.tryComplete();
+                    } else {
+                        promise.tryFail(event.cause());
+                    }
+                });
+                return promise;
+            }
+            case UPDATE:
+            case INSERT:
+                count++;
+                Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
+                future1.onComplete(event -> {
+                    if (event.succeeded()) {
+                        long[] result = event.result();
+                        sendOk(result[0], result[1]).onComplete(result1 -> promise.tryComplete());
+                    } else {
+                        promise.tryFail(event.cause());
+                    }
+
+                });
+                return promise;
+            default:
+                throw new IllegalStateException("Unexpected value: " + detail.getExecuteType());
+        }
     }
 
     @Override
     public PromiseInternal<Void> sendOk() {
-       return sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
+        count++;
+        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
+        new AsyncSendOk(promise, hasMoreResultSet()).handle(VertxUtil.newSuccessPromise());
+        return promise;
     }
 
     @Override
     public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
         session.setLastInsertId(lastInsertId);
         session.setAffectedRows(affectedRow);
-        return sqlExecuterWriter.writeToMycatSession(MycatUpdateResponse.INSTANCE);
+        return sendOk();
     }
 
     @Override
     public <T> T unWrapper(Class<T> clazz) {
-        if (MycatSession.class == clazz) {
-            return clazz.cast(session);
-        }
-        if (SQLExecuterWriter.class == clazz) {
-            return clazz.cast(sqlExecuterWriter);
-        }
         return null;
     }
 
-    @Override
-    public PromiseInternal<Void> sendResultSet(RowObservable rowIterable) {
-        return sqlExecuterWriter.writeToMycatSession(rowIterable);
+//    @Override
+//    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
+//        count++;
+//        boolean hasMoreResultSet = hasMoreResultSet();
+//        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();
+//        mysqlPacketObservable.subscribe(
+//                new VertxResponse.MysqlPayloadObjectObserver(voidPromiseInternal,hasMoreResultSet,binary,session));
+//        return voidPromiseInternal;
+//    }
+
+    protected boolean hasMoreResultSet() {
+        return count < this.stmtSize;
+    }
+
+    private class AsyncSendOk implements Handler<AsyncResult<Void>> {
+        private final PromiseInternal<Void> promise;
+        private final boolean hasMoreResultSet;
+
+        public AsyncSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
+            this.promise = promise;
+            this.hasMoreResultSet = hasMoreResultSet;
+        }
+
+        @Override
+        public void handle(AsyncResult<Void> event) {
+            transactionSession.closeStatementState().onComplete(unused -> {
+                if (!event.succeeded()) {
+                    promise.tryFail(event.cause());
+                } else {
+                    session.writeOk(hasMoreResultSet)
+                            .onComplete(event1 -> promise.tryComplete());
+                }
+            });
+        }
     }
 }

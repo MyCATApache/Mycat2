@@ -38,7 +38,7 @@ public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
     private final String name;
     private final Repository xaRepository;
-    private final AtomicLong xaIdSeq = new AtomicLong();
+    private  static final AtomicLong xaIdSeq = new AtomicLong();
     private final MySQLManager mySQLManager;
 
 
@@ -134,7 +134,7 @@ public class XaLogImpl implements XaLog {
         }
         CompositeFuture.all(list).onComplete(unused -> {
             logCommit(entry.getXid(), unused.succeeded());
-            res.complete();
+            res.tryComplete();
         });
     }
 
@@ -161,7 +161,7 @@ public class XaLogImpl implements XaLog {
             }
             CompositeFuture.all(list).onComplete(unused -> {
                 logRollback(entry.getXid(), unused.succeeded());
-                res.complete();
+                res.tryComplete();
             });
         }
     }
@@ -346,7 +346,6 @@ public class XaLogImpl implements XaLog {
     @Override
     public void close() throws IOException {
         xaRepository.close();
-        mySQLManager.close((h) -> {
-        });
+        mySQLManager.close();
     }
 }

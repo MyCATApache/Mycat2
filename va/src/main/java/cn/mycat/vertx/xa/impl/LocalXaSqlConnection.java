@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,54 +17,43 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.SqlConnection;
+
+import java.util.function.Supplier;
 
 public class LocalXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalXaSqlConnection.class);
     volatile SqlConnection localSqlConnection = null;
     volatile String targetName;
 
-    public LocalXaSqlConnection(MySQLManager mySQLManager, XaLog xaLog) {
-        super(mySQLManager, xaLog);
+    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+        super(mySQLManagerSupplier, xaLog);
     }
 
     @Override
-    public void begin(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> begin() {
         if (inTranscation) {
-            handler.handle(Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
-            return;
+            return Future.failedFuture(new IllegalArgumentException("occur Nested transaction"));
         }
         inTranscation = true;
-        handler.handle(Future.succeededFuture());
+        return Future.succeededFuture();
     }
 
     @Override
-    public void commit(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> commit() {
         if (targetName == null && localSqlConnection == null && map.isEmpty()) {
             inTranscation = false;
-            handler.handle(Future.succeededFuture());
-            return;
+            return (Future.succeededFuture());
         }
         if (targetName != null && localSqlConnection != null && map.isEmpty()) {
-            localSqlConnection.query("commit;").execute(event -> {
-                if (event.succeeded()) {
-                    inTranscation = false;
-                    handler.handle(Future.succeededFuture());
-                    return;
-                }
-                handler.handle(Future.failedFuture(event.cause()));
-            });
-            return;
+            return localSqlConnection.query("commit;").execute()
+                    .onSuccess(event -> inTranscation = false).mapEmpty();
         }
         if (targetName != null && inTranscation && localSqlConnection != null) {
-            super.commitXa(()->{
-              return localSqlConnection.query("commit;").execute();
-            }, handler);
+            return super.commitXa(() -> localSqlConnection.query("commit;").execute());
         } else {
             throw new AssertionError();
         }
@@ -72,12 +61,14 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
 
     @Override
     public Future<SqlConnection> getConnection(String targetName) {
+        MySQLManager mySQLManager = mySQLManager();
         if (inTranscation) {
             if (this.targetName == null && localSqlConnection == null) {
                 LocalXaSqlConnection.this.targetName = targetName;
                 Future<SqlConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
                 return sqlConnectionFuture.map(sqlConnection -> {
                     LocalXaSqlConnection.this.localSqlConnection = sqlConnection;
+                    map.put(targetName, sqlConnection);
                     return sqlConnection;
                 }).compose(sqlConnection -> sqlConnection.query("begin;").execute().map(sqlConnection));
             }
@@ -88,41 +79,61 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             log.beginXa(xid);
             return super.getConnection(targetName);
         }
-        return mySQLManager.getConnection(targetName);
+        return mySQLManager.getConnection(targetName).map(connection -> {
+            addCloseConnection(connection);
+            return connection;
+        });
     }
 
     @Override
-    public void rollback(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> rollback() {
         if (targetName == null && localSqlConnection == null && map.isEmpty()) {
             inTranscation = false;
-            handler.handle(Future.succeededFuture());
-            return;
+            return Future.succeededFuture();
         }
-        localSqlConnection.query("rollback;").execute()
-                .onComplete(ignored -> {
-                    super.rollback(handler);
-                });
+        return Future.future(promise -> {
+            localSqlConnection.query("rollback;").execute()
+                    .onComplete(ignored -> {
+                        super.rollback().onComplete(promise);
+                    });
+        });
     }
 
     @Override
-    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
-        if (!isInTranscation()) {
-            targetName = null;
-            SqlConnection localSqlConnection = this.localSqlConnection;
-            this.localSqlConnection = null;
-            localSqlConnection.close(event -> LocalXaSqlConnection.super.closeStatementState(handler));
-            return;
-        }
-        super.closeStatementState(handler);
+    public Future<Void> closeStatementState() {
+        return Future.future(promise -> {
+            super.closeStatementState()
+                    .onComplete(event -> {
+                        if (!isInTransaction()) {
+                            targetName = null;
+                            SqlConnection localSqlConnection = this.localSqlConnection;
+                            this.localSqlConnection = null;
+                            if (localSqlConnection != null) {
+                                localSqlConnection.close().onComplete(promise);
+                            } else {
+                                promise.tryComplete();
+                            }
+                        }
+                    });
+        });
     }
 
     @Override
-    public void close(Handler<AsyncResult<Void>> handler) {
-        if (localSqlConnection!=null){
-            localSqlConnection.query("rollback").execute().onComplete(c->localSqlConnection.close());
-            localSqlConnection = null;
-            targetName = null;
-        }
-        super.close(handler);
+    public Future<Void> close() {
+        return super.close().flatMap(event -> {
+            if (localSqlConnection != null) {
+                return localSqlConnection
+                        .query("rollback")
+                        .execute()
+                        .flatMap(c -> localSqlConnection.close()
+                                .onComplete(event1 -> {
+                            localSqlConnection = null;
+                            targetName = null;
+                        }));
+
+            } else {
+                return Future.succeededFuture();
+            }
+        });
     }
 }

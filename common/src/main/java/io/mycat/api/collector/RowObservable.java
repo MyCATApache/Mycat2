@@ -1,8 +1,15 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.resultset.MycatObserverResponse;
 
-public abstract class RowObservable extends io.reactivex.rxjava3.core.Observable<Object[]> implements MycatObserverResponse {
-    public abstract MycatRowMetaData getRowMetaData();
+public abstract class RowObservable extends io.reactivex.rxjava3.core.Observable<Object[]> {
+    protected MycatRowMetaData metaData;
+
+    public MycatRowMetaData getRowMetaData() {
+        return metaData;
+    }
+
+    public void setRowMetaData(MycatRowMetaData metaData) {
+        this.metaData = metaData;
+    }
 }

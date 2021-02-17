@@ -21,13 +21,13 @@ import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.datatype.DataFormat;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
+import io.vertx.mysqlclient.impl.protocol.Packets;
 import io.vertx.mysqlclient.impl.util.BufferUtils;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.impl.RowDesc;
 import io.vertx.sqlclient.impl.command.CommandResponse;
 import io.vertx.sqlclient.impl.command.QueryCommandBase;
 
-import java.nio.charset.StandardCharsets;
 import java.util.stream.Collector;
 
 import static io.vertx.mysqlclient.impl.protocol.Packets.*;
@@ -94,7 +94,12 @@ abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends C
 
   protected void handleResultsetColumnDefinitionsDecodingCompleted() {
     commandHandlerState = CommandHandlerState.HANDLING_ROW_DATA_OR_END_PACKET;
-    decoder = new RowResultDecoder<>(cmd.collector(), /*cmd.isSingleton()*/ new MySQLRowDesc(columnDefinitions, format));
+    Collector<Row, ?, T> collector = cmd.collector();
+    MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(columnDefinitions, format);
+    if(collector instanceof MysqlCollector){
+      ((MysqlCollector) collector).onColumnDefinitions(mySQLRowDesc);
+    }
+    decoder = new RowResultDecoder<>(collector, /*cmd.isSingleton()*/ mySQLRowDesc);
   }
 
   protected void handleRows(ByteBuf payload, int payloadLength) {
@@ -104,12 +109,12 @@ abstract class QueryCommandBaseCodec<T, C extends QueryCommandBase<T>> extends C
     the packet length must be checked and must be less than 0xffffff in length.
    */
     int first = payload.getUnsignedByte(payload.readerIndex());
-    if (first == ERROR_PACKET_HEADER) {
+    if (first == Packets.ERROR_PACKET_HEADER) {
       handleErrorPacketPayload(payload);
     }
     // enabling CLIENT_DEPRECATE_EOF capability will receive an OK_Packet with a EOF_Packet header here
     // we need check this is not a row data by checking packet length < 0xFFFFFF
-    else if (first == EOF_PACKET_HEADER && payloadLength < 0xFFFFFF) {
+    else if (first == Packets.EOF_PACKET_HEADER && payloadLength < 0xFFFFFF) {
       int serverStatusFlags;
       long affectedRows = -1;
       long lastInsertId = -1;

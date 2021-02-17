@@ -71,9 +71,6 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
-
-  }
 
   void onFinishedCollect(MySQLClientSession mysql);
 

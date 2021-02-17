@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.util.List;
@@ -47,14 +47,14 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         this.mySQLManager = mySQLManager;
     }
 
+
     @Override
-    public void begin(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> begin() {
         if (inTranscation) {
-            handler.handle(Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
-            return;
+            return (Future.failedFuture(new IllegalArgumentException("occur Nested transaction")));
         }
         inTranscation = true;
-        handler.handle(Future.succeededFuture());
+        return Future.succeededFuture();
     }
 
     public Future<SqlConnection> getConnection(String targetName) {
@@ -70,79 +70,72 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
                 });
             }
         }
-        return mySQLManager.getConnection(targetName);
+        return mySQLManager.getConnection(targetName)
+                .map(connection -> {
+                  addCloseConnection(connection);
+                    return connection;
+                });
     }
 
     @Override
-    public void rollback(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> rollback() {
         List<Future> rollback = map.values().stream().map(c -> c.query("rollback").execute()).collect(Collectors.toList());
-        CompositeFuture.all(rollback).onComplete(event -> {
+        return CompositeFuture.all(rollback).onComplete(event -> {
             map.clear();
             inTranscation = false;
             //每一个记录日志
-            handler.handle((AsyncResult) event);
-        });
+        }).mapEmpty().flatMap(o -> closeStatementState());
     }
 
     @Override
-    public void commit(Handler<AsyncResult<Void>> handler) {
+    public Future<Void> commit() {
         List<Future> rollback = map.values().stream().map(c -> c.query("commit").execute()).collect(Collectors.toList());
-        CompositeFuture.all(rollback).onComplete(event -> {
+        return CompositeFuture.all(rollback).onComplete(event -> {
             map.clear();
             inTranscation = false;
             //每一个记录日志
-            handler.handle((AsyncResult) event);
-        });
+        }).mapEmpty().flatMap(o -> closeStatementState());
     }
 
     @Override
-    public void commitXa(Supplier<Future> beforeCommit, Handler<AsyncResult<Void>> handler) {
-        beforeCommit.get().onComplete((Handler<AsyncResult>) event -> {
-            if (event.succeeded()){
-                commit(handler);
-            }else {
-                handler.handle(Future.failedFuture(event.cause()));
-            }
-        });
-    }
-
-    @Override
-    public void close(Handler<AsyncResult<Void>> handler) {
-        clearConnections(new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                inTranscation = false;
-                handler.handle(Future.succeededFuture());
-            }
-        });
-    }
-
-    @Override
-    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
-        if (!inTranscation) {
-            clearConnections(handler);
-        }
-    }
-
-    private void clearConnections(Handler<AsyncResult<Void>> handler) {
-        if (inTranscation) {
-            executeAll(c -> {
-                Future objectFuture;
-                if (c instanceof MySQLConnection) {
-                    MySQLConnection c1 = (MySQLConnection) c;
-                    objectFuture = c1.resetConnection();
+    public Future<Void> commitXa(Supplier<Future> beforeCommit) {
+        return Future.future(promise -> {
+            beforeCommit.get().onComplete((Handler<AsyncResult>) result -> {
+                if (result.succeeded()) {
+                    commit().onComplete(promise);
                 } else {
-                    objectFuture = Future.succeededFuture();
+                    promise.fail(result.cause());
                 }
-                return objectFuture.onComplete(ignored -> c.close());
             });
+        });
+    }
+
+    @Override
+    public Future<Void> close() {
+        return clearConnections().onComplete(event -> inTranscation = false).mapEmpty();
+    }
+
+
+
+    @Override
+    public String getXid() {
+        return null;
+    }
+
+    @Override
+    public Future<Void> clearConnections() {
+        if (inTranscation) {
+            return dealCloseConnections();
         } else {
-            executeAll(c -> {
-                return c.close();
-            });
+           return executeAll(SqlClient::close).onComplete(event -> {
+                map.clear();
+            }).mapEmpty().flatMap(o -> dealCloseConnections());
         }
-        map.clear();
-        handler.handle((Future) Future.succeededFuture());
+    }
+
+    @Override
+    public Future<Void> closeStatementState() {
+        return super.closeStatementState().flatMap(unused -> clearConnections());
     }
 
     public CompositeFuture executeAll(Function<SqlConnection, Future> connectionFutureFunction) {

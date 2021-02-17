@@ -6,19 +6,21 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
-import java.util.Queue;
 
 public interface NewMycatDataContext extends DataContext {
-
-    public void allocateResource();
 
     Enumerable<Object[]> getEnumerable(org.apache.calcite.rel.RelNode node);
 
     List<Enumerable<Object[]>> getEnumerables(org.apache.calcite.rel.RelNode node);
 
-    io.reactivex.rxjava3.core.Observable <Object[]> getObservable(org.apache.calcite.rel.RelNode node);
+    default Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode node){
+        throw new UnsupportedOperationException();
+    }
 
-    Queue<List<Observable<Object[]>>> getObservables(RelNode node);
+    default List<Observable<Object[]>> getObservables(RelNode node){
+        throw new UnsupportedOperationException();
+    }
+
 
     public Object getSessionVariable(String name);
 

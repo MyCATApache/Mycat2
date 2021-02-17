@@ -47,9 +47,9 @@
             <version>8.0.22</version>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>4.0.0</version>
+            <groupId>io.mycat</groupId>
+            <artifactId>vertx</artifactId>
+            <version>1.14-release</version>
         </dependency>
     </dependencies>
 

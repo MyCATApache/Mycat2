@@ -1,32 +1,33 @@
 package io.mycat.springdata;
 
+import static java.lang.Thread.sleep;
+
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
+import groovy.lang.IntRange;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
-import io.mycat.hint.SetUserDialectHint;
+import java.util.stream.LongStream;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.domain.JpaSort;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
+@Slf4j
 public abstract class TableJPATemplateTest implements MycatTest {
 
      Class clazz;
@@ -203,5 +204,44 @@ public abstract class TableJPATemplateTest implements MycatTest {
         Assert.assertEquals(customerList.size(), repository.count());
         repository.deleteAllInBatch();
     }
+
+    @Test
+    public void testUpdateOne() {
+        repository.deleteAllInBatch();
+        Customer customer = new Customer();
+        repository.save(customer);
+
+        customer.firstname = "newFirstName";
+        repository.updateFirstNameById(customer.id, customer.firstname);
+
+        Optional<Customer> findCustomer = repository.findById(customer.id);
+        Assert.assertTrue(findCustomer.isPresent());
+        Assert.assertEquals(findCustomer.get().firstname, customer.firstname);
+    }
+    @SneakyThrows
+    @Test
+    public void testMultiThreadInsert() {
+        repository.deleteAllInBatch();
+        long start = System.currentTimeMillis();
+        int sum = 10;
+        LongStream.range(0, sum)
+            .parallel()
+            .forEach(i -> {
+                try{
+                    Customer customer1 = new Customer();
+                    customer1.firstname = String.format("customer1-%d",i);
+                    log.info("{}", customer1);
+                    repository.insert(i, customer1.firstname);
+                } catch (Exception e){
+                    log.error(e.getMessage(), e);
+                }
+            });
+        log.info("cost {} s", (System.currentTimeMillis() - start) / 1000);
+        sleep(1000);
+
+        Assert.assertEquals(repository.count(), sum);
+
+    }
+
 
 }

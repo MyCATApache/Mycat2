@@ -1,36 +1,35 @@
 package io.mycat.vertxmycat;
 
-import io.mycat.MycatException;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
-import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.vertx.core.AsyncResult;
+import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLConnection;
-import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.*;
-import io.vertx.sqlclient.desc.ColumnDescriptor;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
+    static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
     volatile Handler<Throwable> exceptionHandler;
     volatile Handler<Void> closeHandler;
-    final MySQLClientSession mySQLClientSession;
+    volatile MySQLClientSession mySQLClientSession;
 
     public AbstractMySqlConnectionImpl(MySQLClientSession mySQLClientSession) {
         this.mySQLClientSession = mySQLClientSession;
@@ -38,7 +37,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Future<PreparedStatement> prepare(String sql) {
-        return null;
+        return Future.succeededFuture(new MycatVertxPreparedStatement(sql, this));
     }
 
     @Override
@@ -84,195 +83,46 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public Query<RowSet<Row>> query(String sql) {
-        return new Query<RowSet<Row>>() {
-            ColumnDefinition[] columnDefinitionList;
+        return new RowSetQuery(sql, this);
+    }
 
+    public static String apply(String parameterizedSql, List<Object> parameters) {
+        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(parameterizedSql);
+        sqlStatement.accept(new MySqlASTVisitorAdapter() {
             @Override
-            public void execute(Handler<AsyncResult<RowSet<Row>>> handler) {
-                Future<RowSet<Row>> future = execute();
-                if (future != null) {
-                    future.onComplete(handler);
-                }
+            public void endVisit(SQLVariantRefExpr x) {
+                SQLReplaceable parent = (SQLReplaceable) x.getParent();
+                parent.replace(x, SQLExprUtils.fromJavaObject(parameters.get(x.getIndex())));
             }
-
-            @Override
-            public Future<RowSet<Row>> execute() {
-                Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
-                Promise<RowSet<Row>> rowSetPromise = runTextQuery(sql, mySQLClientSession, consumer,
-                        (Collector)VertxRowSetImpl.collector(row -> row));
-                return rowSetPromise.future();
-            }
-
-            @Override
-            public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collectorArg) {
-                return new Query<SqlResult<R>>() {
-                    @Override
-                    public void execute(Handler<AsyncResult<SqlResult<R>>> handler) {
-                        Future<SqlResult<R>> future = execute();
-                        if (future!=null){
-                            future.onComplete(handler);
-                        }
-                    }
-
-                    @Override
-                    public Future<SqlResult<R>> execute() {
-                        Consumer<ColumnDefinition[]> consumer = columnDefinitions -> columnDefinitionList = columnDefinitions;
-                        Promise<VertxMycatTextCollector> promise = runTextQuery(sql, mySQLClientSession, consumer,
-                                (Collector<Row, Object, Object>) collectorArg);
-                        return promise.future().map(s->new SqlResult<R>() {
-                            @Override
-                            public int rowCount() {
-                                return (int)s.getAffectedRows();
-                            }
-
-                            @Override
-                            public List<String> columnsNames() {
-                                return Arrays.stream(columnDefinitionList).map(i->i.name()).collect(Collectors.toList());
-                            }
-
-                            @Override
-                            public List<ColumnDescriptor> columnDescriptors() {
-                                return Arrays.asList(columnDefinitionList);
-                            }
-
-                            @Override
-                            public int size() {
-                                return (int) s.getRowCount();
-                            }
-
-                            @Override
-                            public <V> V property(PropertyKind<V> propertyKind) {
-                                if (propertyKind == MySQLClient.LAST_INSERTED_ID){
-                                    Object lastInsertId = s.getLastInsertId();
-                                    return (V)lastInsertId;
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            public R value() {
-                                return (R)s.getRes();
-                            }
-
-                            @Override
-                            public SqlResult<R> next() {
-                                throw  new UnsupportedOperationException();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public <R> Query<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-
-            @Override
-            public <U> Query<RowSet<U>> mapping(Function<Row, U> mapper) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        });
+        return sqlStatement.toString();
     }
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new AbstractMySqlPreparedQuery() {
-
-            @Override
-            public Future<RowSet<Row>> execute(Tuple tuple) {
-                return null;
-            }
-
-            @Override
-            public Future<RowSet<Row>> executeBatch(List<Tuple> batch) {
-                return null;
-            }
-
-            @Override
-            public Future<RowSet<Row>> execute() {
-                return null;
-            }
-
-            @Override
-            public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
-                return null;
-            }
-
-            @Override
-            public <U> PreparedQuery<RowSet<U>> mapping(Function<Row, U> mapper) {
-                return null;
-            }
-        };
+        return new RowSetMySqlPreparedQuery(sql, this);
     }
 
     @NotNull
-    private static Promise<VertxMycatTextCollector> runTextQuery(String curSql,
-                                                                 MySQLClientSession mySQLClientSession,
-                                                                 Consumer<ColumnDefinition[]> consumer,
-                                                                 Collector<Row, Object, Object> collectorArg) {
-        Promise<VertxMycatTextCollector> promise = Promise.promise();
-        if (mySQLClientSession.getIOThread() == Thread.currentThread()) {
-            VertxMycatTextCollector<Object, Object> resultSetHandler = new VertxMycatTextCollector<Object, Object>(consumer, (Collector) collectorArg);
-            resultSetHandler.request(mySQLClientSession, MySQLCommandType.COM_QUERY, curSql.getBytes(),
-                    new ResultSetCallBack<MySQLClientSession>() {
-                        @Override
-                        public void onFinishedSendException(Exception exception, Object sender,
-                                                            Object attr) {
-                            promise.fail(exception);
-                        }
-
-                        @Override
-                        public void onFinishedException(Exception exception, Object sender, Object attr) {
-                            promise.fail(exception);
-                        }
-
-                        @Override
-                        public void onFinished(boolean monopolize, MySQLClientSession mysql,
-                                               Object sender, Object attr) {
-                            promise.complete((resultSetHandler));
-                        }
-
-                        @Override
-                        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                                                  MySQLClientSession mysql, Object sender, Object attr) {
-                            promise.fail(new MycatException(errorPacket.getErrorMessageString()));
-                        }
-                    });
-        } else {
-            mySQLClientSession.getIOThread().addNIOJob(new NIOJob() {
-                @Override
-                public void run(ReactorEnvThread reactor) throws Exception {
-                    Promise<VertxMycatTextCollector> objectPromise = runTextQuery(curSql, mySQLClientSession, consumer, collectorArg);
-                    objectPromise.handle(promise.future());
-                }
-
-                @Override
-                public void stop(ReactorEnvThread reactor, Exception reason) {
-                    promise.fail(reason);
-                }
-
-                @Override
-                public String message() {
-                    return "proxy query text result set";
-                }
-            });
+    public static List<Object> toObjects(Tuple tuple) {
+        int size = tuple.size();
+        ArrayList<Object> objects = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            objects.add(tuple.getValue(i));
         }
-        return promise;
+        return objects;
     }
+
 
     @Override
     public Future<Void> close() {
-        Promise<Void> promise = Promise.promise();
-        Thread thread = Thread.currentThread();
-        if (thread instanceof ReactorEnvThread) {
-            try {
-                mySQLClientSession.close(true, "vertx mysql interface closed");
+        if (mySQLClientSession == null) {
+            return VertxUtil.newSuccessPromise();
+        } else {
+            Promise<Void> promise = Promise.promise();
+            PromiseInternal<Void> close = mySQLClientSession.close(true, "close");
+            mySQLClientSession = null;
+            close.onComplete(event -> {
                 if (closeHandler != null) {
                     try {
                         closeHandler.handle(null);
@@ -282,59 +132,15 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
                         }
                     }
                 }
-                promise.complete();
-            } catch (Throwable throwable) {
-                promise.fail(throwable);
-            }
-        } else {
-            mySQLClientSession.getIOThread()
-                    .addNIOJob(new NIOJob() {
-                        @Override
-                        public void run(ReactorEnvThread reactor) throws Exception {
-                            Future<Void> close = close();
-                            close.onComplete(event -> promise.handle(event));
-                        }
-
-                        @Override
-                        public void stop(ReactorEnvThread reactor, Exception reason) {
-                            Future<Void> close = close();
-                            close.onComplete(event -> promise.handle(event));
-                        }
-
-                        @Override
-                        public String message() {
-                            return "closing " + mySQLClientSession;
-                        }
-                    });
+                promise.tryComplete();
+            });
+            return promise.future();
         }
-        return promise.future();
     }
 
     @NotNull
     private ResultSetCallBack<MySQLClientSession> commandResponse(Promise<Void> promise) {
-        return new ResultSetCallBack<MySQLClientSession>() {
-            @Override
-            public void onFinishedSendException(Exception exception, Object sender,
-                                                Object attr) {
-                promise.fail(exception);
-            }
-
-            @Override
-            public void onFinishedException(Exception exception, Object sender, Object attr) {
-                promise.fail(exception);
-            }
-
-            @Override
-            public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
-                                   Object attr) {
-                promise.complete();
-            }
-
-            @Override
-            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                                      MySQLClientSession mysql, Object sender, Object attr) {
-                promise.fail(new MycatException(errorPacket.getErrorCode(), errorPacket.getErrorMessageString()));
-            }
-        };
+        return new CommandResponse(promise);
     }
+
 }

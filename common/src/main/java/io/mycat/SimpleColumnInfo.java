@@ -63,6 +63,9 @@ public class SimpleColumnInfo {
             case BIGINT:
                 jdbcType = JDBCType.BIGINT;
                 break;
+            case NUMERIC:
+                jdbcType = JDBCType.DECIMAL;
+                break;
             case FLOAT:
             case REAL:
             case DOUBLE:

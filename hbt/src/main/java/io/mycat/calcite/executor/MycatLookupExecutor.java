@@ -95,7 +95,7 @@ public class MycatLookupExecutor implements Executor {
                 return super.visitFieldAccess(fieldAccess);
             }
         });
-        MycatView newView = MycatView.of(accept, this.view.getDistribution());
+        MycatView newView = view.changeTo(accept, this.view.getDistribution());
         ImmutableMultimap<String, SqlString> expandToSqls = newView.expandToSql(false, params);
 
         MycatWorkerProcessor instance = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);

@@ -31,7 +31,6 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
             }else {
                 result = rootRel.implement(this, prefer);
             }
-
         } catch (RuntimeException e) {
             IllegalStateException ex = new IllegalStateException("Unable to implement "
                     + RelOptUtil.toString(rootRel, SqlExplainLevel.ALL_ATTRIBUTES));
@@ -60,7 +59,7 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
         memberDeclarations.add(
                 Expressions.methodDecl(
                         Modifier.PUBLIC,
-                       Observable.class,
+                       Object.class,
                         "bindObservable",
                         Expressions.list(DataContext.ROOT),
                         block));
@@ -70,7 +69,7 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
                         ImmutableList.of(),
                         Blocks.toFunctionBlock(
                                 Expressions.return_(null,
-                                        Expressions.constant(true)))));
+                                        Expressions.constant(block.getType() instanceof Observable)))));
         memberDeclarations.add(
                 Expressions.methodDecl(Modifier.PUBLIC, Class.class,
                         BuiltInMethod.TYPED_GET_ELEMENT_TYPE.method.getName(),
@@ -83,5 +82,16 @@ public class StreamMycatEnumerableRelImplementor extends MycatEnumerableRelImple
                 null,
                 Collections.singletonList(Bindable.class),
                 memberDeclarations);
+    }
+
+    @Override
+    public EnumerableRel.Result visitChild(EnumerableRel parent, int ordinal, EnumerableRel child, EnumerableRel.Prefer prefer) {
+       if (child instanceof MycatRel){
+           MycatRel childRel = (MycatRel) child;
+           if (childRel.isSupportStream()){
+               return childRel.implementStream(this,prefer);
+           }
+       }
+        return super.visitChild(parent, ordinal, child, prefer);
     }
 }

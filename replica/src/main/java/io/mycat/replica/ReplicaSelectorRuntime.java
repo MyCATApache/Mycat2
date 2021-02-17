@@ -437,7 +437,7 @@ public class ReplicaSelectorRuntime implements Closeable {
             return replicaDataSourceSelector.getDbType();
         }
         DatasourceConfig datasourceConfig = datasources.get(name);
-        Objects.requireNonNull(datasourceConfig, "unknown dbType:" + name);
+        Objects.requireNonNull(datasourceConfig, "unknown dbType of :" + name);
         return datasourceConfig.getDbType();
     }
    public Map<String,Set<String>> getState(){

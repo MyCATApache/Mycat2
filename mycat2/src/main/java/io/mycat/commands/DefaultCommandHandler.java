@@ -31,7 +31,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
-import io.mycat.proxy.NativeMycatServer;
+import io.mycat.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ServerTransactionSessionRunner;
 import io.mycat.util.packet.AbstractWritePacket;
@@ -40,6 +40,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -88,9 +89,10 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug(new String(bytes));
             }
             NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+
             mycatServer.getServerTransactionSessionRunner().run(session,
                     () -> {
-                        PromiseInternal<Collection<AsyncResult<Void>>> promise =
+                        Future<Void> promise =
                                 MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
                                 (size) -> new ReceiverImpl(session, size, false));
                         promise.onFailure(o->{

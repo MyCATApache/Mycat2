@@ -15,6 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.util.NumberParseUtil;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  * @author cjw
  */
 @Value
+@EqualsAndHashCode
 public final class NodeIndexRange {
     public final int nodeIndex;
     public final long valueStart;

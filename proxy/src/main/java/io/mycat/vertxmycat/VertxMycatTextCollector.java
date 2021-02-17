@@ -4,9 +4,11 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
+import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.mysqlclient.impl.datatype.DataFormat;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
@@ -22,20 +24,20 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
     private int columnCount;
     private ColumnDefinition[] currentColumnDefList;
     private MycatVertxRowResultDecoder rowResultDecoder;
-    private Consumer<ColumnDefinition[]> consumer;
     private Collector<Row, C, R> collector;
     private BiConsumer<C, Row> accumulator;
     private C c;
     private R res;
-    private long rowCount = 0;
+    private int rowCount = 0;
     private long affectedRows;
     private long lastInsertId;
     private int serverStatusFlags;
 
-    public VertxMycatTextCollector(Consumer<ColumnDefinition[]> consumer, Collector<Row, C, R> collector) {
-        this.consumer = consumer == null ? columnDefinitions -> {
-        } : consumer;
+    public VertxMycatTextCollector(Collector<Row, C, R> collector) {
         this.collector = collector;
+        if (!(this.collector instanceof StreamMysqlCollector)){
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
@@ -67,6 +69,7 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
                 decimals
         );
         this.currentColumnDefList[this.columnCount++] = columnDefinition;
+
     }
 
     @Override
@@ -74,15 +77,15 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
         rowResultDecoder = new MycatVertxRowResultDecoder(collector, new MySQLRowDesc(currentColumnDefList, DataFormat.TEXT));
         this.c = collector.supplier().get();
         this.accumulator = collector.accumulator();
-        if (this.consumer != null) {
-            this.consumer.accept(currentColumnDefList);
+        if (collector instanceof StreamMysqlCollector){
+            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
+            ((StreamMysqlCollector) collector).onColumnDefinitions(mySQLRowDesc);
         }
-
     }
 
     @Override
     public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatException {
-        Row row = rowResultDecoder.decodeRow(endPos - startPos, Buffer.buffer(mySQLPacket.getBytes(startPos, endPos)).getByteBuf());
+        Row row = rowResultDecoder.decodeRow(currentColumnDefList.length, Buffer.buffer(mySQLPacket.getBytes(startPos, endPos-startPos)).getByteBuf());
         rowCount++;
         this.accumulator.accept(this.c, row);
     }
@@ -94,12 +97,8 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
     }
 
     @Override
-    public void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    }
-
-    @Override
     public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
-        ByteBuf payload = Buffer.buffer(mySQLPacket.getBytes(startPos, endPos)).getByteBuf();
+        ByteBuf payload = Buffer.buffer(mySQLPacket.getBytes(startPos, endPos-startPos)).getByteBuf();
         payload.skipBytes(1); // skip OK packet header
         this.affectedRows = BufferUtils.readLengthEncodedInteger(payload);
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
@@ -117,14 +116,23 @@ public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
 
     @Override
     public void onOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
-        ByteBuf payload = Buffer.buffer(mySQLPacket.getBytes(startPos, endPos)).getByteBuf();
+        ByteBuf payload = Buffer.buffer(mySQLPacket.getBytes(startPos, endPos-startPos)).getByteBuf();
         payload.skipBytes(1); // skip OK packet header
         this.affectedRows = BufferUtils.readLengthEncodedInteger(payload);
         this.lastInsertId = BufferUtils.readLengthEncodedInteger(payload);
         this.serverStatusFlags = payload.readUnsignedShortLE();
+//        if (collector instanceof StreamMysqlCollector){
+////            MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(this.currentColumnDefList, DataFormat.TEXT);
+//            ((StreamMysqlCollector) collector).onFinish(serverStatusFlags,affectedRows,lastInsertId);
+//        }
     }
 
-    public long getRowCount() {
+    @Override
+    public void onFinishedCollect(MySQLClientSession mysql) {
+
+    }
+
+    public int getRowCount() {
         return rowCount;
     }
 

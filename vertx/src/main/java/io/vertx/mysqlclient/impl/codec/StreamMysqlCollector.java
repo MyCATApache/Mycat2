@@ -15,12 +15,14 @@ import java.util.function.Supplier;
  */
 public interface StreamMysqlCollector extends MysqlCollector<Void>{
 
-    @Override
-    void onColumnDefinitions(MySQLRowDesc columnDefinitions,QueryCommandBase queryCommand);
+
+    void onColumnDefinitions(MySQLRowDesc columnDefinitions);
 
     void onRow(Row row);
 
-    void onFinish(int sequenceId,int serverStatusFlags,long affectedRows, long lastInsertId);
+//    default void onFinish(int serverStatusFlags,long affectedRows, long lastInsertId){
+//
+//    }
 
     @Override
     default Supplier<Void> supplier() {

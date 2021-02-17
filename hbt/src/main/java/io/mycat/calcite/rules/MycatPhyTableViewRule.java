@@ -23,8 +23,8 @@ public class MycatPhyTableViewRule extends RelOptRule {
         RelOptTable table = rel.getTable();
         AbstractMycatTable mycatTable = table.unwrap(AbstractMycatTable.class);
         if (mycatTable != null) {
-            partInfo = mycatTable.computeDataNode();
-            call.transformTo(MycatView.of(rel, partInfo));
+            partInfo = mycatTable.createDistribution();
+            call.transformTo(MycatView.ofBottom(rel, partInfo));
         }
     }
 }

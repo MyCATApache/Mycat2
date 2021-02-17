@@ -18,9 +18,11 @@ import org.apache.calcite.util.BuiltInMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
-    final ArrayList<RelNode> leafRelNodes = new ArrayList<>();
+    final IdentityHashMap<RelNode,Integer> leafRelNodes = new IdentityHashMap<>();
 
     public MycatEnumerableRelImplementor(Map<String, Object> internalParameters) {
         super(MycatCalciteSupport.RexBuilder, internalParameters);
@@ -83,10 +85,13 @@ public class MycatEnumerableRelImplementor extends EnumerableRelImplementor {
     }
 
     public void collectLeafRelNode(RelNode view) {
-        leafRelNodes.add(view);
+        leafRelNodes.compute(view, (node, integer) -> {
+            if (integer == null) integer=0;
+            return integer+1;
+        });
     }
 
-    public List<RelNode> getLeafRelNodes() {
-        return (List) leafRelNodes;
+    public IdentityHashMap<RelNode,Integer> getLeafRelNodes() {
+        return  leafRelNodes;
     }
 }

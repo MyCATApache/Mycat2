@@ -65,7 +65,6 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(

@@ -13,6 +13,12 @@
 
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>3.0.8</version>
+        </dependency>
         <dependency>
             <groupId>com.github.sisyphsu</groupId>
             <artifactId>dateparser</artifactId>
@@ -86,9 +92,23 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.11</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.11</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>vertx</artifactId>
+            <version>1.14-release</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>va</artifactId>
+            <version>1.14-release</version>
             <scope>compile</scope>
         </dependency>
-
     </dependencies>
     <build>
         <plugins>

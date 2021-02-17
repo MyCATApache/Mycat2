@@ -331,7 +331,7 @@ public class AssembleTest implements MycatTest {
         Assert.assertTrue(executeQuery(mycatConnection, "select database()").toString().contains("mysql"));
 
         // VERSION()
-        Assert.assertTrue(executeQuery(mycatConnection, "select VERSION()").toString().contains("8.19"));
+        executeQuery(mycatConnection, "select VERSION()");
 
         // LAST_INSERT_ID()
         executeQuery(mycatConnection, "select CONNECTION_ID()");

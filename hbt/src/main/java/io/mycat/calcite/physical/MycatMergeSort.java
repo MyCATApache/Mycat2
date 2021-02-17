@@ -108,7 +108,6 @@ public class MycatMergeSort extends Sort implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this.getInput());
         Expression inputExpression = implementor.stash((MycatView) this.getInput(), MycatView.class);
         final BlockBuilder builder = new BlockBuilder();
         Expression listExpression = builder.append("list", Expressions.call(
@@ -204,7 +203,6 @@ public class MycatMergeSort extends Sort implements MycatRel {
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this.getInput());
         Expression inputExpression = implementor.stash((MycatView) this.getInput(), MycatView.class);
         final BlockBuilder builder = new BlockBuilder();
         Expression listExpression = builder.append("list", Expressions.call(

@@ -24,8 +24,8 @@ public class MycatTableViewRule extends RelOptRule {
         AbstractMycatTable mycatTable = table.unwrap(AbstractMycatTable.class);
         if (mycatTable != null) {
             if (!mycatTable.isCustom()){
-                partInfo = mycatTable.computeDataNode();
-                call.transformTo(MycatView.of(rel, partInfo));
+                partInfo = mycatTable.createDistribution();
+                call.transformTo(MycatView.ofBottom(rel, partInfo));
             }else {
 
             }

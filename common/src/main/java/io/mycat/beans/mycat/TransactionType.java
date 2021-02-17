@@ -27,7 +27,7 @@ public enum TransactionType {
     JDBC_TRANSACTION_TYPE("xa"),
     ;
 
-    public static final TransactionType DEFAULT = TransactionType.JDBC_TRANSACTION_TYPE;
+    public static final TransactionType DEFAULT = TransactionType.PROXY_TRANSACTION_TYPE;
     private String name;
 
     TransactionType(String name) {

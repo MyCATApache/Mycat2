@@ -15,6 +15,7 @@
 package io.mycat.router.mycat1xfunction;
 
 import io.mycat.util.NumberParseUtil;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+@EqualsAndHashCode
 public class GroupSizeRange {
 
   public final int groupSize;

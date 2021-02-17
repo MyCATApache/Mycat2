@@ -2,6 +2,7 @@ package org.apache.calcite.util;
 
 import com.google.common.collect.ImmutableMap;
 import io.reactivex.rxjava3.core.Observable;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Types;
@@ -19,21 +20,20 @@ public enum RxBuiltInMethod {
             "select", Observable.class, Function1.class),
     OBSERVABLE_FILTER(RxBuiltInMethodImpl.class,
             "filter", Observable.class, Predicate1.class),
-    OBSERVABLE_CACL(RxBuiltInMethodImpl.class, "calc", Observable.class, Function1.class),
-    OBSERVABLE_UNION_ALL(RxBuiltInMethodImpl.class, "unionAll", Observable.class, List.class),
-    OBSERVABLE_UNION(RxBuiltInMethodImpl.class, "unionAll", Observable.class, Observable.class),
+    OBSERVABLE_UNION_ALL(RxBuiltInMethodImpl.class, "unionAll", Observable.class, Observable.class),
     OBSERVABLE_TOP_N(RxBuiltInMethodImpl.class, "topN", Observable.class, Comparator.class, long.class, long.class),
     OBSERVABLE_SORT(RxBuiltInMethodImpl.class, "sort", Observable.class, Comparator.class),
     OBSERVABLE_LIMIT(RxBuiltInMethodImpl.class, "limit", Observable.class, long.class),
     OBSERVABLE_OFFSET(RxBuiltInMethodImpl.class, "offset", Observable.class, long.class),
-    OBSERVABLE_TO_ENUMERABLE(RxBuiltInMethodImpl.class, "observableToEnumerable", Observable.class),
-    ENUMERABLE_TO_OBSERVABLE(RxBuiltInMethodImpl.class, "enumerableToObservable", Observable.class),
+    TO_ENUMERABLE(RxBuiltInMethodImpl.class, "toEnumerable", Object.class),
+    TO_OBSERVABLE(RxBuiltInMethodImpl.class, "toObservable", Object.class),
     OBSERVABLE_MERGE_SORT(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class, long.class, long.class),
     OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class),
-    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),
+//    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),
+    ENUMERABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Enumerable.class),
     OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
     AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
-
+    AS_GATHER(RxBuiltInMethodImpl.class, "asGather", Enumerable.class),
     ;
     public final Method method;
     public final Constructor constructor;

@@ -145,7 +145,7 @@ public class MycatBatchNestedLoopJoinRule extends RelOptRule {
 
         final RelNode lookupRelNode = lookupView.getRelNode();
         relBuilder.push(lookupRelNode).filter(relBuilder.call(SqlStdOperatorTable.OR,conditionList));
-        RelNode right = MycatLookUpView.create(MycatView.of(relBuilder.build(),lookupView.getDistribution()));
+        RelNode right = MycatLookUpView.create(MycatView.ofBottom(relBuilder.build(),lookupView.getDistribution()));
 
         JoinRelType joinType = join.getJoinType();
         call.transformTo(

@@ -15,11 +15,14 @@
 package io.mycat.router.mycat1xfunction;
 
 import com.google.common.hash.Hashing;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.NodeIndexRange;
 import io.mycat.router.ShardingTableHandler;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -95,5 +98,28 @@ public class PartitionByRangeDateHash extends Mycat1xSingleValueRuleFunction {
   private int innerCaculateEnd(long targetTime) {
     int targetPartition = (int) ((targetTime - beginDate) / partionDay);
     return (targetPartition + 1) * groupPartionSize - 1;
+  }
+  @Override
+  public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+    if (customRuleFunction == null) return false;
+    if (PartitionByRangeDateHash.class.isAssignableFrom(customRuleFunction.getClass())) {
+      PartitionByRangeDateHash ruleFunction = (PartitionByRangeDateHash) customRuleFunction;
+
+       DateTimeFormatter formatter = ruleFunction.formatter;
+       long beginDate = ruleFunction.beginDate;
+       int groupPartionSize = ruleFunction.groupPartionSize;
+       int partionDay = ruleFunction.partionDay;
+
+
+      return Objects.equals(this.formatter, formatter) &&
+              Objects.equals(this.beginDate, beginDate) &&
+              Objects.equals(this.groupPartionSize, groupPartionSize) &&
+              Objects.equals(this.partionDay, partionDay);
+    }
+    return false;
+  }
+  @Override
+  public String getErUniqueID() {
+    return "" + formatter + beginDate + groupPartionSize + partionDay;
   }
 }

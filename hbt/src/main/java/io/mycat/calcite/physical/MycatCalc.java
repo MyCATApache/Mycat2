@@ -35,7 +35,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
@@ -44,10 +43,8 @@ import org.apache.calcite.util.RxBuiltInMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -109,7 +106,7 @@ public class MycatCalc extends Calc implements MycatRel {
 
     @Override
     public Calc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {
-        return new MycatCalc(getCluster(), traitSet, getInput(), program);
+        return MycatCalc.create(traitSet,  child, program);
     }
 
 
@@ -161,7 +158,7 @@ public class MycatCalc extends Calc implements MycatRel {
         Expression input =
                 EnumUtils.convert(
                         Expressions.call(
-                                inputEnumerator,
+                                toEnumerate(inputEnumerator),
                                 BuiltInMethod.ENUMERATOR_CURRENT.method),
                         inputJavaType);
         if (!input.getType().equals(inputJavaType)) {
@@ -315,64 +312,69 @@ public class MycatCalc extends Calc implements MycatRel {
         Type inputJavaType = result.physType.getJavaRowType();
 
         Expression inputObservalbe = builder.append(
-                        "inputObservalbe", result.block, false);
+                "inputObservalbe", result.block, false);
 
-        final RexBuilder rexBuilder = getCluster().getRexBuilder();
-        final RelMetadataQuery mq = getCluster().getMetadataQuery();
-        final RelOptPredicateList predicates = mq.getPulledUpPredicates(child);
-        final RexSimplify simplify =
-                new RexSimplify(rexBuilder, predicates, RexUtil.EXECUTOR);
-        final RexProgram program = this.program.normalize(rexBuilder, simplify);
-        Expression condition = null;
-        Expression  project = null;
-        ParameterExpression rowParameter = Expressions.parameter(inputJavaType, "row");
+        if (!(inputObservalbe.getType()instanceof Class&&
+                Observable.class.isAssignableFrom((Class)inputObservalbe.getType()))) {
+            return implement(implementor, pref);
+        } else {
+            final RexBuilder rexBuilder = getCluster().getRexBuilder();
+            final RelMetadataQuery mq = getCluster().getMetadataQuery();
+            final RelOptPredicateList predicates = mq.getPulledUpPredicates(child);
+            final RexSimplify simplify =
+                    new RexSimplify(rexBuilder, predicates, RexUtil.EXECUTOR);
+            final RexProgram program = this.program.normalize(rexBuilder, simplify);
+            Expression condition = null;
+            Expression project = null;
+            ParameterExpression rowParameter = Expressions.parameter(inputJavaType, "row");
 
-        ParameterExpression input = Expressions.parameter(inputJavaType, "row");
-        final BlockBuilder builder2 = new BlockBuilder();
-        if (program.getCondition() != null) {
-            condition = RexToLixTranslator.translateCondition(
-                    program,
-                    typeFactory,
-                    builder2,
-                    new RexToLixTranslator.InputGetterImpl(
-                            Collections.singletonList(
-                                    Pair.of(input, result.physType))),
-                    implementor.getAllCorrelateVariablesFunction(), implementor.getConformance());
-        }
-        {
-            final BlockBuilder builder3 = new BlockBuilder();
-            final SqlConformance conformance =
-                    (SqlConformance) implementor.map.getOrDefault("_conformance",
-                            SqlConformanceEnum.DEFAULT);
-            List<Expression> expressions =
-                    RexToLixTranslator.translateProjects(
-                            program,
-                            typeFactory,
-                            conformance,
-                            builder3,
-                            physType,
-                            DataContext.ROOT,
-                            new RexToLixTranslator.InputGetterImpl(
-                                    Collections.singletonList(
-                                            Pair.of(input, result.physType))),
-                            implementor.getAllCorrelateVariablesFunction());
-            project= physType.record(expressions);
-        }
+            ParameterExpression input = Expressions.parameter(inputJavaType, "row");
+            final BlockBuilder builder2 = new BlockBuilder();
+            if (program.getCondition() != null) {
+                condition = RexToLixTranslator.translateCondition(
+                        program,
+                        typeFactory,
+                        builder2,
+                        new RexToLixTranslator.InputGetterImpl(
+                                Collections.singletonList(
+                                        Pair.of(input, result.physType))),
+                        implementor.getAllCorrelateVariablesFunction(), implementor.getConformance());
+            }
+            {
+                final SqlConformance conformance =
+                        (SqlConformance) implementor.map.getOrDefault("_conformance",
+                                SqlConformanceEnum.DEFAULT);
+                List<Expression> expressions =
+                        RexToLixTranslator.translateProjects(
+                                program,
+                                typeFactory,
+                                conformance,
+                                builder,
+                                physType,
+                                DataContext.ROOT,
+                                new RexToLixTranslator.InputGetterImpl(
+                                        Collections.singletonList(
+                                                Pair.of(input, result.physType))),
+                                implementor.getAllCorrelateVariablesFunction());
+                project = physType.record(expressions);
+            }
 
-        if (condition!=null){
-            FunctionExpression<Function<?>> lambda = Expressions.lambda(condition, input);
-            inputObservalbe = Expressions.call(RxBuiltInMethod.OBSERVABLE_FILTER.method,
+            if (condition != null) {
+                FunctionExpression<Function<?>> lambda = Expressions.lambda(condition, input);
+                inputObservalbe = Expressions.call(RxBuiltInMethod.OBSERVABLE_FILTER.method,
+                        inputObservalbe,
+                        lambda
+                );
+            }
+            FunctionExpression<Function<?>> lambda = Expressions.lambda(project, input);
+            builder.add(Expressions.call(RxBuiltInMethod.OBSERVABLE_SELECT.method,
                     inputObservalbe,
                     lambda
-            );
-        }
-        FunctionExpression<Function<?>> lambda = Expressions.lambda(project, input);
-        builder.add(Expressions.call(RxBuiltInMethod.OBSERVABLE_SELECT.method,
-                inputObservalbe,
-                lambda
-        ));
-        Expressions.lambda(EnumUtils.convert(rowParameter,inputJavaType),rowParameter);
+            ));
+            Expressions.lambda(EnumUtils.convert(rowParameter, inputJavaType), rowParameter);
 
-        return implementor.result(physType, builder.toBlock());
+            return implementor.result(physType, builder.toBlock());
+        }
+
     }
 }

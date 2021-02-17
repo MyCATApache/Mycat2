@@ -87,6 +87,9 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
 
   @Override
   public final int setPacketId(int packetId) {
+//    if(LOGGER.isDebugEnabled()){
+//      LOGGER.debug("packetId:{} sessionId:{}",packetId,session.sessionId());
+//    }
     return this.packetId = packetId;
   }
 
@@ -179,6 +182,7 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
   @Override
   public final void setState(ComQueryState state) {
     this.state = state;
+//    LOGGER.debug("state:{} id:{}",state,session.sessionId());
   }
 
 

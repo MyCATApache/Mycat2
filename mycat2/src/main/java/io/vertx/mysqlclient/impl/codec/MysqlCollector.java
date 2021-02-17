@@ -17,20 +17,11 @@ import java.util.stream.Collector;
  * @param <LIST> 集合
  * @author wangzihaogithub 2020-01-23
  */
-public interface MysqlCollector<LIST> extends Collector<io.vertx.sqlclient.Row, LIST, LIST> {
+public interface MysqlCollector<LIST> extends Collector<Row, LIST, LIST> {
     RowSetCollector<Row> ROW_COLLECTOR = new RowSetCollector<>(null);
 
     static <ELEMENT> MysqlCollector<RowSet<ELEMENT>> map(Function<Row, ELEMENT> mapper) {
         return new RowSetCollector<>(mapper);
-    }
-
-    /**
-     * 列定义信息到达 (改方法在IO线程回掉，不要阻塞。 Thread.currentThread() == eventloop-thread )
-     *
-     * @param columnDefinitions 列定义
-     * @return 列定义信息到达后， 需要返回row解析器
-     */
-    default void onColumnDefinitions(MySQLRowDesc columnDefinitions, QueryCommandBase queryCommand) {
     }
 
     @Override

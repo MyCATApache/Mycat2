@@ -43,7 +43,7 @@ public class DefaultDatasourceFactory implements DataSourceFactory {
             synchronized (jdbcConnectionManager) {
                 for (String key : keys) {
                     Deque<MycatConnection> mycatConnections = connectionMap.computeIfAbsent(key, (k) -> new LinkedList<>());
-                    mycatConnections.add(transactionSession.getConnection(key));
+                    mycatConnections.add(transactionSession.getJDBCConnection(key));
                     all.remove(key);
                 }
                 for (String key : all) {

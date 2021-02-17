@@ -111,52 +111,52 @@ public class MycatValues extends Values implements MycatRel {
         return implementor.result(physType, builder.toBlock());
     }
 
-    @Override
-    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-     /*
-          return Linq4j.asEnumerable(
-              new Object[][] {
-                  new Object[] {1, 2},
-                  new Object[] {3, 4}
-              });
-*/
-        final JavaTypeFactory typeFactory =
-                (JavaTypeFactory) getCluster().getTypeFactory();
-        final BlockBuilder builder = new BlockBuilder();
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        pref.preferCustom());
-        final Type rowClass = physType.getJavaRowType();
-
-        final List<Expression> expressions = new ArrayList<>();
-        final List<RelDataTypeField> fields = rowType.getFieldList();
-        for (List<RexLiteral> tuple : tuples) {
-            final List<Expression> literals = new ArrayList<>();
-            for (Pair<RelDataTypeField, RexLiteral> pair
-                    : Pair.zip(fields, tuple)) {
-                literals.add(
-                        RexToLixTranslator.translateLiteral(
-                                pair.right,
-                                pair.left.getType(),
-                                typeFactory,
-                                RexImpTable.NullAs.NULL));
-            }
-            expressions.add(physType.record(literals));
-        }
-        builder.add(
-                Expressions.return_(
-                        null,
-                        Expressions.call(
-                                RxBuiltInMethod.AS_OBSERVABLE.method,
-                                Expressions.newArrayInit(
-                                        Primitive.box(rowClass), expressions))));
-        return implementor.result(physType, builder.toBlock());
-    }
+//    @Override
+//    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+//     /*
+//          return Linq4j.asEnumerable(
+//              new Object[][] {
+//                  new Object[] {1, 2},
+//                  new Object[] {3, 4}
+//              });
+//*/
+//        final JavaTypeFactory typeFactory =
+//                (JavaTypeFactory) getCluster().getTypeFactory();
+//        final BlockBuilder builder = new BlockBuilder();
+//        final PhysType physType =
+//                PhysTypeImpl.of(
+//                        implementor.getTypeFactory(),
+//                        getRowType(),
+//                        pref.preferCustom());
+//        final Type rowClass = physType.getJavaRowType();
+//
+//        final List<Expression> expressions = new ArrayList<>();
+//        final List<RelDataTypeField> fields = rowType.getFieldList();
+//        for (List<RexLiteral> tuple : tuples) {
+//            final List<Expression> literals = new ArrayList<>();
+//            for (Pair<RelDataTypeField, RexLiteral> pair
+//                    : Pair.zip(fields, tuple)) {
+//                literals.add(
+//                        RexToLixTranslator.translateLiteral(
+//                                pair.right,
+//                                pair.left.getType(),
+//                                typeFactory,
+//                                RexImpTable.NullAs.NULL));
+//            }
+//            expressions.add(physType.record(literals));
+//        }
+//        builder.add(
+//                Expressions.return_(
+//                        null,
+//                        Expressions.call(
+//                                RxBuiltInMethod.AS_OBSERVABLE.method,
+//                                Expressions.newArrayInit(
+//                                        Primitive.box(rowClass), expressions))));
+//        return implementor.result(physType, builder.toBlock());
+//    }
 
     @Override
     public boolean isSupportStream() {
-        return true;
+        return false;
     }
 }

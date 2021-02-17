@@ -284,7 +284,9 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 if (selectItem.getExpr() instanceof SQLAllColumnExpr){
 
                 }else if (selectItem.getExpr() instanceof SQLPropertyExpr){
-                    selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                    if(!"*".equals(((SQLPropertyExpr) selectItem.getExpr()).getName())){
+                        selectItem.setAlias(SQLUtils.normalize(((SQLPropertyExpr) selectItem.getExpr()).getName()));
+                    }
                 }else if (selectItem.getExpr() instanceof SQLIdentifierExpr){
                     selectItem.setAlias(SQLUtils.normalize(((SQLIdentifierExpr) selectItem.getExpr()).getName()));
                 }else{
@@ -1795,7 +1797,11 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             case "LOCALTIME":
             case "CURRENT_TIMESTAMP":
             case "NOW": {
-                this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                if(argNodes == null||argNodes.isEmpty()){
+                    this.sqlNode = NowFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                }else {
+                    this.sqlNode = NowNoArgFunction.INSTANCE.createCall(SqlParserPos.ZERO, argNodes);
+                }
                 return false;
             }
             case "MAKEDATE": {

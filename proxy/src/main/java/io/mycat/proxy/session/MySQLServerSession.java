@@ -14,6 +14,8 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.MycatDataContext;
+import io.mycat.SessionOpt;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
@@ -229,4 +231,5 @@ public interface MySQLServerSession<T> {
   PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError(int errorCode);
 
 
+    MycatDataContext getDataContext();
 }

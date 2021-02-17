@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -35,18 +36,21 @@ import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.plan.PlanImplementorImpl;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.MatierialRewriter;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
-import io.mycat.calcite.rules.*;
+import io.mycat.calcite.rules.MycatTablePhyViewRule;
+import io.mycat.calcite.rules.MycatViewToIndexViewRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanCache;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -64,7 +68,6 @@ import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.*;
@@ -79,14 +82,16 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.runtime.*;
+import org.apache.calcite.runtime.ArrayBindable;
+import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.runtime.NewMycatDataContext;
+import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.*;
@@ -116,6 +121,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class DrdsRunner {
@@ -159,8 +165,18 @@ public class DrdsRunner {
             public RelNode visit(TableScan scan) {
                 AbstractMycatTable table = scan.getTable().unwrap(AbstractMycatTable.class);
                 if (table != null) {
-                    return MycatView.of(scan, table.computeDataNode());
-
+                    if (table instanceof MycatPhysicalTable) {
+                        DataNode dataNode = ((MycatPhysicalTable) table).getDataNode();
+                        MycatPhysicalTable mycatPhysicalTable = (MycatPhysicalTable) table;
+                        return new MycatTransientSQLTableScan(cluster,
+                                mycatPhysicalTable.getRowType(),
+                                dataNode.getTargetName(),
+                                MycatCalciteSupport.INSTANCE.convertToSql(
+                                        scan,
+                                        MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName()),
+                                        false
+                                ).getSql());
+                    }
                 }
                 return super.visit(scan);
             }
@@ -222,7 +238,7 @@ public class DrdsRunner {
                                      MycatDataContext dataContext,
                                      OptimizationContext optimizationContext) {
         MycatRel rel;
-        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(), drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
                 case PHYSICAL:
@@ -260,9 +276,9 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileInsert((ShardingTable) logicTable, dataContext, drdsSql, optimizationContext);
                 case GLOBAL:
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 case NORMAL:
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 case CUSTOM:
                     throw new UnsupportedOperationException();
             }
@@ -275,10 +291,10 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileUpdate(logicTable, dataContext, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
                 case NORMAL: {
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 }
                 case CUSTOM:
                     throw new UnsupportedOperationException();
@@ -292,10 +308,10 @@ public class DrdsRunner {
                 case SHARDING:
                     return compileDelete(logicTable, dataContext, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
-                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTableHandler) logicTable);
+                    return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
                 case NORMAL: {
-                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTableHandler) logicTable);
+                    return complieNormalUpdate(optimizationContext, drdsSql, sqlStatement, (NormalTable) logicTable);
                 }
                 case CUSTOM:
                     throw new UnsupportedOperationException();
@@ -305,18 +321,16 @@ public class DrdsRunner {
     }
 
     @NotNull
-    private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTableHandler logicTable) {
-        GlobalTableHandler globalTableHandler = logicTable;
-        Distribution distribution = Distribution.of(globalTableHandler.getGlobalDataNode(), false, Distribution.Type.BroadCast);
+    private MycatRel complieGlobalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, GlobalTable logicTable) {
+        Distribution distribution = Distribution.of(logicTable);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, true);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
     @NotNull
-    private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTableHandler logicTable) {
-        NormalTableHandler normalTableHandler = logicTable;
-        Distribution distribution = Distribution.of(ImmutableList.of(normalTableHandler.getDataNode()), false, Distribution.Type.PHY);
+    private MycatRel complieNormalUpdate(OptimizationContext optimizationContext, DrdsSql drdsSql, SQLStatement sqlStatement, NormalTable logicTable) {
+        Distribution distribution = Distribution.of(logicTable);
         MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(distribution, sqlStatement, false);
         optimizationContext.saveAlways();
         return mycatUpdateRel;
@@ -426,7 +440,9 @@ public class DrdsRunner {
         } else {
             rboInCbo = Collections.emptyList();
         }
-        return optimizeWithCBO(rboLogPlan, rboInCbo);
+        MycatRel mycatRel = optimizeWithCBO(rboLogPlan, rboInCbo);
+        mycatRel = (MycatRel) mycatRel.accept(new MatierialRewriter());
+        return mycatRel;
     }
 
     private RelNode getRelRoot(String defaultSchemaName,
@@ -566,31 +582,25 @@ public class DrdsRunner {
         if (input instanceof Filter && ((Filter) input).getInput() instanceof LogicalTableScan) {
             AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
             RexNode condition = ((Filter) input).getCondition();
-            Distribution distribution = mycatTable.computeDataNode(ImmutableList.of(condition));
-            MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
+            Distribution distribution = mycatTable.createDistribution();
+            MycatUpdateRel mycatUpdateRel = MycatUpdateRel.create(tableModify.getCluster(),
                     distribution,
-                    drdsSql.getSqlStatement(), mycatTable.isBroadCast());
+                    Collections.singletonList(condition),
+                    drdsSql.getSqlStatement());
             optimizationContext.saveParameterized();
             return mycatUpdateRel;
         }
         AbstractMycatTable mycatTable = tableModify.getTable().unwrap(AbstractMycatTable.class);
-        Distribution distribution = mycatTable.computeDataNode();
-        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(tableModify.getCluster(),
+        Distribution distribution = mycatTable.createDistribution();
+        MycatUpdateRel mycatUpdateRel = new MycatUpdateRel(
                 distribution,
                 drdsSql.getSqlStatement(), mycatTable.isBroadCast());
         optimizationContext.saveAlways();
         return mycatUpdateRel;
     }
 
-    static boolean isComplex(RelNode logPlan) {
-        ComplexJudged complexJudged = new ComplexJudged();
-        logPlan.accept(complexJudged);
-        return complexJudged.c;
-
-    }
-
     public Plan convertToExecuter(DrdsSql drdsSql, MycatDataContext dataContext, OptimizationContext optimizationContext) {
-        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(),drdsSql.getTypes());
+        Plan minCostPlan = planCache.getMinCostPlan(drdsSql.getParameterizedString(), drdsSql.getTypes());
         if (minCostPlan != null) {
             switch (minCostPlan.getType()) {
                 case PHYSICAL:
@@ -604,24 +614,35 @@ public class DrdsRunner {
         } else if (mycatRel instanceof MycatInsertRel) {
             return new PlanImpl((MycatInsertRel) mycatRel);
         }
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel));
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(Objects.requireNonNull(mycatRel), drdsSql.isForUpdate());
         return new PlanImpl(mycatRel, codeExecuterContext, drdsSql.isForUpdate());
     }
 
     @NotNull
-    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode) {
+    public static CodeExecuterContext getCodeExecuterContext(MycatRel relNode, boolean forUpdate) {
         int fieldCount = relNode.getRowType().getFieldCount();
         HashMap<String, Object> context = new HashMap<>(2);
-        MycatEnumerableRelImplementor mycatEnumerableRelImplementor = new MycatEnumerableRelImplementor(context);
-        ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementRoot(relNode, EnumerableRel.Prefer.ARRAY);
+        StreamMycatEnumerableRelImplementor mycatEnumerableRelImplementor = new StreamMycatEnumerableRelImplementor(context);
+        relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(RelNode other) {
+                if (other instanceof MycatView) {
+                    mycatEnumerableRelImplementor.collectLeafRelNode(other);
+                } else if (other instanceof MycatTransientSQLTableScan) {
+                    mycatEnumerableRelImplementor.collectLeafRelNode(other);
+                }
+                return super.visit(other);
+            }
+        });
+        ClassDeclaration classDeclaration = mycatEnumerableRelImplementor.implementHybridRoot(relNode, EnumerableRel.Prefer.ARRAY);
         String code = Expressions.toString(classDeclaration.memberDeclarations, "\n", false);
-        if (log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("----------------------------------------code----------------------------------------");
             log.debug(code);
         }
-        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(),context,
+        return CodeExecuterContext.of(mycatEnumerableRelImplementor.getLeafRelNodes(), context,
                 asObjectArray(getBindable(classDeclaration, code, fieldCount)),
-                code);
+                code, forUpdate);
     }
 
     @NotNull
@@ -666,32 +687,6 @@ public class DrdsRunner {
         return (ArrayBindable) cbe.createInstance(new StringReader(s));
     }
 
-    static class ComplexJudged extends RelShuttleImpl {
-        boolean c = false;
-
-        @Override
-        public RelNode visit(LogicalJoin join) {
-            RelNode left = join.getLeft();
-            RelNode right = join.getRight();
-            RelOptTable leftTable = left.getTable();
-            RelOptTable rightTable = right.getTable();
-            if (leftTable != null && rightTable != null) {
-                AbstractMycatTable leftT = leftTable.unwrap(AbstractMycatTable.class);
-                AbstractMycatTable rightT = rightTable.unwrap(AbstractMycatTable.class);
-                if (leftT != null && rightT != null) {
-                    if (!leftT.computeDataNode().isSingle() && !rightT.computeDataNode().isSingle()) {
-                        c = true;
-                    }
-                } else {
-                    c = true;
-                }
-            } else {
-                c = true;
-            }
-            return super.visit(join);
-        }
-    }
-
     public MycatRel optimizeWithCBO(RelNode logPlan, Collection<RelOptRule> relOptRules) {
         if (logPlan instanceof MycatRel) {
             return (MycatRel) logPlan;
@@ -714,17 +709,18 @@ public class DrdsRunner {
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
-            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
-            CoreRules.JOIN_EXTRACT_FILTER,
+            CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+            CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
+            CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
             CoreRules.FILTER_INTO_JOIN,
-            CoreRules.FILTER_INTO_JOIN_DUMB,
+//            CoreRules.FILTER_INTO_JOIN_DUMB,
             CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.SORT_JOIN_TRANSPOSE,
             CoreRules.FILTER_CORRELATE,
+            CoreRules.PROJECT_CORRELATE_TRANSPOSE,
             CoreRules.FILTER_AGGREGATE_TRANSPOSE,
             CoreRules.FILTER_MULTI_JOIN_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
-            CoreRules.FILTER_EXPAND_IS_NOT_DISTINCT_FROM,
             CoreRules.FILTER_SET_OP_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.SEMI_JOIN_FILTER_TRANSPOSE,
@@ -733,6 +729,14 @@ public class DrdsRunner {
             CoreRules.JOIN_REDUCE_EXPRESSIONS,
             CoreRules.PROJECT_REDUCE_EXPRESSIONS,
             CoreRules.FILTER_MERGE
+
+//            CoreRules.PROJECT_CALC_MERGE,
+//            CoreRules.FILTER_CALC_MERGE,
+//            CoreRules.FILTER_TO_CALC,
+//            CoreRules.PROJECT_TO_CALC,
+//            CoreRules.CALC_REMOVE,
+//            CoreRules.CALC_MERGE
+
     );
 
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {
@@ -821,24 +825,28 @@ public class DrdsRunner {
 
 
     @SneakyThrows
-    public PromiseInternal<Void>  runOnDrds(MycatDataContext dataContext,
-                          SQLStatement statement, Response response) {
+    public PromiseInternal<Void> runOnDrds(MycatDataContext dataContext,
+                                           SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
-        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, drdsSql.getParams(), response);
+        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+        List<Object> params = drdsSql.getParams();
+        PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
+                transactionSession,
+                dataContext, params, response);
         return impl(plan, planImplementor);
     }
 
-    private PromiseInternal<Void> impl(Plan plan, PlanImplementorImpl planImplementor) {
+    private PromiseInternal<Void> impl(Plan plan, PlanImplementor planImplementor) {
         switch (plan.getType()) {
             case PHYSICAL:
                 return planImplementor.execute(plan);
             case UPDATE:
-                return planImplementor.execute((MycatUpdateRel)Objects.requireNonNull(plan.getPhysical()));
+                return planImplementor.execute((MycatUpdateRel) Objects.requireNonNull(plan.getPhysical()));
             case INSERT:
-                return planImplementor.execute((MycatInsertRel)Objects.requireNonNull(plan.getPhysical()));
-            default:{
-                return VertxUtil.newFailPromise(new MycatException(MySQLErrorCode.ER_NOT_SUPPORTED_YET,"不支持的执行计划"));
+                return planImplementor.execute((MycatInsertRel) Objects.requireNonNull(plan.getPhysical()));
+            default: {
+                return VertxUtil.newFailPromise(new MycatException(MySQLErrorCode.ER_NOT_SUPPORTED_YET, "不支持的执行计划"));
             }
         }
     }
@@ -847,33 +855,40 @@ public class DrdsRunner {
     public Plan getPlan(MycatDataContext dataContext, DrdsSql drdsSql) {
         OptimizationContext optimizationContext = new OptimizationContext();
         Plan plan = this.convertToExecuter(drdsSql, dataContext, optimizationContext);
-        getPlanCache().put(drdsSql.getParameterizedString(),drdsSql.getTypes(), plan);
+        getPlanCache().put(drdsSql.getParameterizedString(), drdsSql.getTypes(), plan);
         return plan;
     }
 
-    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
-        PlanImplementorImpl planImplementor = new PlanImplementorImpl(dataContext, Collections.emptyList(), response);
-        return runHbtOnDrds(dataContext, statement, planImplementor);
+    public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+        List<Object> params =Collections.emptyList();
+        PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
+                transactionSession,
+                dataContext, params, response);
+        PlanImpl hbtPlan = getHbtPlan(dataContext, statement);
+        return planImplementor.execute(hbtPlan);
     }
 
-    public PromiseInternal<Void>  runHbtOnDrds(MycatDataContext dataContext, String statement, PlanImplementor planImplementor) {
+    public PlanImpl getHbtPlan(MycatDataContext dataContext, String statement) {
         DrdsRunner drdsRunners = this;
         MycatRel mycatRel = drdsRunners.doHbt(statement);
-        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel);
-        return planImplementor.execute(new PlanImpl(mycatRel, codeExecuterContext, false));
+        CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
+        return new PlanImpl(mycatRel, codeExecuterContext, false);
     }
 
-    @NotNull
-    public static EnumeratorRowIterator getEnumeratorRowIterator(Plan plan, MycatDataContext context, List<Object> params) {
-        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
 
-        NewMycatDataContextImpl newMycatDataContext = new NewMycatDataContextImpl(context, codeExecuterContext, params, plan.forUpdate());
-        newMycatDataContext.allocateResource();
-        ArrayBindable bindable = codeExecuterContext.getBindable();
-        Enumerable enumerable = bindable.bind(newMycatDataContext);
-        Enumerator enumerator = enumerable.enumerator();
-        RelNode physical = plan.getPhysical();
-        return new EnumeratorRowIterator(new CalciteRowMetaData(physical.getRowType().getFieldList()), enumerator);
+    @NotNull
+    public static CompletableFuture<Enumerable<Object[]>> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
+        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeJdbcTargetConnection(context, params, codeExecuterContext);
+        CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
+        return collect.thenCompose(map -> {
+            JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
+            ArrayBindable bindable = codeExecuterContext.getBindable();
+            Enumerable<Object[]> bindObservable = bindable.bind(jdbcMycatDataContext);
+            CalciteRowMetaData metaData = plan.getMetaData();
+            return CompletableFuture.completedFuture(bindObservable);
+        });
     }
 
 

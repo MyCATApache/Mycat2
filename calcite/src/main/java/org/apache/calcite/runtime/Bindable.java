@@ -42,9 +42,14 @@ public interface Bindable<T> {
         }
     }
 
-    Enumerable<T> bind(NewMycatDataContext dataContext);
-
-    default Observable<T> bindObservable(NewMycatDataContext dataContext) {
+    default Enumerable<T> bind(NewMycatDataContext dataContext){
         return null;
+    }
+
+    default Object bindObservable(NewMycatDataContext dataContext) {
+        return null;
+    }
+    default boolean isObservable(){
+        return false;
     }
 }

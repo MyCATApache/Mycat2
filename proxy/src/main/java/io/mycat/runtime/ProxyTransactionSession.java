@@ -1,15 +1,26 @@
 package io.mycat.runtime;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import io.mycat.MycatConnection;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.util.Dumper;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
-public class ProxyTransactionSession implements TransactionSession {
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
+public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession {
     private TransactionSession parent;
 
-    public ProxyTransactionSession(TransactionSession parent) {
+    public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
+        super(mySQLManagerSupplier, xaLog);
         this.parent = parent;
     }
 
@@ -23,39 +34,10 @@ public class ProxyTransactionSession implements TransactionSession {
         parent.setTransactionIsolation(transactionIsolation);
     }
 
-    @Override
-    public void begin() {
-        parent.begin();
-    }
 
     @Override
-    public void commit() {
-        parent.commit();
-    }
-
-    @Override
-    public void rollback() {
-        parent.rollback();
-    }
-
-    @Override
-    public boolean isInTransaction() {
-        return parent.isInTransaction();
-    }
-
-    @Override
-    public void setAutocommit(boolean autocommit) {
-        parent.setAutocommit(autocommit);
-    }
-
-    @Override
-    public boolean isAutocommit() {
-        return parent.isAutocommit();
-    }
-
-    @Override
-    public MycatConnection getConnection(String targetName) {
-        return parent.getConnection(targetName);
+    public MycatConnection getJDBCConnection(String targetName) {
+        return parent.getJDBCConnection(targetName);
     }
 
     @Override
@@ -83,15 +65,6 @@ public class ProxyTransactionSession implements TransactionSession {
         return ThreadUsageEnum.MULTI_THREADING;
     }
 
-    @Override
-    public void closeStatenmentState() {
-        parent.closeStatenmentState();
-    }
-
-    @Override
-    public void close() {
-        parent.close();
-    }
 
     @Override
     public String resolveFinalTargetName(String targetName) {
@@ -109,22 +82,19 @@ public class ProxyTransactionSession implements TransactionSession {
     }
 
     @Override
-    public void openStatementState() {
-        parent.openStatementState();
-    }
-
-    @Override
     public void addCloseResource(AutoCloseable closeable) {
         parent.addCloseResource(closeable);
     }
 
     @Override
-    public String getTxId() {
-        return parent.getTxId();
-    }
-
-    @Override
     public Dumper snapshot() {
         return parent.snapshot().addText("proxy");
+    }
+
+
+    @Override
+    public Future<Void> closeStatementState() {
+        return CompositeFuture.all(
+                parent.closeStatementState(),super.closeStatementState()).mapEmpty();
     }
 }

@@ -141,7 +141,9 @@ public class GlobalTable implements GlobalTableHandler {
 //            }
 //        }
     }
-
+    public DataNode getDataNode(){
+        return getGlobalDataNode().get(0);
+    }
     @Override
     public List<DataNode> getGlobalDataNode() {
         return backendTableInfos;

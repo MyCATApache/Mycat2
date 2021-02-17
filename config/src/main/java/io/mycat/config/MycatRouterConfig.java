@@ -1,6 +1,5 @@
 package io.mycat.config;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

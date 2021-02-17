@@ -5,6 +5,8 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.util.Dumper;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +23,8 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
         super(dataContext);
     }
 
-    protected String mycatXid;
-
-    static final AtomicLong XID_SEQUENCE = new AtomicLong();
-
     private String nextXid() {
-        MycatUser user = dataContext.getUser();
-        return user.toString() + "_" + XID_SEQUENCE.getAndIncrement();
+        return null;
     }
 
     @Override
@@ -37,40 +34,23 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     @SneakyThrows
-    public MycatConnection getConnection(String targetName) {
-        targetName = resolveFinalTargetName(targetName);
-        DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
-        if (defaultConnection != null) {
-            if (defaultConnection.getRawConnection().getAutoCommit()) {
-                if (isInTransaction()) {
-                    defaultConnection.getRawConnection().setAutoCommit(false);
+    public MycatConnection getJDBCConnection(String targetName) {
+            targetName = resolveFinalTargetName(targetName);
+            DefaultConnection defaultConnection = updateConnectionMap.get(targetName);
+            if (defaultConnection != null) {
+                if (defaultConnection.getRawConnection().getAutoCommit()) {
+                    if (isInTransaction()) {
+                        defaultConnection.getRawConnection().setAutoCommit(false);
+                    }
                 }
+                return (defaultConnection);
             }
-            return defaultConnection;
-        }
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        DefaultConnection connection = jdbcConnectionManager.getConnection(targetName, isAutocommit(), getTransactionIsolation(), false);
-        updateConnectionMap.put(targetName, connection);
-        return connection;
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            DefaultConnection connection = jdbcConnectionManager.getConnection(targetName, isAutocommit(), getTransactionIsolation(), false);
+            updateConnectionMap.put(targetName, connection);
+            return (connection);
     }
 
-    @Override
-    public void begin() {
-        super.begin();
-        mycatXid = nextXid();
-    }
-
-    @Override
-    public void commit() {
-        super.commit();
-        mycatXid = null;
-    }
-
-    @Override
-    public void rollback() {
-        super.rollback();
-        mycatXid = null;
-    }
 
     @Override
     public ThreadUsageEnum getThreadUsageEnum() {
@@ -131,7 +111,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     }
 
     @Override
-    public String getTxId() {
-        return mycatXid;
+    public String getXid() {
+        return null;
     }
 }

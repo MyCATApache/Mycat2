@@ -100,7 +100,7 @@ public class SQL<T extends SQLStatement> {
         ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
         if (generatedKeys != null) {
             if (generatedKeys.next()) {
-                long generatedKeysLong = generatedKeys.getLong(1);
+                long generatedKeysLong = generatedKeys.getBigDecimal(1).longValue();
                 if (log.isDebugEnabled()) {
                     log.debug("preparedStatement:{} insertId:{}", preparedStatement, generatedKeysLong);
                 }

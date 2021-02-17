@@ -14,8 +14,8 @@ public class MapDBGSIService implements GSIService {
     private final MapDBRepository repository;
 
     public MapDBGSIService(File file, MetadataManager metadataManager) {
-        DB db = DBMaker.fileDB(file).make();
-        this.repository = new MapDBRepository(db, metadataManager);
+//        DB db = DBMaker.fileDB(file).make();
+        this.repository = new MapDBRepository(null, metadataManager);
     }
 
     @Override
