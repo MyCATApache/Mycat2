@@ -14,7 +14,7 @@
       "period":60000,
       "timeUnit":"SECONDS"
     },
-    "ip":"127.0.0.1",
+    "ip":"0.0.0.0",
     "mycatId":1,
     "port":8066,
     "reactorNumber":1,
