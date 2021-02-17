@@ -69,14 +69,16 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     }
                     payload.appendBuffer(curBuffer);
                     reveicePacketLength += curBuffer.length();
-                    boolean end = currentPacketLength == reveicePacketLength;
+                    boolean endPacket = currentPacketLength == reveicePacketLength;
                     boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
-                    if (end && !multiPacket) {
+                    if (endPacket){
                         state = HEAD;
-                        Buffer payload = this.payload;
                         this.head = null;
-                        this.payload = null;
                         reveicePacketLength = 0;
+                    }
+                    if (endPacket && !multiPacket) {
+                        Buffer payload = this.payload;
+                        this.payload = null;
                         mySQLHandler.handle(packetId, payload, socket);
                         continue;
                     }else {
