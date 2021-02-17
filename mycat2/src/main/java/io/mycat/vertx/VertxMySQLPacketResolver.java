@@ -6,20 +6,18 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
-import java.text.MessageFormat;
-
 import static io.mycat.vertx.VertxMySQLPacketResolver.State.HEAD;
 import static io.mycat.vertx.VertxMySQLPacketResolver.State.PAYLOAD;
 
 public class VertxMySQLPacketResolver implements Handler<Buffer> {
     Buffer head;
     Buffer payload;
-    int mycatPacketCounter = 0;
     State state = HEAD;
     int currentPacketLength;
+    int reveicePacketLength = 0;
     MycatMySQLHandler mySQLHandler;
     NetSocket socket;
-    private int reveicePayloadCount = 0;
+    private short packetId;
 
     static enum State {
         HEAD,
@@ -51,12 +49,8 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     }
                     if (state == PAYLOAD) {
                         currentPacketLength = readInt(head, 0, 3);
-                        int packetId = head.getUnsignedByte(3);
-                        if (mycatPacketCounter != packetId) {
-                            throw new AssertionError(MessageFormat.format("packet id not match " +
-                                    "mycat:{0} ordinal packet:{1}", mycatPacketCounter, packetId));
-                        }
-                        ++mycatPacketCounter;
+                        reveicePacketLength = 0;
+                        this.packetId = head.getUnsignedByte(3);
                         head = null;//help gc
                     }
                     continue;
@@ -65,32 +59,36 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                     if (payload == null) {
                         payload = Buffer.buffer();
                     }
-                    payload.appendBuffer(event);
-                    reveicePayloadCount += event.length();
-                    boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
-                    if (multiPacket) {
-                        if ((MySQLPacketSplitter.MAX_PACKET_SIZE) == reveicePayloadCount) {
-                            state = HEAD;
-                        }
-                        return;
+                    int restPacketLength = currentPacketLength - reveicePacketLength;
+                    Buffer curBuffer;
+                    if (event.length() > restPacketLength) {
+                        curBuffer = event.slice(0, restPacketLength);
+                        event = event.slice(restPacketLength, event.length());
                     } else {
-                        if (reveicePayloadCount == currentPacketLength) {
-                            Buffer payload = this.payload;
-                            this.payload = null;
-                            reveicePayloadCount = 0;
-                            state = HEAD;
-                            mycatPacketCounter = 0;
-                            mySQLHandler.handle(reveicePayloadCount, payload, socket);
-                            return;
-                        }
+                        curBuffer = event;
                     }
-                    return;
+                    payload.appendBuffer(curBuffer);
+                    reveicePacketLength += curBuffer.length();
+                    boolean end = currentPacketLength == reveicePacketLength;
+                    boolean multiPacket = (currentPacketLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
+                    if (end && !multiPacket) {
+                        state = HEAD;
+                        Buffer payload = this.payload;
+                        this.head = null;
+                        this.payload = null;
+                        reveicePacketLength = 0;
+                        mySQLHandler.handle(packetId, payload, socket);
+                        continue;
+                    }else {
+                        continue;
                 }
-                default:
-                    throw new IllegalStateException("Unexpected value: " + state);
             }
+            default:
+                throw new IllegalStateException("Unexpected value: " + state);
         }
     }
+
+}
 
     public static int readInt(Buffer buffer, int start, int length) {
         int rv = 0;
