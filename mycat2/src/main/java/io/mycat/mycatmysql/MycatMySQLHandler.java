@@ -545,7 +545,7 @@ public class MycatMySQLHandler {
 
     public Future<Void> handleQuery(String sql, MycatMysqlSession session) throws Exception {
         return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
-                new MycatMysqlResponse( size, false,session));
+                new ReceiverImpl(session, size, false));
     }
 
     public PromiseInternal<Void>  handleSleep(MycatMysqlSession session) {

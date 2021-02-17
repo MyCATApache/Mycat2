@@ -21,7 +21,7 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://localhost:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);
@@ -42,7 +42,7 @@ public class TestUtil {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://localhost:8066/db1?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MariaDbDataSource mysqlDataSource = new MariaDbDataSource();
         mysqlDataSource.setUrl(url);
@@ -64,7 +64,7 @@ public class TestUtil {
         properties.put("usePipelineAuth", "false");
 
         Class.forName("com.mysql.jdbc.Driver");
-        Connection connection = DriverManager.getConnection("jdbc:mysql://0.0.0.0:8066/scott?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8", properties);
+        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:8066/scott?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8", properties);
         connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery("select 1");

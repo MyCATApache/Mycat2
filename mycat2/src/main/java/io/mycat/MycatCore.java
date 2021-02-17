@@ -133,7 +133,7 @@ public class MycatCore {
     @NotNull
     private MycatServer newMycatServer(MycatServerConfig serverConfig) throws URISyntaxException {
         String configResourceKeyName = "server";
-        String type = System.getProperty(configResourceKeyName, "native");
+        String type = System.getProperty(configResourceKeyName, "vertx");
         if ("native".equalsIgnoreCase(type)) {
             return new NativeMycatServer(serverConfig);
         }

@@ -13,7 +13,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode
 public class ManagerConfig {
-    private String ip = "0.0.0.0";
+    private String ip = "localhost";
     private int port = 9066;
     private List<UserConfig> users = new ArrayList<>();
 }
