@@ -33,6 +33,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     @Override
     public void handle(Buffer event) {
         for (; ; ) {
+            if (event.length()==0)return;
             switch (state) {
                 case HEAD: {
                     if (head == null) {
@@ -66,6 +67,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
                         event = event.slice(restPacketLength, event.length());
                     } else {
                         curBuffer = event;
+                        event =Buffer.buffer();
                     }
                     payload.appendBuffer(curBuffer);
                     reveicePacketLength += curBuffer.length();

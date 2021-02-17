@@ -16,6 +16,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.commands.MycatdbCommand;
+import io.mycat.commands.ReceiverImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.util.VertxUtil;
 import io.mycat.util.packet.AbstractWritePacket;
@@ -395,7 +396,7 @@ public class MycatMySQLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("preparestatement:{}", statement);
         }
-        Response receiver = new MycatMysqlResponse(1, true,MycatMysqlSession);
+        Response receiver = new ReceiverImpl(session, 1,true);
         return MycatdbCommand.execute(dataContext, receiver, statement);
     }
 

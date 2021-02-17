@@ -2,6 +2,7 @@ package io.mycat.commands;
 
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.VertxUtil;
@@ -25,14 +26,14 @@ import static io.mycat.ExecuteType.*;
 public class ReceiverImpl implements Response {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReceiverImpl.class);
 
-    protected final MycatSession session;
+    protected final MySQLServerSession session;
     protected final MycatDataContext dataContext;
     protected final ProxyTransactionSession transactionSession;
     private final int stmtSize;
     private final boolean binary;
     protected int count = 0;
 
-    public ReceiverImpl(MycatSession session, int stmtSize, boolean binary) {
+    public ReceiverImpl(MySQLServerSession session, int stmtSize, boolean binary) {
         this.stmtSize = stmtSize;
         this.binary = binary;
         this.session = session;
@@ -43,7 +44,7 @@ public class ReceiverImpl implements Response {
 
     @Override
     public PromiseInternal<Void> sendError(Throwable e) {
-        session.setLastMessage(e);
+        session.getDataContext().setLastMessage(e);
         return VertxUtil.newFailPromise(new RuntimeException(e));
     }
 
@@ -67,8 +68,6 @@ public class ReceiverImpl implements Response {
 
     @Override
     public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
-        session.setLastMessage(errorMessage);
-        session.setLastErrorCode(errorCode);
         return VertxUtil.newFailPromise(new MycatException(errorCode, errorMessage));
     }
 
@@ -81,7 +80,6 @@ public class ReceiverImpl implements Response {
                 new VertxResponse.MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
         return promise;
     }
-
 
     @Override
     public PromiseInternal<Void> rollback() {
@@ -127,11 +125,11 @@ public class ReceiverImpl implements Response {
     @Override
     public PromiseInternal<Void> execute(ExplainDetail detail) {
         boolean directPacket = false;
-        boolean master = session.isInTransaction() || !session.isAutocommit() || detail.getExecuteType().isMaster();
+        boolean master = dataContext.isInTransaction() || !dataContext.isAutocommit() || detail.getExecuteType().isMaster();
         String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
         String sql = detail.getSql();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        boolean inTransaction = session.isInTransaction();
+        boolean inTransaction = dataContext.isInTransaction();
         Future<SqlConnection> connectionFuture = transactionSession.getConnection(datasource);
         switch (detail.getExecuteType()) {
             case QUERY:
@@ -183,8 +181,8 @@ public class ReceiverImpl implements Response {
 
     @Override
     public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
-        session.setLastInsertId(lastInsertId);
-        session.setAffectedRows(affectedRow);
+        dataContext.setLastInsertId(lastInsertId);
+        dataContext.setAffectedRows(affectedRow);
         return sendOk();
     }
 
