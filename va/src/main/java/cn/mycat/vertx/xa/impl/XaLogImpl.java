@@ -122,10 +122,14 @@ public class XaLogImpl implements XaLog {
                                             String.format(XaSqlConnection.XA_COMMIT, entry.getXid())
 
                                     ).execute().map(c -> {
-                                        sqlConnection.close();
-                                        log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
-                                        checkState(entry.getXid(), true, State.XA_COMMITED);
-                                        return null;
+                                        Future<Void> closeFuture = sqlConnection.close();
+                                        try {
+                                            log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
+                                            checkState(entry.getXid(), true, State.XA_COMMITED);
+                                        } catch (Exception e) {
+                                            return CompositeFuture.all(closeFuture,Future.failedFuture(e));
+                                        }
+                                        return closeFuture;
                                     }));
                         }));
             } else {
@@ -133,7 +137,12 @@ public class XaLogImpl implements XaLog {
             }
         }
         CompositeFuture.all(list).onComplete(unused -> {
-            logCommit(entry.getXid(), unused.succeeded());
+            try {
+                logCommit(entry.getXid(), unused.succeeded());
+            } catch (Exception e) {
+                res.fail(e);
+                return;
+            }
             res.tryComplete();
         });
     }
@@ -150,18 +159,27 @@ public class XaLogImpl implements XaLog {
                                             String.format(XaSqlConnection.XA_ROLLBACK, entry.getXid())
 
                                     ).execute().map(c -> {
-                                        log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
-                                        sqlConnection.close();
-                                        checkState(entry.getXid(), true, State.XA_ROLLBACKED);
-                                        return null;
+                                        Future<Void> closeFuture = sqlConnection.close();
+                                        try {
+                                            log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
+                                            checkState(entry.getXid(), true, State.XA_ROLLBACKED);
+                                        } catch (Exception e) {
+                                            return CompositeFuture.all(closeFuture,Future.failedFuture(e));
+                                        }
+                                        return closeFuture;
                                     }));
                         }));
             } else {
                 list.add(Future.succeededFuture());
             }
             CompositeFuture.all(list).onComplete(unused -> {
-                logRollback(entry.getXid(), unused.succeeded());
-                res.tryComplete();
+                try {
+                    logRollback(entry.getXid(), unused.succeeded());
+                    res.tryComplete();
+                } catch (Exception e) {
+                    res.tryFail(e);
+                }
+
             });
         }
     }
@@ -238,7 +256,7 @@ public class XaLogImpl implements XaLog {
     }
 
     @Override
-    public void log(String xid, String target, State state) {
+    public void log(String xid, String target, State state)  {
         if (xid == null) return;
         synchronized (xaRepository) {
             ImmutableCoordinatorLog coordinatorLog = xaRepository.get(xid);
@@ -306,7 +324,7 @@ public class XaLogImpl implements XaLog {
     }
 
     @Override
-    public void logCommitBeforeXaCommit(String xid) {
+    public void logCommitBeforeXaCommit(String xid) throws Exception {
         if (xid == null) return;
         //only log
 

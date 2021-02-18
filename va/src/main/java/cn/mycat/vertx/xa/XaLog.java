@@ -52,7 +52,7 @@ public interface XaLog extends AutoCloseable, Closeable {
 
     void log(String xid, ImmutableParticipantLog[] participantLogs);
 
-    void log(String xid, String target, State state);
+    void log(String xid, String target, State state) ;
 
     void logRollback(String xid, boolean succeed);
 
@@ -74,7 +74,7 @@ public interface XaLog extends AutoCloseable, Closeable {
      * Need distributed order, persistence.for recover.
      * @param xid xid
      */
-    void logCommitBeforeXaCommit(String xid);
+    void logCommitBeforeXaCommit(String xid) throws Exception;
 
     /**
      * Need distributed order, persistence.for recover.

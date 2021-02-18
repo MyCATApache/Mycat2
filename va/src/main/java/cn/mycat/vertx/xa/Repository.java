@@ -16,6 +16,7 @@
 
 package cn.mycat.vertx.xa;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 

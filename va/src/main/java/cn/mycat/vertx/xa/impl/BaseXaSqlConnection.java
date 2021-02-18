@@ -131,20 +131,20 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                     case XA_ENDED:
                     case XA_PREPARED:
                         future = future.flatMap(unuse -> c.query(String.format(XA_ROLLBACK, xid))
-                                .execute().map(i->changeTo(c, State.XA_ROLLBACKED))).mapEmpty();
+                                .execute().map(i -> changeTo(c, State.XA_ROLLBACKED))).mapEmpty();
                 }
                 return future;
             };
             Future<Void> future = executeAll(function);
-            future .onComplete(event -> {
-                        log.logRollback(xid, event.succeeded());
-                        if (event.succeeded()) {
-                            inTranscation = false;
-                            clearConnections().onComplete(promise);
-                        } else {
-                            retryRollback(function).onComplete(promise);
-                        }
-                    });
+            future.onComplete(event -> {
+                log.logRollback(xid, event.succeeded());
+                if (event.succeeded()) {
+                    inTranscation = false;
+                    clearConnections().onComplete(promise);
+                } else {
+                    retryRollback(function).onComplete(promise);
+                }
+            });
         });
     }
 
@@ -268,14 +268,15 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                                             .map(c -> changeTo(connection, State.XA_COMMITED)).mapEmpty();
                                 })
                                         .onFailure(ignored -> {
-
                                             log.logCommit(xid, false);
                                             //retry
                                             retryCommit().onComplete(promsie);
                                         })
                                         .onSuccess(ignored -> {
                                             inTranscation = false;
+
                                             log.logCommit(xid, true);
+
                                             clearConnections().onComplete(promsie);
                                         });
                             });
