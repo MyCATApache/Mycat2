@@ -15,6 +15,7 @@
  */
 package cn.mycat.vertx.xa.impl;
 
+import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import io.vertx.core.Future;
@@ -22,15 +23,27 @@ import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.text.MessageFormat;
 import java.util.function.Supplier;
 
 public class LocalXaSqlConnection extends BaseXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalXaSqlConnection.class);
     volatile SqlConnection localSqlConnection = null;
     volatile String targetName;
+    private final String LOCAL_XA_COMMIT_SQL;
 
-    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier,
+                                XaLog xaLog,
+                                String schemaName,
+                                String tableName) {
         super(mySQLManagerSupplier, xaLog);
+        LOCAL_XA_COMMIT_SQL = MessageFormat.format(
+                "REPLACE INTO {0}.{1} (xid,state,expires,info) VALUES ({0},{1},{2});COMMIT;",
+                schemaName, tableName);
+    }
+
+    protected String getLocalXACommitSQL(ImmutableCoordinatorLog log) {
+        return MessageFormat.format(LOCAL_XA_COMMIT_SQL, log.getXid(), log.computeMinState(), log.computeExpires(), log.toJson());
     }
 
     @Override
@@ -53,7 +66,7 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                     .onSuccess(event -> inTranscation = false).mapEmpty();
         }
         if (targetName != null && inTranscation && localSqlConnection != null) {
-            return super.commitXa(() -> localSqlConnection.query("commit;").execute());
+            return super.commitXa((coordinatorLog) -> localSqlConnection.query(getLocalXACommitSQL(coordinatorLog)).execute().mapEmpty());
         } else {
             throw new AssertionError();
         }
@@ -127,9 +140,9 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                         .execute()
                         .flatMap(c -> localSqlConnection.close()
                                 .onComplete(event1 -> {
-                            localSqlConnection = null;
-                            targetName = null;
-                        }));
+                                    localSqlConnection = null;
+                                    targetName = null;
+                                }));
 
             } else {
                 return Future.succeededFuture();

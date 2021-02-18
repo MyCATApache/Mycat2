@@ -324,14 +324,15 @@ public class XaLogImpl implements XaLog {
     }
 
     @Override
-    public void logCommitBeforeXaCommit(String xid) throws Exception {
-        if (xid == null) return;
+    public ImmutableCoordinatorLog logCommitBeforeXaCommit(String xid) {
+        if (xid == null) return null;
         //only log
 
         synchronized (xaRepository) {
             ImmutableCoordinatorLog immutableCoordinatorLog = xaRepository.get(xid);
             immutableCoordinatorLog.withCommit(true);
-            xaRepository.writeCommitLog(immutableCoordinatorLog);
+           xaRepository.writeCommitLog(immutableCoordinatorLog);
+            return immutableCoordinatorLog;
         }
     }
 
