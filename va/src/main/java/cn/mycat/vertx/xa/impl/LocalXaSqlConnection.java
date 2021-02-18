@@ -37,9 +37,9 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                                 String schemaName,
                                 String tableName) {
         super(mySQLManagerSupplier, xaLog);
-        LOCAL_XA_COMMIT_SQL = MessageFormat.format(
-                "REPLACE INTO {0}.{1} (xid,state,expires,info) VALUES ({0},{1},{2},{3});COMMIT;",
-                schemaName, tableName);
+        LOCAL_XA_COMMIT_SQL ="REPLACE INTO " +schemaName+
+                "." +tableName+
+                " (xid,state,expires,info) VALUES ({0},{1},{2},{3});COMMIT;";
     }
 
     protected String getLocalXACommitSQL(ImmutableCoordinatorLog log) {
