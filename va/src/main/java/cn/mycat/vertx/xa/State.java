@@ -20,12 +20,21 @@ package cn.mycat.vertx.xa;
  * Mark the state of reach(ed)
  */
 public enum State {
-    XA_INITED,
-    XA_STARTED,
-    XA_ENDED,
-    XA_PREPARED,
+    XA_INITED(0),
+    XA_STARTED(1),
+    XA_ENDED(2),
+    XA_PREPARED(3),
 
-    XA_COMMITED,
-    XA_ROLLBACKED
+    XA_COMMITED(4),
+    XA_ROLLBACKED(5)
     ;
+    private int value;
+
+    State(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
 }

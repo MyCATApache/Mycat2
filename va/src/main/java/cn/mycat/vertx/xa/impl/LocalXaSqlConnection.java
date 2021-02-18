@@ -31,7 +31,6 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     volatile SqlConnection localSqlConnection = null;
     volatile String targetName;
     private final String LOCAL_XA_COMMIT_SQL;
-
     public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier,
                                 XaLog xaLog,
                                 String schemaName,
@@ -41,9 +40,12 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                 "." +tableName+
                 " (xid,state,expires,info) VALUES ({0},{1},{2},{3});COMMIT;";
     }
+    public LocalXaSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier,XaLog xaLog) {
+        this(mySQLManagerSupplier,xaLog,"mycat","xa_log");
+    }
 
     protected String getLocalXACommitSQL(ImmutableCoordinatorLog log) {
-        return MessageFormat.format(LOCAL_XA_COMMIT_SQL, log.getXid(), log.computeMinState(), log.computeExpires(), log.toJson());
+        return MessageFormat.format(LOCAL_XA_COMMIT_SQL, log.getXid(), log.computeMinState().toString(), log.computeExpires(), log.toJson());
     }
 
     @Override
