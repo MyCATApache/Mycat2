@@ -15,10 +15,7 @@
  */
 package cn.mycat.vertx.xa.impl;
 
-import cn.mycat.vertx.xa.ImmutableParticipantLog;
-import cn.mycat.vertx.xa.MySQLManager;
-import cn.mycat.vertx.xa.State;
-import cn.mycat.vertx.xa.XaLog;
+import cn.mycat.vertx.xa.*;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -198,13 +195,13 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
 
     @Override
     public Future<Void> commit() {
-        return commitXa(() -> Future.succeededFuture());
+        return commitXa((unused) -> Future.succeededFuture());
     }
 
     /**
      * @param beforeCommit for the native connection commit or some exception test
      */
-    public Future<Void> commitXa(Supplier<Future> beforeCommit) {
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit) {
         return Future.future((Promise<Void> promsie) -> {
             logParticipants();
             Future<Void> xaEnd = executeAll(connection -> {
@@ -244,13 +241,13 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
                                 /**
                                  * if log commit fail ,occur exception,other transcations rollback.
                                  */
-                                log.logCommitBeforeXaCommit(xid);
+                                ImmutableCoordinatorLog coordinatorLog = this.log.logCommitBeforeXaCommit(xid);
                                 /**
                                  * if native connection has inner commited,
                                  * but it didn't received the commit response.
                                  * should check the by manually.
                                  */
-                                future = beforeCommit.get();
+                                future = beforeCommit.apply(coordinatorLog);
                             } catch (Throwable throwable) {
                                 future = Future.failedFuture(throwable);
                             }

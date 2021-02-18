@@ -73,8 +73,9 @@ public interface XaLog extends AutoCloseable, Closeable {
     /**
      * Need distributed order, persistence.for recover.
      * @param xid xid
+     * @return
      */
-    void logCommitBeforeXaCommit(String xid) throws Exception;
+    ImmutableCoordinatorLog logCommitBeforeXaCommit(String xid) throws Exception;
 
     /**
      * Need distributed order, persistence.for recover.

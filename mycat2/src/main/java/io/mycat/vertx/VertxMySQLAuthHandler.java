@@ -123,7 +123,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
 
         mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
         MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket,
-                new LocalXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),XaLogImpl.createDemoRepository( MetaClusterCurrent.wrapper(MySQLManager.class))));
+                new BaseXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),XaLogImpl.createDemoRepository( MetaClusterCurrent.wrapper(MySQLManager.class))));
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);

@@ -23,6 +23,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface XaSqlConnection {
@@ -70,7 +71,7 @@ public interface XaSqlConnection {
      * @param beforeCommit for the native connection commit or some exception test
      * @param handler      the callback handler
      */
-    public default void commitXa(Supplier<Future> beforeCommit, Handler<AsyncResult<Void>> handler) {
+    public default void commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit, Handler<AsyncResult<Void>> handler) {
         Future<Void> future = commitXa(beforeCommit);
         if (handler != null) {
             future.onComplete(handler);
@@ -78,7 +79,7 @@ public interface XaSqlConnection {
     }
 
 
-    public Future<Void> commitXa(Supplier<Future> beforeCommit);
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit);
 
     public default void close(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = close();

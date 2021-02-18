@@ -15,6 +15,7 @@
  */
 package cn.mycat.vertx.xa.impl;
 
+import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import io.vertx.core.AsyncResult;
@@ -98,9 +99,9 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     }
 
     @Override
-    public Future<Void> commitXa(Supplier<Future> beforeCommit) {
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit) {
         return Future.future(promise -> {
-            beforeCommit.get().onComplete((Handler<AsyncResult>) result -> {
+            beforeCommit.apply(null).onComplete(result -> {
                 if (result.succeeded()) {
                     commit().onComplete(promise);
                 } else {

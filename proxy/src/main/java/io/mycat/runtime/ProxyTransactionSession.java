@@ -3,17 +3,15 @@ package io.mycat.runtime;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
+import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import io.mycat.MycatConnection;
 import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.util.Dumper;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 public class ProxyTransactionSession extends BaseXaSqlConnection implements TransactionSession {
