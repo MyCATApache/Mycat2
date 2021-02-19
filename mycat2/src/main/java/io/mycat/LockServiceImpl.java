@@ -10,7 +10,7 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import java.util.concurrent.TimeUnit;
 
 public class LockServiceImpl implements LockService {
-    private final static Logger LOGGER = LoggerFactory.getLogger(LockServiceImpl.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(LocalLockServiceImpl.class);
     @Override
     public Future<Lock> getLocalLockWithTimeout(String name, long timeout) {
         InterProcessMutex lock = new InterProcessMutex(ZooMap.getClient(), "mycat/lock/"+name);
