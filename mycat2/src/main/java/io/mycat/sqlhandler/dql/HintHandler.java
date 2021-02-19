@@ -1,13 +1,20 @@
 package io.mycat.sqlhandler.dql;
 
+import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.google.common.collect.Iterables;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
+import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.SchemaHandler;
@@ -32,8 +39,16 @@ import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
 import io.mycat.util.NameMap;
+import io.mycat.util.VertxUtil;
+import io.mycat.vertx.VertxExecuter;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 
+import java.io.FileReader;
+import java.io.Reader;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -41,6 +56,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     @Override
@@ -69,6 +85,118 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("loaddata".equalsIgnoreCase(cmd)) {
+                    Map<String, Object> map = JsonUtil.from(body, Map.class);
+                    String schemaName = Objects.requireNonNull((String) map.get("schemaName"));
+                    String tableName = Objects.requireNonNull((String) map.get("tableName"));
+                    final String fileName = Objects.toString(map.get("fileName"));
+                    CSVFormat format = CSVFormat.MYSQL;
+                    final Character delimiter = map.getOrDefault("delimiter", format.getDelimiter() + "")
+                            .toString()
+                            .charAt(0);
+                    final Character quoteChar = map.getOrDefault("quoteChar", format.getQuoteCharacter() + "")
+                            .toString()
+                            .charAt(0);
+                    final QuoteMode quoteMode = QuoteMode.valueOf(map.getOrDefault("quoteMode",
+                            format.getQuoteMode() + "")
+                            .toString());
+                    final Character commentStart = map.getOrDefault("commentStart", format.getCommentMarker())
+                            .toString()
+                            .charAt(0);
+                    final Character escape = map.getOrDefault("escape", format.getEscapeCharacter())
+                            .toString()
+                            .charAt(0);
+                    final Boolean ignoreSurroundingSpaces = Boolean.parseBoolean(map.getOrDefault("escape", format.getIgnoreSurroundingSpaces())
+                            .toString());
+
+                    final Boolean ignoreEmptyLines = Boolean.parseBoolean(map.getOrDefault("ignoreEmptyLines", format.getIgnoreEmptyLines())
+                            .toString());
+                    final String recordSeparator = map.getOrDefault("recordSeparator", format.getRecordSeparator())
+                            .toString();
+                    final String nullString = map.getOrDefault("nullString", format.getNullString())
+                            .toString();
+                    final List headerComments = (List) map.getOrDefault("headerComments", Arrays.asList(
+                            format.getHeaderComments()));
+                    final List<String> header = (List) map.getOrDefault("header", Arrays.asList(
+                            format.getHeader()));
+                    final Boolean skipHeaderRecord = Boolean.parseBoolean(map.getOrDefault("skipHeaderRecord",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean allowMissingColumnNames = Boolean.parseBoolean(map.getOrDefault("allowMissingColumnNames",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean ignoreHeaderCase = Boolean.parseBoolean(map.getOrDefault("ignoreHeaderCase",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean trim = Boolean.parseBoolean(map.getOrDefault("trim",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean trailingDelimiter = Boolean.parseBoolean(map.getOrDefault("trailingDelimiter",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean autoFlush = Boolean.parseBoolean(map.getOrDefault("autoFlush",
+                            format.getSkipHeaderRecord()).toString());
+                    final Boolean allowDuplicateHeaderNames = Boolean.parseBoolean(map.getOrDefault("allowDuplicateHeaderNames",
+                            format.getSkipHeaderRecord()).toString());
+                    format = CSVFormat.newFormat(delimiter)
+                            .withQuote(quoteChar)
+                            .withQuoteMode(quoteMode)
+                            .withCommentMarker(commentStart)
+                            .withEscape(escape)
+                            .withIgnoreSurroundingSpaces(ignoreSurroundingSpaces)
+                            .withIgnoreEmptyLines(ignoreEmptyLines)
+                            .withRecordSeparator(recordSeparator)
+                            .withNullString(nullString)
+                            .withHeaderComments(headerComments)
+                            .withHeader(header.toArray(new String[]{}))
+                            .withSkipHeaderRecord(skipHeaderRecord)
+                            .withAllowMissingColumnNames(allowMissingColumnNames)
+                            .withIgnoreHeaderCase(ignoreHeaderCase)
+                            .withTrim(trim)
+                            .withTrailingDelimiter(trailingDelimiter)
+                            .withAutoFlush(autoFlush)
+                            .withAllowDuplicateHeaderNames(allowDuplicateHeaderNames);
+
+
+                    MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+                    mySqlInsertStatement.setTableName(new SQLIdentifierExpr(tableName));
+                    mySqlInsertStatement.getTableSource().setSchema(schemaName);
+                    List<String> columnNames;
+                    if (header.isEmpty()) {
+                        TableHandler table = Objects.requireNonNull(
+                                metadataManager.getTable(schemaName, tableName));
+                        columnNames = table.getColumns().stream().map(i -> (i.getColumnName())).collect(Collectors.toList());
+                    } else {
+                        columnNames = header;
+                    }
+                    for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr(i)).collect(Collectors.toList())) {
+                        mySqlInsertStatement.addColumn(columnName);
+                    }
+                    int batch = 1000;
+                    try (Reader in = new FileReader(fileName)) {
+                        Iterable<CSVRecord> records = format.parse(in);
+                        Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.paddedPartition(records, batch).spliterator(), false)
+                                .map(mrecord -> {
+                                    SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
+                                    List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
+                                    for (CSVRecord strings : mrecord) {
+                                        SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+                                        for (String string : strings) {
+                                            valuesClause.addValue(string);
+                                        }
+                                        valuesList.add(valuesClause);
+                                    }
+                                    sqlInsertStatement.getValuesList().addAll(valuesList);
+                                    return sqlInsertStatement;
+                                }).iterator();
+                        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                        XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+                        Future<long[]> future = Future.succeededFuture(new long[]{0, 0});
+                        while (iterator.hasNext()) {
+                            SQLInsertStatement statement = iterator.next();
+                            DrdsSql drdsSql = drdsRunner.preParse(statement);
+                            Plan plan = drdsRunner.getPlan(dataContext, drdsSql);
+                            future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
+                                    (MycatInsertRel) plan.getPhysical(), drdsSql.getParams()));
+                        }
+                        return VertxUtil.castPromise(future.flatMap(l->  response.sendOk(l[0],l[1])));
+                    }
+                }
                 if ("setUserDialect".equalsIgnoreCase(cmd)) {
                     MycatRouterConfigOps ops = ConfigUpdater.getOps();
                     Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
@@ -577,7 +705,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 return response.sendOk();
             }
         }
-        return  response.sendOk();
+        return response.sendOk();
     }
 
     public static RowBaseIterator showClusters(String clusterName) {

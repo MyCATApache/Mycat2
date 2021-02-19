@@ -46,8 +46,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public PromiseInternal<Void> execute(MycatUpdateRel mycatUpdateRel) {
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
         Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel, params);
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
@@ -69,8 +69,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
 
     @Override
     public PromiseInternal<Void> execute(MycatInsertRel logical) {
+        Future<long[]> future = innerExecuteInsert(logical);
         PromiseInternal<Void> promise = VertxUtil.newPromise();
-        Future<long[]> future = VertxExecuter.runMycatInsertRel(xaSqlConnection, context, logical, params);
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
@@ -88,6 +88,10 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             }
         });
         return promise;
+    }
+
+    public Future<long[]> innerExecuteInsert(MycatInsertRel logical) {
+        return VertxExecuter.runMycatInsertRel(xaSqlConnection, context, logical, params);
     }
 
     @Override
