@@ -29,11 +29,6 @@
             <version>1.7.9</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
-        <dependency>
-            <groupId>com.alibaba.fastsql</groupId>
-            <artifactId>fastsql</artifactId>
-            <version>2.0.0_preview_973</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/it.unimi.dsi/fastutil -->
         <dependency>
             <groupId>org.reflections</groupId>
