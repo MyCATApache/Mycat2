@@ -85,6 +85,27 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                 MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
+                if ("showErGroup".equalsIgnoreCase(cmd)) {
+                    ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+                    resultSetBuilder.addColumnInfo("group_id", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
+                    resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
+
+                    Map<String, List<ShardingTable>> erTableGroup = metadataManager.getErTableGroup();
+                    Integer index   = 0;
+                    for (Map.Entry<String, List<ShardingTable>> e : erTableGroup.entrySet()) {
+                        String key = e.getKey();
+                        Iterator<ShardingTable> iterator = e.getValue().iterator();
+                        while (iterator.hasNext()){
+                            ShardingTable table = iterator.next();
+                            String schemaName = table.getSchemaName();
+                            String tableName = table.getTableName();
+                            resultSetBuilder.addObjectRowPayload(Arrays.asList(index.toString(),schemaName,tableName));
+                        }
+                        index++;
+                    }
+                    return response.sendResultSet(resultSetBuilder.build());
+                }
                 if ("loaddata".equalsIgnoreCase(cmd)) {
                     Map<String, Object> map = JsonUtil.from(body, Map.class);
                     String schemaName = Objects.requireNonNull((String) map.get("schemaName"));
