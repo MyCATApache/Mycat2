@@ -53,7 +53,7 @@ public class XaLogImpl implements XaLog {
 
     }
 
-    public static XaLog createDemoRepository(MySQLManager mySQLManager) {
+    public static XaLog createXaLog(MySQLManager mySQLManager) {
         return new XaLogImpl(new MemoryRepositoryImpl()
                 , mySQLManager);
     }

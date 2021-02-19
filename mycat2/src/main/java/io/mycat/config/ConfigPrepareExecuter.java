@@ -3,7 +3,7 @@ package io.mycat.config;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.SimpleConfig;
 import cn.mycat.vertx.xa.XaLog;
-import cn.mycat.vertx.xa.impl.MySQLManagerImpl;
+import cn.mycat.vertx.xa.impl.LocalXaMemoryRepositoryImpl;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
 import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
@@ -12,22 +12,16 @@ import io.mycat.calcite.spm.PlanCache;
 import io.mycat.commands.MycatMySQLManager;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.sqlclient.SqlConnection;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
@@ -203,31 +197,28 @@ public class ConfigPrepareExecuter {
         ////////////////////////////////////////////////////////
 
         List<SimpleConfig> configList = new ArrayList<>();
-        if (serverConfig.isProxy()) {
-            for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
-                if (!"mysql".equalsIgnoreCase(datasource.getDbType())) {
-                    throw new IllegalArgumentException(datasource.toString() + "  \n is not mysql type");
-                }
-                ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
-                HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
-                String name = datasource.getName();
-                String host = hostInfo.getHost();
-                int port = hostInfo.getPort();
-                String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
-                String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
-                String database = hostInfo.getDatabase();
-                int maxSize = datasource.getMaxCon();
-                SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
-                configList.add(simpleConfig);
+        for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
+            if (!"mysql".equalsIgnoreCase(datasource.getDbType())) {
+                throw new IllegalArgumentException(datasource.toString() + "  \n is not mysql type");
             }
-            if (!MetaClusterCurrent.exist(MySQLManager.class)){
-                this.mySQLManager = new MycatMySQLManager();
-            }else {
-                this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-            }
-            this.xaLog = XaLogImpl.createDemoRepository(mySQLManager);
+            ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
+            HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
+            String name = datasource.getName();
+            String host = hostInfo.getHost();
+            int port = hostInfo.getPort();
+            String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
+            String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
+            String database = hostInfo.getDatabase();
+            int maxSize = datasource.getMaxCon();
+            SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
+            configList.add(simpleConfig);
         }
-
+        if (!MetaClusterCurrent.exist(MySQLManager.class)) {
+            this.mySQLManager = new MycatMySQLManager();
+        } else {
+            this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+        }
+        this.xaLog = new XaLogImpl(new LocalXaMemoryRepositoryImpl(), mySQLManager);
     }
 
     private void clearSqlCache() {
@@ -345,6 +336,12 @@ public class ConfigPrepareExecuter {
             mySQLManager = null;
         }
 
+        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        if (connectionManager!=null){
+            for (JdbcDataSource jdbcDataSource : connectionManager.getDatasourceInfo().values()) {
+                LocalXaMemoryRepositoryImpl.tryCreateLogTable(jdbcDataSource.getDataSource());
+            }
+        }
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }

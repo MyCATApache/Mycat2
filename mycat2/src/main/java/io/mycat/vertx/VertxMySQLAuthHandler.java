@@ -3,7 +3,6 @@ package io.mycat.vertx;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
-import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
 import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -25,7 +24,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 import static io.mycat.vertx.VertxMySQLPacketResolver.readInt;
@@ -123,7 +121,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
 
         mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
         MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket,
-                new BaseXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),XaLogImpl.createDemoRepository( MetaClusterCurrent.wrapper(MySQLManager.class))));
+                new BaseXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),XaLogImpl.createXaLog( MetaClusterCurrent.wrapper(MySQLManager.class))));
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);
