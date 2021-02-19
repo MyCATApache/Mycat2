@@ -37,8 +37,8 @@ public class DrdsSql {
     public List<SqlTypeName> getTypes() {
         if (params == null || params.isEmpty()) return Collections.emptyList();
         if (params.get(0) instanceof List) {
-            return getSqlTypeNames((List)params.get(0));
-        }else {
+            return getSqlTypeNames((List) params.get(0));
+        } else {
             return getSqlTypeNames(params);
         }
     }
@@ -49,10 +49,20 @@ public class DrdsSql {
             if (param == null) {
                 list.add(SqlTypeName.NULL);
             } else {
+                Class<?> aClass = param.getClass();
                 SqlTypeName sqlTypeName = null;
-                for (MySQLType value : MySQLType.values()) {
-                    if (value.getJavaClass() == param.getClass()) {
+                MySQLType[] mySQLTypes = MySQLType.values();
+                for (MySQLType value : mySQLTypes) {
+                    if (value.getJavaClass() == aClass) {
                         sqlTypeName = (SqlTypeName.getNameForJdbcType(value.getJdbcType()));
+                        break;
+                    }
+                    if (Integer.class == aClass) {
+                        sqlTypeName = SqlTypeName.INTEGER;
+                        break;
+                    }
+                    if (byte[].class == aClass) {
+                        sqlTypeName = SqlTypeName.BINARY;
                         break;
                     }
                 }
