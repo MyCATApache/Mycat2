@@ -16,8 +16,7 @@
 
 package cn.mycat.vertx.xa;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 
 import java.io.Closeable;
 
@@ -83,5 +82,5 @@ public interface XaLog extends AutoCloseable, Closeable {
      */
     void logCancelCommitBeforeXaCommit(String xid);
 
-    public void readXARecoveryLog(Handler<AsyncResult<XaLog>> handler);
+    public Future<Void> readXARecoveryLog();
 }

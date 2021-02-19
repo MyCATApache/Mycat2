@@ -218,7 +218,7 @@ public class ConfigPrepareExecuter {
         } else {
             this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
         }
-        this.xaLog = new XaLogImpl(new LocalXaMemoryRepositoryImpl(), mySQLManager);
+        this.xaLog = new XaLogImpl(new LocalXaMemoryRepositoryImpl(()->mySQLManager), mySQLManager);
     }
 
     private void clearSqlCache() {
@@ -336,12 +336,6 @@ public class ConfigPrepareExecuter {
             mySQLManager = null;
         }
 
-        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        if (connectionManager!=null){
-            for (JdbcDataSource jdbcDataSource : connectionManager.getDatasourceInfo().values()) {
-                LocalXaMemoryRepositoryImpl.tryCreateLogTable(jdbcDataSource.getDataSource());
-            }
-        }
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
         MetaClusterCurrent.register(context);
     }

@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -122,9 +123,10 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
+    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+
         try {
-            return Files.list(Paths.get(baseDir))
+            return Future.succeededFuture(Files.list(Paths.get(baseDir))
                     .filter(path -> !Files.isDirectory(path) && path.toFile().getPath().endsWith(suffix))
                     .map(path -> {
                         try {
@@ -133,9 +135,9 @@ public class FileRepositoryImpl implements Repository {
                             throw new RuntimeException(e);
 
                         }
-                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList());
+                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList()));
         } catch (Throwable throwable) {
-            return Collections.emptyList();
+            return Future.failedFuture(throwable);
         }
 
     }

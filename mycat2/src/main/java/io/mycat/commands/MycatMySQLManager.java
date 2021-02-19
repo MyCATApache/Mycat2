@@ -1,20 +1,18 @@
 package io.mycat.commands;
 
 import cn.mycat.vertx.xa.MySQLManager;
-import io.mycat.*;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.ScheduleUtil;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.proxy.MySQLDatasourcePool;
-import io.mycat.util.VertxUtil;
 import io.mycat.vertxmycat.*;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
@@ -22,8 +20,8 @@ import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.mysqlclient.impl.datatype.DataFormat;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
-import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.PreparedStatement;
+import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.RowDesc;
 import lombok.SneakyThrows;
@@ -32,9 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +42,13 @@ import static io.vertx.core.Future.succeededFuture;
 
 public class MycatMySQLManager implements MySQLManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatMySQLManager.class);
-    private static final ExecutorService IO_EXECUTOR =Executors.newCachedThreadPool() ;
+    private static final ExecutorService IO_EXECUTOR = Executors.newCachedThreadPool();
 
     public MycatMySQLManager() {
 
     }
-//
+
+    //
     @Override
     public Future<SqlConnection> getConnection(String targetName) {
         JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
@@ -103,10 +100,10 @@ public class MycatMySQLManager implements MySQLManager {
                     @SneakyThrows
                     public Future<RowSet<Row>> execute() {
                         return Future.future(event -> {
-                            IO_EXECUTOR.submit(()->{
+                            IO_EXECUTOR.submit(() -> {
                                 try {
-                                    event.complete( innerExecute());
-                                }catch (Throwable throwable){
+                                    event.complete(innerExecute());
+                                } catch (Throwable throwable) {
                                     event.tryFail(throwable);
                                 }
                             });
@@ -186,7 +183,7 @@ public class MycatMySQLManager implements MySQLManager {
                                 return Future.future(new Handler<Promise<SqlResult<R>>>() {
                                     @Override
                                     public void handle(Promise<SqlResult<R>> promise) {
-                                        IO_EXECUTOR.submit(()-> extracted(promise));
+                                        IO_EXECUTOR.submit(() -> extracted(promise));
                                     }
 
                                     @SneakyThrows
@@ -317,7 +314,14 @@ public class MycatMySQLManager implements MySQLManager {
             }
         });
     }
-//
+
+    @Override
+    public Future<Map<String, SqlConnection>> getConnectionMap() {
+        JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        return getMapFuture(new HashSet<>(connectionManager.getDatasourceInfo().keySet()));
+    }
+
+    //
 //        public Future<SqlConnection> getConnection(String targetName) {
 //
 //        PromiseInternal<SqlConnection> promise = VertxUtil.newPromise();

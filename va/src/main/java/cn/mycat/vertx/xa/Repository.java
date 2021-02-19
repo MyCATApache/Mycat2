@@ -16,6 +16,8 @@
 
 package cn.mycat.vertx.xa;
 
+import io.vertx.core.Future;
+
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +53,7 @@ public interface Repository {
      *
      * @return get all saved log
      */
-    Collection<ImmutableCoordinatorLog> getCoordinatorLogs();
+    Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover();
 
     void close();
 

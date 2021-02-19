@@ -15,19 +15,41 @@
  */
 package cn.mycat.vertx.xa;
 
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.sqlclient.SqlConnection;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public interface MySQLManager {
 
     Future<SqlConnection> getConnection(String targetName);
 
+    Future<Map<String, SqlConnection>> getConnectionMap();
+
     Future<Void> close();
 
     void setTimer(long delay, Runnable handler);
+
+    public  default Future<Map<String, SqlConnection>> getMapFuture(Set<String> keys) {
+        ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
+        List<Future<SqlConnection>> futureList = new ArrayList<>();
+        Iterator<String> iterator = keys.iterator();
+        while (iterator.hasNext()) {
+            String element = iterator.next();
+            futureList.add(getConnection(element).flatMap(f -> {
+                map.put(element, f);
+                return null;
+            }));
+        }
+        return CompositeFuture.all((List) futureList).onComplete(event -> {
+            if (event.failed()) {
+                map.values().forEach(c -> c.close());
+            }
+        }).flatMap(c -> Future.succeededFuture(map));
+    }
+
 }

@@ -8,6 +8,7 @@ import com.google.common.cache.CacheBuilder;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
@@ -136,22 +137,22 @@ public class MySQLRepository implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
+    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
         String datasourceName = replicaSelectorRuntime.getDatasourceNameByReplicaName(targetName, true, null);
         try(DefaultConnection connection = jdbcConnectionManager.getConnection(datasourceName)){
             List<Map<String, Object>> maps = JdbcUtils.executeQuery(
                     connection.getRawConnection(),
                     this.SELECT_SQL_ALL, Collections.emptyList());
-           return maps.stream().map(s->{
+           return Future.succeededFuture(maps.stream().map(s->{
                 Object info = s.get("info");
                 Objects.requireNonNull(info, "info must not null");
                 ImmutableCoordinatorLog log = ImmutableCoordinatorLog.from((String) info);
                 return log;
-            }).collect(Collectors.toList());
+            }).collect(Collectors.toList()));
         } catch (SQLException throwables) {
             LOGGER.error("",throwables);
+            return Future.failedFuture(throwables);
         }
-        return Collections.emptyList();
     }
 
 

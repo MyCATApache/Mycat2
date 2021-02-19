@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
@@ -74,8 +75,8 @@ public class MemoryRepositoryImpl implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
-        return storage.values();
+    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+        return Future.succeededFuture(storage.values());
     }
 
     public boolean isClosed() {

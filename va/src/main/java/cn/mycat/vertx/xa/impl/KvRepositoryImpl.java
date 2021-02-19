@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.Json;
@@ -63,8 +64,9 @@ public class KvRepositoryImpl implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
-        return map.values().stream().map(i->Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList());
+    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+        return Future.succeededFuture(
+                map.values().stream().map(i->Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList()));
     }
 
     @Override

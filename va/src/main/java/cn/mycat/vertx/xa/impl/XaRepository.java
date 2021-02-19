@@ -17,6 +17,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
@@ -53,8 +54,8 @@ public class XaRepository implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
-        return persistenceRepository.getCoordinatorLogs();
+    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+        return persistenceRepository.getCoordinatorLogsForRecover();
     }
 
     @Override

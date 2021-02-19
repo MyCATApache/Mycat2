@@ -19,7 +19,6 @@ import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.SimpleConfig;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -28,10 +27,9 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnection;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -40,7 +38,7 @@ public class MySQLManagerImpl implements MySQLManager {
     private final ConcurrentHashMap<String, MySQLPool> nameMap = new ConcurrentHashMap<>();
 
     public MySQLManagerImpl(List<SimpleConfig> configList) {
-        load(configList,true);
+        load(configList, true);
     }
 
     private void load(List<SimpleConfig> configList, boolean add) {
@@ -57,7 +55,7 @@ public class MySQLManagerImpl implements MySQLManager {
 
     public void reload(List<SimpleConfig> configList) {
         nameMap.clear();
-        load(configList,true);
+        load(configList, true);
     }
 
     private MySQLPool getMySQLPool(int port, String host, String database, String user, String password, int maxSize) {
@@ -82,6 +80,17 @@ public class MySQLManagerImpl implements MySQLManager {
     public Future<SqlConnection> getConnection(String targetName) {
         return nameMap.get(targetName).getConnection();
     }
+
+    @Override
+    public Future<Map<String, SqlConnection>> getConnectionMap() {
+        Enumeration<String> keys = this.nameMap.keys();
+        HashSet<String> objects = new HashSet<>();
+        while (keys.hasMoreElements()){
+            objects.add(keys.nextElement());
+        }
+        return getMapFuture(objects);
+    }
+
 
     @Override
     public Future<Void> close() {

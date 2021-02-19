@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -38,7 +39,7 @@ public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
     private final String name;
     private final Repository xaRepository;
-    private  static final AtomicLong xaIdSeq = new AtomicLong();
+    private static final AtomicLong xaIdSeq = new AtomicLong();
     private final MySQLManager mySQLManager;
 
 
@@ -127,7 +128,7 @@ public class XaLogImpl implements XaLog {
                                             log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
                                             checkState(entry.getXid(), true, State.XA_COMMITED);
                                         } catch (Exception e) {
-                                            return CompositeFuture.all(closeFuture,Future.failedFuture(e));
+                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
                                         }
                                         return closeFuture;
                                     }));
@@ -164,7 +165,7 @@ public class XaLogImpl implements XaLog {
                                             log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
                                             checkState(entry.getXid(), true, State.XA_ROLLBACKED);
                                         } catch (Exception e) {
-                                            return CompositeFuture.all(closeFuture,Future.failedFuture(e));
+                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
                                         }
                                         return closeFuture;
                                     }));
@@ -184,49 +185,45 @@ public class XaLogImpl implements XaLog {
         }
     }
 
-    public void readXARecoveryLog(Handler<AsyncResult<XaLog>> handler) {
-        long id = 0;
+    public Future<Void> readXARecoveryLog() {
         char seq = name.charAt(name.length() - 1);
-        Collection<ImmutableCoordinatorLog> entries = xaRepository.getCoordinatorLogs();
-        for (ImmutableCoordinatorLog entry : entries) {
-            String text = entry.getXid();
-            xaRepository.put(text, entry);
-            id = Math.max(id, Long.parseLong(text.substring(text.lastIndexOf(seq) + 1)));
-        }
-        xaIdSeq.set(id);
+        Future<Collection<ImmutableCoordinatorLog>> entriesFuture = xaRepository.getCoordinatorLogsForRecover();
+        return entriesFuture.flatMap((Function<Collection<ImmutableCoordinatorLog>, Future<XaLog>>) entries -> {
+            for (ImmutableCoordinatorLog entry : entries) {
+                String text = entry.getXid();
+                xaRepository.put(text, entry);
+                xaIdSeq.set(Math.max(xaIdSeq.get(), Long.parseLong(text.substring(text.lastIndexOf(seq) + 1))));
+            }
 
-        List<Future> futures = new ArrayList<>();
-        for (ImmutableCoordinatorLog entry : entries.stream()
-                .filter(p -> p.computeExpires() > System.currentTimeMillis())
-                .collect(Collectors.toList())) {
-            switch (entry.computeMinState()) {
-                case XA_ENDED:
-                case XA_PREPARED: {
-                    futures.add(recoverConnection(entry));
-                    break;
+            List<Future> futures = new ArrayList<>();
+            for (ImmutableCoordinatorLog entry : entries.stream()
+                    .filter(p -> p.computeExpires() > System.currentTimeMillis())
+                    .collect(Collectors.toList())) {
+                switch (entry.computeMinState()) {
+                    case XA_ENDED:
+                    case XA_PREPARED: {
+                        futures.add(recoverConnection(entry));
+                        break;
+                    }
+                    case XA_COMMITED:
+                    case XA_ROLLBACKED:
+                        break;
+                    default:
                 }
-                case XA_COMMITED:
-                case XA_ROLLBACKED:
-                    break;
-                default:
             }
-        }
-        CompositeFuture.all(futures).onComplete(event -> {
-            if (event.succeeded()) {
-                handler.handle(Future.succeededFuture());
+            return CompositeFuture.all(futures).onComplete(event -> {
+                CompositeFuture result = event.result();
+                if (result != null) {
+                    int size = result.size();
+                    for (int i = 0; i < size; i++) {
+                        Throwable cause = result.cause(i);
+                        System.out.println(cause);
+                    }
+                }
                 return;
-            }
-            CompositeFuture result = event.result();
-            if (result != null) {
-                int size = result.size();
-                for (int i = 0; i < size; i++) {
-                    Throwable cause = result.cause(i);
-                    System.out.println(cause);
-                }
-            }
-            handler.handle((AsyncResult) event);
-            return;
-        });
+            }).mapEmpty();
+        }).mapEmpty();
+
     }
 
 
@@ -256,7 +253,7 @@ public class XaLogImpl implements XaLog {
     }
 
     @Override
-    public void log(String xid, String target, State state)  {
+    public void log(String xid, String target, State state) {
         if (xid == null) return;
         synchronized (xaRepository) {
             ImmutableCoordinatorLog coordinatorLog = xaRepository.get(xid);
@@ -331,7 +328,7 @@ public class XaLogImpl implements XaLog {
         synchronized (xaRepository) {
             ImmutableCoordinatorLog immutableCoordinatorLog = xaRepository.get(xid);
             immutableCoordinatorLog.withCommit(true);
-           xaRepository.writeCommitLog(immutableCoordinatorLog);
+            xaRepository.writeCommitLog(immutableCoordinatorLog);
             return immutableCoordinatorLog;
         }
     }
