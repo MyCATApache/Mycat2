@@ -63,6 +63,9 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
             } else {
                 if(valueExpr instanceof SQLIdentifierExpr){
                     value=SQLUtils.normalize(((SQLIdentifierExpr) valueExpr).getSimpleName());
+                }else if(valueExpr instanceof SQLDefaultExpr) {
+                 //todo
+                    value = "default";
                 }else {
                     value = SQLEvalVisitorUtils.eval(DbType.mysql, valueExpr);
                 }
