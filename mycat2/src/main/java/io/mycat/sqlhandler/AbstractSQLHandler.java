@@ -1,7 +1,6 @@
 package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
@@ -11,6 +10,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +34,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     @Override
-    public PromiseInternal<Void> execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
+    public Future<Void> execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
         try {
             onExecuteBefore(request, dataContext, response);
             return onExecute(request, dataContext, response);
@@ -46,9 +46,9 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     protected void onExecuteBefore(SQLRequest<Statement> request, MycatDataContext dataContext, Response respons) {
     }
 
-    protected abstract PromiseInternal<Void>  onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception;
+    protected abstract Future<Void> onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response);
 
-    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
 
 
     }

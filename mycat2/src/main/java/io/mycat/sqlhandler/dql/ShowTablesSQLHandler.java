@@ -8,8 +8,7 @@ import io.mycat.MycatException;
 import io.mycat.Response;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,7 @@ public class ShowTablesSQLHandler extends AbstractSQLHandler<SQLShowTablesStatem
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTablesSQLHandler.class);
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLShowTablesStatement> request, MycatDataContext dataContext, Response response) {
         SQLShowTablesStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
             ast.setDatabase(new SQLIdentifierExpr(dataContext.getDefaultSchema()));

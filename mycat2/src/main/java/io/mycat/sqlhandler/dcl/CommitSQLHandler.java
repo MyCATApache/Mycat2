@@ -5,13 +5,13 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 
 public class CommitSQLHandler extends AbstractSQLHandler<SQLCommitStatement> {
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<SQLCommitStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLCommitStatement> request, MycatDataContext dataContext, Response response) {
         return response.commit();
     }
 }

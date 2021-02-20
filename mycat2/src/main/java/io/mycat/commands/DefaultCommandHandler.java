@@ -33,22 +33,21 @@ import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
 import io.mycat.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.ServerTransactionSessionRunner;
 import io.mycat.util.packet.AbstractWritePacket;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.JDBCType;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -88,18 +87,16 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 LOGGER.debug("-----------------reveice--------------------");
                 LOGGER.debug(new String(bytes));
             }
-            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-
-            mycatServer.getServerTransactionSessionRunner().run(session,
-                    () -> {
-                        Future<Void> promise =
-                                MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+            vertx.executeBlocking((Handler<Promise<Void>>) event -> {
+                Future<Void> promise =
+                        MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
                                 (size) -> new ReceiverImpl(session, size, false));
-                        promise.onFailure(o->{
-                            session.setLastMessage(o);
-                            session.writeErrorEndPacketBySyncInProcessError();
-                        });
-                    });
+                promise.onFailure(o->{
+                    session.setLastMessage(o);
+                    session.writeErrorEndPacketBySyncInProcessError();
+                }).onComplete(event);
+            });
         } catch (Throwable e) {
             LOGGER.debug("-----------------reveice--------------------");
             LOGGER.debug(new String(bytes));
@@ -243,15 +240,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("=> {}", statement);
         }
-
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
-        NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-        mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
-            @Override
-            public void run() throws Exception {
-                MycatdbCommand.execute(dataContext, receiver, statement);
-            }
-        });
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        vertx.executeBlocking((Handler<Promise<Void>>) promise -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(promise));
     }
 
     @Override

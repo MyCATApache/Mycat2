@@ -37,15 +37,12 @@ public class NativeMycatServer implements MycatServer {
 
     private ReactorThreadManager reactorManager;
 
-    private MycatContextThreadPool mycatContextThreadPool;
-
     private MycatWorkerProcessor mycatWorkerProcessor;
 
     private DatasourceConfigProvider datasourceConfigProvider;
 
     private Authenticator authenticator;
 
-    private ServerTransactionSessionRunner serverTransactionSessionRunner;
 
     @SneakyThrows
     public NativeMycatServer(MycatServerConfig serverConfig) {
@@ -59,14 +56,6 @@ public class NativeMycatServer implements MycatServer {
         this.datasourceConfigProvider = new ProxyDatasourceConfigProvider();
 
         this.mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-        io.mycat.config.ServerConfig serverConfigServer = serverConfig.getServer();
-        this.mycatContextThreadPool = new MycatContextThreadPoolImpl(
-                mycatWorkerProcessor.getMycatWorker(),
-                serverConfigServer.getWorkerPool().getTaskTimeout(),
-                TimeUnit.valueOf(serverConfigServer.getWorkerPool().getTimeUnit()));
-        this.serverTransactionSessionRunner = new ServerTransactionSessionRunner(
-                new TranscationSwitch(),
-                mycatContextThreadPool);
         startProxy(this.serverConfig.getServer());
     }
 

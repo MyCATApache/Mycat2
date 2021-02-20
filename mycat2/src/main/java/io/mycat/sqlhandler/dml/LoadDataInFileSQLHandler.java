@@ -5,7 +5,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 
 public class LoadDataInFileSQLHandler extends AbstractSQLHandler<MySqlLoadDataInFileStatement> {
@@ -17,7 +17,7 @@ public class LoadDataInFileSQLHandler extends AbstractSQLHandler<MySqlLoadDataIn
     }
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlLoadDataInFileStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlLoadDataInFileStatement> request, MycatDataContext dataContext, Response response) {
         return response.sendOk();
     }
 }

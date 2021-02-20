@@ -6,7 +6,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +15,11 @@ public class SetTransactionSQLHandler extends AbstractSQLHandler<MySqlSetTransac
     private static final Logger LOGGER = LoggerFactory.getLogger(SetTransactionSQLHandler.class);
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlSetTransactionStatement> request, MycatDataContext dataContext, Response response) {
         MySqlSetTransactionStatement statement = request.getAst();
         String isolationLevel = statement.getIsolationLevel();
         MySQLIsolation mySQLIsolation = MySQLIsolation.parse(isolationLevel);
         if (mySQLIsolation == null) {
-            LOGGER.warn("不支持的设置值:" + statement);
             return response.sendOk();
         }
         int jdbcValue = mySQLIsolation.getJdbcValue();

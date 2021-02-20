@@ -140,7 +140,7 @@ public enum MycatdbCommand {
                         SqlRecord sqlRecord = dataContext.startSqlRecord();
                         sqlRecord.setTarget(dataContext.getUser().getHost());
                         sqlRecord.setSql(sqlStatement);
-                        return execute(dataContext, response, sqlStatement).future();
+                        return execute(dataContext, response, sqlStatement);
                     }
                 });
             }
@@ -163,7 +163,7 @@ public enum MycatdbCommand {
         return false;
     }
 
-    public static PromiseInternal<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
+    public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
 
         //////////////////////////////////apply transaction///////////////////////////////////

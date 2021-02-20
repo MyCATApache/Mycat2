@@ -14,7 +14,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
 import io.mycat.util.JsonUtil;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
 
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLCreateDatabaseStatement> request, MycatDataContext dataContext, Response response) {
         SQLCreateDatabaseStatement ast = request.getAst();
         boolean ifNotExists = ast.isIfNotExists();
         String tableName = SQLUtils.normalize(ast.getName().getSimpleName());
@@ -38,6 +38,8 @@ public class CreateDatabaseSQLHandler extends AbstractSQLHandler<SQLCreateDataba
             ops.commit();
             onPhysics(tableName);
             return response.sendOk();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
 
     }

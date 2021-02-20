@@ -16,7 +16,7 @@ import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.mycat.util.Pair;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
     private static final Logger LOGGER = LoggerFactory.getLogger(ExplainSQLHandler.class);
     @Override
     @SneakyThrows
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
         MySqlExplainStatement explainAst = request.getAst();
         if (explainAst.isDescribe()) {
             return response.proxySelectToPrototype(explainAst.toString());

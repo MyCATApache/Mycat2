@@ -388,7 +388,7 @@ public class MycatMySQLHandler {
         return preparedStatement.getBindValues();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatMysqlSession MycatMysqlSession) throws Exception {
+    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatMysqlSession MycatMysqlSession) throws Exception {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);

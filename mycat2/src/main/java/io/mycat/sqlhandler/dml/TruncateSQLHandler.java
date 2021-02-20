@@ -1,26 +1,23 @@
 package io.mycat.sqlhandler.dml;
 
 import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTruncateStatement;
 import io.mycat.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
 
 
 public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement> {
 
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLTruncateStatement> request, MycatDataContext dataContext, Response response)  {
         SQLTruncateStatement truncateStatement = request.getAst();
 
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);

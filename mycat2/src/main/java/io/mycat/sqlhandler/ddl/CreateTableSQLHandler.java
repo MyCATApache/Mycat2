@@ -10,7 +10,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.JsonUtil;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,26 +29,30 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     public static final CreateTableSQLHandler INSTANCE = new CreateTableSQLHandler();
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
-                .map(i -> i.get(0))
-                .map(i -> i.getText())
-                .filter(i -> {
-                    i = i.replaceAll(" ", "");
-                    return i.contains("+mycat:createTable{");
-                }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
+    protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
+        try{
+            Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())
+                    .map(i -> i.get(0))
+                    .map(i -> i.getText())
+                    .filter(i -> {
+                        i = i.replaceAll(" ", "");
+                        return i.contains("+mycat:createTable{");
+                    }).map(i -> i.substring(i.indexOf("{"))).map(i -> JsonUtil.from(i, Map.class)).orElse(null);
 
-        MySqlCreateTableStatement ast = request.getAst();
-        String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
-        String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
-        if (tableName == null) {
-            return response.sendError(new MycatException("CreateTableSQL need tableName"));
+            MySqlCreateTableStatement ast = request.getAst();
+            String schemaName = ast.getSchema() == null ? dataContext.getDefaultSchema() : SQLUtils.normalize(ast.getSchema());
+            String tableName = ast.getTableName() == null ? null : SQLUtils.normalize(ast.getTableName());
+            if (tableName == null) {
+                return response.sendError(new MycatException("CreateTableSQL need tableName"));
+            }
+            if (schemaName == null) {
+                return response.sendError("No database selected", 1046);
+            }
+            createTable(hint, schemaName, tableName, ast);
+            return response.sendOk();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-        if (schemaName == null) {
-            return response.sendError("No database selected", 1046);
-        }
-        createTable(hint, schemaName, tableName, ast);
-        return response.sendOk();
     }
 
     public void createTable(Map hint,

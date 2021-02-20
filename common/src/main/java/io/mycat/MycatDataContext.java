@@ -104,11 +104,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     boolean isReadOnly();
 
-    @Override
-    default boolean continueBindThreadIfTransactionNeed() {
-        return isInTransaction();
-    }
-
     void close();
 
     //need catch exception

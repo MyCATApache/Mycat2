@@ -10,22 +10,26 @@ import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 
 public class DropSequenceSQLHandler extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLDropSequenceStatement> {
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<com.alibaba.druid.sql.ast.statement.SQLDropSequenceStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        SQLDropSequenceStatement ast = request.getAst();
-        SQLName name = ast.getName();
-        if (name instanceof SQLIdentifierExpr) {
-            SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
-            sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
-            sqlPropertyExpr.setName(name.toString());
-            ast.setName(sqlPropertyExpr);
+    protected Future<Void> onExecute(SQLRequest<SQLDropSequenceStatement> request, MycatDataContext dataContext, Response response) {
+        try {
+            SQLDropSequenceStatement ast = request.getAst();
+            SQLName name = ast.getName();
+            if (name instanceof SQLIdentifierExpr) {
+                SQLPropertyExpr sqlPropertyExpr = new SQLPropertyExpr();
+                sqlPropertyExpr.setOwner(dataContext.getDefaultSchema());
+                sqlPropertyExpr.setName(name.toString());
+                ast.setName(sqlPropertyExpr);
+            }
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            return response.proxyUpdate(metadataManager.getPrototype(), ast.toString());
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        return response.proxyUpdate(metadataManager.getPrototype(), ast.toString());
     }
 }

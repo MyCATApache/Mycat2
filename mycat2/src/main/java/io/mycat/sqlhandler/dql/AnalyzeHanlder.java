@@ -13,7 +13,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.statistic.StatisticCenter;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
@@ -26,7 +26,7 @@ import java.util.Optional;
  **/
 public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
         MySqlAnalyzeStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = Optional.ofNullable(ast.getTableSources()).orElse(Collections.emptyList());
         if (tableSources.isEmpty()) {

@@ -11,6 +11,7 @@ import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.util.NameMap;
 import io.mycat.util.Pair;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 
@@ -20,7 +21,7 @@ import java.util.Optional;
 public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlUpdateStatement> request, MycatDataContext dataContext, Response response) {
         return updateHandler(request.getAst(), dataContext, (SQLExprTableSource) request.getAst().getTableSource(), response);
     }
 

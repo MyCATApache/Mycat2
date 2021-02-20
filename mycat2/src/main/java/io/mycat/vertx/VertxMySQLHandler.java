@@ -386,7 +386,7 @@ public class VertxMySQLHandler {
         return preparedStatement.getBindValues();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, VertxSession vertxSession) throws Exception {
+    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, VertxSession vertxSession) throws Exception {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);

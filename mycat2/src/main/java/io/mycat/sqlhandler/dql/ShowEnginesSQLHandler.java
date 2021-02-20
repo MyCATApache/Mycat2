@@ -6,7 +6,7 @@ import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 
 
 import java.sql.JDBCType;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class ShowEnginesSQLHandler extends AbstractSQLHandler<MySqlShowEnginesStatement> {
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlShowEnginesStatement> request, MycatDataContext dataContext, Response response) {
 
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
 

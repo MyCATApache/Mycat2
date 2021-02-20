@@ -9,8 +9,7 @@ import io.mycat.Response;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
-import io.mycat.Response;
-import io.vertx.core.impl.future.PromiseInternal;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,7 @@ public class ShowTableStatusSQLHandler extends AbstractSQLHandler<MySqlShowTable
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowTableStatusSQLHandler.class);
 
     @Override
-    protected PromiseInternal<Void> onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlShowTableStatusStatement> request, MycatDataContext dataContext, Response response) {
 
         MySqlShowTableStatusStatement ast = request.getAst();
         if (ast.getDatabase() == null && dataContext.getDefaultSchema() != null) {
