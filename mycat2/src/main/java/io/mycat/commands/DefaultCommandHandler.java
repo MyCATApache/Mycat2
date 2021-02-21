@@ -32,7 +32,6 @@ import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.proxy.session.MycatSession;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
@@ -207,7 +206,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     @SneakyThrows
-    public Future<Void> handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MySQLServerSession session) {
+    public Future<Void> handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);

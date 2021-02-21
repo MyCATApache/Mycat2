@@ -15,6 +15,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
+import io.mycat.commands.DefaultCommandHandler;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.util.VertxUtil;
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
-public class VertxMySQLHandler {
+public class VertxMySQLHandler extends DefaultCommandHandler {
     private VertxSession session;
     private MycatDataContext mycatDataContext;
     private static final Logger LOGGER = LoggerFactory.getLogger(VertxMySQLHandler.class);
@@ -96,7 +97,7 @@ public class VertxMySQLHandler {
         }
     }
 
-    private void checkPendingMessages(){
+    private void checkPendingMessages() {
         PendingMessage pendingMessage;
         while ((pendingMessage = pendingMessages.poll()) != null) {
             handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
@@ -118,8 +119,7 @@ public class VertxMySQLHandler {
                     break;
                 }
                 case MySQLCommandType.COM_QUERY: {
-                    String sql = new String(readView.readEOFStringBytes(), StandardCharsets.UTF_8);
-                    promise = handleQuery(sql, this.session);
+                    promise = handleQuery(readView.readEOFStringBytes(), this.session);
                     break;
                 }
                 case MySQLCommandType.COM_INIT_DB: {
@@ -322,12 +322,12 @@ public class VertxMySQLHandler {
                     break;
                 }
                 default: {
-                    promise = VertxUtil.newFailPromise(new MycatException(MycatErrorCode.ERR_NOT_SUPPORT,"无法识别的MYSQL数据包"));
+                    promise = VertxUtil.newFailPromise(new MycatException(MycatErrorCode.ERR_NOT_SUPPORT, "无法识别的MYSQL数据包"));
                     assert false;
                 }
             }
-            promise.onComplete(o->{
-                if(o.failed()){
+            promise.onComplete(o -> {
+                if (o.failed()) {
                     mycatDataContext.setLastMessage(o.cause());
                     this.session.writeErrorEndPacketBySyncInProcessError(0);
                 }
@@ -337,296 +337,5 @@ public class VertxMySQLHandler {
             mycatDataContext.setLastMessage(throwable);
             this.session.writeErrorEndPacketBySyncInProcessError(0);
         }
-    }
-
-    private Disposable subscribe(Observable<AbstractWritePacket> observable){
-        Disposable disposable = observable.subscribe(
-        // 收到数据包
-        new Consumer<AbstractWritePacket>() {
-            @Override
-            public void accept(AbstractWritePacket packet) throws Throwable {
-                packet.run();
-            }
-        }, new Consumer<Throwable>() {
-        // 异常
-            @Override
-            public void accept(Throwable throwable) throws Throwable {
-
-            }
-        }, new Action() {
-        // 完毕
-            @Override
-            public void run() throws Throwable {
-                // check if handle set handleIng gap
-                for (PendingMessage pendingMessage : pendingMessages) {
-                    while ((pendingMessage = pendingMessages.poll()) != null) {
-                        handle0(pendingMessage.packetId, pendingMessage.event, pendingMessage.socket);
-                    }
-                }
-            }
-        });
-        return disposable;
-    }
-
-    private void saveBindValue(long statementId, BindValue[] values, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
-        if (preparedStatement == null) {
-            return;
-        }
-        preparedStatement.setBindValues(values);
-    }
-
-    private BindValue[] getLastBindValue(long statementId, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
-        if (preparedStatement == null) {
-            return null;
-        }
-        return preparedStatement.getBindValues();
-    }
-
-    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, VertxSession vertxSession) throws Exception {
-        MycatDataContext dataContext = session.getDataContext();
-        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
-        SQLStatement statement = preparedStatement.getSQLStatementByBindValue(values);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("preparestatement:{}", statement);
-        }
-        Response receiver = new VertxJdbcResponseImpl(vertxSession, 1, true);
-        return MycatdbCommand.execute(dataContext, receiver, statement);
-    }
-
-    private byte[] getLongData(long statementId, int i, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = preparedStatementMap.get(statementId);
-        ByteArrayOutputStream longData = preparedStatement.getLongData(i);
-        if (longData == null) {
-            return null;
-        }
-        return longData.toByteArray();
-    }
-
-    private int getNumParamsByStatementId(long statementId, VertxSession vertxSession) {
-        Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = Objects.requireNonNull(
-                preparedStatementMap.get(statementId),
-                () -> "preparedStatement:" + statementId + "  not exist"
-        );
-        return preparedStatement.getParametersNumber();
-    }
-
-    private  PromiseInternal<Void>  handlePrepareStatementReset(long statementId, VertxSession vertxSession) {
-        MycatDataContext dataContext = session.getDataContext();
-        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
-        if (preparedStatement != null) {
-            preparedStatement.resetLongData();
-        }
-        return session.writeOkEndPacket();
-    }
-
-    private  PromiseInternal<Void>  handlePrepareStatementFetch(long statementId, long row, VertxSession vertxSession) {
-        return vertxSession.writeErrorEndPacketBySyncInProcessError();
-    }
-
-    private PromiseInternal<Void>  handlePrepareStatementClose(long statementId, VertxSession vertxSession) {
-        MycatDataContext dataContext = session.getDataContext();
-        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
-        longPreparedStatementMap.remove(statementId);
-        return VertxUtil.newSuccessPromise();
-    }
-
-    private PromiseInternal<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, VertxSession vertxSession) {
-        MycatDataContext dataContext = session.getDataContext();
-        Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
-        io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
-        if (preparedStatement != null) {
-            preparedStatement.appendLongData(paramId, data);
-        }
-        return VertxUtil.newSuccessPromise();
-    }
-
-    private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, VertxSession vertxSession) {
-        boolean deprecateEOF = session.isDeprecateEOF();
-        String sql = new String(bytes);
-        /////////////////////////////////////////////////////
-
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        boolean allow = (sqlStatement instanceof SQLSelectStatement
-                ||
-                sqlStatement instanceof SQLInsertStatement
-                ||
-                sqlStatement instanceof SQLUpdateStatement
-                ||
-                sqlStatement instanceof SQLDeleteStatement
-        );
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        metadataManager.resolveMetadata(sqlStatement);
-        ResultSetBuilder fieldsBuilder = ResultSetBuilder.create();
-        MycatRowMetaData fields = fieldsBuilder.build().getMetaData();
-        ResultSetBuilder paramsBuilder = ResultSetBuilder.create();
-
-        sqlStatement.accept(new MySqlASTVisitorAdapter() {
-            @Override
-            public void endVisit(SQLVariantRefExpr x) {
-                if ("?".equalsIgnoreCase(x.getName())) {
-                    SQLDataType sqlDataType = x.computeDataType();
-                    JDBCType res = JDBCType.VARCHAR;
-                    if (sqlDataType != null) {
-                        res = JDBCType.valueOf(sqlDataType.jdbcType());
-                    }
-                    paramsBuilder.addColumnInfo("", res);
-                }
-                super.endVisit(x);
-            }
-        });
-
-        MycatRowMetaData params = paramsBuilder.build().getMetaData();
-        long stmtId = mycatDataContext.nextPrepareStatementId();
-        Map<Long, io.mycat.PreparedStatement> statementMap = this.mycatDataContext.getPrepareInfo();
-        statementMap.put(stmtId, new io.mycat.PreparedStatement(stmtId, sqlStatement, params.getColumnCount()));
-
-        DefaultPreparedOKPacket info = new DefaultPreparedOKPacket(stmtId, fields.getColumnCount(), params.getColumnCount(), session.getWarningCount());
-
-        if (info.getPrepareOkColumnsCount() == 0 && info.getPrepareOkParametersCount() == 0) {
-            return session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), true);
-        }
-        session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
-        if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
-            for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
-            }
-            if (deprecateEOF) {
-                return session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
-                        info.getPrepareOkParametersCount()), true);
-            } else {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params,
-                        info.getPrepareOkParametersCount()), false);
-                return session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
-                        session.getServerStatusValue()), true);
-            }
-        } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
-            for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
-            }
-            if (deprecateEOF) {
-                return session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                        info.getPrepareOkColumnsCount()), true);
-            } else {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                        info.getPrepareOkColumnsCount()), false);
-                return session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
-                        session.getServerStatusValue()), true);
-            }
-        } else {
-            for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
-            }
-            session.writeColumnEndPacket();
-            for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
-            }
-            if (deprecateEOF) {
-                return session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                        info.getPrepareOkColumnsCount()), true);
-            } else {
-                session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields,
-                        info.getPrepareOkColumnsCount()), false);
-                return session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
-                        session.getServerStatusValue()), true);
-            }
-        }
-    }
-
-
-    public Future<Void> handleQuery(String sql, VertxSession session) throws Exception {
-        return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
-                new VertxJdbcResponseImpl(session, size, false));
-    }
-
-    public PromiseInternal<Void>  handleSleep(VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void> handleQuit(VertxSession session) {
-       return session.close();
-    }
-
-    public PromiseInternal<Void>  handleInitDb(String db, VertxSession session) {
-        session.getDataContext().useShcema(db);
-        return session.writeOk(false);
-    }
-
-    public PromiseInternal<Void>  handlePing(VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleFieldList(String table, String filedWildcard, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleSetOption(boolean on, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleCreateDb(String schemaName, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleDropDb(String schemaName, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleRefresh(int subCommand, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleShutdown(int shutdownType, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleStatistics(VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleProcessInfo(VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleConnect(VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleProcessKill(long connectionId, VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleDebug(VertxSession session) {
-        return session.writeErrorEndPacketBySyncInProcessError();
-    }
-
-    public PromiseInternal<Void>  handleTime(VertxSession session) {
-        return session.writeErrorEndPacketBySyncInProcessError();
-    }
-
-    public PromiseInternal<Void>  handleChangeUser(String userName, String authResponse, String schemaName,
-                                 int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-                                 VertxSession session) {
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleDelayedInsert(VertxSession session) {
-        return session.writeErrorEndPacketBySyncInProcessError();
-    }
-
-    public PromiseInternal<Void>  handleResetConnection(VertxSession session) {
-        session.resetSession();
-        return session.writeOkEndPacket();
-    }
-
-    public PromiseInternal<Void>  handleDaemon(VertxSession session) {
-        return session.writeOkEndPacket();
     }
 }

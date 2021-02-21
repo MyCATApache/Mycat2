@@ -18,7 +18,6 @@ package io.mycat.command;
 
 import io.mycat.BindValue;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.proxy.session.MycatSession;
 import io.vertx.core.Future;
 
 /**
@@ -31,7 +30,7 @@ public interface PrepareStatementParserHelper {
   Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
                                               MySQLServerSession session);
 
-  Future<Void> handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags,
+  Future<Void> handlePrepareStatementExecute(long statementId, byte flags,
                                              int[] params,
                                              BindValue[] values,
                                              MySQLServerSession session);

@@ -20,10 +20,7 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.impl.future.PromiseInternal;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -181,7 +178,7 @@ public class CommandResolver {
                         }
                         mycat.resetCurrentProxyPayload();
                         endFuture = commandHandler
-                                .handlePrepareStatementExecute(rawPayload, statementId, flags, params, values,
+                                .handlePrepareStatementExecute(statementId, flags, params, values,
                                         mycat);
                         break;
                     } finally {
