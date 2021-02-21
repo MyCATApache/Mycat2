@@ -232,4 +232,6 @@ public interface MySQLServerSession<T> {
 
 
     MycatDataContext getDataContext();
+
+    Future<Void> close(boolean b, String quit);
 }

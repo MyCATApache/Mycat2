@@ -31,6 +31,7 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -50,27 +51,18 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
 
-    @Override
-    public Future<Void> handleInitDb(String db, MycatSession mycat) {
-        mycat.useSchema(db);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("handleInitDb:{}", db);
-        }
-        return mycat.writeOkEndPacket();
-    }
 
     @Override
-    public void initRuntime(MycatSession session) {
+    public void initRuntime(MySQLServerSession session) {
         Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-        UserConfig userInfo = authenticator.getUserInfo(session.getUser().getUserName());
+        UserConfig userInfo = authenticator.getUserInfo(session.getDataContext().getUser().getUserName());
         if (userInfo != null) {
             session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
         }
     }
 
-
     @Override
-    public Future<Void> handleQuery(byte[] bytes, MycatSession session) {
+    public Future<Void> handleQuery(byte[] bytes, MySQLServerSession session) {
         try {
             String sql = new String(bytes);
             if (LOGGER.isDebugEnabled()) {
@@ -91,17 +83,17 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
 
     @Override
-    public Future<Void> handleContentOfFilename(byte[] sql, MycatSession session) {
+    public Future<Void> handleContentOfFilename(byte[] sql, MySQLServerSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public Future<Void> handleContentOfFilenameEmptyOk(MycatSession session) {
+    public Future<Void> handleContentOfFilenameEmptyOk(MySQLServerSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public Future<Void> handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
+    public Future<Void> handlePrepareStatement(byte[] sqlBytes, MySQLServerSession session) {
         try {
             MycatDataContext dataContext = session.getDataContext();
             boolean deprecateEOF = session.isDeprecateEOF();
@@ -203,20 +195,19 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
+    public Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.appendLongData(paramId, data);
         }
-        session.onHandlerFinishedClear();
         return Future.succeededFuture();
     }
 
     @Override
     @SneakyThrows
-    public Future<Void> handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
+    public Future<Void> handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -230,21 +221,20 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public Future<Void> handlePrepareStatementClose(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementClose(long statementId, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
-        session.onHandlerFinishedClear();
         return Future.succeededFuture();
     }
 
     @Override
-    public Future<Void> handlePrepareStatementFetch(long statementId, long row, MycatSession session) {
+    public Future<Void> handlePrepareStatementFetch(long statementId, long row, MySQLServerSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public Future<Void> handlePrepareStatementReset(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementReset(long statementId, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -255,7 +245,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public int getNumParamsByStatementId(long statementId, MycatSession session) {
+    public int getNumParamsByStatementId(long statementId, MySQLServerSession session) {
         Map<Long, PreparedStatement> prepareInfo = session.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         Objects.requireNonNull(preparedStatement);
@@ -263,7 +253,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public byte[] getLongData(long statementId, int paramId, MycatSession mycat) {
+    public byte[] getLongData(long statementId, int paramId, MySQLServerSession mycat) {
         PreparedStatement preparedStatement = mycat.getDataContext().getPrepareInfo().get(statementId);
         if (preparedStatement == null) {
             return null;
@@ -276,7 +266,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public BindValue[] getLastBindValue(long statementId, MycatSession mycat) {
+    public BindValue[] getLastBindValue(long statementId, MySQLServerSession mycat) {
         Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {
@@ -286,7 +276,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void saveBindValue(long statementId, BindValue[] values, MycatSession mycat) {
+    public void saveBindValue(long statementId, BindValue[] values, MySQLServerSession mycat) {
         Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {

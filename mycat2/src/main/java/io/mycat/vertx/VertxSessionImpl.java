@@ -147,6 +147,12 @@ public class VertxSessionImpl implements VertxSession {
     }
 
     @Override
+    public Future<Void> close(boolean b, String quit) {
+        mycatDataContext.close();
+        return socket.close();
+    }
+
+    @Override
     public PromiseInternal<Void>  close() {
         mycatDataContext.close();
         Future<Void> future = socket.close();

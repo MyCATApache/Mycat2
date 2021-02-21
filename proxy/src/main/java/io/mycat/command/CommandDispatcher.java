@@ -14,6 +14,7 @@
  */
 package io.mycat.command;
 
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import io.vertx.core.Future;
 
@@ -26,49 +27,49 @@ import java.util.Map;
  **/
 public interface CommandDispatcher extends LocalInFileRequestParseHelper,
     PrepareStatementParserHelper {
-  void initRuntime(MycatSession session);
-  Future<Void> handleQuery(byte[] sql, MycatSession session);
+  void initRuntime(MySQLServerSession session);
+  Future<Void> handleQuery(byte[] sql, MySQLServerSession session);
 
-  Future<Void>  handleSleep(MycatSession session);
+  Future<Void>  handleSleep(MySQLServerSession session);
 
-  Future<Void>  handleQuit(MycatSession session);
+  Future<Void>  handleQuit(MySQLServerSession session);
 
-  Future<Void>  handleInitDb(String db, MycatSession session);
+  Future<Void>  handleInitDb(String db, MySQLServerSession session);
 
-  Future<Void>  handlePing(MycatSession session);
+  Future<Void>  handlePing(MySQLServerSession session);
 
-  Future<Void>  handleFieldList(String table, String filedWildcard, MycatSession session);
+  Future<Void>  handleFieldList(String table, String filedWildcard, MySQLServerSession session);
 
-  Future<Void>  handleSetOption(boolean on, MycatSession session);
+  Future<Void>  handleSetOption(boolean on, MySQLServerSession session);
 
-  Future<Void>  handleCreateDb(String schemaName, MycatSession session);
+  Future<Void>  handleCreateDb(String schemaName, MySQLServerSession session);
 
-  Future<Void>  handleDropDb(String schemaName, MycatSession session);
+  Future<Void>  handleDropDb(String schemaName, MySQLServerSession session);
 
-  Future<Void>  handleRefresh(int subCommand, MycatSession session);
+  Future<Void>  handleRefresh(int subCommand, MySQLServerSession session);
 
-  Future<Void>  handleShutdown(int shutdownType, MycatSession session);
+  Future<Void>  handleShutdown(int shutdownType, MySQLServerSession session);
 
-  Future<Void>  handleStatistics(MycatSession session);
+  Future<Void>  handleStatistics(MySQLServerSession session);
 
-  Future<Void>  handleProcessInfo(MycatSession session);
+  Future<Void>  handleProcessInfo(MySQLServerSession session);
 
-  Future<Void>  handleConnect(MycatSession session);
+  Future<Void>  handleConnect(MySQLServerSession session);
 
-  Future<Void>  handleProcessKill(long connectionId, MycatSession session);
+  Future<Void>  handleProcessKill(long connectionId, MySQLServerSession session);
 
-  Future<Void>  handleDebug(MycatSession session);
+  Future<Void>  handleDebug(MySQLServerSession session);
 
-  Future<Void>  handleTime(MycatSession session);
+  Future<Void>  handleTime(MySQLServerSession session);
 
   Future<Void>  handleChangeUser(String userName, String authResponse, String schemaName,
       int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-      MycatSession session);
+                                 MySQLServerSession session);
 
-  Future<Void>  handleDelayedInsert(MycatSession session);
+  Future<Void>  handleDelayedInsert(MySQLServerSession session);
 
-  Future<Void>  handleResetConnection(MycatSession session);
+  Future<Void>  handleResetConnection(MySQLServerSession session);
 
-  Future<Void>  handleDaemon(MycatSession session);
+  Future<Void>  handleDaemon(MySQLServerSession session);
 
 }
