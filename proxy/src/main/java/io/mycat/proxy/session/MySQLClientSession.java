@@ -420,7 +420,9 @@ public class MySQLClientSession extends
     @Override
     public void switchNioHandler(NIOHandler nioHandler) {
         if (this.nioHandler!=null&&nioHandler!=null){
-            System.out.println();
+            if(LOGGER.isDebugEnabled()){
+                LOGGER.debug("switchNioHandler:{} sessionId:{} but has {} handler", nioHandler, sessionId(),this.nioHandler);
+            }
         }
         this.nioHandler = nioHandler;
         if (nioHandler == null && LOGGER.isDebugEnabled()) {

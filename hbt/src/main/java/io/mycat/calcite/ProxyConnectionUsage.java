@@ -56,12 +56,9 @@ public class ProxyConnectionUsage {
         IdentityHashMap<RelNode, List<Observable<Object[]>>> finalResMap = new IdentityHashMap<>();
         Map<RelNode, List<Observable<Object[]>>> resMap = Collections.synchronizedMap(finalResMap);
         if (context.isInTransaction() != context.getTransactionSession().isInTransaction()) {
-            System.out.println();
+            throw new IllegalArgumentException("the isInTransaction state not sync");
         }
         if (context.isInTransaction()) {
-            if (context.isInTransaction() != context.getTransactionSession().isInTransaction()) {
-                System.out.println();
-            }
             return getConnectionWhenTranscation(xaconnection)
                     .flatMap(new QueryResultSetInTranscation(xaconnection, resMap, params, finalResMap));
         } else {

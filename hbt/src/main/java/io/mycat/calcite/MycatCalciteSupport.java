@@ -470,57 +470,10 @@ public enum MycatCalciteSupport implements Context {
     @SneakyThrows
     MycatCalciteSupport() {
         try {
-
             Class<? extends BuiltInMethod> aClass = BuiltInMethod.STRING_TO_TIMESTAMP.getClass();
-            System.out.println();
-//            Class<? extends RexImpTable> aClass = RexImpTable.class;
-//            Field mapField = aClass.getDeclaredField("map");
-//            mapField.setAccessible(true);
-//            Map<SqlOperator, RexImpTable.RexCallImplementor> o = (Map<SqlOperator, RexImpTable.RexCallImplementor>) mapField.get(RexImpTable.INSTANCE);
-//            System.out.println(o);
-//
-//            Method defineMethod = aClass.getDeclaredMethod("defineMethod", SqlOperator.class, Method.class,
-//                    NullPolicy.class);
-//            defineMethod.setAccessible(true);
-//
-//
-//            Map<SqlOperator, RexImpTable.RexCallImplementor> res = new ConcurrentHashMap<SqlOperator, RexImpTable.RexCallImplementor>() {
-//
-//                @SneakyThrows
-//                @Override
-//                public RexImpTable.RexCallImplementor get(Object key) {
-//                    RexImpTable.RexCallImplementor rexCallImplementor = super.get(key);
-//                    if (rexCallImplementor != null) {
-//                        return rexCallImplementor;
-//                    }
-//                    SqlOperator k = (SqlOperator) key;
-//                    String name = k.getName();
-//                    switch (name.toLowerCase()){
-//                        case "regexp":{
-//                            ScalarFunctionImpl implementor = (ScalarFunctionImpl)RegexpFunction.scalarFunction;
-//                            defineMethod.invoke(RexImpTable.INSTANCE, key, implementor.method, NullPolicy.ANY);
-//                          break;
-//                        }
-//                    }
-//                    return get(key);
-//                }
-//            };
-//            res.putAll(o);
-//            mapField.set(RexImpTable.INSTANCE, res);
-//
-//            Field instanceField = aClass.getDeclaredField("INSTANCE");
-//            instanceField.setAccessible(true);
-
-//            Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
-//            declaredConstructor.setAccessible(true);
-
         } catch (Throwable e) {
             System.out.println(e);
         }
-
-//        }catch (Throwable e){
-//          System.err.println(e);
-//        }
     }
 
     private static void fixCalcite() {
