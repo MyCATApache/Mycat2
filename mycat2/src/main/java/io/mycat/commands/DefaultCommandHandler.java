@@ -31,16 +31,8 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
-import io.mycat.NativeMycatServer;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.util.packet.AbstractWritePacket;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -56,17 +48,15 @@ import java.util.Objects;
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
 
-    //  private MycatClient client;
-    //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
-    //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
-    //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
 
     @Override
-    public void handleInitDb(String db, MycatSession mycat) {
+    public Future<Void> handleInitDb(String db, MycatSession mycat) {
         mycat.useSchema(db);
-        LOGGER.info("handleInitDb:" + db);
-        super.handleInitDb(db, mycat);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("handleInitDb:{}", db);
+        }
+        return mycat.writeOkEndPacket();
     }
 
     @Override
@@ -79,45 +69,39 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
 
-
     @Override
-    public void handleQuery(byte[] bytes, MycatSession session) {
+    public Future<Void> handleQuery(byte[] bytes, MycatSession session) {
         try {
+            String sql = new String(bytes);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("-----------------reveice--------------------");
-                LOGGER.debug(new String(bytes));
+                LOGGER.debug(sql);
             }
             Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            vertx.executeBlocking((Handler<Promise<Void>>) event -> {
+            return vertx.executeBlocking(event -> {
                 Future<Void> promise =
-                        MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
+                        MycatdbCommand.INSTANCE.executeQuery(sql, session.getDataContext(),
                                 (size) -> new ReceiverImpl(session, size, false));
-                promise.onFailure(o->{
-                    session.setLastMessage(o);
-                    session.writeErrorEndPacketBySyncInProcessError();
-                }).onComplete(event);
+                promise.onComplete(event);
             });
         } catch (Throwable e) {
-            LOGGER.debug("-----------------reveice--------------------");
-            LOGGER.debug(new String(bytes));
-            session.setLastMessage(e);
-            session.writeErrorEndPacketBySyncInProcessError();
+            return Future.failedFuture(e);
         }
     }
 
 
     @Override
-    public void handleContentOfFilename(byte[] sql, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handleContentOfFilename(byte[] sql, MycatSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handleContentOfFilenameEmptyOk(MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handleContentOfFilenameEmptyOk(MycatSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
+    public Future<Void> handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
         try {
             MycatDataContext dataContext = session.getDataContext();
             boolean deprecateEOF = session.isDeprecateEOF();
@@ -163,7 +147,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
             if (info.getPrepareOkColumnsCount() == 0 && info.getPrepareOkParametersCount() == 0) {
                 session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), true);
-                return;
+                return Future.succeededFuture();
             }
             session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
             if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
@@ -179,7 +163,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
                 for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
@@ -193,7 +177,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             } else {
                 for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
@@ -211,16 +195,15 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             }
         } catch (Throwable throwable) {
-            ReceiverImpl receiver = new ReceiverImpl(session, 1, false);
-            receiver.sendError(throwable);
+            return Future.failedFuture(throwable);
         }
     }
 
     @Override
-    public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
+    public Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -228,11 +211,12 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             preparedStatement.appendLongData(paramId, data);
         }
         session.onHandlerFinishedClear();
+        return Future.succeededFuture();
     }
 
     @Override
     @SneakyThrows
-    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
+    public Future<Void> handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -242,31 +226,32 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         }
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
         Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-        vertx.executeBlocking((Handler<Promise<Void>>) promise -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(promise));
+        return vertx.executeBlocking(promise -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(promise));
     }
 
     @Override
-    public void handlePrepareStatementClose(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementClose(long statementId, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
         session.onHandlerFinishedClear();
+        return Future.succeededFuture();
     }
 
     @Override
-    public void handlePrepareStatementFetch(long statementId, long row, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handlePrepareStatementFetch(long statementId, long row, MycatSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handlePrepareStatementReset(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementReset(long statementId, MycatSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.resetLongData();
         }
-        session.writeOkEndPacket();
+        return session.writeOkEndPacket();
     }
 
     @Override
@@ -308,29 +293,5 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             return;
         }
         preparedStatement.setBindValues(values);
-    }
-    private Disposable subscribe(Observable<AbstractWritePacket> observable) {
-        Disposable disposable = observable.subscribe(
-                // 收到数据
-                new Consumer<AbstractWritePacket>() {
-                    @Override
-                    public void accept(AbstractWritePacket runnable) throws Throwable {
-                        runnable.run();
-                    }
-                }, new Consumer<Throwable>() {
-                    // 异常
-                    @Override
-                    public void accept(Throwable throwable) throws Throwable {
-
-                    }
-                }, new Action() {
-                    // 完毕
-                    @Override
-                    public void run() throws Throwable {
-                        // check if handle set handleIng gap
-
-                    }
-                });
-        return disposable;
     }
 }
