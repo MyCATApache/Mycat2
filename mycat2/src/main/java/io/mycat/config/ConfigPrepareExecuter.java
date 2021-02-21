@@ -17,6 +17,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ public class ConfigPrepareExecuter {
     private String datasourceProvider;
     private SqlResultSetService sqlResultSetService;
     private MySQLManager mySQLManager;
-    private XaLog xaLog;
+
 //    UpdateType updateType = UpdateType.FULL;
 
 
@@ -213,12 +214,8 @@ public class ConfigPrepareExecuter {
             SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
             configList.add(simpleConfig);
         }
-        if (!MetaClusterCurrent.exist(MySQLManager.class)) {
-            this.mySQLManager = new MycatMySQLManager();
-        } else {
-            this.mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-        }
-        this.xaLog = new XaLogImpl(new LocalXaMemoryRepositoryImpl(()->mySQLManager), mySQLManager);
+
+
     }
 
     private void clearSqlCache() {
@@ -323,20 +320,29 @@ public class ConfigPrepareExecuter {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
         PlanCache.INSTANCE.clear();
-        if (xaLog != null) {
-            context.put(XaLog.class, xaLog);
-        }
-        if (mySQLManager != null) {
-            if (MetaClusterCurrent.exist(MySQLManager.class)) {
-                MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-                //close......but meet bug
-            }
 
+        MySQLManager mySQLManager;
+        if (!MetaClusterCurrent.exist(MySQLManager.class)) {
+            mySQLManager = new MycatMySQLManager();
+        } else {
+            mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
+        }
+        this.mySQLManager = Objects.requireNonNull(mySQLManager);
+
+        if (mySQLManager != null) {
             context.put(MySQLManager.class, mySQLManager);
-            mySQLManager = null;
+        }else {
+
         }
 
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
+
+        LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
+        context.put(XaLog.class,XaLogImpl.createXaLogImpl(localXaMemoryRepository,Objects.requireNonNull( this.mySQLManager)));
         MetaClusterCurrent.register(context);
+
+
+        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+        xaLog.readXARecoveryLog();
     }
 }

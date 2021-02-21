@@ -36,7 +36,7 @@ public interface Repository {
         return TimeUnit.SECONDS.toMillis(3);
     }
 
-    void init();
+    Future<Void> init();
 
     /**
      * save log
@@ -55,7 +55,7 @@ public interface Repository {
      */
     Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover();
 
-    void close();
+    Future<Void>  close();
 
     /**
      *  Atomic, persistent ,write the Confirm ready to commit flag log

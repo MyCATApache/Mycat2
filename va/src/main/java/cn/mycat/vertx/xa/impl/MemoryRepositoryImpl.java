@@ -40,11 +40,21 @@ public class MemoryRepositoryImpl implements Repository {
     }
 
     private final ReentrantLock lock = new ReentrantLock();
-    private boolean closed = true;
+    private volatile boolean closed = true;
 
     @Override
-    public void init() {
-        closed = false;
+    public Future<Void> init() {
+        if (lock.tryLock()) {
+            try {
+                if (closed) {
+                    closed = false;
+                    return Future.succeededFuture();
+                }
+            }finally {
+                lock.unlock();
+            }
+        }
+        return Future.failedFuture(new IllegalArgumentException("not close"));
     }
 
     @Override
@@ -63,7 +73,7 @@ public class MemoryRepositoryImpl implements Repository {
     }
 
     @Override
-    public void close() {
+    public Future<Void> close() {
         lock.lock();
         try {
             storage.clear();
@@ -71,7 +81,7 @@ public class MemoryRepositoryImpl implements Repository {
             closed = true;
             lock.unlock();
         }
-
+        return Future.succeededFuture();
     }
 
     @Override

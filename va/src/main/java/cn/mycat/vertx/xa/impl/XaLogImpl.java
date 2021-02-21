@@ -42,12 +42,16 @@ public class XaLogImpl implements XaLog {
     private static final AtomicLong xaIdSeq = new AtomicLong();
     private final MySQLManager mySQLManager;
 
+    public static XaLogImpl createXaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
+        XaLogImpl xaLog = new XaLogImpl(xaRepository, mySQLManager);
+        return xaLog;
+    }
 
-    public XaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
+    protected XaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
         this("x", xaRepository, '.', mySQLManager);
     }
 
-    public XaLogImpl(String name, Repository xaRepository, char sep, MySQLManager mySQLManager) {
+    protected XaLogImpl(String name, Repository xaRepository, char sep, MySQLManager mySQLManager) {
         this.mySQLManager = mySQLManager;
         this.name = name + sep;
         this.xaRepository = xaRepository;
@@ -55,8 +59,7 @@ public class XaLogImpl implements XaLog {
     }
 
     public static XaLog createXaLog(MySQLManager mySQLManager) {
-        return new XaLogImpl(new MemoryRepositoryImpl()
-                , mySQLManager);
+        return new XaLogImpl(new MemoryRepositoryImpl(), mySQLManager);
     }
 
 
@@ -66,7 +69,6 @@ public class XaLogImpl implements XaLog {
                 commit(res, entry);
                 return;
             }
-
             Map<String, State> map = new ConcurrentHashMap<>();
             for (ImmutableParticipantLog participant : entry.getParticipants()) {
                 map.put(participant.getTarget(), participant.getState());

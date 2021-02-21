@@ -42,7 +42,7 @@ public interface MySQLManager {
             String element = iterator.next();
             futureList.add(getConnection(element).flatMap(f -> {
                 map.put(element, f);
-                return null;
+                return Future.succeededFuture(f);
             }));
         }
         return CompositeFuture.all((List) futureList).onComplete(event -> {

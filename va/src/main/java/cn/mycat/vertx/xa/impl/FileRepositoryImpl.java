@@ -51,7 +51,7 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public void init() {
+    public Future<Void> init() {
         this.timeHandler = this.vertx.setPeriodic(TimeUnit.SECONDS.toMillis(5),
                 event -> vertx.executeBlocking(event1 -> {
                     try {
@@ -84,6 +84,7 @@ public class FileRepositoryImpl implements Repository {
                         event1.tryComplete();
                     }
                 }));
+        return Future.succeededFuture();
     }
 
     @Override
@@ -143,11 +144,11 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public void close() {
+    public  Future<Void>  close() {
         if (timeHandler != null) {
             this.vertx.cancelTimer(this.timeHandler);
             timeHandler = null;
         }
-
+        return Future.succeededFuture();
     }
 }

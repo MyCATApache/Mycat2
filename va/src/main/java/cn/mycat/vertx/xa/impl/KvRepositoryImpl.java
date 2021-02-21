@@ -40,8 +40,8 @@ public class KvRepositoryImpl implements Repository {
     }
 
     @Override
-    public void init() {
-
+    public Future<Void> init() {
+        return Future.succeededFuture();
     }
 
     @Override
@@ -70,7 +70,7 @@ public class KvRepositoryImpl implements Repository {
     }
 
     @Override
-    public void close() {
-
+    public Future<Void> close() {
+        return Future.succeededFuture();
     }
 }
