@@ -41,11 +41,15 @@ import java.util.stream.Collectors;
 public class LocalSqlConnection extends AbstractXaSqlConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(LocalSqlConnection.class);
     protected final ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
-    protected final MySQLManager mySQLManager;
+    protected final Supplier<MySQLManager> mySQLManagerSupplier;
 
-    public LocalSqlConnection(MySQLManager mySQLManager, XaLog xaLog) {
+    public LocalSqlConnection(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
         super(xaLog);
-        this.mySQLManager = mySQLManager;
+        this.mySQLManagerSupplier = mySQLManagerSupplier;
+    }
+
+    public MySQLManager mySQLManager(){
+        return mySQLManagerSupplier.get();
     }
 
 
@@ -63,7 +67,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
             if (map.containsKey(targetName)) {
                 return Future.succeededFuture(map.get(targetName));
             } else {
-                Future<SqlConnection> sqlConnectionFuture = mySQLManager.getConnection(targetName);
+                Future<SqlConnection> sqlConnectionFuture = mySQLManager().getConnection(targetName);
                 return sqlConnectionFuture.compose(connection -> {
                     map.put(targetName, connection);
                     Future<RowSet<Row>> execute = connection.query("begin").execute();
@@ -71,7 +75,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
                 });
             }
         }
-        return mySQLManager.getConnection(targetName)
+        return mySQLManager().getConnection(targetName)
                 .map(connection -> {
                   addCloseConnection(connection);
                     return connection;
