@@ -261,7 +261,7 @@ public class ConfigPrepareExecuter {
         return authenticator;
     }
 
-    public void commit() {
+    public Future<Void> commit() {
 
         ReplicaSelectorRuntime replicaSelector = this.replicaSelector;
         JdbcConnectionManager jdbcConnectionManager = this.jdbcConnectionManager;
@@ -334,15 +334,14 @@ public class ConfigPrepareExecuter {
         }else {
 
         }
-
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
-
+        ServerConfig serverConfig =(ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
-        context.put(XaLog.class,XaLogImpl.createXaLogImpl(localXaMemoryRepository,Objects.requireNonNull( this.mySQLManager)));
+        context.put(XaLog.class,new XaLogImpl(localXaMemoryRepository,serverConfig.getMycatId(),Objects.requireNonNull( this.mySQLManager)));
         MetaClusterCurrent.register(context);
 
 
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-        xaLog.readXARecoveryLog();
+       return xaLog.readXARecoveryLog();
     }
 }

@@ -51,17 +51,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
-                promise.tryComplete();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.info("sendOk " + Arrays.toString(result));
                 }
-                response.sendOk(result[0], result[1]);
+                response.sendOk(result[0], result[1]).handle(promise);
             } else {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.error("sendError ", event.cause());
-                }
                 promise.fail(event.cause());
-                response.sendError(event.cause());
             }
         });
         return promise;
@@ -74,17 +69,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
         future.onComplete(event -> {
             if (event.succeeded()) {
                 long[] result = event.result();
-                promise.tryComplete();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.info("sendOk " + Arrays.toString(result));
                 }
-                response.sendOk(result[0], result[1]);
+                response.sendOk(result[0], result[1]).handle(promise);
             } else {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.error("sendError ", event.cause());
-                }
                 promise.fail(event.cause());
-                response.sendError(event.cause());
             }
         });
         return promise;

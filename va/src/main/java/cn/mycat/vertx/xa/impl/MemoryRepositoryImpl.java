@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class MemoryRepositoryImpl implements Repository {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryRepositoryImpl.class);
@@ -85,8 +86,8 @@ public class MemoryRepositoryImpl implements Repository {
     }
 
     @Override
-    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
-        return Future.succeededFuture(storage.values());
+    public Future<Collection<String>> getCoordinatorLogsForRecover() {
+        return Future.succeededFuture(storage.values().stream().map(i->i.getXid()).collect(Collectors.toList()));
     }
 
     public boolean isClosed() {

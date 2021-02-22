@@ -38,11 +38,7 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
     public static Future<Void> tryCreateLogTable(SqlConnection dataSource) {
         String createDatabaseSQL = "create database if not exists `" + database + "`";
         String createTableSQL = "create table if not exists `" + database + "`." + "`" + tableName + "`"
-                + "(`xid` varchar(64) NOT NULL,\n" +
-                "`state` varchar(128) NOT NULL,\n" +
-                "`expires` int(64) NOT NULL,\n" +
-                "`info` varchar(128) NOT NULL,\n" +
-                "PRIMARY KEY (`xid`),\n" +
+                + "(`xid` varchar(64),"+
                 "UNIQUE KEY `uk_key` (`xid`)) ENGINE=InnoDB";
         return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty());
     }
@@ -64,23 +60,23 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
     }
 
     @Override
-    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+    public Future<Collection<String>> getCoordinatorLogsForRecover() {
         return innerInit().flatMap((u)->innerGetCollectionFuture());
     }
 
     @Nullable
-    private Future<Collection<ImmutableCoordinatorLog>> innerGetCollectionFuture() {
+    private Future<Collection<String>> innerGetCollectionFuture() {
         MySQLManager mySQLManager = mySQLManagerSupplier.get();
         Future<Map<String, SqlConnection>> mapFuture = mySQLManager.getConnectionMap();
-        LinkedBlockingQueue<ImmutableCoordinatorLog> objects = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<String> objects = new LinkedBlockingQueue<>();
         Future<Void> future = mapFuture
                 .flatMap(stringSqlConnectionMap -> CompositeFuture.all(stringSqlConnectionMap.values().stream()
                         .map(connection -> {
-                                    Future<Object> future1 = connection.query("select * from " + database + "." + tableName)
+                                    Future<Object> future1 = connection.query("select xid from " + database + "." + tableName)
                                             .execute()
                                             .map(rows -> {
                                                 for (Row row : rows) {
-                                                    objects.add(ImmutableCoordinatorLog.from(row.getString("info")));
+                                                    objects.add((row.getString("xid")));
                                                 }
                                                 return null;
                                             }).mapEmpty();
@@ -94,5 +90,10 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
     @Override
     public Future<Void> close() {
         return super.close();
+    }
+
+    @Override
+    public void remove(String xid) {
+        super.remove(xid);
     }
 }

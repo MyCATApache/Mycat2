@@ -114,7 +114,9 @@ public class MycatMySQLManager implements MySQLManager {
                     private RowSet<Row> innerExecute() throws SQLException {
                         Connection rawConnection = connection.getRawConnection();
                         Statement statement = rawConnection.createStatement();
-                        LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql,rawConnection);
+                        }
                         if (!statement.execute(sql, Statement.RETURN_GENERATED_KEYS)) {
                             VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
                             vertxRowSet.setAffectRow(statement.getUpdateCount());
@@ -158,7 +160,7 @@ public class MycatMySQLManager implements MySQLManager {
                         while (resultSet.next()) {
                             JDBCRow jdbcRow = new JDBCRow(rowDesc);
                             for (int i = 0; i < columnCount; i++) {
-                                jdbcRow.addValue(resultSet.getObject(i));
+                                jdbcRow.addValue(resultSet.getObject(i+1));
                             }
                             vertxRowSet.list.add(jdbcRow);
                         }

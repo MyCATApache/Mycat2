@@ -124,7 +124,7 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover() {
+    public Future<Collection<String>> getCoordinatorLogsForRecover() {
 
         try {
             return Future.succeededFuture(Files.list(Paths.get(baseDir))
@@ -136,7 +136,7 @@ public class FileRepositoryImpl implements Repository {
                             throw new RuntimeException(e);
 
                         }
-                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList()));
+                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).map(i->i.getXid()).collect(Collectors.toList()));
         } catch (Throwable throwable) {
             return Future.failedFuture(throwable);
         }

@@ -53,7 +53,7 @@ public interface Repository {
      *
      * @return get all saved log
      */
-    Future<Collection<ImmutableCoordinatorLog>> getCoordinatorLogsForRecover();
+    Future<Collection<String>> getCoordinatorLogsForRecover();
 
     Future<Void>  close();
 

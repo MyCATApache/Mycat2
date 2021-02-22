@@ -26,6 +26,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -134,6 +135,13 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
             };
             Future<Void> future = executeAll(function);
             future.onComplete(event -> {
+//                Throwable cause = event.cause();
+//                if (cause instanceof SQLException) {
+//                    SQLException sqlException = (SQLException) cause;
+//                    if (sqlException.getErrorCode() == 1397 && "XAER_NOTA: Unknown XID".equalsIgnoreCase(sqlException.getMessage())) {
+//                        event = Future.succeededFuture();
+//                    }
+//                }
                 log.logRollback(xid, event.succeeded());
                 if (event.succeeded()) {
                     inTranscation = false;
@@ -201,7 +209,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     /**
      * @param beforeCommit for the native connection commit or some exception test
      */
-    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit) {
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit) {
         return Future.future((Promise<Void> promsie) -> {
             logParticipants();
             Future<Void> xaEnd = executeAll(connection -> {

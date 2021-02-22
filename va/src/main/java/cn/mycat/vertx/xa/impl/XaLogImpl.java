@@ -18,19 +18,19 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
 import io.vertx.core.*;
+import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -39,27 +39,28 @@ public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
     private final String name;
     private final Repository xaRepository;
-    private static final AtomicLong xaIdSeq = new AtomicLong();
+    private final AtomicLong xaIdSeq;
     private final MySQLManager mySQLManager;
 
     public static XaLogImpl createXaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
-        XaLogImpl xaLog = new XaLogImpl(xaRepository, mySQLManager);
+        XaLogImpl xaLog = new XaLogImpl(xaRepository, 0,mySQLManager);
         return xaLog;
     }
 
-    protected XaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
-        this("x", xaRepository, '.', mySQLManager);
+    public XaLogImpl(Repository xaRepository,int workerId, MySQLManager mySQLManager) {
+        this("x", xaRepository, '.', workerId, mySQLManager);
     }
 
-    protected XaLogImpl(String name, Repository xaRepository, char sep, MySQLManager mySQLManager) {
+    public XaLogImpl(String name, Repository xaRepository, char sep, int workerId, MySQLManager mySQLManager) {
         this.mySQLManager = mySQLManager;
         this.name = name + sep;
         this.xaRepository = xaRepository;
+        this.xaIdSeq = new AtomicLong(System.currentTimeMillis() % workerId);
 
     }
 
     public static XaLog createXaLog(MySQLManager mySQLManager) {
-        return new XaLogImpl(new MemoryRepositoryImpl(), mySQLManager);
+        return new XaLogImpl(new MemoryRepositoryImpl(),0, mySQLManager);
     }
 
 
@@ -188,44 +189,62 @@ public class XaLogImpl implements XaLog {
     }
 
     public Future<Void> readXARecoveryLog() {
-        char seq = name.charAt(name.length() - 1);
-        Future<Collection<ImmutableCoordinatorLog>> entriesFuture = xaRepository.getCoordinatorLogsForRecover();
-        return entriesFuture.flatMap((Function<Collection<ImmutableCoordinatorLog>, Future<XaLog>>) entries -> {
-            for (ImmutableCoordinatorLog entry : entries) {
-                String text = entry.getXid();
-                xaRepository.put(text, entry);
-                xaIdSeq.set(Math.max(xaIdSeq.get(), Long.parseLong(text.substring(text.lastIndexOf(seq) + 1))));
-            }
-
-            List<Future> futures = new ArrayList<>();
-            for (ImmutableCoordinatorLog entry : entries.stream()
-                    .filter(p -> p.computeExpires() > System.currentTimeMillis())
-                    .collect(Collectors.toList())) {
-                switch (entry.computeMinState()) {
-                    case XA_ENDED:
-                    case XA_PREPARED: {
-                        futures.add(recoverConnection(entry));
-                        break;
-                    }
-                    case XA_COMMITED:
-                    case XA_ROLLBACKED:
-                        break;
-                    default:
+        Future<Void> future = mySQLManager.getConnectionMap().flatMap(stringSqlConnectionMap -> CompositeFuture.all(
+                stringSqlConnectionMap.values().stream()
+                        .map(c -> LocalXaMemoryRepositoryImpl.tryCreateLogTable(c)
+                                .onComplete(unused -> c.close())).collect(Collectors.toList())).mapEmpty());
+        return future.flatMap(unused -> {
+            ConcurrentHashMap<String, Set<String>> xid_targets = new ConcurrentHashMap<>();//xid,Set<targetName>
+            List<Future> futureList = new ArrayList<>();
+            mySQLManager.getConnectionMap().onSuccess(event -> {
+                for (Map.Entry<String, SqlConnection> entry : event.entrySet()) {
+                    String targetName = entry.getKey();
+                    futureList.add(entry.getValue().query("XA RECOVER").execute().flatMap(event1 -> {
+                        RowIterator<Row> iterator = event1.iterator();
+                        while (iterator.hasNext()) {
+                            Row next = iterator.next();
+                            Set<String> targetNameSet = xid_targets.computeIfAbsent(next.getString("data"), (s) -> new ConcurrentHashSet<>());
+                            targetNameSet.add(targetName);
+                        }
+                        return entry.getValue().close();
+                    }));
                 }
-            }
-            return CompositeFuture.all(futures).onComplete(event -> {
-                CompositeFuture result = event.result();
-                if (result != null) {
-                    int size = result.size();
-                    for (int i = 0; i < size; i++) {
-                        Throwable cause = result.cause(i);
-                        System.out.println(cause);
+            });
+            Set<String> xidSet = new ConcurrentHashSet<>();//xid set
+            mySQLManager.getConnectionMap().onSuccess(event -> {
+                for (Map.Entry<String, SqlConnection> entry : event.entrySet()) {
+                    futureList.add(entry.getValue().query("select xid from mycat.xa_log").execute().flatMap(event1 -> {
+                        RowIterator<Row> iterator = event1.iterator();
+                        while (iterator.hasNext()) {
+                            Row next = iterator.next();
+                            xidSet.add(next.getString("xid"));
+                        }
+                        return entry.getValue().close();
+                    }));
+                }
+            });
+            return CompositeFuture.all(futureList).flatMap(unuse -> {
+                List<Future<Void>> futureList1 = new ArrayList<>();
+                for (Map.Entry<String, Set<String>> entry : xid_targets.entrySet()) {
+                    String xid = entry.getKey();
+                    Set<String> targets = entry.getValue();
+                    String sql;
+                    if (xidSet.contains(xid)) {
+                        sql = "XA COMMIT '" + xid + "'";
+                    } else {
+                        sql = "XA ROLLBACK '" + xid + "'";
+                    }
+                    for (String target : targets) {
+                        futureList1.add(mySQLManager.getConnection(target)
+                                .flatMap(sqlConnection -> sqlConnection.query(sql)
+                                        .execute().onComplete(u -> {
+                                            sqlConnection.close().mapEmpty();
+                                        }).mapEmpty()));
                     }
                 }
-                return;
-            }).mapEmpty();
-        }).mapEmpty();
-
+                return CompositeFuture.all((List) futureList1);
+            }).onFailure(event -> System.out.println(event)).mapEmpty();
+        });
     }
 
 
