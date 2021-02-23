@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.15-SNAPSHOT</version>
+        <version>1.15-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>calcite</artifactId>
@@ -422,7 +422,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.15-SNAPSHOT</version>
+            <version>1.15-dev</version>
         </dependency>
         <dependency>
             <groupId>com.github.akarnokd</groupId>
