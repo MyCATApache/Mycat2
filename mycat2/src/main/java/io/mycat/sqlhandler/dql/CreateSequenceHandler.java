@@ -9,12 +9,13 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.Future;
 
 import java.util.Optional;
 
 public class CreateSequenceHandler extends AbstractSQLHandler<SQLCreateSequenceStatement> {
     @Override
-    protected void onExecute(SQLRequest<SQLCreateSequenceStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLCreateSequenceStatement> request, MycatDataContext dataContext, Response response) {
         SQLCreateSequenceStatement requestAst = request.getAst();
 
         SequenceConfig config = new SequenceConfig();
@@ -94,8 +95,10 @@ public class CreateSequenceHandler extends AbstractSQLHandler<SQLCreateSequenceS
         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
             ops.putSequence(config);
             ops.commit();
+            return response.sendOk();
+        }catch (Throwable throwable){
+            return response.sendError(throwable);
         }
-        response.sendOk();
     }
 
 

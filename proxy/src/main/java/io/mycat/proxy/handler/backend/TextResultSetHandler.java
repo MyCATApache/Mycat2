@@ -343,12 +343,6 @@ public class TextResultSetHandler implements ResultSetHandler {
     this.currentColumnDefList = new ColumnDefPacket[columnCount];
     collector.onResultSetStart();
   }
-
-  @Override
-  public void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onResultSetEnd();
-  }
-
   @Override
   public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
     collector.onResultSetEnd();

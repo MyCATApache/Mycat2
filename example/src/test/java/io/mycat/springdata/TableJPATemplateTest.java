@@ -223,7 +223,7 @@ public abstract class TableJPATemplateTest implements MycatTest {
     public void testMultiThreadInsert() {
         repository.deleteAllInBatch();
         long start = System.currentTimeMillis();
-        int sum = 10000;
+        int sum = 10;
         LongStream.range(0, sum)
             .parallel()
             .forEach(i -> {

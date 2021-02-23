@@ -43,7 +43,7 @@ public class MySQLVariableObjectMapWrapper {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://0.0.0.0:3306/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://localhost:3306/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);

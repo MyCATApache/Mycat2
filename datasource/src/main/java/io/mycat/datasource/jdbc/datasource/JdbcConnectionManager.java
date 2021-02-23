@@ -120,7 +120,9 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                                            int transactionIsolation, boolean readOnly) {
         JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
-                    return dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+                    JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+
+                    return jdbcDataSource;
                 }), () -> "unknown target:" + name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {

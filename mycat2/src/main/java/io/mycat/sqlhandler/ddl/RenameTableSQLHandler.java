@@ -11,6 +11,7 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
+import io.vertx.core.Future;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,41 +21,44 @@ import java.util.List;
 public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        MySqlRenameTableStatement mySqlRenameTableStatement = request.getAst();
-        for (MySqlRenameTableStatement.Item item : mySqlRenameTableStatement.getItems()) {
-            SQLName name = item.getName();
-            if (name instanceof SQLIdentifierExpr) {
-                checkDefaultSchemaNotNull(dataContext);
-                item.setName(new SQLPropertyExpr(dataContext.getDefaultSchema(), name.getSimpleName()));
+    protected Future<Void> onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response){
+        try{
+            MySqlRenameTableStatement mySqlRenameTableStatement = request.getAst();
+            for (MySqlRenameTableStatement.Item item : mySqlRenameTableStatement.getItems()) {
+                SQLName name = item.getName();
+                if (name instanceof SQLIdentifierExpr) {
+                    checkDefaultSchemaNotNull(dataContext);
+                    item.setName(new SQLPropertyExpr(dataContext.getDefaultSchema(), name.getSimpleName()));
+                }
+                SQLName to = item.getTo();
+                if (to instanceof SQLIdentifierExpr) {
+                    checkDefaultSchemaNotNull(dataContext);
+                    item.setTo(new SQLPropertyExpr(dataContext.getDefaultSchema(), to.getSimpleName()));
+                }
             }
-            SQLName to = item.getTo();
-            if (to instanceof SQLIdentifierExpr) {
-                checkDefaultSchemaNotNull(dataContext);
-                item.setTo(new SQLPropertyExpr(dataContext.getDefaultSchema(), to.getSimpleName()));
+            JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+            MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+            for (MySqlRenameTableStatement.Item item : new ArrayList<>(mySqlRenameTableStatement.getItems())) {
+                MySqlRenameTableStatement sqlRenameTableStatement = clone(mySqlRenameTableStatement);
+                sqlRenameTableStatement.getItems().clear();
+                sqlRenameTableStatement.addItem(item);
+
+                SQLPropertyExpr name = (SQLPropertyExpr) item.getName();
+                TableHandler tableHandler = metadataManager.getTable(name.getOwnernName(), name.getName());
+                executeOnPrototype(sqlRenameTableStatement, jdbcConnectionManager);
+                executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, tableHandler);
+
+                String createTableSQL = tableHandler.getCreateTableSQL();
+                MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
+                CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),
+                        tableHandler.getSchemaName(),
+                        tableHandler.getTableName(), sqlStatement);
             }
-        }
-        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-        for (MySqlRenameTableStatement.Item item : new ArrayList<>(mySqlRenameTableStatement.getItems())) {
-            MySqlRenameTableStatement sqlRenameTableStatement = clone(mySqlRenameTableStatement);
-            sqlRenameTableStatement.getItems().clear();
-            sqlRenameTableStatement.addItem(item);
-
-            SQLPropertyExpr name = (SQLPropertyExpr) item.getName();
-            TableHandler tableHandler = metadataManager.getTable(name.getOwnernName(), name.getName());
-            executeOnPrototype(sqlRenameTableStatement, jdbcConnectionManager);
-            executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, tableHandler);
-
-            String createTableSQL = tableHandler.getCreateTableSQL();
-            MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
-            CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),
-                    tableHandler.getSchemaName(),
-                    tableHandler.getTableName(), sqlStatement);
+            return response.sendOk();
+        }catch (Throwable throwable){
+            return response.sendError(throwable);
         }
 
-
-        response.sendOk();
     }
 
     private MySqlRenameTableStatement clone(MySqlRenameTableStatement mySqlRenameTableStatement) {

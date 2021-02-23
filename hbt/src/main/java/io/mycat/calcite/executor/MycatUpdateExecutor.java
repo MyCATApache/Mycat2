@@ -16,7 +16,6 @@ import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
-import io.mycat.util.StringUtil;
 import io.mycat.util.UpdateSQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -34,6 +33,7 @@ import static io.mycat.calcite.executor.MycatPreparedStatementUtil.apply;
 public class MycatUpdateExecutor implements Executor {
 
     private final MycatDataContext context;
+    private final MycatUpdateRel mycatUpdateRel;
     private final Distribution distribution;
     /**
      * 逻辑语法树（用户在前端写的SQL语句）
@@ -52,32 +52,33 @@ public class MycatUpdateExecutor implements Executor {
     private long affectedRow = 0;
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatUpdateExecutor.class);
 
-    public MycatUpdateExecutor(MycatDataContext context, Distribution distribution,
+    public MycatUpdateExecutor(MycatDataContext context, MycatUpdateRel mycatUpdateRel, Distribution distribution,
                                SQLStatement logicStatement,
                                List<Object> parameters) {
         this.context = context;
+        this.mycatUpdateRel = mycatUpdateRel;
 
         this.distribution = distribution;
         this.logicStatement = logicStatement;
         this.logicParameters = parameters;
 
-        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(context, distribution,logicStatement,parameters));
+        this.reallySqlSet = Collections.unmodifiableSet(buildReallySqlList(mycatUpdateRel,distribution,logicStatement,parameters));
     }
 
-    public static MycatUpdateExecutor create(MycatDataContext context, Distribution values,
+    public static MycatUpdateExecutor create(MycatDataContext context, MycatUpdateRel mycatUpdateRel,Distribution values,
                                              SQLStatement sqlStatement,
                                              List<Object> parameters) {
-        return new MycatUpdateExecutor(context, values, sqlStatement, parameters);
+        return new MycatUpdateExecutor(context,mycatUpdateRel, values, sqlStatement, parameters);
     }
 
     public static MycatUpdateExecutor create(MycatUpdateRel mycatUpdateRel,MycatDataContext dataContext,List<Object> params) {
         MycatUpdateExecutor updateExecutor;
         if (mycatUpdateRel.isGlobal()) {
-            updateExecutor = new MycatGlobalUpdateExecutor(dataContext, mycatUpdateRel.getValues(),
+            updateExecutor = new MycatGlobalUpdateExecutor(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
                     params);
         } else {
-            updateExecutor = MycatUpdateExecutor.create(dataContext, mycatUpdateRel.getValues(),
+            updateExecutor = MycatUpdateExecutor.create(dataContext,mycatUpdateRel, mycatUpdateRel.getValues(),
                     mycatUpdateRel.getSqlStatement(),
                     params
             );
@@ -116,7 +117,7 @@ public class MycatUpdateExecutor implements Executor {
         for (SQL sql : reallySqlSet) {
             String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
             if (uniqueValues.add(k)) {
-                if (connections.put(sql.getTarget(), transactionSession.getConnection(k)) != null) {
+                if (connections.put(sql.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
                 }
             }
@@ -191,18 +192,18 @@ public class MycatUpdateExecutor implements Executor {
         // 更新索引
         // todo 更新语句包含limit或者order by的情况处理，等实现了全局索引再考虑实现。 wangzihaogithub 2020-12-29
         TableHandler table = sql.getTable();
-        gsiService.updateByPrimaryKey(transactionSession.getTxId(),
+        gsiService.updateByPrimaryKey(transactionSession.getXid(),
                 table.getSchemaName(),
                 table.getTableName(),
                 sql.getSetColumnMap(),
                 primaryKeyList,sql.getTarget());
     }
 
-    public static Set<SQL> buildReallySqlList(MycatDataContext context,
-        Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
+
+    public static Set<SQL> buildReallySqlList(MycatUpdateRel mycatUpdateRel, Distribution distribution, SQLStatement orginalStatement, List<Object> parameters) {
         List<Object> readOnlyParameters = Collections.unmodifiableList(parameters);
 
-        Iterable<DataNode> dataNodes = distribution.getDataNodes(readOnlyParameters);
+        Iterable<DataNode> dataNodes = distribution.getDataNodesAsSingleTableUpdate(mycatUpdateRel.getConditions(),readOnlyParameters);
         Map<SQL,SQL> sqlMap = new LinkedHashMap<>();
 
         for (DataNode dataNode : dataNodes) {
@@ -210,12 +211,7 @@ public class MycatUpdateExecutor implements Executor {
             SQLExprTableSource tableSource = FastSqlUtils.getTableSource(currentStatement);
             tableSource.setExpr(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
-
-            SQLStatement orgStatement = FastSqlUtils.clone(orginalStatement);
-            SQLExprTableSource orgTableSource = FastSqlUtils.getTableSource(orgStatement);
-            String orgSchema = StringUtil.isEmpty(orgTableSource.getSchema())? context.getDefaultSchema(): orgTableSource.getSchema();
-            orgTableSource.setSchema(orgSchema);
-            SQL sql = SQL.of(currentStatement.toString(), dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
+            SQL sql = SQL.of(currentStatement.toString(),dataNode, FastSqlUtils.clone(currentStatement),new ArrayList<>(parameters));
             SQL exist = sqlMap.put(sql, sql);
             if(exist != null){
                 LOGGER.debug("remove exist sql = {}",exist);

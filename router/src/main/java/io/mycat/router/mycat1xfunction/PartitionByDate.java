@@ -19,6 +19,8 @@ import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.util.StringUtil;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
@@ -75,6 +77,11 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
             } catch (DateTimeParseException e) {
                 //skip
             }
+        }
+        try {
+            return Timestamp.valueOf(startBeginDate).toLocalDateTime().getLong(ChronoField.DAY_OF_YEAR) * ONE_DAY;
+        } catch (DateTimeParseException e) {
+            //skip
         }
         throw new IllegalArgumentException(
                 "columnValue:" + startBeginDate + " Please check if the format satisfied."+dateFormat);
@@ -139,7 +146,8 @@ public class PartitionByDate extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + beginDate + partionTime + endDate + nCount + dateFormat;
     }
+
 }

@@ -5,14 +5,13 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-
-
+import io.vertx.core.Future;
 
 
 public class DropViewSQLHandler extends AbstractSQLHandler<SQLDropViewStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropViewStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.sendOk();
+    protected Future<Void> onExecute(SQLRequest<SQLDropViewStatement> request, MycatDataContext dataContext, Response response) {
+        return response.sendOk();
     }
 }

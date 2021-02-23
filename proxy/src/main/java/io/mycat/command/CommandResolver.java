@@ -20,9 +20,11 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
+import io.vertx.core.Future;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Objects;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
@@ -31,17 +33,19 @@ public class CommandResolver {
     public static void handle(MycatSession mycat, MySQLPacket curPacket,
                               CommandDispatcher commandHandler) {
         MycatMonitor.onCommandStart(mycat);
+
+        Future<Void> endFuture = null;
         try {
             boolean isEmptyPayload = curPacket.readFinished();
             if (isEmptyPayload) {
                 MycatMonitor.onLoadDataLocalInFileEmptyPacketStart(mycat);
-                commandHandler.handleContentOfFilenameEmptyOk(mycat);
+                endFuture = commandHandler.handleContentOfFilenameEmptyOk(mycat);
                 mycat.resetCurrentProxyPayload();
                 MycatMonitor.onLoadDataLocalInFileEmptyPacketEnd(mycat);
                 return;
             } else if (mycat.shouldHandleContentOfFilename()) {
                 MycatMonitor.onLoadDataLocalInFileContextStart(mycat);
-                commandHandler.handleContentOfFilename(curPacket.readEOFStringBytes(), mycat);
+                endFuture = commandHandler.handleContentOfFilename(curPacket.readEOFStringBytes(), mycat);
                 mycat.resetCurrentProxyPayload();
                 MycatMonitor.onLoadDataLocalInFileContextEnd(mycat);
                 return;
@@ -52,14 +56,14 @@ public class CommandResolver {
                     MycatMonitor.onSleepCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleSleep(mycat);
+                    endFuture = commandHandler.handleSleep(mycat);
                     MycatMonitor.onSleepCommandEnd(mycat);
                     break;
                 }
                 case MySQLCommandType.COM_QUIT: {
                     MycatMonitor.onQuitCommandStart(mycat);
                     curPacket.readByte();
-                    commandHandler.handleQuit(mycat);
+                    endFuture = commandHandler.handleQuit(mycat);
                     MycatMonitor.onQuitCommandEnd(mycat);
                     break;
                 }
@@ -68,7 +72,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     byte[] bytes = curPacket.readEOFStringBytes();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleQuery(bytes, mycat);
+                    endFuture = commandHandler.handleQuery(bytes, mycat);
                     break;
                 }
                 case MySQLCommandType.COM_INIT_DB: {
@@ -76,7 +80,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     String schema = curPacket.readEOFString();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleInitDb(schema, mycat);
+                    endFuture = commandHandler.handleInitDb(schema, mycat);
                     MycatMonitor.onInitDbCommandEnd(mycat);
                     break;
                 }
@@ -84,7 +88,7 @@ public class CommandResolver {
                     MycatMonitor.onPingCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePing(mycat);
+                    endFuture = commandHandler.handlePing(mycat);
                     MycatMonitor.onPingCommandEnd(mycat);
                     break;
                 }
@@ -95,7 +99,7 @@ public class CommandResolver {
                     String table = curPacket.readNULString();
                     String field = curPacket.readEOFString();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleFieldList(table, field, mycat);
+                    endFuture = commandHandler.handleFieldList(table, field, mycat);
                     MycatMonitor.onFieldListCommandEnd(mycat);
                     break;
                 }
@@ -104,7 +108,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     boolean option = curPacket.readFixInt(2) == 1;
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleSetOption(option, mycat);
+                    endFuture = commandHandler.handleSetOption(option, mycat);
                     MycatMonitor.onSetOptionCommandEnd(mycat);
                     break;
                 }
@@ -113,7 +117,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     byte[] bytes = curPacket.readEOFStringBytes();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePrepareStatement(bytes, mycat);
+                    endFuture = commandHandler.handlePrepareStatement(bytes, mycat);
                     MycatMonitor.onPrepareCommandEnd(mycat);
                     break;
                 }
@@ -124,7 +128,7 @@ public class CommandResolver {
                     int paramId = (int) curPacket.readFixInt(2);
                     byte[] data = curPacket.readEOFStringBytes();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
+                    endFuture = commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
                     MycatMonitor.onSendLongDataCommandEnd(mycat);
                     break;
                 }
@@ -145,7 +149,7 @@ public class CommandResolver {
                             nullMap = curPacket.readBytes((numParams + 7) / 8);
                         }
                         int[] params = null;
-                        BindValue[] values= null;
+                        BindValue[] values = null;
                         boolean newParameterBoundFlag = curPacket.readByte() == 1;
                         if (newParameterBoundFlag) {
                             params = new int[numParams];
@@ -159,7 +163,7 @@ public class CommandResolver {
                                 if ((nullMap[i / 8] & (1 << (i & 7))) != 0) {
                                     bv.isNull = true;
                                 } else {
-                                    byte[] longData = commandHandler.getLongData(statementId,i,mycat);
+                                    byte[] longData = commandHandler.getLongData(statementId, i, mycat);
                                     if (longData == null) {
                                         BindValueUtil.read(curPacket, bv, StandardCharsets.UTF_8);
                                     } else {
@@ -168,13 +172,13 @@ public class CommandResolver {
                                 }
                                 values[i] = bv;
                             }
-                            commandHandler.saveBindValue(statementId,values,mycat);
-                        }else {
-                            values = commandHandler.getLastBindValue(statementId,mycat);
+                            commandHandler.saveBindValue(statementId, values, mycat);
+                        } else {
+                            values = commandHandler.getLastBindValue(statementId, mycat);
                         }
                         mycat.resetCurrentProxyPayload();
-                        commandHandler
-                                .handlePrepareStatementExecute(rawPayload, statementId, flags, params, values,
+                        endFuture = commandHandler
+                                .handlePrepareStatementExecute(statementId, flags, params, values,
                                         mycat);
                         break;
                     } finally {
@@ -186,7 +190,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     long statementId = curPacket.readFixInt(4);
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePrepareStatementClose(statementId, mycat);
+                    endFuture = commandHandler.handlePrepareStatementClose(statementId, mycat);
                     MycatMonitor.onCloseCommandEnd(mycat);
                     break;
                 }
@@ -196,7 +200,7 @@ public class CommandResolver {
                     long statementId = curPacket.readFixInt(4);
                     long row = curPacket.readFixInt(4);
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePrepareStatementFetch(statementId, row, mycat);
+                    endFuture = commandHandler.handlePrepareStatementFetch(statementId, row, mycat);
                     MycatMonitor.onFetchCommandEnd(mycat);
                     break;
                 }
@@ -205,7 +209,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     long statementId = curPacket.readFixInt(4);
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handlePrepareStatementReset(statementId, mycat);
+                    endFuture = commandHandler.handlePrepareStatementReset(statementId, mycat);
                     MycatMonitor.onResetCommandEnd(mycat);
                     break;
                 }
@@ -214,7 +218,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     String schema = curPacket.readEOFString();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleCreateDb(schema, mycat);
+                    endFuture = commandHandler.handleCreateDb(schema, mycat);
                     MycatMonitor.onCreateDbCommandEnd(mycat);
                     break;
                 }
@@ -223,7 +227,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     String schema = curPacket.readEOFString();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleDropDb(schema, mycat);
+                    endFuture = commandHandler.handleDropDb(schema, mycat);
                     MycatMonitor.onDropDbCommandEnd(mycat);
                     break;
                 }
@@ -232,7 +236,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     byte subCommand = curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleRefresh(subCommand, mycat);
+                    endFuture = commandHandler.handleRefresh(subCommand, mycat);
                     MycatMonitor.onRefreshCommandEnd(mycat);
                     break;
                 }
@@ -243,10 +247,10 @@ public class CommandResolver {
                         if (!curPacket.readFinished()) {
                             byte shutdownType = curPacket.readByte();
                             mycat.resetCurrentProxyPayload();
-                            commandHandler.handleShutdown(shutdownType, mycat);
+                            endFuture = commandHandler.handleShutdown(shutdownType, mycat);
                         } else {
                             mycat.resetCurrentProxyPayload();
-                            commandHandler.handleShutdown(0, mycat);
+                            endFuture = commandHandler.handleShutdown(0, mycat);
                         }
                     } finally {
                         MycatMonitor.onShutdownCommandEnd(mycat);
@@ -257,7 +261,7 @@ public class CommandResolver {
                     MycatMonitor.onStatisticsCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleStatistics(mycat);
+                    endFuture = commandHandler.handleStatistics(mycat);
                     MycatMonitor.onStatisticsCommandEnd(mycat);
                     break;
                 }
@@ -265,7 +269,7 @@ public class CommandResolver {
                     MycatMonitor.onProcessInfoCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleProcessInfo(mycat);
+                    endFuture = commandHandler.handleProcessInfo(mycat);
                     MycatMonitor.onProcessInfoCommandEnd(mycat);
                     break;
                 }
@@ -273,7 +277,7 @@ public class CommandResolver {
                     MycatMonitor.onConnectCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleConnect(mycat);
+                    endFuture = commandHandler.handleConnect(mycat);
                     MycatMonitor.onConnectCommandEnd(mycat);
                     break;
                 }
@@ -282,7 +286,7 @@ public class CommandResolver {
                     curPacket.readByte();
                     long connectionId = curPacket.readFixInt(4);
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleProcessKill(connectionId, mycat);
+                    endFuture = commandHandler.handleProcessKill(connectionId, mycat);
                     MycatMonitor.onProcessKillCommandEnd(mycat);
                     break;
                 }
@@ -290,7 +294,7 @@ public class CommandResolver {
                     MycatMonitor.onDebugCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleDebug(mycat);
+                    endFuture = commandHandler.handleDebug(mycat);
                     MycatMonitor.onDebugCommandEnd(mycat);
                     break;
                 }
@@ -298,7 +302,7 @@ public class CommandResolver {
                     MycatMonitor.onTimeCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleTime(mycat);
+                    endFuture = commandHandler.handleTime(mycat);
                     MycatMonitor.onTimeCommandEnd(mycat);
                     break;
                 }
@@ -306,7 +310,7 @@ public class CommandResolver {
                     MycatMonitor.onDelayedInsertCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleDelayedInsert(mycat);
+                    endFuture = commandHandler.handleDelayedInsert(mycat);
                     MycatMonitor.onDelayedInsertCommandEnd(mycat);
                     break;
                 }
@@ -351,7 +355,7 @@ public class CommandResolver {
                             }
                         }
                         mycat.resetCurrentProxyPayload();
-                        commandHandler
+                        endFuture = commandHandler
                                 .handleChangeUser(userName, authResponse, schemaName, characterSet, authPluginName,
                                         clientConnectAttrs, mycat);
                     } finally {
@@ -363,7 +367,7 @@ public class CommandResolver {
                     MycatMonitor.onResetConnectionCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleResetConnection(mycat);
+                    endFuture = commandHandler.handleResetConnection(mycat);
                     MycatMonitor.onResetConnectionCommandEnd(mycat);
                     break;
                 }
@@ -371,7 +375,7 @@ public class CommandResolver {
                     MycatMonitor.onDaemonCommandStart(mycat);
                     curPacket.readByte();
                     mycat.resetCurrentProxyPayload();
-                    commandHandler.handleDaemon(mycat);
+                    endFuture = commandHandler.handleDaemon(mycat);
                     MycatMonitor.onDaemonCommandEnd(mycat);
                     break;
                 }
@@ -379,13 +383,20 @@ public class CommandResolver {
                     assert false;
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            mycat.setLastMessage(e);
-            mycat.writeErrorEndPacketBySyncInProcessError();
-            mycat.onHandlerFinishedClear();
+
         } finally {
-            MycatMonitor.onCommandEnd(mycat);
+            Objects.requireNonNull(endFuture).onComplete(event -> {
+                Future<Void> future = Future.succeededFuture();
+                if (event.failed()){
+                    mycat.setLastMessage(event.cause());
+                    future = mycat.writeErrorEndPacketBySyncInProcessError();
+                }
+                future.onComplete(event1 -> {
+                    mycat.onHandlerFinishedClear();
+                    MycatMonitor.onCommandEnd(mycat);
+                });
+            });
+
         }
     }
 }

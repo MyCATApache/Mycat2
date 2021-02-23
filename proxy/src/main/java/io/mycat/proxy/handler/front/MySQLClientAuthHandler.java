@@ -156,7 +156,6 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             mycat.setUser(user);
             mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());
-            mycat.setAutoCommit(true);
             mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
             mycat.setCharset(characterSet);
             finished = true;
@@ -192,7 +191,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     }
 
     public void failture(MycatSession mycat, Exception e) {
-        mycat.setLastMessage(e);
+        mycat.getDataContext().setLastMessage(e);
         LOGGER.error("login fail: {}",e.getMessage(),e);
         mycat.writeErrorEndPacketBySyncInProcessError(ER_ACCESS_DENIED_ERROR);
     }

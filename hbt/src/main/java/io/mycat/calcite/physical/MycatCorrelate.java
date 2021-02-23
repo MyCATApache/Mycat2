@@ -78,8 +78,8 @@ public class MycatCorrelate extends Correlate implements MycatRel {
         final Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
         Expression leftExpression =
-                builder.append(
-                        "left", leftResult.block);
+                toEnumerate(builder.append(
+                        "left", leftResult.block));
 
         final BlockBuilder corrBlock = new BlockBuilder();
         Type corrVarType = leftResult.physType.getJavaRowType();

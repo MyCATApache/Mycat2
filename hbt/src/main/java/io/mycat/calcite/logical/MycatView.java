@@ -19,12 +19,14 @@ import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DataNode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.rewriter.Distribution;
+import io.mycat.calcite.rewriter.PredicateAnalyzer;
+import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.ShardingTable;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -42,49 +44,49 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
-import org.jetbrains.annotations.NotNull;
+import org.apache.zookeeper.Op;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
 
 public class MycatView extends AbstractRelNode implements MycatRel {
-    RelNode relNode;
-    Distribution distribution;
+    final RelNode relNode;
+    final Distribution distribution;
+    final RexNode conditions;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
+        this(relTrait, input, dataNode,null);
+    }
+
+    public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
         super(input.getCluster(), relTrait);
         this.distribution = Objects.requireNonNull(dataNode);
+        this.conditions = conditions;
         this.rowType = input.getRowType();
         this.relNode = input;
         this.traitSet = relTrait;
     }
-//    public View(RelTraitSet relTrait, List<RelNode> inputs, Distribution dataNode, boolean gather) {
-//        super(inputs.get(0).getCluster(),relTrait);
-//        this.distribution = Objects.requireNonNull(dataNode);
-//        this.rowType = inputs.get(0).getRowType();
-//        this.traitSet = relTrait;
-//        this.gather = gather;
-//    }
-//    public static View of(List<RelNode> input, Distribution dataNodeInfo) {
-//        return new View(input.get(0).getTraitSet().replace(MycatConvention.INSTANCE),input,dataNodeInfo,false);
-//    }
 
-    public static MycatView of(RelNode input, Distribution dataNodeInfo) {
-        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
+    public static MycatView ofCondition(RelNode input,
+                                        Distribution dataNodeInfo,
+                                        RexNode conditions) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, conditions);
     }
-
-    public static MycatView of(RelTraitSet relTrait, RelNode input, Distribution dataNodeInfo) {
-        return new MycatView(relTrait.replace(MycatConvention.INSTANCE), input, dataNodeInfo);
+    public  MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo,this.conditions);
+    }
+    public static MycatView ofBottom( RelNode input, Distribution dataNodeInfo) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
     }
 
 
@@ -106,19 +108,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         RelWriter writer = super.explainTerms(pw);
         writer.item("relNode", relNode);
         writer.item("distribution", distribution);
+        writer.item("conditions", conditions);
         return writer;
     }
 
-    @NotNull
-    private RelWriter innerExplainTerms(RelWriter pw) {
-        RelWriter writer = super.explainTerms(pw);
-        writer.item("\nrelNode", getSql(MycatSqlDialect.DEFAULT));
-        String msg = StreamSupport
-                .stream(distribution.getDataNodes().spliterator(), false)
-                .map(i -> i.toString()).collect(Collectors.joining(",\n"));
-        writer.item("\ndistribution", "\n" + msg);
-        return writer;
-    }
 
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
@@ -136,58 +129,85 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        RelOptCost relOptCost = super.computeSelfCost(planner, mq);
-        return relOptCost;
+        return super.computeSelfCost(planner, mq);
     }
 
 
     public RelNode expandToPhyRelNode() {
-        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
-            DataNode dataNode = distribution.getDataNodes().iterator().next();
-            return applyDataNode(dataNode);
-        } else {
-            ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
-            for (DataNode dataNode : this.distribution.getDataNodes()) {
-                builder.add(applyDataNode(dataNode));
-            }
-            ImmutableList<RelNode> views = builder.build();
-            return LogicalUnion.create(views, true);
-        }
+        List<Object> params = Collections.emptyList();
+        List<RelNode> subViews = assignParamsToRelNode(params);
+        return LogicalUnion.create(subViews, true);
     }
 
-//    public Map<String, List<View>> expandToPhyView() {
-//        if (this.distribution.isSingle() || this.distribution.isBroadCast()) {
-//            DataNode dataNode = distribution.getDataNodes().iterator().next();
-//            return ImmutableMap.of(dataNode.getTargetName(),
-//                    ImmutableList.of(View.of(applyDataNode(dataNode),
-//                    Distribution.of(ImmutableList.of(dataNode), "")))
-//            );
-//        } else {
-//            ImmutableMap.Builder<String,List<View>> builder = ImmutableMap.builder();
-//            for (DataNode dataNode : this.distribution.getDataNodes()) {
-//                builder.add(applyDataNode(dataNode));
-//            }
-//            ImmutableList<RelNode> views = builder.build();
-//            return LogicalUnion.create(views, true);
-//        }
-//    }
+    private List<RelNode> assignParamsToRelNode(List<Object> params) {
+        return assignParams(params)
+                .map(map -> applyDataNode(map, this.relNode))
+                .collect(Collectors.toList());
+    }
+
+    private RelNode applyDataNode(Map<String, DataNode> map, RelNode relNode) {
+        return relNode.accept(new RelShuttleImpl() {
+                    @Override
+                    public RelNode visit(TableScan scan) {
+                        MycatLogicTable mycatLogicTable = scan.getTable().unwrap(MycatLogicTable.class);
+                        if (mycatLogicTable != null) {
+                            String uniqueName = mycatLogicTable.getTable().getUniqueName();
+                            DataNode dataNode = map.get(uniqueName);
+                            MycatPhysicalTable physicalTable = new MycatPhysicalTable(mycatLogicTable, dataNode);
+                            RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
+                                    scan.getRowType(),
+                                    physicalTable,
+                                    ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
+                            );
+                            return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
+                        }
+                        return super.visit(scan);
+                    }
+                });
+    }
+
+    public Stream<Map<String, DataNode>> assignParams(List<Object> params) {
+        return distribution.getDataNodes(table -> PredicateAnalyzer.analyze(table, conditions==null?
+                ImmutableList.of():ImmutableList.of(conditions), params));
+    }
+
 
     public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params) {
-        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
-            DataNode dataNode = distribution.getDataNodes().iterator().next();
-            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
-            SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update, params);
-            return ImmutableMultimap.of(dataNode.getTargetName(), sql);
-        } else {
-            ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
-            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
-                SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(dataNode.getTargetName());
-                SqlString sql = MycatCalciteSupport.INSTANCE.convertToSql(applyDataNode(dataNode), dialect, update, params);
-                builder.put(dataNode.getTargetName(), sql);
-            }
-            return builder.build();
+        Stream<Map<String, DataNode>> dataNodes = assignParams(params);
+        ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
+        if (distribution.type() == Distribution.Type.BroadCast) {
+            GlobalTable globalTable = distribution.getGlobalTables().get(0);
+            List<DataNode> globalDataNode = globalTable.getGlobalDataNode();
+            int i = ThreadLocalRandom.current().nextInt(0, globalDataNode.size());
+            DataNode dataNode = globalDataNode.get(i);
+            String targetName = dataNode.getTargetName();
+            Map<String, DataNode> m = dataNodes.findFirst().get();
+            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
+            SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
+            return ImmutableMultimap.of(targetName, sqlString);
         }
+        dataNodes.forEach(m -> {
+            String targetName = m.values().iterator().next().getTargetName();
+            SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
+            SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
+            builder.put(targetName, sqlString);
+        });
+        return builder.build();
     }
+
+//    public List<String> getTargets(List<Object> params) {
+//        distribution.
+//        if (this.distribution.isPhy() || this.distribution.isBroadCast()) {
+//            DataNode dataNode = distribution.getDataNodes().iterator().next();
+//            return ImmutableList.of(dataNode.getTargetName());
+//        } else {
+//            ImmutableList.Builder<String> builder = ImmutableList.builder();
+//            for (DataNode dataNode : this.distribution.getDataNodes(params)) {
+//                builder.add(dataNode.getTargetName());
+//            }
+//            return builder.build();
+//        }
+//    }
 
     public RelNode applyDataNode(DataNode dataNode) {
         return this.relNode.accept(new RelShuttleImpl() {
@@ -210,7 +230,6 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
                 PhysTypeImpl.of(
@@ -220,10 +239,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         ParameterExpression root = implementor.getRootExpression();
         Expression mycatViewStash = implementor.stash(this, RelNode.class);
         Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class);
-        final Expression expression2 = toEnumerable(
-                Expressions.call(root, getEnumerable, mycatViewStash));
-        assert Types.isAssignableFrom(Enumerable.class, expression2.getType());
-        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        builder.add(Expressions.call(root, getEnumerable, mycatViewStash));
         return implementor.result(physType, builder.toBlock());
     }
 
@@ -250,7 +266,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return expression;
     }
 
-    public static Expression toRows(PhysType physType, Expression expression,final int fieldCount ) {
+    public static Expression toRows(PhysType physType, Expression expression, final int fieldCount) {
         JavaRowFormat oldFormat = JavaRowFormat.ARRAY;
         if (physType.getFormat() == oldFormat) {
             return expression;
@@ -266,34 +282,34 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                 Expressions.lambda(Function1.class, physType.record(expressionList),
                         row_));
     }
+
     public static Expression fieldExpression(ParameterExpression row_, int i,
                                        PhysType physType, JavaRowFormat format) {
-        final Expression e =
-                format.field(row_, i, null, physType.getJavaFieldType(i));
-        final RelDataType relFieldType =
-                physType.getRowType().getFieldList().get(i).getType();
-        switch (relFieldType.getSqlTypeName()) {
-            case ARRAY:
-            case MULTISET:
-                final RelDataType fieldType = relFieldType.getComponentType();
-                if (fieldType.isStruct()) {
-                    // We can't represent a multiset or array as a List<Employee>, because
-                    // the consumer does not know the element type.
-                    // The standard element type is List.
-                    // We need to convert to a List<List>.
-                    final JavaTypeFactory typeFactory = MycatCalciteSupport.TypeFactory;
-                    final PhysType elementPhysType = PhysTypeImpl.of(
-                            typeFactory, fieldType, JavaRowFormat.CUSTOM);
-                    final MethodCallExpression e2 =
-                            Expressions.call(BuiltInMethod.AS_ENUMERABLE2.method, e);
-                    final Expression e3 = elementPhysType.convertTo(e2, JavaRowFormat.LIST);
-                    return Expressions.call(e3, BuiltInMethod.ENUMERABLE_TO_LIST.method);
-                } else {
-                    return e;
-                }
-            default:
-                return e;
-        }
+        return format.field(row_, i, null, physType.getJavaFieldType(i));
     }
 
+    @Override
+    public boolean isSupportStream() {
+        return true;
+    }
+
+    @Override
+    public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
+        final BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        ParameterExpression root = implementor.getRootExpression();
+        Expression mycatViewStash = implementor.stash(this, RelNode.class);
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class);
+        final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash);
+        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        return implementor.result(physType, builder.toBlock());
+    }
+
+    public Optional<RexNode> getConditions() {
+        return Optional.ofNullable(conditions);
+    }
 }

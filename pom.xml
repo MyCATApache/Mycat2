@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.14-release</version>
+  <version>1.15-dev</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -20,6 +20,8 @@
       <module>example</module>
       <module>statistic</module>
       <module>calcite</module>
+      <module>va</module>
+      <module>vertx</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

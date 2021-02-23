@@ -17,36 +17,37 @@ package io.mycat.command;
 
 
 import io.mycat.BindValue;
-import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.MySQLServerSession;
+import io.vertx.core.Future;
 
 /**
  * @author jamie12221 date 2019-05-12 21:30 实现mysql服务器 预处理相关处理
  **/
 public interface PrepareStatementParserHelper {
 
-  void handlePrepareStatement(byte[] sql, MycatSession session);
+  Future<Void> handlePrepareStatement(byte[] sql, MySQLServerSession session);
 
-  void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
-      MycatSession session);
+  Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
+                                              MySQLServerSession session);
 
-  void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags,
-                                     int[] params,
-                                     BindValue[] values,
-      MycatSession session);
+  Future<Void> handlePrepareStatementExecute(long statementId, byte flags,
+                                             int[] params,
+                                             BindValue[] values,
+                                             MySQLServerSession session);
 
-  void handlePrepareStatementClose(long statementId, MycatSession session);
+  Future<Void> handlePrepareStatementClose(long statementId, MySQLServerSession session);
 
-  void handlePrepareStatementFetch(long statementId, long row, MycatSession session);
+  Future<Void> handlePrepareStatementFetch(long statementId, long row, MySQLServerSession session);
 
-  void handlePrepareStatementReset(long statementId, MycatSession session);
+  Future<Void> handlePrepareStatementReset(long statementId, MySQLServerSession session);
 
-  int getNumParamsByStatementId(long statementId, MycatSession session);
+  int getNumParamsByStatementId(long statementId, MySQLServerSession session);
 
 
 
-  byte[] getLongData(long statementId, int i, MycatSession mycat);
+  byte[] getLongData(long statementId, int i, MySQLServerSession mycat);
 
-  BindValue[] getLastBindValue(long statementId, MycatSession mycat);
+  BindValue[] getLastBindValue(long statementId, MySQLServerSession mycat);
 
-  void  saveBindValue(long statementId, BindValue[] values, MycatSession mycat);
+  void  saveBindValue(long statementId, BindValue[] values, MySQLServerSession mycat);
 }

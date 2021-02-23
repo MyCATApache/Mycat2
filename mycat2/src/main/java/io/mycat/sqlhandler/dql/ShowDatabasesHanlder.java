@@ -1,5 +1,6 @@
 package io.mycat.sqlhandler.dql;
 
+import com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
@@ -8,6 +9,7 @@ import io.mycat.MetadataManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.Future;
 
 
 import java.sql.JDBCType;
@@ -16,7 +18,7 @@ import java.util.List;
 
 public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement> {
     @Override
-    protected void onExecute(SQLRequest<com.alibaba.druid.sql.ast.statement.SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLShowDatabasesStatement> request, MycatDataContext dataContext, Response response) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         List<String> collect = metadataManager.showDatabases();
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
@@ -25,6 +27,6 @@ public class ShowDatabasesHanlder extends AbstractSQLHandler<com.alibaba.druid.s
             resultSetBuilder.addObjectRowPayload(s);
         }
         RowBaseIterator rowBaseIterator = resultSetBuilder.build();
-        response.sendResultSet(()->rowBaseIterator);
+        return response.sendResultSet(()->rowBaseIterator);
     }
 }

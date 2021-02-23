@@ -84,7 +84,7 @@ public class AutoPartitionByLong extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return ""+longRanges+defaultNode+partitionCount;
     }
 }

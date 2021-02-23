@@ -119,7 +119,7 @@ public class PartitionByRangeDateHash extends Mycat1xSingleValueRuleFunction {
     return false;
   }
   @Override
-  public String getUniqueID() {
+  public String getErUniqueID() {
     return "" + formatter + beginDate + groupPartionSize + partionDay;
   }
 }

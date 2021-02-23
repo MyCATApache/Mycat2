@@ -210,7 +210,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     public void writeToChannel(SocketChannel channel) throws IOException {
         applyChannelWritingIndex();
         int oldIndex = channelWriteStartIndex();
-        if (channel.write(buffer) == -1) {
+        int remaining = buffer.remaining();
+        int write = channel.write(buffer);
+        if (write == -1) {
             throw new ClosedChannelException();
         }
         channelWriteStartIndex(buffer.position());

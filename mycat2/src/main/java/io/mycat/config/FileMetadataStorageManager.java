@@ -9,6 +9,7 @@ import io.mycat.beans.mycat.MycatErrorCode;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
+import io.vertx.core.Future;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -168,7 +169,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             datasourceConfig.setUser("root");
             datasourceConfig.setPassword("123456");
             datasourceConfig.setName("prototypeDs");
-            datasourceConfig.setUrl("jdbc:mysql://127.0.0.1:3306/mysql");
+            datasourceConfig.setUrl("jdbc:mysql://localhost:3306/mysql");
             routerConfig.getDatasources().add(datasourceConfig);
 
             if (routerConfig.getClusters().isEmpty()) {
@@ -228,7 +229,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops) throws Exception {
-                commitAndSyncDisk((MycatRouterConfigOps) ops);
+                 commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
             }
 
             @Override
@@ -245,7 +246,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         };
     }
 
-    public State commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
+    public Future<State> commitAndSyncDisk(MycatRouterConfigOps ops) throws IOException {
         String suffix = "json";
         MycatRouterConfigOps routerConfig = ops;
         ConfigPrepareExecuter prepare = new ConfigPrepareExecuter(routerConfig, FileMetadataStorageManager.this, datasourceProvider);
@@ -324,16 +325,21 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
         State state = new State();
         ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
         state.replica.putAll(replicaSelector.getState());
-        prepare.commit();
-        Path statePath = baseDirectory.resolve("state.json");
+        Future<Void> commitFuture = prepare.commit();
+        return commitFuture.flatMap(unused -> {
+            try {
+                Path statePath = baseDirectory.resolve("state.json");
+                Files.deleteIfExists(statePath);
+                if (Files.notExists(statePath)) Files.createFile(statePath);
+                writeFile(
+                        ConfigReaderWriter.getReaderWriterBySuffix("json")
+                                .transformation(state), statePath);
+                return Future.succeededFuture(state);
+            } catch (Exception e) {
+                return  Future.failedFuture(e);
+            }
+        });
 
-        Files.deleteIfExists(statePath);
-        if (Files.notExists(statePath)) Files.createFile(statePath);
-        writeFile(
-                ConfigReaderWriter.getReaderWriterBySuffix("json")
-                        .transformation(state), statePath);
-
-        return state;
     }
 
 

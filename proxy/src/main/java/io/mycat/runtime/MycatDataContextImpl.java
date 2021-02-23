@@ -1,11 +1,17 @@
 package io.mycat.runtime;
 
+import cn.mycat.vertx.xa.MySQLManager;
+import cn.mycat.vertx.xa.XaLog;
 import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.*;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
+import io.mycat.util.packet.AbstractWritePacket;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -59,10 +65,17 @@ public class MycatDataContextImpl implements MycatDataContext {
     public static final AtomicLong IDS = new AtomicLong();
     private volatile SqlRecord record;
     private final AtomicLong prepareStatementIds = new AtomicLong(0);
+    private ObservableEmitter<AbstractWritePacket> emitter;
+    private volatile Observable<AbstractWritePacket> observable;
 
     public MycatDataContextImpl() {
         this.id = IDS.getAndIncrement();
+        JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         switchTransaction(TransactionType.DEFAULT);
+
+        ProxyTransactionSession proxyTransactionSession = new ProxyTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), xaLog, connection.getDatasourceProvider().createSession(this));
+        setTransactionSession(proxyTransactionSession);
     }
 
 
@@ -242,31 +255,31 @@ public class MycatDataContextImpl implements MycatDataContext {
     public boolean isWrapperFor(Class<?> iface) {
         return false;
     }
-
+    @Override
     public boolean isAutocommit() {
-        return autoCommit == 1;
+        return transactionSession.isAutocommit();
     }
-
+    @Override
     public void setAutoCommit(boolean autoCommit) {
-        this.autoCommit = autoCommit ? 1 : 0;
+            transactionSession.setAutocommit(autoCommit);
     }
-
+    @Override
     public MySQLIsolation getIsolation() {
         return isolation;
     }
-
+    @Override
     public void setIsolation(MySQLIsolation isolation) {
         this.isolation = isolation;
     }
-
+    @Override
     public boolean isInTransaction() {
-        return inTransaction;
+        return transactionSession.isInTransaction();
     }
-
+    @Override
     public void setInTransaction(boolean inTransaction) {
         this.inTransaction = inTransaction;
     }
-
+    @Override
     public MycatUser getUser() {
         return user;
     }
@@ -333,7 +346,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 //        Objects.requireNonNull(connection);
 //        return connection.executeQuery(null,sql);
 //    }
-
+    @Override
     public String resolveDatasourceTargetName(String targetName) {
         return transactionSession.resolveFinalTargetName(targetName);
     }
@@ -376,7 +389,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public void close() {
         if (transactionSession != null) {
-            transactionSession.closeStatenmentState();
+            transactionSession.closeStatementState();
             transactionSession.close();
         }
         cancelFlag.set(true);
@@ -395,7 +408,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     public void setServerStatus(int serverStatus) {
         this.serverStatus = serverStatus;
     }
-
+    @Override
     public void setLastInsertId(long lastInsertId) {
         this.lastInsertId = lastInsertId;
     }

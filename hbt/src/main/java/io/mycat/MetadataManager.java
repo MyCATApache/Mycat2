@@ -81,7 +81,13 @@ public class MetadataManager implements MysqlVariableService {
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
-    private final Map<String, List<ShardingTable>> tableGroup;
+
+    @Getter
+    private final Map<String, List<ShardingTable>> erTableGroup;
+    @Getter
+    private final List<GlobalTable> globalTables;
+    @Getter
+    private final List<NormalTable> normalTables;
 
 
     public void removeSchema(String schemaName) {
@@ -252,10 +258,16 @@ public class MetadataManager implements MysqlVariableService {
                 );
             }
         }
-        Stream<TableHandler> tableHandlerStream = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream());
-        Stream<ShardingTable> customRuleFunctionStream = tableHandlerStream.filter(i -> i.getType() == LogicTableType.SHARDING)
+
+        Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
                 .map(i -> (ShardingTable) i);
-        this.tableGroup = customRuleFunctionStream.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getUniqueID()));
+        this.erTableGroup = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
+
+        this.globalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.GLOBAL)
+                .map(i -> (GlobalTable) i).collect(Collectors.toList());
+
+        this.normalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.NORMAL)
+                .map(i -> (NormalTable) i).collect(Collectors.toList());
     }
 
     private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {

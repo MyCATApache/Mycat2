@@ -85,7 +85,7 @@ public class PartitionByPrefixPattern extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + patternValue + prefixLength + longRongs + nPartition;
     }
 }

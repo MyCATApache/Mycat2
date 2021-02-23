@@ -54,25 +54,9 @@ public class MycatPhysicalTable extends MycatTableBase implements AbstractMycatT
     }
 
     @Override
-    public Distribution computeDataNode(List<RexNode> conditions) {
-        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
+    public Distribution createDistribution() {
+        throw new UnsupportedOperationException();
     }
-
-    @Override
-    public boolean isSingle(List<RexNode> conditions) {
-        return true;
-    }
-
-    @Override
-    public Distribution computeDataNode() {
-        return Distribution.of(ImmutableList.of(dataNode),false, Distribution.Type.PHY);
-    }
-
-    @Override
-    public boolean isPartial(List<RexNode> conditions) {
-        return false;
-    }
-
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         return LogicalTableScan.create(context.getCluster(),relOptTable,ImmutableList.of());

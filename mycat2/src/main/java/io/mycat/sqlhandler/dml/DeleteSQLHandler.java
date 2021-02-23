@@ -6,6 +6,7 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.Future;
 
 
 import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
@@ -14,8 +15,8 @@ import static io.mycat.sqlhandler.dml.UpdateSQLHandler.updateHandler;
 public class DeleteSQLHandler extends AbstractSQLHandler<MySqlDeleteStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlDeleteStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlDeleteStatement> request, MycatDataContext dataContext, Response response){
         SQLExprTableSource tableSource = (SQLExprTableSource)request.getAst().getTableSource();
-        updateHandler(request.getAst(),dataContext,tableSource,response);
+        return updateHandler(request.getAst(),dataContext,tableSource,response);
     }
 }

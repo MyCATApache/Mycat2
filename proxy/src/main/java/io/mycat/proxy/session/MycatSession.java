@@ -14,8 +14,10 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.*;
-import io.mycat.beans.mycat.TransactionType;
+import io.mycat.MycatDataContext;
+import io.mycat.MycatDataContextEnum;
+import io.mycat.MycatException;
+import io.mycat.MycatUser;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -34,8 +36,9 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +46,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 
 //tcp.port in {8066} or tcp.port in  {3066}
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
@@ -149,7 +150,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public  synchronized  void close(boolean normal, String hint) {
+    public  synchronized  PromiseInternal<Void> close(boolean normal, String hint) {
         try {
             dataContext.close();
         } catch (Exception e) {
@@ -179,6 +180,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         } catch (Exception e) {
             LOGGER.error("", e);
         }
+        return VertxUtil.newSuccessPromise();
     }
 
 
@@ -254,7 +256,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         String lastMessage = this.dataContext.getLastMessage();
         return " " + lastMessage + "";
     }
-
+    @Override
     public String setLastMessage(String lastMessage) {
         this.dataContext.setLastMessage(lastMessage);
         return lastMessage;
@@ -288,15 +290,15 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public boolean isDeprecateEOF() {
         return MySQLServerCapabilityFlags.isDeprecateEOF(this.dataContext.getServerCapabilities());
     }
-
+    @Override
     public int getWarningCount() {
         return this.dataContext.getWarningCount();
     }
-
+    @Override
     public long getLastInsertId() {
         return this.dataContext.getLastInsertId();
     }
-
+    @Override
     public void resetSession() {
         throw new MycatException("unsupport!");
     }
@@ -345,9 +347,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
     @Override
-    public  void writeToChannel() throws IOException {
+    public PromiseInternal<Void> writeToChannel() throws IOException {
         try {
-            writeHandler.writeToChannel(this);
+            return writeHandler.writeToChannel(this);
         } catch (Exception e) {
             writeHandler.onException(this, e);
             resetPacket();

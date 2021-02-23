@@ -31,9 +31,9 @@ import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.packet.DefaultPreparedOKPacket;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.config.UserConfig;
-import io.mycat.proxy.NativeMycatServer;
-import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.ServerTransactionSessionRunner;
+import io.mycat.proxy.session.MySQLServerSession;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,64 +48,51 @@ import java.util.Objects;
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
 
-    //  private MycatClient client;
-    //  private final ApplicationContext applicationContext = MycatCore.INSTANCE.getContext();
-    //  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
-    //  private final Set<SQLHandler> sqlHandlers = new TreeSet<>(new OrderComparator(Arrays.asList(Order.class)));
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCommandHandler.class);
 
-    @Override
-    public void handleInitDb(String db, MycatSession mycat) {
-        mycat.useSchema(db);
-        LOGGER.info("handleInitDb:" + db);
-        super.handleInitDb(db, mycat);
-    }
 
     @Override
-    public void initRuntime(MycatSession session) {
+    public void initRuntime(MySQLServerSession session) {
         Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-        UserConfig userInfo = authenticator.getUserInfo(session.getUser().getUserName());
+        UserConfig userInfo = authenticator.getUserInfo(session.getDataContext().getUser().getUserName());
         if (userInfo != null) {
             session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
         }
     }
 
     @Override
-    public void handleQuery(byte[] bytes, MycatSession session) {
+    public Future<Void> handleQuery(byte[] bytes, MySQLServerSession session) {
         try {
+            String sql = new String(bytes);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("-----------------reveice--------------------");
-                LOGGER.debug(new String(bytes));
+                LOGGER.debug(sql);
             }
-            NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-            mycatServer.getServerTransactionSessionRunner().run(session,
-                    () -> MycatdbCommand.INSTANCE.executeQuery(new String(bytes), session.getDataContext(),
-                            (size) -> {
-                return new ReceiverImpl(session, size, false);
-            }));
-
-            return;
+            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+            return vertx.executeBlocking(event -> {
+                Future<Void> promise =
+                        MycatdbCommand.INSTANCE.executeQuery(sql, session.getDataContext(),
+                                (size) -> new ReceiverImpl(session, size, false));
+                promise.onComplete(event);
+            });
         } catch (Throwable e) {
-            LOGGER.debug("-----------------reveice--------------------");
-            LOGGER.debug(new String(bytes));
-            session.setLastMessage(e);
-            session.writeErrorEndPacketBySyncInProcessError();
+            return Future.failedFuture(e);
         }
     }
 
 
     @Override
-    public void handleContentOfFilename(byte[] sql, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handleContentOfFilename(byte[] sql, MySQLServerSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handleContentOfFilenameEmptyOk(MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handleContentOfFilenameEmptyOk(MySQLServerSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handlePrepareStatement(byte[] sqlBytes, MycatSession session) {
+    public Future<Void> handlePrepareStatement(byte[] sqlBytes, MySQLServerSession session) {
         try {
             MycatDataContext dataContext = session.getDataContext();
             boolean deprecateEOF = session.isDeprecateEOF();
@@ -151,7 +138,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
             if (info.getPrepareOkColumnsCount() == 0 && info.getPrepareOkParametersCount() == 0) {
                 session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), true);
-                return;
+                return Future.succeededFuture();
             }
             session.writeBytes(MySQLPacketUtil.generatePrepareOk(info), false);
             if (info.getPrepareOkParametersCount() > 0 && info.getPrepareOkColumnsCount() == 0) {
@@ -167,7 +154,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             } else if (info.getPrepareOkParametersCount() == 0 && info.getPrepareOkColumnsCount() > 0) {
                 for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
@@ -181,7 +168,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             } else {
                 for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
@@ -199,28 +186,27 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                     session.writeBytes(MySQLPacketUtil.generateEof(session.getWarningCount(),
                             session.getServerStatusValue()), true);
                 }
-                return;
+                return Future.succeededFuture();
             }
         } catch (Throwable throwable) {
-            ReceiverImpl receiver = new ReceiverImpl(session, 1, false);
-            receiver.sendError(throwable);
+            return Future.failedFuture(throwable);
         }
     }
 
     @Override
-    public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatSession session) {
+    public Future<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.appendLongData(paramId, data);
         }
-        session.onHandlerFinishedClear();
+        return Future.succeededFuture();
     }
 
     @Override
     @SneakyThrows
-    public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int[] params, BindValue[] values, MycatSession session) {
+    public Future<Void> handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -228,43 +214,37 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("=> {}", statement);
         }
-
         ReceiverImpl receiver = new ReceiverImpl(session, 1, true);
-        NativeMycatServer mycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-        mycatServer.getServerTransactionSessionRunner().run(session, new ServerTransactionSessionRunner.Runnable() {
-            @Override
-            public void run() throws Exception {
-                MycatdbCommand.execute(dataContext, receiver, statement);
-            }
-        });
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        return vertx.executeBlocking(promise -> MycatdbCommand.execute(dataContext, receiver, statement).onComplete(promise));
     }
 
     @Override
-    public void handlePrepareStatementClose(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementClose(long statementId, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
-        session.onHandlerFinishedClear();
+        return Future.succeededFuture();
     }
 
     @Override
-    public void handlePrepareStatementFetch(long statementId, long row, MycatSession session) {
-        session.writeErrorEndPacketBySyncInProcessError();
+    public Future<Void> handlePrepareStatementFetch(long statementId, long row, MySQLServerSession session) {
+        return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override
-    public void handlePrepareStatementReset(long statementId, MycatSession session) {
+    public Future<Void> handlePrepareStatementReset(long statementId, MySQLServerSession session) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
         if (preparedStatement != null) {
             preparedStatement.resetLongData();
         }
-        session.writeOkEndPacket();
+        return session.writeOkEndPacket();
     }
 
     @Override
-    public int getNumParamsByStatementId(long statementId, MycatSession session) {
+    public int getNumParamsByStatementId(long statementId, MySQLServerSession session) {
         Map<Long, PreparedStatement> prepareInfo = session.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         Objects.requireNonNull(preparedStatement);
@@ -272,7 +252,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public byte[] getLongData(long statementId, int paramId, MycatSession mycat) {
+    public byte[] getLongData(long statementId, int paramId, MySQLServerSession mycat) {
         PreparedStatement preparedStatement = mycat.getDataContext().getPrepareInfo().get(statementId);
         if (preparedStatement == null) {
             return null;
@@ -285,7 +265,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public BindValue[] getLastBindValue(long statementId, MycatSession mycat) {
+    public BindValue[] getLastBindValue(long statementId, MySQLServerSession mycat) {
         Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {
@@ -295,7 +275,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void saveBindValue(long statementId, BindValue[] values, MycatSession mycat) {
+    public void saveBindValue(long statementId, BindValue[] values, MySQLServerSession mycat) {
         Map<Long, PreparedStatement> prepareInfo = mycat.getDataContext().getPrepareInfo();
         PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {

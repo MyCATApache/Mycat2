@@ -111,11 +111,11 @@ public class MycatNestedLoopJoin extends Join implements MycatRel {
         final Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
         Expression leftExpression =
-                builder.append("left", leftResult.block);
+                toEnumerate(builder.append("left", leftResult.block));
         final Result rightResult =
                 implementor.visitChild(this, 1, (EnumerableRel) right, pref);
         Expression rightExpression =
-                builder.append("right", rightResult.block);
+                toEnumerate(builder.append("right", rightResult.block));
         final PhysType physType =
                 PhysTypeImpl.of(implementor.getTypeFactory(),
                         getRowType(),

@@ -108,7 +108,7 @@ public class ConsistentHashPreSlot extends Mycat1xSingleValueRuleFunction {
     }
 
     @Override
-    public String getUniqueID() {
+    public String getErUniqueID() {
         return "" + DEFAULT_SLOTS_NUM + Arrays.toString(rangeMap2) + hashFunction + longRanges;
     }
 }

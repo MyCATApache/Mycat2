@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -410,7 +411,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
 
     public void commit() throws Exception {
-        this.configOps.commit(this);
+         this.configOps.commit(this);
     }
 
     public void close() {

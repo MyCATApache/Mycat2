@@ -14,9 +14,10 @@ public class MycatGather extends SingleRel implements MycatRel {
         super(cluster, traits, input);
     }
 
-    public static MycatGather create(RelTraitSet traits, RelNode input) {
+
+    public static MycatGather create(RelNode input) {
         RelOptCluster cluster = input.getCluster();
-        return new MycatGather(cluster, traits.replace(MycatConvention.INSTANCE), input);
+        return new MycatGather(cluster, input.getTraitSet().replace(MycatConvention.INSTANCE), input);
     }
 
     @Override
@@ -36,8 +37,9 @@ public class MycatGather extends SingleRel implements MycatRel {
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new MycatGather(getCluster(),traitSet,inputs.get(0));
+        return new MycatGather(getCluster(), traitSet, inputs.get(0));
     }
+
     @Override
     public boolean isSupportStream() {
         return true;

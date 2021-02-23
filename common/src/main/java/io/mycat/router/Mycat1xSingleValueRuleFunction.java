@@ -14,6 +14,7 @@
  */
 package io.mycat.router;
 
+import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.DataNode;
 import io.mycat.MycatException;
 import io.mycat.RangeVariable;
@@ -171,6 +172,16 @@ public abstract class Mycat1xSingleValueRuleFunction extends CustomRuleFunction 
 
     @Override
     public boolean isShardingKey(String name) {
+        return isShardingTableKey(SQLUtils.normalize(name));
+    }
+
+    @Override
+    public boolean isShardingDbKey(String name) {
+        return false;
+    }
+
+    @Override
+    public boolean isShardingTableKey(String name) {
         return this.columnName.equalsIgnoreCase(name);
     }
 }

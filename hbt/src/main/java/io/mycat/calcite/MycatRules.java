@@ -23,6 +23,7 @@ import io.mycat.calcite.rules.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -65,7 +66,7 @@ public class MycatRules {
             (input, condition, variablesSet) -> {
                 Preconditions.checkArgument(variablesSet.isEmpty(),
                         "MycatFilter does not allow variables");
-                return  MycatFilter.create(
+                return MycatFilter.create(
                         input.getTraitSet(), input, condition);
             };
 
@@ -174,7 +175,7 @@ public class MycatRules {
                                          RelBuilderFactory relBuilderFactory) {
         return ImmutableList.of(
                 new MycatJoinRule(out, relBuilderFactory),
-//                new MycatCalcRule(out, relBuilderFactory),
+                new MycatCalcRule(out, relBuilderFactory),
                 new MycatProjectRule(out, relBuilderFactory),
                 new MycatFilterRule(out, relBuilderFactory),
                 new MycatAggregateRule(out, relBuilderFactory),
@@ -186,9 +187,17 @@ public class MycatRules {
                 new MycatValuesRule(out, relBuilderFactory),
                 new MycatMergeJoinRule(out, relBuilderFactory),
                 new MycatSortAggRule(out, relBuilderFactory),
-//                new MycatCorrelateRule(out,relBuilderFactory),
-                new MycatTopNRule(out, relBuilderFactory)
+                new MycatCorrelateRule(out, relBuilderFactory),
+                new MycatTopNRule(out, relBuilderFactory),
+
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
+
+                CoreRules.PROJECT_CALC_MERGE,
+                CoreRules.FILTER_CALC_MERGE,
+                CoreRules.FILTER_TO_CALC,
+                CoreRules.PROJECT_TO_CALC,
+                CoreRules.CALC_REMOVE,
+                CoreRules.CALC_MERGE
         );
     }
 

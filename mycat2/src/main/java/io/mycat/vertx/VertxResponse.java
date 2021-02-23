@@ -1,16 +1,21 @@
 package io.mycat.vertx;
 
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.RowIterable;
-import io.mycat.beans.mycat.JdbcRowBaseIterator;
-import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.resultset.BinaryResultSetResponse;
-import io.mycat.resultset.DirectTextResultSetResponse;
-import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.api.collector.*;
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.proxy.session.MySQLServerSession;
+import io.mycat.util.VertxUtil;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.impl.future.PromiseInternal;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static io.mycat.ExecuteType.QUERY;
 import static io.mycat.ExecuteType.UPDATE;
@@ -31,69 +36,44 @@ public abstract class VertxResponse implements Response {
     }
 
     @Override
-    public void proxySelect(String defaultTargetName, String statement) {
-        execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
+    public PromiseInternal<Void> proxySelect(String defaultTargetName, String statement) {
+        return execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
     }
 
     @Override
-    public void proxyUpdate(String defaultTargetName, String proxyUpdate) {
-        execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), proxyUpdate, null));
+    public PromiseInternal<Void> proxyUpdate(String defaultTargetName, String proxyUpdate) {
+        return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), proxyUpdate, null));
     }
 
     @Override
-    public void sendError(Throwable e) {
-        dataContext.getTransactionSession().closeStatenmentState();
-        dataContext.setLastMessage(e);
-        session.writeErrorEndPacketBySyncInProcessError();
+    public PromiseInternal<Void> sendError(Throwable e) {
+        PromiseInternal<Void> newPromise = VertxUtil.newPromise();
+        dataContext.getTransactionSession().closeStatementState()
+                .onComplete(event -> {
+                    dataContext.setLastMessage(e);
+                    newPromise.tryComplete();
+                    session.writeErrorEndPacketBySyncInProcessError();
+                });
+        return newPromise;
     }
 
     @Override
-    public void proxySelectToPrototype(String statement) {
-        proxySelect("prototype",statement);
+    public PromiseInternal<Void> proxySelectToPrototype(String statement) {
+        return proxySelect("prototype", statement);
     }
 
 
     @Override
-    public void sendError(String errorMessage, int errorCode) {
-        dataContext.getTransactionSession().closeStatenmentState();
+    public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
+        dataContext.getTransactionSession().closeStatementState();
         dataContext.setLastMessage(errorMessage);
-        session.writeErrorEndPacketBySyncInProcessError();
-    }
+        return VertxUtil.newFailPromise(new MycatException(errorCode,errorMessage));
+    };
+
 
     @Override
-    public void sendResultSet(RowIterable rowIterable) {
-        ++count;
-        RowBaseIterator resultSet = rowIterable.get();
-        boolean moreResultSet = count < size;
-        MycatResultSetResponse currentResultSet;
-        if (!binary) {
-            if (resultSet instanceof JdbcRowBaseIterator){
-                currentResultSet = new DirectTextResultSetResponse((resultSet));
-            }else {
-                currentResultSet = new TextResultSetResponse(resultSet);
-            }
-        } else {
-            currentResultSet = new BinaryResultSetResponse(resultSet);
-        }
-        session.writeColumnCount(currentResultSet.columnCount());
-        Iterator<byte[]> columnDefPayloadsIterator = currentResultSet
-                .columnDefIterator();
-        while (columnDefPayloadsIterator.hasNext()) {
-            session.writeBytes(columnDefPayloadsIterator.next(), false);
-        }
-        session.writeColumnEndPacket();
-        Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
-        while (rowIterator.hasNext()) {
-            byte[] row = rowIterator.next();
-            session.writeBytes(row, false);
-        }
-        currentResultSet.close();
-        session.getDataContext().getTransactionSession().closeStatenmentState();
-        session.writeRowEndPacket(moreResultSet, false);
-    }
-
-    @Override
-    public void execute(ExplainDetail detail) {
+    public PromiseInternal<Void> execute(ExplainDetail detail) {
+        PromiseInternal<Void> promise;
         String target = detail.getTarget();
         ExecuteType executeType = detail.getExecuteType();
         String sql = detail.getSql();
@@ -111,44 +91,118 @@ public abstract class VertxResponse implements Response {
                 break;
         }
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        MycatConnection connection = transactionSession.getConnection(target);
+        MycatConnection connection = transactionSession.getJDBCConnection(target);
         count++;
         switch (executeType) {
             case QUERY:
             case QUERY_MASTER:
-                sendResultSet(connection.executeQuery(null, sql));
+                promise = sendResultSet(connection.executeQuery(null, sql));
                 break;
             case INSERT:
             case UPDATE:
                 long[] longs = connection.executeUpdate(sql, true);
-                transactionSession.closeStatenmentState();
-                sendOk(longs[0],longs[1]);
+                transactionSession.closeStatementState();
+                promise = sendOk(longs[0], longs[1]);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + executeType);
         }
+        return promise;
     }
 
     @Override
-    public void sendOk(long affectedRow,long lastInsertId ) {
+    public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
         count++;
         MycatDataContext dataContext = session.getDataContext();
-        dataContext.getTransactionSession().closeStatenmentState();
+        dataContext.getTransactionSession().closeStatementState();
         dataContext.setLastInsertId(lastInsertId);
         dataContext.setAffectedRows(affectedRow);
-        session.writeOk(count < size);
-
+        return session.writeOk(count < size);
     }
+
     @Override
-    public void sendOk() {
+    public PromiseInternal<Void> sendOk() {
         count++;
+        PromiseInternal<Void> newPromise = VertxUtil.newPromise();
         MycatDataContext dataContext = session.getDataContext();
-        dataContext.getTransactionSession().closeStatenmentState();
-        session.writeOk(count < size);
+        dataContext.getTransactionSession().closeStatementState()
+                .onComplete(event -> {
+                    newPromise.tryComplete();
+                    session.writeOk(count < size);
+                });
+        return newPromise;
     }
 
     @Override
     public <T> T unWrapper(Class<T> clazz) {
         return null;
+    }
+
+    @Override
+    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
+        count++;
+        boolean moreResultSet = count < size;
+        PromiseInternal<Void> promise = VertxUtil.newPromise();
+        mysqlPacketObservable.subscribe(
+                new MysqlPayloadObjectObserver(promise, moreResultSet,binary,session));
+        return promise;
+    }
+
+    public   static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
+        private final PromiseInternal<Void> promise;
+        private final boolean moreResultSet;
+        private boolean binary;
+        private MySQLServerSession session;
+        private Disposable disposable;
+        Function<Object[], byte[]> convertor;
+
+        public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
+                                          boolean moreResultSet,boolean binary, MySQLServerSession session) {
+            this.promise = promise;
+            this.moreResultSet = moreResultSet;
+            this.binary = binary;
+            this.session = session;
+        }
+
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            this.disposable = d;
+        }
+
+        @Override
+        public void onNext(@NonNull MysqlPayloadObject next) {
+            if (next instanceof MysqlRow) {
+                session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
+            } else if (next instanceof MySQLColumnDef) {
+                MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
+                session.writeColumnCount(rowMetaData.getColumnCount());
+                if (!binary) {
+                    convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+                } else {
+                    convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+                }
+                Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+                while (columnIterator.hasNext()) {
+                    session.writeBytes(columnIterator.next(), false);
+                }
+                session.writeColumnEndPacket();
+            }
+        }
+
+        @Override
+        public void onError(@NonNull Throwable throwable) {
+            disposable.dispose();
+            promise.tryFail(throwable);
+        }
+
+        @Override
+        public void onComplete() {
+            disposable.dispose();
+            session.getDataContext().getTransactionSession().closeStatementState()
+                    .onComplete(event -> {
+                        session.writeRowEndPacket(moreResultSet, false)
+                        .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
+                    });
+        }
     }
 }

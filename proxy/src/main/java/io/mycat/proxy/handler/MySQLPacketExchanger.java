@@ -26,6 +26,8 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +85,7 @@ public enum MySQLPacketExchanger {
             MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);
             mysql.switchNioHandler(null);
 //            mysql.getDatasource().decrementUsedCounter();
-            mysql.getSessionManager().addIdleSession(mysql);
+            mysql.close(true,"exchanger end");
         }
         mycatSession.onHandlerFinishedClear();
         MycatMonitor.onPacketExchangerClear(mycatSession);
@@ -175,9 +177,9 @@ public enum MySQLPacketExchanger {
         static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
 
-        public void proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
-                                 ResponseType responseType, MycatSession mycat, byte[] packetData) {
-
+        public PromiseInternal<Void> proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
+                                                  ResponseType responseType, MycatSession mycat, byte[] packetData) {
+            PromiseInternal<Void> promise;
 
             try {
                 //对于判断是否mycat session重复绑定多个mysql session
@@ -213,17 +215,19 @@ public enum MySQLPacketExchanger {
                 mycat.currentProxyBuffer().newBuffer(packetData);
                 mycat.setMySQLSession(mysql);
                 mysql.setMycatSession(mycat);
-                mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
+                promise = mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
 
                 MycatMonitor.onBindMySQLSession(mycat, mysql);
             } catch (Exception e) {
                 onExceptionClearCloseInRequest(mycat, e, finallyCallBack);
-                return;
+                promise = VertxUtil.newFailPromise(e);
+                return promise;
             }finally {
                 if (mysql.getMycat() !=mycat||mycat.getMySQLSession()!=mysql){
                     throw new AssertionError();
                 }
             }
+            return promise;
         }
 
         /**
@@ -361,11 +365,9 @@ public enum MySQLPacketExchanger {
                     case BINARY_ROW:
                         callback.onBinaryRow(mySQLPacket, sIndex, eIndex);
                         break;
-                    case ROW_EOF:
-                        callback.onRowEof(mySQLPacket, sIndex, eIndex);
-                        break;
 //          case ROW_FINISHED:
 //            break;
+                    case ROW_EOF:
                     case ROW_OK: {
                         callback.onRowOk(mySQLPacket, sIndex, eIndex);
                         break;
@@ -420,7 +422,7 @@ public enum MySQLPacketExchanger {
         INSTANCE;
 
         @Override
-        public void writeToChannel(MycatSession mycat) throws IOException {
+        public PromiseInternal<Void>  writeToChannel(MycatSession mycat) throws IOException {
                 MySQLClientSession mySQLSession = Objects.requireNonNull(mycat.getMySQLSession());
                 mySQLSession.clearReadWriteOpts();
                 ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
@@ -454,6 +456,8 @@ public enum MySQLPacketExchanger {
                         }
                     }
                 }
+                // todo 异步未实现完全 wangzihaogithub
+                return VertxUtil.newSuccessPromise();
         }
 
         @Override
