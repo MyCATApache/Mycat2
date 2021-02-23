@@ -422,5 +422,51 @@ public class SqlFunctionTest implements MycatTest {
 
         checkValue("select 1");
     }
+
+
+    @Test
+    public void testInsertFunction() throws Exception {
+        Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        execute(mycatConnection, RESET_CONFIG);
+        Connection mysql3306 = getMySQLConnection(DB1);
+
+        execute(mycatConnection, "DROP DATABASE db1");
+
+
+        execute(mycatConnection, "CREATE DATABASE db1");
+        execute(mycatConnection, "CREATE DATABASE db1");
+
+
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds0",
+                        DB1));
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds1",
+                        DB2));
+
+        execute(mycatConnection,
+                CreateClusterHint.create("c0",
+                        Arrays.asList("ds0"), Collections.emptyList()));
+        execute(mycatConnection,
+                CreateClusterHint.create("c1",
+                        Arrays.asList("ds1"), Collections.emptyList()));
+
+        execute(mycatConnection, "USE `db1`;");
+        execute(mysql3306, "USE `db1`;");
+
+        execute(mycatConnection, "CREATE TABLE `travelrecord2` (\n" +
+                "  `id` bigint(20) NOT NULL KEY,\n" +
+                "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                "  `traveldate` datetime DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int(11) DEFAULT NULL,\n" +
+                "  `blob` longblob DEFAULT NULL\n" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                "tbpartition by YYYYMM(traveldate) tbpartitions 12;");
+
+        execute(mycatConnection,"INSERT INTO `travelrecord2`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`)\n" +
+                "VALUES (1,2,timestamp('2021-02-22 18:34:05.983692'),3,4,NULL)");
+
+    }
 }
 
