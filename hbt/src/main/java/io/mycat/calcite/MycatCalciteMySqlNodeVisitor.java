@@ -1653,6 +1653,10 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
                 this.sqlNode = MycatLastInsertIdFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;
             }
+            case "ROW_COUNT": {
+                this.sqlNode = MycatRowCountFunction.INSTANCE.createCall(SqlParserPos.ZERO);
+                return false;
+            }
             case "VERSION": {
                 this.sqlNode = MycatVersionFunction.INSTANCE.createCall(SqlParserPos.ZERO);
                 return false;

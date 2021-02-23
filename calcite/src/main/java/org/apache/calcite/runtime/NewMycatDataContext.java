@@ -30,6 +30,8 @@ public interface NewMycatDataContext extends DataContext {
 
     public Long getLastInsertId();
 
+    public Long getRowCount();
+
     public Long getConnectionId();
 
     public Object getUserVariable(String name);

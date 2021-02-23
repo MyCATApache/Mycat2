@@ -159,7 +159,9 @@ public class AssembleTest implements MycatTest {
             Assert.assertTrue(
                     executeQuery(mycatConnection, "select LAST_INSERT_ID()").toString().contains("999999999")
             );
-
+            Assert.assertEquals("[{ROW_COUNT()=4}]",
+                    executeQuery(mycatConnection, "select ROW_COUNT()").toString()
+            );
             Assert.assertFalse(
                     executeQuery(mycatConnection, "select * from travelrecord limit 1").isEmpty()
             );

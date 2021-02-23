@@ -78,6 +78,7 @@ public class SqlFunctionTest implements MycatTest {
         check("SELECT LOWER('A') ");
         check("SELECT LCASE('A') ");
         check("SELECT UNHEX('GG') ");
+        uncheckValue("SELECT ROW_COUNT() ");
 
 
     }

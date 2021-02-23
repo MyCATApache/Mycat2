@@ -97,4 +97,8 @@ public abstract class NewMycatDataContextImpl implements NewMycatDataContext {
         return forUpdate;
     }
 
+    @Override
+    public Long getRowCount() {
+        return dataContext.getAffectedRows();
+    }
 }

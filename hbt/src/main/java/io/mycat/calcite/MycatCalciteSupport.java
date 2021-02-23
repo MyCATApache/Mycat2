@@ -377,6 +377,7 @@ public enum MycatCalciteSupport implements Context {
                             MycatUserValueFunction.INSTANCE,
                             MycatVersionFunction.INSTANCE,
                             MycatLastInsertIdFunction.INSTANCE,
+                            MycatRowCountFunction.INSTANCE,
                             MycatConnectionIdFunction.INSTANCE,
                             MycatCurrentUserFunction.INSTANCE,
                             MycatUserFunction.INSTANCE,
