@@ -463,7 +463,10 @@ public class DrdsRunner {
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
-
+                        if (node!=null&&node instanceof SqlDynamicParam){
+                            RelDataType relDataType = deriveType(scope, node);
+                           return;
+                        }
                         super.inferUnknownTypes(inferredType, scope, node);
                     }
 
