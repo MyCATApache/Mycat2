@@ -16,7 +16,10 @@ package io.mycat.calcite.logical;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.TableHandler;
 import io.mycat.calcite.*;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
@@ -24,6 +27,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.ShardingTable;
+import io.mycat.config.ServerConfig;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
@@ -39,7 +43,9 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -63,9 +69,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     final RelNode relNode;
     final Distribution distribution;
     final RexNode conditions;
+    final boolean containsOrder;
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode) {
-        this(relTrait, input, dataNode,null);
+        this(relTrait, input, dataNode, null);
     }
 
     public MycatView(RelTraitSet relTrait, RelNode input, Distribution dataNode, RexNode conditions) {
@@ -75,6 +82,23 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         this.rowType = input.getRowType();
         this.relNode = input;
         this.traitSet = relTrait;
+        FindOrder findOrder = new FindOrder();
+        this.relNode.accept(findOrder);
+        this.containsOrder = findOrder.containsOrder;
+    }
+
+    public boolean isContainsOrder() {
+        return containsOrder;
+    }
+
+    static class FindOrder extends RelShuttleImpl {
+        boolean containsOrder = false;
+
+        @Override
+        public RelNode visit(LogicalSort sort) {
+            containsOrder = true;
+            return sort;
+        }
     }
 
     public static MycatView ofCondition(RelNode input,
@@ -82,10 +106,12 @@ public class MycatView extends AbstractRelNode implements MycatRel {
                                         RexNode conditions) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, conditions);
     }
-    public  MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
-        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo,this.conditions);
+
+    public MycatView changeTo(RelNode input, Distribution dataNodeInfo) {
+        return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo, this.conditions);
     }
-    public static MycatView ofBottom( RelNode input, Distribution dataNodeInfo) {
+
+    public static MycatView ofBottom(RelNode input, Distribution dataNodeInfo) {
         return new MycatView(input.getTraitSet().replace(MycatConvention.INSTANCE), input, dataNodeInfo);
     }
 
@@ -147,34 +173,37 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     private RelNode applyDataNode(Map<String, DataNode> map, RelNode relNode) {
         return relNode.accept(new RelShuttleImpl() {
-                    @Override
-                    public RelNode visit(TableScan scan) {
-                        MycatLogicTable mycatLogicTable = scan.getTable().unwrap(MycatLogicTable.class);
-                        if (mycatLogicTable != null) {
-                            String uniqueName = mycatLogicTable.getTable().getUniqueName();
-                            DataNode dataNode = map.get(uniqueName);
-                            MycatPhysicalTable physicalTable = new MycatPhysicalTable(mycatLogicTable, dataNode);
-                            RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
-                                    scan.getRowType(),
-                                    physicalTable,
-                                    ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
-                            );
-                            return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
-                        }
-                        return super.visit(scan);
-                    }
-                });
+            @Override
+            public RelNode visit(TableScan scan) {
+                MycatLogicTable mycatLogicTable = scan.getTable().unwrap(MycatLogicTable.class);
+                if (mycatLogicTable != null) {
+                    String uniqueName = mycatLogicTable.getTable().getUniqueName();
+                    DataNode dataNode = map.get(uniqueName);
+                    MycatPhysicalTable physicalTable = new MycatPhysicalTable(mycatLogicTable, dataNode);
+                    RelOptTableImpl relOptTable1 = RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
+                            scan.getRowType(),
+                            physicalTable,
+                            ImmutableList.of(dataNode.getTargetName(), dataNode.getSchema(), dataNode.getTable())
+                    );
+                    return LogicalTableScan.create(scan.getCluster(), relOptTable1, ImmutableList.of());
+                }
+                return super.visit(scan);
+            }
+        });
     }
 
     public Stream<Map<String, DataNode>> assignParams(List<Object> params) {
-        return distribution.getDataNodes(table -> PredicateAnalyzer.analyze(table, conditions==null?
-                ImmutableList.of():ImmutableList.of(conditions), params));
+        return distribution.getDataNodes(table -> PredicateAnalyzer.analyze(table, conditions == null ?
+                ImmutableList.of() : ImmutableList.of(conditions), params));
     }
 
-
     public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params) {
+        ServerConfig serverConfig = MetaClusterCurrent.wrapper(ServerConfig.class);
+        return expandToSql(update, params, serverConfig.getMergeUnionSize());
+    }
+
+    public ImmutableMultimap<String, SqlString> expandToSql(boolean update, List<Object> params, int mergeUnionSize) {
         Stream<Map<String, DataNode>> dataNodes = assignParams(params);
-        ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
         if (distribution.type() == Distribution.Type.BroadCast) {
             GlobalTable globalTable = distribution.getGlobalTables().get(0);
             List<DataNode> globalDataNode = globalTable.getGlobalDataNode();
@@ -186,13 +215,59 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
             return ImmutableMultimap.of(targetName, sqlString);
         }
-        dataNodes.forEach(m -> {
-            String targetName = m.values().iterator().next().getTargetName();
+        if (mergeUnionSize==0||containsOrder){
+            ImmutableMultimap.Builder<String,SqlString> builder = ImmutableMultimap.builder();
+            dataNodes.forEach(m -> {
+                String targetName = m.values().iterator().next().getTargetName();
+                SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
+                SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
+                builder.put(targetName, sqlString);
+            });
+            return builder.build();
+        }
+        Map<String, List<Map<String, DataNode>>> collect = dataNodes.collect(Collectors.groupingBy(m -> m.values().iterator().next().getTargetName()));
+        ImmutableMultimap.Builder<String, SqlString> resMapBuilder = ImmutableMultimap.builder();
+        for (Map.Entry<String, List<Map<String, DataNode>>> entry : collect.entrySet()) {
+            String targetName = entry.getKey();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
-            builder.put(targetName, sqlString);
-        });
-        return builder.build();
+            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize).iterator();
+            while (iterator.hasNext()) {
+                List<Map<String, DataNode>> eachList = iterator.next();
+                ImmutableList.Builder<RelNode> builderList = ImmutableList.builder();
+                for (Map<String, DataNode> each : eachList) {
+                    RelNode newNode = relNode.accept(new RelShuttleImpl() {
+                        @Override
+                        public RelNode visit(LogicalSort sort) {
+                            return super.visit(sort);
+                        }
+
+                        @Override
+                        public RelNode visit(TableScan scan) {
+                            MycatLogicTable logicTable = scan.getTable().unwrap(MycatLogicTable.class);
+                            DataNode backendTableInfo = null;
+                            if (logicTable != null && each != null) {
+                                TableHandler tableHandler = logicTable.logicTable();
+                                backendTableInfo = each.get(tableHandler.getUniqueName());
+                                MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(logicTable, backendTableInfo);
+                                return LogicalTableScan.create(scan.getCluster(),
+                                        RelOptTableImpl.create(scan.getTable().getRelOptSchema(),
+                                                scan.getRowType(),
+                                                mycatPhysicalTable,
+                                                ImmutableList.of(backendTableInfo.getUniqueName())),
+                                        ImmutableList.of()
+                                );
+                            }
+                            return scan;
+                        }
+                    });
+                    builderList.add(newNode);
+                }
+                ImmutableList<RelNode> relNodes = builderList.build();
+                SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(LogicalUnion.create(relNodes, true), dialect, Collections.emptyMap(), update, params);
+                resMapBuilder.put(targetName, sqlString);
+            }
+        }
+        return resMapBuilder.build();
     }
 
 //    public List<String> getTargets(List<Object> params) {
@@ -284,7 +359,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     }
 
     public static Expression fieldExpression(ParameterExpression row_, int i,
-                                       PhysType physType, JavaRowFormat format) {
+                                             PhysType physType, JavaRowFormat format) {
         return format.field(row_, i, null, physType.getJavaFieldType(i));
     }
 
@@ -305,7 +380,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         Expression mycatViewStash = implementor.stash(this, RelNode.class);
         Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class);
         final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash);
-        builder.add(toRows(physType, expression2,getRowType().getFieldCount()));
+        builder.add(toRows(physType, expression2, getRowType().getFieldCount()));
         return implementor.result(physType, builder.toBlock());
     }
 
