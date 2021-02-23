@@ -84,6 +84,7 @@ public class AssembleTest implements MycatTest {
         }
     }
 
+
     @Test
     public void testBase() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
@@ -100,6 +101,8 @@ public class AssembleTest implements MycatTest {
 
         }
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);) {
+
+
 
             List<Map<String, Object>> maps = executeQuery(mycatConnection,
                     "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'db1' UNION SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'xxx' UNION SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'db1' ");
@@ -131,6 +134,12 @@ public class AssembleTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+
+            execute(mycatConnection, "START TRANSACTION");
+            execute(mycatConnection,"INSERT INTO `db1`.`travelrecord` (`blob`, `days`, `fee`, `traveldate`, `user_id`) VALUES (NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom')");
+            execute(mycatConnection, "COMMIT");
+            deleteData(mycatConnection,"db1","travelrecord");
+
             execute(mycatConnection, "/*+ mycat:setSequence{\"name\":\"db1_travelrecord\",\"time\":true} */;");
 
             Assert.assertTrue(

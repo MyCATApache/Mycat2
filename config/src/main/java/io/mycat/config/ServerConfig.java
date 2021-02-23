@@ -56,6 +56,7 @@ public class ServerConfig {
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
     private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
+    private int mergeUnionSize = 5;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
