@@ -60,6 +60,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -209,8 +210,18 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName);
                 Map<String, NormalTableConfig> normalTables = value.getNormalTables();
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName, tableName -> {
+                    NormalTableConfig normalTableConfig = normalTables.get(tableName);
+                    boolean needLoadCreateTableSQL = true;
+                    if (normalTableConfig != null) {
+                        if (normalTableConfig.getCreateTableSQL() != null) {
+                            needLoadCreateTableSQL = false;
+                        }
+                    }
+                    return needLoadCreateTableSQL;
+                });
+
                 for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
                     normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
                 }
@@ -333,7 +344,7 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName, String schemaName) {
+    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName, String schemaName, Predicate<String> tableFilter) {
         Set<String> tables = new HashSet<>();
         try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
@@ -342,7 +353,7 @@ public class MetadataManager implements MysqlVariableService {
             }
         }
         Map<String, NormalTableConfig> res = new ConcurrentHashMap<>();
-        tables.stream().parallel().forEach(tableName -> {
+        tables.stream().filter(tableFilter).parallel().forEach(tableName -> {
             NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(targetName, schemaName, tableName);
             try {
                 res.put(tableName, (new NormalTableConfig(
@@ -929,8 +940,8 @@ public class MetadataManager implements MysqlVariableService {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
                                 int i = ThreadLocalRandom.current().nextInt(0, tableHandler1.getGlobalDataNode().size());
                                 dataNode = tableHandler1.getGlobalDataNode().get(i);
-                            }else {
-                                throw new IllegalArgumentException("unsupported table type:"+tableHandler.getType());
+                            } else {
+                                throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());
                             }
                             tables.put(tableHandler.getTableName(),
                                     new SimpleRoute(tableName.getKey(), tableName.getValue(), dataNode.getTargetName()));
