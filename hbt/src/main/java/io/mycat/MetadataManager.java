@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -340,8 +341,8 @@ public class MetadataManager implements MysqlVariableService {
                 tables.add(tableIterator.getString(0));
             }
         }
-        Map<String, NormalTableConfig> res = new HashMap<>();
-        for (String tableName : tables) {
+        Map<String, NormalTableConfig> res = new ConcurrentHashMap<>();
+        tables.stream().parallel().forEach(tableName -> {
             NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(targetName, schemaName, tableName);
             try {
                 res.put(tableName, (new NormalTableConfig(
@@ -351,7 +352,7 @@ public class MetadataManager implements MysqlVariableService {
             } catch (Throwable e) {
                 LOGGER.warn("", e);
             }
-        }
+        });
         return res;
     }
 
