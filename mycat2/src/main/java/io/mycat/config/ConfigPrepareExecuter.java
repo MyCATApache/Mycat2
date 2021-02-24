@@ -290,6 +290,7 @@ public class ConfigPrepareExecuter {
         if (jdbcConnectionManager != null) {
             if (MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
                 JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+                connectionManager.close();
             }
             context.put(JdbcConnectionManager.class, jdbcConnectionManager);
         }
