@@ -98,6 +98,11 @@ public class MySQLManagerImpl implements MySQLManager {
     }
 
     @Override
+    public Map<String, Integer> computeConnectionUsageSnapshot() {
+        return null;
+    }
+
+    @Override
     public void setTimer(long delay, Runnable handler) {
         Vertx.currentContext().owner().setTimer(delay, event -> handler.run());
     }

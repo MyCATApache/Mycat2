@@ -47,7 +47,7 @@ import static com.alibaba.druid.sql.visitor.SQLEvalVisitor.EVAL_EXPR;
 import static com.alibaba.druid.sql.visitor.SQLEvalVisitor.EVAL_VALUE;
 import static com.alibaba.druid.sql.visitor.SQLEvalVisitor.EVAL_VALUE_NULL;
 
-public class SQLEvalVisitorUtils {
+public class MycatSQLEvalVisitorUtils {
 
     private static Map<String, Function> functions = new HashMap<String, Function>();
 

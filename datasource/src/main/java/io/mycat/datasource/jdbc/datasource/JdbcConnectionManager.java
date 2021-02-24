@@ -191,6 +191,13 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         }
     }
 
+    @Override
+    public void close() {
+        for (JdbcDataSource value : dataSourceMap.values()) {
+            value.close();
+        }
+    }
+
     public Map<String, JdbcDataSource> getDatasourceInfo() {
         return Collections.unmodifiableMap(dataSourceMap);
     }
@@ -233,15 +240,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         });
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        ScheduleUtil.getTimer().schedule(() -> {
-            for (JdbcDataSource value : dataSourceMap.values()) {
-                value.close();
-            }
-        }, 1, TimeUnit.MINUTES);
-    }
 
     public DatasourceProvider getDatasourceProvider() {
         return datasourceProvider;

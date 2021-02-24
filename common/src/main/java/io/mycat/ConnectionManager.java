@@ -27,4 +27,6 @@ public interface ConnectionManager<T extends MycatConnection> {
     T getConnection(String name) throws Exception;
 
     void closeConnection(T connection) throws Exception;
+
+    void close();
 }

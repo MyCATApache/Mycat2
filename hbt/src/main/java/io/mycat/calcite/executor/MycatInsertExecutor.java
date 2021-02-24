@@ -5,12 +5,14 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.*;
 import io.mycat.calcite.Executor;
@@ -101,7 +103,7 @@ public class MycatInsertExecutor implements Executor {
             });
             valuesList.add(valuesClause);
         }
-        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(),true), sqlStatement.toString());
+        return Pair.of(context.resolveDatasourceTargetName(key.getTarget(), true), sqlStatement.toString());
     }
 
     @NotNull
@@ -110,7 +112,7 @@ public class MycatInsertExecutor implements Executor {
         return null;
     }
 
-    public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel,List<Object> params) {
+    public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel, List<Object> params) {
         return new MycatInsertExecutor(context, mycatInsertRel, params);
     }
 
@@ -119,7 +121,7 @@ public class MycatInsertExecutor implements Executor {
         try {
             execute(groupMap);
             onInsertSuccess();
-        }finally {
+        } finally {
             done = true;
         }
     }
@@ -148,7 +150,7 @@ public class MycatInsertExecutor implements Executor {
                 valuesClause.addValue(SQLExprUtils.fromJavaObject(sequence));
             }
 
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),params);
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), params);
             DataNode dataNode = function.calculateOne((Map) variables);
 
             SQLExprTableSource tableSource = cloneStatement.getTableSource();
@@ -157,14 +159,14 @@ public class MycatInsertExecutor implements Executor {
             cloneStatement.addValueCause(valuesClause);
 
             int size = valuesClause.getValues().size();
-            int startIndex = count*size;
+            int startIndex = count * size;
             List<Object> outParams = new ArrayList<>(params);
             StringBuilder sb = new StringBuilder();
 
             MycatPreparedStatementUtil.outputToParameterized(cloneStatement, sb, outParams);
 
             String parameterizedString = sb.toString();
-            SQL key = SQL.of(parameterizedString, dataNode,cloneStatement,outParams);
+            SQL key = SQL.of(parameterizedString, dataNode, cloneStatement, outParams);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);
 
@@ -196,7 +198,7 @@ public class MycatInsertExecutor implements Executor {
                 valuesClause.addValue(sqlVariantRefExpr);
             }
 
-            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(),(List)param);
+            Map<String, List<RangeVariable>> variables = compute(shardingKeys, columnNames, valuesClause.getValues(), (List) param);
             DataNode dataNode = function.calculateOne((Map) variables);
             SQLExprTableSource tableSource = mySqlInsertStatement.getTableSource();
             tableSource.setExpr(dataNode.getTable());
@@ -206,7 +208,7 @@ public class MycatInsertExecutor implements Executor {
             List<Object> out = new ArrayList<>();
             MycatPreparedStatementUtil.outputToParameterized(mySqlInsertStatement, sb, out);
             String parameterizedString = sb.toString();
-            SQL key = SQL.of(parameterizedString, dataNode,mySqlInsertStatement,arg);
+            SQL key = SQL.of(parameterizedString, dataNode, mySqlInsertStatement, arg);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(arg);
         }
@@ -221,7 +223,7 @@ public class MycatInsertExecutor implements Executor {
         Map<String, MycatConnection> connections = new HashMap<>();
         Set<String> uniqueValues = new HashSet<>();
         for (SQL target : group.keySet()) {
-            String k = transactionSession.resolveFinalTargetName(target.getTarget(),true);
+            String k = transactionSession.resolveFinalTargetName(target.getTarget(), true);
             if (uniqueValues.add(k)) {
                 if (connections.put(target.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
                     throw new IllegalStateException("Duplicate key");
@@ -229,7 +231,7 @@ public class MycatInsertExecutor implements Executor {
             }
         }
 
-        long lastInsertId =0;
+        long lastInsertId = 0;
         long affected = 0;
         SqlRecord sqlRecord = context.currentSqlRecord();
         if (group.size() == 1) {
@@ -254,7 +256,7 @@ public class MycatInsertExecutor implements Executor {
                                     lastInsertId);
                         }
                     }
-                    sqlRecord.addSubRecord(parameterizedSql, startTime,targetName, affected);
+                    sqlRecord.addSubRecord(parameterizedSql, startTime, targetName, affected);
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
                     }
@@ -271,7 +273,7 @@ public class MycatInsertExecutor implements Executor {
                 long startTime = SqlRecord.now();
 
                 MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
-                lastInsertId =Math.max(lastInsertId,res.getLastInsertId());
+                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
 
                 affected += res.getAffected();
 
@@ -284,8 +286,8 @@ public class MycatInsertExecutor implements Executor {
     }
 
     private static Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
-                                                     String[] columnNames,
-                                                     List<SQLExpr> values,
+                                                            String[] columnNames,
+                                                            List<SQLExpr> values,
                                                             List<Object> params) {
         Map<String, List<RangeVariable>> variables = new HashMap<>(1);
         for (Integer shardingKey : shardingKeys) {
@@ -297,7 +299,24 @@ public class MycatInsertExecutor implements Executor {
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
             } else {
-                o = SQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
+                try {
+                    o = MycatSQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
+                } catch (Throwable throwable) {
+                    boolean success = false;
+                    if (sqlExpr instanceof SQLMethodInvokeExpr) {
+                        if (!((SQLMethodInvokeExpr) sqlExpr).getArguments().isEmpty()) {
+                            SQLExpr sqlExpr1 = ((SQLMethodInvokeExpr) sqlExpr).getArguments().get(0);
+                            if (sqlExpr1 instanceof SQLVariantRefExpr) {
+                                int index = ((SQLVariantRefExpr) sqlExpr1).getIndex();
+                                o = params.get(index);
+                                success =true;
+                            }
+                        }
+                    }
+                    if (!success){
+                        throw  throwable;
+                    }
+                }
             }
             String columnName = columnNames[shardingKey];
             List<RangeVariable> rangeVariables = variables.computeIfAbsent(columnName, s -> new ArrayList<>(1));
@@ -340,7 +359,7 @@ public class MycatInsertExecutor implements Executor {
         if (!logicTable.canIndex()) {
             return;
         }
-        if(!MetaClusterCurrent.exist(GSIService.class)){
+        if (!MetaClusterCurrent.exist(GSIService.class)) {
             return;
         }
         GSIService gsiService = MetaClusterCurrent.wrapper(GSIService.class);

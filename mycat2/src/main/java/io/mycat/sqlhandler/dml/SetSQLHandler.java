@@ -2,7 +2,7 @@ package io.mycat.sqlhandler.dml;
 
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.ast.expr.*;
-import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
+import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
@@ -12,7 +12,6 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 
 import java.util.Collections;
@@ -70,7 +69,7 @@ public class SetSQLHandler extends AbstractSQLHandler<SQLSetStatement> {
                         //todo
                         value = "default";
                     }else {
-                        value = SQLEvalVisitorUtils.eval(DbType.mysql, valueExpr);
+                        value = MycatSQLEvalVisitorUtils.eval(DbType.mysql, valueExpr);
                     }
                 }
                 switch (varType) {
