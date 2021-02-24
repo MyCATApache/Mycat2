@@ -237,7 +237,11 @@ public class XaLogImpl implements XaLog {
                     for (String target : targets) {
                         futureList1.add(mySQLManager.getConnection(target)
                                 .flatMap(sqlConnection -> sqlConnection.query(sql)
-                                        .execute().onComplete(u -> {
+                                        .execute()
+                                        .flatMap((Function<RowSet<Row>, Future<Void>>) rows ->
+                                                sqlConnection.query("delete from mycat.xa_log where xid = '"+xid+"'").execute()
+                                                        .mapEmpty())
+                                        .onComplete(u -> {
                                             sqlConnection.close().mapEmpty();
                                         }).mapEmpty()));
                     }

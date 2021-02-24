@@ -35,12 +35,17 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 
+    /**
+     * 不理会是否创建,如果创建不成功,需要人工创建
+     * @param dataSource
+     * @return
+     */
     public static Future<Void> tryCreateLogTable(SqlConnection dataSource) {
         String createDatabaseSQL = "create database if not exists `" + database + "`";
         String createTableSQL = "create table if not exists `" + database + "`." + "`" + tableName + "`"
                 + "(`xid` varchar(64),"+
                 "UNIQUE KEY `uk_key` (`xid`)) ENGINE=InnoDB";
-        return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty());
+        return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty()).otherwise(throwable -> null).mapEmpty();
     }
 
     @Override
