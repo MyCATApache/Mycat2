@@ -11,6 +11,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.*;
 import io.mycat.calcite.Executor;
@@ -297,7 +298,7 @@ public class MycatInsertExecutor implements Executor {
             } else if (sqlExpr instanceof SQLNullExpr) {
                 o = null;
             } else {
-                o = SQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
+                o = MycatSQLEvalVisitorUtils.eval(DbType.mysql, sqlExpr, params);
             }
             String columnName = columnNames[shardingKey];
             List<RangeVariable> rangeVariables = variables.computeIfAbsent(columnName, s -> new ArrayList<>(1));
