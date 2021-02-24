@@ -1,9 +1,12 @@
 package io.vertx;
 
 import io.mycat.util.ExpiryLRUMap;
+import io.mycat.vertxmycat.JdbcMySqlConnection;
 import io.netty.util.concurrent.FastThreadLocal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Queue;
@@ -13,6 +16,7 @@ import java.util.function.Consumer;
 
 @Slf4j
 public enum Trace {
+
     /*追踪分类*/
 
     /**
@@ -34,6 +38,7 @@ public enum Trace {
     };
 
     private static final boolean ENABLE = Boolean.getBoolean("trace.enable");
+    private static final Logger LOGGER = LoggerFactory.getLogger(Trace.class);
     private static final FastThreadLocal<TraceContext> CONTEXT_THREAD_LOCAL = new FastThreadLocal<TraceContext>() {
         @Override
         protected TraceContext initialValue() throws Exception {
@@ -50,7 +55,7 @@ public enum Trace {
     }
 
     public static boolean isEnable() {
-        return true;
+        return LOGGER.isDebugEnabled() || ENABLE;
 //        return ENABLE;
     }
 
