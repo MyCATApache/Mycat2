@@ -32,9 +32,11 @@ public interface MySQLManager {
 
     Future<Void> close();
 
+   Map<String,Integer> computeConnectionUsageSnapshot();
+
     void setTimer(long delay, Runnable handler);
 
-    public  default Future<Map<String, SqlConnection>> getMapFuture(Set<String> keys) {
+    public default Future<Map<String, SqlConnection>> getMapFuture(Set<String> keys) {
         ConcurrentHashMap<String, SqlConnection> map = new ConcurrentHashMap<>();
         List<Future<SqlConnection>> futureList = new ArrayList<>();
         Iterator<String> iterator = keys.iterator();

@@ -9,10 +9,9 @@ import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.calcite.spm.PlanCache;
-import io.mycat.commands.MycatMySQLManager;
+import io.mycat.commands.JdbcMycatMySQLManager;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
@@ -323,7 +322,7 @@ public class ConfigPrepareExecuter {
 
         MySQLManager mySQLManager;
         if (!MetaClusterCurrent.exist(MySQLManager.class)) {
-            mySQLManager = new MycatMySQLManager();
+            mySQLManager = new JdbcMycatMySQLManager();
         } else {
             mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
         }
