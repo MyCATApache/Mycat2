@@ -15,7 +15,7 @@ import io.vertx.core.Future;
 
 import java.util.function.Supplier;
 
-public class ProxyTransactionSession extends LocalSqlConnection implements TransactionSession {
+public class ProxyTransactionSession extends LocalXaSqlConnection implements TransactionSession {
     private TransactionSession parent;
 
     public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog, TransactionSession parent) {
