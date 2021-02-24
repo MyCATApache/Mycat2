@@ -73,6 +73,7 @@ public class TableAnalyse implements MycatTest {
 
         List<Map<String, Object>> maps = JdbcUtils.executeQuery(mycatConnection, "/*+ mycat:showErGroup{}*/", Collections.emptyList());
         Assert.assertEquals(2,maps.size() );
+        Assert.assertEquals("[{group_id=0, schemaName=db1, tableName=travelrecord}, {group_id=0, schemaName=db1, tableName=travelrecord2}]",maps.toString() );
     }
 
 }
