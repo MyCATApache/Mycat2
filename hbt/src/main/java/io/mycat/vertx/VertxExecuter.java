@@ -4,6 +4,7 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.mchange.util.AssertException;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.executor.Group;
 import io.mycat.calcite.executor.MycatInsertExecutor;
@@ -17,8 +18,6 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.mysqlclient.MySQLClient;
-import io.mycat.api.collector.MysqlPayloadObject;
-import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.sqlclient.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -55,9 +54,9 @@ public class VertxExecuter {
         }
         return CompositeFuture.all((List) list)
                 .map(compositeFuture -> list.stream().map(l -> l.result())
-                   .reduce((longs, longs2) ->
-                           new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
-                   .orElse(new long[2])).onComplete(event -> sqlConnection.closeStatementState());
+                        .reduce((longs, longs2) ->
+                                new long[]{longs[0] + longs2[0], Math.max(longs[1], longs2[1])})
+                        .orElse(new long[2])).onComplete(event -> sqlConnection.closeStatementState());
     }
 
 
@@ -93,62 +92,51 @@ public class VertxExecuter {
     }
 
     public static Observable<MysqlPayloadObject> runQueryOutputAsMysqlPayloadObject(Future<SqlConnection> connectionFuture,
-                                                          String sql,
-                                                          List<Object> values){
+                                                                                    String sql,
+                                                                                    List<Object> values) {
         return Observable.create(emitter -> {
             // 连接到达
-            connectionFuture.onSuccess(connection->{
+            connectionFuture.onSuccess(connection -> {
                 // 预编译到达
                 connection.prepare(sql)
-                        .onSuccess(preparedStatement->{
+                        .onSuccess(preparedStatement -> {
                             // 查询结果到达
                             PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                            query.collecting(new EmitterMysqlPayloadCollector(emitter,null,true)).execute(Tuple.tuple(values))
-                                    .onSuccess(new Handler<SqlResult<Void>>() {
-                                        @Override
-                                        public void handle(SqlResult<Void> event) {
-                                            emitter.onComplete();
-                                        }
-                                    });
+                            query.collecting(new EmitterMysqlPayloadCollector(emitter, null, true)).execute(Tuple.tuple(values))
+                                    .onSuccess(event -> emitter.onComplete())
+                                    .onFailure(throwable -> emitter.onError(throwable));
                         })
                         .onFailure(throwable -> {
                             emitter.onError(throwable);
-                            System.out.println("throwable = " + throwable);
                         });
             }).onFailure(throwable -> {
                 emitter.onError(throwable);
-                System.out.println("throwable = " + throwable);
             });
         });
 
     }
+
     public static Observable<Object[]> runQuery(Future<SqlConnection> connectionFuture,
-                                                          String sql,
-                                                          List<Object> values,
-                                                          MycatRowMetaData rowMetaData) {
+                                                String sql,
+                                                List<Object> values,
+                                                MycatRowMetaData rowMetaData) {
         return Observable.create(emitter -> {
             // 连接到达
-            connectionFuture.onSuccess(connection->{
+            connectionFuture.onSuccess(connection -> {
                 // 预编译到达
                 connection.prepare(sql)
-                        .onSuccess(preparedStatement->{
+                        .onSuccess(preparedStatement -> {
                             // 查询结果到达
                             PreparedQuery<RowSet<Row>> query = preparedStatement.query();
-                            query.collecting(new EmitterObjectsCollector(emitter,rowMetaData)).execute(Tuple.tuple(values))
-                            .onSuccess(new Handler<SqlResult<Void>>() {
-                                @Override
-                                public void handle(SqlResult<Void> event) {
-                                    emitter.onComplete();
-                                }
-                            });
+                            query.collecting(new EmitterObjectsCollector(emitter, rowMetaData)).execute(Tuple.tuple(values))
+                                    .onSuccess(event -> emitter.onComplete())
+                                    .onFailure(throwable -> emitter.onError(throwable));
                         })
                         .onFailure(throwable -> {
                             emitter.onError(throwable);
-                            System.out.println("throwable = " + throwable);
                         });
             }).onFailure(throwable -> {
                 emitter.onError(throwable);
-                System.out.println("throwable = " + throwable);
             });
         });
     }
