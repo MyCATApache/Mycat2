@@ -87,7 +87,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
                     if ("showErGroup".equalsIgnoreCase(cmd)) {
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                        resultSetBuilder.addColumnInfo("group_id", JDBCType.VARCHAR);
+                        resultSetBuilder.addColumnInfo("groupId", JDBCType.VARCHAR);
                         resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
                         resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
 
