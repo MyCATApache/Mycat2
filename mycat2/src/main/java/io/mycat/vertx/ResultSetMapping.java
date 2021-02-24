@@ -4,8 +4,13 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextConvertorImpl;
+import io.mycat.vertxmycat.JdbcMySqlConnection;
 import org.apache.calcite.avatica.util.ByteString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -14,6 +19,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public class ResultSetMapping {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResultSetMapping.class);
+
     public static Function<Object[], byte[]> concertToDirectTextResultSet(MycatRowMetaData rowMetaData) {
         int columnCount = rowMetaData.getColumnCount();
         return new Function<Object[], byte[]>() {
@@ -48,7 +55,12 @@ public class ResultSetMapping {
                                 row[rowIndex] = TextConvertorImpl.getBytes((Duration) o);
                             } else if (o instanceof LocalTime) {
                                 row[rowIndex] = TextConvertorImpl.getBytes((LocalTime) o);
-                            } else {
+                            } else if (o instanceof Time) {
+                                row[rowIndex] = TextConvertorImpl.getBytes(((Time) o).toLocalTime());
+                            } else if (o instanceof String) {
+                                row[rowIndex] = ((String) o).getBytes();
+                            }  else {
+                                LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
                             }
                             break;
@@ -58,9 +70,12 @@ public class ResultSetMapping {
                             Object o = objects[columnIndex];
                             if (o == null) {
                                 row[rowIndex] = null;
+                            } else if (o instanceof Timestamp) {
+                                row[rowIndex] = TextConvertorImpl.getBytes(((Timestamp) o).toLocalDateTime());
                             } else if (o instanceof LocalDateTime) {
                                 row[rowIndex] = TextConvertorImpl.getBytes((LocalDateTime) o);
-                            }else {
+                            } else {
+                                LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
                             }
                             break;
@@ -78,7 +93,10 @@ public class ResultSetMapping {
                                 } else {
                                     row[rowIndex] = TextConvertorImpl.ZERO;
                                 }
-                            }else {
+                            }else if (o instanceof String) {
+                                row[rowIndex] = ((String) o).getBytes();
+                            }  else {
+                                LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
                             }
                         }
