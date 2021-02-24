@@ -16,7 +16,7 @@ import java.util.Map;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class TableAnalyse implements MycatTest {
+public class TableAnalyseTest implements MycatTest {
 
     @Test
     public void testSameShardingRule() throws Exception {
