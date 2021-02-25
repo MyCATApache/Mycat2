@@ -164,11 +164,6 @@
             <artifactId>va</artifactId>
             <version>1.15-dev</version>
         </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>vertx</artifactId>
-            <version>1.15-dev</version>
-        </dependency>
     </dependencies>
     <build>
 

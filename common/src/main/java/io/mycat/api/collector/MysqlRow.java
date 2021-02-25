@@ -1,6 +1,5 @@
 package io.mycat.api.collector;
 
-import io.vertx.sqlclient.Row;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
