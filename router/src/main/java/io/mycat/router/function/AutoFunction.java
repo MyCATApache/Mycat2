@@ -42,6 +42,9 @@ public class AutoFunction extends CustomRuleFunction {
     }
 
     private  static String exractKey(SQLMethodInvokeExpr method) {
+        if (method == null){
+            return "null";
+        }
         String methodName = method.getMethodName().toUpperCase();
         //DD,MM,MMDD,MOD_HASH,UNI_HASH,WEEK,YYYYDD,YYYYMM,YYYYWEEK
         String key ;

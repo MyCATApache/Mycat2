@@ -160,7 +160,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         SqlIdentifier alias = null;
         if (x.getTableSource().getAlias() != null) {
-            alias = new SqlIdentifier(tableSource.getAlias(), SqlParserPos.ZERO);
+            alias = new SqlIdentifier(SQLUtils.normalize(tableSource.getAlias()), SqlParserPos.ZERO);
         }
 
         sqlNode = new SqlUpdate(SqlParserPos.ZERO, targetTable, targetColumnList, sourceExpressList, condition, null, alias);
@@ -178,7 +178,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         SqlIdentifier alias = null;
         if (x.getTableSource().getAlias() != null) {
-            alias = new SqlIdentifier(tableSource.getAlias(), SqlParserPos.ZERO);
+            alias = new SqlIdentifier(SQLUtils.normalize(tableSource.getAlias()), SqlParserPos.ZERO);
         }
 
         sqlNode = new SqlDelete(SqlParserPos.ZERO, targetTable, condition, null, alias);
@@ -483,7 +483,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         }
 
         if (x.getAlias() != null) {
-            SqlIdentifier alias = new SqlIdentifier(x.computeAlias(), SqlParserPos.ZERO);
+            SqlIdentifier alias = new SqlIdentifier(SQLUtils.normalize(x.computeAlias()), SqlParserPos.ZERO);
             SqlBasicCall as = new SqlBasicCall(SqlStdOperatorTable.AS, new SqlNode[]{table, alias},
                     SqlParserPos.ZERO);
             sqlNode = as;
@@ -607,7 +607,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         final String alias = x.getAlias();
         if (alias != null) {
-            SqlIdentifier aliasIdentifier = new SqlIdentifier(alias, SqlParserPos.ZERO);
+            SqlIdentifier aliasIdentifier = new SqlIdentifier(SQLUtils.normalize(alias), SqlParserPos.ZERO);
 
             List<SQLName> columns = x.getColumns();
 
@@ -635,7 +635,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
 
         final String alias = x.getAlias();
         if (alias != null) {
-            SqlIdentifier aliasIdentifier = new SqlIdentifier(alias, SqlParserPos.ZERO);
+            SqlIdentifier aliasIdentifier = new SqlIdentifier(SQLUtils.normalize(alias), SqlParserPos.ZERO);
             sqlNode = new SqlBasicCall(SqlStdOperatorTable.AS,
                     new SqlNode[]{sqlNode, aliasIdentifier},
                     SqlParserPos.ZERO);
@@ -826,7 +826,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
             }
         }
         SqlNode query = convertToSqlNode(x.getSubQuery());
-        SqlIdentifier name = new SqlIdentifier(x.getAlias(), SqlParserPos.ZERO);
+        SqlIdentifier name = new SqlIdentifier(SQLUtils.normalize(x.getAlias()), SqlParserPos.ZERO);
         sqlNode = new SqlWithItem(SqlParserPos.ZERO, name, columnList, query);
         return false;
     }
@@ -2356,7 +2356,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         String alias = x.getAlias();
         if (alias != null) {
             sqlNode = new SqlBasicCall(SqlStdOperatorTable.AS
-                    , new SqlNode[]{sqlNode, new SqlIdentifier(alias, SqlParserPos.ZERO)}
+                    , new SqlNode[]{sqlNode, new SqlIdentifier(SQLUtils.normalize(alias), SqlParserPos.ZERO)}
                     , SqlParserPos.ZERO
             );
         }
