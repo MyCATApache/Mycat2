@@ -13,14 +13,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>vertx</artifactId>
-            <version>1.15-dev</version>
-        </dependency>
-        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mysql-client</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
