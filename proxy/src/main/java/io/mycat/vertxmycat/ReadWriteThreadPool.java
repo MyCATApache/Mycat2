@@ -45,12 +45,12 @@ public class ReadWriteThreadPool {
     }
 
     private int readCoreSize(int maxThreads) {
-        int coreSize = Math.max(maxThreads / 5, 1);
+        int coreSize = Math.max(maxThreads / 4, 1);
         return coreSize > 100 ? 100 : coreSize;
     }
 
     private int writeCoreSize(int maxThreads) {
-        int coreSize = Math.max(maxThreads / 5, 1);
+        int coreSize = Math.max(maxThreads / 4, 1);
         return coreSize > 100 ? 100 : coreSize;
     }
 
