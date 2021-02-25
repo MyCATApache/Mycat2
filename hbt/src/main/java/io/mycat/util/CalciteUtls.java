@@ -74,7 +74,9 @@ public class CalciteUtls {
     }
 
     public static List<DataNode> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
-        LOGGER.info("origin  filters:{}", filters);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("origin  filters:{}", filters);
+        }
         DataMappingEvaluator record = new DataMappingEvaluator();
         for (RexNode filter : filters) {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
@@ -83,7 +85,9 @@ public class CalciteUtls {
                 record.merge(dataMappingRule);
             }
         }
-        LOGGER.info("optimize filters:{}", filters);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("optimize filters:{}", filters);
+        }
         List<DataNode> dataNodeList = table.function().calculate(record.getColumnMap());
         return dataNodeList;
     }

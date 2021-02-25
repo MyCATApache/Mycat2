@@ -267,7 +267,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                                 String orgName = new String(packet.getColumnOrgName());
                                                 int characterSet = packet.getColumnCharsetSet();
                                                 long columnLength = packet.getColumnLength();
-                                                DataType type = DataType.valueOf(packet.getColumnType());
+                                                DataType type = DataType.valueOf(packet.getColumnType()==15?253:packet.getColumnType());
                                                 int flags = packet.getColumnFlags();
                                                 byte decimals = packet.getColumnDecimals();
                                                 ColumnDefinition columnDefinition = new ColumnDefinition(
