@@ -93,12 +93,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
         @Override
         public RelNode visit(LogicalSort sort) {
-            if (Optional.ofNullable(sort.getCollation()).map(i -> i.getFieldCollations()).map(i -> !i.isEmpty()).orElse(false)) {
-                containsOrder = true;
-                return sort;
-            } else {
-                return super.visit(sort);
-            }
+            containsOrder = true;
+            return sort;
         }
     }
 
