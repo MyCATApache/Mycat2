@@ -20,7 +20,6 @@
       <module>example</module>
       <module>statistic</module>
       <module>va</module>
-      <module>vertx</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
