@@ -1,10 +1,10 @@
 package io.mycat.vertx;
 
+import io.mycat.MycatTimeUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowObservable;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.MycatValueFactory;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observer;
@@ -18,19 +18,23 @@ import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.data.Numeric;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
-import io.vertx.sqlclient.impl.command.QueryCommandBase;
-import org.apache.calcite.rel.type.RelDataType;
+import lombok.SneakyThrows;
+import org.apache.calcite.avatica.util.ByteString;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.sql.JDBCType;
+import java.sql.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static java.sql.Types.*;
 
-public class  BaseRowObservable extends RowObservable implements StreamMysqlCollector {
+public class BaseRowObservable extends RowObservable implements StreamMysqlCollector {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseRowObservable.class);
     protected MycatRowMetaData metaData;
     protected Observer<? super Object[]> observer;
@@ -94,6 +98,7 @@ public class  BaseRowObservable extends RowObservable implements StreamMysqlColl
     }
 
     @NotNull
+    @SneakyThrows
     public static Object[] getObjects(Row row, MycatRowMetaData metaData) {
         Object[] objects = new Object[metaData.getColumnCount()];
         for (int columnIndex = 0; columnIndex < objects.length; columnIndex++) {
@@ -113,8 +118,7 @@ public class  BaseRowObservable extends RowObservable implements StreamMysqlColl
                 case TINYINT:
                 case SMALLINT:
                 case INTEGER:
-                case BIGINT:
-                {
+                case BIGINT: {
                     Numeric numeric = row.getNumeric(columnIndex);
                     if (numeric == null) {
                         value = null;
@@ -151,21 +155,67 @@ public class  BaseRowObservable extends RowObservable implements StreamMysqlColl
                     break;
                 }
                 case DATE: {
-                    value = row.getLocalDate(columnIndex);
+                    value = row.getValue(columnIndex);
+                    if (value == null) {
+
+                    } else if (value instanceof LocalDate) {
+
+                    } else if (value instanceof  java.sql.Date) {
+                        value = ((Date) value).toLocalDate();
+                    }else if (value instanceof java.util.Date){
+                        java.util.Date value1 = (java.util.Date) value;
+                        value =  LocalDate.of(value1.getYear()+1900,value1.getMonth()+1,value1.getDate());
+                    }else if (value instanceof String){
+                        value = LocalDate.parse((String) value);
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
                     break;
                 }
                 case TIME_WITH_TIMEZONE:
                 case TIME: {
                     value = row.getValue(columnIndex);
+                    if (value == null){
+
+                    }else if ( value instanceof Duration){
+
+                    }else{
+                        String s = value.toString();
+                        value = MycatTimeUtil.timeStringToTimeDuration(s);
+                    }
                     break;
                 }
                 case TIMESTAMP_WITH_TIMEZONE:
                 case TIMESTAMP: {
                     value = row.getValue(columnIndex);
+                    if (value == null){
+                        value = null;
+                    }else if (value instanceof LocalDateTime){
+
+                    }else if (value instanceof Timestamp) {
+                        value =  ((Timestamp) value).toLocalDateTime();
+                    }else if (value instanceof String){
+                        value = Timestamp.valueOf((String) value);
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
                     break;
                 }
-                case CLOB:
                 case NCLOB:
+                case CLOB: {
+                    value = row.getValue(columnIndex);
+                    if (value != null && value instanceof Clob) {
+                        Clob value1 = (Clob) value;
+                        try {
+                            value = (value1.getSubString(1, (int) (value1.length())));
+                        } finally {
+                            value1.free();
+                        }
+                    }else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
+                    }
+                    break;
+                }
                 case BLOB:
                 case LONGVARBINARY:
                 case VARBINARY:
@@ -174,9 +224,18 @@ public class  BaseRowObservable extends RowObservable implements StreamMysqlColl
                     if (value == null) {
                         value = null;
                     } else if (value instanceof String) {
-                        value = ((String) value).getBytes();
+                        value = new ByteString(((String) value).getBytes());
                     } else if (value instanceof Buffer) {
-                        value = ((Buffer) value).getBytes();
+                        value = new ByteString(((Buffer) value).getBytes());
+                    } else if (value instanceof Blob) {
+                        Blob value1 = (Blob) value;
+                        try {
+                            value = new ByteString(value1.getBytes(1, (int) (value1.length())));
+                        } finally {
+                            value1.free();
+                        }
+                    } else {
+                        throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
                 }
@@ -202,6 +261,104 @@ public class  BaseRowObservable extends RowObservable implements StreamMysqlColl
         return objects;
     }
 
+    public static Object convertSqlValue(Object value) throws SQLException {
+        if (value == null) {
+            return null;
+        }
+
+        // valid json types are just returned as is
+        if (value instanceof Boolean || value instanceof String || value instanceof byte[]) {
+            return value;
+        }
+
+        // numeric values
+        if (value instanceof Number) {
+            if (value instanceof BigDecimal) {
+                BigDecimal d = (BigDecimal) value;
+                if (d.scale() == 0) {
+                    return ((BigDecimal) value).toBigInteger();
+                } else {
+                    // we might loose precision here
+                    return ((BigDecimal) value).doubleValue();
+                }
+            }
+
+            return value;
+        }
+
+        // JDBC temporal values
+
+        if (value instanceof Time) {
+            return ((Time) value).toLocalTime();
+        }
+
+        if (value instanceof java.sql.Date) {
+            return ((java.sql.Date) value).toLocalDate();
+        }
+
+        if (value instanceof Timestamp) {
+            return ((Timestamp) value).toInstant().atOffset(ZoneOffset.UTC);
+        }
+
+        // large objects
+        if (value instanceof Clob) {
+            Clob c = (Clob) value;
+            try {
+                // result might be truncated due to downcasting to int
+                return c.getSubString(1, (int) c.length());
+            } finally {
+                try {
+                    c.free();
+                } catch (AbstractMethodError | SQLFeatureNotSupportedException e) {
+                    // ignore since it is an optional feature since 1.6 and non existing before 1.6
+                }
+            }
+        }
+
+        if (value instanceof Blob) {
+            Blob b = (Blob) value;
+            try {
+                // result might be truncated due to downcasting to int
+                return b.getBytes(1, (int) b.length());
+            } finally {
+                try {
+                    b.free();
+                } catch (AbstractMethodError | SQLFeatureNotSupportedException e) {
+                    // ignore since it is an optional feature since 1.6 and non existing before 1.6
+                }
+            }
+        }
+
+        // arrays
+        if (value instanceof Array) {
+            Array a = (Array) value;
+            try {
+                Object[] arr = (Object[]) a.getArray();
+                if (arr != null) {
+                    Object[] castedArray = new Object[arr.length];
+                    for (int i = 0; i < arr.length; i++) {
+                        castedArray[i] = convertSqlValue(arr[i]);
+                    }
+                    return castedArray;
+                }
+            } finally {
+                a.free();
+            }
+        }
+
+        // RowId
+        if (value instanceof RowId) {
+            return ((RowId) value).getBytes();
+        }
+
+        // Struct
+        if (value instanceof Struct) {
+            return Tuple.of(((Struct) value).getAttributes());
+        }
+
+        // fallback to String
+        return value.toString();
+    }
 
     public static MycatRowMetaData toColumnMetaData(List<ColumnDescriptor> event) {
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
