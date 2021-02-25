@@ -1,7 +1,6 @@
 package io.vertx;
 
 import io.mycat.util.ExpiryLRUMap;
-import io.mycat.vertxmycat.JdbcMySqlConnection;
 import io.netty.util.concurrent.FastThreadLocal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +86,7 @@ public enum Trace {
         StackTraceElement[] stackTrace = stackTrace();
         TraceTimeoutSpan span = new TraceTimeoutSpan(currentThread(), traceId(), Arrays.copyOfRange(stackTrace, 2, stackTrace.length),
                 traceObject, onCloseTimeout);
+
         expiryLRUMap.put(span.getTraceId(), span, 5000);
         return span;
     }

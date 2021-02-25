@@ -14,6 +14,7 @@ import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
+import io.vertx.mysqlclient.impl.codec.VertxRowSetImpl;
 import io.vertx.mysqlclient.impl.datatype.DataFormat;
 import io.vertx.mysqlclient.impl.datatype.DataType;
 import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;

@@ -3,7 +3,7 @@ package io.vertx.mysqlclient.impl.codec;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.impl.RowSetCollector;
+
 
 import java.util.Collections;
 import java.util.Set;

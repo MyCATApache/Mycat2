@@ -4,8 +4,6 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatWorkerProcessor;
 import io.mycat.NameableExecutor;
 import io.mycat.NativeMycatServer;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertxmycat.AbstractMySqlConnectionImpl;

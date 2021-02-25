@@ -1,18 +1,12 @@
 package io.mycat.vertxmycat;
 
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
-import io.vertx.core.VertxException;
 import io.vertx.mysqlclient.MySQLClient;
+import io.vertx.mysqlclient.impl.codec.VertxRowSetImpl;
 import io.vertx.sqlclient.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 

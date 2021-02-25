@@ -16,6 +16,7 @@ import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
+import io.vertx.mysqlclient.impl.codec.VertxRowSetImpl;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
