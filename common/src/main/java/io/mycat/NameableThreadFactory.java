@@ -1,5 +1,7 @@
 package io.mycat;
 
+import io.netty.util.concurrent.FastThreadLocalThread;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,7 +21,7 @@ public class NameableThreadFactory implements ThreadFactory {
     }
 
     public Thread newThread(Runnable r) {
-        Thread t = new Thread(group, r, namePrefix + threadId.getAndIncrement());
+        Thread t = new FastThreadLocalThread(group, r, namePrefix + threadId.getAndIncrement());
         t.setDaemon(isDaemon);
         return t;
     }
