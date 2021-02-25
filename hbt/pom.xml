@@ -25,9 +25,9 @@
             <version>1.0.5</version>
         </dependency>
         <dependency>
-            <groupId>io.mycat</groupId>
-            <artifactId>calcite</artifactId>
-            <version>1.15-dev</version>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+            <version>1.26.0</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
