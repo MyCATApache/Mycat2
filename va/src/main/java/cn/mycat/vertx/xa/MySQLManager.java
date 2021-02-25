@@ -32,7 +32,7 @@ public interface MySQLManager {
 
     Future<Void> close();
 
-   Map<String,Integer> computeConnectionUsageSnapshot();
+    Future<Map<String,Integer>> computeConnectionUsageSnapshot();
 
     void setTimer(long delay, Runnable handler);
 

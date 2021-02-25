@@ -9,7 +9,7 @@ import com.mysql.cj.conf.ConnectionUrlParser;
 import com.mysql.cj.conf.HostInfo;
 import io.mycat.*;
 import io.mycat.calcite.spm.PlanCache;
-import io.mycat.commands.JdbcMycatMySQLManager;
+import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -39,7 +39,7 @@ public class ConfigPrepareExecuter {
 
     private String datasourceProvider;
     private SqlResultSetService sqlResultSetService;
-    private MySQLManager mySQLManager;
+
 
 //    UpdateType updateType = UpdateType.FULL;
 
@@ -322,26 +322,16 @@ public class ConfigPrepareExecuter {
         PlanCache.INSTANCE.clear();
 
         MySQLManager mySQLManager;
-        if (!MetaClusterCurrent.exist(MySQLManager.class)) {
-            mySQLManager = new JdbcMycatMySQLManager();
-        } else {
-            mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-        }
-        this.mySQLManager = Objects.requireNonNull(mySQLManager);
+        context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        if (mySQLManager != null) {
-            context.put(MySQLManager.class, mySQLManager);
-        }else {
-
-        }
         context.put(DrdsRunner.class, new DrdsRunner(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap(), PlanCache.INSTANCE));
-        ServerConfig serverConfig =(ServerConfig) context.get(ServerConfig.class);
+        ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
-        context.put(XaLog.class,new XaLogImpl(localXaMemoryRepository,serverConfig.getMycatId(),Objects.requireNonNull( this.mySQLManager)));
+        context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
         MetaClusterCurrent.register(context);
 
 
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-       return xaLog.readXARecoveryLog();
+        return xaLog.readXARecoveryLog();
     }
 }
