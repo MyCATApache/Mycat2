@@ -152,9 +152,7 @@ public class ShardingTable implements ShardingTableHandler {
             createDatabaseIfNotExist(connection, getSchemaName());
             connection.executeUpdate(normalizeCreateTableSQLToMySQL(getCreateTableSQL()), false);
         }
-        for (DataNode node : getBackends()) {
-            CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL());
-        }
+        getBackends().stream().parallel().forEach(node -> CreateTableUtils.createPhysicalTable(jdbcConnectionManager, node, getCreateTableSQL()));
     }
 
     @Override
