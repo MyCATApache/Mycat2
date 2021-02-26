@@ -31,7 +31,7 @@ public enum RxBuiltInMethod {
     OBSERVABLE_MERGE_SORT2(RxBuiltInMethodImpl.class, "mergeSort", List.class, Comparator.class),
 //    OBSERVABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Observable.class),
     ENUMERABLE_MATIERIAL(RxBuiltInMethodImpl.class, "matierial", Enumerable.class),
-    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
+//    OBSERVABLE_BIND(Bindable.class, "bindObservable", NewMycatDataContext.class),
     AS_OBSERVABLE(RxBuiltInMethodImpl.class, "asObservable", Object[][].class),
     AS_GATHER(RxBuiltInMethodImpl.class, "asGather", Enumerable.class),
     ;
