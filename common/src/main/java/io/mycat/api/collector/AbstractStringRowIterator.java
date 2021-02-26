@@ -212,6 +212,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
             case Types.TIMESTAMP: {
                 return this.getTimestamp(columnIndex);
             }
+            case Types.CLOB:
             case Types.CHAR: {
 
             }
@@ -221,10 +222,8 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
             case Types.LONGVARCHAR: {
                 return this.getString(columnIndex);
             }
-            case Types.BLOB: {
-
-            }
-            case Types.CLOB: {
+            case Types.BLOB:
+          {
                 return this.getBytes(columnIndex);
             }
             case Types.NULL: {

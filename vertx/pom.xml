@@ -19,7 +19,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mysql-client</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
         </dependency>
     </dependencies>
 

@@ -4,6 +4,7 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlHintStatement;
@@ -53,6 +54,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -62,7 +64,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
     protected Future<Void> onExecute(SQLRequest<MySqlHintStatement> request, MycatDataContext dataContext, Response response) {
         MySqlHintStatement ast = request.getAst();
         List<SQLCommentHint> hints = ast.getHints();
-        try{
+        try {
             if (hints.size() == 1) {
                 String s = SqlHints.unWrapperHint(hints.get(0).getText());
                 if (s.startsWith("mycat:")) {
@@ -87,20 +89,20 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
                     if ("showErGroup".equalsIgnoreCase(cmd)) {
                         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                        resultSetBuilder.addColumnInfo("group_id", JDBCType.VARCHAR);
+                        resultSetBuilder.addColumnInfo("groupId", JDBCType.VARCHAR);
                         resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
                         resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
 
                         Map<String, List<ShardingTable>> erTableGroup = metadataManager.getErTableGroup();
-                        Integer index   = 0;
+                        Integer index = 0;
                         for (Map.Entry<String, List<ShardingTable>> e : erTableGroup.entrySet()) {
                             String key = e.getKey();
                             Iterator<ShardingTable> iterator = e.getValue().iterator();
-                            while (iterator.hasNext()){
+                            while (iterator.hasNext()) {
                                 ShardingTable table = iterator.next();
                                 String schemaName = table.getSchemaName();
                                 String tableName = table.getTableName();
-                                resultSetBuilder.addObjectRowPayload(Arrays.asList(index.toString(),schemaName,tableName));
+                                resultSetBuilder.addObjectRowPayload(Arrays.asList(index.toString(), schemaName, tableName));
                             }
                             index++;
                         }
@@ -121,9 +123,9 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         final QuoteMode quoteMode = QuoteMode.valueOf(map.getOrDefault("quoteMode",
                                 format.getQuoteMode() + "")
                                 .toString());
-                        final Character commentStart = map.getOrDefault("commentStart", format.getCommentMarker())
-                                .toString()
-                                .charAt(0);
+                        final Character commentStart = Optional.ofNullable(map.get("commentStart")).map(c ->
+                                c.toString()
+                                        .charAt(0)).orElse(format.getCommentMarker());
                         final Character escape = map.getOrDefault("escape", format.getEscapeCharacter())
                                 .toString()
                                 .charAt(0);
@@ -137,9 +139,8 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         final String nullString = map.getOrDefault("nullString", format.getNullString())
                                 .toString();
                         final List headerComments = (List) map.getOrDefault("headerComments", Arrays.asList(
-                                format.getHeaderComments()));
-                        final List<String> header = (List) map.getOrDefault("header", Arrays.asList(
-                                format.getHeader()));
+                                Optional.ofNullable(format.getHeaderComments()).orElse(new String[]{})));
+                        final List<String> header = Optional.ofNullable((List<String>) map.get("header")).orElse(null);
                         final Boolean skipHeaderRecord = Boolean.parseBoolean(map.getOrDefault("skipHeaderRecord",
                                 format.getSkipHeaderRecord()).toString());
                         final Boolean allowMissingColumnNames = Boolean.parseBoolean(map.getOrDefault("allowMissingColumnNames",
@@ -164,7 +165,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 .withRecordSeparator(recordSeparator)
                                 .withNullString(nullString)
                                 .withHeaderComments(headerComments)
-                                .withHeader(header.toArray(new String[]{}))
+                                .withHeader(Optional.ofNullable(header).map(n -> n.toArray(new String[]{})).orElse(null))
                                 .withSkipHeaderRecord(skipHeaderRecord)
                                 .withAllowMissingColumnNames(allowMissingColumnNames)
                                 .withIgnoreHeaderCase(ignoreHeaderCase)
@@ -178,27 +179,27 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         mySqlInsertStatement.setTableName(new SQLIdentifierExpr(tableName));
                         mySqlInsertStatement.getTableSource().setSchema(schemaName);
                         List<String> columnNames;
-                        if (header.isEmpty()) {
+                        if (header == null || header.isEmpty()) {
                             TableHandler table = Objects.requireNonNull(
                                     metadataManager.getTable(schemaName, tableName));
                             columnNames = table.getColumns().stream().map(i -> (i.getColumnName())).collect(Collectors.toList());
                         } else {
                             columnNames = header;
                         }
-                        for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr(i)).collect(Collectors.toList())) {
+                        for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr("`" + i + "`")).collect(Collectors.toList())) {
                             mySqlInsertStatement.addColumn(columnName);
                         }
                         int batch = 1000;
                         try (Reader in = new FileReader(fileName)) {
                             Iterable<CSVRecord> records = format.parse(in);
-                            Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.paddedPartition(records, batch).spliterator(), false)
+                            Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.partition(records, batch).spliterator(), false)
                                     .map(mrecord -> {
                                         SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
                                         List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
                                         for (CSVRecord strings : mrecord) {
                                             SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
                                             for (String string : strings) {
-                                                valuesClause.addValue(string);
+                                                valuesClause.addValue(new SQLCharExpr(string));
                                             }
                                             valuesList.add(valuesClause);
                                         }
@@ -212,10 +213,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 SQLInsertStatement statement = iterator.next();
                                 DrdsSql drdsSql = drdsRunner.preParse(statement);
                                 Plan plan = drdsRunner.getPlan(dataContext, drdsSql);
-                                future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
+                                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
                                         (MycatInsertRel) plan.getPhysical(), drdsSql.getParams()));
                             }
-                            return VertxUtil.castPromise(future.flatMap(l->  response.sendOk(l[0],l[1])));
+                            return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
                         }
                     }
                     if ("setUserDialect".equalsIgnoreCase(cmd)) {
@@ -727,7 +728,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                 }
             }
             return response.sendOk();
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return response.sendError(throwable);
         }
     }

@@ -1,8 +1,9 @@
-package io.vertx.sqlclient.impl;
+package io.vertx.mysqlclient.impl.codec;
 
-import io.vertx.mysqlclient.impl.codec.MysqlCollector;
+
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
+
 
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -16,9 +17,9 @@ public class RowSetCollector<ELEMENT> implements MysqlCollector<RowSet<ELEMENT>>
 
     public RowSetCollector(Function<Row, ELEMENT> mapper) {
         if(mapper == null){
-            this.collector = (Collector)RowSetImpl.COLLECTOR;
+            this.collector = (Collector) VertxRowSetImpl.COLLECTOR;
         }else {
-            this.collector = (Collector) RowSetImpl.collector(mapper);
+            this.collector = (Collector) VertxRowSetImpl.collector(mapper);
         }
     }
 

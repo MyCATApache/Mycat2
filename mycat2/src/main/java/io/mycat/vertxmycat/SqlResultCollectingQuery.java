@@ -1,10 +1,8 @@
 package io.mycat.vertxmycat;
 
-import io.mycat.util.VertxUtil;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;

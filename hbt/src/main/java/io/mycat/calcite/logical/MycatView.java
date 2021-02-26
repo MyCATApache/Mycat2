@@ -39,10 +39,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.RelOptTableImpl;
-import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalSort;
@@ -215,8 +212,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
             SqlString sqlString = MycatCalciteSupport.INSTANCE.convertToSql(relNode, dialect, m, update, params);
             return ImmutableMultimap.of(targetName, sqlString);
         }
-        if (mergeUnionSize==0||containsOrder){
-            ImmutableMultimap.Builder<String,SqlString> builder = ImmutableMultimap.builder();
+        if (mergeUnionSize == 0 || containsOrder) {
+            ImmutableMultimap.Builder<String, SqlString> builder = ImmutableMultimap.builder();
             dataNodes.forEach(m -> {
                 String targetName = m.values().iterator().next().getTargetName();
                 SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);

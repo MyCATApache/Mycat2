@@ -19,9 +19,7 @@
       <module>hbt</module>
       <module>example</module>
       <module>statistic</module>
-      <module>calcite</module>
       <module>va</module>
-      <module>vertx</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

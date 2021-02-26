@@ -4,7 +4,6 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.resultset.BinaryResultSetResponse;
 import io.mycat.resultset.TextConvertorImpl;
-import io.mycat.vertxmycat.JdbcMySqlConnection;
 import org.apache.calcite.avatica.util.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

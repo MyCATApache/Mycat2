@@ -1,28 +1,40 @@
 package io.mycat.vertxmycat;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.MycatTimeUtil;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.resultset.TextConvertorImpl;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.sqlclient.*;
+import org.apache.calcite.avatica.util.ByteString;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
@@ -92,10 +104,68 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
             @Override
             public void endVisit(SQLVariantRefExpr x) {
                 SQLReplaceable parent = (SQLReplaceable) x.getParent();
-                parent.replace(x, SQLExprUtils.fromJavaObject(parameters.get(x.getIndex())));
+                parent.replace(x, fromJavaObject(parameters.get(x.getIndex())));
             }
         });
         return sqlStatement.toString();
+    }
+
+    private static SQLExpr fromJavaObject(Object o) {
+        if (o == null) {
+            return new SQLNullExpr();
+        }
+        o = adaptType(o);
+
+        if (o instanceof String) {
+            return new SQLCharExpr((String) o);
+        }
+
+        if (o instanceof BigDecimal) {
+            return new SQLDecimalExpr((BigDecimal) o);
+        }
+
+        if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
+            return new SQLIntegerExpr((Number) o);
+        }
+
+        if (o instanceof Number) {
+            return new SQLNumberExpr((Number) o);
+        }
+
+        if (o instanceof Date) {
+            return new SQLTimestampExpr((Date) o, null);
+        }
+        return null;
+    }
+    public   static Object adaptType( Object value) {
+        // we must convert types (to comply to JDBC)
+
+        if (value instanceof LocalTime) {
+            // -> java.sql.Time
+            LocalTime time = (LocalTime) value;
+            return Time.valueOf(time);
+        } else if (value instanceof LocalDate) {
+            // -> java.sql.Date
+            LocalDate date = (LocalDate) value;
+            return java.sql.Date.valueOf(date);
+        } else if (value instanceof Instant) {
+            // -> java.sql.Timestamp
+            Instant timestamp = (Instant) value;
+            return Timestamp.from(timestamp);
+        } else if (value instanceof Buffer) {
+            // -> java.sql.Blob
+            Buffer blob = (Buffer) value;
+            return  blob.getBytes();
+        } else if (value instanceof ByteString) {
+            // -> java.sql.Blob
+            return  ((ByteString) value).getBytes();
+        } else if (value instanceof Duration) {
+            // -> java.sql.Blob
+            Duration duration = (Duration) value;
+           return Time.valueOf(LocalTime.parse(TextConvertorImpl.toString(duration)));
+        }
+
+        return value;
     }
 
     @Override

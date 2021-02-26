@@ -159,6 +159,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 res = convertor.convertTimeStamp(value);
                 break;
             }
+            case Types.CLOB:
             case Types.CHAR: {
 
             }
@@ -176,10 +177,8 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
                 }
                 break;
             }
-            case Types.BLOB: {
-
-            }
-            case Types.CLOB: {
+            case Types.BLOB:
+         {
                 res = rowBaseIterator.getBytes(columnIndex);
                 if (rowBaseIterator.wasNull()) {
                     return null;

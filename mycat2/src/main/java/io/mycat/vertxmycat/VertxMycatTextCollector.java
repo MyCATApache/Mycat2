@@ -16,7 +16,6 @@ import io.vertx.mysqlclient.impl.util.BufferUtils;
 import io.vertx.sqlclient.Row;
 
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collector;
 
 public class VertxMycatTextCollector<C, R> implements ResultSetHandler {
