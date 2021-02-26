@@ -392,7 +392,6 @@ public class CommandResolver {
                     future = mycat.writeErrorEndPacketBySyncInProcessError();
                 }
                 future.onComplete(event1 -> {
-                    mycat.onHandlerFinishedClear();
                     MycatMonitor.onCommandEnd(mycat);
                 });
             });

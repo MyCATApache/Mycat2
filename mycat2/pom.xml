@@ -164,6 +164,17 @@
             <artifactId>va</artifactId>
             <version>1.15-dev</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.48.Final</version>
+        </dependency>
     </dependencies>
     <build>
 

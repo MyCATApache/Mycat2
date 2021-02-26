@@ -43,36 +43,36 @@ public class ReceiverImpl implements Response {
 
 
     @Override
-    public PromiseInternal<Void> sendError(Throwable e) {
+    public Future<Void> sendError(Throwable e) {
         session.getDataContext().setLastMessage(e);
         return VertxUtil.newFailPromise(new RuntimeException(e));
     }
 
     @Override
-    public PromiseInternal<Void> proxySelect(String defaultTargetName, String statement) {
+    public Future<Void> proxySelect(String defaultTargetName, String statement) {
         return execute(ExplainDetail.create(QUERY, defaultTargetName, statement, null));
     }
 
 
     @Override
-    public PromiseInternal<Void> proxyUpdate(String defaultTargetName, String sql) {
+    public Future<Void> proxyUpdate(String defaultTargetName, String sql) {
         return execute(ExplainDetail.create(UPDATE, Objects.requireNonNull(defaultTargetName), sql, null));
     }
 
     @Override
-    public PromiseInternal<Void> proxySelectToPrototype(String statement) {
+    public Future<Void> proxySelectToPrototype(String statement) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         return execute(ExplainDetail.create(QUERY_MASTER, Objects.requireNonNull(metadataManager.getPrototype()), statement, null));
     }
 
 
     @Override
-    public PromiseInternal<Void> sendError(String errorMessage, int errorCode) {
+    public Future<Void> sendError(String errorMessage, int errorCode) {
         return VertxUtil.newFailPromise(new MycatException(errorCode, errorMessage));
     }
 
     @Override
-    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
+    public Future<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
         count++;
         boolean hasMoreResult = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
@@ -82,48 +82,33 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> rollback() {
+    public Future<Void> rollback() {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        class RollbackSendOk extends AsyncSendOk {
-            public RollbackSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
-                super(promise, hasMoreResultSet);
-            }
-        }
-        transactionSession.rollback()
-                .onComplete(new RollbackSendOk(promise, hasMoreResultSet()));
-        return promise;
+        boolean hasMoreResultSet = hasMoreResultSet();
+       return transactionSession.rollback()
+               .eventually((u)-> transactionSession.closeStatementState())
+                .flatMap(u->session.writeOk(hasMoreResultSet));
     }
 
     @Override
-    public PromiseInternal<Void> begin() {
+    public Future<Void> begin() {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        class BeginSendOk extends AsyncSendOk {
-            public BeginSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
-                super(promise, hasMoreResultSet);
-            }
-        }
-        transactionSession.begin().onComplete(new BeginSendOk(promise, hasMoreResultSet()));
-        return promise;
+        boolean hasMoreResultSet = hasMoreResultSet();
+        return  transactionSession.begin()
+                .eventually((u)-> transactionSession.closeStatementState())
+                .flatMap(u->session.writeOk(hasMoreResultSet));
     }
 
     @Override
-    public PromiseInternal<Void> commit() {
+    public Future<Void> commit() {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        class CommitSendOk extends AsyncSendOk {
-            public CommitSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
-                super(promise, hasMoreResultSet);
-            }
-        }
-        transactionSession.commit()
-                .onComplete(new CommitSendOk(promise, hasMoreResultSet()));
-        return promise;
+        boolean moreResultSet = hasMoreResultSet();
+        return transactionSession.commit().eventually((u)->transactionSession.closeStatementState())
+                .flatMap(u->session.writeOk(moreResultSet));
     }
 
     @Override
-    public PromiseInternal<Void> execute(ExplainDetail detail) {
+    public Future<Void> execute(ExplainDetail detail) {
         boolean directPacket = false;
         boolean master = dataContext.isInTransaction() || !dataContext.isAutocommit() || detail.getExecuteType().isMaster();
         String datasource = session.getDataContext().resolveDatasourceTargetName(detail.getTarget(), master);
@@ -172,15 +157,14 @@ public class ReceiverImpl implements Response {
     }
 
     @Override
-    public PromiseInternal<Void> sendOk() {
+    public Future<Void> sendOk() {
         count++;
-        PromiseInternal<Void> promise = VertxUtil.newSuccessPromise();
-        new AsyncSendOk(promise, hasMoreResultSet()).handle(VertxUtil.newSuccessPromise());
-        return promise;
+        boolean hasMoreResultSet = hasMoreResultSet();
+        return transactionSession.closeStatementState().flatMap(u->session.writeOk(hasMoreResultSet));
     }
 
     @Override
-    public PromiseInternal<Void> sendOk(long affectedRow, long lastInsertId) {
+    public Future<Void> sendOk(long affectedRow, long lastInsertId) {
         dataContext.setLastInsertId(lastInsertId);
         dataContext.setAffectedRows(affectedRow);
         return sendOk();
@@ -191,39 +175,8 @@ public class ReceiverImpl implements Response {
         return null;
     }
 
-//    @Override
-//    public PromiseInternal<Void> sendResultSet(Observable<MysqlPayloadObject> mysqlPacketObservable) {
-//        count++;
-//        boolean hasMoreResultSet = hasMoreResultSet();
-//        PromiseInternal<Void> voidPromiseInternal = VertxUtil.newPromise();
-//        mysqlPacketObservable.subscribe(
-//                new VertxResponse.MysqlPayloadObjectObserver(voidPromiseInternal,hasMoreResultSet,binary,session));
-//        return voidPromiseInternal;
-//    }
 
     protected boolean hasMoreResultSet() {
         return count < this.stmtSize;
-    }
-
-    private class AsyncSendOk implements Handler<AsyncResult<Void>> {
-        private final PromiseInternal<Void> promise;
-        private final boolean hasMoreResultSet;
-
-        public AsyncSendOk(PromiseInternal<Void> promise, boolean hasMoreResultSet) {
-            this.promise = promise;
-            this.hasMoreResultSet = hasMoreResultSet;
-        }
-
-        @Override
-        public void handle(AsyncResult<Void> event) {
-            transactionSession.closeStatementState().onComplete(unused -> {
-                if (!event.succeeded()) {
-                    promise.tryFail(event.cause());
-                } else {
-                    session.writeOk(hasMoreResultSet)
-                            .onComplete(event1 -> promise.tryComplete());
-                }
-            });
-        }
     }
 }

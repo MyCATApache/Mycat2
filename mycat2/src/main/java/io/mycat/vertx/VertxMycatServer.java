@@ -1,5 +1,6 @@
 package io.mycat.vertx;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatServer;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
@@ -70,7 +71,8 @@ public class VertxMycatServer implements MycatServer {
                 .setWorkerPoolName("vertx-mycat")
                 .setWorkerPoolSize(workerPool.getMaxPoolSize());
         this.server = new MycatSessionManager(serverConfig);
-        Vertx.vertx().deployVerticle(this.server, workerOpts);
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        vertx.deployVerticle(this.server, workerOpts);
     }
 
     public static class MycatSessionManager extends AbstractVerticle implements MycatServer {

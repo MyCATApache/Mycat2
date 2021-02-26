@@ -36,12 +36,7 @@
             <artifactId>druid</artifactId>
             <version>1.2.4</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.seata/seata-core -->
-        <dependency>
-            <groupId>io.seata</groupId>
-            <artifactId>seata-core</artifactId>
-            <version>1.4.1</version>
-        </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/com.zaxxer/HikariCP -->
         <dependency>
@@ -53,13 +48,13 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-jdbc-client</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.vertx/vertx-junit5 -->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-junit5</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.2</version>
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
