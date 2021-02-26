@@ -48,7 +48,7 @@ public class VertxSessionImpl implements VertxSession {
 
     @Override
     public int getServerStatusValue() {
-        return mycatDataContext.getServerStatus();
+        return mycatDataContext.serverStatus();
     }
 
     @Override

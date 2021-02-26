@@ -26,7 +26,7 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
     }
 
     @SneakyThrows
-    public static PromiseInternal<Void> updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
+    public static Future<Void> updateHandler(SQLStatement sqlStatement, MycatDataContext dataContext, SQLExprTableSource tableSource, Response receiver) {
         String schemaName = Optional.ofNullable(tableSource.getSchema() == null ? dataContext.getDefaultSchema() : tableSource.getSchema())
                 .map(i -> SQLUtils.normalize(i)).orElse(null);
         String tableName = SQLUtils.normalize(tableSource.getTableName());

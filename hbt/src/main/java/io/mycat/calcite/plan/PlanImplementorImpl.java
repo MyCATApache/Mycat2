@@ -19,6 +19,7 @@ import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.util.Pair;
 import io.mycat.util.VertxUtil;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.RelNode;
@@ -44,7 +45,7 @@ public class PlanImplementorImpl implements PlanImplementor {
     private final Response response;
 
     @Override
-    public PromiseInternal<Void> execute(MycatUpdateRel mycatUpdateRel) {
+    public Future<Void> execute(MycatUpdateRel mycatUpdateRel) {
         MycatUpdateExecutor updateExecutor;
         updateExecutor = MycatUpdateExecutor.create(mycatUpdateRel, context, params);
 
@@ -63,7 +64,7 @@ public class PlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public PromiseInternal<Void> execute(MycatInsertRel logical) {
+    public Future<Void> execute(MycatInsertRel logical) {
         MycatInsertExecutor insertExecutor = MycatInsertExecutor.create(context, Objects.requireNonNull(logical), params);
         if (this.context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
             if (insertExecutor.isProxy()) {
@@ -77,7 +78,7 @@ public class PlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public PromiseInternal<Void> execute(Plan plan) {
+    public Future<Void> execute(Plan plan) {
         if (context.getTransactionSession().transactionType() == TransactionType.PROXY_TRANSACTION_TYPE) {
             RelNode physical = plan.getPhysical();
             if (physical instanceof MycatView) {

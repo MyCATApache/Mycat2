@@ -60,6 +60,7 @@ import io.mycat.hbt.parser.ParseNode;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.VertxUtil;
+import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
@@ -828,7 +829,7 @@ public class DrdsRunner {
 
 
     @SneakyThrows
-    public PromiseInternal<Void> runOnDrds(MycatDataContext dataContext,
+    public Future<Void> runOnDrds(MycatDataContext dataContext,
                                            SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
@@ -840,7 +841,7 @@ public class DrdsRunner {
         return impl(plan, planImplementor);
     }
 
-    private PromiseInternal<Void> impl(Plan plan, PlanImplementor planImplementor) {
+    private Future<Void> impl(Plan plan, PlanImplementor planImplementor) {
         switch (plan.getType()) {
             case PHYSICAL:
                 return planImplementor.execute(plan);
@@ -862,7 +863,7 @@ public class DrdsRunner {
         return plan;
     }
 
-    public PromiseInternal<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
+    public Future<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
         List<Object> params =Collections.emptyList();
         PlanImplementor planImplementor = new ObservablePlanImplementorImpl(

@@ -33,7 +33,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     private String defaultSchema;
     private String lastMessage;
     private long affectedRows;
-    private int serverStatus;
     private int warningCount;
     private long lastInsertId;
     private int serverCapabilities;
@@ -405,11 +404,9 @@ public class MycatDataContextImpl implements MycatDataContext {
         return (int) id;
     }
 
-    public void setServerStatus(int serverStatus) {
-        this.serverStatus = serverStatus;
-    }
     @Override
     public void setLastInsertId(long lastInsertId) {
         this.lastInsertId = lastInsertId;
     }
+
 }

@@ -45,39 +45,17 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public PromiseInternal<Void> execute(MycatUpdateRel mycatUpdateRel) {
+    public Future<Void> execute(MycatUpdateRel mycatUpdateRel) {
         Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel, params);
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        future.onComplete(event -> {
-            if (event.succeeded()) {
-                long[] result = event.result();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.info("sendOk " + Arrays.toString(result));
-                }
-                response.sendOk(result[0], result[1]).handle(promise);
-            } else {
-                promise.fail(event.cause());
-            }
-        });
-        return promise;
+        return future.eventually(u->context.getTransactionSession().closeStatementState())
+                .flatMap(result-> response.sendOk(result[0], result[1]));
     }
 
     @Override
-    public PromiseInternal<Void> execute(MycatInsertRel logical) {
+    public Future<Void> execute(MycatInsertRel logical) {
         Future<long[]> future = innerExecuteInsert(logical);
-        PromiseInternal<Void> promise = VertxUtil.newPromise();
-        future.onComplete(event -> {
-            if (event.succeeded()) {
-                long[] result = event.result();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.info("sendOk " + Arrays.toString(result));
-                }
-                response.sendOk(result[0], result[1]).handle(promise);
-            } else {
-                promise.fail(event.cause());
-            }
-        });
-        return promise;
+        return future.eventually(u->context.getTransactionSession().closeStatementState())
+                .flatMap(result-> response.sendOk(result[0], result[1]));
     }
 
     public Future<long[]> innerExecuteInsert(MycatInsertRel logical) {
@@ -85,7 +63,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public PromiseInternal<Void> execute(Plan plan) {
+    public Future<Void> execute(Plan plan) {
         Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context,params,plan);
         return response.sendResultSet(rowObservable);
     }
