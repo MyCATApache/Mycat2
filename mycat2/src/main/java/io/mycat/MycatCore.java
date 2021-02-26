@@ -1,5 +1,6 @@
 package io.mycat;
 
+import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
@@ -10,12 +11,15 @@ import io.mycat.vertx.VertxMycatServer;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -23,7 +27,7 @@ import java.util.Optional;
  * @author cjw
  **/
 public class MycatCore {
-
+    final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
     public static final String PROPERTY_MODE_LOCAL = "local";
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
@@ -135,9 +139,11 @@ public class MycatCore {
         String configResourceKeyName = "server";
         String type = System.getProperty(configResourceKeyName, "vertx");
         if ("native".equalsIgnoreCase(type)) {
+            logger.info("start NativeMycatServer");
             return new NativeMycatServer(serverConfig);
         }
         if ("vertx".equalsIgnoreCase(type)) {
+            logger.info("start VertxMycatServer");
             return new VertxMycatServer(serverConfig);
         }
         throw new UnsupportedOperationException("unsupport server type:" + type);
@@ -151,6 +157,10 @@ public class MycatCore {
     }
 
     public static void main(String[] args) throws Exception {
+        if (args != null) {
+            Arrays.stream(args).filter(i -> i.startsWith("-D")||i.startsWith("-d"))
+                    .map(i -> i.substring(2).split("=")).forEach(n -> System.setProperty(n[0], n[1]));
+        }
         new MycatCore().start();
     }
 }
