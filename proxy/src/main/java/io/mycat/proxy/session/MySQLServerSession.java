@@ -140,15 +140,7 @@ public interface MySQLServerSession<T> {
    * 写入ok包,调用该方法,就指定响应已经结束
    */
   default PromiseInternal<Void> writeOkEndPacket() {
-    byte[] bytes = MySQLPacketUtil
-        .generateOk(0, getWarningCount(), getServerStatusValue(), affectedRows(),
-            getLastInsertId(),
-            MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
-            MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
-                MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()), ""
-
-        );
-    return writeBytes(bytes,true);
+    return writeOk(false);
   }
   default PromiseInternal<Void> writeOk(boolean hasMoreResult) {
     int serverStatus = getServerStatusValue();

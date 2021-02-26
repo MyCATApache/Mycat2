@@ -8,6 +8,8 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author cjw
@@ -72,6 +75,14 @@ public class MycatCore {
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
+
+
+        VertxOptions vertxOptions = new VertxOptions();
+        vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
+        vertxOptions.setMaxWorkerExecuteTime(workerPool.getTaskTimeout());
+        vertxOptions.setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()));
+
+
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
@@ -79,6 +90,7 @@ public class MycatCore {
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
+        context.put(Vertx.class, Vertx.vertx(vertxOptions));
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
