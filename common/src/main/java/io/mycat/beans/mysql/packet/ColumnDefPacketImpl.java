@@ -67,13 +67,13 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
         try {
             String schemaName = resultSetMetaData.getSchemaName(columnIndex);
             if (StringUtil.isEmpty(schemaName)) {
-                schemaName = "UNKNOWN";//mysql workbench 该字段不能为长度0
+                schemaName = "";//mysql workbench 该字段不能为长度0
             }
             this.columnSchema = getBytes(schemaName);
             this.columnName = getBytes(resultSetMetaData.getColumnLabel(columnIndex));
             this.columnOrgName = getBytes(resultSetMetaData.getColumnName(columnIndex));
-            this.columnOrgTable = "UNKNOWN".getBytes();
-            this.columnTable = "UNKNOWN".getBytes();
+            this.columnOrgTable = new byte[]{};
+            this.columnTable = new byte[]{};
             this.columnNextLength = 0xC;
             this.columnLength = 256;
             this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));

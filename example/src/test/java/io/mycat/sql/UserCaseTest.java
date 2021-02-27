@@ -51,6 +51,8 @@ public class UserCaseTest implements MycatTest {
                     "  PRIMARY KEY (`id`)\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
+            deleteData(mycatConnection,"db1","travelrecord2");
+
             executeQuery(mycatConnection,"SELECT t1.id,t1.name,t2.count FROM db1.user as t1\n" +
                     "left join (select count(1) as `count`,`user_id` from travelrecord2 group by `user_id`) \n" +
                     "as t2 on `t1`.`id` = `t2`.`user_id`;");
@@ -58,6 +60,14 @@ public class UserCaseTest implements MycatTest {
             executeQuery(mycatConnection,"SELECT t1.id,t1.name,t2.count FROM db1.user as t1\n" +
                     "left join (select count(1) as `count`,`user_id` from travelrecord2 group by `user_id`) \n" +
                     "as `t2` on `t1`.`id` = `t2`.`user_id`;");
+            execute(mycatConnection,"use db1");
+
+            execute(mycatConnection,"START TRANSACTION;\n" +
+                    "INSERT INTO `travelrecord2` (id,`blob`, `days`, `fee`, `traveldate`, `user_id`)\n" +
+                    "VALUES (1,NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom');\n" +
+                    "SELECT ROW_COUNT();\n" +
+                    "COMMIT;");
+            executeQuery(mycatConnection,"SELECT ROW_COUNT();");
         }
     }
 }
