@@ -92,7 +92,7 @@ public class JdbcRowMetaData implements MycatRowMetaData {
     @Override
     public String getColumnName(int column) {
         try {
-            return resultSetMetaData.getColumnName(column+1);
+            return resultSetMetaData.getColumnLabel(column+1);
         } catch (SQLException e) {
             throw new MycatException(toMessage(e));
         }
