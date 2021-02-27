@@ -25,7 +25,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.JDBCType;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -526,7 +524,7 @@ public class MycatMySQLHandler {
             for (int i = 0; i < info.getPrepareOkParametersCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
             }
-            session.writeColumnEndPacket();
+            session.writeColumnEndPacket(false);
             for (int i = 0; i < info.getPrepareOkColumnsCount(); i++) {
                 session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
             }

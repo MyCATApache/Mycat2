@@ -15,7 +15,6 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatDataContext;
-import io.mycat.SessionOpt;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
@@ -160,12 +159,14 @@ public interface MySQLServerSession<T> {
 
   /**
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
+   * @param moreResultSet
    */
-  default PromiseInternal<Void> writeColumnEndPacket() {
-//    if (false) {
-//    } else {
-//    }
-    byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
+  default PromiseInternal<Void> writeColumnEndPacket(boolean moreResultSet) {
+    int serverStatusValue = getServerStatusValue();
+    if (moreResultSet) {
+      serverStatusValue |= MySQLServerStatusFlags.MORE_RESULTS;
+    }
+    byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), serverStatusValue);
     return writeBytes(bytes,false);
   }
 

@@ -173,7 +173,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
                 for (int i = 1; i <= info.getPrepareOkParametersCount(); i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(params, i), false);
                 }
-                session.writeColumnEndPacket();
+                session.writeColumnEndPacket(false);
                 for (int i = 1; i <= info.getPrepareOkColumnsCount() - 1; i++) {
                     session.writeBytes(MySQLPacketUtil.generateColumnDefPayload(fields, i), false);
                 }

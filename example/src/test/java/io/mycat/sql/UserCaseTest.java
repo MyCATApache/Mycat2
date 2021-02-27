@@ -67,6 +67,9 @@ public class UserCaseTest implements MycatTest {
                     "VALUES (1,NULL, 3, 3, timestamp('2021-02-21 12:23:42.058156'), 'tom');\n" +
                     "SELECT ROW_COUNT();\n" +
                     "COMMIT;");
+            execute(mycatConnection,"" +
+                    "UPDATE  `travelrecord2` SET id = 1 where id = 1;" +
+                    "SELECT ROW_COUNT();\n");
             executeQuery(mycatConnection,"SELECT ROW_COUNT();");
         }
     }
