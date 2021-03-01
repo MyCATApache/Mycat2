@@ -70,6 +70,9 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection,"" +
                     "UPDATE  `travelrecord2` SET id = 1 where id = 1;" +
                     "SELECT ROW_COUNT();\n");
+            execute(mycatConnection,"" +
+                    "UPDATE  `user` SET id = 1 where id = 1;" +
+                    "SELECT ROW_COUNT();\n");
             executeQuery(mycatConnection,"SELECT ROW_COUNT();");
         }
     }
