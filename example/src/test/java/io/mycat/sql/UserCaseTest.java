@@ -82,6 +82,11 @@ public class UserCaseTest implements MycatTest {
                     "VALUES (1,2,timestamp('2021-02-22 18:34:05.983692'),3.5,4,NULL)");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE id = 1;");
             Assert.assertTrue(maps.get(0).get("traveldate").toString().endsWith("983692"));//!= 05.983692000
+
+             maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE traveldate = '2021-02-22 18:34:05.983692';");
+            Assert.assertTrue(!maps.isEmpty());
+            maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE traveldate = timestamp('2021-02-22 18:34:05.983692');");
+            Assert.assertTrue(!maps.isEmpty());
         }
     }
 }
