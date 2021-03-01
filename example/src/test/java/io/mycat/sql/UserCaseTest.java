@@ -74,6 +74,7 @@ public class UserCaseTest implements MycatTest {
                     "UPDATE  `user` SET id = 1 where id = 1;SELECT * from `user`; " +
                     "SELECT ROW_COUNT();\n");
             executeQuery(mycatConnection,"SELECT ROW_COUNT();");
+            deleteData(mycatConnection,"db1","travelrecord2");
             execute(mycatConnection,"INSERT INTO `travelrecord2`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`)\n" +
                     "VALUES (1,2,timestamp('2021-02-22 18:34:05.983692'),3.5,4,NULL)");
         }
