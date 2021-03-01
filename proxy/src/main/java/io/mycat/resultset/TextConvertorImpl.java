@@ -19,10 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 
 /**
  * @author Junwen Chen
@@ -188,7 +185,7 @@ public enum TextConvertorImpl implements TextConvertor {
                     second
             ).getBytes();
         }
-        return String.format("%04d-%02d-%02d %02d:%02d:%02d.%09d",
+        return String.format("%04d-%02d-%02d %02d:%02d:%02d.%06d",//"%04d-%02d-%02d %02d:%02d:%02d.%09d"
                 year,
                 monthValue,
                 dayOfMonth,

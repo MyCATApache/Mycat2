@@ -3,12 +3,15 @@ package io.mycat.sql;
 import io.mycat.assemble.MycatTest;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -38,7 +41,7 @@ public class UserCaseTest implements MycatTest {
             execute(mycatConnection, "CREATE TABLE `travelrecord2` (\n" +
                     "  `id` bigint(20) NOT NULL KEY,\n" +
                     "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
-                    "  `traveldate` datetime DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
                     "  `fee` decimal(10,0) DEFAULT NULL,\n" +
                     "  `days` int(11) DEFAULT NULL,\n" +
                     "  `blob` longblob DEFAULT NULL\n" +
@@ -77,6 +80,8 @@ public class UserCaseTest implements MycatTest {
             deleteData(mycatConnection,"db1","travelrecord2");
             execute(mycatConnection,"INSERT INTO `travelrecord2`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`)\n" +
                     "VALUES (1,2,timestamp('2021-02-22 18:34:05.983692'),3.5,4,NULL)");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE id = 1;");
+            Assert.assertTrue(maps.get(0).get("traveldate").toString().endsWith("983692"));//!= 05.983692000
         }
     }
 }
