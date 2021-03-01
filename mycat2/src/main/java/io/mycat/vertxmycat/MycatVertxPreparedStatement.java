@@ -8,6 +8,7 @@ import io.vertx.sqlclient.*;
 public class MycatVertxPreparedStatement implements PreparedStatement {
     private final String sql;
     private final AbstractMySqlConnection abstractMySqlConnection;
+    private Object[] params;
 
     public MycatVertxPreparedStatement(String sql,AbstractMySqlConnection abstractMySqlConnection) {
         this.sql = sql;
