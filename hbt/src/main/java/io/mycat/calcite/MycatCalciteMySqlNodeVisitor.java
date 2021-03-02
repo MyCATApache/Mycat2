@@ -2388,6 +2388,14 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         );
         return false;
     }
+    @Override
+    public boolean visit(SQLDataType x) {
+        ;
+        SqlTypeName sqlTypeName = SqlTypeName.valueOf(x.getName().toUpperCase());
+        SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, -1,-1, null, SqlParserPos.ZERO);
+        sqlNode = new SqlDataTypeSpec(sqlBasicTypeNameSpec, SqlParserPos.ZERO);
+        return false;
+    }
 
     static long JSON_VALUE = FnvHash.fnv1a_64_lower("JSON VALUE");
     static long JSON_OBJECT = FnvHash.fnv1a_64_lower("JSON OBJECT");

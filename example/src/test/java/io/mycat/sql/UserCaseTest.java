@@ -84,6 +84,7 @@ public class UserCaseTest implements MycatTest {
             Assert.assertTrue(!maps.isEmpty());
             maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE traveldate = timestamp('2021-02-22 18:34:05.983692');");
             Assert.assertTrue(!maps.isEmpty());
+            maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE CONVERT(traveldate,date) = '2021-2-22';");
         }
     }
 
