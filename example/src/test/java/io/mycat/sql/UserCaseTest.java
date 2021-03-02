@@ -8,10 +8,7 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
@@ -87,6 +84,75 @@ public class UserCaseTest implements MycatTest {
             Assert.assertTrue(!maps.isEmpty());
             maps = executeQuery(mycatConnection, "SELECT * FROM travelrecord2 WHERE traveldate = timestamp('2021-02-22 18:34:05.983692');");
             Assert.assertTrue(!maps.isEmpty());
+        }
+    }
+
+    @Test
+    public  void case2()throws Exception{
+        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT)){
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+
+            execute(mycatConnection, "CREATE TABLE `user` (\n" +
+                    "  `id` int NOT NULL,\n" +
+                    "  `name` varchar(45) DEFAULT NULL,\n" +
+                    "\t`is_enable` tinyint(1) not null default 1,\n" +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+            deleteData(mycatConnection,"db1","user");
+            execute(mycatConnection,"insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
+            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
+        }
+    }
+
+
+    @Test
+    public  void case3()throws Exception{
+        try(Connection mycatConnection = getMySQLConnection(DB_MYCAT)){
+            execute(mycatConnection, RESET_CONFIG);
+
+            execute(mycatConnection, "DROP DATABASE db1");
+
+
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+
+            execute(mycatConnection, "CREATE TABLE `user` (\n" +
+                    "  `id` int NOT NULL,\n" +
+                    "  `name` varchar(45) DEFAULT NULL,\n" +
+                    "\t`is_enable` bit(1) not null default 1,\n" +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+            deleteData(mycatConnection,"db1","user");
+            execute(mycatConnection,"insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
+            List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
+            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
         }
     }
 }

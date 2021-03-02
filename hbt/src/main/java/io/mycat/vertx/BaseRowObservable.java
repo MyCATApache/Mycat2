@@ -105,14 +105,10 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
             int columnType = metaData.getColumnType(columnIndex);
             Object value = null;
             switch (columnType) {
+                case BIT:
                 case BOOLEAN:
-                case BIT: {
-                    Numeric numeric = row.getNumeric(columnIndex);
-                    if (numeric == null) {
-                        value = null;
-                    } else {
-                        value = MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(numeric.longValue());
-                    }
+                {
+                    value = row.getBoolean(columnIndex);
                     break;
                 }
                 case TINYINT:
