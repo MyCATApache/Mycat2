@@ -106,12 +106,6 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo , Closeable {
      * @return
      */
     private List<PhysicsInstanceImpl> getDataSource(Collection<PhysicsInstanceImpl> datasourceList) {
-        int max = this.maxRequestCount();
-        if (max < Integer.MAX_VALUE) {
-            if (max <= datasourceList.stream().mapToInt(i -> i.getSessionCounter()).sum()) {
-                return Collections.emptyList();
-            }
-        }
         if (datasourceList.isEmpty()) return Collections.emptyList();
         List<PhysicsInstanceImpl> result = datasourceList.stream().filter(mySQLDatasource -> mySQLDatasource.isAlive() && mySQLDatasource
                 .asSelectRead()).collect(Collectors.toList());
