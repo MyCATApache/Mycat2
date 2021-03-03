@@ -108,8 +108,18 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case BIT:
                 case BOOLEAN:
                 {
-                    value = row.getBoolean(columnIndex);
-                    break;
+                    value = row.getValue(columnIndex);
+                    if (value == null){
+                        break;
+                    }
+                    if (value instanceof Boolean){
+                        break;
+                    }
+                    if (value instanceof Number){
+                        value=  MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
+                        break;
+                    }
+                    throw new UnsupportedOperationException("unsupport type:" + value);
                 }
                 case TINYINT:
                 case SMALLINT:
