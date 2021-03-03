@@ -240,7 +240,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    } else {
+                    } else if (value instanceof byte[]){
+
+                    }else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;
