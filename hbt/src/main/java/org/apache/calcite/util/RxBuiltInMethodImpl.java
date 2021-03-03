@@ -47,7 +47,7 @@ public class RxBuiltInMethodImpl {
     }
 
     public static Observable<Object[]> offset(Observable<Object[]> input, long limit) {
-        return input.take(limit);
+        return input.skip(limit);
     }
 
     public static Enumerable<Object[]> toEnumerable(Object input) {
