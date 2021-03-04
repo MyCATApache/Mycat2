@@ -6,11 +6,11 @@ import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.JdbcConnectionUsage;
 import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.connectionschedule.Scheduler;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
@@ -74,8 +74,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             emitter.onNext(new MySQLColumnDef(plan.getMetaData()));
             CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
             ArrayBindable bindable = codeExecuterContext.getBindable();
-            ProxyConnectionUsage proxyConnectionUsage = JdbcConnectionUsage.computeProxyTargetConnection(context,params , codeExecuterContext);
-            Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> future = proxyConnectionUsage.collect((XaSqlConnection) context.getTransactionSession(), params);
+            Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
+            Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> future = scheduler.schedule(context,params,plan.getCodeExecuterContext());
             future.onSuccess(relNodeListIdentityHashMap -> {
                     MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                     mycatWorkerProcessor.getMycatWorker()

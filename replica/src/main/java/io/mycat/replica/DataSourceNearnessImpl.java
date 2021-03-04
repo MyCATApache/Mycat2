@@ -6,6 +6,7 @@ import io.mycat.TransactionSession;
 
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 使集群选择数据源具有亲近性
@@ -13,7 +14,7 @@ import java.util.Objects;
  * @junwen12221
  */
 public class DataSourceNearnessImpl implements DataSourceNearness {
-    HashMap<String, String> map = new HashMap<>();
+    ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
     String loadBalanceStrategy;
 
     private TransactionSession transactionSession;
@@ -22,7 +23,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
         this.transactionSession = transactionSession;
     }
 
-    public String getDataSourceByTargetName(final String targetName, boolean masterArg) {
+    public synchronized String getDataSourceByTargetName(final String targetName, boolean masterArg) {
         Objects.requireNonNull(targetName);
         boolean master = masterArg || transactionSession.isInTransaction();
         ReplicaSelectorRuntime selector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);

@@ -21,6 +21,7 @@ import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.TableHandler;
 import io.mycat.calcite.*;
+import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.PredicateAnalyzer;
 import io.mycat.calcite.table.GlobalTable;
@@ -52,6 +53,7 @@ import org.apache.calcite.runtime.NewMycatDataContext;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Pair;
 import org.apache.zookeeper.Op;
 
 import java.lang.reflect.Method;
@@ -383,5 +385,71 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
     public Optional<RexNode> getConditions() {
         return Optional.ofNullable(conditions);
+    }
+
+    public Result implementMergeSort(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort){
+        implementor.collectLeafRelNode(this);
+        final BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        ParameterExpression root = implementor.getRootExpression();
+        Expression mycatViewStash = implementor.stash(mycatMergeSort, RelNode.class);
+
+        final PhysType inputPhysType = physType;
+        final Pair<Expression, Expression> pair =
+                inputPhysType.generateCollationKey(mycatMergeSort.collation.getFieldCollations());
+
+        final Expression fetchVal;
+        if (mycatMergeSort.fetch == null) {
+            fetchVal = Expressions.constant(Integer.valueOf(Integer.MAX_VALUE));
+        } else {
+            fetchVal = MycatMergeSort.getExpression(mycatMergeSort.fetch);
+        }
+//        builder.append("keySelector", pair.left))
+//                                        .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
+
+        final Expression offsetVal = mycatMergeSort.offset == null ? Expressions.constant(Integer.valueOf(0))
+                : MycatMergeSort.getExpression(mycatMergeSort.offset);
+
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class,Function1.class,Comparator.class,int.class,int.class);
+        builder.add(Expressions.call(root, getEnumerable, mycatViewStash,pair.left,pair.right,offsetVal,fetchVal));
+        return implementor.result(physType, builder.toBlock());
+
+    }
+    public Result implementMergeSortStream(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort){
+        implementor.collectLeafRelNode(this);
+        final BlockBuilder builder = new BlockBuilder();
+        final PhysType physType =
+                PhysTypeImpl.of(
+                        implementor.getTypeFactory(),
+                        getRowType(),
+                        JavaRowFormat.ARRAY);
+        ParameterExpression root = implementor.getRootExpression();
+        Expression mycatViewStash = implementor.stash(this, RelNode.class);
+
+        final PhysType inputPhysType = physType;
+        final Pair<Expression, Expression> pair =
+                inputPhysType.generateCollationKey(mycatMergeSort.collation.getFieldCollations());
+
+        final Expression fetchVal;
+        if (mycatMergeSort.fetch == null) {
+            fetchVal = Expressions.constant(Integer.valueOf(Integer.MAX_VALUE));
+        } else {
+            fetchVal = MycatMergeSort.getExpression(mycatMergeSort.fetch);
+        }
+//        builder.append("keySelector", pair.left))
+//                                        .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
+
+        final Expression offsetVal = mycatMergeSort.offset == null ? Expressions.constant(Integer.valueOf(0))
+                : MycatMergeSort.getExpression(mycatMergeSort.offset);
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class,Function1.class,Comparator.class,int.class,int.class);
+        final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash,pair.left,pair.right,offsetVal,fetchVal);
+        builder.add(toRows(physType, expression2, getRowType().getFieldCount()));
+
+
+        return implementor.result(physType, builder.toBlock());
     }
 }

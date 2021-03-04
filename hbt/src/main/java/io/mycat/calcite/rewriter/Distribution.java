@@ -200,7 +200,7 @@ public class Distribution {
 
                     }
                 }
-                TreeMap<Integer,Map<String, DataNode>> res = new TreeMap<>();
+                TreeMap<Integer, Map<String, DataNode>> res = new TreeMap<>();
                 {
                     for (Map.Entry<String, List<DataNode>> e : collect.entrySet()) {
                         String key = e.getKey();
@@ -217,6 +217,10 @@ public class Distribution {
             default:
                 throw new IllegalStateException("Unexpected value: " + this.type());
         }
+    }
+
+    public Set<String> getTargets() {
+        return getDataNodes().flatMap(i -> i.values().stream()).map(i -> i.getTargetName()).collect(Collectors.toSet());
     }
 
 

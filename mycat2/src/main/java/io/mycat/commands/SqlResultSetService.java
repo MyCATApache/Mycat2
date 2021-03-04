@@ -7,17 +7,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.JdbcConnectionUsage;
-import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
-import io.mycat.config.ServerConfig;
 import io.mycat.config.SqlCacheConfig;
-import io.mycat.config.ThreadPoolExecutorConfig;
+import io.mycat.connectionschedule.Scheduler;
 import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.Dumper;
@@ -29,8 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class  SqlResultSetService implements Closeable, Dumpable {
     final HashMap<String, SqlCacheTask> cacheConfigMap = new HashMap<>();
@@ -147,13 +146,11 @@ public class  SqlResultSetService implements Closeable, Dumpable {
             MycatDataContext context = new MycatDataContextImpl();
             try {
                 DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
                 DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
                 Plan plan = drdsRunner.getPlan(context, drdsSql);
                 CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
                 ProxyTransactionSession transactionSession = (ProxyTransactionSession) context.getTransactionSession();
-                ProxyConnectionUsage connectionUsage = JdbcConnectionUsage
-                        .computeProxyTargetConnection(context, drdsSql.getParams(), codeExecuterContext);
-                        connectionUsage.collect((ProxyTransactionSession)context.getTransactionSession(), drdsSql.getParams());
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql.getParams(), null);

@@ -35,6 +35,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.RxBuiltInMethod;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -126,33 +128,62 @@ public class MycatUnion extends Union implements MycatRel {
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         Expression unionExp = null;
-        boolean toEnumerate = false;
+
+        ArrayList<Result> results = new ArrayList<>();
         for (Ord<RelNode> ord : Ord.zip(inputs)) {
             EnumerableRel input = (EnumerableRel) ord.e;
-            final Result result = implementor.visitChild(this, ord.i, input, pref);
-            Expression childExp =
-                    builder.append(
-                            "child" + ord.i,
-                            result.block);
-            toEnumerate |= (!(childExp.getType() instanceof Observable));
-            if (unionExp == null) {
-                unionExp = childExp;
-            } else if (!toEnumerate) {
-                unionExp = Expressions.call(unionExp, RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
+            results.add(implementor.visitChild(this, ord.i, input, pref));
+        }
+        boolean toEnumerate = false;
+        for (Result result : results) {
+            Type type = result.block.getType();
+            toEnumerate |= (!(type instanceof Observable));
+        }
+        if (toEnumerate){
+            for (Ord<Result> ord : Ord.zip(results)) {
+                Result result = ord.e;
+                Expression childExp =
+                        toEnumerate(builder.append(
+                                "child" + ord.i,
+                                result.block));
+                if (unionExp == null) {
+                    unionExp = childExp;
+                } else {
+                    unionExp = all
+                            ? Expressions.call(unionExp, BuiltInMethod.CONCAT.method, childExp)
+                            : Expressions.call(unionExp,
+                            BuiltInMethod.UNION.method,
+                            Expressions.list(childExp)
+                                    .appendIfNotNull(result.physType.comparer()));
+                }
             }
+            builder.add(unionExp);
+            final PhysType physType =
+                    PhysTypeImpl.of(
+                            implementor.getTypeFactory(),
+                            getRowType(),
+                            pref.prefer(JavaRowFormat.ARRAY));
+            return implementor.result(physType, builder.toBlock());
+        }else {
+            for (Ord<Result> ord : Ord.zip(results)) {
+                Result result = ord.e;
+                Expression childExp =
+                        (builder.append(
+                                "child" + ord.i,
+                                result.block));
+                if (unionExp == null) {
+                    unionExp = childExp;
+                } else  {
+                    unionExp = Expressions.call(unionExp, RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
+                }
+            }
+            builder.add(unionExp);
+            final PhysType physType =
+                    PhysTypeImpl.of(
+                            implementor.getTypeFactory(),
+                            getRowType(),
+                            pref.prefer(JavaRowFormat.ARRAY));
+            return implementor.result(physType, builder.toBlock());
         }
-        if (toEnumerate) {
-            return implement(implementor, pref);
-        }
-        builder.add(unionExp);
-
-
-        builder.add(unionExp);
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        pref.prefer(JavaRowFormat.ARRAY));
-        return implementor.result(physType, builder.toBlock());
     }
 }

@@ -11,16 +11,16 @@ public interface NewMycatDataContext extends DataContext {
 
     Enumerable<Object[]> getEnumerable(org.apache.calcite.rel.RelNode node);
 
-    List<Enumerable<Object[]>> getEnumerables(org.apache.calcite.rel.RelNode node);
+    Enumerable<Object[]> getEnumerable(org.apache.calcite.rel.RelNode node,
+                                       org.apache.calcite.linq4j.function.Function1 function1,
+                                       java.util.Comparator comparator, int offset, int fetch);
 
-    default Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode node){
-        throw new UnsupportedOperationException();
-    }
+     Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode node);
 
-    default List<Observable<Object[]>> getObservables(RelNode node){
-        throw new UnsupportedOperationException();
-    }
 
+     Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode relNode,
+                                               org.apache.calcite.linq4j.function.Function1 function1,
+                                               java.util.Comparator comparator, int offset, int fetch);
 
     public Object getSessionVariable(String name);
 

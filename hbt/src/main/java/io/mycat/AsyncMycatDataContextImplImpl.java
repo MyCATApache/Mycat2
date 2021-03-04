@@ -1,12 +1,17 @@
 package io.mycat;
 
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.logical.MycatView;
+import io.mycat.calcite.physical.MycatMergeSort;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.util.RxBuiltInMethodImpl;
 
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,43 +26,30 @@ public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
                                          List<Object> params,
                                          boolean forUpdate) {
         super(dataContext, context, params, forUpdate);
-
-        this.viewMap = new IdentityHashMap<>();
-        IdentityHashMap<RelNode, Integer> mycatViews = codeExecuterContext.getMycatViews();
-        for (Map.Entry<RelNode, List<Observable<Object[]>>> entry : map.entrySet()) {
-            RelNode key = entry.getKey();
-            List<Observable<Object[]>> observableList = entry.getValue().stream().map(i -> {
-                ConnectableObservable<Object[]> replay = i.replay();
-                return replay.autoConnect();
-            }).collect(Collectors.toList());
-            this.viewMap.put(key, observableList);
-        }
+        this.viewMap = map;
     }
 
 
     @Override
     public Enumerable<Object[]> getEnumerable(RelNode node) {
-        Observable<Object[]> observable = getObservable(node);
-        Iterable<Object[]> iterable = observable.toList().blockingGet();
-        return Linq4j.asEnumerable(iterable);
+        return Linq4j.asEnumerable(getObservable(node).blockingIterable());
     }
 
     @Override
-    public List<Enumerable<Object[]>> getEnumerables(RelNode node) {
-        return getObservables(node).stream().map(i -> Linq4j.asEnumerable(i.blockingIterable())).collect(Collectors.toList());
+    public Enumerable<Object[]> getEnumerable(RelNode node, Function1 function1, Comparator comparator, int offset, int fetch) {
+        return Linq4j.asEnumerable(getObservable(node, function1, comparator, offset, fetch).blockingIterable());
     }
 
     @Override
     public Observable<Object[]> getObservable(RelNode node) {
-        List<Observable<Object[]>> observables = getObservables(node);
-        if (observables.size() == 1) {
-            return observables.get(0);
-        }
+        List<Observable<Object[]>> observables = viewMap.get(node);
         return Observable.merge(observables);
     }
 
     @Override
-    public List<Observable<Object[]>> getObservables(RelNode node) {
-        return viewMap.get(node);
+    public Observable<Object[]> getObservable(RelNode relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
+            return MycatMergeSort.streamOrderBy(viewMap.get(relNode), function1, comparator, offset, fetch);
+
     }
+
 }

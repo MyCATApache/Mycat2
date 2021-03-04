@@ -53,12 +53,13 @@ import java.util.List;
 
 public class MycatMergeSort extends Sort implements MycatRel {
 
-    private static final Method ORDER_BY_METHOD = Types.lookupMethod(MycatMergeSort.class,
-            "orderBy", List.class,
-            Function1.class, Comparator.class, int.class, int.class);
-    private static final Method STREAM_ORDER_BY = Types.lookupMethod(MycatMergeSort.class,
-            "streamOrderBy", List.class,
-            Function1.class, Comparator.class, int.class, int.class);
+//    private static final Method ORDER_BY_METHOD = Types.lookupMethod(MycatMergeSort.class,
+//            "orderBy", List.class,
+//            Function1.class, Comparator.class, int.class, int.class);
+//    private static final Method STREAM_ORDER_BY = Types.lookupMethod(MycatMergeSort.class,
+//            "streamOrderBy", List.class,
+//            Function1.class, Comparator.class, int.class, int.class);
+
     protected MycatMergeSort(RelOptCluster cluster,
                              RelTraitSet traits,
                              RelNode child,
@@ -98,55 +99,18 @@ public class MycatMergeSort extends Sort implements MycatRel {
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatMergeSort(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
-
-    final static Method GET_ENUMERABLES =
-            Types.lookupMethod(NewMycatDataContext.class,
-                    "getEnumerables", org.apache.calcite.rel.RelNode.class);
-    final static Method GET_OBSERVABLES =
-            Types.lookupMethod(NewMycatDataContext.class,
-                    "getObservables", org.apache.calcite.rel.RelNode.class);
+//
+//    final static Method GET_ENUMERABLES =
+//            Types.lookupMethod(NewMycatDataContext.class,
+//                    "getEnumerables", org.apache.calcite.rel.RelNode.class);
+//    final static Method GET_OBSERVABLES =
+//            Types.lookupMethod(NewMycatDataContext.class,
+//                    "getObservables", org.apache.calcite.rel.RelNode.class);
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
-        Expression inputExpression = implementor.stash((MycatView) this.getInput(), MycatView.class);
-        final BlockBuilder builder = new BlockBuilder();
-        Expression listExpression = builder.append("list", Expressions.call(
-                DataContext.ROOT, GET_ENUMERABLES, inputExpression));
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        JavaRowFormat.ARRAY);
-
-        final PhysType inputPhysType = physType;
-        final Pair<Expression, Expression> pair =
-                inputPhysType.generateCollationKey(this.collation.getFieldCollations());
-
-        final Expression fetchVal;
-        if (this.fetch == null) {
-            fetchVal = Expressions.constant(Integer.valueOf(Integer.MAX_VALUE));
-        } else {
-            fetchVal = getExpression(this.fetch);
-        }
-
-        final Expression offsetVal = this.offset == null ? Expressions.constant(Integer.valueOf(0))
-                : getExpression(this.offset);
-
-        builder.add(
-                Expressions.return_(
-                        null, Expressions.call(
-                                ORDER_BY_METHOD, Expressions.list(
-                                        listExpression,
-                                        builder.append("keySelector", pair.left))
-                                        .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
-                                        .appendIfNotNull(
-                                                builder.appendIfNotNull("offset",
-                                                        Expressions.constant(offsetVal)))
-                                        .appendIfNotNull(
-                                                builder.appendIfNotNull("fetch",
-                                                        Expressions.constant(fetchVal)))
-                        )));
-        return implementor.result(physType, builder.toBlock());
+        MycatView input = (MycatView) this.getInput();
+        return input.implementMergeSort(implementor, pref, this);
     }
 
     public static Expression getExpression(RexNode rexNode) {
@@ -203,45 +167,8 @@ public class MycatMergeSort extends Sort implements MycatRel {
 
     @Override
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
-        Expression inputExpression = implementor.stash((MycatView) this.getInput(), MycatView.class);
-        final BlockBuilder builder = new BlockBuilder();
-        Expression listExpression = builder.append("list", Expressions.call(
-                DataContext.ROOT, GET_OBSERVABLES, inputExpression));
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        JavaRowFormat.ARRAY);
-
-        final PhysType inputPhysType = physType;
-        final Pair<Expression, Expression> pair =
-                inputPhysType.generateCollationKey(this.collation.getFieldCollations());
-
-        final Expression fetchVal;
-        if (this.fetch == null) {
-            fetchVal = Expressions.constant(Integer.valueOf(Integer.MAX_VALUE));
-        } else {
-            fetchVal = getExpression(this.fetch);
-        }
-
-        final Expression offsetVal = this.offset == null ? Expressions.constant(Integer.valueOf(0))
-                : getExpression(this.offset);
-
-        builder.add(
-                Expressions.return_(
-                        null, Expressions.call(
-                                STREAM_ORDER_BY, Expressions.list(
-                                        listExpression,
-                                        builder.append("keySelector", pair.left))
-                                        .appendIfNotNull(builder.appendIfNotNull("comparator", pair.right))
-                                        .appendIfNotNull(
-                                                builder.appendIfNotNull("offset",
-                                                        Expressions.constant(offsetVal)))
-                                        .appendIfNotNull(
-                                                builder.appendIfNotNull("fetch",
-                                                        Expressions.constant(fetchVal)))
-                        )));
-        return implementor.result(physType, builder.toBlock());
+        MycatView input = (MycatView) this.getInput();
+        return input.implementMergeSortStream(implementor, pref, this);
     }
 
     @Override

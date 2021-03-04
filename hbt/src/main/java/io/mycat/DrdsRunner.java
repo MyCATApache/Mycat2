@@ -38,8 +38,6 @@ import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
-import io.mycat.calcite.plan.PlanImplementorImpl;
-import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.MatierialRewriter;
 import io.mycat.calcite.rewriter.OptimizationContext;
@@ -881,19 +879,19 @@ public class DrdsRunner {
     }
 
 
-    @NotNull
-    public static CompletableFuture<Enumerable<Object[]>> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
-        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeJdbcTargetConnection(context, params, codeExecuterContext);
-        CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
-        return collect.thenCompose(map -> {
-            JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
-            ArrayBindable bindable = codeExecuterContext.getBindable();
-            Enumerable<Object[]> bindObservable = bindable.bind(jdbcMycatDataContext);
-            CalciteRowMetaData metaData = plan.getMetaData();
-            return CompletableFuture.completedFuture(bindObservable);
-        });
-    }
+//    @NotNull
+//    public static CompletableFuture<Enumerable<Object[]>> getJdbcExecuter(Plan plan, MycatDataContext context, List<Object> params) {
+//        CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
+//        JdbcConnectionUsage connectionUsage = JdbcConnectionUsage.computeJdbcTargetConnection(context, params, codeExecuterContext);
+//        CompletableFuture<IdentityHashMap<RelNode, List<Enumerable<Object[]>>>> collect = connectionUsage.collect(MetaClusterCurrent.wrapper(JdbcConnectionManager.class), params);
+//        return collect.thenCompose(map -> {
+//            JdbcMycatDataContextImpl jdbcMycatDataContext = new JdbcMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
+//            ArrayBindable bindable = codeExecuterContext.getBindable();
+//            Enumerable<Object[]> bindObservable = bindable.bind(jdbcMycatDataContext);
+//            CalciteRowMetaData metaData = plan.getMetaData();
+//            return CompletableFuture.completedFuture(bindObservable);
+//        });
+//    }
 
 
 }

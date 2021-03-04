@@ -2,6 +2,7 @@ package io.mycat;
 
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
+import io.mycat.connectionschedule.Scheduler;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
@@ -86,6 +87,10 @@ public class MycatCore {
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
+        Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
+        Thread thread = new Thread(scheduler, "mycat connection scheduler");
+        thread.start();
+        context.put(Scheduler.class,scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);

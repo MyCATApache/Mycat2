@@ -4,9 +4,11 @@ import io.mycat.calcite.CodeExecuterContext;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.RelNode;
 import org.slf4j.LoggerFactory;
 
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,16 +54,21 @@ public class JdbcMycatDataContextImpl extends NewMycatDataContextImpl {
         return Linq4j.concat(enumerables);
     }
 
-    /**
-     * 获取MergeSort的迭代器
-     *
-     * @param node
-     * @return
-     */
     @Override
-    public List<Enumerable<Object[]>> getEnumerables(RelNode node) {
-        return viewMap.get(node);
+    public Enumerable<Object[]> getEnumerable(RelNode node, Function1 function1, Comparator comparator, int offset, int fetch) {
+        return null;
     }
+
+    @Override
+    public Observable<Object[]> getObservable(RelNode node) {
+        return null;
+    }
+
+    @Override
+    public Observable<Object[]> getObservable(RelNode relNode, Function1 function1, Comparator comparator, int offset, int fetch) {
+        return null;
+    }
+
 
 
 }
