@@ -185,7 +185,7 @@ public abstract class VertxResponse implements Response {
                 while (columnIterator.hasNext()) {
                     session.writeBytes(columnIterator.next(), false);
                 }
-                session.writeColumnEndPacket();
+                session.writeColumnEndPacket(moreResultSet);
             }
         }
 

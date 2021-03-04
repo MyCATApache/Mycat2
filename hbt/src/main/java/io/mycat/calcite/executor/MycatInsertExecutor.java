@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
@@ -28,6 +29,7 @@ import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.calcite.sql.SqlDynamicParam;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,12 +162,17 @@ public class MycatInsertExecutor implements Executor {
 
             int size = valuesClause.getValues().size();
             int startIndex = count * size;
-            List<Object> outParams = new ArrayList<>(params);
-            StringBuilder sb = new StringBuilder();
+            List<Object> outParams = new ArrayList<>();
 
-            MycatPreparedStatementUtil.outputToParameterized(cloneStatement, sb, outParams);
+            cloneStatement.accept(new MySqlASTVisitorAdapter(){
+                @Override
+                public boolean visit(SQLVariantRefExpr x) {
+                    outParams.add(params.get(x.getIndex()));
+                    return false;
+                }
+            });
 
-            String parameterizedString = sb.toString();
+            String parameterizedString = cloneStatement.toString();
             SQL key = SQL.of(parameterizedString, dataNode, cloneStatement, outParams);
             Group group1 = group.computeIfAbsent(key, key1 -> new Group());
             group1.args.add(outParams);

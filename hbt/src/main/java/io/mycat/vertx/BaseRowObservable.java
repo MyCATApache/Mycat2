@@ -105,15 +105,21 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
             int columnType = metaData.getColumnType(columnIndex);
             Object value = null;
             switch (columnType) {
+                case BIT:
                 case BOOLEAN:
-                case BIT: {
-                    Numeric numeric = row.getNumeric(columnIndex);
-                    if (numeric == null) {
-                        value = null;
-                    } else {
-                        value = MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(numeric.longValue());
+                {
+                    value = row.getValue(columnIndex);
+                    if (value == null){
+                        break;
                     }
-                    break;
+                    if (value instanceof Boolean){
+                        break;
+                    }
+                    if (value instanceof Number){
+                        value=  MycatValueFactory.BOOLEAN_VALUE_FACTORY.createFromLong(((Number) value).longValue());
+                        break;
+                    }
+                    throw new UnsupportedOperationException("unsupport type:" + value);
                 }
                 case TINYINT:
                 case SMALLINT:
@@ -234,7 +240,9 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                         } finally {
                             value1.free();
                         }
-                    } else {
+                    } else if (value instanceof byte[]){
+
+                    }else {
                         throw new UnsupportedOperationException("unsupport type:" + value);
                     }
                     break;

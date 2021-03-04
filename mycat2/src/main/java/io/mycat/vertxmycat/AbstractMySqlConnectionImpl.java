@@ -119,10 +119,13 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
         if (o instanceof String) {
             return new SQLCharExpr((String) o);
         }
-
-        if (o instanceof BigDecimal) {
-            return new SQLDecimalExpr((BigDecimal) o);
+        if (o instanceof Boolean) {
+            o = (Boolean) o ? 1 : 0;
         }
+
+//        if (o instanceof BigDecimal) {
+//            return new SQLDecimalExpr((BigDecimal) o);
+//        }
 
         if (o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof Long || o instanceof BigInteger) {
             return new SQLIntegerExpr((Number) o);
@@ -135,9 +138,16 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
         if (o instanceof Date) {
             return new SQLTimestampExpr((Date) o, null);
         }
-        return null;
+        if (o instanceof byte[]) {
+            o = new ByteString((byte[]) o);
+        }
+        if (o instanceof ByteString) {
+            return new SQLHexExpr(((ByteString) o).toString(16));
+        }
+        throw new UnsupportedOperationException("unsupport type:" + o.getClass());
     }
-    public   static Object adaptType( Object value) {
+
+    public static Object adaptType(Object value) {
         // we must convert types (to comply to JDBC)
 
         if (value instanceof LocalTime) {
@@ -155,14 +165,14 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
         } else if (value instanceof Buffer) {
             // -> java.sql.Blob
             Buffer blob = (Buffer) value;
-            return  blob.getBytes();
+            return blob.getBytes();
         } else if (value instanceof ByteString) {
             // -> java.sql.Blob
-            return  ((ByteString) value).getBytes();
+            return ((ByteString) value).getBytes();
         } else if (value instanceof Duration) {
             // -> java.sql.Blob
             Duration duration = (Duration) value;
-           return Time.valueOf(LocalTime.parse(TextConvertorImpl.toString(duration)));
+            return Time.valueOf(LocalTime.parse(TextConvertorImpl.toString(duration)));
         }
 
         return value;

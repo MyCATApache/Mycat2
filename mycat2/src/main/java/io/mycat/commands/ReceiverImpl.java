@@ -139,7 +139,6 @@ public class ReceiverImpl implements Response {
             }
             case UPDATE:
             case INSERT:
-                count++;
                 Future<long[]> future1 = VertxExecuter.runUpdate(connectionFuture, sql);
                 future1.onComplete(event -> {
                     if (event.succeeded()) {

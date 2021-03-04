@@ -17,6 +17,8 @@ package io.mycat.calcite.rewriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.DataNode;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MetadataManager;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.ShardingTable;
@@ -181,11 +183,13 @@ public class Distribution {
                 ShardingTable shardingTable = this.shardingTables.get(0);
                 String primaryTableUniqueName = shardingTable.getLogicTable().getUniqueName();
                 List<DataNode> primaryTableFilterDataNodes = function.apply(shardingTable);
-                Map<String, List<DataNode>> collect = this.shardingTables.stream()
-                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
-
+//                Map<String, List<DataNode>> collect = this.shardingTables.stream()
+//                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
+                MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(),Collections.emptyList());
+                Map<String, List<DataNode>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
                 List<Integer> mappingIndex = new ArrayList<>();
-                Set<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().map(i -> i.getUniqueName()).collect(Collectors.toSet());
+                List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i->i.getUniqueName()).collect(Collectors.toList());
                 {
 
                     for (DataNode filterDataNode : primaryTableFilterDataNodes) {

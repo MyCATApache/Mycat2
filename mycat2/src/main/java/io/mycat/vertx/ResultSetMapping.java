@@ -79,6 +79,21 @@ public class ResultSetMapping {
                             }
                             break;
                         }
+                        case Types.BIT:
+                        {
+                            Object o = objects[columnIndex];
+                            if (o == null) {
+                                row[rowIndex] = null;
+                            } else if (o instanceof Boolean) {
+                                row[rowIndex] = ((Boolean) o).booleanValue()?new byte[]{1}:new byte[]{0};
+                            } else if (o instanceof Number) {
+                                row[rowIndex] = new byte[]{((Number) o).byteValue()};
+                            } else {
+                                LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
+                                throw new UnsupportedOperationException();
+                            }
+                            break;
+                        }
                         case Types.BOOLEAN: {
                             Object o = objects[columnIndex];
                             if (o == null) {
@@ -98,6 +113,7 @@ public class ResultSetMapping {
                                 LOGGER.error(" unsupport type:{}  value:{}", o.getClass(), o);
                                 throw new UnsupportedOperationException();
                             }
+                            break;
                         }
                         default:
                             Object object = objects[columnIndex];

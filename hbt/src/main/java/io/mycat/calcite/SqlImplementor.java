@@ -588,7 +588,7 @@ public abstract class SqlImplementor {
         private final boolean ignoreCast;
 
         protected Context(SqlDialect dialect, int fieldCount) {
-            this(dialect, fieldCount, true);
+            this(dialect, fieldCount, false);
         }
 
         protected Context(SqlDialect dialect, int fieldCount, boolean ignoreCast) {

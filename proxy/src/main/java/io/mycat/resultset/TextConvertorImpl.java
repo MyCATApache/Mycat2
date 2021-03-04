@@ -19,10 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 
 /**
  * @author Junwen Chen
@@ -177,7 +174,7 @@ public enum TextConvertorImpl implements TextConvertor {
         int hour = value.getHour();
         int minute = value.getMinute();
         int second = value.getSecond();
-        int nano = value.getNano();
+        int nano = value.getNano()/1000;
         if (nano == 0) {
             return String.format("%04d-%02d-%02d %02d:%02d:%02d",
                     year,
@@ -188,7 +185,7 @@ public enum TextConvertorImpl implements TextConvertor {
                     second
             ).getBytes();
         }
-        return String.format("%04d-%02d-%02d %02d:%02d:%02d.%09d",
+        return (String.format("%04d-%02d-%02d %02d:%02d:%02d.%06d",//"%04d-%02d-%02d %02d:%02d:%02d.%09d"
                 year,
                 monthValue,
                 dayOfMonth,
@@ -196,7 +193,7 @@ public enum TextConvertorImpl implements TextConvertor {
                 minute,
                 second,
                 nano
-        ).getBytes();
+        )).getBytes();
     }
 
     @Override

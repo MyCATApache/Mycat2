@@ -230,7 +230,8 @@ public class SimpleColumnInfo {
                 throw new IllegalArgumentException();
             case TIMESTAMP:
                 if (o instanceof String) {
-                    return MycatTimeUtil.timestampStringToTimestamp((String) o);
+                    Temporal toTimestamp = MycatTimeUtil.timestampStringToTimestamp((String) o);
+                    return toTimestamp;
                 }
                 if (o instanceof LocalDateTime) {
                     return o;

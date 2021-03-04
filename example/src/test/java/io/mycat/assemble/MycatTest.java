@@ -24,6 +24,7 @@ public interface MycatTest {
     String DB_MYCAT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
     String DB1 = System.getProperty("db1","jdbc:mysql://localhost:3306/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
     String DB2 = System.getProperty("db2","jdbc:mysql://localhost:3307/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+    String DB_MYCAT_PSTMT = System.getProperty("db_mycat","jdbc:mysql://localhost:8066/mysql?username=root&password=123456&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=true");
 
     String RESET_CONFIG ="/*+ mycat:resetConfig{} */";
 
