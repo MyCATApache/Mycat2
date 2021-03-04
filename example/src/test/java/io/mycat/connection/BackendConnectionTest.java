@@ -120,6 +120,255 @@ public class BackendConnectionTest implements MycatTest {
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
         }
     }
+
+    @Test
+    public void testNormalNoTranscationSelect() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+        }
+    }
+    @Test
+    public void testNormalTranscationSelectCommit() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.commit();
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+        }
+    }
+    @Test
+    public void testNormalTranscationSelectRollback() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `mysql`.`role_edges` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.rollback();
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+        }
+    }
+    @Test
+    public void testNormalTranscationSelectSetAutocommit() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.setAutoCommit(true);
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+        }
+    }
+
+
+    @Test
+    public void testGlobalNoTranscationSelect() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds1",
+                            DB1));
+
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("ds1"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 BroadCast\n");
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
+        }
+    }
+    @Test
+    public void testGlobalTranscationSelectCommit() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds1",
+                            DB1));
+
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("ds1"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 BroadCast\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.commit();
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
+        }
+    }
+    @Test
+    public void testGlobalTranscationSelectRollback() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds1",
+                            DB1));
+
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("ds1"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 BroadCast\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.rollback();
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
+        }
+    }
+    @Test
+    public void testGlobalTranscationSelectSetAutocommit() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "DROP DATABASE db1");
+            execute(mycatConnection, "CREATE DATABASE db1");
+
+
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds0",
+                            DB1));
+            execute(mycatConnection, CreateDataSourceHint
+                    .create("ds1",
+                            DB1));
+
+
+            execute(mycatConnection,
+                    CreateClusterHint.create("c0",
+                            Arrays.asList("ds0"), Collections.emptyList()));
+            execute(mycatConnection,
+                    CreateClusterHint.create("c1",
+                            Arrays.asList("ds1"), Collections.emptyList()));
+
+            execute(mycatConnection, "USE `db1`;");
+
+            execute(mycatConnection, "CREATE TABLE db1.`travelrecord2` (\n" +
+                    "  `id` bigint(20) NOT NULL KEY,\n" +
+                    "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                    "  `traveldate` datetime(6) DEFAULT NULL,\n" +
+                    "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                    "  `days` int(11) DEFAULT NULL,\n" +
+                    "  `blob` longblob DEFAULT NULL\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 BroadCast\n");
+            mycatConnection.setAutoCommit(false);
+            repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            mycatConnection.setAutoCommit(true);
+            Thread.sleep(5);
+            Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
+            Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
+        }
+    }
     private void initTestData(Connection mycatConnection) throws Exception {
         execute(mycatConnection, RESET_CONFIG);
 
