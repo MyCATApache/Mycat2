@@ -17,7 +17,7 @@ public class JdbcDatasourcePoolImpl extends MycatDatasourcePool {
         try {
         return Future.succeededFuture(new JdbcMySqlConnection(targetName));
         } catch (Throwable throwable){
-            return Future.failedFuture(targetName);
+            return Future.failedFuture(throwable);
         }
     }
 
