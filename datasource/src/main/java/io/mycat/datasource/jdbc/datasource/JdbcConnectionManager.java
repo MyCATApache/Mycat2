@@ -129,7 +129,11 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 return ++operand;
             }
             return operand;
-        }) < key.getMaxCon()) {
+        }) < key.getMaxCon()){
+
+        }
+
+
             DefaultConnection defaultConnection;
             try {
                 DatasourceConfig config = key.getConfig();
@@ -154,9 +158,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 key.counter.decrementAndGet();
                 throw new MycatException(e);
             }
-        } else {
-            throw new MycatException("max limit");
-        }
     }
 
     @Override
