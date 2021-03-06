@@ -9,10 +9,7 @@ import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -128,6 +125,9 @@ public enum MycatdbCommand {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
+            if (statements.isEmpty()){
+                throw new MycatException("Illegal syntax:"+text);
+            }
             Response response = responseFactory.apply(statements.size());
             Future<Void> future = Future.succeededFuture();
             for (SQLStatement sqlStatement : statements) {
