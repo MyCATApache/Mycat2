@@ -90,10 +90,6 @@ public class MycatMergeSort extends Sort implements MycatRel {
         return writer.ret();
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
 
     @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {

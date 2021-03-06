@@ -88,11 +88,11 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
         RelOptCost relOptCost = planner.getCostFactory().makeCost(d, 0, 0);
         return relOptCost;
     }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
+//
+//    @Override
+//    public Executor implement(ExecutorImplementor implementor) {
+//        return implementor.implement(this);
+//    }
 
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {

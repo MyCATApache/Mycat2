@@ -41,7 +41,6 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             forUpdate = ((SQLSelectStatement) explainAst .getStatement()).getSelect().getFirstQueryBlock().isForUpdate();
         }
         ResultSetBuilder builder = ResultSetBuilder.create().addColumnInfo("plan", JDBCType.VARCHAR);
-        try (DataSourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
             try{
                 HackRouter hackRouter = new HackRouter(statement, dataContext);
                 if (hackRouter.analyse()) {
@@ -63,6 +62,5 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                 builder.addObjectRowPayload(Arrays.asList(th.toString()));
             }
             return response.sendResultSet(RowIterable.create(builder.build()));
-        }
     }
 }

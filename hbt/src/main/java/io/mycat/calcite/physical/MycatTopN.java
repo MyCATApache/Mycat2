@@ -72,11 +72,6 @@ public class MycatTopN extends Sort implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatTopN(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }

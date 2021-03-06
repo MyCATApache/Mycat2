@@ -117,10 +117,10 @@ public class MycatCalc extends Calc implements MycatRel {
         return writer.ret();
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
+//    @Override
+//    public Executor implement(ExecutorImplementor implementor) {
+//        return implementor.implement(this);
+//    }
 
     public RexProgram getProgram() {
         return program;

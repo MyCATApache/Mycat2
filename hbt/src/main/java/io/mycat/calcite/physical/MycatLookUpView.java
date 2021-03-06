@@ -38,10 +38,6 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
         return super.explainTerms(pw);
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
 
     public MycatView getRelNode() {
         return relNode;

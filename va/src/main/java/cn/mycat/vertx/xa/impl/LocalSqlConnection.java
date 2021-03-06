@@ -18,14 +18,10 @@ package cn.mycat.vertx.xa.impl;
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.SqlConnection;
 
@@ -48,7 +44,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         this.mySQLManagerSupplier = mySQLManagerSupplier;
     }
 
-    public MySQLManager mySQLManager(){
+    public MySQLManager mySQLManager() {
         return mySQLManagerSupplier.get();
     }
 
@@ -70,14 +66,15 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
                 Future<SqlConnection> sqlConnectionFuture = mySQLManager().getConnection(targetName);
                 return sqlConnectionFuture.compose(connection -> {
                     map.put(targetName, connection);
-                    Future<RowSet<Row>> execute = connection.query("begin").execute();
-                    return execute.map(r -> connection);
+                    return connection.query(getTransactionIsolation().getCmd())
+                            .execute().flatMap(rows -> connection.query("begin")
+                                    .execute().mapEmpty()).map(r -> connection);
                 });
             }
         }
         return mySQLManager().getConnection(targetName)
                 .map(connection -> {
-                  addCloseConnection(connection);
+                    addCloseConnection(connection);
                     return connection;
                 });
     }
@@ -102,7 +99,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     }
 
     @Override
-    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit) {
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit) {
         return Future.future(promise -> {
             beforeCommit.apply(null).onComplete(result -> {
                 if (result.succeeded()) {
@@ -120,7 +117,6 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
     }
 
 
-
     @Override
     public String getXid() {
         return null;
@@ -131,7 +127,7 @@ public class LocalSqlConnection extends AbstractXaSqlConnection {
         if (inTranscation) {
             return dealCloseConnections();
         } else {
-           return executeAll(SqlClient::close).onComplete(event -> {
+            return executeAll(SqlClient::close).onComplete(event -> {
                 map.clear();
             }).mapEmpty().flatMap(o -> dealCloseConnections());
         }

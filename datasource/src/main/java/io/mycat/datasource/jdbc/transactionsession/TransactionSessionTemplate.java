@@ -150,8 +150,8 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         return dataSourceNearness.getDataSourceByTargetName(targetName);
     }
 
-    public int getTransactionIsolation() {
-        return dataContext.getIsolation().getJdbcValue();
+    public MySQLIsolation getTransactionIsolation() {
+        return dataContext.getIsolation();
     }
 
     @Override
@@ -185,10 +185,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.updateConnectionMap.forEach((key, value) -> value.setTransactionIsolation(transactionIsolation));
     }
 
-    @Override
-    public void addCloseResource(AutoCloseable closeable) {
-        closeResourceQueue.add(closeable);
-    }
 
     @Override
     public Dumper snapshot() {

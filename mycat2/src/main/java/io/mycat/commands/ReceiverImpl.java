@@ -1,14 +1,20 @@
 package io.mycat.commands;
 
 import io.mycat.*;
+import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
+import io.mycat.api.collector.MysqlRow;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.VertxUtil;
+import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
-import io.mycat.vertx.VertxResponse;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -18,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static io.mycat.ExecuteType.*;
 
@@ -77,7 +85,7 @@ public class ReceiverImpl implements Response {
         boolean hasMoreResult = hasMoreResultSet();
         PromiseInternal<Void> promise = VertxUtil.newPromise();
         mysqlPacketObservable.subscribe(
-                new VertxResponse.MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
+                new MysqlPayloadObjectObserver(promise, hasMoreResult, binary, session));
         return promise;
     }
 
@@ -177,5 +185,64 @@ public class ReceiverImpl implements Response {
 
     protected boolean hasMoreResultSet() {
         return count < this.stmtSize;
+    }
+
+
+    public   static class MysqlPayloadObjectObserver implements Observer<MysqlPayloadObject> {
+        private final PromiseInternal<Void> promise;
+        private final boolean moreResultSet;
+        private boolean binary;
+        private MySQLServerSession session;
+        private Disposable disposable;
+        Function<Object[], byte[]> convertor;
+
+        public MysqlPayloadObjectObserver(PromiseInternal<Void> promise,
+                                          boolean moreResultSet,boolean binary, MySQLServerSession session) {
+            this.promise = promise;
+            this.moreResultSet = moreResultSet;
+            this.binary = binary;
+            this.session = session;
+        }
+
+        @Override
+        public void onSubscribe(@NonNull Disposable d) {
+            this.disposable = d;
+        }
+
+        @Override
+        public void onNext(@NonNull MysqlPayloadObject next) {
+            if (next instanceof MysqlRow) {
+                session.writeBytes(this.convertor.apply(((MysqlRow) next).getRow()), false);
+            } else if (next instanceof MySQLColumnDef) {
+                MycatRowMetaData rowMetaData = ((MySQLColumnDef) next).getMetaData();
+                session.writeColumnCount(rowMetaData.getColumnCount());
+                if (!binary) {
+                    convertor = ResultSetMapping.concertToDirectTextResultSet(rowMetaData);
+                } else {
+                    convertor = ResultSetMapping.concertToDirectBinaryResultSet(rowMetaData);
+                }
+                Iterator<byte[]> columnIterator = MySQLPacketUtil.generateAllColumnDefPayload(rowMetaData).iterator();
+                while (columnIterator.hasNext()) {
+                    session.writeBytes(columnIterator.next(), false);
+                }
+                session.writeColumnEndPacket(moreResultSet);
+            }
+        }
+
+        @Override
+        public void onError(@NonNull Throwable throwable) {
+            disposable.dispose();
+            promise.tryFail(throwable);
+        }
+
+        @Override
+        public void onComplete() {
+            disposable.dispose();
+            session.getDataContext().getTransactionSession().closeStatementState()
+                    .onComplete(event -> {
+                        session.writeRowEndPacket(moreResultSet, false)
+                                .onComplete((Handler<AsyncResult>) event1 -> promise.tryComplete());
+                    });
+        }
     }
 }

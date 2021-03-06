@@ -89,7 +89,10 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                 return sqlConnectionFuture.map(sqlConnection -> {
                     LocalXaSqlConnection.this.localSqlConnection = sqlConnection;
                     return sqlConnection;
-                }).compose(sqlConnection -> sqlConnection.query("begin;").execute().map(sqlConnection));
+                }).compose(sqlConnection -> sqlConnection
+                        .query(getTransactionIsolation().getCmd()).execute()
+                        .mapEmpty()
+                        .flatMap(unused->sqlConnection.query("begin;").execute().map(sqlConnection)));
             }
             if (this.targetName != null && this.targetName.equals(targetName)) {
                 return Future.succeededFuture(localSqlConnection);

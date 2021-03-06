@@ -1,7 +1,6 @@
 package io.mycat.calcite.physical;
 
-import io.mycat.calcite.Executor;
-import io.mycat.calcite.ExecutorImplementor;
+
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -38,11 +37,6 @@ public class MycatMatierial extends SingleRel implements MycatRel {
             relNode1.explain(writer);
         }
         return writer.ret();
-    }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return input.implement(implementor);
     }
 
     @Override

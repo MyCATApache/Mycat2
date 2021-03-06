@@ -41,8 +41,6 @@ public interface MycatRel extends RelNode, EnumerableRel {
 
     ExplainWriter explain(ExplainWriter writer);
 
-    Executor implement(ExecutorImplementor implementor);
-
     public static ExplainWriter explainJoin(Join join, String name, ExplainWriter writer) {
         writer.name(name);
         List<String> fieldList = join.getRowType().getFieldNames();

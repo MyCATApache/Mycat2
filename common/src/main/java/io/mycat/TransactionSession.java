@@ -15,6 +15,7 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 
@@ -41,19 +42,9 @@ public interface TransactionSession extends Dumpable {
 
     void setAutocommit(boolean autocommit);
 
-    public MycatConnection getJDBCConnection(String targetName);
+    MySQLIsolation getTransactionIsolation();
 
-    public int getServerStatus();
-
-    boolean isReadOnly();
-
-    public void setReadOnly(boolean readOnly);
-
-    int getTransactionIsolation();
-
-    void setTransactionIsolation(int transactionIsolation);
-
-    ThreadUsageEnum getThreadUsageEnum();
+    void setTransactionIsolation(MySQLIsolation transactionIsolation);
 
     Future<Void> closeStatementState();
 
@@ -63,21 +54,11 @@ public interface TransactionSession extends Dumpable {
 
     String resolveFinalTargetName(String targetName, boolean master);
 
-    TransactionType transactionType();
-
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
     public     Future<Void> openStatementState();
 
-    public void addCloseResource(AutoCloseable closeable);
 
     String getXid();
-
-   default public void bindContext(){
-
-    }
-    default public void unBindContext(){
-
-    }
 }

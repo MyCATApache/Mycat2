@@ -44,9 +44,6 @@ public class MycatDataContextImpl implements MycatDataContext {
     private Charset charset;
     private int charsetIndex;
 
-
-    private int autoCommit = 1;
-    private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
     protected int localInFileRequestState = 0;
     private long selectLimit = -1;
     private long netWriteTimeout = -1;
@@ -73,7 +70,7 @@ public class MycatDataContextImpl implements MycatDataContext {
         XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
         switchTransaction(TransactionType.DEFAULT);
 
-        ProxyTransactionSession proxyTransactionSession = new ProxyTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), xaLog, connection.getDatasourceProvider().createSession(this));
+        ProxyTransactionSession proxyTransactionSession = new ProxyTransactionSession(() -> MetaClusterCurrent.wrapper(MySQLManager.class), xaLog);
         setTransactionSession(proxyTransactionSession);
     }
 
@@ -264,11 +261,11 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
     @Override
     public MySQLIsolation getIsolation() {
-        return isolation;
+        return transactionSession.getTransactionIsolation();
     }
     @Override
     public void setIsolation(MySQLIsolation isolation) {
-        this.isolation = isolation;
+        this.transactionSession.setTransactionIsolation(isolation);
     }
     @Override
     public boolean isInTransaction() {

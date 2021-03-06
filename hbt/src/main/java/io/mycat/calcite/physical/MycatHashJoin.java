@@ -71,11 +71,6 @@ public class MycatHashJoin extends Join implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public MycatHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new MycatHashJoin(getCluster(), traitSet,left, right, conditionExpr, getVariablesSet(), joinType);
     }

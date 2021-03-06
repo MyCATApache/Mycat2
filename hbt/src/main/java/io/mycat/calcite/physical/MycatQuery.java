@@ -15,8 +15,6 @@
 package io.mycat.calcite.physical;
 
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.Executor;
-import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
 import lombok.Getter;
@@ -41,11 +39,6 @@ public class MycatQuery extends AbstractRelNode implements MycatRel {
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         return null;
-    }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
     }
 
     @Override

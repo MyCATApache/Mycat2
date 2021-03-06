@@ -6,7 +6,6 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
@@ -30,7 +29,7 @@ import java.util.stream.Collectors;
 import static io.mycat.calcite.executor.MycatPreparedStatementUtil.apply;
 
 @Getter
-public class MycatUpdateExecutor implements Executor {
+public class MycatUpdateExecutor {
 
     private final MycatDataContext context;
     private final MycatUpdateRel mycatUpdateRel;
@@ -108,62 +107,62 @@ public class MycatUpdateExecutor implements Executor {
         throw new MycatException("更新语句转查询语句出错，不支持的语法。 \n sql = "+ statement);
     }
 
-    @Override
-    @SneakyThrows
-    public void open() {
-        TransactionSession transactionSession = context.getTransactionSession();
-        Map<String, MycatConnection> connections = new HashMap<>(3);
-        Set<String> uniqueValues = new HashSet<>();
-        for (SQL sql : reallySqlSet) {
-            String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
-            if (uniqueValues.add(k)) {
-                if (connections.put(sql.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
-                    throw new IllegalStateException("Duplicate key");
-                }
-            }
-        }
-
-        SqlRecord sqlRecord = context.currentSqlRecord();
-        //建立targetName与连接的映射
-        for (SQL sql : reallySqlSet) {
-            String parameterizedSql = sql.getParameterizedSql();
-            String target = sql.getTarget();
-
-            MycatConnection mycatConnection = connections.get(target);
-            Connection connection = mycatConnection.unwrap(Connection.class);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, parameterizedSql, logicParameters);
-
-            }
-            if (LOGGER.isDebugEnabled() && connection.isClosed()) {
-                LOGGER.debug("{} has closed but still using", mycatConnection);
-            }
-
-            // 如果是更新语法. 例： update set id = 1
-            if(sql instanceof UpdateSQL) {
-                UpdateSQL updateSQL = (UpdateSQL) sql;
-                // 如果用户修改了分片键
-                if(updateSQL.isUpdateShardingKey()){
-                    onUpdateShardingKey(updateSQL,connection,transactionSession);
-                }
-
-                // 如果用户修改了索引
-                if(updateSQL.isUpdateIndex()){
-                    onUpdateIndex(updateSQL,connection,transactionSession);
-                }
-            }
-
-            long start = SqlRecord.now();
-            SQL.UpdateResult updateResult = sql.executeUpdate(connection);
-            Long lastInsertId = updateResult.getLastInsertId();
-            int subAffectedRow = updateResult.getAffectedRow();
-            sqlRecord.addSubRecord(parameterizedSql,start,SqlRecord.now(),target,subAffectedRow);
-            this.affectedRow += subAffectedRow;
-            if(lastInsertId != null && lastInsertId > 0) {
-                this.lastInsertId = lastInsertId;
-            }
-        }
-    }
+//    @Override
+//    @SneakyThrows
+//    public void open() {
+//        TransactionSession transactionSession = context.getTransactionSession();
+//        Map<String, MycatConnection> connections = new HashMap<>(3);
+//        Set<String> uniqueValues = new HashSet<>();
+//        for (SQL sql : reallySqlSet) {
+//            String k = context.resolveDatasourceTargetName(sql.getTarget(),true);
+//            if (uniqueValues.add(k)) {
+//                if (connections.put(sql.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
+//                    throw new IllegalStateException("Duplicate key");
+//                }
+//            }
+//        }
+//
+//        SqlRecord sqlRecord = context.currentSqlRecord();
+//        //建立targetName与连接的映射
+//        for (SQL sql : reallySqlSet) {
+//            String parameterizedSql = sql.getParameterizedSql();
+//            String target = sql.getTarget();
+//
+//            MycatConnection mycatConnection = connections.get(target);
+//            Connection connection = mycatConnection.unwrap(Connection.class);
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("{} targetName:{} sql:{} parameters:{} ", mycatConnection, target, parameterizedSql, logicParameters);
+//
+//            }
+//            if (LOGGER.isDebugEnabled() && connection.isClosed()) {
+//                LOGGER.debug("{} has closed but still using", mycatConnection);
+//            }
+//
+//            // 如果是更新语法. 例： update set id = 1
+//            if(sql instanceof UpdateSQL) {
+//                UpdateSQL updateSQL = (UpdateSQL) sql;
+//                // 如果用户修改了分片键
+//                if(updateSQL.isUpdateShardingKey()){
+//                    onUpdateShardingKey(updateSQL,connection,transactionSession);
+//                }
+//
+//                // 如果用户修改了索引
+//                if(updateSQL.isUpdateIndex()){
+//                    onUpdateIndex(updateSQL,connection,transactionSession);
+//                }
+//            }
+//
+//            long start = SqlRecord.now();
+//            SQL.UpdateResult updateResult = sql.executeUpdate(connection);
+//            Long lastInsertId = updateResult.getLastInsertId();
+//            int subAffectedRow = updateResult.getAffectedRow();
+//            sqlRecord.addSubRecord(parameterizedSql,start,SqlRecord.now(),target,subAffectedRow);
+//            this.affectedRow += subAffectedRow;
+//            if(lastInsertId != null && lastInsertId > 0) {
+//                this.lastInsertId = lastInsertId;
+//            }
+//        }
+//    }
 
     private void onUpdateShardingKey(UpdateSQL<?> sql,Connection connection,TransactionSession transactionSession) throws SQLException {
         List<String> shardingKeys = sql.getSetColumnMap().keySet().stream()
@@ -220,22 +219,6 @@ public class MycatUpdateExecutor implements Executor {
         return new LinkedHashSet<>(sqlMap.keySet());
     }
 
-    @Override
-    public Row next() {
-        return null;
-    }
-
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public boolean isRewindSupported() {
-        return false;
-    }
-
-    @Override
     public ExplainWriter explain(ExplainWriter writer) {
         ExplainWriter explainWriter = writer.name(this.getClass().getName())
                 .into();

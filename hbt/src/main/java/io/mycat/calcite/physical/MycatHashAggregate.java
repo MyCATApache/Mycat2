@@ -79,12 +79,6 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
         return writer.ret();
     }
 
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();

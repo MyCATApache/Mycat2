@@ -17,6 +17,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -39,6 +40,7 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
             new ArrayList<>());
     protected List<Future> closeFutureList = Collections.synchronizedList(
             new ArrayList<>());
+    protected MySQLIsolation isolation = MySQLIsolation.DEFAULT;
 
     public AbstractXaSqlConnection(XaLog xaLog) {
         this.log = xaLog;
@@ -112,5 +114,15 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     @Override
     public void addCloseFuture(Future<?> future) {
         closeFutureList.add(future);
+    }
+
+    @Override
+    public void setTransactionIsolation(MySQLIsolation level) {
+        this.isolation = level;
+    }
+
+    @Override
+    public MySQLIsolation getTransactionIsolation() {
+        return this.isolation;
     }
 }

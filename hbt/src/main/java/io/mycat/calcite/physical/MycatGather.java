@@ -30,10 +30,6 @@ public class MycatGather extends SingleRel implements MycatRel {
         return writer.ret();
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {

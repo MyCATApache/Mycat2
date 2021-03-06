@@ -64,9 +64,4 @@ public class MycatInsertRel extends AbstractRelNode implements MycatRel {
         return writer.ret();
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
 }

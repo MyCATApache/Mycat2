@@ -2,7 +2,6 @@ package io.mycat.calcite.logical;
 
 import com.google.common.collect.Iterables;
 import io.mycat.calcite.*;
-import io.mycat.calcite.executor.ScanExecutor;
 import io.mycat.mpp.Row;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
@@ -45,11 +44,6 @@ public class IndexTableView extends AbstractRelNode implements MycatRel {
             writer.item("relNode",pw.toString());
         }
         return writer;
-    }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return new ScanExecutor( Iterables.transform(rows,(i)-> Row.of(i)).iterator());
     }
 
     @Override
