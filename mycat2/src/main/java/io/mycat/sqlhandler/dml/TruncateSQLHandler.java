@@ -31,7 +31,9 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
             eachTruncateStatement.getTableSources().clear();
             eachTruncateStatement.addTableSource(source.getName());
 
-            TableHandler table = metadataManager.getTable(source.getSchema(), source.getTableName());
+            TableHandler table = metadataManager.getTable(
+                    SQLUtils.normalize(source.getSchema()),
+                    SQLUtils.normalize(source.getTableName()));
             executeOnDataNodes(eachTruncateStatement,jdbcConnectionManager,getDataNodes(table));
         }
         return response.sendOk();

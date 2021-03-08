@@ -457,6 +457,20 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<DataNode> backends) {
+        ShardingFuntion function = tableConfigEntry.getFunction();
+        if (function != null) {
+            if (function.getClazz() == null) {
+                Map<String, Object> properties = function.getProperties();
+                String mappingFormat = (String) properties.get("mappingFormat");
+                if (mappingFormat == null) {
+                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
+                            String.join("/", "c${targetIndex}",
+                                    schemaName + "_${dbIndex}",
+                                    orignalTableName + "_${tableIndex}"));
+                    properties.put("mappingFormat", mappingFormat);
+                }
+            }
+        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);

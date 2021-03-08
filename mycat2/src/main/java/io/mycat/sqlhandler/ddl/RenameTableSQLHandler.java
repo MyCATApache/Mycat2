@@ -2,28 +2,30 @@ package io.mycat.sqlhandler.ddl;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLName;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlRenameTableStatement;
 import io.mycat.*;
+import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.sqlhandler.AbstractSQLHandler;
+import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
+import io.mycat.util.JsonUtil;
 import io.vertx.core.Future;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 
 
 public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableStatement> {
 
     @Override
-    protected Future<Void> onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response){
-        try{
+    protected Future<Void> onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) {
+        try {
             MySqlRenameTableStatement mySqlRenameTableStatement = request.getAst();
             for (MySqlRenameTableStatement.Item item : mySqlRenameTableStatement.getItems()) {
                 SQLName name = item.getName();
@@ -45,17 +47,77 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
                 sqlRenameTableStatement.addItem(item);
 
                 SQLPropertyExpr name = (SQLPropertyExpr) item.getName();
-                TableHandler tableHandler = metadataManager.getTable(name.getOwnernName(), name.getName());
-                executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, tableHandler);
+                String orgSchemaName = name.getOwnerName();
+                String orgTableName = name.getName();
+                TableHandler tableHandler = metadataManager.getTable(orgSchemaName, orgTableName);
+
+                MycatRouterConfig mycatRouterConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+                Object tableConfig = mycatRouterConfig.getSchemas().stream()
+                        .filter(n -> tableHandler.getSchemaName().equalsIgnoreCase(n.getSchemaName()))
+                        .map(logicSchemaConfig -> {
+                            NormalTableConfig normalTableConfig = logicSchemaConfig.getNormalTables().get(tableHandler.getTableName());
+                            GlobalTableConfig globalTableConfig = logicSchemaConfig.getGlobalTables().get(tableHandler.getTableName());
+                            ShardingTableConfig shardingTableConfig = logicSchemaConfig.getShadingTables().get(tableHandler.getTableName());
+                            CustomTableConfig customTableConfig = logicSchemaConfig.getCustomTables().get(tableHandler.getTableName());
+                            if (normalTableConfig != null) {
+                                return normalTableConfig;
+                            }
+                            if (globalTableConfig != null) {
+                                return globalTableConfig;
+                            }
+                            if (shardingTableConfig != null) {
+                                return shardingTableConfig;
+                            }
+                            if (customTableConfig != null) {
+                                return customTableConfig;
+                            }
+                            throw new IllegalArgumentException("unknown table:" + orgSchemaName + "." + orgTableName);
+                        }).findFirst().orElseThrow(() -> new IllegalArgumentException("unknown table:" + orgSchemaName + "." + orgTableName));
+                Object newConfig = JsonUtil.from(JsonUtil.toJson(tableConfig), tableConfig.getClass());
+
+                SQLPropertyExpr to = (SQLPropertyExpr) item.getTo();
+                String newSchemaName = SQLUtils.normalize(to.getOwnerName());
+                String newTableName = SQLUtils.normalize(to.getName());
 
                 String createTableSQL = tableHandler.getCreateTableSQL();
                 MySqlCreateTableStatement sqlStatement = (MySqlCreateTableStatement) SQLUtils.parseSingleMysqlStatement(createTableSQL);
-                CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),
-                        tableHandler.getSchemaName(),
-                        tableHandler.getTableName(), sqlStatement);
+
+                sqlStatement.setTableName(newTableName);
+                sqlStatement.setSchema(newSchemaName);
+
+                Set<DataNode> dataNodes = new HashSet<>();
+                dataNodes.add( new BackendTableInfo(metadataManager.getPrototype(), "", ""));
+
+                if (tableHandler.getType() == LogicTableType.GLOBAL){
+                    dataNodes.addAll(getDataNodes(tableHandler));//更改所有节点
+                }
+                executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager,dataNodes);
+
+                String newCreateTableSql = sqlStatement.toString();
+                try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                    ops.removeTable(orgSchemaName, orgTableName);
+                    if (newConfig instanceof NormalTableConfig) {
+                        NormalTableConfig normalTableConfig = (NormalTableConfig) newConfig;
+                        normalTableConfig.setCreateTableSQL(newCreateTableSql);
+                        ops.putNormalTable(newSchemaName, newTableName, normalTableConfig);
+                    } else if (newConfig instanceof GlobalTableConfig) {
+                        GlobalTableConfig globalTableConfig = (GlobalTableConfig) newConfig;
+                        globalTableConfig.setCreateTableSQL(newCreateTableSql);
+                        ops.putGlobalTableConfig(newSchemaName, newTableName, globalTableConfig);
+                    } else if (newConfig instanceof ShardingTableConfig) {
+                        ShardingTableConfig shardingTableConfig = (ShardingTableConfig) newConfig;
+                        shardingTableConfig.setCreateTableSQL(newCreateTableSql);
+                        ops.putShardingTable(newSchemaName, newTableName, shardingTableConfig);
+                    } else if (newConfig instanceof CustomTableConfig) {
+                        CustomTableConfig customTableConfig = (CustomTableConfig) newConfig;
+                        customTableConfig.setCreateTableSQL(newCreateTableSql);
+                        throw new UnsupportedOperationException();
+                    }
+                    ops.commit();
+                }
             }
             return response.sendOk();
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             return response.sendError(throwable);
         }
 
@@ -72,7 +134,11 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
         Collection<DataNode> dataNodes = getDataNodes(tableHandler);
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
         dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),
-                tableHandler.getSchemaName(),tableHandler.getTableName()));//add Prototype
+                tableHandler.getSchemaName(), tableHandler.getTableName()));//add Prototype
+        executeOnDataNodes(sqlStatement, connectionManager, dataNodes);
+    }
+
+    private void executeOnDataNodes(MySqlRenameTableStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<DataNode> dataNodes) {
         for (DataNode dataNode : dataNodes) {
             MySqlRenameTableStatement each = clone(sqlStatement);
             String sql = each.toString();

@@ -14,7 +14,7 @@ import java.util.Collections;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class AlterTableAddTest implements MycatTest {
+public class AlterTableTest implements MycatTest {
     @Test
     public void testNormal() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
