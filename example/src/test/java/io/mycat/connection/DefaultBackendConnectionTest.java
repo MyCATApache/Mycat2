@@ -412,6 +412,7 @@ public abstract class DefaultBackendConnectionTest implements MycatTest {
             initTestData(mycatConnection);
 
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
