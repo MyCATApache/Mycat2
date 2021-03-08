@@ -14,7 +14,7 @@ import java.util.Collections;
 
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
-public class AlterTableAddColumnTest implements MycatTest {
+public class AlterTableAddTest implements MycatTest {
     @Test
     public void testNormal() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
@@ -41,6 +41,29 @@ public class AlterTableAddColumnTest implements MycatTest {
             Assert.assertEquals(2,
                     getColumns(db1, "db1", "travelrecord2")
                             .getColumnCount());
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n MODIFY COLUMN user_id varchar(30);");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n ADD INDEX user_id_idx (user_id);");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n RENAME INDEX `user_id_idx` TO `iuser_id_idx_new`;");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP INDEX `iuser_id_idx_new`;");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP COLUMN user_id;");
+
+
+
+
+            Assert.assertEquals(1,
+                    getColumns(db1, "db1", "travelrecord2")
+                            .getColumnCount());
+
         }
     }
 
@@ -84,8 +107,27 @@ public class AlterTableAddColumnTest implements MycatTest {
             JdbcUtils.execute(mycatConnection,
                     "ALTER TABLE db1.`travelrecord2`\n ADD COLUMN user_id varchar(30);");
 
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n ADD INDEX user_id_idx (user_id);");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n RENAME INDEX `user_id_idx` TO `iuser_id_idx_new`;");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP INDEX `iuser_id_idx_new`;");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n MODIFY COLUMN user_id varchar(30);");
+
             Assert.assertEquals(2,
                     getColumns(db2, "db1", "travelrecord2")
+                            .getColumnCount());
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP COLUMN user_id;");
+
+            Assert.assertEquals(1,
+                    getColumns(db1, "db1", "travelrecord2")
                             .getColumnCount());
         }
     }
@@ -138,8 +180,27 @@ public class AlterTableAddColumnTest implements MycatTest {
             JdbcUtils.execute(mycatConnection,
                     "ALTER TABLE db1.`travelrecord2`\n ADD COLUMN user_id varchar(30);");
 
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n ADD INDEX user_id_idx (user_id);");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n RENAME INDEX `user_id_idx` TO `iuser_id_idx_new`;");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP INDEX `iuser_id_idx_new`;");
+
             Assert.assertEquals(2,
                     getColumns(db2, "db1_1", "travelrecord2_0")
+                            .getColumnCount());
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n MODIFY COLUMN user_id varchar(30);");
+
+            JdbcUtils.execute(mycatConnection,
+                    "ALTER TABLE db1.`travelrecord2`\n DROP COLUMN user_id;");
+
+            Assert.assertEquals(1,
+                    getColumns(db1, "db1", "travelrecord2")
                             .getColumnCount());
         }
     }
