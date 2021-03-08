@@ -1,13 +1,12 @@
 package io.mycat.commands;
 
+import cn.mycat.vertx.xa.XaSqlConnection;
 import io.mycat.*;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.proxy.session.MySQLServerSession;
-import io.mycat.proxy.session.MycatSession;
-import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.ResultSetMapping;
 import io.mycat.vertx.VertxExecuter;
@@ -36,7 +35,7 @@ public class ReceiverImpl implements Response {
 
     protected final MySQLServerSession session;
     protected final MycatDataContext dataContext;
-    protected final ProxyTransactionSession transactionSession;
+    protected final XaSqlConnection transactionSession;
     private final int stmtSize;
     private final boolean binary;
     protected int count = 0;
@@ -46,7 +45,7 @@ public class ReceiverImpl implements Response {
         this.binary = binary;
         this.session = session;
         this.dataContext = this.session.getDataContext();
-        this.transactionSession = (ProxyTransactionSession) this.dataContext.getTransactionSession();
+        this.transactionSession = (XaSqlConnection) this.dataContext.getTransactionSession();
     }
 
 

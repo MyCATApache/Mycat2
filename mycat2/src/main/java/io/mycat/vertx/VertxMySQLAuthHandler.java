@@ -1,10 +1,5 @@
 package io.mycat.vertx;
 
-import cn.mycat.vertx.xa.MySQLManager;
-import cn.mycat.vertx.xa.XaLog;
-import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
-import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
-import cn.mycat.vertx.xa.impl.XaLogImpl;
 import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -12,13 +7,11 @@ import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.mycatmysql.MycatMySQLHandler;
 import io.mycat.mycatmysql.MycatMysqlSession;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -32,7 +25,7 @@ import static io.mycat.vertx.VertxMySQLPacketResolver.readInt;
 public class VertxMySQLAuthHandler implements Handler<Buffer> {
     final NetSocket socket;
     final VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle;
-    private final MycatDataContextImpl mycatDataContext;
+    private final MycatDataContext mycatDataContext;
     private byte[][] seedParts;
     Buffer buffer = Buffer.buffer();
     boolean authSwitchResponse = false;
@@ -121,18 +114,12 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         }
 
         mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
-        MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket,
-                new LocalXaSqlConnection(()-> MetaClusterCurrent.wrapper(MySQLManager.class),MetaClusterCurrent.wrapper(XaLog.class)));
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);
-        mycatDataContext.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
+        mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
-        JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-        mycatDataContext.setTransactionSession(
-                new ProxyTransactionSession(()-> MetaClusterCurrent.wrapper(MySQLManager.class),xaLog));
-
+        MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket);
         socket.handler(new VertxMySQLPacketResolver(socket, new MycatMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);
 

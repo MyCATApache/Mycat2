@@ -375,7 +375,7 @@ public class BaseXaSqlConnection extends AbstractXaSqlConnection {
     /**
      * before clear connections,it should check not be in transaction
      */
-    public Future<Void> clearConnections() {
+    public Future<Void>  clearConnections() {
         dealCloseConnections();
         if (inTranscation) {
             return Future.succeededFuture();

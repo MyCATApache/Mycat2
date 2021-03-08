@@ -2,6 +2,7 @@ package io.mycat.vertxmycat;
 
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
@@ -31,6 +32,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -95,7 +97,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
 
     @Override
     public Future<Void> close() {
-        IO_EXECUTOR.execute(true,()->{
+        IO_EXECUTOR.execute(true, () -> {
             connection.close();
         });
         return Future.succeededFuture();
@@ -135,6 +137,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                     try {
                         event.complete(innerExecute());
                     } catch (Throwable throwable) {
+                        LOGGER.error("", throwable);
                         event.tryFail(throwable);
                     }
                 });
@@ -144,6 +147,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
         @NotNull
         private RowSet<Row> innerExecute() throws SQLException {
             Connection rawConnection = connection.getRawConnection();
+            Optional<MySQLIsolation> mayBeMySQLIsolation = MySQLIsolation.toMySQLIsolationFrom(sql);
+            if (mayBeMySQLIsolation.isPresent()) {
+                if (mayBeMySQLIsolation.get().getJdbcValue() == rawConnection.getTransactionIsolation())
+                    return new VertxRowSetImpl<>();
+            }
             Statement statement = rawConnection.createStatement();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql, rawConnection);
@@ -269,7 +277,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                                 String orgName = new String(packet.getColumnOrgName());
                                                 int characterSet = packet.getColumnCharsetSet();
                                                 long columnLength = packet.getColumnLength();
-                                                DataType type = DataType.valueOf(packet.getColumnType()==15?253:packet.getColumnType());
+                                                DataType type = DataType.valueOf(packet.getColumnType() == 15 ? 253 : packet.getColumnType());
                                                 int flags = packet.getColumnFlags();
                                                 byte decimals = packet.getColumnDecimals();
                                                 ColumnDefinition columnDefinition = new ColumnDefinition(
@@ -304,6 +312,8 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                                         accumulator.accept(supplier, jdbcRow);
                                     }
                                     finisher.apply(supplier);
+                                    resultSet.close();
+                                    statement.close();
                                     promise.complete(new MySqlResult<>(
                                             count, 0, 0, (R) supplier, columnDescriptors));
                                 }

@@ -37,7 +37,6 @@ import java.util.stream.StreamSupport;
 
 public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
-    private final String name;
     private final Repository xaRepository;
     private final AtomicLong xaIdSeq;
     private final MySQLManager mySQLManager;
@@ -47,13 +46,9 @@ public class XaLogImpl implements XaLog {
         return xaLog;
     }
 
-    public XaLogImpl(Repository xaRepository,int workerId, MySQLManager mySQLManager) {
-        this("x", xaRepository, '.', workerId, mySQLManager);
-    }
 
-    public XaLogImpl(String name, Repository xaRepository, char sep, int workerId, MySQLManager mySQLManager) {
+    public XaLogImpl(Repository xaRepository,int workerId, MySQLManager mySQLManager) {
         this.mySQLManager = mySQLManager;
-        this.name = name + sep;
         this.xaRepository = xaRepository;
         this.xaIdSeq = new AtomicLong(System.currentTimeMillis()<<4 + workerId);
 
@@ -260,7 +255,7 @@ public class XaLogImpl implements XaLog {
             }
             return ++operand;
         });
-        return name + seq;
+        return String.valueOf(seq);
     }
 
     @Override

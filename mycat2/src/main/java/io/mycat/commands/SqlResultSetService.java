@@ -1,5 +1,6 @@
 package io.mycat.commands;
 
+import cn.mycat.vertx.xa.XaSqlConnection;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -13,7 +14,6 @@ import io.mycat.calcite.spm.Plan;
 import io.mycat.config.SqlCacheConfig;
 import io.mycat.connectionschedule.Scheduler;
 import io.mycat.runtime.MycatDataContextImpl;
-import io.mycat.runtime.ProxyTransactionSession;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import io.reactivex.rxjava3.core.Observable;
@@ -150,7 +150,7 @@ public class  SqlResultSetService implements Closeable, Dumpable {
                 DrdsSql drdsSql = drdsRunner.preParse(sqlSelectStatement);
                 Plan plan = drdsRunner.getPlan(context, drdsSql);
                 CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
-                ProxyTransactionSession transactionSession = (ProxyTransactionSession) context.getTransactionSession();
+                XaSqlConnection transactionSession = (XaSqlConnection) context.getTransactionSession();
                 ObservablePlanImplementorImpl planImplementor = new ObservablePlanImplementorImpl(
                         transactionSession,
                         context, drdsSql.getParams(), null);
