@@ -10,6 +10,8 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
+import java.util.Set;
+
 public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatement> {
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response){
@@ -25,8 +27,9 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
             MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             TableHandler table = metadataManager.getTable(schema, tableName);
-            executeOnPrototype(sqlDropIndexStatement,jdbcConnectionManager);
-            executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager,getDataNodes(table),tableSource);
+            Set<DataNode> dataNodes = getDataNodes(table);
+            dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
+            executeOnDataNodes(sqlDropIndexStatement,jdbcConnectionManager,dataNodes,tableSource);
             return response.sendOk();
         }catch (Throwable throwable){
             return response.sendError(throwable);

@@ -10,6 +10,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
+import java.util.Collection;
 import java.util.List;
 
 
@@ -49,8 +50,8 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
     private void createLocalIndex(SQLCreateIndexStatement sqlCreateIndexStatement, SQLExprTableSource table, String schema, String tableName, MetadataManager metadataManager) {
         JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
         TableHandler tableHandler = metadataManager.getTable(schema, tableName);
-        List<DataNode> dataNodes = getDataNodes(tableHandler);
-        executeOnPrototype(sqlCreateIndexStatement,connectionManager);
+        Collection<DataNode> dataNodes = getDataNodes(tableHandler);
+        dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
         executeOnDataNodes(sqlCreateIndexStatement,connectionManager,dataNodes,table);
     }
 }

@@ -288,8 +288,6 @@ public class SqlFunctionTest implements MycatTest {
 
 
         execute(mycatConnection, "CREATE DATABASE db1");
-        execute(mycatConnection, "CREATE DATABASE db1");
-
 
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds0",

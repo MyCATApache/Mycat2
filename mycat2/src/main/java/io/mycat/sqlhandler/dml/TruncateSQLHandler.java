@@ -10,6 +10,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 
@@ -30,13 +31,8 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
             eachTruncateStatement.getTableSources().clear();
             eachTruncateStatement.addTableSource(source.getName());
 
-
             TableHandler table = metadataManager.getTable(source.getSchema(), source.getTableName());
-
-            List<DataNode> dataNodes = getDataNodes(table);
-
-            executeOnPrototype(eachTruncateStatement,jdbcConnectionManager);
-            executeOnDataNodes(eachTruncateStatement,jdbcConnectionManager,dataNodes);
+            executeOnDataNodes(eachTruncateStatement,jdbcConnectionManager,getDataNodes(table));
         }
         return response.sendOk();
     }
@@ -47,7 +43,7 @@ public class TruncateSQLHandler extends AbstractSQLHandler<SQLTruncateStatement>
 
     public void executeOnDataNodes(SQLTruncateStatement truncateStatement,
                                    JdbcConnectionManager connectionManager,
-                                   List<DataNode> dataNodes) {
+                                   Collection<DataNode> dataNodes) {
         SQLExprTableSource tableSource = truncateStatement.getTableSources().get(0);
         executeOnDataNodes(truncateStatement, connectionManager, dataNodes, tableSource);
     }

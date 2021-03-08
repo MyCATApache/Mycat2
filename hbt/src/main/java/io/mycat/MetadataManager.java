@@ -938,7 +938,11 @@ public class MetadataManager implements MysqlVariableService {
                                 dataNode = tableHandler1.getDataNode();
                             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
-                                int i = ThreadLocalRandom.current().nextInt(0, tableHandler1.getGlobalDataNode().size());
+                                int size = tableHandler1.getGlobalDataNode().size();
+                                if (size == 0) {
+                                    throw new IllegalArgumentException("datanodes of global table is empty");
+                                }
+                                int i = ThreadLocalRandom.current().nextInt(0, size);
                                 dataNode = tableHandler1.getGlobalDataNode().get(i);
                             } else {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());

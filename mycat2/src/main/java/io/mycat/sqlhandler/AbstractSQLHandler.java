@@ -15,9 +15,7 @@ import io.vertx.core.impl.future.PromiseInternal;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @EqualsAndHashCode
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
@@ -73,13 +71,13 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return defaultSchema;
     }
 
-    public void executeOnPrototype(SQLStatement sqlStatement,
-                                   JdbcConnectionManager connectionManager) {
-        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
-            connection.executeUpdate(sqlStatement.toString(),false);
-        }
-    }
-    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, List<DataNode> dataNodes, SQLExprTableSource tableSource) {
+//    public void executeOnPrototype(SQLStatement sqlStatement,
+//                                   JdbcConnectionManager connectionManager) {
+//        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
+//            connection.executeUpdate(sqlStatement.toString(),false);
+//        }
+//    }
+    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<DataNode> dataNodes, SQLExprTableSource tableSource) {
         for (DataNode dataNode : dataNodes) {
             tableSource.setSimpleName(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
@@ -90,7 +88,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         }
     }
 
-    public List<DataNode> getDataNodes(TableHandler tableHandler) {
+    public Set<DataNode> getDataNodes(TableHandler tableHandler) {
         List<DataNode> dataNodes;
         switch (tableHandler.getType()) {
             case SHARDING: {
@@ -112,6 +110,6 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
             default:
                 throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
         }
-        return dataNodes;
+        return new HashSet<>(dataNodes);
     }
 }

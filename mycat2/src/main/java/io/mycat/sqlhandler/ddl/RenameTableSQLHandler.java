@@ -14,6 +14,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +46,6 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
 
                 SQLPropertyExpr name = (SQLPropertyExpr) item.getName();
                 TableHandler tableHandler = metadataManager.getTable(name.getOwnernName(), name.getName());
-                executeOnPrototype(sqlRenameTableStatement, jdbcConnectionManager);
                 executeOnDataNodes(sqlRenameTableStatement, jdbcConnectionManager, tableHandler);
 
                 String createTableSQL = tableHandler.getCreateTableSQL();
@@ -69,25 +69,16 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
     public void executeOnDataNodes(MySqlRenameTableStatement sqlStatement,
                                    JdbcConnectionManager connectionManager,
                                    TableHandler tableHandler) {
-        List<DataNode> dataNodes = getDataNodes(tableHandler);
-        switch (tableHandler.getType()) {
-            case SHARDING:
-                executeOnPrototype(sqlStatement, connectionManager);
-                break;
-            case GLOBAL:
-            case NORMAL:
-                executeOnPrototype(sqlStatement, connectionManager);
-                for (DataNode dataNode : dataNodes) {
-                    MySqlRenameTableStatement each = clone(sqlStatement);
-                    String sql = each.toString();
-                    try (DefaultConnection connection = connectionManager.getConnection(dataNode.getTargetName())) {
-                        connection.executeUpdate(sql, false);
-                    }
-                }
-                break;
-            case CUSTOM:
-            default:
-                break;
+        Collection<DataNode> dataNodes = getDataNodes(tableHandler);
+        MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
+        dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),
+                tableHandler.getSchemaName(),tableHandler.getTableName()));//add Prototype
+        for (DataNode dataNode : dataNodes) {
+            MySqlRenameTableStatement each = clone(sqlStatement);
+            String sql = each.toString();
+            try (DefaultConnection connection = connectionManager.getConnection(dataNode.getTargetName())) {
+                connection.executeUpdate(sql, false);
+            }
         }
     }
 
