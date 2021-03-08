@@ -53,11 +53,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MySQLServerSession session) {
-        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-        UserConfig userInfo = authenticator.getUserInfo(session.getDataContext().getUser().getUserName());
-        if (userInfo != null) {
-            session.getDataContext().switchTransaction(TransactionType.parse(userInfo.getTransactionType()));
-        }
+
     }
 
     @Override

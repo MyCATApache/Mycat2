@@ -9,10 +9,7 @@ import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatDataContext;
-import io.mycat.Response;
-import io.mycat.TransactionSession;
+import io.mycat.*;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
@@ -128,6 +125,9 @@ public enum MycatdbCommand {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
+            if (statements.isEmpty()) {
+                throw new MycatException("Illegal syntax:" + text);
+            }
             Response response = responseFactory.apply(statements.size());
             Future<Void> future = Future.succeededFuture();
             for (SQLStatement sqlStatement : statements) {
@@ -163,42 +163,27 @@ public enum MycatdbCommand {
 
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
-
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.openStatementState().onComplete(new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-
+        return transactionSession.openStatementState().flatMap(unused -> {
+            //////////////////////////////////////////////////////////////////////////////////////
+            if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
+                SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+                Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+                if (baseIteratorOptional.isPresent()) {
+                    return receiver.sendResultSet(baseIteratorOptional.get());
+                }
+            }
+            SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+            Class aClass = sqlStatement.getClass();
+            SQLHandler instance = sqlHandlerMap.getInstance(aClass);
+            if (instance != null) {
+                return instance.execute(request, dataContext, receiver);
+            } else {
+                return receiver.proxySelectToPrototype(sqlStatement.toString());
             }
         });
-        //////////////////////////////////////////////////////////////////////////////////////
-        if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
-            SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-            Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
-            if (baseIteratorOptional.isPresent()) {
-                return receiver.sendResultSet(baseIteratorOptional.get());
-            }
-        }
-        SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
-        Class aClass = sqlStatement.getClass();
-        SQLHandler instance = sqlHandlerMap.getInstance(aClass);
-        if (instance != null) {
-            return instance.execute(request, dataContext, receiver);
-        } else {
-            return receiver.proxySelectToPrototype(sqlStatement.toString());
-        }
     }
-
-    private static boolean isHbt(String text) {
-        boolean hbt = false;
-        char c = text.charAt(0);
-        if ((c == 'e' || c == 'E') && text.length() > 12) {
-            hbt = "execute plan".equalsIgnoreCase(text.substring(0, 12));
-        }
-        return hbt;
-    }
-
 
     @NotNull
     public LinkedList<SQLStatement> parse(String text) {

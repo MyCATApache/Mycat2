@@ -15,12 +15,12 @@ import io.vertx.core.net.NetSocket;
 import java.nio.charset.Charset;
 
 public class VertxSessionImpl implements VertxSession {
-    private MycatDataContextImpl mycatDataContext;
+    private MycatDataContext mycatDataContext;
     private NetSocket socket;
     int packetId = 0;
     private ProcessState processState;
 
-    public VertxSessionImpl(MycatDataContextImpl mycatDataContext, NetSocket socket) {
+    public VertxSessionImpl(MycatDataContext mycatDataContext, NetSocket socket) {
         this.mycatDataContext = mycatDataContext;
 
         this.socket = socket;

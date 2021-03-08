@@ -15,8 +15,11 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
+import lombok.SneakyThrows;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Junwen Chen
@@ -41,19 +44,9 @@ public interface TransactionSession extends Dumpable {
 
     void setAutocommit(boolean autocommit);
 
-    public MycatConnection getJDBCConnection(String targetName);
+    MySQLIsolation getTransactionIsolation();
 
-    public int getServerStatus();
-
-    boolean isReadOnly();
-
-    public void setReadOnly(boolean readOnly);
-
-    int getTransactionIsolation();
-
-    void setTransactionIsolation(int transactionIsolation);
-
-    ThreadUsageEnum getThreadUsageEnum();
+    void setTransactionIsolation(MySQLIsolation transactionIsolation);
 
     Future<Void> closeStatementState();
 
@@ -63,21 +56,24 @@ public interface TransactionSession extends Dumpable {
 
     String resolveFinalTargetName(String targetName, boolean master);
 
-    TransactionType transactionType();
-
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public     Future<Void> openStatementState();
+    public Future<Void> openStatementState();
 
-    public void addCloseResource(AutoCloseable closeable);
 
     String getXid();
 
-   default public void bindContext(){
-
+    @SneakyThrows
+    default void deliverTo(TransactionSession newTransactionSession) {
+        boolean inTransaction = isInTransaction();
+        if (inTransaction) {
+            throw new IllegalArgumentException("can not deliver transcation in transcation ");
+        }
+        closeStatementState().toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        newTransactionSession.setTransactionIsolation(getTransactionIsolation());
+        newTransactionSession.setAutocommit(isAutocommit());
     }
-    default public void unBindContext(){
 
-    }
+    TransactionType transactionType();
 }

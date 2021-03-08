@@ -59,11 +59,6 @@ public class MycatUpdateRel extends AbstractRelNode implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public RelWriter explainTerms(RelWriter pw) {
         pw.item("sql",sqlStatement+"\n");
         int index = 0;

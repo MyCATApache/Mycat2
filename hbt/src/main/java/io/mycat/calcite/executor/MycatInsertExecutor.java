@@ -10,41 +10,30 @@ import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
-import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import io.mycat.*;
-import io.mycat.calcite.Executor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.gsi.GSIService;
 import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
-import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.calcite.sql.SqlDynamicParam;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.mycat.calcite.executor.MycatPreparedStatementUtil.setParams;
-
 @Getter
-public class MycatInsertExecutor implements Executor {
+public class MycatInsertExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatInsertExecutor.class);
 
     private MycatDataContext context;
@@ -108,25 +97,19 @@ public class MycatInsertExecutor implements Executor {
         return Pair.of(context.resolveDatasourceTargetName(key.getTarget(), true), sqlStatement.toString());
     }
 
-    @NotNull
-    @Override
-    public Iterator<Object[]> outputObjectIterator() {
-        return null;
-    }
-
     public static MycatInsertExecutor create(MycatDataContext context, MycatInsertRel mycatInsertRel, List<Object> params) {
         return new MycatInsertExecutor(context, mycatInsertRel, params);
     }
 
-    @Override
-    public void open() {
-        try {
-            execute(groupMap);
-            onInsertSuccess();
-        } finally {
-            done = true;
-        }
-    }
+//    @Override
+//    public void open() {
+//        try {
+//            execute(groupMap);
+//            onInsertSuccess();
+//        } finally {
+//            done = true;
+//        }
+//    }
 
     @SneakyThrows
     private Map<SQL, Group> runNormalParams() {
@@ -222,76 +205,6 @@ public class MycatInsertExecutor implements Executor {
         return group;
     }
 
-    @SneakyThrows
-    public void execute(Map<SQL, Group> group) {
-        TransactionSession transactionSession = context.getTransactionSession();
-
-        //建立targetName与连接的映射
-        Map<String, MycatConnection> connections = new HashMap<>();
-        Set<String> uniqueValues = new HashSet<>();
-        for (SQL target : group.keySet()) {
-            String k = transactionSession.resolveFinalTargetName(target.getTarget(), true);
-            if (uniqueValues.add(k)) {
-                if (connections.put(target.getTarget(), transactionSession.getJDBCConnection(k)) != null) {
-                    throw new IllegalStateException("Duplicate key");
-                }
-            }
-        }
-
-        long lastInsertId = 0;
-        long affected = 0;
-        SqlRecord sqlRecord = context.currentSqlRecord();
-        if (group.size() == 1) {
-            Map.Entry<SQL, Group> keyGroupEntry = group.entrySet().iterator().next();
-            String parameterizedSql = keyGroupEntry.getKey().getParameterizedSql();
-            LinkedList<List<Object>> args = keyGroupEntry.getValue().getArgs();
-            String targetName = connections.keySet().iterator().next();
-            Connection connection = connections.values().iterator().next().unwrap(Connection.class);
-            try (PreparedStatement preparedStatement = connection.
-                    prepareStatement(parameterizedSql, Statement.RETURN_GENERATED_KEYS)) {
-                for (List<Object> arg : args) {
-                    List<Object> objects = arg;
-                    setParams(preparedStatement, objects);
-
-                    long startTime = SqlRecord.now();
-
-                    affected += preparedStatement.executeUpdate();
-                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                    if (generatedKeys != null) {
-                        if (generatedKeys.next()) {
-                            lastInsertId = Math.max(generatedKeys.getBigDecimal(1).longValue(),
-                                    lastInsertId);
-                        }
-                    }
-                    sqlRecord.addSubRecord(parameterizedSql, startTime, targetName, affected);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("parameterizedSql:{} args:{} lastInsertId:{}", parameterizedSql, args, lastInsertId);
-                    }
-                }
-            }
-        } else {
-            for (Map.Entry<SQL, Group> e : group.entrySet()) {
-                SQL key = e.getKey();
-                String targetName = (key.getTarget());
-                String sql = key.getParameterizedSql();
-                Group value = e.getValue();
-                Connection connection = connections.get(targetName).unwrap(Connection.class);
-
-                long startTime = SqlRecord.now();
-
-                MycatPreparedStatementUtil.ExecuteBatchInsert res = MycatPreparedStatementUtil.batchInsert(sql, value, connection, targetName);
-                lastInsertId = Math.max(lastInsertId, res.getLastInsertId());
-
-                affected += res.getAffected();
-
-                sqlRecord.addSubRecord(sql, startTime, targetName, affected);
-            }
-        }
-
-        this.lastInsertId = lastInsertId;
-        this.affectedRow = affected;
-    }
-
     private static Map<String, List<RangeVariable>> compute(List<Integer> shardingKeys,
                                                             String[] columnNames,
                                                             List<SQLExpr> values,
@@ -333,22 +246,7 @@ public class MycatInsertExecutor implements Executor {
     }
 
 
-    @Override
-    public Row next() {
-        return null;
-    }
 
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public boolean isRewindSupported() {
-        return false;
-    }
-
-    @Override
     public ExplainWriter explain(ExplainWriter writer) {
         ExplainWriter explainWriter = writer.name(this.getClass().getName())
                 .into();

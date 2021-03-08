@@ -80,12 +80,6 @@ public class MycatUnion extends Union implements MycatRel {
         return writer.ret();
     }
 
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();

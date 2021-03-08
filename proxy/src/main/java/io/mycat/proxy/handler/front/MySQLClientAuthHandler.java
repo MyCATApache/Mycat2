@@ -153,10 +153,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                         userInfo);
             }
 
-            mycat.setUser(user);
+            mycat.getDataContext().setUser(user);
             mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());
-            mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
+            mycat.setIsolation(MySQLIsolation.REPEATED_READ);
             mycat.setCharset(characterSet);
             finished = true;
             mycatSessionManager.initCommandDispatcher(mycat);

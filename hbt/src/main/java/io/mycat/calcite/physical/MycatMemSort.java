@@ -88,11 +88,6 @@ public class MycatMemSort
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableRel child = (EnumerableRel) this.getInput();

@@ -2,31 +2,26 @@ package io.mycat.runtime;
 
 import cn.mycat.vertx.xa.MySQLManager;
 import cn.mycat.vertx.xa.XaLog;
-import cn.mycat.vertx.xa.impl.BaseXaSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalSqlConnection;
 import cn.mycat.vertx.xa.impl.LocalXaSqlConnection;
 import io.mycat.DataSourceNearness;
-import io.mycat.MycatConnection;
-import io.mycat.ThreadUsageEnum;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mycat.TransactionType;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.replica.DataSourceNearnessImpl;
 import io.mycat.util.Dumper;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 
 import java.util.function.Supplier;
 
-public class ProxyTransactionSession extends LocalSqlConnection implements TransactionSession {
+public class XaTransactionSession extends LocalXaSqlConnection implements TransactionSession {
     protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl(this);
-    public ProxyTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
+    public XaTransactionSession(Supplier<MySQLManager> mySQLManagerSupplier, XaLog xaLog) {
         super(mySQLManagerSupplier, xaLog);
     }
 
     @Override
     public String name() {
-        return "proxy";
+        return "xa";
     }
 
     @Override
@@ -41,7 +36,7 @@ public class ProxyTransactionSession extends LocalSqlConnection implements Trans
 
     @Override
     public TransactionType transactionType() {
-        return TransactionType.PROXY_TRANSACTION_TYPE;
+        return TransactionType.JDBC_TRANSACTION_TYPE;
     }
 
     @Override

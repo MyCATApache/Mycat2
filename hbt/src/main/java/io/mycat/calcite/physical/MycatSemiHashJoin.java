@@ -81,11 +81,6 @@ public class MycatSemiHashJoin extends Join implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         EnumerableHashJoin enumerableHashJoin = EnumerableHashJoin.create(left, right, condition, variablesSet, joinType);
         Result result = enumerableHashJoin.implement(implementor, pref);

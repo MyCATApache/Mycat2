@@ -16,6 +16,7 @@
 
 package cn.mycat.vertx.xa;
 
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -35,6 +36,9 @@ public interface XaSqlConnection {
     public static String XA_COMMIT_ONE_PHASE = "XA COMMIT '%s' ONE PHASE;";
     public static String XA_RECOVER = "XA RECOVER;";
 
+    public void setTransactionIsolation(MySQLIsolation level);
+
+    public MySQLIsolation getTransactionIsolation();
 
     default public void begin(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = begin();
@@ -71,7 +75,7 @@ public interface XaSqlConnection {
      * @param beforeCommit for the native connection commit or some exception test
      * @param handler      the callback handler
      */
-    public default void commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit, Handler<AsyncResult<Void>> handler) {
+    public default void commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit, Handler<AsyncResult<Void>> handler) {
         Future<Void> future = commitXa(beforeCommit);
         if (handler != null) {
             future.onComplete(handler);
@@ -79,7 +83,7 @@ public interface XaSqlConnection {
     }
 
 
-    public Future<Void> commitXa(Function<ImmutableCoordinatorLog,Future<Void>> beforeCommit);
+    public Future<Void> commitXa(Function<ImmutableCoordinatorLog, Future<Void>> beforeCommit);
 
     public default void close(Handler<AsyncResult<Void>> handler) {
         Future<Void> future = close();

@@ -15,9 +15,8 @@ import java.util.Map;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
-@NotThreadSafe
-@net.jcip.annotations.NotThreadSafe
-public class BackendConnectionTest implements MycatTest {
+
+public abstract class DefaultBackendConnectionTest implements MycatTest {
     @Test
     public void testPrototypeNoTranscationSelect() throws Exception {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
@@ -34,7 +33,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `mysql`.`role_edges` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.commit();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -46,7 +45,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `mysql`.`role_edges` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.rollback();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -58,7 +57,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `mysql`.`role_edges` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.setAutoCommit(true);
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -67,6 +66,7 @@ public class BackendConnectionTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
             initTestData(mycatConnection);
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -82,7 +82,7 @@ public class BackendConnectionTest implements MycatTest {
             Assert.assertEquals(1,getUseCon(mycatConnection, "ds0"));
             Assert.assertEquals(1,getUseCon(mycatConnection,"ds1"));
             mycatConnection.commit();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -98,7 +98,7 @@ public class BackendConnectionTest implements MycatTest {
             Assert.assertEquals(1,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(1,getUseCon(mycatConnection,"ds1"));
             mycatConnection.rollback();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -114,7 +114,7 @@ public class BackendConnectionTest implements MycatTest {
             Assert.assertEquals(1,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(1,getUseCon(mycatConnection,"ds1"));
             mycatConnection.setAutoCommit(true);
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -157,7 +157,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.commit();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -179,7 +179,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `mysql`.`role_edges` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.rollback();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -201,7 +201,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
             Assert.assertEquals(1,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.setAutoCommit(true);
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
         }
     }
@@ -279,7 +279,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.commit();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -320,7 +320,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.rollback();
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -363,7 +363,7 @@ public class BackendConnectionTest implements MycatTest {
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             mycatConnection.setAutoCommit(true);
-            Thread.sleep(5);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));
@@ -412,6 +412,7 @@ public class BackendConnectionTest implements MycatTest {
             initTestData(mycatConnection);
 
             repeatSql(mycatConnection,  "SELECT * FROM `db1`.`travelrecord2` LIMIT 0, 1000; ",400);
+            Thread.sleep(300);
             Assert.assertEquals(0,getUseCon(mycatConnection,"prototypeDs"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds0"));
             Assert.assertEquals(0,getUseCon(mycatConnection,"ds1"));

@@ -81,11 +81,6 @@ public class MycatNestedLoopSemiJoin extends Join implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         MycatNestedLoopJoin mycatNestedLoopJoin = MycatNestedLoopJoin.create(getTraitSet(), getLeft(), getRight(), getCondition(), joinType);
         return mycatNestedLoopJoin.implement(implementor, pref);

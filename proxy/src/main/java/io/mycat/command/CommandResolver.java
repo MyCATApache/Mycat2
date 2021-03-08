@@ -20,7 +20,9 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -191,6 +193,7 @@ public class CommandResolver {
                     long statementId = curPacket.readFixInt(4);
                     mycat.resetCurrentProxyPayload();
                     endFuture = commandHandler.handlePrepareStatementClose(statementId, mycat);
+                    endFuture = endFuture.onComplete(event -> mycat.onHandlerFinishedClear());
                     MycatMonitor.onCloseCommandEnd(mycat);
                     break;
                 }
@@ -385,6 +388,7 @@ public class CommandResolver {
             }
 
         } finally {
+
             Objects.requireNonNull(endFuture).onComplete(event -> {
                 Future<Void> future = Future.succeededFuture();
                 if (event.failed()){

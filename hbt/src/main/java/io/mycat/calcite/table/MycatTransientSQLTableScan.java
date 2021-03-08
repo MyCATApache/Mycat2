@@ -59,11 +59,6 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =

@@ -43,8 +43,8 @@ public class LocalXaMemoryRepositoryImpl extends MemoryRepositoryImpl {
     public static Future<Void> tryCreateLogTable(SqlConnection dataSource) {
         String createDatabaseSQL = "create database if not exists `" + database + "`";
         String createTableSQL = "create table if not exists `" + database + "`." + "`" + tableName + "`"
-                + "(`xid` varchar(64),"+
-                "UNIQUE KEY `uk_key` (`xid`)) ENGINE=InnoDB";
+                + "(`xid` bigint PRIMARY KEY NOT NULL"+
+                ") ENGINE=InnoDB";
         return dataSource.query(createDatabaseSQL).execute().mapEmpty().flatMap(o -> dataSource.query(createTableSQL).execute().mapEmpty()).otherwise(throwable -> null).mapEmpty();
     }
 

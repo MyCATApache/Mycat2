@@ -428,9 +428,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         return dataContext.getUser();
     }
 
-    public void setUser(MycatUser user) {
-        this.dataContext.setUser(user);
-    }
 
     public void setCharset(int index) {
         this.setCharset(CharsetUtil.getCharset(index));

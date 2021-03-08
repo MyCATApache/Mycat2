@@ -1,7 +1,6 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.*;
-import io.mycat.calcite.executor.SimpleExecutor;
 import io.mycat.mpp.Row;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -34,8 +33,6 @@ public abstract class QueryBuilder extends AbstractRelNode implements MycatRel {
                                                 Long fetchNumber,
                                                 RelCollation collation);
 
-    public abstract Executor run();
-
     public static QueryBuilder createDefaultQueryBuilder(RelOptCluster cluster,
                                                          String name,
                                                          Iterable<Object[]> rows){
@@ -62,19 +59,10 @@ public abstract class QueryBuilder extends AbstractRelNode implements MycatRel {
                 return Optional.empty();
             }
 
-            @Override
-            public Executor run() {
-                return new SimpleExecutor(rows);
-            }
 
             @Override
             public ExplainWriter explain(ExplainWriter writer) {
                 return writer.name(name).into().ret();
-            }
-
-            @Override
-            public Executor implement(ExecutorImplementor implementor) {
-                return implementor.implement(this);
             }
         };
     }

@@ -62,10 +62,6 @@ public class MycatValues extends Values implements MycatRel {
         return writer.name("MycatValues").item("values", tuples).ret();
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
 
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {

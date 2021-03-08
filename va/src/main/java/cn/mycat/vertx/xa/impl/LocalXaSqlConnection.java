@@ -51,28 +51,34 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
     @Override
     public Future<Void> commit() {
         String curXid = xid;
-        if (targetName == null && localSqlConnection == null && map.isEmpty()) {
+        if (localSqlConnection == null && map.isEmpty()) {
             inTranscation = false;
             return (Future.succeededFuture());
         }
-        if (targetName != null && localSqlConnection != null && map.isEmpty()) {
+        if (localSqlConnection != null && map.isEmpty()) {
             return localSqlConnection.query("commit;").execute()
                     .onSuccess(event -> inTranscation = false).mapEmpty();
         }
-        if (targetName != null && inTranscation && localSqlConnection != null) {
+        if (inTranscation && localSqlConnection != null) {
             return super.commitXa((coordinatorLog) -> localSqlConnection.query(
-                    "REPLACE INTO mycat.xa_log (xid) VALUES('" +curXid+ "')").execute().mapEmpty())
+                    "REPLACE INTO mycat.xa_log (xid) VALUES('" + curXid + "')").execute().mapEmpty())
                     .compose((Function<Void, Future<Void>>) o -> localSqlConnection.query("commit;").execute().mapEmpty()).mapEmpty()
-                    .onSuccess(event -> {
-                        Future<SqlConnection> connection = mySQLManager().getConnection(targetName);
-                        connection
-                                .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid+"'")
-                                        .execute()
-                                        .onComplete(event1 -> sqlConnection.close()));
-                        targetName = null;
-                        localSqlConnection.close();
-                        localSqlConnection = null;
+                    .compose(o -> {
+                        xid = null;
                         inTranscation = false;
+                        SqlConnection localSqlConnection = this.localSqlConnection;
+                        this.localSqlConnection = null;
+                        return localSqlConnection.close();
+                    })
+                    .onSuccess(event -> {
+                        if (targetName != null) {
+                            Future<SqlConnection> connectionFuture = mySQLManager().getConnection(targetName);
+                            connectionFuture
+                                    .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'")
+                                            .execute()
+                                            .onComplete(event1 -> connectionFuture.map(c -> c.close())));
+                        }
+                        targetName = null;
                     }).mapEmpty();
         } else {
             throw new AssertionError();
@@ -89,7 +95,10 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
                 return sqlConnectionFuture.map(sqlConnection -> {
                     LocalXaSqlConnection.this.localSqlConnection = sqlConnection;
                     return sqlConnection;
-                }).compose(sqlConnection -> sqlConnection.query("begin;").execute().map(sqlConnection));
+                }).compose(sqlConnection -> sqlConnection
+                        .query(getTransactionIsolation().getCmd()).execute()
+                        .mapEmpty()
+                        .flatMap(unused -> sqlConnection.query("begin;").execute().map(sqlConnection)));
             }
             if (this.targetName != null && this.targetName.equals(targetName)) {
                 return Future.succeededFuture(localSqlConnection);
@@ -114,48 +123,46 @@ public class LocalXaSqlConnection extends BaseXaSqlConnection {
             return Future.succeededFuture();
         }
         String curXid = this.xid;
-        return Future.future(promise -> {
-            localSqlConnection.query("rollback;").execute()
-                    .onComplete(ignored -> {
-                        localSqlConnection.close();
-                        super.rollback().onSuccess(event -> {
-                            Future<SqlConnection> connection = mySQLManager().getConnection(curtargetName);
-                            connection
-                                    .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid+"'")
-                                            .execute()
-                                            .onComplete(event1 -> sqlConnection.close()));
-                        }).onComplete(promise);
-                        localSqlConnection = null;
-                        targetName = null;
-                        inTranscation = false;
-                    });
-        });
+        return super.rollback().flatMap(unused -> localSqlConnection.query("rollback;")
+                .execute().eventually(unused1 -> {
+                    SqlConnection curLocalSqlConnection = this.localSqlConnection;
+                    this.localSqlConnection = null;
+                    targetName = null;
+                    xid = null;
+                    if (curXid != null) {
+                        Future<SqlConnection> sqlConnectionFuture = Future.succeededFuture(curLocalSqlConnection);
+                        return sqlConnectionFuture
+                                .onSuccess(sqlConnection -> sqlConnection.query("delete from mycat.xa_log where xid = '" + curXid + "'")
+                                        .execute()
+                                        .onComplete(event1 -> sqlConnectionFuture.map(c -> c.close()))).mapEmpty();
+                    }else {
+                        return curLocalSqlConnection.close();
+                    }
+                }).mapEmpty());
     }
 
     @Override
     public Future<Void> closeStatementState() {
-        return Future.future(promise -> {
-            super.closeStatementState()
-                    .onComplete(event -> {
-                        if (!isInTransaction()) {
-                            targetName = null;
-                            SqlConnection localSqlConnection = this.localSqlConnection;
-                            this.localSqlConnection = null;
-                            if (localSqlConnection != null) {
-                                localSqlConnection.close().onComplete(promise);
-                            } else {
-                                promise.tryComplete();
-                            }
+        return super.closeStatementState()
+                .eventually(event -> {
+                    if (!isInTransaction()) {
+                        SqlConnection localSqlConnection = this.localSqlConnection;
+                        this.localSqlConnection = null;
+                        this.targetName = null;
+                        if (localSqlConnection != null) {
+                            return localSqlConnection.close();
                         } else {
-                            promise.tryComplete();
+                            return Future.succeededFuture();
                         }
-                    });
-        });
+                    } else {
+                        return Future.succeededFuture();
+                    }
+                });
     }
 
     @Override
     public Future<Void> close() {
-        return super.close().flatMap(event -> {
+        return super.close().eventually(event -> {
             if (localSqlConnection != null) {
                 return localSqlConnection
                         .query("rollback")

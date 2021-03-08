@@ -20,7 +20,6 @@ import io.mycat.TransactionSession;
 import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.datasource.jdbc.transactionsession.LocalTransactionSession;
 
 import java.util.List;
 import java.util.Objects;
@@ -80,11 +79,11 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     public void init(ServerConfig config) {
 
     }
-
-    @Override
-    public TransactionSession createSession(MycatDataContext context) {
-        LocalTransactionSession localTransactionSession = new LocalTransactionSession(context);
-        context.setTransactionSession(localTransactionSession);
-        return localTransactionSession;
-    }
+//
+//    @Override
+//    public TransactionSession createSession(MycatDataContext context) {
+//        LocalTransactionSession localTransactionSession = new LocalTransactionSession(context);
+//        context.setTransactionSession(localTransactionSession);
+//        return localTransactionSession;
+//    }
 }

@@ -69,5 +69,11 @@
             <version>1.0-1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>common</artifactId>
+            <version>1.15-dev</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

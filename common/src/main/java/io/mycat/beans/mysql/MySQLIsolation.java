@@ -15,6 +15,7 @@
 package io.mycat.beans.mysql;
 
 import java.sql.Connection;
+import java.util.Optional;
 
 public enum MySQLIsolation {
     READ_UNCOMMITTED("READ UNCOMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;",
@@ -80,5 +81,14 @@ public enum MySQLIsolation {
 
     public int getJdbcValue() {
         return jdbcValue;
+    }
+
+    public static Optional<MySQLIsolation> toMySQLIsolationFrom(String sql) {
+        for (MySQLIsolation value : values()) {
+            if (value.getCmd() == sql) {
+                return Optional.of(value);
+            }
+        }
+        return Optional.empty();
     }
 }
