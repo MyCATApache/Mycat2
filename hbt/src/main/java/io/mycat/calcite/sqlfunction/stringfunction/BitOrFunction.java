@@ -8,17 +8,16 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.mycat.MycatSqlDefinedFunction;
 import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.schema.ScalarFunction;
-import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class BitOrFunction extends MycatSqlDefinedFunction {
@@ -58,5 +57,10 @@ public class BitOrFunction extends MycatSqlDefinedFunction {
             return null;
         }
         return left|right;
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+        SqlUtil.unparseBinarySyntax(this, call, writer, leftPrec, rightPrec);
     }
 }
