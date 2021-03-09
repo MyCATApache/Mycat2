@@ -457,6 +457,20 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<DataNode> backends) {
+        ShardingFuntion function = tableConfigEntry.getFunction();
+        if (function != null) {
+            if (function.getClazz() == null) {
+                Map<String, Object> properties = function.getProperties();
+                String mappingFormat = (String) properties.get("mappingFormat");
+                if (mappingFormat == null) {
+                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
+                            String.join("/", "c${targetIndex}",
+                                    schemaName + "_${dbIndex}",
+                                    orignalTableName + "_${tableIndex}"));
+                    properties.put("mappingFormat", mappingFormat);
+                }
+            }
+        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
@@ -938,7 +952,11 @@ public class MetadataManager implements MysqlVariableService {
                                 dataNode = tableHandler1.getDataNode();
                             } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
                                 GlobalTable tableHandler1 = (GlobalTable) tableHandler;
-                                int i = ThreadLocalRandom.current().nextInt(0, tableHandler1.getGlobalDataNode().size());
+                                int size = tableHandler1.getGlobalDataNode().size();
+                                if (size == 0) {
+                                    throw new IllegalArgumentException("datanodes of global table is empty");
+                                }
+                                int i = ThreadLocalRandom.current().nextInt(0, size);
                                 dataNode = tableHandler1.getGlobalDataNode().get(i);
                             } else {
                                 throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());

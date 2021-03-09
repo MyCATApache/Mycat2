@@ -44,7 +44,7 @@ public class TrimLeadingFunction extends MycatSqlDefinedFunction {
     }
     @Override
     public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        writer.print("trim(leading,");
+        writer.print("trim(leading ");
         List<SqlNode> operandList = call.getOperandList();
         operandList.get(0).unparse(writer, 0, 0);
         writer.print(" from ");

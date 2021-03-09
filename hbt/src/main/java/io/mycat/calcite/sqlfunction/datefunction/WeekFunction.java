@@ -20,6 +20,10 @@ public class WeekFunction extends MycatDateFunction {
         super("WEEK", scalarFunction);
     }
 
+    public static Integer week(LocalDate date){
+        return week(date,null);
+    }
+
     public static Integer week(LocalDate date, @Parameter(name = "mode", optional = true) Integer mode) {
         if (date==null) {
             return null;

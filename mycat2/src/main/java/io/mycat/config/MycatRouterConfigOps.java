@@ -411,7 +411,7 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
 
     public void commit() throws Exception {
-         this.configOps.commit(this);
+        this.configOps.commit(this);
     }
 
     public void close() {

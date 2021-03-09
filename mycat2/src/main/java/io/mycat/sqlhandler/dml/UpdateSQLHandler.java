@@ -58,7 +58,9 @@ public class UpdateSQLHandler extends AbstractSQLHandler<MySqlUpdateStatement> {
         TableHandler tableHandler = tableMap.get(tableName);
         ///////////////////////////////common///////////////////////////////
         if (tableHandler == null) {
-            return receiver.proxyUpdate(defaultTargetName, sqlStatement.toString());
+            return receiver.proxyUpdate(
+                    Objects.requireNonNull(defaultTargetName,"can not route :"+sqlStatement),
+                    sqlStatement.toString());
         }
         switch (tableHandler.getType()) {
             case NORMAL:

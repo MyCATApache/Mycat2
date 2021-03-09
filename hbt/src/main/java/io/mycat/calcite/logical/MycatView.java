@@ -224,7 +224,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         for (Map.Entry<String, List<Map<String, DataNode>>> entry : collect.entrySet()) {
             String targetName = entry.getKey();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize).iterator();
+            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize+1).iterator();
             while (iterator.hasNext()) {
                 List<Map<String, DataNode>> eachList = iterator.next();
                 ImmutableList.Builder<RelNode> builderList = ImmutableList.builder();

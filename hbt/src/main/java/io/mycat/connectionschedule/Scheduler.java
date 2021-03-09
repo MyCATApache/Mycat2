@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
@@ -46,12 +47,12 @@ public  class Scheduler implements Runnable {
     }
 
 
-    public static CloseFuture addTask(Future<SqlConnection> connectionFuture,
+    public static Future<Void> addTask(Future<SqlConnection> connectionFuture,
                                       @NonNull ObservableEmitter<Object[]> emitter,
                                       SqlString sqlString,
                                       List<Object> params,
-                                      CalciteRowMetaData calciteRowMetaData) {
-        AtomicBoolean cancel = new AtomicBoolean(false);
+                                      CalciteRowMetaData calciteRowMetaData,
+                                      AtomicBoolean cancel) {
         Future<Void> closeFuture = Future.future(promise -> {
             Observable<Object[]> observable = Objects.requireNonNull(VertxExecuter.runQuery(connectionFuture,
                     sqlString.getSql(),
@@ -69,11 +70,7 @@ public  class Scheduler implements Runnable {
                         promise.tryComplete();
                     });
         });
-        Future<Void> finalCloseFuture = closeFuture;
-        return () -> {
-            cancel.set(true);
-            return finalCloseFuture;
-        };
+        return closeFuture;
     }
 
     @Override
@@ -214,7 +211,8 @@ public  class Scheduler implements Runnable {
     }
 
     private Observable<Object[]> schedule(SchedulePolicy schedulePolicy,
-                                          MycatDataContext context, int order, int refCount, String target, long deadline,
+                                          MycatDataContext context,
+                                          int order, int refCount, String target, long deadline,
                                           SqlString sqlString,
                                           List<Object> params,
                                           CalciteRowMetaData calciteRowMetaData) {
@@ -225,11 +223,15 @@ public  class Scheduler implements Runnable {
             Future<Void> resultSetCloseFuture = resultSetClosePromise.future();
             Future<SqlConnection> connectionFuture = schedulePolicy
                     .getConnetion(context, order, refCount, (target), deadline, sqlConnectionRecyclePromise.future());
-            CloseFuture subTask = addTask(connectionFuture,
-                    emitter, sqlString, params, calciteRowMetaData);
+            AtomicBoolean cancel = new AtomicBoolean(false);
+            Future<Void> closeFuture = addTask(connectionFuture,
+                    emitter, sqlString, params, calciteRowMetaData,cancel);
+            closeFuture.onFailure(event -> emitter.tryOnError(event));
+            closeFuture.onSuccess(event -> emitter.onComplete());
             XaSqlConnection xaSqlConnection = (XaSqlConnection)context.getTransactionSession();
-            xaSqlConnection.addCloseFuture(resultSetCloseFuture.eventually(unused -> subTask.close()
-                    .onComplete(voidAsyncResult -> connectionFuture.onComplete(sqlConnectionRecyclePromise))));
+            xaSqlConnection.addCloseFuture(resultSetCloseFuture.eventually(unused ->
+            {cancel.set(true);return closeFuture;})
+                    .onComplete(voidAsyncResult -> connectionFuture.onComplete(sqlConnectionRecyclePromise)));
         });
     }
 }

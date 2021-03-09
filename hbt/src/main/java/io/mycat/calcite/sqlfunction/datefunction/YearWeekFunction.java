@@ -15,6 +15,10 @@ public class YearWeekFunction extends MycatDateFunction {
         super("YEARWEEK", scalarFunction);
     }
 
+    public static Integer yearWeek(LocalDate date) {
+        return yearWeek(date,null);
+    }
+
     public static Integer yearWeek(LocalDate date, @Parameter(name = "mode", optional = true) Integer mode) {
         if (date==null) {
             return null;

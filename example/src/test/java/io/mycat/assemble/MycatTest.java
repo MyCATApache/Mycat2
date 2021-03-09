@@ -2,6 +2,9 @@ package io.mycat.assemble;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.util.JdbcUtils;
+import io.mycat.beans.mycat.CopyMycatRowMetaData;
+import io.mycat.beans.mycat.JdbcRowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import io.mycat.util.JsonUtil;
@@ -9,7 +12,7 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
+import java.sql.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -81,5 +84,14 @@ public interface MycatTest {
                 .create("newDs",
                         DB1));
         execute(connection, CreateClusterHint.create("c0", Arrays.asList("newDs"), Collections.emptyList()));
+    }
+
+
+    public default MycatRowMetaData getColumns(Connection connection, String db, String table) throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("select * from " + db + "." + table)) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            return new CopyMycatRowMetaData(new JdbcRowMetaData(metaData));
+        }
     }
 }

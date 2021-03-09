@@ -141,7 +141,7 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                     if (numeric == null) {
                         value = null;
                     } else {
-                        value = MycatValueFactory.DOUBLE_VALUE_FACTORY.createFromDouble(numeric.longValue());
+                        value = numeric.doubleValue();
                     }
                     break;
                 }
@@ -157,7 +157,12 @@ public class BaseRowObservable extends RowObservable implements StreamMysqlColle
                 case LONGVARCHAR:
                 case VARCHAR:
                 case CHAR: {
-                    value = row.getString(columnIndex);
+                    value = row.getValue(columnIndex);
+                    if (value instanceof String){
+
+                    }else if (value instanceof byte[]){
+                        value = new String((byte[])value);
+                    }
                     break;
                 }
                 case DATE: {

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.15-dev</version>
+        <version>1.15-release</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -58,13 +58,13 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-            <version>1.15-dev</version>
+            <version>1.15-release</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>
-            <version>1.15-dev</version>
+            <version>1.15-release</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>
@@ -76,6 +76,12 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>5.3.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-junit5</artifactId>
+            <version>4.0.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

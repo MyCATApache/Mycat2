@@ -38,13 +38,16 @@ public class SysDateFunction extends MycatDateFunction {
         super("SYSDATE", scalarFunction);
     }
 
+    public static final LocalDateTime sysdate() {
+        return sysdate(null);
+    }
 
-    public static final LocalDateTime sysdate(@Parameter(name = "precision",optional = true) Integer precision) {
-      if (precision == null){
-          return NowFunction.now(null);
-      }else {
-          return NowFunction.now(precision);
-      }
+    public static final LocalDateTime sysdate(@Parameter(name = "precision", optional = true) Integer precision) {
+        if (precision == null) {
+            return NowFunction.now(null);
+        } else {
+            return NowFunction.now(precision);
+        }
     }
 
     @Override

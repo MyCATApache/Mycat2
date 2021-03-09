@@ -10,8 +10,10 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.vertx.core.Future;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 
 public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatement> {
@@ -30,9 +32,8 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
             boolean changed = createTableStatement.apply(sqlAlterTableStatement);
             if (changed) {
                 JdbcConnectionManager connectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-                List<DataNode> dataNodes;
-                dataNodes = getDataNodes(tableHandler);
-                executeOnPrototype(sqlAlterTableStatement,connectionManager);
+                Set<DataNode> dataNodes = getDataNodes(tableHandler);
+                dataNodes.add(new BackendTableInfo(metadataManager.getPrototype(),schema,tableName));//add Prototype
                 executeOnDataNodes(sqlAlterTableStatement, connectionManager, dataNodes);
                 CreateTableSQLHandler.INSTANCE.createTable(Collections.emptyMap(),schema,tableName,createTableStatement);
             }
@@ -45,7 +46,7 @@ public class AlterTableSQLHandler extends AbstractSQLHandler<SQLAlterTableStatem
 
     public void executeOnDataNodes(SQLAlterTableStatement alterTableStatement,
                                    JdbcConnectionManager connectionManager,
-                                   List<DataNode> dataNodes) {
+                                   Collection<DataNode> dataNodes) {
         SQLExprTableSource tableSource = alterTableStatement.getTableSource();
         executeOnDataNodes(alterTableStatement, connectionManager, dataNodes, tableSource);
     }
