@@ -21,7 +21,11 @@ public class CurTimeFunction extends MycatDateFunction {
         );
     }
 
-    public static Duration curTime(@Parameter( name="precision",optional = true) Integer precision) {
+    public static Duration curTime() {
+        return curTime(null);
+    }
+
+    public static Duration curTime(@Parameter(name = "precision", optional = true) Integer precision) {
         if (precision == null) {
             Duration duration = Duration.ofSeconds(LocalTime.now().toSecondOfDay());
             return duration;
@@ -29,8 +33,8 @@ public class CurTimeFunction extends MycatDateFunction {
         LocalTime now = LocalTime.now();
         int nano = now.getNano();
         String s = Integer.toString(nano);
-        if (s.length()>precision){
-            s = s.substring(0,precision);
+        if (s.length() > precision) {
+            s = s.substring(0, precision);
             nano = Integer.parseInt(s);
         }
         return Duration.ofSeconds(now.toSecondOfDay()).plusNanos(nano);
