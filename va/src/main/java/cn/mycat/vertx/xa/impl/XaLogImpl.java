@@ -47,10 +47,10 @@ public class XaLogImpl implements XaLog {
     }
 
 
-    public XaLogImpl(Repository xaRepository,int workerId, MySQLManager mySQLManager) {
+    public XaLogImpl(Repository xaRepository,long workerId, MySQLManager mySQLManager) {
         this.mySQLManager = mySQLManager;
         this.xaRepository = xaRepository;
-        this.xaIdSeq = new AtomicLong(System.currentTimeMillis()<<4 + workerId);
+        this.xaIdSeq = new AtomicLong((System.currentTimeMillis()>>32) + (workerId<<32));
 
     }
 
