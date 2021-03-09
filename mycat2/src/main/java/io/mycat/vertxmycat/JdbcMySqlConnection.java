@@ -98,7 +98,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
     @Override
     public Future<Void> close() {
         IO_EXECUTOR.execute(true, () -> {
-            connection.close();
+            try {
+                connection.close();
+            }catch (Throwable throwable){
+                LOGGER.error("",throwable);
+            }
         });
         return Future.succeededFuture();
     }
@@ -224,7 +228,13 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                     return Future.future(new Handler<Promise<SqlResult<R>>>() {
                         @Override
                         public void handle(Promise<SqlResult<R>> promise) {
-                            IO_EXECUTOR.execute(isRead, () -> extracted(promise));
+                            IO_EXECUTOR.execute(isRead, () -> {
+                                try {
+                                    extracted(promise);
+                                }catch (Throwable throwable){
+                                    promise.tryFail(throwable);
+                                }
+                            });
                         }
 
                         @SneakyThrows
