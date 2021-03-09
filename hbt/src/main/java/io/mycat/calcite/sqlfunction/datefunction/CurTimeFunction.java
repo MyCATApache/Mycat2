@@ -3,6 +3,8 @@ package io.mycat.calcite.sqlfunction.datefunction;
 import org.apache.calcite.linq4j.function.Parameter;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.impl.ScalarFunctionImpl;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlWriter;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -32,5 +34,10 @@ public class CurTimeFunction extends MycatDateFunction {
             nano = Integer.parseInt(s);
         }
         return Duration.ofSeconds(now.toSecondOfDay()).plusNanos(nano);
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+        super.unparse(writer, call, leftPrec, rightPrec);
     }
 }

@@ -49,7 +49,7 @@ public class DateFormatFunction extends MycatDateFunction {
 
 
     public DateFormatFunction() {
-        super("dateFormat", scalarFunction);
+        super("DATE_FORMAT", scalarFunction);
     }
 
     //SqlParserUtil

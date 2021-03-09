@@ -44,7 +44,7 @@ import java.util.Map;
 
 public class DateFormat2Function extends MycatDateFunction {
     public static ScalarFunction scalarFunction = ScalarFunctionImpl.create(DateFormat2Function.class,
-            "DATE_FORMAT");
+            "dateFormat");
     public static DateFormat2Function INSTANCE = new DateFormat2Function();
 
 
