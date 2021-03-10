@@ -187,8 +187,12 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @Override
     @SneakyThrows
     public void start() {
+        start(loadFromLocalFile());
+    }
+
+    public void start(MycatRouterConfig mycatRouterConfig) {
         try (ConfigOps configOps = startOps()) {
-            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) loadFromLocalFile(), configOps));
+            configOps.commit(new MycatRouterConfigOps((io.mycat.config.MycatRouterConfig) mycatRouterConfig, configOps));
         } catch (Exception e) {
             throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_INIT_CONFIG, "start FileMetadataStorageManager fail", e);
         }
@@ -229,7 +233,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
             @Override
             public void commit(Object ops) throws Exception {
-                 commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
+                commitAndSyncDisk((MycatRouterConfigOps) ops).mapEmpty().toCompletionStage().toCompletableFuture().get();
             }
 
             @Override
@@ -336,7 +340,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
                                 .transformation(state), statePath);
                 return Future.succeededFuture(state);
             } catch (Exception e) {
-                return  Future.failedFuture(e);
+                return Future.failedFuture(e);
             }
         });
 

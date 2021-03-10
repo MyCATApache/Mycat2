@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.spm;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DrdsSql;
 import io.mycat.MycatDataContext;
@@ -31,12 +32,11 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class PlanImpl implements Plan {
     private boolean forUpdate;
@@ -107,13 +107,13 @@ public class PlanImpl implements Plan {
         return physical;
     }
 
-    @Override
-    public List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql) {
+    public List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql, boolean code) {
         ArrayList<String> list = new ArrayList<>();
         ExplainWriter explainWriter = new ExplainWriter();
+
         switch (this.type) {
             case PHYSICAL:
-                String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(physical);
+                String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(physical).replaceAll("\r","");
                 list.addAll(Arrays.asList(s.split("\n")));
                 physical.accept(new RelShuttleImpl() {
                     @Override
@@ -121,20 +121,22 @@ public class PlanImpl implements Plan {
                         if (rel instanceof MycatView) {
                             ImmutableMultimap<String, SqlString> stringSqlStringImmutableMultimap = ((MycatView) rel).expandToSql(drdsSql.isForUpdate(), drdsSql.getParams());
                             for (Map.Entry<String, SqlString> entry : stringSqlStringImmutableMultimap.entries()) {
-                                list.add("\n");
-                                list.add(rel.toString());
-                                list.add("targetName:" + entry.getKey());
-                                list.add("sql:" + entry.getValue());
+                                SqlString sqlString = new SqlString(
+                                        entry.getValue().getDialect(),
+                                        (Util.toLinux(entry.getValue().getSql())).replaceAll("\n"," "),
+                                        entry.getValue().getDynamicParameters());
+                                list.add(new AbstractMap.SimpleEntry<>(entry.getKey(), sqlString).toString());
                             }
-
                         } else if (rel instanceof MycatTransientSQLTableScan) {
                             ((MycatTransientSQLTableScan) rel).explain(explainWriter);
                         }
                         return super.visitChildren(rel);
                     }
                 });
-                list.add("\n");
-                list.addAll(Arrays.asList(getCodeExecuterContext().getCode().split("\n")));
+                if (code) {
+                    list.add("code:");
+                    list.addAll(Arrays.asList(getCodeExecuterContext().getCode().split("\n")));
+                }
                 break;
             case UPDATE: {
                 MycatUpdateRel physical = (MycatUpdateRel) this.physical;
@@ -153,6 +155,6 @@ public class PlanImpl implements Plan {
         for (String s1 : explainWriter.getText().split("\n")) {
             list.add(s1);
         }
-        return list;
+        return list.stream().filter(i->!i.isEmpty()).collect(Collectors.toList());
     }
 }

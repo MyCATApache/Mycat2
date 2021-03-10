@@ -130,6 +130,7 @@ public class MycatCore {
         }
 
         context.put(metadataStorageManager.getClass(), metadataStorageManager);
+        context.put(MetadataStorageManager.class, metadataStorageManager);
         MetaClusterCurrent.register(context);
     }
 

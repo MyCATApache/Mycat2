@@ -35,7 +35,11 @@ public interface Plan extends Comparable<Plan> {
 
     public RelNode getPhysical();
 
-    List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql);
+    default List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql) {
+        return explain(dataContext, drdsSql, true);
+    }
+
+    List<String> explain(MycatDataContext dataContext, DrdsSql drdsSql, boolean code);
 
     static public enum Type {
         PHYSICAL,

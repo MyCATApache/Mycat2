@@ -183,6 +183,9 @@ public class DrdsRunner {
         return optimizeWithCBO(bestExp, Collections.emptyList());
     }
 
+    public DrdsSql preParse(String sqlStatement) {
+        return preParse(SQLUtils.parseSingleMysqlStatement(sqlStatement));
+    }
 
     public DrdsSql preParse(SQLStatement sqlStatement) {
         List<Object> params = new ArrayList<>();
@@ -462,9 +465,9 @@ public class DrdsRunner {
                         MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
                     @Override
                     protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
-                        if (node!=null&&node instanceof SqlDynamicParam){
+                        if (node != null && node instanceof SqlDynamicParam) {
                             RelDataType relDataType = deriveType(scope, node);
-                           return;
+                            return;
                         }
                         super.inferUnknownTypes(inferredType, scope, node);
                     }
@@ -828,7 +831,7 @@ public class DrdsRunner {
 
     @SneakyThrows
     public Future<Void> runOnDrds(MycatDataContext dataContext,
-                                           SQLStatement statement, Response response) {
+                                  SQLStatement statement, Response response) {
         DrdsSql drdsSql = this.preParse(statement);
         Plan plan = getPlan(dataContext, drdsSql);
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
@@ -863,7 +866,7 @@ public class DrdsRunner {
 
     public Future<Void> runHbtOnDrds(MycatDataContext dataContext, String statement, Response response) {
         XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
-        List<Object> params =Collections.emptyList();
+        List<Object> params = Collections.emptyList();
         PlanImplementor planImplementor = new ObservablePlanImplementorImpl(
                 transactionSession,
                 dataContext, params, response);

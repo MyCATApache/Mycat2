@@ -133,7 +133,9 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         RelWriter writer = super.explainTerms(pw);
         writer.item("relNode", relNode);
         writer.item("distribution", distribution);
-        writer.item("conditions", conditions);
+        if (conditions != null) {
+            writer.item("conditions", conditions);
+        }
         return writer;
     }
 
@@ -224,7 +226,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         for (Map.Entry<String, List<Map<String, DataNode>>> entry : collect.entrySet()) {
             String targetName = entry.getKey();
             SqlDialect dialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize+1).iterator();
+            Iterator<List<Map<String, DataNode>>> iterator = Iterables.partition(entry.getValue(), mergeUnionSize + 1).iterator();
             while (iterator.hasNext()) {
                 List<Map<String, DataNode>> eachList = iterator.next();
                 ImmutableList.Builder<RelNode> builderList = ImmutableList.builder();
@@ -382,7 +384,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         return Optional.ofNullable(conditions);
     }
 
-    public Result implementMergeSort(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort){
+    public Result implementMergeSort(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort) {
         implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
@@ -409,12 +411,13 @@ public class MycatView extends AbstractRelNode implements MycatRel {
         final Expression offsetVal = mycatMergeSort.offset == null ? Expressions.constant(Integer.valueOf(0))
                 : MycatMergeSort.getExpression(mycatMergeSort.offset);
 
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class,Function1.class,Comparator.class,int.class,int.class);
-        builder.add(Expressions.call(root, getEnumerable, mycatViewStash,pair.left,pair.right,offsetVal,fetchVal));
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class, Function1.class, Comparator.class, int.class, int.class);
+        builder.add(Expressions.call(root, getEnumerable, mycatViewStash, pair.left, pair.right, offsetVal, fetchVal));
         return implementor.result(physType, builder.toBlock());
 
     }
-    public Result implementMergeSortStream(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort){
+
+    public Result implementMergeSortStream(MycatEnumerableRelImplementor implementor, Prefer pref, MycatMergeSort mycatMergeSort) {
         implementor.collectLeafRelNode(this);
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType =
@@ -440,8 +443,8 @@ public class MycatView extends AbstractRelNode implements MycatRel {
 
         final Expression offsetVal = mycatMergeSort.offset == null ? Expressions.constant(Integer.valueOf(0))
                 : MycatMergeSort.getExpression(mycatMergeSort.offset);
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class,Function1.class,Comparator.class,int.class,int.class);
-        final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash,pair.left,pair.right,offsetVal,fetchVal);
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getObservable", RelNode.class, Function1.class, Comparator.class, int.class, int.class);
+        final Expression expression2 = Expressions.call(root, getEnumerable, mycatViewStash, pair.left, pair.right, offsetVal, fetchVal);
         builder.add(toRows(physType, expression2, getRowType().getFieldCount()));
 
 

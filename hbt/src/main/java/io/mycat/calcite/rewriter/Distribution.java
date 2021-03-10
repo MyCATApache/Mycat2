@@ -186,10 +186,10 @@ public class Distribution {
 //                Map<String, List<DataNode>> collect = this.shardingTables.stream()
 //                        .collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.getShardingFuntion().calculate(Collections.emptyMap())));
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
-                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(),Collections.emptyList());
+                List<ShardingTable> shardingTables = metadataManager.getErTableGroup().getOrDefault(shardingTable.getShardingFuntion().getErUniqueID(), Collections.emptyList());
                 Map<String, List<DataNode>> collect = shardingTables.stream().collect(Collectors.toMap(k -> k.getUniqueName(), v -> v.dataNodes()));
                 List<Integer> mappingIndex = new ArrayList<>();
-                List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i->i.getUniqueName()).collect(Collectors.toList());
+                List<String> allDataNodeUniqueNames = collect.get(primaryTableUniqueName).stream().sequential().map(i -> i.getUniqueName()).collect(Collectors.toList());
                 {
 
                     for (DataNode filterDataNode : primaryTableFilterDataNodes) {
@@ -236,10 +236,22 @@ public class Distribution {
 
     @Override
     public String toString() {
-        return "Distribution{" +
-                "shardingTables=" + shardingTables +
-                ", globalTables=" + globalTables +
-                ", normalTables=" + normalTables +
-                '}';
+        StringBuilder builder = new StringBuilder().append("Distribution{");
+        if (!shardingTables.isEmpty()) {
+            builder.append("shardingTables=")
+                    .append(shardingTables.stream().map(i -> i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
+
+        }
+        if (!globalTables.isEmpty()) {
+            builder.append("shardingTables=")
+                    .append(globalTables.stream().map(i -> i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
+
+        }
+        if (!normalTables.isEmpty()) {
+            builder.append("normalTables=")
+                    .append(normalTables.stream().map(i ->  i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
+
+        }
+        return builder.toString();
     }
 }

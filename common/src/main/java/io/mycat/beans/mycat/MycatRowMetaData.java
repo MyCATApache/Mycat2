@@ -15,6 +15,7 @@
 
 package io.mycat.beans.mycat;
 
+import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.*;
 
@@ -73,8 +74,8 @@ public interface MycatRowMetaData {
 //            info.put("schemaName", schemaName);
 //            info.put("tableName", tableName);
             info.put("columnName", columnName);
-            info.put("columnType", columnType);
-            info.put("nullable", columnType);
+            info.put("columnType", JDBCType.valueOf(columnType));
+            info.put("nullable", nullable);
             list.add(info);
 
             String columnLabel = getColumnLabel(i);
