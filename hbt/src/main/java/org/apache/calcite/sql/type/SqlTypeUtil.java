@@ -810,92 +810,93 @@ public abstract class SqlTypeUtil {
       RelDataType toType,
       RelDataType fromType,
       boolean coerce) {
-    if (toType.equals(fromType)) {
-      return true;
-    }
-    if (isAny(toType) || isAny(fromType)) {
-      return true;
-    }
+    return true;
+//    if (toType.equals(fromType)) {
+//      return true;
+//    }
+//    if (isAny(toType) || isAny(fromType)) {
+//      return true;
+//    }
 
-    final SqlTypeName fromTypeName = fromType.getSqlTypeName();
-    final SqlTypeName toTypeName = toType.getSqlTypeName();
-    if (toType.isStruct() || fromType.isStruct()) {
-      if (toTypeName == SqlTypeName.DISTINCT) {
-        if (fromTypeName == SqlTypeName.DISTINCT) {
-          // can't cast between different distinct types
-          return false;
-        }
-        return canCastFrom(
-            toType.getFieldList().get(0).getType(), fromType, coerce);
-      } else if (fromTypeName == SqlTypeName.DISTINCT) {
-        return canCastFrom(
-            toType, fromType.getFieldList().get(0).getType(), coerce);
-      } else if (toTypeName == SqlTypeName.ROW) {
-        if (fromTypeName != SqlTypeName.ROW) {
-          return false;
-        }
-        int n = toType.getFieldCount();
-        if (fromType.getFieldCount() != n) {
-          return false;
-        }
-        for (int i = 0; i < n; ++i) {
-          RelDataTypeField toField = toType.getFieldList().get(i);
-          RelDataTypeField fromField = fromType.getFieldList().get(i);
-          if (!canCastFrom(
-              toField.getType(),
-              fromField.getType(),
-              coerce)) {
-            return false;
-          }
-        }
-        return true;
-      } else if (toTypeName == SqlTypeName.MULTISET) {
-        if (!fromType.isStruct()) {
-          return false;
-        }
-        if (fromTypeName != SqlTypeName.MULTISET) {
-          return false;
-        }
-        return canCastFrom(
-            toType.getComponentType(),
-            fromType.getComponentType(),
-            coerce);
-      } else if (fromTypeName == SqlTypeName.MULTISET) {
-        return false;
-      } else {
-        return toType.getFamily() == fromType.getFamily();
-      }
-    }
-    RelDataType c1 = toType.getComponentType();
-    if (c1 != null) {
-      RelDataType c2 = fromType.getComponentType();
-      if (c2 == null) {
-        return false;
-      }
-      return canCastFrom(c1, c2, coerce);
-    }
-    if ((isInterval(fromType) && isExactNumeric(toType))
-        || (isInterval(toType) && isExactNumeric(fromType))) {
-      IntervalSqlType intervalType =
-          (IntervalSqlType) (isInterval(fromType) ? fromType : toType);
-      if (!intervalType.getIntervalQualifier().isSingleDatetimeField()) {
-        // Casts between intervals and exact numerics must involve
-        // intervals with a single datetime field.
-        return false;
-      }
-    }
-    if (toTypeName == null || fromTypeName == null) {
-      return false;
-    }
-
-    // REVIEW jvs 9-Feb-2009: we don't impose SQL rules for character sets
-    // here; instead, we do that in SqlCastFunction.  The reason is that
-    // this method is called from at least one place (MedJdbcNameDirectory)
-    // where internally a cast across character repertoires is OK.  Should
-    // probably clean that up.
-
-    SqlTypeMappingRule rules = SqlTypeMappingRules.instance(coerce);
-    return rules.canApplyFrom(toTypeName, fromTypeName);
+//    final SqlTypeName fromTypeName = fromType.getSqlTypeName();
+//    final SqlTypeName toTypeName = toType.getSqlTypeName();
+//    if (toType.isStruct() || fromType.isStruct()) {
+//      if (toTypeName == SqlTypeName.DISTINCT) {
+//        if (fromTypeName == SqlTypeName.DISTINCT) {
+//          // can't cast between different distinct types
+//          return false;
+//        }
+//        return canCastFrom(
+//            toType.getFieldList().get(0).getType(), fromType, coerce);
+//      } else if (fromTypeName == SqlTypeName.DISTINCT) {
+//        return canCastFrom(
+//            toType, fromType.getFieldList().get(0).getType(), coerce);
+//      } else if (toTypeName == SqlTypeName.ROW) {
+//        if (fromTypeName != SqlTypeName.ROW) {
+//          return false;
+//        }
+//        int n = toType.getFieldCount();
+//        if (fromType.getFieldCount() != n) {
+//          return false;
+//        }
+//        for (int i = 0; i < n; ++i) {
+//          RelDataTypeField toField = toType.getFieldList().get(i);
+//          RelDataTypeField fromField = fromType.getFieldList().get(i);
+//          if (!canCastFrom(
+//              toField.getType(),
+//              fromField.getType(),
+//              coerce)) {
+//            return false;
+//          }
+//        }
+//        return true;
+//      } else if (toTypeName == SqlTypeName.MULTISET) {
+//        if (!fromType.isStruct()) {
+//          return false;
+//        }
+//        if (fromTypeName != SqlTypeName.MULTISET) {
+//          return false;
+//        }
+//        return canCastFrom(
+//            toType.getComponentType(),
+//            fromType.getComponentType(),
+//            coerce);
+//      } else if (fromTypeName == SqlTypeName.MULTISET) {
+//        return false;
+//      } else {
+//        return toType.getFamily() == fromType.getFamily();
+//      }
+//    }
+//    RelDataType c1 = toType.getComponentType();
+//    if (c1 != null) {
+//      RelDataType c2 = fromType.getComponentType();
+//      if (c2 == null) {
+//        return false;
+//      }
+//      return canCastFrom(c1, c2, coerce);
+//    }
+//    if ((isInterval(fromType) && isExactNumeric(toType))
+//        || (isInterval(toType) && isExactNumeric(fromType))) {
+//      IntervalSqlType intervalType =
+//          (IntervalSqlType) (isInterval(fromType) ? fromType : toType);
+//      if (!intervalType.getIntervalQualifier().isSingleDatetimeField()) {
+//        // Casts between intervals and exact numerics must involve
+//        // intervals with a single datetime field.
+//        return false;
+//      }
+//    }
+//    if (toTypeName == null || fromTypeName == null) {
+//      return false;
+//    }
+//
+//    // REVIEW jvs 9-Feb-2009: we don't impose SQL rules for character sets
+//    // here; instead, we do that in SqlCastFunction.  The reason is that
+//    // this method is called from at least one place (MedJdbcNameDirectory)
+//    // where internally a cast across character repertoires is OK.  Should
+//    // probably clean that up.
+//
+//    SqlTypeMappingRule rules = SqlTypeMappingRules.instance(coerce);
+//    return rules.canApplyFrom(toTypeName, fromTypeName);
   }
 
   /**

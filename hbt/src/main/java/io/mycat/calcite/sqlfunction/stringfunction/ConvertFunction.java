@@ -20,7 +20,7 @@ public class ConvertFunction extends MycatStringFunction {
     public static final ConvertFunction INSTANCE = new ConvertFunction();
 
     public ConvertFunction() {
-        super("convert", scalarFunction);
+        super("mycat_convert", scalarFunction);
     }
 
     @SneakyThrows
@@ -37,9 +37,9 @@ public class ConvertFunction extends MycatStringFunction {
             SqlCall call,
             int leftPrec,
             int rightPrec) {
-        final SqlWriter.Frame frame = writer.startFunCall(getName());
+        final SqlWriter.Frame frame = writer.startFunCall("CONVERT");
         call.operand(0).unparse(writer, leftPrec, rightPrec);
-        writer.sep("USING");
+        writer.print("USING");
         call.operand(1).unparse(writer, leftPrec, rightPrec);
         writer.endFunCall(frame);
     }

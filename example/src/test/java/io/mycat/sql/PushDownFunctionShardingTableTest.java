@@ -302,5 +302,43 @@ public class PushDownFunctionShardingTableTest implements MycatTest {
         checkValue("SELECT YEARWEEK(\"2017-06-15\") from db1.`travelrecord`;");
         //todo
     }
+
+    /**
+     *  BINARY, CHAR, DATE, DATETIME, TIME,DECIMAL, SIGNED, UNSIGNED
+     * @throws Exception
+     */
+    @Test
+    public void testCastFunction() throws Exception {
+        checkValue("SELECT CONVERT('abc' USING utf8);");
+        checkValue("SELECT CONVERT('abc' USING utf8) from db1.`travelrecord`;");
+
+        checkValue("SELECT CONVERT('abc' USING GBK)");
+        checkValue("SELECT CONVERT('abc' USING GBK) from db1.`travelrecord`;");
+
+
+        checkValue("SELECT CAST( 1231 AS BINARY ) AS result ");
+        checkValue("SELECT CAST( 1231 AS BINARY ) AS result FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('abc' AS BINARY)");
+        checkValue("SELECT CAST('abc' AS BINARY) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('2018-1-1' AS DATE)");
+        checkValue("SELECT CAST('2018-1-1' AS DATE) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('2018-1-1' AS DATETIME)");
+        checkValue("SELECT CAST('2018-1-1' AS DATETIME) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('00:00:00' AS TIME)");
+        checkValue("SELECT CAST('00:00:00' AS TIME) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('1' AS DECIMAL)");
+        checkValue("SELECT CAST('1' AS DECIMAL) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('-1' AS SIGNED)");
+        checkValue("SELECT CAST('-1' AS SIGNED) FROM db1.travelrecord;");
+
+        checkValue("SELECT CAST('1' AS UNSIGNED)");
+        checkValue("SELECT CAST('1' AS UNSIGNED) FROM db1.travelrecord;");
+    }
 }
 

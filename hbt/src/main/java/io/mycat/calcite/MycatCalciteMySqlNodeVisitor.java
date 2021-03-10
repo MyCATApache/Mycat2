@@ -687,6 +687,13 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
         if (typeName.equalsIgnoreCase("SIGNED")) {
             sqlDataTypeSpec = new SqlDataTypeSpec(new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, precision, scale, null, SqlParserPos.ZERO), SqlParserPos.ZERO);
         } else {
+            if ("datetime".equalsIgnoreCase(typeName)){
+                typeName = "TIMESTAMP";
+            } else if ("BINARY".equalsIgnoreCase(typeName)){
+                typeName = "VARCHAR";
+            } else if ("UNSIGNED".equalsIgnoreCase(typeName)){
+                typeName = "DECIMAL";
+            }
             SqlTypeName sqlTypeName = SqlTypeName.valueOf(typeName);
             SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, precision, scale, null, SqlParserPos.ZERO);
 
