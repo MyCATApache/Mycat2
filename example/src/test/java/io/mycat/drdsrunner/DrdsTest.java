@@ -60,7 +60,7 @@ public abstract class DrdsTest implements MycatTest {
                 logicSchemaConfig.setSchemaName("db1");
 
                 NormalTableConfig normalTableConfig = new NormalTableConfig();
-                normalTableConfig.setCreateTableSQL("CREATE TABLE `address` (\n" +
+                normalTableConfig.setCreateTableSQL("CREATE TABLE `normal` (\n" +
                         "  `id` int(11) NOT NULL,\n" +
                         "  `addressname` varchar(20) DEFAULT NULL,\n" +
                         "  PRIMARY KEY (`id`)\n" +
@@ -74,7 +74,7 @@ public abstract class DrdsTest implements MycatTest {
                 globalTableConfig.getDataNodes().add(
                         GlobalBackEndTableInfoConfig.builder().targetName("c1").build()
                         );
-                globalTableConfig.setCreateTableSQL("CREATE TABLE `company` (\n" +
+                globalTableConfig.setCreateTableSQL("CREATE TABLE `global` (\n" +
                         "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
                         "  `companyname` varchar(20) DEFAULT NULL,\n" +
                         "  `addressid` int(11) DEFAULT NULL,\n" +
