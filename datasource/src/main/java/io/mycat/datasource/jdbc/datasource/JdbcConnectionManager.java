@@ -15,6 +15,7 @@
 package io.mycat.datasource.jdbc.datasource;
 
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
@@ -118,56 +119,46 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
-        JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
+        final JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
                     JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
 
                     return jdbcDataSource;
                 }), () -> "unknown target:" + name);
-        if (key.counter.updateAndGet(operand -> {
-            if (operand < key.getMaxCon()) {
-                return ++operand;
-            }
-            return operand;
-        }) < key.getMaxCon()){
-
-        }
-
-
+        synchronized (key) {
             DefaultConnection defaultConnection;
+            Connection connection = null;
             try {
                 DatasourceConfig config = key.getConfig();
-                Connection connection = key.getDataSource().getConnection();
+                connection = key.getDataSource().getConnection();
                 defaultConnection = new DefaultConnection(connection, key, autocommit, transactionIsolation, readOnly, this);
-                try {
-                    return defaultConnection;
-                } finally {
-                    LOGGER.debug("get connection:{} {}", name, defaultConnection);
-                    if (config.isInitSqlsGetConnection()) {
-                        if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
-                            try (Statement statement = connection.createStatement()) {
-                                for (String initSql : config.getInitSqls()) {
-                                    statement.execute(initSql);
-                                }
+                LOGGER.debug("get connection:{} {}", name, defaultConnection);
+                if (config.isInitSqlsGetConnection()) {
+                    if (config.getInitSqls() != null && !config.getInitSqls().isEmpty()) {
+                        try (Statement statement = connection.createStatement()) {
+                            for (String initSql : config.getInitSqls()) {
+                                statement.execute(initSql);
                             }
                         }
                     }
                 }
+                key.counter.getAndIncrement();
+                return defaultConnection;
             } catch (SQLException e) {
+                if (connection != null) {
+                    JdbcUtils.close(connection);
+                }
                 LOGGER.debug("", e);
-                key.counter.decrementAndGet();
                 throw new MycatException(e);
             }
+        }
     }
 
     @Override
     public void closeConnection(DefaultConnection connection) {
-        connection.getDataSource().counter.updateAndGet(operand -> {
-            if (operand == 0) {
-                return 0;
-            }
-            return --operand;
-        });
+        synchronized (connection.getDataSource()) {
+            connection.getDataSource().counter.decrementAndGet();
+        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close :{} {}", connection, connection.connection);
         }
@@ -180,16 +171,11 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         try {
             if (!connection.connection.getAutoCommit()) {
                 connection.connection.rollback();
-
             }
         } catch (SQLException e) {
             LOGGER.error("", e);
         }
-        try {
-            connection.connection.close();
-        } catch (SQLException e) {
-            LOGGER.error("", e);
-        }
+        JdbcUtils.close(connection.connection);
     }
 
     @Override
