@@ -1,6 +1,8 @@
 package io.mycat.drdsrunner;
 
+import io.mycat.DrdsSql;
 import io.mycat.calcite.spm.Plan;
+import io.mycat.calcite.spm.SpecificSql;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptUtil;
@@ -9,17 +11,21 @@ import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Util;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Getter
 public class Explain {
-    Plan plan;
-    List<String> lines;
+    private Plan plan;
+    private DrdsSql drdsSql;
 
-    public Explain(Plan plan, List<String> lines) {
+    public Explain(Plan plan, DrdsSql drdsSql) {
         this.plan = plan;
-        this.lines = lines;
+        this.drdsSql = drdsSql;
     }
 
     public String getColumnInfo() {
@@ -33,6 +39,9 @@ public class Explain {
         return dumpPlan;
     }
     public String dumpPlan() {
-        return String.join("\n",lines);
+        return plan.dumpPlan().replaceAll("\r"," ").replaceAll("\n"," ");
+    }
+    public  List<SpecificSql> specificSql() {
+        return plan.specificSql(drdsSql);
     }
 }

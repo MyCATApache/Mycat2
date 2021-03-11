@@ -14,6 +14,7 @@
  */
 package io.mycat.calcite.table;
 
+import io.mycat.LogicTableType;
 import io.mycat.TableHandler;
 import io.mycat.calcite.rewriter.Distribution;
 import lombok.Getter;
@@ -58,5 +59,25 @@ public class MycatLogicTable extends MycatTableBase implements AbstractMycatTabl
                 return Distribution.of(normalTable);
         }
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isSharding() {
+        return table.getType()== LogicTableType.SHARDING;
+    }
+
+    @Override
+    public boolean isNormal() {
+        return  table.getType()== LogicTableType.NORMAL;
+    }
+
+    @Override
+    public boolean isCustom() {
+        return table.getType() ==LogicTableType.CUSTOM;
+    }
+
+    @Override
+    public boolean isBroadCast() {
+        return table.getType() ==LogicTableType.GLOBAL;
     }
 }

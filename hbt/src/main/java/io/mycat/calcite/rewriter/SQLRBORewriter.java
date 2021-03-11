@@ -504,12 +504,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
     private static Optional<RelNode> pushDownERTable(LogicalJoin join,
                                                      MycatView left,
                                                      MycatView right) {
-        Optional<RexNode> conditions = left.getConditions();
-        if (!conditions.isPresent()){
-            return Optional.empty();
-        }
         JoinInfo joinInfo = join.analyzeCondition();
         if (joinInfo.isEqui()) {
+            RexNode conditions = left.getConditions().orElse(right.getConditions().orElse(null));
             ColumnMapping leftColumnMapping = new ColumnMapping();
             ColumnMapping rightColumnMapping = new ColumnMapping();
             left.getRelNode().accept(leftColumnMapping);
@@ -539,7 +536,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
                                             ==
                                             rFuntion.isShardingTableKey(rColumn.getColumnName())) {
                                 return left.getDistribution().join(right.getDistribution())
-                                        .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,conditions.get()));
+                                        .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
+                                                conditions));
                             }
                         }
                     }

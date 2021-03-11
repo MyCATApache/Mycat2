@@ -14,7 +14,6 @@
  */
 package io.mycat.calcite.spm;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DrdsSql;
 import io.mycat.MycatDataContext;
@@ -113,26 +112,12 @@ public class PlanImpl implements Plan {
 
         switch (this.type) {
             case PHYSICAL:
-                String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(physical).replaceAll("\r","");
+                String s = dumpPlan();
                 list.addAll(Arrays.asList(s.split("\n")));
-                physical.accept(new RelShuttleImpl() {
-                    @Override
-                    protected RelNode visitChildren(RelNode rel) {
-                        if (rel instanceof MycatView) {
-                            ImmutableMultimap<String, SqlString> stringSqlStringImmutableMultimap = ((MycatView) rel).expandToSql(drdsSql.isForUpdate(), drdsSql.getParams());
-                            for (Map.Entry<String, SqlString> entry : stringSqlStringImmutableMultimap.entries()) {
-                                SqlString sqlString = new SqlString(
-                                        entry.getValue().getDialect(),
-                                        (Util.toLinux(entry.getValue().getSql())).replaceAll("\n"," "),
-                                        entry.getValue().getDynamicParameters());
-                                list.add(new AbstractMap.SimpleEntry<>(entry.getKey(), sqlString).toString());
-                            }
-                        } else if (rel instanceof MycatTransientSQLTableScan) {
-                            ((MycatTransientSQLTableScan) rel).explain(explainWriter);
-                        }
-                        return super.visitChildren(rel);
-                    }
-                });
+                List<SpecificSql> map = specificSql(drdsSql);
+                for (SpecificSql specificSql : map) {
+                    list.add(specificSql.toString());
+                }
                 if (code) {
                     list.add("code:");
                     list.addAll(Arrays.asList(getCodeExecuterContext().getCode().split("\n")));
@@ -151,10 +136,46 @@ public class PlanImpl implements Plan {
                         .explain(explainWriter);
                 break;
             }
+            default:
+                throw new IllegalStateException("Unexpected value: " + this.type);
         }
         for (String s1 : explainWriter.getText().split("\n")) {
             list.add(s1);
         }
-        return list.stream().filter(i->!i.isEmpty()).collect(Collectors.toList());
+        return list.stream().filter(i -> !i.isEmpty()).collect(Collectors.toList());
+    }
+
+    @NotNull
+    public String dumpPlan() {
+        return MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(physical).replaceAll("\r", "");
+    }
+
+    @NotNull
+    public List<SpecificSql> specificSql(DrdsSql drdsSql) {
+        List<SpecificSql> res = new ArrayList<>();
+
+        physical.accept(new RelShuttleImpl() {
+            @Override
+            protected RelNode visitChildren(RelNode relNode) {
+                String name = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode).replaceAll("\r", "");
+                List< Each> sqls  = new ArrayList<>();
+                if (relNode instanceof MycatView) {
+                    ImmutableMultimap<String, SqlString> stringSqlStringImmutableMultimap = ((MycatView) relNode).expandToSql(drdsSql.isForUpdate(), drdsSql.getParams());
+                    for (Map.Entry<String, SqlString> entry : (stringSqlStringImmutableMultimap.entries())) {
+                        SqlString sqlString = new SqlString(
+                                entry.getValue().getDialect(),
+                                (Util.toLinux(entry.getValue().getSql())),
+                                entry.getValue().getDynamicParameters());
+                        sqls.add(new Each(entry.getKey(), sqlString.getSql()));
+                    }
+                    res.add(new SpecificSql(name,((MycatView) relNode).getSql(),sqls));
+                } else if (relNode instanceof MycatTransientSQLTableScan) {
+                    MycatTransientSQLTableScan rel = (MycatTransientSQLTableScan) relNode;
+                    res.add(new SpecificSql(name,rel.getSql(),Collections.singletonList(new Each(rel.getTargetName(), rel.getSql()))));
+                }
+                return super.visitChildren(relNode);
+            }
+        });
+        return res;
     }
 }

@@ -236,22 +236,48 @@ public class Distribution {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder().append("Distribution{");
-        if (!shardingTables.isEmpty()) {
-            builder.append("shardingTables=")
-                    .append(shardingTables.stream().map(i -> i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
+        String builder = "Distribution{" +
+                innerToString() +
+                "}";
+        return builder;
+    }
 
+    public String innerToString() {
+
+        List<String> each = new ArrayList<>();
+
+        if (!normalTables.isEmpty()) {
+            StringBuilder builder=  new StringBuilder();
+            builder.append("normalTables=")
+                    .append(normalTables
+                            .stream()
+                            .map(i ->
+                                    i.getSchemaName() + "." + i.getTableName() ).collect(Collectors.joining(","))
+
+                    );
+            each.add(builder.toString());
+        }
+
+        if (!shardingTables.isEmpty()) {
+            StringBuilder builder=  new StringBuilder();
+            builder.append("shardingTables=")
+                    .append(shardingTables
+                            .stream()
+                            .map(i -> i.getSchemaName() + "." + i.getTableName()).collect(Collectors.joining(","))
+                    );
+            each.add(builder.toString());
         }
         if (!globalTables.isEmpty()) {
-            builder.append("shardingTables=")
-                    .append(globalTables.stream().map(i -> i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
-
+            StringBuilder builder=  new StringBuilder();
+            builder.append("globalTables=")
+                    .append(globalTables
+                            .stream()
+                            .map(i ->
+                                    i.getSchemaName() + "." + i.getTableName() ).collect(Collectors.joining(","))
+                    );
+            each.add(builder.toString());
         }
-        if (!normalTables.isEmpty()) {
-            builder.append("normalTables=")
-                    .append(normalTables.stream().map(i ->  i.getSchemaName()+"."+i.getTableName()).collect(Collectors.joining(",", " ", " ")));
 
-        }
-        return builder.toString();
+        return String.join(",",each);
     }
 }

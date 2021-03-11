@@ -17,10 +17,17 @@ package io.mycat.calcite.spm;
 import io.mycat.DrdsSql;
 import io.mycat.MycatDataContext;
 import io.mycat.calcite.CodeExecuterContext;
+import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 public interface Plan extends Comparable<Plan> {
@@ -50,4 +57,12 @@ public interface Plan extends Comparable<Plan> {
     public default CalciteRowMetaData getMetaData() {
         return new CalciteRowMetaData(getPhysical().getRowType().getFieldList());
     }
+
+    @NotNull
+    public   String dumpPlan();
+    @NotNull
+     List<SpecificSql> specificSql(DrdsSql drdsSql);
+
+
+
 }

@@ -132,7 +132,7 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
         writer.item("relNode", relNode);
-        writer.item("distribution", distribution);
+        writer.item("distribution", distribution.innerToString());
         if (conditions != null) {
             writer.item("conditions", conditions);
         }
@@ -143,6 +143,10 @@ public class MycatView extends AbstractRelNode implements MycatRel {
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         return writer.name("View").into().item("sql", getSql(MycatSqlDialect.DEFAULT)).ret();
+    }
+
+    public String getSql() {
+        return getSql(MycatSqlDialect.DEFAULT);
     }
 
     public String getSql(SqlDialect dialect) {
