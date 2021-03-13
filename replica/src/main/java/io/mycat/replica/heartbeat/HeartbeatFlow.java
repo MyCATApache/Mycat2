@@ -43,8 +43,7 @@ public abstract class HeartbeatFlow {
     this.instance = instance;
     this.slaveThreshold = slaveThreshold;
     this.dsStatus = new DatasourceStatus();
-    this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false,
-  Long.MIN_VALUE);
+    this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false, 0);
     this.heartbeatTimeout = heartbeatTimeout;
   }
 

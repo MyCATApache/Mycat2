@@ -303,7 +303,7 @@ public class ConfigPrepareExecuter {
                 ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 replicaSelectorRuntime.close();
             }
-            context.put(ReplicaSelectorRuntime.class, replicaSelector);
+            context.put(ReplicaSelectorManager.class, replicaSelector);
         }
         if (jdbcConnectionManager != null) {
             if (MetaClusterCurrent.exist(JdbcConnectionManager.class)) {
