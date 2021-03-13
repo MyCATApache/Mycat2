@@ -34,7 +34,7 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     }
 
     @Override
-    public void reportReplica(Map<String, Set<String>> dsNames) {
+    public void reportReplica(Map<String, List<String>> dsNames) {
         storageManager.reportReplica(dsNames);
         FileMetadataStorageManager.State state = new FileMetadataStorageManager.State();
         store.set("state", readerWriter.transformation(state));

@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
 
-  final static String sql = "select user();";
+  final static String sql = "select 1";
 
   @Override
   public String getSql() {
@@ -36,11 +36,6 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
   @Override
   public void process(List<Map<String, Object>> resultSetList) {
     this.heartbeatFlow.setStatus(DatasourceEnum.OK_STATUS);
-  }
-
-  @Override
-  public void onError(String errorMessage) {
-    this.heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
   }
 
   @Override

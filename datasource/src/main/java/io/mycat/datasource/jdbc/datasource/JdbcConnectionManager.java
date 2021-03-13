@@ -23,7 +23,7 @@ import io.mycat.config.DatasourceConfig;
 import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -44,13 +43,13 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;
     private final MycatWorkerProcessor workerProcessor;
-    private final ReplicaSelectorRuntime replicaSelector;
+    private final ReplicaSelectorManager replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
                                  Map<String, DatasourceConfig> datasources,
                                  Map<String, ClusterConfig> clusterConfigs,
                                  MycatWorkerProcessor workerProcessor,
-                                 ReplicaSelectorRuntime replicaSelector) {
+                                 ReplicaSelectorManager replicaSelector) {
         this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), workerProcessor, replicaSelector);
     }
 
@@ -71,7 +70,7 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                                  Map<String, ClusterConfig> clusterConfigs,
                                  DatasourceProvider provider,
                                  MycatWorkerProcessor workerProcessor,
-                                 ReplicaSelectorRuntime replicaSelector) {
+                                 ReplicaSelectorManager replicaSelector) {
         this.datasourceProvider = Objects.requireNonNull(provider);
         this.workerProcessor = workerProcessor;
         this.replicaSelector = replicaSelector;
@@ -98,11 +97,11 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     @Override
     public void addDatasource(DatasourceConfig key) {
-        dataSourceMap.computeIfAbsent(key.getName(), dataSource1 -> {
-            JdbcDataSource dataSource = datasourceProvider.createDataSource(key);
-            replicaSelector.registerDatasource(dataSource1, () -> dataSource.counter.get());
-            return dataSource;
-        });
+        JdbcDataSource jdbcDataSource = dataSourceMap.get(key.getName());
+        if (jdbcDataSource!=null){
+            jdbcDataSource.close();
+        }
+        dataSourceMap.put(key.getName(), datasourceProvider.createDataSource(key));
     }
 
     @Override

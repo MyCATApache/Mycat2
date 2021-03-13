@@ -8,7 +8,7 @@ import io.mycat.DataNode;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 
 import java.util.HashSet;
 import java.util.List;
@@ -20,13 +20,13 @@ import static io.mycat.calcite.table.LogicTable.rewriteCreateTableSql;
 public class CreateTableUtils {
 
     public static void createPhysicalTable(JdbcConnectionManager jdbcConnectionManager, DataNode node,String createSQL) {
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         Set<String> set = new HashSet<>();
         if (selectorRuntime.isDatasource(node.getTargetName())) {
             set.add(node.getTargetName());
         }
         if (selectorRuntime.isReplicaName(node.getTargetName())) {
-            set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getAllDataSources());
+            set.addAll(selectorRuntime.getReplicaMap().get(node.getTargetName()).getRawDataSourceMap().keySet());
         }
         if (set.isEmpty()){
             throw new IllegalArgumentException();

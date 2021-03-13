@@ -25,10 +25,7 @@ import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaDataSourceSelector;
-import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.replica.ReplicaSwitchType;
+import io.mycat.replica.*;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
@@ -54,7 +51,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -83,7 +79,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
 
                     MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                     MycatRouterConfig routerConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
-                    ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+                    ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                     JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
                     MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
@@ -566,7 +562,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                             boolean ALIVE = instance.isAlive();
                             boolean MASTER = instance.isMaster();
 
-                            long SLAVE_THRESHOLD = heartbeatFlow.getSlaveThreshold();
+                            double SLAVE_THRESHOLD = heartbeatFlow.getSlaveThreshold();
 
                             boolean IS_HEARTBEAT_TIMEOUT = heartbeatFlow.isHeartbeatTimeout();
                             final HeartBeatStatus HEART_BEAT_STATUS = heartbeatFlow.getHbStatus();
@@ -646,7 +642,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         resultSetBuilder.addColumnInfo("LIMIT_SESSION_COUNT", JDBCType.BIGINT);
                         resultSetBuilder.addColumnInfo("REPLICA", JDBCType.VARCHAR);
                         Collection<PhysicsInstance> values =
-                                replicaSelectorRuntime.getPhysicsInstanceMap().values();
+                                replicaSelectorRuntime.getPhysicsInstances();
                         Map<String, DatasourceConfig> dataSourceConfig = routerConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
 
 
@@ -745,12 +741,12 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         resultSetBuilder.addColumnInfo("WRITE_L", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("READ_L", JDBCType.VARCHAR);
         resultSetBuilder.addColumnInfo("AVAILABLE", JDBCType.VARCHAR);
-        Collection<ReplicaDataSourceSelector> values = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class).getReplicaMap().values();
+        Collection<ReplicaSelector> values = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class).getReplicaMap().values();
 
         Map<String, ClusterConfig> clusterConfigMap = routerConfig.getClusters().stream()
                 .collect(Collectors.toMap(k -> k.getName(), v -> v));
 
-        for (ReplicaDataSourceSelector value :
+        for (ReplicaSelector value :
                 values.stream().filter(v -> {
                     if (clusterName != null) {
                         return clusterName.equalsIgnoreCase(v.getName());

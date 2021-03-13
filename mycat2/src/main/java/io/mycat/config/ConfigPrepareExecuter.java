@@ -15,20 +15,23 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.*;
 import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ConfigPrepareExecuter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPrepareExecuter.class);
     private final MycatRouterConfigOps ops;
     ////////////////////////////////////////////////////////////////////////////////////
-    private ReplicaSelectorRuntime replicaSelector;
+    private ReplicaSelectorManager replicaSelector;
     private JdbcConnectionManager jdbcConnectionManager;
     private MetadataManager metadataManager;
     private DatasourceConfigProvider datasourceConfigProvider;
@@ -155,7 +158,7 @@ public class ConfigPrepareExecuter {
         return MetadataManager.createMetadataManager(ops.getSchemas(),
                 MetaClusterCurrent.wrapper(LoadBalanceManager.class),
                 MetaClusterCurrent.wrapper(SequenceGenerator.class),
-                MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class),
+                MetaClusterCurrent.wrapper(ReplicaSelectorManager.class),
                 MetaClusterCurrent.wrapper(JdbcConnectionManager.class),
                 "prototype");
     }
@@ -166,7 +169,22 @@ public class ConfigPrepareExecuter {
         MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
-        replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager, metadataStorageManager);
+        replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager,
+                name -> {
+                    MySQLManager manager = MetaClusterCurrent.wrapper(MySQLManager.class);
+                    return manager.getSessionCount(name);
+                }, (command, initialDelay, period, unit) -> {
+                    ScheduledFuture<?> scheduled = ScheduleUtil.getTimer().scheduleAtFixedRate(command, initialDelay, period, unit);
+                    return () -> {
+                        try {
+                            if (scheduled != null && (!scheduled.isDone() || !scheduled.isCancelled())) {
+                                scheduled.cancel(true);
+                            }
+                        }catch (Throwable throwable){
+                            LOGGER.error("",throwable);
+                        }
+                    };
+                });
         jdbcConnectionManager = new JdbcConnectionManager(
                 datasourceProvider,
                 datasourceConfigMap,
@@ -240,7 +258,7 @@ public class ConfigPrepareExecuter {
     }
 
 
-    public ReplicaSelectorRuntime getReplicaSelector() {
+    public ReplicaSelectorManager getReplicaSelector() {
         return replicaSelector;
     }
 
@@ -260,9 +278,9 @@ public class ConfigPrepareExecuter {
         return authenticator;
     }
 
-    public Future<Void> commit() {
+    public Future<Void> commit() throws IOException {
 
-        ReplicaSelectorRuntime replicaSelector = this.replicaSelector;
+        ReplicaSelectorManager replicaSelector = this.replicaSelector;
         JdbcConnectionManager jdbcConnectionManager = this.jdbcConnectionManager;
         MetadataManager metadataManager = this.metadataManager;
         DatasourceConfigProvider datasourceConfigProvider = this.datasourceConfigProvider;
@@ -281,8 +299,8 @@ public class ConfigPrepareExecuter {
         }
 
         if (replicaSelector != null) {
-            if (MetaClusterCurrent.exist(ReplicaSelectorRuntime.class)) {
-                ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            if (MetaClusterCurrent.exist(ReplicaSelectorManager.class)) {
+                ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 replicaSelectorRuntime.close();
             }
             context.put(ReplicaSelectorRuntime.class, replicaSelector);
@@ -309,6 +327,7 @@ public class ConfigPrepareExecuter {
         if (metadataStorageManager != null) {
             context.put(metadataStorageManager.getClass(), metadataStorageManager);
             context.put(MetadataStorageManager.class, metadataStorageManager);
+            context.put(ReplicaReporter.class, metadataStorageManager);
         }
         if (sequenceGenerator != null) {
             context.put(sequenceGenerator.getClass(), sequenceGenerator);

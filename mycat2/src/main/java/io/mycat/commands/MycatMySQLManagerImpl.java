@@ -9,10 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlConnection;
 import lombok.SneakyThrows;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -63,6 +60,11 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
+    public int getSessionCount(String targetName) {
+        return map.get(targetName).getUsedNumber();
+    }
+
+    @Override
     public Future<Map<String, SqlConnection>> getConnectionMap() {
         return getMapFuture(map.keySet());
     }
@@ -74,14 +76,13 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
 
     @Override
     public Future<Map<String, Integer>> computeConnectionUsageSnapshot() {
-        ConcurrentHashMap<String,Integer> resMap = new ConcurrentHashMap<>();
-        ArrayList<  Future<Integer>> list = new ArrayList<>(map.size());
+        HashMap<String,Integer> resMap = new HashMap<>();
         for (Map.Entry<String, MycatDatasourcePool> entry : map.entrySet()) {
             MycatDatasourcePool pool = entry.getValue();
-            Future<Integer> future = pool.getAvailableNumber();
-            list.add(future.map(n->resMap.put(pool.getTargetName(),n)));
+            Integer n = pool.getAvailableNumber();
+            resMap.put(entry.getKey(),n);
         }
-        return CompositeFuture.all((List)list).map(resMap);
+        return Future.succeededFuture(resMap);
     }
 }
 

@@ -6,7 +6,7 @@ import io.mycat.ConfigReaderWriter;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataStorageManager;
 import io.mycat.beans.mycat.MycatErrorCode;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import io.vertx.core.Future;
@@ -200,7 +200,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
 
     @Override
     @SneakyThrows
-    public void reportReplica(Map<String, Set<String>> setMap) {
+    public void reportReplica(Map<String, List<String>> setMap) {
         Path statePath = baseDirectory.resolve("state.json");
         final State state = new State();
         state.replica.putAll(setMap);
@@ -213,7 +213,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
     @EqualsAndHashCode
     @Data
     public static class State {
-        final Map<String, Set<String>> replica = new HashMap<>();
+        final Map<String, List<String>> replica = new HashMap<>();
     }
 
     @Override
@@ -327,7 +327,7 @@ public class FileMetadataStorageManager extends MetadataStorageManager {
             writeFile(t, filePath);
         }
         State state = new State();
-        ReplicaSelectorRuntime replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class));
+        ReplicaSelectorManager replicaSelector = Optional.ofNullable(prepare.getReplicaSelector()).orElseGet(() -> MetaClusterCurrent.wrapper(ReplicaSelectorManager.class));
         state.replica.putAll(replicaSelector.getState());
         Future<Void> commitFuture = prepare.commit();
         return commitFuture.flatMap(unused -> {

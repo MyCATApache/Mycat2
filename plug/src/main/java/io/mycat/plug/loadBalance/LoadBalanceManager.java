@@ -33,7 +33,9 @@ public class LoadBalanceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalanceManager.class);
     private final Map<String, LoadBalanceStrategy> map = new HashMap<>();
     private final LoadBalanceStrategy defaultLoadBalanceStrategy;
-
+    public LoadBalanceManager(){
+        this(null);
+    }
     public LoadBalanceManager(LoadBalance rootConfig) {
         if (rootConfig == null) {
             defaultLoadBalanceStrategy = BalanceRandom.INSTANCE;

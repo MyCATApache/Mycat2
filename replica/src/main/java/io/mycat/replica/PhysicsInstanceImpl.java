@@ -27,20 +27,23 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
     final InstanceType type;
     final String name;
+    final SessionCounter sessionCounter;
     final ReplicaDataSourceSelector selector;
     final int weight;
-    final CopyOnWriteArraySet<SessionCounter> sessionCounters = new CopyOnWriteArraySet<>();
     volatile boolean alive;
     volatile boolean selectRead;
 
     public PhysicsInstanceImpl(String name, InstanceType type, boolean alive,
                                boolean selectRead,
-                               int weight, ReplicaDataSourceSelector selector) {
+                               int weight,
+                               SessionCounter sessionCounter,
+                               ReplicaDataSourceSelector selector) {
         this.type = type;
         this.name = name;
         this.alive = alive;
         this.selectRead = selectRead;
         this.weight = weight;
+        this.sessionCounter = sessionCounter;
         this.selector = selector;
     }
 
@@ -58,7 +61,35 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
 
     @Override
     public boolean isMaster() {
-        return selector.writeDataSourceList.contains(this);
+        switch (selector.getType()) {
+            case SINGLE_NODE:
+            case MASTER_SLAVE:
+                if(selector.writeDataSourceList.contains(this)){
+                    return selector.writeDataSourceList.size() == 1||selector.writeDataSourceList.get(0) == this;
+                }
+                return false;
+            case GARELA_CLUSTER:
+            case NONE:
+            default:
+                return selector.writeDataSourceList.contains(this);
+        }
+    }
+
+    @Override
+    public boolean isBackup() {
+        switch (selector.getType()) {
+            case SINGLE_NODE:
+                return false;
+            case MASTER_SLAVE:
+                if(selector.writeDataSourceList.contains(this)){
+                    return selector.writeDataSourceList.get(0) != this;
+                }
+                return false;
+            case GARELA_CLUSTER:
+            case NONE:
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -68,17 +99,9 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
 
     @Override
     public int getSessionCounter() {
-        int count = 0;
-        for (SessionCounter sessionCounter : sessionCounters) {
-            count += sessionCounter.getSessionCounter();
-        }
-        return count;
+        return sessionCounter.getSessionCounter();
     }
-    public void addSessionCounter(SessionCounter sessionCounter){
-        if (sessionCounter!=null){
-            sessionCounters.add(sessionCounter);
-        }
-    }
+
 
     @Override
     public int getWeight() {

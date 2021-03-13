@@ -39,7 +39,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
   public DefaultHeartbeatFlow(ReplicaSelectorRuntime replicaSelector,PhysicsInstance instance, String replica, String datasouceName,
       int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
-      ReplicaSwitchType switchType, long slaveThreshold,
+      ReplicaSwitchType switchType, double slaveThreshold,
       Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider,
       Consumer<HeartBeatStrategy> executer) {
     super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold);
@@ -73,10 +73,9 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
     if (switchType.equals(ReplicaSwitchType.SWITCH)&& dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
-      if (replicaSelector.notifySwitchReplicaDataSource(replicaName)) {
+       replicaSelector.notifySwitchReplicaDataSource(replicaName);
         //updataSwitchTime
         this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
-      }
     }
   }
 

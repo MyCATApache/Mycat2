@@ -33,7 +33,7 @@ import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.Explains;
 import io.mycat.util.NameMap;
 import lombok.SneakyThrows;
@@ -683,7 +683,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public SqlDialect getSqlDialectByTargetName(String name) {
-        ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         String dbTypeText = selectorRuntime.getDbTypeByTargetName(name);
         switch (dbTypeText) {
             case "sqlserver":

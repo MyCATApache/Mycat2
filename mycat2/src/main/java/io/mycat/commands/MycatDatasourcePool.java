@@ -15,8 +15,8 @@ public  abstract class MycatDatasourcePool {
 
     public abstract Future<SqlConnection> getConnection();
 
-    public abstract Future<Integer> getAvailableNumber();
-
+    public abstract Integer getAvailableNumber();
+    public abstract Integer getUsedNumber();
     public String getTargetName() {
         return targetName;
     }

@@ -6,7 +6,6 @@ import cn.mycat.vertx.xa.XaSqlConnection;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
-import io.mycat.TransactionSession;
 import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.MycatSqlDialect;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
@@ -14,7 +13,7 @@ import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.MycatTransientSQLTableScan;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.annotations.NonNull;
@@ -24,11 +23,9 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.util.SqlString;
-import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +78,7 @@ public  class Scheduler implements Runnable {
 
                 subTask = queue.take();
                 MySQLManager mySQLManager = MetaClusterCurrent.wrapper(MySQLManager.class);
-                ReplicaSelectorRuntime selector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+                ReplicaSelectorManager selector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
                 if (subTask != null) {
                     SubTask curTask = subTask;
                     String datasourceName = selector.getDatasourceNameByReplicaName(curTask.getTarget(), false, null);

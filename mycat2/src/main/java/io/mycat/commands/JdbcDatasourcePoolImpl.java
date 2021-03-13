@@ -22,14 +22,16 @@ public class JdbcDatasourcePoolImpl extends MycatDatasourcePool {
     }
 
     @Override
-    public Future<Integer> getAvailableNumber() {
-        try {
+    public Integer getAvailableNumber() {
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
-            int n = jdbcDataSource.getMaxCon() - jdbcDataSource.getUsedCount();
-            return Future.succeededFuture(n);
-        }catch (Throwable throwable){
-            return Future.failedFuture(throwable);
-        }
+            return jdbcDataSource.getMaxCon() - jdbcDataSource.getUsedCount();
+    }
+
+    @Override
+    public Integer getUsedNumber() {
+        JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
+        JdbcDataSource jdbcDataSource = jdbcConnectionManager.getDatasourceInfo().get(targetName);
+        return jdbcDataSource.getUsedCount();
     }
 }

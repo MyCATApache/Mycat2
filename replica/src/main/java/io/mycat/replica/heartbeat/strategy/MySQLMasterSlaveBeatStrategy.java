@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.mycat.GlobalConst.MASTER_SLAVE_HEARTBEAT_MASTER_SQL;
 
@@ -32,7 +33,8 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLMasterSlaveBeatStrategy.class);
 
     public String getSql() {
-        if (this.heartbeatFlow.getInstance().isMaster()) {
+        boolean master = this.heartbeatFlow.getInstance().isMaster();
+        if (master) {
             return "select 1";
         }
         return GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL;
@@ -41,9 +43,9 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
     public void process(List<Map<String, Object>> resultList) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
         if (this.heartbeatFlow.getInstance().isMaster()) {
-            if (resultList.size() > 0){
+            if (resultList.size() > 0) {
                 datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
-                heartbeatFlow.setStatus(datasourceStatus,DatasourceEnum.OK_STATUS);
+                heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
                 return;
             }
         }
@@ -57,10 +59,10 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
                     && Slave_IO_Running.equals(Slave_SQL_Running)
                     && Slave_SQL_Running.equals("Yes")) {
                 datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
-                Long Behind_Master = (Long) resultResult.get("Seconds_Behind_Master");
+                Long Behind_Master = Long.parseLong(Objects.toString(resultResult.get("Seconds_Behind_Master")));
                 if (Behind_Master > heartbeatFlow.getSlaveThreshold()) {
                     datasourceStatus.setSlaveBehindMaster(true);
-                    LOGGER.info("found MySQL master/slave Replication delay !!! " +
+                    LOGGER.warn("found MySQL master/slave Replication delay !!! " +
                             " binlog sync time delay: " + Behind_Master + "s");
                 } else {
                     datasourceStatus.setSlaveBehindMaster(false);
@@ -74,11 +76,6 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
             }
         }
         heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
-    }
-
-    @Override
-    public void onError(String errorMessage) {
-        heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
     }
 
     @Override

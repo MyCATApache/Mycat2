@@ -12,7 +12,7 @@ import io.mycat.calcite.table.GlobalTable;
 import io.mycat.MetadataManager;
 import io.mycat.calcite.table.ShardingTable;
 import io.mycat.TableHandler;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -142,7 +142,7 @@ public enum StatisticCenter {
 
     private Double fetchRowCount(String targetName, String sql) {
         try {
-            ReplicaSelectorRuntime runtime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            ReplicaSelectorManager runtime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
             targetName = runtime.getDatasourceNameByReplicaName(targetName, false, null);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {

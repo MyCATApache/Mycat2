@@ -45,7 +45,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.querycondition.*;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.mycat1xfunction.PartitionRuleFunctionManager;
 import io.mycat.util.*;
@@ -74,7 +74,7 @@ public class MetadataManager implements MysqlVariableService {
     final NameMap<SchemaHandler> schemaMap = new NameMap<>();
     final LoadBalanceManager loadBalanceManager;
     final SequenceGenerator sequenceGenerator;
-    final ReplicaSelectorRuntime replicaSelectorRuntime;
+    final ReplicaSelectorManager replicaSelectorRuntime;
     final JdbcConnectionManager jdbcConnectionManager;
 
     @Getter
@@ -118,7 +118,7 @@ public class MetadataManager implements MysqlVariableService {
     public static MetadataManager createMetadataManager(List<LogicSchemaConfig> schemaConfigs,
                                                         LoadBalanceManager loadBalanceManager,
                                                         SequenceGenerator sequenceGenerator,
-                                                        ReplicaSelectorRuntime replicaSelectorRuntime,
+                                                        ReplicaSelectorManager replicaSelectorRuntime,
                                                         JdbcConnectionManager jdbcConnectionManager,
                                                         String prototype) {
         try {
@@ -137,7 +137,7 @@ public class MetadataManager implements MysqlVariableService {
     public MetadataManager(List<LogicSchemaConfig> schemaConfigs,
                            LoadBalanceManager loadBalanceManager,
                            SequenceGenerator sequenceGenerator,
-                           ReplicaSelectorRuntime replicaSelectorRuntime,
+                           ReplicaSelectorManager replicaSelectorRuntime,
                            JdbcConnectionManager jdbcConnectionManager,
                            String prototype
     ) {

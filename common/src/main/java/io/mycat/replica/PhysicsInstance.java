@@ -20,6 +20,8 @@ public interface PhysicsInstance {
 
     boolean isMaster();
 
+    boolean isBackup();
+
     boolean asSelectRead();
 
     boolean isAlive();

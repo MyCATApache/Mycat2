@@ -6,7 +6,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import lombok.SneakyThrows;
 
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ public class UnsolvedMysqlFunctionUtil {
         }
         String sql = "select " + fun + "(" + String.join(",", p) + ")";
         return objectCache.get(sql, () -> {
-            ReplicaSelectorRuntime replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            ReplicaSelectorManager replicaSelectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
             JdbcConnectionManager jdbcConnectionManager = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
             String datasource = replicaSelectorRuntime.getDatasourceNameByRandom();
             try (DefaultConnection connection = jdbcConnectionManager.getConnection(datasource)) {

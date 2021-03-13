@@ -4,7 +4,6 @@ import io.mycat.DataSourceNearness;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.TransactionSession;
 
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,7 +25,7 @@ public class DataSourceNearnessImpl implements DataSourceNearness {
     public synchronized String getDataSourceByTargetName(final String targetName, boolean masterArg) {
         Objects.requireNonNull(targetName);
         boolean master = masterArg || transactionSession.isInTransaction();
-        ReplicaSelectorRuntime selector = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+        ReplicaSelectorManager selector = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
         boolean replicaMode = selector.isReplicaName(targetName);
         String datasource;
         if (replicaMode) {

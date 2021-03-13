@@ -64,6 +64,11 @@ public class MySQLManagerImpl extends AbstractMySQLManagerImpl {
     }
 
     @Override
+    public int getSessionCount(String targetName) {
+        return 0;
+    }
+
+    @Override
     public Future<Map<String, SqlConnection>> getConnectionMap() {
         return getMapFuture(nameMap.keySet());
     }

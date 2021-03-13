@@ -10,7 +10,7 @@ import io.mycat.config.*;
 import io.mycat.proxy.MySQLDatasourcePool;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.*;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.ReplicaSelectorManager;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -23,7 +23,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -172,7 +171,7 @@ public class NativeMycatServer implements MycatServer {
             int WEIGHT = e.map(i -> i.getWeight()).orElse(-1);
             String INIT_SQL = value.getInitSqlForProxy();
             boolean INIT_SQL_GET_CONNECTION = false;
-            ReplicaSelectorRuntime selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorRuntime.class);
+            ReplicaSelectorManager selectorRuntime = MetaClusterCurrent.wrapper(ReplicaSelectorManager.class);
             String INSTANCE_TYPE = Optional.ofNullable(selectorRuntime.getPhysicsInstanceByName(NAME)).map(i -> i.getType().name()).orElse(e.map(i -> i.getInstanceType()).orElse(null));
             long IDLE_TIMEOUT = value.getIdleTimeout();
 

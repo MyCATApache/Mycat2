@@ -30,7 +30,7 @@ public abstract class HeartbeatFlow {
   private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatFlow.class);
   protected final HeartBeatStatus hbStatus;
   protected final long heartbeatTimeout;
-  protected final long slaveThreshold;
+  protected final double slaveThreshold;
   protected final PhysicsInstance instance;
   protected volatile DatasourceStatus dsStatus;
   protected volatile long lastSendQryTime;
@@ -39,12 +39,12 @@ public abstract class HeartbeatFlow {
 
   public HeartbeatFlow(PhysicsInstance instance, int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
-      long slaveThreshold) {
+                       double slaveThreshold) {
     this.instance = instance;
     this.slaveThreshold = slaveThreshold;
     this.dsStatus = new DatasourceStatus();
     this.hbStatus = new HeartBeatStatus(maxRetry, minSwitchTimeInterval, false,
-        System.currentTimeMillis());
+  Long.MIN_VALUE);
     this.heartbeatTimeout = heartbeatTimeout;
   }
 
@@ -133,7 +133,7 @@ public abstract class HeartbeatFlow {
 
   public abstract void setTaskquitDetector();
 
-  public long getSlaveThreshold() {
+  public double getSlaveThreshold() {
     return slaveThreshold;
   }
 

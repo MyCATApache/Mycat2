@@ -14,7 +14,5 @@ public interface CommonSQLCallback {
 
     void process(List<Map<String, Object>> resultSetList);
 
-    void onError(String errorMessage);
-
     void onException(Exception e);
 }

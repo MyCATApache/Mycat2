@@ -34,11 +34,16 @@ public class NativeDatasourcePoolImpl extends MycatDatasourcePool {
     }
 
     @Override
-    public Future<Integer> getAvailableNumber() {
-        return Future.future(promise -> {
-            NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
-            MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
-            promise.complete(sqlDatasourcePool.getSessionLimitCount() - sqlDatasourcePool.currentSessionCount());
-        });
+    public Integer getAvailableNumber() {
+        NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+        MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
+        return sqlDatasourcePool.getSessionLimitCount() - sqlDatasourcePool.currentSessionCount();
+    }
+
+    @Override
+    public Integer getUsedNumber() {
+        NativeMycatServer nativeMycatServer = MetaClusterCurrent.wrapper(NativeMycatServer.class);
+        MySQLDatasourcePool sqlDatasourcePool = nativeMycatServer.getDatasource(targetName);
+        return sqlDatasourcePool.currentSessionCount();
     }
 }
