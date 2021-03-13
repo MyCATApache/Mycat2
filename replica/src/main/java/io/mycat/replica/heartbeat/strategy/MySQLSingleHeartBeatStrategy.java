@@ -18,6 +18,7 @@ import io.mycat.replica.heartbeat.DatasourceEnum;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -29,12 +30,12 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
   final static String sql = "select 1";
 
   @Override
-  public String getSql() {
-    return sql;
+  public List<String> getSqls() {
+    return Collections.singletonList(sql);
   }
 
   @Override
-  public void process(List<Map<String, Object>> resultSetList) {
+  public void process(List<List<Map<String, Object>>> resultSetList) {
     this.heartbeatFlow.setStatus(DatasourceEnum.OK_STATUS);
   }
 

@@ -15,72 +15,78 @@
 package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.GlobalConst;
-import io.mycat.replica.heartbeat.DatasourceEnum;
-import io.mycat.replica.heartbeat.DatasourceStatus;
-import io.mycat.replica.heartbeat.DbSynEnum;
-import io.mycat.replica.heartbeat.HeartbeatFlow;
+import io.mycat.api.collector.CommonSQLCallback;
+import io.mycat.replica.heartbeat.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author : zhangwy
  * @author : chenujunwen date Date : 2019年05月17日 21:34
  */
-public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
+public class MySQLGaleraHeartBeatStrategy extends HeartBeatStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLGaleraHeartBeatStrategy.class);
 
-    public String getSql() {
-        return GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL;
+    public List<String> getSqls() {
+        return Collections.singletonList(
+                GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL);
     }
 
     @Override
-    public void process(List<Map<String, Object>> resultList) {
-        DatasourceStatus datasourceStatus = new DatasourceStatus();
-        Map<String, Object> resultResult = new HashMap<>();
-        for (Map<String, Object> map : resultList) {
-            String variableName = (String) map.get("Variable_name");
-            String value = (String) map.get("Value");
-            resultResult.put(variableName, value);
-        }
-        if (resultList.size() > 0) {
-            String wsrep_cluster_status = (String) resultResult.get("wsrep_cluster_status");// Primary
-            String wsrep_connected = (String) resultResult.get("wsrep_connected");// ON
-            String wsrep_ready = (String) resultResult.get("wsrep_ready");// ON
+    public void process(List<List<Map<String, Object>>> resultList) {
+        if (!resultList.isEmpty()){
+            List<Map<String, Object>> result = resultList.get(0);
 
-            if ("ON".equals(wsrep_connected)
-                    && "ON".equals(wsrep_ready)
-                    && "Primary".equals(wsrep_cluster_status)) {
-                datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
-            } else {
-                LOGGER.info("found MySQL  cluster status err !!! "
-                        + " wsrep_cluster_status: " + wsrep_cluster_status
-                        + " wsrep_connected: " + wsrep_connected
-                        + " wsrep_ready: " + wsrep_ready
-                );
-                datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_ERROR);
+            DatasourceStatus datasourceStatus = new DatasourceStatus();
+            Map<String, Object> resultResult = new HashMap<>();
+            for (Map<String, Object> map : result) {
+                String variableName = (String) map.get("Variable_name");
+                String value = (String) map.get("Value");
+                resultResult.put(variableName, value);
             }
-            try {
-                BigDecimal wsrep_flow_control_paused = new BigDecimal(
-                        Objects.toString(resultResult.get("wsrep_flow_control_paused")));// delay
-                if (wsrep_flow_control_paused.compareTo(BigDecimal.valueOf(heartbeatFlow.getSlaveThreshold())) > 0) {
-                    datasourceStatus.setSlaveBehindMaster(true);
-                    LOGGER.warn("found MySQL Galera master/slave Replication delay !!! " +
-                            " delay: " + wsrep_flow_control_paused + "s");
+            if (resultList.size() > 0) {
+                String wsrep_cluster_status = (String) resultResult.get("wsrep_cluster_status");// Primary
+                String wsrep_connected = (String) resultResult.get("wsrep_connected");// ON
+                String wsrep_ready = (String) resultResult.get("wsrep_ready");// ON
+
+                if ("ON".equals(wsrep_connected)
+                        && "ON".equals(wsrep_ready)
+                        && "Primary".equals(wsrep_cluster_status)) {
+                    datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
                 } else {
-                    datasourceStatus.setSlaveBehindMaster(false);
+                    LOGGER.info("found MySQL  cluster status err !!! "
+                            + " wsrep_cluster_status: " + wsrep_cluster_status
+                            + " wsrep_connected: " + wsrep_connected
+                            + " wsrep_ready: " + wsrep_ready
+                    );
+                    datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_ERROR);
                 }
-            } catch (Throwable throwable) {
-                LOGGER.error("", throwable);
+                try {
+                    BigDecimal wsrep_flow_control_paused = new BigDecimal(
+                            Objects.toString(resultResult.get("wsrep_flow_control_paused")));// delay
+                    if (wsrep_flow_control_paused.compareTo(BigDecimal.valueOf(heartbeatFlow.getSlaveThreshold())) > 0) {
+                        datasourceStatus.setSlaveBehindMaster(true);
+                        LOGGER.warn("found MySQL Galera master/slave Replication delay !!! " +
+                                " delay: " + wsrep_flow_control_paused + "s");
+                    } else {
+                        datasourceStatus.setSlaveBehindMaster(false);
+                    }
+                } catch (Throwable throwable) {
+                    LOGGER.error("", throwable);
+                }
             }
+            heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
         }
-        heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
+
+    }
+
+    @Override
+    public void onException(Exception e) {
+        heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
     }
 
     public MySQLGaleraHeartBeatStrategy() {

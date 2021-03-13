@@ -254,7 +254,7 @@ public class GaleraTest extends ReplicaTest {
     @NotNull
     public static Consumer<HeartBeatStrategy> checkGalera(double delay) {
         return heartBeatStrategy -> {
-            Assert.assertEquals("show status like 'wsrep%'", heartBeatStrategy.getSql());
+            Assert.assertEquals("show status like 'wsrep%'", heartBeatStrategy.getSqls().get(0));
 
             List<Map<String, Object>> list = new ArrayList<>();
             {
@@ -281,7 +281,7 @@ public class GaleraTest extends ReplicaTest {
                 map.put("Value", delay+"");
                 list.add(map);
             }
-            heartBeatStrategy.process(list);
+            heartBeatStrategy.process(Collections.singletonList(list));
             return;
         };
     }

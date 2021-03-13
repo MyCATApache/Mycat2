@@ -205,12 +205,18 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 DefaultConnection connection = null;
                 try {
                     connection = getConnection(datasource);
-                    List<Map<String, Object>> resultList;
-                    try (RowBaseIterator iterator = connection
-                            .executeQuery(heartBeatStrategy.getSql())) {
-                        resultList = iterator.getResultSetMap();
+                    ArrayList<List<Map<String, Object>> > resultList = new ArrayList<>();
+                    List<String> sqls = heartBeatStrategy.getSqls();
+                    for (String sql : sqls) {
+                        try (RowBaseIterator iterator  = connection
+                                .executeQuery(sql)) {
+                            resultList.add( iterator.getResultSetMap());
+
+                        }catch (Exception e){
+                            LOGGER.error("jdbc heartbeat ", e);
+                            return;
+                        }
                     }
-                    LOGGER.debug("jdbc heartbeat {}", Objects.toString(resultList));
                     heartBeatStrategy.process(resultList);
                 } catch (Exception e) {
                     heartBeatStrategy.onException(e);

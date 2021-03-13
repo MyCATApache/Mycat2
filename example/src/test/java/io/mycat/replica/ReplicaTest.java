@@ -25,11 +25,11 @@ public abstract class ReplicaTest {
     @NotNull
     public static Consumer<HeartBeatStrategy> checkSelect1() {
         return heartBeatStrategy -> {
-            Assert.assertEquals("select 1", heartBeatStrategy.getSql());
+            Assert.assertEquals("select 1", heartBeatStrategy.getSqls().get(0));
             Map<String, Object> map13 = new HashMap<>();
             map13.put("1", 1);
             List<Map<String, Object>> list = Arrays.asList(map13);
-            heartBeatStrategy.process(list);
+            heartBeatStrategy.process(Collections.singletonList(list));
         };
     }
 
@@ -49,20 +49,20 @@ public abstract class ReplicaTest {
     @NotNull
     public static Consumer<HeartBeatStrategy> checkShowSlaveStatus(int delay) {
         return heartBeatStrategy -> {
-            Assert.assertEquals("show slave status", heartBeatStrategy.getSql());
+            Assert.assertEquals("show slave status", heartBeatStrategy.getSqls().get(0));
             Map<String, Object> map13 = new HashMap<>();
             map13.put("Slave_IO_Running", "Yes");
             map13.put("Slave_SQL_Running", "Yes");
             map13.put("Seconds_Behind_Master", delay +"");
             List<Map<String, Object>> list = Arrays.asList(map13);
-            heartBeatStrategy.process(list);
+            heartBeatStrategy.process(Collections.singletonList(list));
         };
     }
 
     @NotNull
     public static Consumer<HeartBeatStrategy> checkMasterSlave() {
         return heartBeatStrategy -> {
-            switch (heartBeatStrategy.getSql()) {
+            switch (heartBeatStrategy.getSqls().get(0)) {
                 case "select 1": {
                     checkSelect1().accept(heartBeatStrategy);
                     return;

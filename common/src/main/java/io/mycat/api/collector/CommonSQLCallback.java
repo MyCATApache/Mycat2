@@ -10,9 +10,9 @@ import java.util.Map;
  **/
 public interface CommonSQLCallback {
 
-    String getSql();
+    List<String> getSqls();
 
-    void process(List<Map<String, Object>> resultSetList);
+    void process(List<List<Map<String, Object>> >resultSetList);
 
     void onException(Exception e);
 }

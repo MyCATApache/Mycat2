@@ -19,6 +19,7 @@ import io.mycat.replica.heartbeat.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,15 +33,15 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLMasterSlaveBeatStrategy.class);
 
-    public String getSql() {
+    public List<String> getSqls() {
         boolean master = this.heartbeatFlow.getInstance().isMaster();
         if (master) {
-            return "select 1";
+            return Collections.singletonList("select 1");
         }
-        return GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL;
+        return Collections.singletonList(GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL);
     }
 
-    public void process(List<Map<String, Object>> resultList) {
+    public void process(List<List<Map<String, Object>>> resultList) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
         if (this.heartbeatFlow.getInstance().isMaster()) {
             if (resultList.size() > 0) {
@@ -49,30 +50,33 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
                 return;
             }
         }
-        if (resultList.size() > 0) {
-            Map<String, Object> resultResult = resultList.get(0);
-            String Slave_IO_Running =
-                    resultResult != null ? (String) resultResult.get("Slave_IO_Running") : null;
-            String Slave_SQL_Running =
-                    resultResult != null ? (String) resultResult.get("Slave_SQL_Running") : null;
-            if (Slave_IO_Running != null
-                    && Slave_IO_Running.equals(Slave_SQL_Running)
-                    && Slave_SQL_Running.equals("Yes")) {
-                datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
-                Long Behind_Master = Long.parseLong(Objects.toString(resultResult.get("Seconds_Behind_Master")));
-                if (Behind_Master > heartbeatFlow.getSlaveThreshold()) {
-                    datasourceStatus.setSlaveBehindMaster(true);
-                    LOGGER.warn("found MySQL master/slave Replication delay !!! " +
-                            " binlog sync time delay: " + Behind_Master + "s");
-                } else {
-                    datasourceStatus.setSlaveBehindMaster(false);
+        if (!resultList.isEmpty()) {
+            List<Map<String, Object>> result = resultList.get(0);
+            if (!result.isEmpty()){
+                Map<String, Object> resultResult = result.get(0);
+                String Slave_IO_Running =
+                        resultResult != null ? (String) resultResult.get("Slave_IO_Running") : null;
+                String Slave_SQL_Running =
+                        resultResult != null ? (String) resultResult.get("Slave_SQL_Running") : null;
+                if (Slave_IO_Running != null
+                        && Slave_IO_Running.equals(Slave_SQL_Running)
+                        && Slave_SQL_Running.equals("Yes")) {
+                    datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
+                    Long Behind_Master = Long.parseLong(Objects.toString(resultResult.get("Seconds_Behind_Master")));
+                    if (Behind_Master > heartbeatFlow.getSlaveThreshold()) {
+                        datasourceStatus.setSlaveBehindMaster(true);
+                        LOGGER.warn("found MySQL master/slave Replication delay !!! " +
+                                " binlog sync time delay: " + Behind_Master + "s");
+                    } else {
+                        datasourceStatus.setSlaveBehindMaster(false);
+                    }
+                } else if (heartbeatFlow.instance().asSelectRead()) {
+                    String Last_IO_Error =
+                            resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
+                    LOGGER.error("found MySQL master/slave Replication err !!! "
+                            + Last_IO_Error);
+                    datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_ERROR);
                 }
-            } else if (heartbeatFlow.instance().asSelectRead()) {
-                String Last_IO_Error =
-                        resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
-                LOGGER.error("found MySQL master/slave Replication err !!! "
-                        + Last_IO_Error);
-                datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_ERROR);
             }
         }
         heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
