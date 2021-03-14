@@ -22,6 +22,7 @@ import io.mycat.plug.loadBalance.SessionCounter;
 import io.mycat.replica.heartbeat.DefaultHeartbeatFlow;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
+import io.mycat.replica.heartbeat.strategy.MGRHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
@@ -125,11 +126,6 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         }
     }
 
-    public synchronized void notifySwitchReplicaDataSource(String replicaName) {
-        ReplicaSelector selector = replicaMap.get(replicaName);
-        Objects.requireNonNull(selector, replicaName + " 集群不存在");
-        selector.switchDataSourceIfNeed();
-    }
 
     public void updateInstanceStatus(String replicaName, String dataSource, boolean alive,
                                      boolean selectAsRead) {
@@ -281,9 +277,9 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
         if (loadBalanceStrategy != null) {
             loadBalanceByBalance = loadBalanceManager.getLoadBalanceByBalanceName(loadBalanceStrategy);
         }//传null集群配置的负载均衡生效
-        if (replicaDataSourceSelector.getWriteDataSource().isEmpty()
+        if (replicaDataSourceSelector.getWriteDataSourceByReplicaType().isEmpty()
                 &&
-                replicaDataSourceSelector.getReadDataSource().isEmpty()) {
+                replicaDataSourceSelector.getReadDataSourceByReplica().isEmpty()) {
             LOGGER.error("No data sources are available {}", replicaName);
             if (replicaDataSourceSelector.getRawDataSourceMap().size() == 1) {
                 return replicaDataSourceSelector.getRawDataSourceMap().keySet().stream().iterator().next();
@@ -312,13 +308,13 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
             return null;
         }
         return getDatasource(balanceStrategy, selector,
-                selector.getDefaultWriteLoadBalanceStrategy(), selector.getWriteDataSource());
+                selector.getDefaultWriteLoadBalanceStrategy(), selector.getWriteDataSourceByReplicaType());
     }
 
     public PhysicsInstance getWriteDatasource(LoadBalanceStrategy balanceStrategy,
                                               ReplicaSelector selector) {
         LoadBalanceStrategy defaultWriteLoadBalanceStrategy = selector.getDefaultWriteLoadBalanceStrategy();
-        List<PhysicsInstance> writeDataSource = selector.getWriteDataSource();
+        List<PhysicsInstance> writeDataSource = selector.getWriteDataSourceByReplicaType();
         return getDatasource(balanceStrategy, selector, defaultWriteLoadBalanceStrategy,
                 writeDataSource);
     }
@@ -366,13 +362,15 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 ReplicaSelector selector = replicaMap.get(replicaName);
                 if (selector != null) {
                     PhysicsInstance physicsInstance = selector.getRawDataSourceMap().get(datasourceName);
-                    DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(this, physicsInstance, replicaName, datasourceName,
+                    DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(selector, physicsInstance, datasourceName,
                             heartbeat.getMaxRetry(), heartbeat.getMinSwitchTimeInterval(), heartbeat.getHeartbeatTimeout(),
                             ReplicaSwitchType.valueOf(c.getSwitchType()),
                             heartbeat.getSlaveThreshold(), getStrategyByReplicaType(c.getClusterType()),
                             executer);
 
                     heartbeatDetectorMap.put(name, heartbeatFlow);
+                    //马上进行心跳,获取集群状态
+                    heartbeatFlow.heartbeat();
                 }
             }
         });
@@ -391,11 +389,15 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
             case GARELA_CLUSTER:
                 strategyProvider = MySQLGaleraHeartBeatStrategy::new;
                 break;
+            case MGR:
+                strategyProvider = MGRHeartBeatStrategy::new;
+                break;
             case NONE:
             case SINGLE_NODE:
-            default:
                 strategyProvider = MySQLSingleHeartBeatStrategy::new;
                 break;
+            default:
+               throw new UnsupportedOperationException("unsupported:"+replicaType);
         }
         return strategyProvider;
     }
@@ -464,7 +466,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
     public Map<String, List<String>> getState() {
         Map<String, List<String>> map = new HashMap<>();
         for (ReplicaSelector value : replicaMap.values()) {
-            ArrayList<PhysicsInstance> objects = new ArrayList<>(value.getWriteDataSource());
+            ArrayList<PhysicsInstance> objects = new ArrayList<>(value.getWriteDataSourceByReplicaType());
             map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toList()));
         }
         return map;

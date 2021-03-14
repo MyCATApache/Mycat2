@@ -15,6 +15,7 @@
 package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.replica.heartbeat.DatasourceEnum;
+import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 
@@ -36,12 +37,12 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
 
   @Override
   public void process(List<List<Map<String, Object>>> resultSetList) {
-    this.heartbeatFlow.setStatus(DatasourceEnum.OK_STATUS);
+    this.heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.OK_STATUS);
   }
 
   @Override
   public void onException(Exception e) {
-    this.heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
+    this.heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
   }
 
   public MySQLSingleHeartBeatStrategy() {

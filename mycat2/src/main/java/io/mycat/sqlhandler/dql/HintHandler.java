@@ -762,11 +762,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
             ReplicaSwitchType SWITCH_TYPE = value.getSwitchType();
             int MAX_REQUEST_COUNT = value.maxRequestCount();
             String TYPE = value.getBalanceType().name();
-            String WRITE_DS = ((List<PhysicsInstance>) value.getWriteDataSource()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
-            String READ_DS = (value.getReadDataSource()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
+            String WRITE_DS = ((List<PhysicsInstance>) value.getWriteDataSourceByReplicaType()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
+            String READ_DS = (value.getReadDataSourceByReplica()).stream().map(i -> i.getName()).collect(Collectors.joining(","));
             String WL = Optional.ofNullable(value.getDefaultWriteLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
             String RL = Optional.ofNullable(value.getDefaultReadLoadBalanceStrategy()).map(i -> i.getClass().getName()).orElse(null);
-            String AVAILABLE = Boolean.toString(((List<PhysicsInstance>) value.getWriteDataSource()).stream().anyMatch(PhysicsInstance::isAlive));
+            String AVAILABLE = Boolean.toString(((List<PhysicsInstance>) value.getWriteDataSourceByReplicaType()).stream().anyMatch(PhysicsInstance::isAlive));
 
             resultSetBuilder.addObjectRowPayload(
                     Arrays.asList(NAME, SWITCH_TYPE, MAX_REQUEST_COUNT, TYPE,

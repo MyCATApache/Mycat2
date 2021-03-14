@@ -45,7 +45,7 @@ public abstract class HeartBeatStrategy implements CommonSQLCallback {
 
   public void onStatus(DatasourceEnum status) {
     if (heartbeatFlow != null && !quit) {
-      heartbeatFlow.setStatus(status);
+      heartbeatFlow.setStatus(new DatasourceStatus(),status);
     }
   }
 }

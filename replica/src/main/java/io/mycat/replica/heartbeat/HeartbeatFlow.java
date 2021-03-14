@@ -60,10 +60,10 @@ public abstract class HeartbeatFlow {
     this.lastSendQryTime = System.currentTimeMillis();
   }
 
-  public void setStatus(DatasourceEnum status) {
-    DatasourceStatus datasourceStatus = new DatasourceStatus();
-    setStatus(datasourceStatus, status);
-  }
+//  public void setStatus(DatasourceEnum status) {
+//    DatasourceStatus datasourceStatus = new DatasourceStatus();
+//    setStatus(datasourceStatus, status);
+//  }
 
   public void setStatus(DatasourceStatus datasourceStatus, DatasourceEnum status) {
     //对应的status 状态进行设置

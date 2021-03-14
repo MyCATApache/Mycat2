@@ -43,6 +43,9 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
 
     public void process(List<List<Map<String, Object>>> resultList) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
+
+        datasourceStatus.setMaster(heartbeatFlow.getInstance().isMaster());
+
         if (this.heartbeatFlow.getInstance().isMaster()) {
             if (resultList.size() > 0) {
                 datasourceStatus.setDbSynStatus(DbSynEnum.DB_SYN_NORMAL);
@@ -84,7 +87,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
 
     @Override
     public void onException(Exception e) {
-        heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
+        heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
     }
 
     public MySQLMasterSlaveBeatStrategy() {

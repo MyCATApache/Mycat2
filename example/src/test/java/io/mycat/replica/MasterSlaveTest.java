@@ -207,7 +207,7 @@ public class MasterSlaveTest extends ReplicaTest {
                 runnable.run();
             }
 
-            Set<String>    balanceTargets = new HashSet<>();
+            Set<String> balanceTargets = new HashSet<>();
             test(() -> {
                 balanceTargets.add(manager.getDatasourceNameByReplicaName("c0", false, null));
                 return false;
@@ -270,7 +270,7 @@ public class MasterSlaveTest extends ReplicaTest {
             runnable.run();
         }
         {
-            checkALlRight(manager);
+
 
         }
         for (Runnable runnable : runnables) {

@@ -42,6 +42,9 @@ public class MySQLGaleraHeartBeatStrategy extends HeartBeatStrategy {
             List<Map<String, Object>> result = resultList.get(0);
 
             DatasourceStatus datasourceStatus = new DatasourceStatus();
+
+            datasourceStatus.setMaster(heartbeatFlow.getInstance().isMaster());
+
             Map<String, Object> resultResult = new HashMap<>();
             for (Map<String, Object> map : result) {
                 String variableName = (String) map.get("Variable_name");
@@ -86,7 +89,7 @@ public class MySQLGaleraHeartBeatStrategy extends HeartBeatStrategy {
 
     @Override
     public void onException(Exception e) {
-        heartbeatFlow.setStatus(DatasourceEnum.ERROR_STATUS);
+        heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
     }
 
     public MySQLGaleraHeartBeatStrategy() {

@@ -129,7 +129,7 @@ public class GaleraTest extends ReplicaTest {
             runnable.run();
         }
         {
-            checkALlRight(manager);
+
 
         }
         for (Runnable runnable : runnables) {

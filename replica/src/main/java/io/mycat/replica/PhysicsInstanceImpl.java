@@ -64,10 +64,11 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         switch (selector.getType()) {
             case SINGLE_NODE:
             case MASTER_SLAVE:
-                if(selector.writeDataSourceList.contains(this)){
-                    return selector.writeDataSourceList.size() == 1||selector.writeDataSourceList.get(0) == this;
+                if (selector.writeDataSourceList.contains(this)) {
+                    return selector.writeDataSourceList.size() == 1 || selector.writeDataSourceList.get(0) == this;
                 }
                 return false;
+            case MGR:
             case GARELA_CLUSTER:
             case NONE:
             default:
@@ -81,9 +82,11 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
             case SINGLE_NODE:
                 return false;
             case MASTER_SLAVE:
-                if(selector.writeDataSourceList.contains(this)){
+                if (selector.writeDataSourceList.contains(this)) {
                     return selector.writeDataSourceList.get(0) != this;
                 }
+                return false;
+            case MGR:
                 return false;
             case GARELA_CLUSTER:
             case NONE:

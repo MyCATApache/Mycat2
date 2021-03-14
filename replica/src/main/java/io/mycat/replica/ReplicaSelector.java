@@ -7,11 +7,12 @@ import io.mycat.plug.loadBalance.SessionCounter;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public interface ReplicaSelector extends LoadBalanceInfo, Closeable {
     String getDbType();
 
-    List<PhysicsInstance> getWriteDataSource();
+    List<PhysicsInstance> getWriteDataSourceByReplicaType();
 
     String getName();
 
@@ -23,15 +24,13 @@ public interface ReplicaSelector extends LoadBalanceInfo, Closeable {
 
     void unregister(String datasourceName);
 
-    void switchDataSourceIfNeed();
-
     ReplicaSwitchType getSwitchType();
 
     int maxRequestCount();
 
     BalanceType getBalanceType();
 
-    List<PhysicsInstance> getReadDataSource();
+    List<PhysicsInstance> getReadDataSourceByReplica();
 
     LoadBalanceStrategy getDefaultWriteLoadBalanceStrategy();
 
@@ -40,7 +39,20 @@ public interface ReplicaSelector extends LoadBalanceInfo, Closeable {
     List<PhysicsInstance> getDataSourceByLoadBalacneType();
 
 
-    public void updateInstanceStatus(String dataSource, boolean alive, boolean selectAsRead);
+    public void updateInstanceStatus(String dataSource, boolean alive, boolean selectAsRead,boolean master);
 
     ReplicaType getType();
+
+    void notifySwitchReplicaDataSource();
+
+
+    public void addWriteDataSource(String dataSource);
+
+
+    public void removeWriteDataSource(String dataSource);
+
+
+    public void addReadDataSource(String dataSource);
+
+    public void removeReadDataSource(String dataSource);
 }
