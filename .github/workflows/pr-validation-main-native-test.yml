@@ -5,9 +5,9 @@ name: Java CI - Mycat2 Native
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main ]
   pull_request:
-    branches: [ dev ]
+    branches: [ main ]
 
 jobs:
   build:
