@@ -418,6 +418,7 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
+            execute(db1, "set global time_zone='+8:00';");
             execute(db1, "drop database if exists db1");
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "create database db1");
@@ -441,12 +442,9 @@ public class AssembleTest implements MycatTest {
                 preparedStatement.executeUpdate();
             }
 
-            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from test_timezone");
-            Map<String, Object> map = list.get(0);
-            String traveldate = Objects.toString(map.get("traveldate"));
-            String travel_timestamp = Objects.toString(map.get("travel_timestamp"));
-            Assert.assertEquals(localDate, LocalDate.parse(traveldate));
-            Assert.assertEquals(localDateTime.getHour(), Timestamp.valueOf(travel_timestamp).toLocalDateTime().getHour());
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "select * from db1.test_timezone");
+            Assert.assertEquals(mysql_result, mycat_result);
         }
     }
 
@@ -455,6 +453,7 @@ public class AssembleTest implements MycatTest {
         try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
              Connection db1 = getMySQLConnection(DB1);
         ) {
+            execute(db1, "set global time_zone='+8:00'; ");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1");
             execute(db1, "drop database if exists db1_0");
@@ -483,18 +482,14 @@ public class AssembleTest implements MycatTest {
             LocalDate localDate = LocalDate.now();
             LocalDateTime localDateTime = LocalDateTime.now();
             try (PreparedStatement preparedStatement = mycatConnection
-                    .prepareStatement("insert test_timezone (traveldate,travel_timestamp) VALUES (?,?)")) {
+                    .prepareStatement("insert test_timezone (id,traveldate,travel_timestamp) VALUES (3,?,?)")) {
                 preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
                 preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
                 preparedStatement.executeUpdate();
             }
-
-            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from test_timezone");
-            Map<String, Object> map = list.get(0);
-            String traveldate = Objects.toString(map.get("traveldate"));
-            String travel_timestamp = Objects.toString(map.get("travel_timestamp"));
-            Assert.assertEquals(localDate, LocalDate.parse(traveldate));
-            Assert.assertEquals(localDateTime.getHour(), Timestamp.valueOf(travel_timestamp).toLocalDateTime().getHour());
+            List<Map<String, Object>> mycat_result = executeQuery(mycatConnection, "select * from db1.test_timezone");
+            List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_1` LIMIT 0, 1000; ");
+            Assert.assertEquals(mysql_result, mycat_result);
         }
     }
 
