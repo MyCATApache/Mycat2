@@ -67,12 +67,6 @@ public class MycatFilter extends Filter implements MycatRel {
         return writer.ret();
     }
 
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final MycatCalc calc = toMycatCalc();

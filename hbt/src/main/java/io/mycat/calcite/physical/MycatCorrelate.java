@@ -68,18 +68,13 @@ public class MycatCorrelate extends Correlate implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
         Expression leftExpression =
-                builder.append(
-                        "left", leftResult.block);
+                toEnumerate(builder.append(
+                        "left", leftResult.block));
 
         final BlockBuilder corrBlock = new BlockBuilder();
         Type corrVarType = leftResult.physType.getJavaRowType();

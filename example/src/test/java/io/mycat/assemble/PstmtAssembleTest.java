@@ -13,7 +13,13 @@ import java.util.function.Function;
 @NotThreadSafe
 @net.jcip.annotations.NotThreadSafe
 public class PstmtAssembleTest extends AssembleTest {
-
+    @Override
+    public Connection getMySQLConnection(String url) throws Exception {
+        if (DB_MYCAT.equals(url)){
+            url = DB_MYCAT_PSTMT;
+        }
+        return super.getMySQLConnection(url);
+    }
     @Override
     public void testTranscationFail2() throws Exception {
         super.testTranscationFail2();

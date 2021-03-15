@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-      <version>1.14-release</version>
+      <version>1.15-release</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>plug</artifactId>
@@ -13,12 +13,12 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-          <version>1.14-release</version>
+          <version>1.15-release</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>common</artifactId>
-        <version>1.14-release</version>
+        <version>1.15-release</version>
       </dependency>
         <!-- https://mvnrepository.com/artifact/com.imadcn.framework/idworker -->
         <dependency>

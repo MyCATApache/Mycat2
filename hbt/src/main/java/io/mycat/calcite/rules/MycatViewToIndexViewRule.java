@@ -43,7 +43,8 @@ public class MycatViewToIndexViewRule extends RelOptRule {
     public void onMatch(RelOptRuleCall call) {
         MycatView view = call.rel(0);
         Distribution distribution = view.getDistribution();
-        if (!distribution.isSharding()) {
+        Distribution.Type type = distribution.type();
+        if (!(type==Distribution.Type.Sharding)) {
             return;
         }
         RelNode relNode = view.getRelNode();

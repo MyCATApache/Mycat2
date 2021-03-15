@@ -18,8 +18,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import static io.mycat.replica.heartbeat.DatasourceEnum.DB_SYN_NORMAL;
 import static io.mycat.replica.heartbeat.DatasourceEnum.OK_STATUS;
+import static io.mycat.replica.heartbeat.DbSynEnum.DB_SYN_NORMAL;
 
 /**
  * @author : zhangwy
@@ -34,7 +34,7 @@ public class DatasourceStatus {
   // heartbeat config
   private DatasourceEnum status = OK_STATUS; //心跳状态
   private boolean isSlaveBehindMaster = false; //同步延时
-  private DatasourceEnum dbSynStatus = DB_SYN_NORMAL; //同步状态
+  private DbSynEnum dbSynStatus = DB_SYN_NORMAL; //同步状态
 
   public DatasourceStatus() {
   }

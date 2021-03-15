@@ -5,17 +5,12 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLStartTransactionStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import io.mycat.*;
-import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.calcite.DefaultDatasourceFactory;
-import io.mycat.calcite.ExecutorImplementor;
-import io.mycat.calcite.ResponseExecutorImplementor;
-import io.mycat.calcite.executor.TempResultSetFactoryImpl;
+import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.sqlhandler.SQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
@@ -24,17 +19,17 @@ import io.mycat.sqlhandler.ddl.*;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
-import io.mycat.Response;
-import io.vertx.core.CompositeFuture;
+import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 /**
@@ -105,6 +100,7 @@ public enum MycatdbCommand {
             //Analyze
             sqlHandlers.add(new AnalyzeHanlder());
             sqlHandlers.add(new DropIndexSQLHandler());
+            sqlHandlers.add(new MySQLCheckHandler());
 
             for (SQLHandler sqlHandler : sqlHandlers) {
                 Class statementClass = sqlHandler.getStatementClass();
@@ -122,42 +118,39 @@ public enum MycatdbCommand {
 
     }
 
-    public void executeQuery(String text,
-                             MycatDataContext dataContext,
-                             IntFunction<Response> responseFactory) {
+    public Future<Void> executeQuery(String text,
+                                     MycatDataContext dataContext,
+                                     IntFunction<Response> responseFactory) {
         try {
             if (logger.isDebugEnabled()) {
                 logger.debug(text);
             }
             LinkedList<SQLStatement> statements = parse(text);
+            if (statements.isEmpty()) {
+                throw new MycatException("Illegal syntax:" + text);
+            }
             Response response = responseFactory.apply(statements.size());
-
-            Future future = Future.succeededFuture();
+            Future<Void> future = Future.succeededFuture();
             for (SQLStatement sqlStatement : statements) {
-                Future<Object> future1 = Future.future(event -> {
-                    try {
+                future = future.flatMap(new Function<Void, Future<Void>>() {
+                    @Override
+                    @SneakyThrows
+                    public Future<Void> apply(Void unused) {
                         SqlRecord sqlRecord = dataContext.startSqlRecord();
                         sqlRecord.setTarget(dataContext.getUser().getHost());
                         sqlRecord.setSql(sqlStatement);
-                        execute(dataContext, response, sqlStatement);
-                        event.complete();
-                    } catch (Throwable throwable) {
-                        Response response1 = responseFactory.apply(1);
-                        if (isNavicatClientStatusQuery(text)) {
-                            response1.sendOk();
-                            return;
-                        }
-                        response1.sendError(throwable);
-                        event.fail(throwable);
+                        return execute(dataContext, response, sqlStatement);
                     }
                 });
-
             }
+            return future;
         } catch (Throwable e) {
-
-            return;
+            Response response = responseFactory.apply(1);
+            if (isNavicatClientStatusQuery(text)) {
+                return response.sendOk();
+            }
+            return Future.failedFuture(e);
         }
-
     }
 
     private static boolean isNavicatClientStatusQuery(String text) {
@@ -169,40 +162,29 @@ public enum MycatdbCommand {
         return false;
     }
 
-    public static void execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) throws Exception {
+    public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
-
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();
-        transactionSession.openStatementState();
-        //////////////////////////////////////////////////////////////////////////////////////
-        if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
-            SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
-            Optional<RowBaseIterator> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
-            if (baseIteratorOptional.isPresent()) {
-                receiver.sendResultSet(baseIteratorOptional.get());
-                return;
+        return transactionSession.openStatementState().flatMap(unused -> {
+            //////////////////////////////////////////////////////////////////////////////////////
+            if (existSqlResultSetService && !transactionSession.isInTransaction() && sqlStatement instanceof SQLSelectStatement) {
+                SqlResultSetService sqlResultSetService = MetaClusterCurrent.wrapper(SqlResultSetService.class);
+                Optional<Observable<MysqlPayloadObject>> baseIteratorOptional = sqlResultSetService.get((SQLSelectStatement) sqlStatement);
+                if (baseIteratorOptional.isPresent()) {
+                    return receiver.sendResultSet(baseIteratorOptional.get());
+                }
             }
-        }
-        SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
-        Class aClass = sqlStatement.getClass();
-        SQLHandler instance = sqlHandlerMap.getInstance(aClass);
-        if (instance != null) {
-            instance.execute(request, dataContext, receiver);
-        } else {
-            receiver.proxySelectToPrototype(sqlStatement.toString());
-        }
+            SQLRequest<SQLStatement> request = new SQLRequest<>(sqlStatement);
+            Class aClass = sqlStatement.getClass();
+            SQLHandler instance = sqlHandlerMap.getInstance(aClass);
+            if (instance != null) {
+                return instance.execute(request, dataContext, receiver);
+            } else {
+                return receiver.proxySelectToPrototype(sqlStatement.toString());
+            }
+        });
     }
-
-    private static boolean isHbt(String text) {
-        boolean hbt = false;
-        char c = text.charAt(0);
-        if ((c == 'e' || c == 'E') && text.length() > 12) {
-            hbt = "execute plan".equalsIgnoreCase(text.substring(0, 12));
-        }
-        return hbt;
-    }
-
 
     @NotNull
     public LinkedList<SQLStatement> parse(String text) {
@@ -217,7 +199,7 @@ public enum MycatdbCommand {
                 text = text.substring(1);
             }
             text = text.trim();
-            if (text.isEmpty()){
+            if (text.isEmpty()) {
                 return resStatementList;
             }
         }
@@ -225,7 +207,7 @@ public enum MycatdbCommand {
     }
 
     @NotNull
-    private String convertSql(String text,DbType type) {
+    private String convertSql(String text, DbType type) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(text, type, true);
         List<SQLStatement> sqlStatements = parser.parseStatementList();
         StringBuilder out = new StringBuilder();

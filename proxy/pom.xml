@@ -5,42 +5,53 @@
     <parent>
         <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-      <version>1.14-release</version>
+      <version>1.15-release</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>proxy</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mysql-client</artifactId>
+            <version>4.0.2</version>
+        </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
-        <version>1.14-release</version>
+        <version>1.15-release</version>
       </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>plug</artifactId>
-          <version>1.14-release</version>
+          <version>1.15-release</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-          <version>1.14-release</version>
+          <version>1.15-release</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-          <version>1.14-release</version>
+          <version>1.15-release</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>replica</artifactId>
-        <version>1.14-release</version>
+        <version>1.15-release</version>
       </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.14-release</version>
+            <version>1.15-release</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>va</artifactId>
+            <version>1.15-release</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava3</groupId>

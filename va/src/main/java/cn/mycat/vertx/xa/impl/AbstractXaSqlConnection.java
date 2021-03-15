@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,17 +17,30 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.XaLog;
 import cn.mycat.vertx.xa.XaSqlConnection;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
+import io.vertx.sqlclient.SqlConnection;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractXaSqlConnection.class);
-    protected boolean autocommit;
+    protected boolean autocommit = true;
     protected boolean inTranscation = false;
-    protected  final XaLog log;
+    protected final XaLog log;
+    protected List<SqlConnection> closeConnections = Collections.synchronizedList(
+            new ArrayList<>());
+    protected List<Future> closeFutureList = Collections.synchronizedList(
+            new ArrayList<>());
+    protected MySQLIsolation isolation = MySQLIsolation.DEFAULT;
 
     public AbstractXaSqlConnection(XaLog xaLog) {
         this.log = xaLog;
@@ -44,23 +57,72 @@ public abstract class AbstractXaSqlConnection implements XaSqlConnection {
     }
 
     /**
-     *  a sql runs before call it,if autocommit = false,it should begin a transcation.
+     * a sql runs before call it,if autocommit = false,it should begin a transcation.
+     *
      * @param handler the callback handler
      */
     @Override
     public void openStatementState(Handler<AsyncResult<Void>> handler) {
+        Future<Void> future = openStatementState();
+        if (handler != null) {
+            future.onComplete(handler);
+        }
+    }
+
+    public Future<Void> openStatementState() {
+
         if (!isAutocommit()) {
-            if (!isInTranscation()) {
-                begin(handler);
-                return;
+            if (!isInTransaction()) {
+                return begin();
             }
         }
-        handler.handle(Future.succeededFuture());
+        return Future.succeededFuture();
     }
 
     @Override
-    public boolean isInTranscation() {
+    public boolean isInTransaction() {
         return inTranscation;
     }
 
+
+    public Future<Void> dealCloseConnections() {
+        List<Future> futures = closeConnections.stream().map(c -> c.close()).collect(Collectors.toList());
+        return CompositeFuture.all(futures)
+                .onComplete(event -> closeConnections.clear()).mapEmpty();
+    }
+
+    @Override
+    public Future<Void> closeStatementState() {
+        return CompositeFuture.all(closeFutureList)
+                .onComplete(event -> closeFutureList.clear()).flatMap(compositeFuture -> {
+                    return dealCloseConnections();
+                });
+    }
+
+    @Override
+    public void addCloseConnection(SqlConnection sqlConnection) {
+        closeConnections.add(sqlConnection);
+    }
+
+    public void closeStatementState(Handler<AsyncResult<Void>> handler) {
+        Future<Void> future = closeStatementState();
+        if (handler != null) {
+            future.onComplete(handler);
+        }
+    }
+
+    @Override
+    public void addCloseFuture(Future<?> future) {
+        closeFutureList.add(future);
+    }
+
+    @Override
+    public void setTransactionIsolation(MySQLIsolation level) {
+        this.isolation = level;
+    }
+
+    @Override
+    public MySQLIsolation getTransactionIsolation() {
+        return this.isolation;
+    }
 }

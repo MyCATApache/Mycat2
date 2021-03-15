@@ -15,7 +15,9 @@
 package io.mycat.command;
 
 
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
+import io.vertx.core.Future;
 
 /**
  * @author jamie12221
@@ -24,11 +26,11 @@ import io.mycat.proxy.session.MycatSession;
  **/
 public interface LocalInFileRequestParseHelper {
 
-  void handleQuery(byte[] sql, MycatSession seesion) throws Exception;
+  Future<Void> handleQuery(byte[] sql, MySQLServerSession seesion) throws Exception;
 
-  void handleContentOfFilename(byte[] sql, MycatSession session);
+  Future<Void> handleContentOfFilename(byte[] sql, MySQLServerSession session);
 
-  void handleContentOfFilenameEmptyOk(MycatSession session);
+  Future<Void> handleContentOfFilenameEmptyOk(MySQLServerSession session);
 
   interface LocalInFileSession {
 

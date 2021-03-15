@@ -55,7 +55,14 @@ public class TrimBothFunction extends MycatSqlDefinedFunction {
 
     @Override
     public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        writer.print("trim(both,");
+        if (call.getOperandList().size()==1){
+            writer.print("trim(");
+            List<SqlNode> operandList = call.getOperandList();
+            operandList.get(0).unparse(writer, 0, 0);
+            writer.print(")");
+            return;
+        }
+        writer.print("trim(both ");
         List<SqlNode> operandList = call.getOperandList();
         operandList.get(0).unparse(writer, 0, 0);
         writer.print(" from ");

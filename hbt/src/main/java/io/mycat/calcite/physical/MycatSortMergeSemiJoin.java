@@ -96,10 +96,6 @@ public class MycatSortMergeSemiJoin extends MycatSortMergeJoin implements MycatR
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-    @Override
     public boolean isSupportStream() {
         return true;
     }

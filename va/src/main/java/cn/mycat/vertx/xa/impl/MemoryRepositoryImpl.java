@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 
@@ -25,16 +26,36 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class MemoryRepositoryImpl implements Repository {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryRepositoryImpl.class);
-    private final Map<String, ImmutableCoordinatorLog> storage = new ConcurrentHashMap<>();
+    private final Map<String, ImmutableCoordinatorLog> storage;
+
+    public MemoryRepositoryImpl(Map<String, ImmutableCoordinatorLog> storage) {
+        this.storage = storage;
+    }
+
+    public MemoryRepositoryImpl() {
+        this(new ConcurrentHashMap<>());
+    }
+
     private final ReentrantLock lock = new ReentrantLock();
-    private boolean closed = true;
+    private volatile boolean closed = true;
 
     @Override
-    public void init() {
-        closed = false;
+    public Future<Void> init() {
+        if (lock.tryLock()) {
+            try {
+                if (closed) {
+                    closed = false;
+                    return Future.succeededFuture();
+                }
+            }finally {
+                lock.unlock();
+            }
+        }
+        return Future.failedFuture(new IllegalArgumentException("not close"));
     }
 
     @Override
@@ -53,7 +74,7 @@ public class MemoryRepositoryImpl implements Repository {
     }
 
     @Override
-    public void close() {
+    public Future<Void> close() {
         lock.lock();
         try {
             storage.clear();
@@ -61,12 +82,12 @@ public class MemoryRepositoryImpl implements Repository {
             closed = true;
             lock.unlock();
         }
-
+        return Future.succeededFuture();
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
-        return storage.values();
+    public Future<Collection<String>> getCoordinatorLogsForRecover() {
+        return Future.succeededFuture(storage.values().stream().map(i->i.getXid()).collect(Collectors.toList()));
     }
 
     public boolean isClosed() {

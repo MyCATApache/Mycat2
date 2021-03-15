@@ -1,5 +1,6 @@
 package io.mycat;
 
+import com.alibaba.druid.sql.SQLUtils;
 import io.mycat.beans.mycat.TransactionType;
 
 import java.util.Objects;
@@ -8,7 +9,7 @@ public class MySQLVariablesUtil {
     public static void setVariable(MycatDataContext dataContext,
                                    String target,
                                    Object text) {
-        String value = Objects.toString(text);
+        String value = SQLUtils.normalize(Objects.toString(text));
         if (target.contains("autocommit")) {
             dataContext.setAutoCommit(toInt(value) == 1);
         } else if (target.equalsIgnoreCase("transaction_policy")) {
@@ -22,6 +23,9 @@ public class MySQLVariablesUtil {
         } else if (target.contains("net_write_timeout")) {
             dataContext.setVariable(MycatDataContextEnum.NET_WRITE_TIMEOUT, Long.parseLong(value));
         } else if ("SQL_SELECT_LIMIT".equalsIgnoreCase(target)) {
+            if ("default".equalsIgnoreCase(value)) {
+                value = Integer.toString(Integer.MAX_VALUE);
+            }
             dataContext.setVariable(MycatDataContextEnum.SELECT_LIMIT, Long.parseLong(value));
         } else if ("character_set_results".equalsIgnoreCase(target)) {
             dataContext.setVariable(MycatDataContextEnum.CHARSET_SET_RESULT, value);

@@ -120,14 +120,20 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                                            int transactionIsolation, boolean readOnly) {
         JdbcDataSource key = Objects.requireNonNull(Optional.ofNullable(dataSourceMap.get(name))
                 .orElseGet(() -> {
-                    return dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+                    JdbcDataSource jdbcDataSource = dataSourceMap.get(replicaSelector.getDatasourceNameByReplicaName(name, true, null));
+
+                    return jdbcDataSource;
                 }), () -> "unknown target:" + name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {
                 return ++operand;
             }
             return operand;
-        }) < key.getMaxCon()) {
+        }) < key.getMaxCon()){
+
+        }
+
+
             DefaultConnection defaultConnection;
             try {
                 DatasourceConfig config = key.getConfig();
@@ -152,9 +158,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                 key.counter.decrementAndGet();
                 throw new MycatException(e);
             }
-        } else {
-            throw new MycatException("max limit");
-        }
     }
 
     @Override
@@ -186,6 +189,13 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
             connection.connection.close();
         } catch (SQLException e) {
             LOGGER.error("", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        for (JdbcDataSource value : dataSourceMap.values()) {
+            value.close();
         }
     }
 
@@ -231,15 +241,6 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         });
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        ScheduleUtil.getTimer().schedule(() -> {
-            for (JdbcDataSource value : dataSourceMap.values()) {
-                value.close();
-            }
-        }, 1, TimeUnit.MINUTES);
-    }
 
     public DatasourceProvider getDatasourceProvider() {
         return datasourceProvider;

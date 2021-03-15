@@ -14,12 +14,12 @@
  */
 package io.mycat.resultset;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 
 /**
  * @author Junwen Chen
@@ -76,7 +76,7 @@ public enum TextConvertorImpl implements TextConvertor {
     }
 
     @Override
-    public byte[] convertDate(java.util.Date  v) {
+    public byte[] convertDate(java.util.Date v) {
         return v.toString().getBytes();
     }
 
@@ -117,21 +117,35 @@ public enum TextConvertorImpl implements TextConvertor {
 
     @Override
     public byte[] convertDuration(Duration duration) {
+        return getBytes(duration);
+    }
+
+    @NotNull
+    public static byte[] getBytes(Duration duration) {
+        return toString(duration).getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static String toString(Duration duration) {
         long seconds = duration.getSeconds();
-        int SECONDS_PER_HOUR = 60*60;
+        int SECONDS_PER_HOUR = 60 * 60;
         int SECONDS_PER_MINUTE = 60;
         long hours = seconds / SECONDS_PER_HOUR;
         int minutes = (int) ((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
         int secs = (int) (seconds % SECONDS_PER_MINUTE);
         int nano = duration.getNano();
         if (nano == 0) {
-            return String.format("%02d:%02d:%02d", hours, minutes, secs).getBytes();
+            return String.format("%02d:%02d:%02d", hours, minutes, secs);
         }
-        return String.format("%02d:%02d:%02d.%09d", hours, minutes, secs,nano).getBytes();
+        return String.format("%02d:%02d:%02d.%09d", hours, minutes, secs, nano);
     }
 
     @Override
     public byte[] convertTime(LocalTime localTime) {
+        return getBytes(localTime);
+    }
+
+    @NotNull
+    public static byte[] getBytes(LocalTime localTime) {
         int hour = localTime.getHour();
         int minute = localTime.getMinute();
         int second = localTime.getSecond();
@@ -139,7 +153,7 @@ public enum TextConvertorImpl implements TextConvertor {
         if (nano == 0) {
             return String.format("%02d:%02d:%02d", hour, minute, second).getBytes();
         }
-        return String.format("%02d:%02d:%02d.%09d", hour, minute, second,nano).getBytes();
+        return String.format("%02d:%02d:%02d.%09d", hour, minute, second, nano).getBytes();
     }
 
     @Override
@@ -149,14 +163,19 @@ public enum TextConvertorImpl implements TextConvertor {
 
     @Override
     public byte[] convertTimeStamp(LocalDateTime value) {
+        return getBytes(value);
+    }
+
+    @NotNull
+    public static byte[] getBytes(LocalDateTime value) {
         int year = value.getYear();
         int monthValue = value.getMonthValue();
         int dayOfMonth = value.getDayOfMonth();
         int hour = value.getHour();
         int minute = value.getMinute();
         int second = value.getSecond();
-        int nano = value.getNano();
-        if (nano == 0){
+        int nano = value.getNano()/1000;
+        if (nano == 0) {
             return String.format("%04d-%02d-%02d %02d:%02d:%02d",
                     year,
                     monthValue,
@@ -164,9 +183,9 @@ public enum TextConvertorImpl implements TextConvertor {
                     hour,
                     minute,
                     second
-                    ).getBytes();
+            ).getBytes();
         }
-        return String.format("%04d-%02d-%02d %02d:%02d:%02d.%09d",
+        return (String.format("%04d-%02d-%02d %02d:%02d:%02d.%06d",//"%04d-%02d-%02d %02d:%02d:%02d.%09d"
                 year,
                 monthValue,
                 dayOfMonth,
@@ -174,7 +193,7 @@ public enum TextConvertorImpl implements TextConvertor {
                 minute,
                 second,
                 nano
-                ).getBytes();
+        )).getBytes();
     }
 
     @Override

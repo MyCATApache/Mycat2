@@ -18,6 +18,7 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.ImmutableCoordinatorLog;
 import cn.mycat.vertx.xa.Repository;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -50,7 +51,7 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public void init() {
+    public Future<Void> init() {
         this.timeHandler = this.vertx.setPeriodic(TimeUnit.SECONDS.toMillis(5),
                 event -> vertx.executeBlocking(event1 -> {
                     try {
@@ -80,9 +81,10 @@ public class FileRepositoryImpl implements Repository {
                     } catch (Throwable e) {
 
                     } finally {
-                        event1.complete();
+                        event1.tryComplete();
                     }
                 }));
+        return Future.succeededFuture();
     }
 
     @Override
@@ -122,9 +124,10 @@ public class FileRepositoryImpl implements Repository {
     }
 
     @Override
-    public Collection<ImmutableCoordinatorLog> getCoordinatorLogs() {
+    public Future<Collection<String>> getCoordinatorLogsForRecover() {
+
         try {
-            return Files.list(Paths.get(baseDir))
+            return Future.succeededFuture(Files.list(Paths.get(baseDir))
                     .filter(path -> !Files.isDirectory(path) && path.toFile().getPath().endsWith(suffix))
                     .map(path -> {
                         try {
@@ -133,19 +136,19 @@ public class FileRepositoryImpl implements Repository {
                             throw new RuntimeException(e);
 
                         }
-                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).collect(Collectors.toList());
+                    }).map(i -> Json.decodeValue(i, ImmutableCoordinatorLog.class)).map(i->i.getXid()).collect(Collectors.toList()));
         } catch (Throwable throwable) {
-            return Collections.emptyList();
+            return Future.failedFuture(throwable);
         }
 
     }
 
     @Override
-    public void close() {
+    public  Future<Void>  close() {
         if (timeHandler != null) {
             this.vertx.cancelTimer(this.timeHandler);
             timeHandler = null;
         }
-
+        return Future.succeededFuture();
     }
 }

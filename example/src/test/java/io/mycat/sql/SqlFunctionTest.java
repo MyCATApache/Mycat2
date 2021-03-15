@@ -78,6 +78,7 @@ public class SqlFunctionTest implements MycatTest {
         check("SELECT LOWER('A') ");
         check("SELECT LCASE('A') ");
         check("SELECT UNHEX('GG') ");
+        uncheckValue("SELECT ROW_COUNT() ");
 
 
     }
@@ -146,8 +147,8 @@ public class SqlFunctionTest implements MycatTest {
                 for (int i = 0, size = rsMeta.getColumnCount(); i < size; ++i) {
                     String columName = rsMeta.getColumnLabel(i + 1).replaceAll(" ", "");
                     Object value = rs.getString(i + 1);
-                    if (row.containsKey(columName)){
-                        columName = columName+i;
+                    if (row.containsKey(columName)) {
+                        columName = columName + i;
                     }
                     row.put(columName, value);
                 }
@@ -287,15 +288,13 @@ public class SqlFunctionTest implements MycatTest {
 
 
         execute(mycatConnection, "CREATE DATABASE db1");
-        execute(mycatConnection, "CREATE DATABASE db1");
-
 
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds0",
                         DB1));
         execute(mycatConnection, CreateDataSourceHint
                 .create("ds1",
-                        DB1));
+                        DB2));
 
         execute(mycatConnection,
                 CreateClusterHint.create("c0",
@@ -322,6 +321,7 @@ public class SqlFunctionTest implements MycatTest {
         execute(mysql3306, "CREATE TABLE if not exists db1.`travelrecord` (\n" +
                 "  `id` bigint NOT NULL AUTO_INCREMENT\n," +
                 "  `user_id` varchar(100) DEFAULT NULL" +
+                " , PRIMARY KEY (`id`) " +
                 ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
         execute(mysql3306, "CREATE TABLE if not exists `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))");
 
@@ -353,6 +353,9 @@ public class SqlFunctionTest implements MycatTest {
     @Test
     public void testComplexQuery() throws Exception {
         initShardingTable();
+
+        checkValue("select t.* from db1.travelrecord t order by t.id");
+
         checkValue("SELECT * FROM `travelrecord` WHERE (ISNULL(`id`)) AND (`user_id`='3') AND (`traveldate`='2020-12-25') AND (`fee`='333') AND (`days`='111') AND (`blob`='张三') LIMIT 1", "");
         checkValue("select * from db1.travelrecord as t,db1.company as c  where t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
         checkValue("select * from db1.travelrecord as t INNER JOIN db1.company as c  on  t.id = c.id order by  t.id", "(1,999,null,null,null,null,1,Intel,1)");
@@ -364,7 +367,7 @@ public class SqlFunctionTest implements MycatTest {
                 "select * from (db1.travelrecord as t LEFT  JOIN db1.company as c  on  t.id = c.id )  LEFT  JOIN db1.company as c2 on t.id = c2.id order by t.id");
 
 
-       // checkValue("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1 order by t.id", "(1)"); todo
+        // checkValue("select (select c.id from db1.company as c  where c.id = t.id) from db1.travelrecord as t where t.id = 1 order by t.id", "(1)"); todo
         checkValue("select * from db1.travelrecord as t where  EXISTS (select id from db1.company as c where t.id =c.id ) order by t.id", "(1,999,null,null,null,null)");
         checkValue("select * from db1.travelrecord as t where not EXISTS (select id from db1.company as c where t.id =c.id ) order by t.id", "(999999999,999,null,null,null,null)");
 
@@ -401,7 +404,7 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("select id,user_id from db1.travelrecord where id = " + max, "(" + max + ",999)");
 
         //or表达式
-        checkValue("select id,user_id from db1.travelrecord where id = " + min + " or " + " id = " + max+" order by id", "(" + min + ",999)" + "(" + max + ",999)");
+        checkValue("select id,user_id from db1.travelrecord where id = " + min + " or " + " id = " + max + " order by id", "(" + min + ",999)" + "(" + max + ",999)");
 
         //and表达式
         checkValue("select id,user_id from db1.travelrecord where id = " + min + " and " + " user_id = 999 order by id", "(" + min + ",999)");
@@ -416,6 +419,52 @@ public class SqlFunctionTest implements MycatTest {
         checkValue("select id,user_id from db1.travelrecord where user_id LIKE '99%' order by id");
 
         checkValue("select 1");
+    }
+
+
+    @Test
+    public void testInsertFunction() throws Exception {
+        Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+        execute(mycatConnection, RESET_CONFIG);
+        Connection mysql3306 = getMySQLConnection(DB1);
+
+        execute(mycatConnection, "DROP DATABASE db1");
+
+
+        execute(mycatConnection, "CREATE DATABASE db1");
+        execute(mycatConnection, "CREATE DATABASE db1");
+
+
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds0",
+                        DB1));
+        execute(mycatConnection, CreateDataSourceHint
+                .create("ds1",
+                        DB2));
+
+        execute(mycatConnection,
+                CreateClusterHint.create("c0",
+                        Arrays.asList("ds0"), Collections.emptyList()));
+        execute(mycatConnection,
+                CreateClusterHint.create("c1",
+                        Arrays.asList("ds1"), Collections.emptyList()));
+
+        execute(mycatConnection, "USE `db1`;");
+        execute(mysql3306, "USE `db1`;");
+
+        execute(mycatConnection, "CREATE TABLE `travelrecord2` (\n" +
+                "  `id` bigint(20) NOT NULL KEY,\n" +
+                "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+                "  `traveldate` datetime DEFAULT NULL,\n" +
+                "  `fee` decimal(10,0) DEFAULT NULL,\n" +
+                "  `days` int(11) DEFAULT NULL,\n" +
+                "  `blob` longblob DEFAULT NULL\n" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n" +
+                "tbpartition by YYYYMM(traveldate) tbpartitions 12;");
+        deleteData(mycatConnection, "db1", "travelrecord2");
+        execute(mycatConnection, "INSERT INTO `travelrecord2`(`id`,`user_id`,`traveldate`,`fee`,`days`,`blob`)\n" +
+                "VALUES (1,2,timestamp('2021-02-22 18:34:05.983692'),3,4,NULL)");
+
     }
 }
 

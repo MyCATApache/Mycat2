@@ -13,6 +13,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.statistic.StatisticCenter;
 import io.mycat.Response;
+import io.vertx.core.Future;
 
 import java.sql.JDBCType;
 import java.util.Arrays;
@@ -25,12 +26,11 @@ import java.util.Optional;
  **/
 public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
     @Override
-    protected void onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlAnalyzeStatement> request, MycatDataContext dataContext, Response response) {
         MySqlAnalyzeStatement ast = request.getAst();
         List<SQLExprTableSource> tableSources = Optional.ofNullable(ast.getTableSources()).orElse(Collections.emptyList());
         if (tableSources.isEmpty()) {
-            response.sendError(new MycatException("need tables"));
-            return ;
+            return response.sendError(new MycatException("need tables"));
         } else {
             ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
             resultSetBuilder.addColumnInfo("Table", JDBCType.VARCHAR);
@@ -50,15 +50,11 @@ public class AnalyzeHanlder extends AbstractSQLHandler<MySqlAnalyzeStatement> {
                 MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
                 TableHandler tableHandler = metadataManager.getTable(schemaName, tableName);
                 if (tableHandler == null) {
-                    response.sendError(new MycatException(tableSource + "不存在"));
-                    return ;
+                    return response.sendError(new MycatException(tableSource + "不存在"));
                 }
                 StatisticCenter.INSTANCE.computeTableRowCount(tableHandler);
             }
-            response.sendResultSet(resultSetBuilder.build());
-            return ;
+            return response.sendResultSet(resultSetBuilder.build());
         }
-
-
     }
 }

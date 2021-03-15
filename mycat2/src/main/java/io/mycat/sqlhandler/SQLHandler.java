@@ -4,6 +4,8 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import io.mycat.MycatDataContext;
 import io.mycat.MycatException;
 import io.mycat.Response;
+import io.vertx.core.Future;
+import io.vertx.core.impl.future.PromiseInternal;
 
 /**
  * 数据库代理的执行器, 调用后端数据库接口.
@@ -13,8 +15,8 @@ import io.mycat.Response;
  * @author wangzihaogithub 2020年4月18日23:09:18
  */
 public interface SQLHandler<Statement extends SQLStatement> {
-    default void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response)throws Exception {
-        response.sendError(new MycatException(request.getAst()+" not Implemented"));
+    default Future<Void> execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response){
+        return response.sendError(new MycatException(request.getAst()+" not Implemented"));
     }
     public Class getStatementClass();
 }

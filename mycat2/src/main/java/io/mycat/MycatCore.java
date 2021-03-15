@@ -1,19 +1,21 @@
 package io.mycat;
 
-
-import cn.mycat.vertx.xa.MySQLManager;
-import cn.mycat.vertx.xa.SimpleConfig;
-import cn.mycat.vertx.xa.impl.MySQLManagerImpl;
+import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
+import io.mycat.connectionschedule.Scheduler;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.proxy.NativeMycatServer;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import lombok.SneakyThrows;
+import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -22,12 +24,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author cjw
  **/
 public class MycatCore {
-
+    final static Logger logger = LoggerFactory.getLogger(MycatdbCommand.class);
     public static final String PROPERTY_MODE_LOCAL = "local";
     public static final String PROPERTY_MODE_CLUSTER = "cluster";
     public static final String PROPERTY_METADATADIR = "metadata";
@@ -57,15 +61,11 @@ public class MycatCore {
             throw new Error("init error. " + e.toString());
         }
     }
-    public static SimpleConfig demoConfig(String name, int port) {
-        SimpleConfig simpleConfig = new SimpleConfig(name, "127.0.0.1", port, "root", "123456", "mysql", 5);
-        return simpleConfig;
-    }
+
 
     @SneakyThrows
     public MycatCore() {
-       MySQLManagerImpl mySQLManager = new MySQLManagerImpl(Arrays.asList(demoConfig("ds1", 3306)
-                , demoConfig("ds2", 3307)));
+        RxBuiltInMethod[] values = RxBuiltInMethod.values();
         // TimeZone.setDefault(ZoneInfo.getTimeZone("UTC"));
         String path = findMycatHome();
         boolean enableGSI = false;
@@ -73,17 +73,29 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
-        String datasourceProvider = serverConfig.getDatasourceProvider();
+        String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
         this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
+
+
+        VertxOptions vertxOptions = new VertxOptions();
+        vertxOptions.setWorkerPoolSize(workerPool.getMaxPoolSize());
+        vertxOptions.setMaxWorkerExecuteTime(workerPool.getTaskTimeout());
+        vertxOptions.setMaxWorkerExecuteTimeUnit(TimeUnit.valueOf(workerPool.getTimeUnit()));
+
+
         this.mycatServer = newMycatServer(serverConfig);
 
         HashMap<Class, Object> context = new HashMap<>();
-        context.put(MySQLManager.class,mySQLManager);
+        Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
+        Thread thread = new Thread(scheduler, "mycat connection scheduler");
+        thread.start();
+        context.put(Scheduler.class,scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
+        context.put(Vertx.class, Vertx.vertx(vertxOptions));
         context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
@@ -144,9 +156,11 @@ public class MycatCore {
         String configResourceKeyName = "server";
         String type = System.getProperty(configResourceKeyName, "vertx");
         if ("native".equalsIgnoreCase(type)) {
+            logger.info("start NativeMycatServer");
             return new NativeMycatServer(serverConfig);
         }
         if ("vertx".equalsIgnoreCase(type)) {
+            logger.info("start VertxMycatServer");
             return new VertxMycatServer(serverConfig);
         }
         throw new UnsupportedOperationException("unsupport server type:" + type);
@@ -160,6 +174,10 @@ public class MycatCore {
     }
 
     public static void main(String[] args) throws Exception {
+        if (args != null) {
+            Arrays.stream(args).filter(i -> i.startsWith("-D")||i.startsWith("-d"))
+                    .map(i -> i.substring(2).split("=")).forEach(n -> System.setProperty(n[0], n[1]));
+        }
         new MycatCore().start();
     }
 }

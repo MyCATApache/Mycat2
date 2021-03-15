@@ -16,10 +16,11 @@ package io.mycat.calcite.physical;
 
 
 import io.mycat.calcite.*;
-import io.mycat.calcite.logical.MycatView;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.enumerable.*;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
+import io.reactivex.rxjava3.core.Observable;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -35,6 +36,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.RxBuiltInMethod;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,12 +50,14 @@ public class MycatUnion extends Union implements MycatRel {
             boolean all) {
         super(cluster, traitSet, inputs, all);
     }
+
     public static MycatUnion create(
             RelTraitSet traitSet,
             List<RelNode> inputs,
             boolean all) {
-        return new MycatUnion(inputs.get(0).getCluster(),traitSet.replace(MycatConvention.INSTANCE),inputs,all);
+        return new MycatUnion(inputs.get(0).getCluster(), traitSet.replace(MycatConvention.INSTANCE), inputs, all);
     }
+
     public MycatUnion copy(
             RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         return new MycatUnion(getCluster(), traitSet, inputs, all);
@@ -76,12 +80,6 @@ public class MycatUnion extends Union implements MycatRel {
         return writer.ret();
     }
 
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
     @Override
     public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
@@ -90,9 +88,9 @@ public class MycatUnion extends Union implements MycatRel {
             EnumerableRel input = (EnumerableRel) ord.e;
             final Result result = implementor.visitChild(this, ord.i, input, pref);
             Expression childExp =
-                    builder.append(
+                    toEnumerate(builder.append(
                             "child" + ord.i,
-                            result.block);
+                            result.block));
 
             if (unionExp == null) {
                 unionExp = childExp;
@@ -114,6 +112,7 @@ public class MycatUnion extends Union implements MycatRel {
                         pref.prefer(JavaRowFormat.ARRAY));
         return implementor.result(physType, builder.toBlock());
     }
+
     @Override
     public boolean isSupportStream() {
         return all;
@@ -123,29 +122,62 @@ public class MycatUnion extends Union implements MycatRel {
     public Result implementStream(StreamMycatEnumerableRelImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
         Expression unionExp = null;
+
+        ArrayList<Result> results = new ArrayList<>();
         for (Ord<RelNode> ord : Ord.zip(inputs)) {
             EnumerableRel input = (EnumerableRel) ord.e;
-            final Result result = implementor.visitChild(this, ord.i, input, pref);
-            Expression childExp =
-                    builder.append(
-                            "child" + ord.i,
-                            result.block);
-
-            if (unionExp == null) {
-                unionExp = childExp;
-            } else {
-                unionExp =  Expressions.call(unionExp,  RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
-            }
+            results.add(implementor.visitChild(this, ord.i, input, pref));
         }
-        builder.add(unionExp);
-
-
-        builder.add(unionExp);
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getRowType(),
-                        pref.prefer(JavaRowFormat.ARRAY));
-        return implementor.result(physType, builder.toBlock());
+        boolean toEnumerate = false;
+        for (Result result : results) {
+            Type type = result.block.getType();
+            toEnumerate |= (!(type instanceof Observable));
+        }
+        if (toEnumerate){
+            for (Ord<Result> ord : Ord.zip(results)) {
+                Result result = ord.e;
+                Expression childExp =
+                        toEnumerate(builder.append(
+                                "child" + ord.i,
+                                result.block));
+                if (unionExp == null) {
+                    unionExp = childExp;
+                } else {
+                    unionExp = all
+                            ? Expressions.call(unionExp, BuiltInMethod.CONCAT.method, childExp)
+                            : Expressions.call(unionExp,
+                            BuiltInMethod.UNION.method,
+                            Expressions.list(childExp)
+                                    .appendIfNotNull(result.physType.comparer()));
+                }
+            }
+            builder.add(unionExp);
+            final PhysType physType =
+                    PhysTypeImpl.of(
+                            implementor.getTypeFactory(),
+                            getRowType(),
+                            pref.prefer(JavaRowFormat.ARRAY));
+            return implementor.result(physType, builder.toBlock());
+        }else {
+            for (Ord<Result> ord : Ord.zip(results)) {
+                Result result = ord.e;
+                Expression childExp =
+                        (builder.append(
+                                "child" + ord.i,
+                                result.block));
+                if (unionExp == null) {
+                    unionExp = childExp;
+                } else  {
+                    unionExp = Expressions.call(unionExp, RxBuiltInMethod.OBSERVABLE_UNION_ALL.getMethodName(), childExp);
+                }
+            }
+            builder.add(unionExp);
+            final PhysType physType =
+                    PhysTypeImpl.of(
+                            implementor.getTypeFactory(),
+                            getRowType(),
+                            pref.prefer(JavaRowFormat.ARRAY));
+            return implementor.result(physType, builder.toBlock());
+        }
     }
 }

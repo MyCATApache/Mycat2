@@ -72,11 +72,6 @@ public class MycatTopN extends Sort implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Sort copy(RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch) {
         return new MycatTopN(getCluster(), traitSet, newInput, newCollation, offset, fetch);
     }
@@ -90,7 +85,7 @@ public class MycatTopN extends Sort implements MycatRel {
                 implementor.getTypeFactory(),
                 this.getRowType(),
                 result.format);
-        final Expression childExp = builder.append("child", result.block);
+        final Expression childExp = toEnumerate(builder.append("child", result.block));
 
         final PhysType inputPhysType = result.physType;
         final Pair<Expression, Expression> pair =

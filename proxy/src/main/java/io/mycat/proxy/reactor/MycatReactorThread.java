@@ -14,18 +14,13 @@
  */
 package io.mycat.proxy.reactor;
 
-import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.ReactorBufferPool;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MySQLProxyServerSession;
-import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Mycat reactor 每个线程独立 一些同步的使用的,反复使用释放的帮助类对象可以放在此对象保存复用
@@ -35,27 +30,9 @@ import java.util.Objects;
 public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
   static final Logger LOGGER = LoggerFactory.getLogger(MycatReactorThread.class);
 
-  private final MySQLSessionManager mySQLSessionManager;
 
   public MycatReactorThread(ReactorBufferPool bufPool, FrontSessionManager<MycatSession> sessionManager)
       throws IOException {
     super(bufPool, sessionManager);
-    this.mySQLSessionManager  = new MySQLSessionManager();
-  }
-
-  public MySQLSessionManager getMySQLSessionManager() {
-    return mySQLSessionManager;
-  }
-
-  public void close(Exception throwable) {
-    super.close(throwable);
-    try{
-      Objects.requireNonNull(mySQLSessionManager);
-      for (MySQLClientSession s : mySQLSessionManager.getAllSessions()) {
-        mySQLSessionManager.removeSession(s,true,"close");
-      }
-    }catch (Exception e){
-      LOGGER.error("",e);
-    }
   }
 }

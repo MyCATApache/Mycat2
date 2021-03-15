@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>1.14-release</version>
+  <version>1.15-release</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -19,7 +19,6 @@
       <module>hbt</module>
       <module>example</module>
       <module>statistic</module>
-      <module>calcite</module>
       <module>va</module>
   </modules>
   <packaging>pom</packaging>

@@ -88,11 +88,11 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
         RelOptCost relOptCost = planner.getCostFactory().makeCost(d, 0, 0);
         return relOptCost;
     }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
+//
+//    @Override
+//    public Executor implement(ExecutorImplementor implementor) {
+//        return implementor.implement(this);
+//    }
 
     @Override
     public Join copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
@@ -105,13 +105,13 @@ public class MycatSortMergeJoin extends Join implements MycatRel {
         final Result leftResult =
                 implementor.visitChild(this, 0, (EnumerableRel) left, pref);
         final Expression leftExpression =
-                builder.append("left", leftResult.block);
+                toEnumerate(builder.append("left", leftResult.block));
         final ParameterExpression left_ =
                 Expressions.parameter(leftResult.physType.getJavaRowType(), "left");
         final Result rightResult =
                 implementor.visitChild(this, 1, (EnumerableRel) right, pref);
         final Expression rightExpression =
-                builder.append("right", rightResult.block);
+                toEnumerate(builder.append("right", rightResult.block));
         final ParameterExpression right_ =
                 Expressions.parameter(rightResult.physType.getJavaRowType(), "right");
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();

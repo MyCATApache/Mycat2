@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStateme
 import io.mycat.ConfigOps;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MetadataManager;
+import io.vertx.core.Future;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -454,8 +455,6 @@ public class MycatRouterConfigOps implements AutoCloseable {
 
     public void reset() {
         MycatRouterConfig newMycatRouterConfig = new MycatRouterConfig();
-        newMycatRouterConfig.setSchemas(this.mycatRouterConfig.getSchemas().stream()
-                .filter(i -> "mysql".equals(i.getSchemaName())).collect(Collectors.toList()));
         this.mycatRouterConfig = newMycatRouterConfig;
         FileMetadataStorageManager.defaultConfig(this.mycatRouterConfig);
         this.updateType = UpdateType.RESET;

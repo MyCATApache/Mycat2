@@ -11,7 +11,7 @@
 	"name":"prototypeDs",
 	"password":"123456",
 	"type":"JDBC",
-	"url":"jdbc:mysql://127.0.0.1:3306/mysql?useUnicode=true&serverTimezone=UTC&characterEncoding=UTF-8",
+	"url":"jdbc:mysql://localhost:3306/mysql?useUnicode=true&serverTimezone=UTC&characterEncoding=UTF-8",
 	"user":"root",
 	"weight":0
 }

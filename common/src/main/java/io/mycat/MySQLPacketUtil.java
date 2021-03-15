@@ -126,7 +126,7 @@ public class MySQLPacketUtil {
             list.add(MySQLPacketUtil
                     .generateColumnDefPayload(
                             metaData,
-                            index++));
+                            index));
         }
         return list;
     }

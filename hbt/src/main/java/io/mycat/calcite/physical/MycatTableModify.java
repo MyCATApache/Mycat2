@@ -60,9 +60,4 @@ import java.util.List;
     public ExplainWriter explain(ExplainWriter writer) {
         return null;
     }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return null;
-    }
 }

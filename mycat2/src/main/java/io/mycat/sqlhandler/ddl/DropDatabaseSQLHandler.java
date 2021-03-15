@@ -11,6 +11,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,14 +20,16 @@ public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseSt
     private static final Logger LOGGER = LoggerFactory.getLogger(DropDatabaseSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response)  {
         SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
         String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
         try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
             ops.dropSchema(schemaName);
             ops.commit();
             onPhysics(schemaName);
-            response.sendOk();
+            return response.sendOk();
+        }catch (Throwable throwable){
+            return Future.failedFuture(throwable);
         }
     }
     protected void onPhysics(String name) {

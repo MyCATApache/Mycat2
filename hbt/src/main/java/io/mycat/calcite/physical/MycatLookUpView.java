@@ -28,7 +28,8 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
     @Override
     public ExplainWriter explain(ExplainWriter writer) {
         return writer.name("MycatLookUpView")
-                .item("sql", MycatCalciteSupport.INSTANCE.convertToSql(relNode, MycatSqlDialect.DEFAULT,false, Collections.emptyList()))
+                .item("sql", MycatCalciteSupport.INSTANCE
+                        .convertToSql(relNode, MycatSqlDialect.DEFAULT,false))
                 .into().ret();
     }
 
@@ -37,10 +38,6 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
         return super.explainTerms(pw);
     }
 
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
 
     public MycatView getRelNode() {
         return relNode;

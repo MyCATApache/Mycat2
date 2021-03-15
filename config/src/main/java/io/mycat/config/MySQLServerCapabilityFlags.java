@@ -201,6 +201,8 @@ public class MySQLServerCapabilityFlags {
 //        flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_ATTRS;
 //        flag |= MySQLServerCapabilityFlags.CLIENT_DEPRECATE_EOF;
 //        flag |= (MySQLServerCapabilityFlags.CLIENT_SESSION_TRACK);
+        flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_RESULTS;
+        flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_STATEMENTS;
         return flag;
     }
 

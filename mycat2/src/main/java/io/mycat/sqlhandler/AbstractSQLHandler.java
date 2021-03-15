@@ -1,7 +1,6 @@
 package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import io.mycat.*;
 import io.mycat.beans.mycat.MycatErrorCode;
@@ -11,12 +10,12 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.ClassUtil;
+import io.vertx.core.Future;
+import io.vertx.core.impl.future.PromiseInternal;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @EqualsAndHashCode
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
@@ -33,10 +32,10 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     }
 
     @Override
-    public void execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
+    public Future<Void> execute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
         try {
             onExecuteBefore(request, dataContext, response);
-            onExecute(request, dataContext, response);
+            return onExecute(request, dataContext, response);
         } finally {
             onExecuteAfter(request, dataContext, response);
         }
@@ -45,9 +44,9 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
     protected void onExecuteBefore(SQLRequest<Statement> request, MycatDataContext dataContext, Response respons) {
     }
 
-    protected abstract void onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception;
+    protected abstract Future<Void> onExecute(SQLRequest<Statement> request, MycatDataContext dataContext, Response response);
 
-    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected void onExecuteAfter(SQLRequest<Statement> request, MycatDataContext dataContext, Response response) {
 
 
     }
@@ -72,13 +71,13 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         return defaultSchema;
     }
 
-    public void executeOnPrototype(SQLStatement sqlStatement,
-                                   JdbcConnectionManager connectionManager) {
-        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
-            connection.executeUpdate(sqlStatement.toString(),false);
-        }
-    }
-    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, List<DataNode> dataNodes, SQLExprTableSource tableSource) {
+//    public void executeOnPrototype(SQLStatement sqlStatement,
+//                                   JdbcConnectionManager connectionManager) {
+//        try(DefaultConnection connection = connectionManager.getConnection("prototype")){
+//            connection.executeUpdate(sqlStatement.toString(),false);
+//        }
+//    }
+    public void executeOnDataNodes(SQLStatement sqlStatement, JdbcConnectionManager connectionManager, Collection<DataNode> dataNodes, SQLExprTableSource tableSource) {
         for (DataNode dataNode : dataNodes) {
             tableSource.setSimpleName(dataNode.getTable());
             tableSource.setSchema(dataNode.getSchema());
@@ -89,7 +88,7 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
         }
     }
 
-    public List<DataNode> getDataNodes(TableHandler tableHandler) {
+    public Set<DataNode> getDataNodes(TableHandler tableHandler) {
         List<DataNode> dataNodes;
         switch (tableHandler.getType()) {
             case SHARDING: {
@@ -111,6 +110,6 @@ public abstract class AbstractSQLHandler<Statement extends SQLStatement> impleme
             default:
                 throw MycatErrorCode.createMycatException(MycatErrorCode.ERR_NOT_SUPPORT,"alter custom table supported");
         }
-        return dataNodes;
+        return new HashSet<>(dataNodes);
     }
 }

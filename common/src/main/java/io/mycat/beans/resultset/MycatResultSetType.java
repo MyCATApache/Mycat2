@@ -21,5 +21,6 @@ public enum MycatResultSetType {
     PROXY,
     COMMIT,
     ROLLBACK,
-    BEGIN
+    BEGIN,
+    OBSERVER_RRESULTSET
 }

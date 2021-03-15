@@ -14,12 +14,14 @@
  */
 package io.mycat.router.mycat1xfunction;
 
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.router.util.PartitionUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
@@ -88,7 +90,25 @@ public class PartitionByString extends Mycat1xSingleValueRuleFunction {
     return null;
   }
 
+  @Override
+  public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+    if (customRuleFunction == null) return false;
+    if (PartitionByString.class.isAssignableFrom(customRuleFunction.getClass())) {
+      PartitionByString ruleFunction = (PartitionByString) customRuleFunction;
 
+       int hashSliceStart = ruleFunction.hashSliceStart;
+       int hashSliceEnd = ruleFunction.hashSliceEnd;
+       PartitionUtil partitionUtil = ruleFunction.partitionUtil;
 
+      return Objects.equals(this.hashSliceStart, hashSliceStart) &&
+              Objects.equals(this.hashSliceEnd, hashSliceEnd) &&
+              Objects.equals(this.partitionUtil, partitionUtil);
+    }
+    return false;
+  }
+  @Override
+  public String getErUniqueID() {
+    return "" + hashSliceStart + hashSliceEnd + partitionUtil;
+  }
 
 }

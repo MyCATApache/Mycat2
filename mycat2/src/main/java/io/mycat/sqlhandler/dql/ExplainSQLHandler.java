@@ -16,6 +16,7 @@ import io.mycat.sqlhandler.HackRouter;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.mycat.util.Pair;
+import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +30,10 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
     private static final Logger LOGGER = LoggerFactory.getLogger(ExplainSQLHandler.class);
     @Override
     @SneakyThrows
-    protected void onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) throws Exception {
+    protected Future<Void> onExecute(SQLRequest<MySqlExplainStatement> request, MycatDataContext dataContext, Response response) {
         MySqlExplainStatement explainAst = request.getAst();
         if (explainAst.isDescribe()) {
-            response.proxySelectToPrototype(explainAst.toString());
-            return;
+            return response.proxySelectToPrototype(explainAst.toString());
         }
         SQLStatement statement = request.getAst().getStatement();
         boolean forUpdate = false;
@@ -41,7 +41,6 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
             forUpdate = ((SQLSelectStatement) explainAst .getStatement()).getSelect().getFirstQueryBlock().isForUpdate();
         }
         ResultSetBuilder builder = ResultSetBuilder.create().addColumnInfo("plan", JDBCType.VARCHAR);
-        try (DataSourceFactory ignored = new DefaultDatasourceFactory(dataContext)) {
             try{
                 HackRouter hackRouter = new HackRouter(statement, dataContext);
                 if (hackRouter.analyse()) {
@@ -62,7 +61,6 @@ public class ExplainSQLHandler extends AbstractSQLHandler<MySqlExplainStatement>
                 LOGGER.error("",th);
                 builder.addObjectRowPayload(Arrays.asList(th.toString()));
             }
-            response.sendResultSet(RowIterable.create(builder.build()));
-        }
+            return response.sendResultSet(RowIterable.create(builder.build()));
     }
 }

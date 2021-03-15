@@ -13,6 +13,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
+import io.vertx.core.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,25 +24,29 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
     private static final Logger LOGGER = LoggerFactory.getLogger(DropTableSQLHandler.class);
 
     @Override
-    protected void onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response)  throws Exception {
-        SQLDropTableStatement ast = request.getAst();
-        List<SQLExprTableSource> tableSources = ast.getTableSources();
-        if (tableSources.size() != 1) {
-            throw new UnsupportedOperationException("unsupported drop multi table :" + tableSources.get(0));
-        }
-        SQLExprTableSource tableSource = ast.getTableSources().get(0);
-        String schema = SQLUtils.normalize(
-                tableSource.getSchema() == null ?
-                        dataContext.getDefaultSchema() : tableSource.getSchema()
-        );
-        String tableName = SQLUtils.normalize(
-                tableSource.getTableName()
-        );
-        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-            ops.removeTable(schema, tableName);
-            ops.commit();
-            onPhysics(schema, tableName);
-            response.sendOk();
+    protected Future<Void> onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response) {
+        try {
+            SQLDropTableStatement ast = request.getAst();
+            List<SQLExprTableSource> tableSources = ast.getTableSources();
+            if (tableSources.size() != 1) {
+                throw new UnsupportedOperationException("unsupported drop multi table :" + tableSources.get(0));
+            }
+            SQLExprTableSource tableSource = ast.getTableSources().get(0);
+            String schema = SQLUtils.normalize(
+                    tableSource.getSchema() == null ?
+                            dataContext.getDefaultSchema() : tableSource.getSchema()
+            );
+            String tableName = SQLUtils.normalize(
+                    tableSource.getTableName()
+            );
+            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                ops.removeTable(schema, tableName);
+                ops.commit();
+                onPhysics(schema, tableName);
+                return response.sendOk();
+            }
+        }catch (Throwable throwable){
+            return response.sendError(throwable);
         }
     }
 

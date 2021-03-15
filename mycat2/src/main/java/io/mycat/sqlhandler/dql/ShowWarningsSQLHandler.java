@@ -5,14 +5,13 @@ import io.mycat.MycatDataContext;
 import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
-
-
+import io.vertx.core.Future;
 
 
 public class ShowWarningsSQLHandler extends AbstractSQLHandler<MySqlShowWarningsStatement> {
 
     @Override
-    protected void onExecute(SQLRequest<MySqlShowWarningsStatement> request, MycatDataContext dataContext, Response response) throws Exception {
-        response.proxySelectToPrototype(request.getAst().toString());
+    protected Future<Void> onExecute(SQLRequest<MySqlShowWarningsStatement> request, MycatDataContext dataContext, Response response) {
+        return response.proxySelectToPrototype(request.getAst().toString());
     }
 }

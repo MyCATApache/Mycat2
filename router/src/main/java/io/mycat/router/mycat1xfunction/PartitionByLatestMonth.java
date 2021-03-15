@@ -14,8 +14,9 @@
  */
 package io.mycat.router.mycat1xfunction;
 
-import io.mycat.router.ShardingTableHandler;
+import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.Mycat1xSingleValueRuleFunction;
+import io.mycat.router.ShardingTableHandler;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
@@ -25,38 +26,55 @@ import java.util.Objects;
 
 public class PartitionByLatestMonth extends Mycat1xSingleValueRuleFunction {
 
-  private int splitOneDay;
-  private int hourSpan;
-  private DateTimeFormatter formatter;
+    private int splitOneDay;
+    private int hourSpan;
+    private DateTimeFormatter formatter;
 
-  @Override
-  public String name() {
-    return "PartitionByLatestMonth";
-  }
-
-  @Override
-  public int calculateIndex(String columnValue) {
-    TemporalAccessor date = this.formatter.parse(columnValue);
-    int day = date.get(ChronoField.DAY_OF_YEAR);
-    int hour = date.get(ChronoField.HOUR_OF_DAY);
-    return (day - 1) * splitOneDay + hour / hourSpan;
-  }
-
-  @Override
-  public int[] calculateIndexRange(String beginValue, String endValue) {
-    return calculateSequenceRange(this, beginValue, endValue);
-  }
-
-  @Override
-  public void init(ShardingTableHandler table,Map<String, Object> prot, Map<String, Object> ranges) {
-    this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
-    this.splitOneDay = Integer.parseInt(Objects.toString(prot.get("splitOneDay")));
-    hourSpan = 24 / splitOneDay;
-    if (hourSpan * 24 < 24) {
-      throw new java.lang.IllegalArgumentException(
-          "invalid splitOnDay param:"
-              + splitOneDay
-              + " should be an even number and less or equals than 24");
+    @Override
+    public String name() {
+        return "PartitionByLatestMonth";
     }
-  }
+
+    @Override
+    public int calculateIndex(String columnValue) {
+        TemporalAccessor date = this.formatter.parse(columnValue);
+        int day = date.get(ChronoField.DAY_OF_YEAR);
+        int hour = date.get(ChronoField.HOUR_OF_DAY);
+        return (day - 1) * splitOneDay + hour / hourSpan;
+    }
+
+    @Override
+    public int[] calculateIndexRange(String beginValue, String endValue) {
+        return calculateSequenceRange(this, beginValue, endValue);
+    }
+
+    @Override
+    public void init(ShardingTableHandler table, Map<String, Object> prot, Map<String, Object> ranges) {
+        this.formatter = DateTimeFormatter.ofPattern(Objects.toString(prot.get("dateFormat")));
+        this.splitOneDay = Integer.parseInt(Objects.toString(prot.get("splitOneDay")));
+        hourSpan = 24 / splitOneDay;
+        if (hourSpan * 24 < 24) {
+            throw new java.lang.IllegalArgumentException(
+                    "invalid splitOnDay param:"
+                            + splitOneDay
+                            + " should be an even number and less or equals than 24");
+        }
+    }
+
+    @Override
+    public boolean isSameDistribution(CustomRuleFunction customRuleFunction) {
+        if (customRuleFunction == null) return false;
+        if (PartitionByLatestMonth.class.isAssignableFrom(customRuleFunction.getClass())) {
+            PartitionByLatestMonth ruleFunction = (PartitionByLatestMonth) customRuleFunction;
+            int splitOneDay = ruleFunction.splitOneDay;
+            int hourSpan = ruleFunction.hourSpan;
+            DateTimeFormatter formatter = ruleFunction.formatter;
+            return this.splitOneDay == splitOneDay && this.hourSpan == hourSpan && Objects.equals(this.formatter, formatter);
+        }
+        return false;
+    }
+    @Override
+    public String getErUniqueID() {
+        return "" + splitOneDay+hourSpan+formatter;
+    }
 }

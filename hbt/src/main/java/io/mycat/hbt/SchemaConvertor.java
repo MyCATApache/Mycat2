@@ -257,7 +257,7 @@ public class SchemaConvertor {
             if (parseNode1.getExprs().size() == 1) {
                 return transforSchema(parseNode1.getExprs().get(0));
             } else {
-                System.out.println();
+
             }
         } else {
             return null;

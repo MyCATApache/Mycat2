@@ -16,6 +16,9 @@
 
 package cn.mycat.vertx.xa;
 
+import io.vertx.core.Future;
+
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +36,7 @@ public interface Repository {
         return TimeUnit.SECONDS.toMillis(3);
     }
 
-    void init();
+    Future<Void> init();
 
     /**
      * save log
@@ -50,9 +53,9 @@ public interface Repository {
      *
      * @return get all saved log
      */
-    Collection<ImmutableCoordinatorLog> getCoordinatorLogs();
+    Future<Collection<String>> getCoordinatorLogsForRecover();
 
-    void close();
+    Future<Void>  close();
 
     /**
      *  Atomic, persistent ,write the Confirm ready to commit flag log

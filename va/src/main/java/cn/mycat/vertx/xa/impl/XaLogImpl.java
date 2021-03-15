@@ -1,12 +1,12 @@
 /**
  * Copyright [2021] [chen junwen]
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,44 +18,46 @@ package cn.mycat.vertx.xa.impl;
 
 import cn.mycat.vertx.xa.*;
 import io.vertx.core.*;
+import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class XaLogImpl implements XaLog {
     private final static Logger LOGGER = LoggerFactory.getLogger(XaLogImpl.class);
-    private final String name;
     private final Repository xaRepository;
-    private final AtomicLong xaIdSeq = new AtomicLong();
+    private final AtomicLong xaIdSeq;
     private final MySQLManager mySQLManager;
 
-
-    public XaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
-        this("x", xaRepository, '.', mySQLManager);
+    public static XaLogImpl createXaLogImpl(Repository xaRepository, MySQLManager mySQLManager) {
+        XaLogImpl xaLog = new XaLogImpl(xaRepository, 0, mySQLManager);
+        return xaLog;
     }
 
-    public XaLogImpl(String name, Repository xaRepository, char sep, MySQLManager mySQLManager) {
+
+    public XaLogImpl(Repository xaRepository, long workerId, MySQLManager mySQLManager) {
         this.mySQLManager = mySQLManager;
-        this.name = name + sep;
         this.xaRepository = xaRepository;
+        this.xaIdSeq = new AtomicLong((System.currentTimeMillis() >> 32) + (workerId << 32));
 
     }
 
-    public static XaLog createDemoRepository(MySQLManager mySQLManager) {
-        return new XaLogImpl(new MemoryRepositoryImpl()
-                , mySQLManager);
+    public static XaLog createXaLog(MySQLManager mySQLManager) {
+        return new XaLogImpl(new MemoryRepositoryImpl(), 0, mySQLManager);
     }
 
 
@@ -65,7 +67,6 @@ public class XaLogImpl implements XaLog {
                 commit(res, entry);
                 return;
             }
-
             Map<String, State> map = new ConcurrentHashMap<>();
             for (ImmutableParticipantLog participant : entry.getParticipants()) {
                 map.put(participant.getTarget(), participant.getState());
@@ -122,10 +123,14 @@ public class XaLogImpl implements XaLog {
                                             String.format(XaSqlConnection.XA_COMMIT, entry.getXid())
 
                                     ).execute().map(c -> {
-                                        sqlConnection.close();
-                                        log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
-                                        checkState(entry.getXid(), true, State.XA_COMMITED);
-                                        return null;
+                                        Future<Void> closeFuture = sqlConnection.close();
+                                        try {
+                                            log(entry.getXid(), participant.getTarget(), State.XA_COMMITED);
+                                            checkState(entry.getXid(), true, State.XA_COMMITED);
+                                        } catch (Exception e) {
+                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
+                                        }
+                                        return closeFuture;
                                     }));
                         }));
             } else {
@@ -133,8 +138,13 @@ public class XaLogImpl implements XaLog {
             }
         }
         CompositeFuture.all(list).onComplete(unused -> {
-            logCommit(entry.getXid(), unused.succeeded());
-            res.complete();
+            try {
+                logCommit(entry.getXid(), unused.succeeded());
+            } catch (Exception e) {
+                res.fail(e);
+                return;
+            }
+            res.tryComplete();
         });
     }
 
@@ -150,64 +160,100 @@ public class XaLogImpl implements XaLog {
                                             String.format(XaSqlConnection.XA_ROLLBACK, entry.getXid())
 
                                     ).execute().map(c -> {
-                                        log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
-                                        sqlConnection.close();
-                                        checkState(entry.getXid(), true, State.XA_ROLLBACKED);
-                                        return null;
+                                        Future<Void> closeFuture = sqlConnection.close();
+                                        try {
+                                            log(entry.getXid(), participant.getTarget(), State.XA_ROLLBACKED);
+                                            checkState(entry.getXid(), true, State.XA_ROLLBACKED);
+                                        } catch (Exception e) {
+                                            return CompositeFuture.all(closeFuture, Future.failedFuture(e));
+                                        }
+                                        return closeFuture;
                                     }));
                         }));
             } else {
                 list.add(Future.succeededFuture());
             }
             CompositeFuture.all(list).onComplete(unused -> {
-                logRollback(entry.getXid(), unused.succeeded());
-                res.complete();
+                try {
+                    logRollback(entry.getXid(), unused.succeeded());
+                    res.tryComplete();
+                } catch (Exception e) {
+                    res.tryFail(e);
+                }
+
             });
         }
     }
 
-    public void readXARecoveryLog(Handler<AsyncResult<XaLog>> handler) {
-        long id = 0;
-        char seq = name.charAt(name.length() - 1);
-        Collection<ImmutableCoordinatorLog> entries = xaRepository.getCoordinatorLogs();
-        for (ImmutableCoordinatorLog entry : entries) {
-            String text = entry.getXid();
-            xaRepository.put(text, entry);
-            id = Math.max(id, Long.parseLong(text.substring(text.lastIndexOf(seq) + 1)));
-        }
-        xaIdSeq.set(id);
-
-        List<Future> futures = new ArrayList<>();
-        for (ImmutableCoordinatorLog entry : entries.stream()
-                .filter(p -> p.computeExpires() > System.currentTimeMillis())
-                .collect(Collectors.toList())) {
-            switch (entry.computeMinState()) {
-                case XA_ENDED:
-                case XA_PREPARED: {
-                    futures.add(recoverConnection(entry));
-                    break;
-                }
-                case XA_COMMITED:
-                case XA_ROLLBACKED:
-                    break;
-                default:
+    @SneakyThrows
+    public Future<Void> readXARecoveryLog() {
+        Future<Void> future = mySQLManager.getConnectionMap().flatMap(stringSqlConnectionMap -> CompositeFuture.all(
+                stringSqlConnectionMap.values().stream()
+                        .map(c -> LocalXaMemoryRepositoryImpl.tryCreateLogTable(c)
+                                .onComplete(unused -> c.close())).collect(Collectors.toList())).mapEmpty());
+        return future.flatMap(new Function<Void, Future<Void>>() {
+            @Override
+            @SneakyThrows
+            public Future<Void> apply(Void unused) {
+                ConcurrentHashMap<String, Set<String>> xid_targets = new ConcurrentHashMap<>();//xid,Set<targetName>
+                List<Future> rootFutureList = Collections.synchronizedList(new ArrayList<>());
+                List<Future> subFutureList = Collections.synchronizedList(new ArrayList<>());
+                rootFutureList.add(mySQLManager.getConnectionMap().onSuccess(event -> {
+                    for (Map.Entry<String, SqlConnection> entry : event.entrySet()) {
+                        String targetName = entry.getKey();
+                        subFutureList.add(entry.getValue().query("XA RECOVER").execute().flatMap(event1 -> {
+                            RowIterator<Row> iterator = event1.iterator();
+                            while (iterator.hasNext()) {
+                                Row next = iterator.next();
+                                Set<String> targetNameSet = xid_targets.computeIfAbsent(next.getString("data"), (s) -> new ConcurrentHashSet<>());
+                                targetNameSet.add(targetName);
+                            }
+                            return entry.getValue().close();
+                        }));
+                    }
+                }));
+                Set<String> xidSet = new ConcurrentHashSet<>();//xid set
+                rootFutureList.add(mySQLManager.getConnectionMap().onSuccess(new Handler<Map<String, SqlConnection>>() {
+                    @Override
+                    public void handle(Map<String, SqlConnection> stringSqlConnectionMap) {
+                        for (Map.Entry<String, SqlConnection> entry : stringSqlConnectionMap.entrySet()) {
+                            subFutureList.add(entry.getValue().query("select xid from mycat.xa_log").execute().flatMap(event1 -> {
+                                RowIterator<Row> iterator = event1.iterator();
+                                while (iterator.hasNext()) {
+                                    Row next = iterator.next();
+                                    xidSet.add(Objects.toString(next.getValue("xid")));
+                                }
+                                return entry.getValue().close();
+                            }));
+                        }
+                    }
+                }));
+                return CompositeFuture.all(rootFutureList).flatMap(i->CompositeFuture.all(subFutureList)).flatMap(unuse -> {
+                    List<Future<Void>> futureList1 = new ArrayList<>();
+                    for (Map.Entry<String, Set<String>> entry : xid_targets.entrySet()) {
+                        String xid = entry.getKey();
+                        Set<String> targets = entry.getValue();
+                        String sql;
+                        if (xidSet.contains(xid)) {
+                            sql = "XA COMMIT '" + xid + "'";
+                        } else {
+                            sql = "XA ROLLBACK '" + xid + "'";
+                        }
+                        for (String target : targets) {
+                            futureList1.add(mySQLManager.getConnection(target)
+                                    .flatMap(sqlConnection -> sqlConnection.query(sql)
+                                            .execute()
+                                            .flatMap((Function<RowSet<Row>, Future<Void>>) rows ->
+                                                    sqlConnection.query("delete from mycat.xa_log where xid = '" + xid + "'").execute()
+                                                            .mapEmpty())
+                                            .onComplete(u -> {
+                                                sqlConnection.close().mapEmpty();
+                                            }).mapEmpty()));
+                        }
+                    }
+                    return CompositeFuture.all((List) futureList1);
+                }).onFailure(event -> System.out.println(event)).mapEmpty();
             }
-        }
-        CompositeFuture.all(futures).onComplete(event -> {
-            if (event.succeeded()) {
-                handler.handle(Future.succeededFuture());
-                return;
-            }
-            CompositeFuture result = event.result();
-            if (result != null) {
-                int size = result.size();
-                for (int i = 0; i < size; i++) {
-                    Throwable cause = result.cause(i);
-                    System.out.println(cause);
-                }
-            }
-            handler.handle((AsyncResult) event);
-            return;
         });
     }
 
@@ -220,7 +266,7 @@ public class XaLogImpl implements XaLog {
             }
             return ++operand;
         });
-        return name + seq;
+        return String.valueOf(seq);
     }
 
     @Override
@@ -306,14 +352,15 @@ public class XaLogImpl implements XaLog {
     }
 
     @Override
-    public void logCommitBeforeXaCommit(String xid) {
-        if (xid == null) return;
+    public ImmutableCoordinatorLog logCommitBeforeXaCommit(String xid) {
+        if (xid == null) return null;
         //only log
 
         synchronized (xaRepository) {
             ImmutableCoordinatorLog immutableCoordinatorLog = xaRepository.get(xid);
             immutableCoordinatorLog.withCommit(true);
             xaRepository.writeCommitLog(immutableCoordinatorLog);
+            return immutableCoordinatorLog;
         }
     }
 
@@ -346,7 +393,6 @@ public class XaLogImpl implements XaLog {
     @Override
     public void close() throws IOException {
         xaRepository.close();
-        mySQLManager.close((h) -> {
-        });
+        mySQLManager.close();
     }
 }

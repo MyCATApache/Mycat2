@@ -14,8 +14,6 @@
  */
 package io.mycat.calcite.physical;
 
-import io.mycat.calcite.Executor;
-import io.mycat.calcite.ExecutorImplementor;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,11 +42,6 @@ public class QueryView extends Union implements MycatRel {
             rel.explain(writer);
         }
        return writer.ret();
-    }
-
-    @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
     }
 
     @Override

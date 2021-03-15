@@ -81,11 +81,6 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-    @Override
     public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new MycatSortAgg(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
@@ -101,9 +96,9 @@ public class MycatSortAgg extends EnumerableAggregateBase implements MycatRel {
         final EnumerableRel child = (EnumerableRel) getInput();
         final Result result = implementor.visitChild(this, 0, child, pref);
         Expression childExp =
-                builder.append(
+                toEnumerate(builder.append(
                         "child",
-                        result.block);
+                        result.block));
 
         final PhysType physType =
                 PhysTypeImpl.of(

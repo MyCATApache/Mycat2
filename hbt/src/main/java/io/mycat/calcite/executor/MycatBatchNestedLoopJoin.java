@@ -70,12 +70,6 @@ public class MycatBatchNestedLoopJoin extends Join implements MycatRel {
     }
 
     @Override
-    public Executor implement(ExecutorImplementor implementor) {
-        return implementor.implement(this);
-    }
-
-
-    @Override
     public MycatBatchNestedLoopJoin copy(RelTraitSet traitSet,
                                          RexNode condition, RelNode left, RelNode right, JoinRelType joinType,
                                          boolean semiJoinDone) {

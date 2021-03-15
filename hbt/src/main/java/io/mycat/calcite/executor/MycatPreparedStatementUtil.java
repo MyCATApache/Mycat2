@@ -19,9 +19,11 @@ import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,16 +37,17 @@ public class MycatPreparedStatementUtil {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("INSERT INTO `sharding` (`user_id`, `user_name`) VALUES \t('123', '323'),  \t('223', '323')");
         StringBuilder sb = new StringBuilder();
         ArrayList<Object> objects = new ArrayList<>();
-        outputToParameterized(sqlStatement,sb,new ArrayList<>(),objects);
+        outputToParameterized(sqlStatement, sb, new ArrayList<>(), objects);
         System.out.println("objects = " + objects);
     }
 
     /**
      * 将参数改为占位符(?), 同时将占位符替换过的参数, 添加到outputParameters数组中.
      * 例: set name = '123' where id = 10. 则 set name = ? where id = ?. 同时会向数组中添加 '123'和10.
-     * @param sqlStatement 语法树
-     * @param sb 参数化后的字符串. 返回 set name = ? where id = ?
-     * @param inputParameters 输入参数
+     *
+     * @param sqlStatement     语法树
+     * @param sb               参数化后的字符串. 返回 set name = ? where id = ?
+     * @param inputParameters  输入参数
      * @param outputParameters 输出被参数化的参数
      */
     public static void outputToParameterized(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
@@ -83,11 +86,11 @@ public class MycatPreparedStatementUtil {
         };
         parameterVisitor.setShardingSupport(false);
         parameterVisitor.setFeatures(VisitorFeature.OutputParameterizedQuesUnMergeInList.mask |
-                VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
-                VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
-                VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
+                        VisitorFeature.OutputParameterizedQuesUnMergeAnd.mask |
+                        VisitorFeature.OutputParameterizedUnMergeShardingTable.mask |
+                        VisitorFeature.OutputParameterizedQuesUnMergeOr.mask
 //                | VisitorFeature.OutputParameterizedQuesUnMergeValuesList.mask
-                | VisitorFeature.OutputParameterized.mask
+                        | VisitorFeature.OutputParameterized.mask
         );
         if (inputParameters != null) {
             parameterVisitor.setInputParameters(inputParameters);
@@ -99,8 +102,9 @@ public class MycatPreparedStatementUtil {
     /**
      * 将参数改为占位符(?), 同时将占位符替换过的参数, 添加到outputParameters数组中.
      * 例: set name = '123' where id = 10. 则 set name = ? where id = ?. 同时会向数组中添加 '123'和10.
-     * @param sqlStatement 语法树
-     * @param sb 参数化后的字符串. 返回 set name = ? where id = ?
+     *
+     * @param sqlStatement     语法树
+     * @param sb               参数化后的字符串. 返回 set name = ? where id = ?
      * @param outputParameters 输出被参数化的参数
      */
     public static void outputToParameterized(SQLStatement sqlStatement, StringBuilder sb, List<Object> outputParameters) {
@@ -158,13 +162,13 @@ public class MycatPreparedStatementUtil {
                 }
                 ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
                 while (generatedKeys.next()) {
-                    long aLong = generatedKeys.getLong(1);
+                    BigDecimal aLong = generatedKeys.getBigDecimal(1);
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("batch parameterizedSql:{} args:{} lastInsertId:{}", sql, value.args, aLong);
                     }
-                    lastInsertId = aLong;
+                    lastInsertId = aLong.longValue();
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 throw e;
             }
             return this;
@@ -194,10 +198,11 @@ public class MycatPreparedStatementUtil {
 
     @SneakyThrows
     public static RowBaseIterator executeQuery(Connection mycatConnection,
-                                               MycatConnection connection, MycatRowMetaData calciteRowMetaData,
+                                               MycatConnection connection,
+                                               MycatRowMetaData calciteRowMetaData,
                                                SqlString value,
                                                List<Object> params,
-                                            RowIteratorCloseCallback closeCallback) {
+                                               RowIteratorCloseCallback closeCallback) {
         String sql = value.getSql();
         try {
             if (LOGGER.isDebugEnabled()) {
@@ -205,15 +210,24 @@ public class MycatPreparedStatementUtil {
             }
             PreparedStatement preparedStatement = mycatConnection.prepareStatement(sql);
             ImmutableList<Integer> dynamicParameters = value.getDynamicParameters();
-            if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
-                MycatPreparedStatementUtil.setParams(preparedStatement, dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList()));
-            }
+            List<Object> outoutParams = extractParams(params, dynamicParameters);
+            MycatPreparedStatementUtil.setParams(preparedStatement, outoutParams);
             ResultSet resultSet = preparedStatement.executeQuery();
             return new JdbcRowBaseIterator(calciteRowMetaData, connection, preparedStatement, resultSet, closeCallback, sql);
         } catch (Throwable throwable) {
             LOGGER.error("sql:{} {}", sql, (params).toString(), throwable);
             throw throwable;
         }
+    }
+
+    public static List<Object> extractParams(List<Object> params, ImmutableList<Integer> dynamicParameters) {
+        List<Object> outoutParams;
+        if (dynamicParameters != null && !dynamicParameters.isEmpty()) {
+            outoutParams = dynamicParameters.stream().map(i -> params.get(i)).collect(Collectors.toList());
+        }else {
+            outoutParams = Collections.emptyList();
+        }
+        return outoutParams;
     }
 
 }

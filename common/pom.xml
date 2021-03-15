@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.14-release</version>
+        <version>1.15-release</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,9 +13,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>3.0.6</version>
+        </dependency>
+        <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>config</artifactId>
-            <version>1.14-release</version>
+            <version>1.15-release</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
         <dependency>
@@ -42,9 +47,21 @@
             <version>8.0.22</version>
         </dependency>
         <dependency>
-            <groupId>io.reactivex.rxjava3</groupId>
-            <artifactId>rxjava</artifactId>
-            <version>3.0.0</version>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <version>4.0.2</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-sql-client</artifactId>
+            <version>4.0.2</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-mysql-client</artifactId>
+            <version>4.0.2</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

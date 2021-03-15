@@ -58,8 +58,12 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -79,6 +83,13 @@ public class MetadataManager implements MysqlVariableService {
     //    public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
     private final NameMap<Object> globalVariables;
     private final NameMap<Object> sessionVariables;
+
+    @Getter
+    private final Map<String, List<ShardingTable>> erTableGroup;
+    @Getter
+    private final List<GlobalTable> globalTables;
+    @Getter
+    private final List<NormalTable> normalTables;
 
 
     public void removeSchema(String schemaName) {
@@ -199,8 +210,18 @@ public class MetadataManager implements MysqlVariableService {
             final String schemaName = orignalSchemaName;
             addSchema(schemaName, targetName);
             if (targetName != null) {
-                Map<String, NormalTableConfig> adds = getDefaultNormalTable(schemaName);
                 Map<String, NormalTableConfig> normalTables = value.getNormalTables();
+                Map<String, NormalTableConfig> adds = getDefaultNormalTable(targetName, schemaName, tableName -> {
+                    NormalTableConfig normalTableConfig = normalTables.get(tableName);
+                    boolean needLoadCreateTableSQL = true;
+                    if (normalTableConfig != null) {
+                        if (normalTableConfig.getCreateTableSQL() != null) {
+                            needLoadCreateTableSQL = false;
+                        }
+                    }
+                    return needLoadCreateTableSQL;
+                });
+
                 for (Map.Entry<String, NormalTableConfig> add : adds.entrySet()) {
                     normalTables.computeIfAbsent(add.getKey(), (n) -> add.getValue());
                 }
@@ -208,7 +229,7 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, NormalTableConfig> e : value.getNormalTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 NormalTableConfig tableConfigEntry = e.getValue();
                 try {
                     addNormalTable(schemaName, tableName,
@@ -221,7 +242,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 GlobalTableConfig tableConfigEntry = e.getValue();
                 List<DataNode> backendTableInfos = tableConfigEntry.getDataNodes().stream().map(i -> new BackendTableInfo(i.getTargetName(), schemaName, tableName)).collect(Collectors.toList());
                 addGlobalTable(schemaName, tableName,
@@ -232,7 +253,7 @@ public class MetadataManager implements MysqlVariableService {
             }
             for (Map.Entry<String, ShardingTableConfig> e : value.getShadingTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 ShardingTableConfig tableConfigEntry = e.getValue();
                 addShardingTable(schemaName, tableName,
                         tableConfigEntry,
@@ -242,13 +263,23 @@ public class MetadataManager implements MysqlVariableService {
 
             for (Map.Entry<String, CustomTableConfig> e : value.getCustomTables().entrySet()) {
                 String tableName = e.getKey();
-                removeTable(schemaName,tableName);
+                removeTable(schemaName, tableName);
                 CustomTableConfig tableConfigEntry = e.getValue();
                 addCustomTable(schemaName, tableName,
                         tableConfigEntry
                 );
             }
         }
+
+        Stream<ShardingTable> shardingTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.SHARDING)
+                .map(i -> (ShardingTable) i);
+        this.erTableGroup = shardingTables.collect(Collectors.groupingBy(i -> i.getShardingFuntion().getErUniqueID()));
+
+        this.globalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.GLOBAL)
+                .map(i -> (GlobalTable) i).collect(Collectors.toList());
+
+        this.normalTables = this.schemaMap.values().stream().flatMap(i -> i.logicTables().values().stream()).filter(i -> i.getType() == LogicTableType.NORMAL)
+                .map(i -> (NormalTable) i).collect(Collectors.toList());
     }
 
     private void addInnerTable(List<LogicSchemaConfig> schemaConfigs, String prototype) {
@@ -269,7 +300,7 @@ public class MetadataManager implements MysqlVariableService {
 
 
         Map<String, NormalTableConfig> normalTables = logicSchemaConfig.getNormalTables();
-        normalTables.put(tableName, NormalTableConfig.create(schemaName, tableName,
+        normalTables.putIfAbsent(tableName, NormalTableConfig.create(schemaName, tableName,
                 "CREATE TABLE `mysql`.`proc` (\n" +
                         "  `db` varchar(64) DEFAULT NULL,\n" +
                         "  `name` varchar(64) DEFAULT NULL,\n" +
@@ -313,26 +344,26 @@ public class MetadataManager implements MysqlVariableService {
     }
 
 
-    private Map<String, NormalTableConfig> getDefaultNormalTable(String schemaName) {
+    private Map<String, NormalTableConfig> getDefaultNormalTable(String targetName, String schemaName, Predicate<String> tableFilter) {
         Set<String> tables = new HashSet<>();
-        try (DefaultConnection connection = jdbcConnectionManager.getConnection(this.prototype)) {
+        try (DefaultConnection connection = jdbcConnectionManager.getConnection(targetName)) {
             RowBaseIterator tableIterator = connection.executeQuery("show tables from " + schemaName);
             while (tableIterator.next()) {
                 tables.add(tableIterator.getString(0));
             }
         }
-        Map<String, NormalTableConfig> res = new HashMap<>();
-        for (String tableName : tables) {
-            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(prototype, schemaName, tableName);
+        Map<String, NormalTableConfig> res = new ConcurrentHashMap<>();
+        tables.stream().filter(tableFilter).parallel().forEach(tableName -> {
+            NormalBackEndTableInfoConfig normalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig(targetName, schemaName, tableName);
             try {
                 res.put(tableName, (new NormalTableConfig(
                         getCreateTableSQLByJDBC(schemaName, tableName,
-                                Collections.singletonList(new BackendTableInfo(prototype, schemaName, tableName))),
+                                Collections.singletonList(new BackendTableInfo(targetName, schemaName, tableName))),
                         normalBackEndTableInfoConfig)));
             } catch (Throwable e) {
                 LOGGER.warn("", e);
             }
-        }
+        });
         return res;
     }
 
@@ -426,6 +457,20 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<DataNode> backends) {
+        ShardingFuntion function = tableConfigEntry.getFunction();
+        if (function != null) {
+            if (function.getClazz() == null) {
+                Map<String, Object> properties = function.getProperties();
+                String mappingFormat = (String) properties.get("mappingFormat");
+                if (mappingFormat == null) {
+                    mappingFormat = (String) properties.getOrDefault("mappingFormat",
+                            String.join("/", "c${targetIndex}",
+                                    schemaName + "_${dbIndex}",
+                                    orignalTableName + "_${tableIndex}"));
+                    properties.put("mappingFormat", mappingFormat);
+                }
+            }
+        }
         //////////////////////////////////////////////
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
@@ -892,24 +937,38 @@ public class MetadataManager implements MysqlVariableService {
         Set<String> targets = new HashSet<>();
         TableHandler tableHandler = null;
         for (Pair<String, String> tableName : tableNames) {
-            SchemaHandler schemaHandler = schemaMap1.get(tableName.getKey(), false);
+            SchemaHandler schemaHandler = schemaMap1.get(SQLUtils.normalize(tableName.getKey()), false);
             if (schemaHandler != null) {
                 NameMap<TableHandler> logicTables = schemaHandler.logicTables();
                 if (logicTables != null) {
-                    tableHandler = logicTables.get(tableName.getValue(), false);
+                    tableHandler = logicTables.get(SQLUtils.normalize(tableName.getValue()), false);
                     if (tableHandler != null) {
-                        if (tableHandler.getType() == LogicTableType.NORMAL) {
-                            NormalTable tableHandler1 = (NormalTable) tableHandler;
-                            DataNode dataNode = tableHandler1.getDataNode();
+                        if (tableHandler.getType() == LogicTableType.NORMAL
+                                ||
+                                tableHandler.getType() == LogicTableType.GLOBAL) {
+                            DataNode dataNode = null;
+                            if (tableHandler.getType() == LogicTableType.NORMAL) {
+                                NormalTable tableHandler1 = (NormalTable) tableHandler;
+                                dataNode = tableHandler1.getDataNode();
+                            } else if (tableHandler.getType() == LogicTableType.GLOBAL) {
+                                GlobalTable tableHandler1 = (GlobalTable) tableHandler;
+                                int size = tableHandler1.getGlobalDataNode().size();
+                                if (size == 0) {
+                                    throw new IllegalArgumentException("datanodes of global table is empty");
+                                }
+                                int i = ThreadLocalRandom.current().nextInt(0, size);
+                                dataNode = tableHandler1.getGlobalDataNode().get(i);
+                            } else {
+                                throw new IllegalArgumentException("unsupported table type:" + tableHandler.getType());
+                            }
                             tables.put(tableHandler.getTableName(),
                                     new SimpleRoute(tableName.getKey(), tableName.getValue(), dataNode.getTargetName()));
-                            if (dataNode != null) {
-                                if (targets.add(dataNode.getTargetName()) && targets.size() > 1) {
+                            if (targets.add(dataNode.getTargetName())) {
+                                if (targets.size() > 1) {
                                     return false;
                                 }
-                                continue;
                             }
-                            return false;
+                            continue;
                         } else {
                             return false;
                         }
@@ -917,11 +976,11 @@ public class MetadataManager implements MysqlVariableService {
                 }
             }
         }
-        if (tables.values().isEmpty() && tableNames.size() == 1) {
-            Pair<String, String> next = tableNames.iterator().next();
-            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
-            targets.add(prototype);
-        }
+//        if (tables.values().isEmpty() && tableNames.size() == 1) {
+//            Pair<String, String> next = tableNames.iterator().next();
+//            tables.put(next.getValue(), new SimpleRoute(next.getKey(), next.getValue(), prototype));
+//            targets.add(prototype);
+//        }
         return targets.size() == 1;
     }
 

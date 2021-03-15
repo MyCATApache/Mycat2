@@ -334,7 +334,8 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public final void onBackendRead(Session session, ByteBuffer view, int startIndex,
       int len) {
-    if (recordDump) {
+    if (true) {
+      LOGGER.debug("onBackendRead sessionId:{}",session.sessionId());
       DumpUtil.printAsHex(view, startIndex, len);
     }
   }

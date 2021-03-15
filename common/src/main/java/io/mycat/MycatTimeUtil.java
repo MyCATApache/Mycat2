@@ -1,5 +1,6 @@
 package io.mycat;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -127,7 +128,7 @@ public class MycatTimeUtil {
             }
             if (s.contains("-")) {
                 //SELECT DATE_FORMAT('2006-06-00', '%d'); unsupport
-                return LocalDate.parse(s).atStartOfDay();
+                return Date.valueOf(s).toLocalDate().atStartOfDay();
             }
             if (s.contains(":")) {
                 return LocalTime.parse(s);

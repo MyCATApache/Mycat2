@@ -15,14 +15,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface MycatDataContext extends Wrapper, SessionOpt {
     static final Logger LOGGER = LoggerFactory.getLogger(MycatDataContext.class);
+
     long getSessionId();
 
-    TransactionType transactionType();
-
+    @Override
     TransactionSession getTransactionSession();
-
-
-    void setTransactionSession(TransactionSession transactionSession);
 
     void switchTransaction(TransactionType transactionSessionType);
 
@@ -105,11 +102,6 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
 
     boolean isReadOnly();
 
-    @Override
-    default boolean continueBindThreadIfTransactionNeed() {
-        return isInTransaction();
-    }
-
     void close();
 
     //need catch exception
@@ -142,4 +134,9 @@ public interface MycatDataContext extends Wrapper, SessionOpt {
     }
 
     public long nextPrepareStatementId();
+
+    void setCharsetIndex(int characterSet);
+
+    void setLastErrorCode(int errorCode);
+
 }

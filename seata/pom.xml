@@ -16,15 +16,15 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.2.4</version>
+            <version>1.2.5</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.seata</groupId>
-            <artifactId>seata-all</artifactId>
-            <version>1.4.0</version>
-            <scope>compile</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.seata</groupId>-->
+<!--            <artifactId>seata-all</artifactId>-->
+<!--            <version>1.4.0</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>mycat2</artifactId>

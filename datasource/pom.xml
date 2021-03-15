@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.14-release</version>
+    <version>1.15-release</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,22 +15,22 @@
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
-    <version>1.14-release</version>
+    <version>1.15-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
-    <version>1.14-release</version>
+    <version>1.15-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>plug</artifactId>
-    <version>1.14-release</version>
+    <version>1.15-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>replica</artifactId>
-    <version>1.14-release</version>
+    <version>1.15-release</version>
   </dependency>
   <dependency>
     <groupId>com.zaxxer</groupId>
@@ -47,7 +47,7 @@
   <dependency>
     <groupId>com.alibaba</groupId>
     <artifactId>druid</artifactId>
-    <version>1.2.4</version>
+    <version>1.2.5</version>
   </dependency>
   <!-- https://mvnrepository.com/artifact/mysql-connector-java -->
   <dependency>

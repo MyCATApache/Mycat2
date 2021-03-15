@@ -1,16 +1,14 @@
 package io.mycat.vertx;
 
-import io.mycat.Authenticator;
-import io.mycat.MetaClusterCurrent;
-import io.mycat.MySQLPacketUtil;
-import io.mycat.MycatUser;
+import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
+import io.mycat.mycatmysql.MycatMySQLHandler;
+import io.mycat.mycatmysql.MycatMysqlSession;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
@@ -20,7 +18,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 import static io.mycat.vertx.VertxMySQLPacketResolver.readInt;
@@ -28,7 +25,7 @@ import static io.mycat.vertx.VertxMySQLPacketResolver.readInt;
 public class VertxMySQLAuthHandler implements Handler<Buffer> {
     final NetSocket socket;
     final VertxMycatServer.MycatSessionManager mysqlProxyServerVerticle;
-    private final MycatDataContextImpl mycatDataContext;
+    private final MycatDataContext mycatDataContext;
     private byte[][] seedParts;
     Buffer buffer = Buffer.buffer();
     boolean authSwitchResponse = false;
@@ -96,7 +93,7 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         if (authenticator != null) {
             Authenticator.AuthInfo authInfo = authenticator.getPassword(username,
                     host);
-            String rightPassword = Objects.requireNonNull(
+            String rightPassword = (
                     authInfo.getRightPassword());
             if (!checkPassword(rightPassword, authPacket.getPassword())) {
                 String message = "Access denied for user '" +
@@ -117,15 +114,13 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         }
 
         mycatDataContext.setUser(new MycatUser(username, null, null, host, userInfo));
-        VertxSession vertxSession = new VertxSessionImpl(mycatDataContext, socket);
         mycatDataContext.useShcema(authPacket.getDatabase());
         mycatDataContext.setServerCapabilities(authPacket.getCapabilities());
         mycatDataContext.setAutoCommit(true);
-        mycatDataContext.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
+        mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
-        JdbcConnectionManager connection = MetaClusterCurrent.wrapper(JdbcConnectionManager.class);
-        connection.getDatasourceProvider().createSession(mycatDataContext);
-        socket.handler(vertxSession.getVertxMySQLPacketResolver());
+        MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket);
+        socket.handler(new VertxMySQLPacketResolver(socket, new MycatMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);
 
         mysqlProxyServerVerticle.addSession(vertxSession);

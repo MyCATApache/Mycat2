@@ -17,6 +17,7 @@ package io.mycat.calcite.spm;
 import com.google.common.collect.ImmutableMultimap;
 import io.mycat.DrdsSql;
 import io.mycat.MycatDataContext;
+import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.executor.MycatInsertExecutor;
@@ -29,7 +30,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.runtime.CodeExecuterContext;
 import org.apache.calcite.sql.util.SqlString;
 import org.jetbrains.annotations.NotNull;
 
@@ -115,19 +115,19 @@ public class PlanImpl implements Plan {
             case PHYSICAL:
                 String s = MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(physical);
                 list.addAll(Arrays.asList(s.split("\n")));
-                physical.accept(new RelShuttleImpl(){
+                physical.accept(new RelShuttleImpl() {
                     @Override
                     protected RelNode visitChildren(RelNode rel) {
-                        if (rel instanceof MycatView){
+                        if (rel instanceof MycatView) {
                             ImmutableMultimap<String, SqlString> stringSqlStringImmutableMultimap = ((MycatView) rel).expandToSql(drdsSql.isForUpdate(), drdsSql.getParams());
                             for (Map.Entry<String, SqlString> entry : stringSqlStringImmutableMultimap.entries()) {
                                 list.add("\n");
                                 list.add(rel.toString());
-                                list.add("targetName:"+entry.getKey());
-                                list.add("sql:"+entry.getValue());
+                                list.add("targetName:" + entry.getKey());
+                                list.add("sql:" + entry.getValue());
                             }
 
-                        }else if (rel instanceof MycatTransientSQLTableScan){
+                        } else if (rel instanceof MycatTransientSQLTableScan) {
                             ((MycatTransientSQLTableScan) rel).explain(explainWriter);
                         }
                         return super.visitChildren(rel);
@@ -149,7 +149,8 @@ public class PlanImpl implements Plan {
                         .explain(explainWriter);
                 break;
             }
-        }  for (String s1 : explainWriter.getText().split("\n")) {
+        }
+        for (String s1 : explainWriter.getText().split("\n")) {
             list.add(s1);
         }
         return list;

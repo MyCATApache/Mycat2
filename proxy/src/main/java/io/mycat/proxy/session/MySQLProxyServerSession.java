@@ -8,6 +8,9 @@ import io.mycat.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.util.VertxUtil;
+import io.vertx.core.impl.future.PromiseImpl;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,28 +53,32 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 前端写入处理器可能有多种,此为设置服务器模式
      */
     void switchMySQLServerWriteHandler();
-
+    @Override
     MycatReactorThread getIOThread();
 
     /**
      * 写入payload
      */
-    default void writeBytes(byte[] payload, boolean end) {
+    @Override
+    default PromiseInternal<Void> writeBytes(byte[] payload, boolean end) {
         try {
             switchMySQLServerWriteHandler();
             ConcurrentLinkedQueue<ByteBuffer> byteBuffers = writeQueue();
             byte[] bytes = MySQLPacketUtil.generateMySQLPacket(getNextPacketId(), payload);
             byteBuffers.offer(writeBufferPool().allocate(bytes));
             change2WriteOpts();
+
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             getIOThread().wakeup();
+            return VertxUtil.newSuccessPromise();
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
+            return VertxUtil.newFailPromise(e);
         }
     }
-
-    default void writeErrorEndPacketBySyncInProcessError() {
-        writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);
+    @Override
+    default PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError() {
+        return writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);
     }
 
 //    default void writeErrorEndPacketBySyncInProcessError(int errorCode) {
@@ -81,7 +88,8 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     /**
      * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
      */
-    default void writeErrorEndPacketBySyncInProcessError( int errorCode) {
+    @Override
+    default PromiseInternal<Void> writeErrorEndPacketBySyncInProcessError( int errorCode) {
         if (channel().isConnected()){
             setLastErrorCode(errorCode);
             switchMySQLServerWriteHandler();
@@ -90,6 +98,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                             this.getCapabilities());
             writeBytes( bytes, true);
         }
+        return VertxUtil.newSuccessPromise();
     }
 
     MySQLPacketSplitter packetSplitter();
@@ -104,7 +113,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         INSTANCE;
 
         @Override
-        public void writeToChannel(MycatSession session) throws IOException {
+        public PromiseInternal<Void>  writeToChannel(MycatSession session) throws IOException {
                 if (session.getIOThread() != Thread.currentThread()) {
                     throw new AssertionError();
                 }
@@ -113,10 +122,11 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 if (byteBuffers.isEmpty() && session.getProcessState() == ProcessState.DONE) {
                     session.writeFinished(session);
                     session.change2ReadOpts();
-                    return;
+                    return VertxUtil.newSuccessPromise();
                 } else {
                     session.change2WriteOpts();
-                    return;
+                    // todo 异步未实现完全 wangzihaogithub
+                    return VertxUtil.newSuccessPromise();
                 }
         }
 

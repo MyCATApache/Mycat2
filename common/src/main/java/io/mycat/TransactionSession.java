@@ -15,6 +15,11 @@
 package io.mycat;
 
 import io.mycat.beans.mycat.TransactionType;
+import io.mycat.beans.mysql.MySQLIsolation;
+import io.vertx.core.Future;
+import lombok.SneakyThrows;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Junwen Chen
@@ -27,11 +32,11 @@ public interface TransactionSession extends Dumpable {
 
     String name();
 
-    void begin();
+    Future<Void> begin();
 
-    void commit();
+    Future<Void> commit();
 
-    void rollback();
+    Future<Void> rollback();
 
     boolean isInTransaction();
 
@@ -39,36 +44,36 @@ public interface TransactionSession extends Dumpable {
 
     void setAutocommit(boolean autocommit);
 
-    MycatConnection getConnection(String targetName);
+    MySQLIsolation getTransactionIsolation();
 
-    public int getServerStatus();
+    void setTransactionIsolation(MySQLIsolation transactionIsolation);
 
-    boolean isReadOnly();
+    Future<Void> closeStatementState();
 
-    public void setReadOnly(boolean readOnly);
-
-    int getTransactionIsolation();
-
-    void setTransactionIsolation(int transactionIsolation);
-
-    ThreadUsageEnum getThreadUsageEnum();
-
-    void closeStatenmentState();
-
-    void close();
+    Future<Void> close();
 
     String resolveFinalTargetName(String targetName);
 
     String resolveFinalTargetName(String targetName, boolean master);
 
-    TransactionType transactionType();
-
     /**
      * 模拟autocommit = 0 时候自动开启事务
      */
-    public void openStatementState();
+    public Future<Void> openStatementState();
 
-    public void addCloseResource(AutoCloseable closeable);
 
-    String getTxId();
+    String getXid();
+
+    @SneakyThrows
+    default void deliverTo(TransactionSession newTransactionSession) {
+        boolean inTransaction = isInTransaction();
+        if (inTransaction) {
+            throw new IllegalArgumentException("can not deliver transcation in transcation ");
+        }
+        closeStatementState().toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        newTransactionSession.setTransactionIsolation(getTransactionIsolation());
+        newTransactionSession.setAutocommit(isAutocommit());
+    }
+
+    TransactionType transactionType();
 }

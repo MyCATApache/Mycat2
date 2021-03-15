@@ -31,5 +31,4 @@ public interface DatasourceProvider {
 
    void init(ServerConfig config);
 
-    TransactionSession createSession(MycatDataContext context);
 }

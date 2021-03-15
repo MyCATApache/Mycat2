@@ -270,7 +270,8 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
     public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
-        BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function = master ? this::getWriteDatasource : this::getDatasource;
+        BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function =
+                master ? this::getWriteDatasource : this::getDatasource;
         ReplicaDataSourceSelector replicaDataSourceSelector = replicaMap.get(Objects.requireNonNull(replicaName));
         if (replicaDataSourceSelector == null) {
             return replicaName;
@@ -279,11 +280,28 @@ public class ReplicaSelectorRuntime implements Closeable {
         if (loadBalanceStrategy != null) {
             loadBalanceByBalance = loadBalanceManager.getLoadBalanceByBalanceName(loadBalanceStrategy);
         }//传null集群配置的负载均衡生效
-        PhysicsInstanceImpl writeDatasource = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
-        if (writeDatasource == null) {
-            return replicaName;
+        if (replicaDataSourceSelector.writeDataSourceList.isEmpty()
+                &&
+                replicaDataSourceSelector.readDataSource.isEmpty()) {
+            LOGGER.error("No data sources are available {}", replicaName);
+            if (replicaDataSourceSelector.datasourceMap.size() == 1) {
+                return replicaDataSourceSelector.datasourceMap.keySet().stream().iterator().next();
+            }
         }
-        return writeDatasource.getName();
+        try {
+            PhysicsInstanceImpl physicsInstance = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
+            if (physicsInstance == null) {
+                return replicaName;
+            }
+            return physicsInstance.getName();
+        } catch (Throwable throwable) {
+            LOGGER.error("No data sources are available {}", replicaName, throwable);
+        }
+        if (!master) {
+            LOGGER.error("need abnormal cluster check {}", replicaName);
+            return replicaDataSourceSelector.datasourceMap.values().iterator().next().getName();
+        }
+        return replicaName;
     }
 
     public PhysicsInstanceImpl getWriteDatasourceByReplicaName(String replicaName,
@@ -391,7 +409,7 @@ public class ReplicaSelectorRuntime implements Closeable {
     }
 
     public boolean isDatasource(String targetName) {
-        return this.physicsInstanceMap.containsKey(targetName)||this.datasources.containsKey(targetName);
+        return this.physicsInstanceMap.containsKey(targetName) || this.datasources.containsKey(targetName);
     }
 
 
@@ -437,13 +455,14 @@ public class ReplicaSelectorRuntime implements Closeable {
             return replicaDataSourceSelector.getDbType();
         }
         DatasourceConfig datasourceConfig = datasources.get(name);
-        Objects.requireNonNull(datasourceConfig, "unknown dbType:" + name);
+        Objects.requireNonNull(datasourceConfig, "unknown dbType of :" + name);
         return datasourceConfig.getDbType();
     }
-   public Map<String,Set<String>> getState(){
-        Map<String,Set<String>> map = new HashMap<>();
+
+    public Map<String, Set<String>> getState() {
+        Map<String, Set<String>> map = new HashMap<>();
         for (ReplicaDataSourceSelector value : replicaMap.values()) {
-            ArrayList<PhysicsInstance> objects = new ArrayList<>(  value.getWriteDataSource());
+            ArrayList<PhysicsInstance> objects = new ArrayList<>(value.getWriteDataSource());
             map.put(value.getName(), objects.stream().map(i -> i.getName()).collect(Collectors.toSet()));
         }
         return map;

@@ -31,9 +31,10 @@ import java.util.concurrent.TimeUnit;
 @EqualsAndHashCode
 public class ServerConfig {
     private int mycatId = 1;
-    private String ip = "127.0.0.1";
+    private String ip = "localhost";
     private int port = 8066;
     private int reactorNumber = Runtime.getRuntime().availableProcessors();
+    private boolean proxy = true;
     private ThreadPoolExecutorConfig workerPool = ThreadPoolExecutorConfig
             .builder()
             .corePoolSize(Runtime.getRuntime().availableProcessors())
@@ -55,6 +56,7 @@ public class ServerConfig {
     private BufferPoolConfig bufferPool = new BufferPoolConfig();
     private TimerConfig idleTimer = new TimerConfig(3, 15, TimeUnit.SECONDS.name());
     private String tempDirectory;
+    private int mergeUnionSize = 5;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));
