@@ -422,7 +422,7 @@ public class AssembleTest implements MycatTest {
             execute(mycatConnection, RESET_CONFIG);
             execute(mycatConnection, "create database db1");
             execute(mycatConnection, "use db1");
-            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+            execute(mycatConnection, "CREATE TABLE `test_timezone` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `user_id` varchar(100) DEFAULT NULL,\n" +
                     "  `traveldate` date DEFAULT NULL,\n" +
@@ -430,18 +430,18 @@ public class AssembleTest implements MycatTest {
                     "  PRIMARY KEY (`id`),\n" +
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
-            deleteData(mycatConnection, "db1", "travelrecord");
-            Assert.assertTrue(!hasData(mycatConnection, "db1", "travelrecord"));
+            deleteData(mycatConnection, "db1", "test_timezone");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "test_timezone"));
             LocalDate localDate = LocalDate.now();
             LocalDateTime localDateTime = LocalDateTime.now();
             try (PreparedStatement preparedStatement = mycatConnection
-                    .prepareStatement("insert travelrecord (traveldate,travel_timestamp) VALUES (?,?)")) {
+                    .prepareStatement("insert test_timezone (traveldate,travel_timestamp) VALUES (?,?)")) {
                 preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
                 preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
                 preparedStatement.executeUpdate();
             }
 
-            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from travelrecord");
+            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from test_timezone");
             Map<String, Object> map = list.get(0);
             String traveldate = Objects.toString(map.get("traveldate"));
             String travel_timestamp = Objects.toString(map.get("travel_timestamp"));
@@ -469,7 +469,7 @@ public class AssembleTest implements MycatTest {
             addC0(mycatConnection);
             execute(mycatConnection, "create database db1");
             execute(mycatConnection, "use db1");
-            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+            execute(mycatConnection, "CREATE TABLE `test_timezone` (\n" +
                     "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
                     "  `user_id` varchar(100) DEFAULT NULL,\n" +
                     "  `traveldate` date DEFAULT NULL,\n" +
@@ -478,18 +478,18 @@ public class AssembleTest implements MycatTest {
                     "  KEY `id` (`id`)\n" +
                     ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
                     + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
-            deleteData(mycatConnection, "db1", "travelrecord");
-            Assert.assertTrue(!hasData(mycatConnection, "db1", "travelrecord"));
+            deleteData(mycatConnection, "db1", "test_timezone");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "test_timezone"));
             LocalDate localDate = LocalDate.now();
             LocalDateTime localDateTime = LocalDateTime.now();
             try (PreparedStatement preparedStatement = mycatConnection
-                    .prepareStatement("insert travelrecord (traveldate,travel_timestamp) VALUES (?,?)")) {
+                    .prepareStatement("insert test_timezone (traveldate,travel_timestamp) VALUES (?,?)")) {
                 preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
                 preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
                 preparedStatement.executeUpdate();
             }
 
-            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from travelrecord");
+            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from test_timezone");
             Map<String, Object> map = list.get(0);
             String traveldate = Objects.toString(map.get("traveldate"));
             String travel_timestamp = Objects.toString(map.get("travel_timestamp"));

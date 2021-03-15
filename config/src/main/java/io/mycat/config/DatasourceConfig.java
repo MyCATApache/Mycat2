@@ -163,7 +163,8 @@ public class DatasourceConfig {
             }
             if (!properties.containsKey("serverTimezone")) {
                 TimeZone timeZone = TimeZone.getDefault();
-                properties.put("serverTimezone",timeZone.getID());
+                timeZone.getID();
+                properties.put("serverTimezone","Asia/Shanghai");
             }
 //            if (!properties.containsKey("useSSL")) {
 //                properties.put("useSSL", "false");
