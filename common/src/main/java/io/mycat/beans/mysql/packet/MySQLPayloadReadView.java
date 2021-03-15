@@ -19,6 +19,7 @@ import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 
 /**
  * @author jamie12221
@@ -101,10 +102,9 @@ public interface MySQLPayloadReadView {
             minutes = readByte() & 0xff;
             seconds = readByte() & 0xff;
             byte[] bytes = readBytes(4);
-            int offset = 0;
-            nanos = 1000 * (bytes[offset + 1] & 0xff) | ((bytes[offset + 2] & 0xff) << 8) | (
-                    (bytes[offset + 3] & 0xff) << 16)
-                    | ((bytes[offset + 4] & 0xff) << 24);
+            nanos = 1000 * (bytes[0] & 0xff) | ((bytes[1] & 0xff) << 8) | (
+                    (bytes[2] & 0xff) << 16)
+                    | ((bytes[3] & 0xff) << 24);
         } else {
             throw new RuntimeException("UNKOWN FORMAT");
         }
@@ -135,14 +135,19 @@ public interface MySQLPayloadReadView {
         }
 
         if (length == 11) {
-            int nanos;
-            byte[] bytes = readBytes(4);
-            int offset = 0;
-            nanos = 1000 * (bytes[offset + 1] & 0xff) | ((bytes[offset + 2] & 0xff) << 8) | (
-                    (bytes[offset + 3] & 0xff) << 16)
-                    | ((bytes[offset + 4] & 0xff) << 24);
-            return java.sql.Timestamp
-                    .valueOf(LocalDateTime.of(year, month, date, hour, minute, second, nanos));
+            byte[] bytes = null;
+            try {
+                int nanos;
+                bytes = readBytes(4);
+                nanos = 1000 * (bytes[0] & 0xff) | ((bytes[1] & 0xff) << 8) | (
+                        (bytes[2] & 0xff) << 16)
+                        | ((bytes[3] & 0xff) << 24);
+                return java.sql.Timestamp
+                        .valueOf(LocalDateTime.of(year, month, date, hour, minute, second, nanos));
+            }catch (Throwable throwable){
+                System.out.println(Arrays.toString(bytes));
+                return null;
+            }
         } else {
 
             throw new RuntimeException("UNKOWN FORMAT");
