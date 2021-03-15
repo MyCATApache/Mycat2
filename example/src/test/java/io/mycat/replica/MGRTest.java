@@ -432,7 +432,7 @@ public class MGRTest extends ReplicaTest {
             List<String> sqls = heartBeatStrategy.getSqls();
             List<List<Map<String, Object>>> list = new ArrayList<>();
             Assert.assertTrue(sqls.get(0).equalsIgnoreCase(MGRHeartBeatStrategy.CHECK_SQL));
-            list.add(Arrays.asList(Maps.of("MEMBER_STATE", "ONLINE", "MASTER", master ? 1 : 0, "BEHIND", (delay))));
+            list.add(Arrays.asList(Maps.of("MEMBER_STATE", "ONLINE", "READ_ONLY", !master ? 1 : 0, "BEHIND", (delay))));
             heartBeatStrategy.process(list);
         };
     }

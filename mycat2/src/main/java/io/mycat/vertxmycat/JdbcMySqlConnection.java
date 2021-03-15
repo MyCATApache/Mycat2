@@ -97,13 +97,11 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
 
     @Override
     public Future<Void> close() {
-        IO_EXECUTOR.execute(true, () -> {
-            try {
-                connection.close();
-            }catch (Throwable throwable){
-                LOGGER.error("",throwable);
-            }
-        });
+        try {
+            connection.close();
+        }catch (Throwable throwable){
+            LOGGER.error("",throwable);
+        }
         return Future.succeededFuture();
     }
 

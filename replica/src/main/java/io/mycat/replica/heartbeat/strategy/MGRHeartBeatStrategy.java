@@ -31,7 +31,7 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
     private static final Logger LOGGER = LoggerFactory.getLogger(MGRHeartBeatStrategy.class);
 
     public static String CHECK_SQL = "SELECT (SELECT MEMBER_STATE FROM performance_schema.replication_group_members WHERE member_id=@@server_uuid) AS `MEMBER_STATE`,\n" +
-            "(SELECT TRUE FROM performance_schema.global_variables WHERE variable_name IN ('read_only', 'super_read_only') AND VARIABLE_VALUE = 'OFF' LIMIT 1) AS `MASTER`,\n" +
+            "(SELECT TRUE FROM performance_schema.global_variables WHERE variable_name IN ('read_only', 'super_read_only') AND VARIABLE_VALUE = 'ON' LIMIT 1) AS `READ_ONLY`,\n" +
             "(SELECT (Received_transaction_set-@@gtid_executed) FROM performance_schema.replication_connection_status WHERE Channel_name = 'group_replication_applier') AS `BEHIND`";
 
     public List<String> getSqls() {
@@ -44,7 +44,7 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
     public void process(List<List<Map<String, Object>>> resultList) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
         Map<String, Object> result = resultList.get(0).get(0);
-        boolean master = "1".equalsIgnoreCase(Objects.toString( result.getOrDefault("MASTER", null)));
+        boolean master = !("1".equalsIgnoreCase(Objects.toString( result.getOrDefault("READ_ONLY", null))));
         double behind;
         if (!"ONLINE".equalsIgnoreCase(Objects.toString(result.getOrDefault("MEMBER_STATE","OFFLINE")))) {
             heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.ERROR_STATUS);
