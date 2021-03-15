@@ -82,6 +82,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
                     this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
                 }
                 break;
+            case MHA:
             case MGR:
                 if (currentDatasourceStatus.isMaster()){
                     replicaSelector.addWriteDataSource(datasouceName);

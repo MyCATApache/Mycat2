@@ -65,19 +65,6 @@ public class MGRHeartBeatStrategy extends HeartBeatStrategy {
         heartbeatFlow.setStatus(datasourceStatus, DatasourceEnum.OK_STATUS);
     }
 
-    private boolean isOnline(List<Map<String, Object>> group_replication_primary_member_resultset) {
-        boolean online;
-        if (group_replication_primary_member_resultset.isEmpty()) {
-            LOGGER.error("found MGR  cluster status err !!! ");
-            online = false;
-        } else {
-            Map<String, String> info = (Map) group_replication_primary_member_resultset.get(0);
-            String member_state = (String) info.get("MEMBER_STATE");
-            online = ("ONLINE".equalsIgnoreCase(member_state));
-        }
-        return online;
-    }
-
     @Override
     public void onException(Exception e) {
         heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);

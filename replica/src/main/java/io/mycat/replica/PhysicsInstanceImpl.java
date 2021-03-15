@@ -63,6 +63,7 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
     public boolean isMaster() {
         switch (selector.getType()) {
             case SINGLE_NODE:
+            case MHA:
             case MASTER_SLAVE:
                 if (selector.writeDataSourceList.contains(this)) {
                     return selector.writeDataSourceList.size() == 1 || selector.writeDataSourceList.get(0) == this;
@@ -81,6 +82,7 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
         switch (selector.getType()) {
             case SINGLE_NODE:
                 return false;
+            case MHA:
             case MASTER_SLAVE:
                 if (selector.writeDataSourceList.contains(this)) {
                     return selector.writeDataSourceList.get(0) != this;

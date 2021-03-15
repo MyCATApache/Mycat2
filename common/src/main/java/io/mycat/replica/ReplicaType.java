@@ -24,6 +24,7 @@ public enum ReplicaType {
     // 普通基于garela cluster集群
     GARELA_CLUSTER(),
     NONE(),
+    MHA(),
     MGR(),
     ;
 

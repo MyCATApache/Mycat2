@@ -22,10 +22,7 @@ import io.mycat.plug.loadBalance.SessionCounter;
 import io.mycat.replica.heartbeat.DefaultHeartbeatFlow;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
-import io.mycat.replica.heartbeat.strategy.MGRHeartBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
-import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
+import io.mycat.replica.heartbeat.strategy.*;
 import io.mycat.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,17 +169,7 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 }
             }
         } else {
-            instanceType = READ;
-            switch (selector.getType()) {
-                case SINGLE_NODE:
-                case MASTER_SLAVE:
-                    instanceType = master ? InstanceType.READ_WRITE : READ;
-                    break;
-                case GARELA_CLUSTER:
-                    instanceType = master ? InstanceType.READ_WRITE : READ;
-                case NONE:
-                    break;
-            }
+            instanceType =  master ? InstanceType.READ_WRITE : READ;
         }
         return registerDatasource(selector.getName(), datasourceConfig.getName(), instanceType,
                 datasourceConfig.getWeight(), sessionCounter);
@@ -391,6 +378,9 @@ public class ReplicaSelectorRuntime implements ReplicaSelectorManager {
                 break;
             case MGR:
                 strategyProvider = MGRHeartBeatStrategy::new;
+                break;
+            case MHA:
+                strategyProvider = MHAHeartBeatStrategy::new;
                 break;
             case NONE:
             case SINGLE_NODE:
