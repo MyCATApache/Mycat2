@@ -38,7 +38,7 @@ replicas:
         weight: 3            # 权重
         dbType:   mysql-xa
         initDb: db1
-        url: jdbc:mysql://localhost:3306/db1?useLegacyDatetimeCode=false&serverTimezone=UTC&pinGlobalTxToPhysicalConnection=true
+        url: jdbc:mysql://localhost:3306/db1?useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&pinGlobalTxToPhysicalConnection=true
  
 ```
 

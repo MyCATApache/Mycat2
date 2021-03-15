@@ -8,9 +8,14 @@ import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @NotThreadSafe
@@ -407,5 +412,91 @@ public class AssembleTest implements MycatTest {
         );
         Assert.assertEquals(2, executeQuery(mycatConnection, "select id from db1.travelrecord").size());
     }
+
+    @Test
+    public void testNormalTableTimezone() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection db1 = getMySQLConnection(DB1);
+        ) {
+            execute(db1, "drop database if exists db1");
+            execute(mycatConnection, RESET_CONFIG);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `travel_timestamp` timestamp DEFAULT NULL,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8");
+            deleteData(mycatConnection, "db1", "travelrecord");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "travelrecord"));
+            LocalDate localDate = LocalDate.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            try (PreparedStatement preparedStatement = mycatConnection
+                    .prepareStatement("insert travelrecord (traveldate,travel_timestamp) VALUES (?,?)")) {
+                preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
+                preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
+                preparedStatement.executeUpdate();
+            }
+
+            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from travelrecord");
+            Map<String, Object> map = list.get(0);
+            String traveldate = Objects.toString(map.get("traveldate"));
+            String travel_timestamp = Objects.toString(map.get("travel_timestamp"));
+            Assert.assertEquals(localDate, LocalDate.parse(traveldate));
+            Assert.assertEquals(localDateTime.getHour(), Timestamp.valueOf(travel_timestamp).toLocalDateTime().getHour());
+        }
+    }
+
+    @Test
+    public void testShardingTableTimezone() throws Exception {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection db1 = getMySQLConnection(DB1);
+        ) {
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1_0");
+            execute(db1, "drop database if exists db1_1");
+
+            execute(db1, "drop database if exists db1");
+            execute(db1, "drop database if exists db1_0");
+            execute(db1, "drop database if exists db1_1");
+
+
+            execute(mycatConnection, RESET_CONFIG);
+            addC0(mycatConnection);
+            execute(mycatConnection, "create database db1");
+            execute(mycatConnection, "use db1");
+            execute(mycatConnection, "CREATE TABLE `travelrecord` (\n" +
+                    "  `id` bigint NOT NULL AUTO_INCREMENT,\n" +
+                    "  `user_id` varchar(100) DEFAULT NULL,\n" +
+                    "  `traveldate` date DEFAULT NULL,\n" +
+                    "  `travel_timestamp` timestamp DEFAULT NULL,\n" +
+                    "  PRIMARY KEY (`id`),\n" +
+                    "  KEY `id` (`id`)\n" +
+                    ") ENGINE=InnoDB  DEFAULT CHARSET=utf8"
+                    + " dbpartition by hash(id) tbpartition by hash(id) tbpartitions 2 dbpartitions 2;");
+            deleteData(mycatConnection, "db1", "travelrecord");
+            Assert.assertTrue(!hasData(mycatConnection, "db1", "travelrecord"));
+            LocalDate localDate = LocalDate.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            try (PreparedStatement preparedStatement = mycatConnection
+                    .prepareStatement("insert travelrecord (traveldate,travel_timestamp) VALUES (?,?)")) {
+                preparedStatement.setDate(1, java.sql.Date.valueOf(localDate));
+                preparedStatement.setTimestamp(2, java.sql.Timestamp.valueOf(localDateTime));
+                preparedStatement.executeUpdate();
+            }
+
+            List<Map<String, Object>> list = executeQuery(mycatConnection, "select * from travelrecord");
+            Map<String, Object> map = list.get(0);
+            String traveldate = Objects.toString(map.get("traveldate"));
+            String travel_timestamp = Objects.toString(map.get("travel_timestamp"));
+            Assert.assertEquals(localDate, LocalDate.parse(traveldate));
+            Assert.assertEquals(localDateTime.getHour(), Timestamp.valueOf(travel_timestamp).toLocalDateTime().getHour());
+        }
+    }
+
 
 }

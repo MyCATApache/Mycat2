@@ -162,7 +162,8 @@ public class DatasourceConfig {
                 properties.put("characterEncoding", "UTF-8");
             }
             if (!properties.containsKey("serverTimezone")) {
-                properties.put("serverTimezone", "UTC");
+                TimeZone timeZone = TimeZone.getDefault();
+                properties.put("serverTimezone",timeZone.getID());
             }
 //            if (!properties.containsKey("useSSL")) {
 //                properties.put("useSSL", "false");

@@ -22,7 +22,7 @@ public class MetaDataConfig {
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
 
-        String url = "jdbc:mysql://localhost.1:3306/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+        String url = "jdbc:mysql://localhost.1:3306/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=Asia/Shanghai&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
         mysqlDataSource.setUrl(url);

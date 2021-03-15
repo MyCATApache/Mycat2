@@ -34,6 +34,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -185,6 +186,9 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @NotNull
     public static List<Object> toObjects(Tuple tuple) {
+        if (tuple.size() == 0){
+            return Collections.emptyList();
+        }
         int size = tuple.size();
         ArrayList<Object> objects = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
