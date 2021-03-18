@@ -414,7 +414,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             input = aggregate.copy(aggregate.getTraitSet(), ImmutableList.of(input));
             return view.changeTo(input, dataNodeInfo);
         } else {
-            ColumnMapping2 columnMapping = new ColumnMapping2();
+            ColumnRefResolver columnMapping = new ColumnRefResolver();
             input.accept(columnMapping);
             ImmutableBitSet groupSet = aggregate.getGroupSet();
             boolean canPushDown = false;
@@ -626,31 +626,25 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
             RexNode conditions = left.getConditions().orElse(right.getConditions().orElse(null));
 
-            ColumnMapping2 leftColumnMapping = new ColumnMapping2();
-            ColumnMapping2 rightColumnMapping = new ColumnMapping2();
+            ColumnRefResolver leftColumnMapping = new ColumnRefResolver();
+            ColumnRefResolver rightColumnMapping = new ColumnRefResolver();
             left.getRelNode().accept(leftColumnMapping);
             right.getRelNode().accept(rightColumnMapping);
 
             for (IntPair pair : pairs) {
 
-                ColumnInfo leftBottomColumnInfo = leftColumnMapping.getBottomColumnInfo(pair.source);
-                ColumnInfo rightBottomColumnInfo = rightColumnMapping.getBottomColumnInfo(pair.target);
+                Optional<ColumnInfo> leftBottomColumnInfoOptional = leftColumnMapping.getBottomColumnInfoList(pair.source).stream()
+                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
+                Optional<ColumnInfo> rightBottomColumnInfoOptional = rightColumnMapping.getBottomColumnInfoList(pair.target).stream()
+                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
 
-                if (leftBottomColumnInfo != null && rightBottomColumnInfo != null) {
+                if (leftBottomColumnInfoOptional.isPresent() && rightBottomColumnInfoOptional.isPresent()) {
+                    ColumnInfo leftBottomColumnInfo = leftBottomColumnInfoOptional.get();
+                    ColumnInfo rightBottomColumnInfo = rightBottomColumnInfoOptional.get();
                     MycatLogicTable leftRelNode = leftBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
                     MycatLogicTable rightRelNode = rightBottomColumnInfo.getTableScan().getTable().unwrap(MycatLogicTable.class);
                     LogicTableType leftTableType = leftRelNode.getTable().getType();
                     LogicTableType rightTableType = rightRelNode.getTable().getType();
-
-//                    if (leftTableType == LogicTableType.GLOBAL || rightTableType == LogicTableType.GLOBAL) {
-//                        Optional<Distribution> newJoinDistributionOptional = left.getDistribution().join(right.getDistribution());
-//                        if(newJoinDistributionOptional.isPresent()){
-//
-//                        }
-//                        return left.getDistribution().join(right.getDistribution())
-//                                .map(distribution -> MycatView.ofCondition(join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())), distribution,
-//                                        conditions));
-//                    }
 
                     if (leftTableType == LogicTableType.SHARDING && leftTableType == rightTableType) {
                         ShardingTable leftTableHandler = (ShardingTable) leftRelNode.logicTable();

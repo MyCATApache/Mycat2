@@ -17,7 +17,7 @@ public class RelMdSqlViews {
         nextConvertor.put(TableScan.class,
                 Project.class, Union.class, Aggregate.class, Sort.class, Filter.class, Join.class);
         nextConvertor.put(Filter.class,
-                Project.class, Union.class, Aggregate.class, Sort.class,Filter.class);
+                Project.class, Union.class, Aggregate.class, Sort.class,Filter.class,Join.class);
         nextConvertor.put(Join.class,
                 Project.class, Union.class, Aggregate.class, Filter.class, Join.class, Sort.class);
         nextConvertor.put(Project.class,

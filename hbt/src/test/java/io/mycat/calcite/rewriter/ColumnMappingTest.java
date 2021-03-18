@@ -5,10 +5,8 @@ import io.mycat.calcite.MycatCalciteSupport;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.logical.LogicalIntersect;
-import org.apache.calcite.rel.logical.LogicalMinus;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -23,8 +21,9 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.Collection;
 
+import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 
 public class ColumnMappingTest {
@@ -35,7 +34,7 @@ public class ColumnMappingTest {
         RelBuilder relBuilder = createRelBuilder();
         RelNode relNode = createTable_user(relBuilder);
 
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -76,7 +75,7 @@ public class ColumnMappingTest {
         RelBuilder relBuilder = createRelBuilder();
         RelNode relNode = createTable_user(relBuilder);
         relNode = relBuilder.push(relNode).filter(rexBuilder.makeLiteral(true)).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -94,7 +93,7 @@ public class ColumnMappingTest {
         RelBuilder relBuilder = createRelBuilder();
         RelNode relNode = createTable_user(relBuilder);
         relNode = relBuilder.push(relNode).sort(0).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -112,7 +111,7 @@ public class ColumnMappingTest {
         RelBuilder relBuilder = createRelBuilder();
         RelNode relNode = createTable_user(relBuilder);
         relNode = RelOptUtil.createProject(relNode, Arrays.asList(1, 0));
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -135,7 +134,7 @@ public class ColumnMappingTest {
         relNode = relBuilder.project(plus,
                 relBuilder.field(0),
                 relBuilder.field(1)).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo first = columnMapping.getBottomColumnInfo(0);
@@ -164,7 +163,7 @@ public class ColumnMappingTest {
         RelNode joinTable = relBuilder.join(JoinRelType.INNER, rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
 
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -188,7 +187,7 @@ public class ColumnMappingTest {
         RelNode joinTable = relBuilder.join(LEFT, rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
 
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -212,7 +211,7 @@ public class ColumnMappingTest {
         RelNode joinTable = relBuilder.join(JoinRelType.RIGHT, rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
 
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -236,7 +235,7 @@ public class ColumnMappingTest {
         RelNode joinTable = relBuilder.join(JoinRelType.FULL, rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
 
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -259,7 +258,7 @@ public class ColumnMappingTest {
 
         RelNode joinTable = relBuilder.semiJoin(rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(2, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -282,7 +281,7 @@ public class ColumnMappingTest {
 
         RelNode joinTable = relBuilder.antiJoin(rexBuilder.makeLiteral(true)).build();
         Assert.assertEquals(2, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -292,6 +291,29 @@ public class ColumnMappingTest {
         ColumnInfo right = columnMapping.getBottomColumnInfo(2);
         Assert.assertEquals(0, right.getIndex());
         Assert.assertEquals(joinTable.getInput(1), right.getTableScan());
+    }
+
+    @Test
+    public void testTreeJoinsTable() {
+
+        RelBuilder relBuilder = createRelBuilder();
+        RelNode leftTable = createTable_user(relBuilder);
+        RelNode rightTable2 = createTable_user2(relBuilder);
+        RelNode rightTable3 = createTable_test(relBuilder);
+        relBuilder.push(leftTable);
+        relBuilder.push(rightTable2);
+
+        RelNode joinTable = relBuilder.join(INNER, "id").build();
+        joinTable = relBuilder.push(joinTable).push(rightTable3).join(INNER, "id").build();
+        Assert.assertEquals(5, joinTable.getRowType().getFieldCount());
+
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
+        joinTable.accept(columnMapping);
+
+        Collection<ColumnInfo> bottomColumnInfoList = columnMapping.getBottomColumnInfoList(0);
+        Assert.assertTrue(bottomColumnInfoList.contains(new ColumnInfo((TableScan) leftTable, 0)));
+        Assert.assertTrue(bottomColumnInfoList.contains(new ColumnInfo((TableScan) rightTable2, 0)));
+        Assert.assertTrue(bottomColumnInfoList.contains(new ColumnInfo((TableScan) rightTable3, 0)));
     }
 
     /**
@@ -325,7 +347,7 @@ public class ColumnMappingTest {
 
 
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -358,7 +380,7 @@ public class ColumnMappingTest {
 
 
         Assert.assertEquals(4, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -391,7 +413,7 @@ public class ColumnMappingTest {
 
 
         Assert.assertEquals(2, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -424,7 +446,7 @@ public class ColumnMappingTest {
 
 
         Assert.assertEquals(2, joinTable.getRowType().getFieldCount());
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         joinTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -446,7 +468,7 @@ public class ColumnMappingTest {
         relBuilder.push(rightTable);
 
         RelNode unionTable = relBuilder.union(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -463,7 +485,7 @@ public class ColumnMappingTest {
         relBuilder.push(leftTable);
 
         RelNode unionTable = relBuilder.union(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -481,7 +503,7 @@ public class ColumnMappingTest {
         relBuilder.push(rightTable);
 
         RelNode unionTable = relBuilder.intersect(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -498,7 +520,7 @@ public class ColumnMappingTest {
         relBuilder.push(leftTable);
 
         RelNode unionTable = relBuilder.intersect(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -516,7 +538,7 @@ public class ColumnMappingTest {
         relBuilder.push(rightTable);
 
         RelNode unionTable = relBuilder.minus(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -533,7 +555,7 @@ public class ColumnMappingTest {
         relBuilder.push(leftTable);
 
         RelNode unionTable = relBuilder.minus(true).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         unionTable.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
@@ -549,7 +571,7 @@ public class ColumnMappingTest {
         RelNode relNode = createTable_user(relBuilder);
         RelBuilder builder = relBuilder.push(relNode);
         relNode = builder.aggregate(builder.groupKey(0, 1)).build();
-        ColumnMapping2 columnMapping = new ColumnMapping2();
+        ColumnRefResolver columnMapping = new ColumnRefResolver();
         relNode.accept(columnMapping);
 
         ColumnInfo left = columnMapping.getBottomColumnInfo(0);
