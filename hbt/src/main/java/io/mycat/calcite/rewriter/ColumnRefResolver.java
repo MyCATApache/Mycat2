@@ -157,7 +157,7 @@ public class ColumnRefResolver extends RelShuttleImpl {
                 for (ColumnInfo l : leftBottomColumnInfo) {
                     for (ColumnInfo r : rightBottomColumnInfo) {
                         pairs.add(Pair.of(l, r));
-                        pairs.add(Pair.of(r, l));
+//                        pairs.add(Pair.of(r, l));
                     }
                 }
             }

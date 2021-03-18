@@ -419,7 +419,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             ImmutableBitSet groupSet = aggregate.getGroupSet();
             boolean canPushDown = false;
             for (Integer integer : groupSet) {
-                ColumnInfo bottomColumnInfo = columnMapping.getBottomColumnInfo(integer);
+                ColumnInfo bottomColumnInfo = columnMapping.getBottomColumnInfoList(integer).stream()
+                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding())
+                        .findFirst().orElse(null);
                 if (bottomColumnInfo == null) {
                     continue;
                 }
