@@ -23,7 +23,7 @@ public class MycatFilterViewRule extends RelOptRule {
         LogicalFilter up = call.rel(0);
         RelNode base = call.rel(1);
         if (RelMdSqlViews.filter(base)) {
-            RelNode res = SQLRBORewriter.filter(base, up,optimizationContext);
+            RelNode res = SQLRBORewriter.filter(base, up);
             if (res != null) {
                 call.transformTo(res);
             }

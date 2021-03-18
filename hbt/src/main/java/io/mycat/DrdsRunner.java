@@ -85,6 +85,7 @@ import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.ArrayBindable;
@@ -700,7 +701,6 @@ public class DrdsRunner {
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
             MycatConvention.INSTANCE.register(planner);
-
             if (relOptRules != null) {
                 for (RelOptRule relOptRule : relOptRules) {
                     planner.addRule(relOptRule);
@@ -746,7 +746,7 @@ public class DrdsRunner {
 
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {
         HepProgramBuilder builder = new HepProgramBuilder();
-        builder.addMatchLimit(128);
+        builder.addMatchLimit(1024);
 //        builder.addRuleCollection(FILTER);
         if (false) {
 //            MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
@@ -771,6 +771,7 @@ public class DrdsRunner {
             builder.addRuleCollection(relOptRules);
         }
         builder.addRuleCollection(FILTER);
+
         builder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
         builder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
 //        builder.addRuleCollection(ImmutableList.of(
@@ -785,7 +786,7 @@ public class DrdsRunner {
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        RelNode accept = bestExp.accept(new SQLRBORewriter(optimizationContext, drdsSql.getParams()));
+        RelNode accept = bestExp.accept(new SQLRBORewriter());
         return accept;
     }
 

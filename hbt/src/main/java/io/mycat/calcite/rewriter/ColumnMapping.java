@@ -1,10 +1,12 @@
 package io.mycat.calcite.rewriter;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.calcite.util.mapping.Mappings;
 
@@ -14,17 +16,29 @@ public class ColumnMapping extends RelShuttleImpl {
 
     TableScan tableScan;
     Map<Integer, Integer> map;
+    private final RelNode root;
 
     public ColumnMapping() {
-
+        this(null);
     }
+
+    public ColumnMapping(RelNode relNode) {
+        this.root = relNode;
+    }
+
+    public ColumnInfo getBottomColumnInfo(int index) {
+        RelDataType rowType = this.root.getRowType();
+        this.root.accept(this);
+        return null;
+    }
+
 
     public boolean hasRes() {
         return tableScan != null && map != null;
     }
 
     public int mapping(int index) {
-            return map.get(index);
+        return map.get(index);
     }
 
     private void updateMapping(Mappings.TargetMapping permutation) {

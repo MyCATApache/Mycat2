@@ -23,8 +23,8 @@ import static io.mycat.util.CalciteUtls.unCastWrapper;
 
 public class IndexRBORewriter<T> extends SQLRBORewriter {
     boolean apply = false;
-    public IndexRBORewriter(OptimizationContext optimizationContext, List<Object> params) {
-        super(optimizationContext,params);
+    public IndexRBORewriter() {
+        super();
     }
 
     @Override
@@ -116,7 +116,7 @@ public class IndexRBORewriter<T> extends SQLRBORewriter {
                     if (right instanceof RexLiteral){
                         value = ((RexLiteral) right).getValue2();
                     }else if (right instanceof RexDynamicParam){
-                        value = super.params.get (((RexDynamicParam)right).getIndex());
+//                        value = super.params.get (((RexDynamicParam)right).getIndex());
                     }else {
                         return Optional.empty();
                     }

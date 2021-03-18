@@ -229,9 +229,10 @@ public class Distribution {
 
 
     public static enum Type {
-        PHY,
         BroadCast,
-        Sharding
+        Sharding,
+        PHY
+
     }
 
     @Override

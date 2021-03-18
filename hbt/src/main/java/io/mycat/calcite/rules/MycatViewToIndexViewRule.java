@@ -48,7 +48,7 @@ public class MycatViewToIndexViewRule extends RelOptRule {
             return;
         }
         RelNode relNode = view.getRelNode();
-        IndexRBORewriter<Object> indexRboRewriter = new IndexRBORewriter<>(optimizationContext, params);
+        IndexRBORewriter<Object> indexRboRewriter = new IndexRBORewriter<>();
         RelNode res = relNode.accept(indexRboRewriter);
         if (indexRboRewriter.isApply()) {
             call.transformTo(res);
