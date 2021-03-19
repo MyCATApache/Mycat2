@@ -213,26 +213,6 @@ public class ConfigPrepareExecuter {
 
 
         ////////////////////////////////////////////////////////
-
-        List<SimpleConfig> configList = new ArrayList<>();
-        for (DatasourceConfig datasource : mycatRouterConfig.getDatasources()) {
-            if (!"mysql".equalsIgnoreCase(datasource.getDbType())) {
-                throw new IllegalArgumentException(datasource.toString() + "  \n is not mysql type");
-            }
-            ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString(datasource.getUrl());
-            HostInfo hostInfo = connectionUrlParser.getHosts().get(0);
-            String name = datasource.getName();
-            String host = hostInfo.getHost();
-            int port = hostInfo.getPort();
-            String user = Optional.ofNullable(datasource.getUser()).orElse(hostInfo.getUser());
-            String password = Optional.ofNullable(datasource.getPassword()).orElse(hostInfo.getPassword());
-            String database = hostInfo.getDatabase();
-            int maxSize = datasource.getMaxCon();
-            SimpleConfig simpleConfig = new SimpleConfig(name, host, port, user, password, database, maxSize);
-            configList.add(simpleConfig);
-        }
-
-
     }
 
     private void clearSqlCache() {
@@ -349,8 +329,13 @@ public class ConfigPrepareExecuter {
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
         MetaClusterCurrent.register(context);
 
-
-        XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-        return xaLog.readXARecoveryLog();
+        MycatRouterConfig curConfig = MetaClusterCurrent.wrapper(MycatRouterConfig.class);
+        boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
+        if (allMatchMySQL){
+            XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
+            return xaLog.readXARecoveryLog();
+        }else {
+            return Future.succeededFuture();
+        }
     }
 }
