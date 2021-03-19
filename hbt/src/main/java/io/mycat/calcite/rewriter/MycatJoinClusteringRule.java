@@ -9,9 +9,9 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 
 import java.util.Optional;
 
-public class JoinClusteringRule extends RelRule<JoinClusteringRule.Config> {
+public class MycatJoinClusteringRule extends RelRule<MycatJoinClusteringRule.Config> {
 
-    public JoinClusteringRule(Config config) {
+    public MycatJoinClusteringRule(Config config) {
         super(config);
     }
 
@@ -27,20 +27,20 @@ public class JoinClusteringRule extends RelRule<JoinClusteringRule.Config> {
     }
 
     public interface Config extends RelRule.Config {
-        JoinClusteringRule.Config DEFAULT = EMPTY.as(JoinClusteringRule.Config.class)
+        MycatJoinClusteringRule.Config DEFAULT = EMPTY.as(MycatJoinClusteringRule.Config.class)
                 .withOperandFor(LogicalJoin.class);
 
         @Override
-        default JoinClusteringRule toRule() {
-            return new JoinClusteringRule(this);
+        default MycatJoinClusteringRule toRule() {
+            return new MycatJoinClusteringRule(this);
         }
 
-        default JoinClusteringRule.Config withOperandFor(Class<? extends Join> joinClass) {
+        default MycatJoinClusteringRule.Config withOperandFor(Class<? extends Join> joinClass) {
             return withOperandSupplier(b0 ->
                     b0.operand(joinClass).inputs(
                             b2 -> b2.operand(MycatView.class).anyInputs(),
                             b3 -> b3.operand(MycatView.class).anyInputs()))
-                    .as(JoinClusteringRule.Config.class);
+                    .as(MycatJoinClusteringRule.Config.class);
         }
     }
 }

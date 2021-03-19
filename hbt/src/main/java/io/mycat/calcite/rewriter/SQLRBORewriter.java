@@ -26,10 +26,7 @@ import io.mycat.calcite.sqlfunction.infofunction.MycatSessionValueFunction;
 import io.mycat.calcite.table.*;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.util.NameMap;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptListener;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelCollation;
@@ -38,9 +35,7 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.JoinAssociateRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -54,6 +49,8 @@ import org.apache.calcite.util.mapping.IntPair;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
+
+import static org.apache.calcite.rel.rules.CoreRules.*;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
@@ -120,6 +117,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         final Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> projectFilter =
                 calc.getProgram().split();
         RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(calc.getCluster(), null);
+        relBuilder.push(calc.getInput());
         relBuilder.filter(projectFilter.right);
         relBuilder.project(projectFilter.left, calc.getRowType().getFieldNames());
         RelNode relNode = relBuilder.build();
@@ -311,6 +309,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(RelNode other) {
+        if (other instanceof LogicalCalc){
+           return visit((LogicalCalc)other);
+        }
         return other;
     }
 
@@ -420,7 +421,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             boolean canPushDown = false;
             for (Integer integer : groupSet) {
                 ColumnInfo bottomColumnInfo = columnMapping.getBottomColumnInfoList(integer).stream()
-                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding())
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding())
                         .findFirst().orElse(null);
                 if (bottomColumnInfo == null) {
                     continue;
@@ -496,21 +497,26 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (relNodeOptional.isPresent()) return relNodeOptional.get();
         Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER) {
+            int orgJoinCount = RelOptUtil.countJoins(newJoin);
             RelOptCluster cluster = newJoin.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
             MycatConvention.INSTANCE.register(planner);
-            planner.addRule(JoinAssociateRule.Config.DEFAULT.toRule());
-            planner.addRule(JoinCommuteRule.Config.DEFAULT.toRule());
-            planner.addRule(JoinPushThroughJoinRule.Config.LEFT.toRule());
-            planner.addRule(JoinPushThroughJoinRule.Config.RIGHT.toRule());
-            planner.addRule(JoinClusteringRule.Config.DEFAULT.toRule());
-            planner.addRule(ProjectJoinClusteringRule.Config.DEFAULT.toRule());
-//            planner.addRule(JoinTernaryCommuteRule.Config.DEFAULT.toRule());
-//            planner.addListener(new RuleAttemptsListener());
+            planner.addRule(CoreRules.JOIN_COMMUTE);
+            planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
+            planner.addRule(CoreRules.JOIN_ASSOCIATE);
+            planner.addRule(CoreRules.FILTER_INTO_JOIN);
+            planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
+            planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
+            planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
+            planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
+            planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
+            planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
+            planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
             planner.setRoot(planner.changeTraits(newJoin, cluster.traitSetOf(MycatConvention.INSTANCE)));
+
             RelNode bestExp = planner.findBestExp();
-            if (bestExp instanceof MycatView){
+            if (RelOptUtil.countJoins(bestExp) < orgJoinCount) {
                 return bestExp;
             }
         }
@@ -636,9 +642,9 @@ public class SQLRBORewriter extends RelShuttleImpl {
             for (IntPair pair : pairs) {
 
                 Optional<ColumnInfo> leftBottomColumnInfoOptional = leftColumnMapping.getBottomColumnInfoList(pair.source).stream()
-                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
                 Optional<ColumnInfo> rightBottomColumnInfoOptional = rightColumnMapping.getBottomColumnInfoList(pair.target).stream()
-                        .filter(i->i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
+                        .filter(i -> i.getTableScan().getTable().unwrap(MycatLogicTable.class).isSharding()).findFirst();
 
                 if (leftBottomColumnInfoOptional.isPresent() && rightBottomColumnInfoOptional.isPresent()) {
                     ColumnInfo leftBottomColumnInfo = leftBottomColumnInfoOptional.get();

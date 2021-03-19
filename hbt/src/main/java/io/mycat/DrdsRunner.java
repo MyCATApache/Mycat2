@@ -34,21 +34,18 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.calcite.*;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.mycat.calcite.logical.MycatView;
-import io.mycat.calcite.physical.MycatInsertRel;
-import io.mycat.calcite.physical.MycatUpdateRel;
+import io.mycat.calcite.physical.*;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.plan.PlanImplementor;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.calcite.rewriter.MatierialRewriter;
 import io.mycat.calcite.rewriter.OptimizationContext;
 import io.mycat.calcite.rewriter.SQLRBORewriter;
-import io.mycat.calcite.rules.MycatTablePhyViewRule;
 import io.mycat.calcite.rules.MycatViewToIndexViewRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanCache;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
-import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -60,6 +57,8 @@ import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
 import io.vertx.core.impl.future.PromiseInternal;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -78,6 +77,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -87,6 +87,7 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.CalciteException;
@@ -105,13 +106,16 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql2rel.RelDecorrelator;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +127,8 @@ import java.sql.JDBCType;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static org.apache.calcite.rel.rules.CoreRules.*;
 
 public class DrdsRunner {
     final static Logger log = LoggerFactory.getLogger(DrdsRunner.class);
@@ -415,13 +421,15 @@ public class DrdsRunner {
                                   SchemaPlus plus,
                                   DrdsSql drdsSql) {
         RelNode logPlan;
+        RelNodeContext relNodeContext = null;
         if (drdsSql.getRelNode() != null) {
             if (drdsSql.getRelNode() instanceof MycatRel) {
                 return (MycatRel) drdsSql.getRelNode();
             }
             logPlan = drdsSql.getRelNode();
         } else {
-            logPlan = getRelRoot(defaultSchemaName, plus, drdsSql);
+            relNodeContext = getRelRoot(defaultSchemaName, plus, drdsSql);
+            logPlan = relNodeContext.getRoot().project(false);
         }
 
         if (logPlan instanceof TableModify) {
@@ -435,6 +443,10 @@ public class DrdsRunner {
             }
         }
         RelNode rboLogPlan = optimizeWithRBO(logPlan, drdsSql, optimizationContext);
+        if (relNodeContext != null&&!(rboLogPlan instanceof MycatView)) {
+            RelFieldTrimmer relFieldTrimmer = new MycatRelFieldTrimmer(relNodeContext.getValidator(),relNodeContext.getRelBuilder());
+            rboLogPlan = relFieldTrimmer.trim(rboLogPlan);
+        }
         Collection<RelOptRule> rboInCbo;
         if (MetaClusterCurrent.exist(GSIService.class)) {
             rboInCbo = Collections.singletonList(
@@ -448,118 +460,28 @@ public class DrdsRunner {
         return mycatRel;
     }
 
-    private RelNode getRelRoot(String defaultSchemaName,
-                               SchemaPlus plus, DrdsSql drdsSql) {
-        SQLStatement sqlStatement = drdsSql.getSqlStatement();
+    @AllArgsConstructor
+    @Getter
+    static class RelNodeContext {
+        final RelRoot root;
+        final SqlToRelConverter sqlToRelConverter;
+        final SqlValidator validator;
+        final RelBuilder relBuilder;
+    }
+
+
+    private RelNodeContext getRelRoot(String defaultSchemaName,
+                                      SchemaPlus plus, DrdsSql drdsSql) {
+
         List<Object> params = drdsSql.getParams();
-        MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
-        sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
-        SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
+
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema
                 .from(plus),
                 defaultSchemaName != null ? ImmutableList.of(defaultSchemaName) : ImmutableList.of(),
                 MycatCalciteSupport.TypeFactory,
                 MycatCalciteSupport.INSTANCE.getCalciteConnectionConfig());
-        SqlValidator validator =
-
-                new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.config.getOperatorTable()), catalogReader, MycatCalciteSupport.TypeFactory,
-                        MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
-                    @Override
-                    protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
-                        if (node != null && node instanceof SqlDynamicParam) {
-                            RelDataType relDataType = deriveType(scope, node);
-                            return;
-                        }
-                        super.inferUnknownTypes(inferredType, scope, node);
-                    }
-
-                    @Override
-                    public RelDataType getUnknownType() {
-                        return super.getUnknownType();
-                    }
-
-                    @Override
-                    public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
-                        RelDataType res = resolveDynamicParam(expr);
-                        if (res == null) {
-                            return super.deriveType(scope, expr);
-                        } else {
-                            return res;
-                        }
-                    }
-
-                    @Override
-                    public void validateLiteral(SqlLiteral literal) {
-                        if (literal.getTypeName() == SqlTypeName.DECIMAL) {
-                            return;
-                        }
-                        super.validateLiteral(literal);
-                    }
-
-                    private RelDataType resolveDynamicParam(SqlNode expr) {
-                        if (expr != null && expr instanceof SqlDynamicParam) {
-                            int index = ((SqlDynamicParam) expr).getIndex();
-                            if (index < params.size()) {
-                                Object o = params.get(index);
-                                if (o == null) {
-                                    return super.typeFactory.createUnknownType();
-                                } else {
-                                    SqlTypeName type = null;
-                                    if (o instanceof String) {
-                                        type = SqlTypeName.VARCHAR;
-                                    } else if (o instanceof Number) {
-                                        type = SqlTypeName.DECIMAL;
-                                    } else {
-                                        Class<?> aClass = o.getClass();
-                                        for (SqlType value : SqlType.values()) {
-                                            if (value.clazz == aClass) {
-                                                type = SqlTypeName.getNameForJdbcType(value.id);
-                                            }
-                                        }
-                                    }
-
-                                    Objects.requireNonNull(type, () -> "unknown type:" + o.getClass());
-                                    return super.typeFactory.createSqlType(type);
-                                }
-                            }
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    public RelDataType getValidatedNodeType(SqlNode node) {
-                        RelDataType relDataType = resolveDynamicParam(node);
-                        if (relDataType == null) {
-                            return super.getValidatedNodeType(node);
-                        } else {
-                            return relDataType;
-                        }
-                    }
-
-                    @Override
-                    public CalciteException handleUnresolvedFunction(SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames) {
-                        return super.handleUnresolvedFunction(call, unresolvedFunction, argTypes, argNames);
-                    }
-
-                    @Override
-                    protected void addToSelectList(List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
-                        super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
-                    }
-
-                    @Override
-                    protected void validateWhereOrOn(SqlValidatorScope scope, SqlNode condition, String clause) {
-                        if (!condition.getKind().belongsTo(SqlKind.COMPARISON)) {
-                            condition = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO,
-                                    condition, SqlTypeUtil.convertTypeToSpec(typeFactory.createSqlType(SqlTypeName.BOOLEAN)));
-                        }
-                        super.validateWhereOrOn(scope, condition, clause);
-                    }
-                };
-        SqlNode validated;
-        validated = validator.validate(sqlNode);
-
+        SqlValidator validator = getSqlValidator(params, catalogReader);
         RelOptCluster cluster = newCluster();
-        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(cluster, catalogReader);
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
                 NOOP_EXPANDER,
                 validator,
@@ -568,15 +490,122 @@ public class DrdsRunner {
                 MycatCalciteSupport.config.getConvertletTable(),
                 MycatCalciteSupport.sqlToRelConverterConfig);
 
+        SQLStatement sqlStatement = drdsSql.getSqlStatement();
+        MycatCalciteMySqlNodeVisitor mycatCalciteMySqlNodeVisitor = new MycatCalciteMySqlNodeVisitor();
+        sqlStatement.accept(mycatCalciteMySqlNodeVisitor);
+        SqlNode sqlNode = mycatCalciteMySqlNodeVisitor.getSqlNode();
+
+
+        SqlNode validated = validator.validate(sqlNode);
+
+        RelBuilder relBuilder = MycatCalciteSupport.relBuilderFactory.create(sqlToRelConverter.getCluster(), catalogReader);
+
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
         drdsSql.setAliasList(
                 root.fields.stream()
                         .map(Pair::getValue).collect(Collectors.toList()));
-        final RelRoot root2 =
-                root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
+//        RelRoot root2 =
+//                root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
 
-        return root2.withRel(
-                RelDecorrelator.decorrelateQuery(root.rel, relBuilder)).project();
+        RelNode newRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
+        return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder);
+    }
+
+
+    private SqlValidator getSqlValidator(List<Object> params, CalciteCatalogReader catalogReader) {
+        return new SqlValidatorImpl(SqlOperatorTables.chain(catalogReader, MycatCalciteSupport.config.getOperatorTable()), catalogReader, MycatCalciteSupport.TypeFactory,
+                MycatCalciteSupport.INSTANCE.getValidatorConfig()) {
+            @Override
+            protected void inferUnknownTypes(@Nonnull RelDataType inferredType, @Nonnull SqlValidatorScope scope, @Nonnull SqlNode node) {
+                if (node != null && node instanceof SqlDynamicParam) {
+                    RelDataType relDataType = deriveType(scope, node);
+                    return;
+                }
+                super.inferUnknownTypes(inferredType, scope, node);
+            }
+
+            @Override
+            public RelDataType getUnknownType() {
+                return super.getUnknownType();
+            }
+
+            @Override
+            public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+                RelDataType res = resolveDynamicParam(expr);
+                if (res == null) {
+                    return super.deriveType(scope, expr);
+                } else {
+                    return res;
+                }
+            }
+
+            @Override
+            public void validateLiteral(SqlLiteral literal) {
+                if (literal.getTypeName() == SqlTypeName.DECIMAL) {
+                    return;
+                }
+                super.validateLiteral(literal);
+            }
+
+            private RelDataType resolveDynamicParam(SqlNode expr) {
+                if (expr != null && expr instanceof SqlDynamicParam) {
+                    int index = ((SqlDynamicParam) expr).getIndex();
+                    if (index < params.size()) {
+                        Object o = params.get(index);
+                        if (o == null) {
+                            return super.typeFactory.createUnknownType();
+                        } else {
+                            SqlTypeName type = null;
+                            if (o instanceof String) {
+                                type = SqlTypeName.VARCHAR;
+                            } else if (o instanceof Number) {
+                                type = SqlTypeName.DECIMAL;
+                            } else {
+                                Class<?> aClass = o.getClass();
+                                for (SqlType value : SqlType.values()) {
+                                    if (value.clazz == aClass) {
+                                        type = SqlTypeName.getNameForJdbcType(value.id);
+                                    }
+                                }
+                            }
+
+                            Objects.requireNonNull(type, () -> "unknown type:" + o.getClass());
+                            return super.typeFactory.createSqlType(type);
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public RelDataType getValidatedNodeType(SqlNode node) {
+                RelDataType relDataType = resolveDynamicParam(node);
+                if (relDataType == null) {
+                    return super.getValidatedNodeType(node);
+                } else {
+                    return relDataType;
+                }
+            }
+
+            @Override
+            public CalciteException handleUnresolvedFunction(SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames) {
+                return super.handleUnresolvedFunction(call, unresolvedFunction, argTypes, argNames);
+            }
+
+            @Override
+            protected void addToSelectList(List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
+                super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
+            }
+
+            @Override
+            protected void validateWhereOrOn(SqlValidatorScope scope, SqlNode condition, String clause) {
+                if (!condition.getKind().belongsTo(SqlKind.COMPARISON)) {
+                    condition = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO,
+                            condition, SqlTypeUtil.convertTypeToSpec(typeFactory.createSqlType(SqlTypeName.BOOLEAN)));
+                }
+                super.validateWhereOrOn(scope, condition, clause);
+            }
+        };
     }
 
     private MycatRel planUpdate(LogicalTableModify tableModify,
@@ -701,19 +730,30 @@ public class DrdsRunner {
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
             MycatConvention.INSTANCE.register(planner);
+            planner.addRule(CoreRules.PROJECT_TO_CALC);
+            planner.addRule(CoreRules.FILTER_TO_CALC);
+            planner.addRule(CoreRules.CALC_MERGE);
             if (relOptRules != null) {
                 for (RelOptRule relOptRule : relOptRules) {
                     planner.addRule(relOptRule);
                 }
             }
+
+            if (log.isDebugEnabled()){
+                MycatRelOptListener mycatRelOptListener = new MycatRelOptListener();
+                planner.addListener(mycatRelOptListener);
+                log.debug(mycatRelOptListener.dump());
+            }
             logPlan = planner.changeTraits(logPlan, cluster.traitSetOf(MycatConvention.INSTANCE));
             planner.setRoot(logPlan);
-            return (MycatRel) planner.findBestExp();
+            RelNode bestExp = planner.findBestExp();
+
+            return (MycatRel) bestExp;
         }
     }
 
     static final ImmutableSet<RelOptRule> FILTER = ImmutableSet.of(
-            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            JOIN_PUSH_TRANSITIVE_PREDICATES,
             CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
             CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
             CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
@@ -733,8 +773,9 @@ public class DrdsRunner {
             CoreRules.FILTER_REDUCE_EXPRESSIONS,
             CoreRules.JOIN_REDUCE_EXPRESSIONS,
             CoreRules.PROJECT_REDUCE_EXPRESSIONS,
-            CoreRules.FILTER_MERGE
-
+            CoreRules.FILTER_MERGE,
+            CoreRules.JOIN_PUSH_EXPRESSIONS,
+            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES
 //            CoreRules.PROJECT_CALC_MERGE,
 //            CoreRules.FILTER_CALC_MERGE,
 //            CoreRules.FILTER_TO_CALC,
@@ -752,7 +793,7 @@ public class DrdsRunner {
 //            MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
             ImmutableList<RelOptRule> relOptRules = ImmutableList.of(
 //                    mycatFilterPhyViewRule,
-                    MycatTablePhyViewRule.INSTANCE,
+//                    MycatTablePhyViewRule.INSTANCE,
                     CoreRules.PROJECT_SET_OP_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
                     CoreRules.JOIN_LEFT_UNION_TRANSPOSE,
@@ -771,9 +812,9 @@ public class DrdsRunner {
             builder.addRuleCollection(relOptRules);
         }
         builder.addRuleCollection(FILTER);
-
-        builder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
-        builder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
+//        builder.addRuleInstance(PROJECT_JOIN_JOIN_REMOVE);
+//        builder.addRuleInstance(PROJECT_JOIN_TRANSPOSE);
+//        builder.addRuleInstance(PROJECT_REMOVE);
 //        builder.addRuleCollection(ImmutableList.of(
 //                new MycatFilterViewRule(optimizationContext),
 //                MycatProjectViewRule.INSTANCE,
@@ -786,7 +827,8 @@ public class DrdsRunner {
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        RelNode accept = bestExp.accept(new SQLRBORewriter());
+        SQLRBORewriter sqlrboRewriter = new SQLRBORewriter();
+        RelNode accept = bestExp.accept(sqlrboRewriter);
         return accept;
     }
 
@@ -800,30 +842,6 @@ public class DrdsRunner {
     }
 
     private static final RelOptTable.ViewExpander NOOP_EXPANDER = (rowType, queryString, schemaPath, viewPath) -> null;
-
-    private static class Parameterized {
-        private String parameterizedString;
-        private List<Object> parameters;
-
-        public String getParameterizedString() {
-            return parameterizedString;
-        }
-
-        public List<Object> getParameters() {
-            return parameters;
-        }
-
-        public static Parameterized invoke(SQLStatement mySqlInsertStatement) {
-            Parameterized parameterized = new Parameterized();
-            StringBuilder sb = new StringBuilder();
-            List<Object> params = new ArrayList<>();
-            MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(params, sb, true);
-            mySqlInsertStatement.accept(parameterVisitor);
-            parameterized.parameterizedString = sb.toString();
-            parameterized.parameters = params;
-            return parameterized;
-        }
-    }
 
     public PlanCache getPlanCache() {
         return planCache;

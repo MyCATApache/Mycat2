@@ -12,9 +12,9 @@ import org.apache.calcite.rel.logical.LogicalProject;
 
 import java.util.Optional;
 
-public  class ProjectJoinClusteringRule extends RelRule<ProjectJoinClusteringRule.Config> {
+public  class MycatProjectJoinClusteringRule extends RelRule<MycatProjectJoinClusteringRule.Config> {
 
-        public ProjectJoinClusteringRule(Config config) {
+        public MycatProjectJoinClusteringRule(Config config) {
             super(config);
         }
 
@@ -37,21 +37,21 @@ public  class ProjectJoinClusteringRule extends RelRule<ProjectJoinClusteringRul
         }
 
         public interface Config extends RelRule.Config {
-            ProjectJoinClusteringRule.Config DEFAULT = EMPTY.as(ProjectJoinClusteringRule.Config.class)
+            MycatProjectJoinClusteringRule.Config DEFAULT = EMPTY.as(MycatProjectJoinClusteringRule.Config.class)
                     .withOperandFor(LogicalJoin.class);
 
             @Override
-            default ProjectJoinClusteringRule toRule() {
-                return new ProjectJoinClusteringRule(this);
+            default MycatProjectJoinClusteringRule toRule() {
+                return new MycatProjectJoinClusteringRule(this);
             }
 
-            default ProjectJoinClusteringRule.Config withOperandFor(Class<? extends Join> joinClass) {
+            default MycatProjectJoinClusteringRule.Config withOperandFor(Class<? extends Join> joinClass) {
                 return withOperandSupplier(b0 ->
                         b0.operand(LogicalProject.class)
                                 .oneInput(j->j.operand(joinClass).inputs(
                                         b1 -> b1.operand(MycatView.class).anyInputs(),
                                         b2 -> b2.operand(MycatView.class).anyInputs())))
-                        .as(ProjectJoinClusteringRule.Config.class);
+                        .as(MycatProjectJoinClusteringRule.Config.class);
             }
         }
     }

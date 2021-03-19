@@ -60,7 +60,7 @@ public class MycatMergeSort extends Sort implements MycatRel {
 //            "streamOrderBy", List.class,
 //            Function1.class, Comparator.class, int.class, int.class);
 
-    protected MycatMergeSort(RelOptCluster cluster,
+    public MycatMergeSort(RelOptCluster cluster,
                              RelTraitSet traits,
                              RelNode child,
                              RelCollation collation,
