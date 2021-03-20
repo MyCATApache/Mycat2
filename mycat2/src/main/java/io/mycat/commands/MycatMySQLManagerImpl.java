@@ -27,9 +27,6 @@ public class MycatMySQLManagerImpl extends AbstractMySQLManagerImpl {
             String name = datasource.getName();
             switch (datasource.computeType()) {
                 case NATIVE:
-                    hashMap.put(name, new NativeDatasourcePoolImpl(name));
-                    break;
-
                 case NATIVE_JDBC:
                     if (nativeServer) {
                         NativeDatasourcePoolImpl nativeDatasourcePool = new NativeDatasourcePoolImpl(name);

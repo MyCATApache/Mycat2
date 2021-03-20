@@ -6,7 +6,6 @@ import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import io.mycat.MycatTimeUtil;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
@@ -25,11 +24,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.*;
@@ -39,7 +35,7 @@ import java.util.Date;
 import java.util.List;
 
 public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
-    static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
+   public static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
     volatile Handler<Throwable> exceptionHandler;
     volatile Handler<Void> closeHandler;
     volatile MySQLClientSession mySQLClientSession;
@@ -181,7 +177,7 @@ public class AbstractMySqlConnectionImpl extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetMySqlPreparedQuery(sql, this);
+        return new RowSetMySqlPreparedTextQuery(sql, this);
     }
 
     @NotNull

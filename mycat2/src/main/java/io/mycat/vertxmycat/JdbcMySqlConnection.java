@@ -3,8 +3,6 @@ package io.mycat.vertxmycat;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.vertx.core.AsyncResult;
@@ -13,12 +11,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.MySQLConnection;
-import io.vertx.mysqlclient.impl.MySQLRowDesc;
-import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
 import io.vertx.mysqlclient.impl.codec.VertxRowSetImpl;
-import io.vertx.mysqlclient.impl.datatype.DataFormat;
-import io.vertx.mysqlclient.impl.datatype.DataType;
-import io.vertx.mysqlclient.impl.protocol.ColumnDefinition;
 import io.vertx.sqlclient.PreparedStatement;
 import io.vertx.sqlclient.*;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
@@ -30,10 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
@@ -92,7 +83,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
-        return new RowSetMySqlPreparedQuery(sql, this);
+        return new RowSetJdbcPreparedJdbcQuery(targetName,sql,connection.unwrap(Connection.class), IO_EXECUTOR);
     }
 
     @Override
@@ -229,7 +220,7 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                             IO_EXECUTOR.execute(isRead, () -> {
                                 try {
                                     extracted(promise);
-                                }catch (Throwable throwable){
+                                } catch (Throwable throwable) {
                                     promise.tryFail(throwable);
                                 }
                             });
@@ -238,94 +229,13 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                         @SneakyThrows
                         private void extracted(Promise<SqlResult<R>> promise) {
                             try (Statement statement = rawConnection.createStatement()) {
-
-                                LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
-
+                                if (LOGGER.isDebugEnabled()) {
+                                    LOGGER.debug("MycatMySQLManager targetName:{} sql:{}", targetName, sql);
+                                }
                                 statement.execute(sql);
                                 ResultSet resultSet = statement.getResultSet();
-                                JdbcRowMetaData metaData = new JdbcRowMetaData(
-                                        resultSet.getMetaData());
-                                int columnCount = metaData.getColumnCount();
-                                List<ColumnDescriptor> columnDescriptors = new ArrayList<>();
-                                for (int i = 0; i < columnCount; i++) {
-                                    int index = i;
-                                    columnDescriptors.add(new ColumnDescriptor() {
-                                        @Override
-                                        public String name() {
-                                            return metaData.getColumnName(index);
-                                        }
-
-                                        @Override
-                                        public boolean isArray() {
-                                            return false;
-                                        }
-
-                                        @Override
-                                        public JDBCType jdbcType() {
-                                            return JDBCType.valueOf(metaData.getColumnType(index));
-                                        }
-                                    });
-                                }
-
-                                RowDesc rowDesc = new RowDesc(metaData.getColumnList(), columnDescriptors);
-                                ColumnDefPacket[] columnDefPackets = new ColumnDefPacket[columnCount];
-                                for (int i = 0; i < columnCount; i++) {
-                                    columnDefPackets[i] = new ColumnDefPacketImpl(metaData, i);
-                                }
-
-
-                                if (collector instanceof StreamMysqlCollector) {
-                                    MySQLRowDesc mySQLRowDesc = new MySQLRowDesc(
-                                            Arrays.asList(columnDefPackets).stream().map(packet -> {
-                                                String catalog = new String(packet.getColumnCatalog());
-                                                String schema = new String(packet.getColumnSchema());
-                                                String table = new String(packet.getColumnTable());
-                                                String orgTable = new String(packet.getColumnOrgTable());
-                                                String name = new String(packet.getColumnName());
-                                                String orgName = new String(packet.getColumnOrgName());
-                                                int characterSet = packet.getColumnCharsetSet();
-                                                long columnLength = packet.getColumnLength();
-                                                DataType type = DataType.valueOf(packet.getColumnType() == 15 ? 253 : packet.getColumnType());
-                                                int flags = packet.getColumnFlags();
-                                                byte decimals = packet.getColumnDecimals();
-                                                ColumnDefinition columnDefinition = new ColumnDefinition(
-                                                        catalog,
-                                                        schema,
-                                                        table,
-                                                        orgTable,
-                                                        name,
-                                                        orgName,
-                                                        characterSet,
-                                                        columnLength,
-                                                        type,
-                                                        flags,
-                                                        decimals
-                                                );
-                                                return columnDefinition;
-                                            }).toArray(n -> new ColumnDefinition[n]), DataFormat.TEXT);
-                                    ((StreamMysqlCollector) collector)
-                                            .onColumnDefinitions(mySQLRowDesc);
-                                }
-                                {
-                                    Object supplier = collector.supplier().get();
-                                    BiConsumer<Object, Row> accumulator = (BiConsumer) collector.accumulator();
-                                    Function<Object, Object> finisher = (Function) collector.finisher();
-                                    int count = 0;
-                                    while (resultSet.next()) {
-                                        JDBCRow jdbcRow = new JDBCRow(rowDesc);
-                                        for (int i = 0; i < columnCount; i++) {
-                                            jdbcRow.addValue(resultSet.getObject(i + 1));
-                                        }
-                                        count++;
-                                        accumulator.accept(supplier, jdbcRow);
-                                    }
-                                    finisher.apply(supplier);
-                                    resultSet.close();
-                                    statement.close();
-                                    promise.complete(new MySqlResult<>(
-                                            count, 0, 0, (R) supplier, columnDescriptors));
-                                }
-                            } catch (Throwable throwable) {
+                                RowSetJdbcPreparedJdbcQuery.extracted(promise, statement, resultSet, collector);
+                            }catch (Throwable throwable){
                                 promise.tryFail(throwable);
                             }
                         }

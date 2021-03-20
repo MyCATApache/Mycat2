@@ -10,13 +10,13 @@ import java.util.stream.Collector;
 import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.apply;
 import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.toObjects;
 
-public class SqlResultCollectingPrepareQuery<R> implements AbstractMySqlPreparedQuery<SqlResult<R>> {
+public class SqlResultCollectingPrepareTextQuery<R> implements AbstractMySqlPreparedQuery<SqlResult<R>> {
 
     private final String sql;
     private final AbstractMySqlConnection connection;
     private final Collector<Row, Object, R> collector;
 
-    public SqlResultCollectingPrepareQuery(String sql,
+    public SqlResultCollectingPrepareTextQuery(String sql,
                                                AbstractMySqlConnection connection,
                                                Collector<Row, Object, R> collector) {
         this.sql = sql;

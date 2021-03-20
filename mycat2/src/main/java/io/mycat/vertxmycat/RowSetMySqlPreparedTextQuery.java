@@ -13,12 +13,12 @@ import java.util.stream.Collector;
 import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.apply;
 import static io.mycat.vertxmycat.AbstractMySqlConnectionImpl.toObjects;
 
-public class RowSetMySqlPreparedQuery implements AbstractMySqlPreparedQuery<RowSet<Row>> {
+public class RowSetMySqlPreparedTextQuery implements AbstractMySqlPreparedQuery<RowSet<Row>> {
 
     private final String sql;
     private final AbstractMySqlConnection connection;
 
-    public RowSetMySqlPreparedQuery(String sql, AbstractMySqlConnection connection) {
+    public RowSetMySqlPreparedTextQuery(String sql, AbstractMySqlConnection connection) {
         this.sql = sql;
         this.connection = connection;
     }
@@ -54,7 +54,7 @@ public class RowSetMySqlPreparedQuery implements AbstractMySqlPreparedQuery<RowS
 
     @Override
     public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
-        return new SqlResultCollectingPrepareQuery(sql,connection,collector);
+        return new SqlResultCollectingPrepareTextQuery(sql,connection,collector);
     }
 
     @Override
