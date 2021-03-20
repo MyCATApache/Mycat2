@@ -700,6 +700,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                     join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
                     distribution));
         }
+        if (lType == Distribution.Type.PHY && lType == rType) {
+            return ldistribution.join(rdistribution).map(distribution -> MycatView.ofBottom(
+                    join.copy(join.getTraitSet(), ImmutableList.of(left.getRelNode(), right.getRelNode())),
+                    distribution));
+        }
         return Optional.empty();
     }
 

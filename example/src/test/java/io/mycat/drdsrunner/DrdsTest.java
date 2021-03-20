@@ -169,6 +169,23 @@ public abstract class DrdsTest implements MycatTest {
                 mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c0", Arrays.asList("ds0"), Collections.emptyList()));
                 mycatRouterConfig.getClusters().add(CreateClusterHint.createConfig("c1", Arrays.asList("ds1"), Collections.emptyList()));
 
+                {
+                    NormalTableConfig orherTargetNormalTableConfig = new NormalTableConfig();
+                    orherTargetNormalTableConfig.setCreateTableSQL("CREATE TABLE `normal3` (\n" +
+                            "  `id` int(11) NOT NULL,\n" +
+                            "  `addressname` varchar(20) DEFAULT NULL,\n" +
+                            "  PRIMARY KEY (`id`)\n" +
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n");
+                    NormalBackEndTableInfoConfig otherTargetNormalBackEndTableInfoConfig = new NormalBackEndTableInfoConfig();
+                    otherTargetNormalBackEndTableInfoConfig.setTargetName("ds1");
+                    otherTargetNormalBackEndTableInfoConfig.setSchemaName("db1");
+                    otherTargetNormalBackEndTableInfoConfig.setTableName("normal3");
+                    orherTargetNormalTableConfig.setDataNode(otherTargetNormalBackEndTableInfoConfig);
+                    logicSchemaConfig.getNormalTables().put("normal3", orherTargetNormalTableConfig);
+
+                }
+
+
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds0", DB1));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("ds1", DB2));
                 mycatRouterConfig.getDatasources().add(CreateDataSourceHint.createConfig("prototype", DB1));

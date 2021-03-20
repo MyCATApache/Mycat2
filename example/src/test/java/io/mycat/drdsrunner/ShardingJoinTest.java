@@ -37,7 +37,16 @@ public class ShardingJoinTest extends DrdsTest {
 //        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,db1.normal2]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`))])]",
 //                explain.specificSql().toString());
     }
-
+    @Test
+    public void testSelectNormalOtherNormal() throws Exception {
+        Explain explain = parse("select * from db1.normal s join db1.normal3 e on s.id = e.id");
+        Assert.assertEquals(
+                "[{columnType=BIGINT, nullable=true, columnName=id}, {columnType=VARCHAR, nullable=true, columnName=addressname}, {columnType=BIGINT, nullable=true, columnName=id0}, {columnType=VARCHAR, nullable=true, columnName=addressname0}]",
+                explain.getColumnInfo());
+        Assert.assertEquals("MycatHashJoin(condition=[=($0, $2)], joinType=[inner])   MycatView(distribution=[normalTables=db1.normal])   MycatView(distribution=[normalTables=db1.normal3]) ", explain.dumpPlan());
+//        Assert.assertEquals("[SpecificSql(relNode=MycatView(distribution=[normalTables=db1.normal,db1.normal2]) , parameterizedSql=SELECT *  FROM db1.normal      INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`), sqls=[Each(targetName=prototype, sql=SELECT * FROM db1.normal     INNER JOIN db1.normal2 ON (`normal`.`id` = `normal2`.`id`))])]",
+//                explain.specificSql().toString());
+    }
 
     @Test
     public void testSelectNormalGlobal() throws Exception {
