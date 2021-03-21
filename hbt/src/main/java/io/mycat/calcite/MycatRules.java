@@ -199,8 +199,9 @@ public class MycatRules {
                 CoreRules.FILTER_TO_CALC,
                 CoreRules.PROJECT_TO_CALC,
                 CoreRules.CALC_REMOVE,
-                CoreRules.CALC_MERGE
-        );
+                CoreRules.CALC_MERGE,
+                CoreRules.CALC_TO_WINDOW
+                );
     }
 
 

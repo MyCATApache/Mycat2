@@ -215,6 +215,18 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Information_Functions.put("SYSTEM_USER", null);
         Information_Functions.put("USER", null);
         Information_Functions.put("VERSION", null);
+
+        //window function
+        Information_Functions.put("ROW_NUMBER", null);
+        Information_Functions.put("RANK", null);
+        Information_Functions.put("DENSE_RANK", null);
+        Information_Functions.put("PERCENT_RANK", null);
+        Information_Functions.put("CUME_DIST", null);
+        Information_Functions.put("FIRST_VALUE", null);
+        Information_Functions.put("LAST_VALUE", null);
+        Information_Functions.put("LAG", null);
+        Information_Functions.put("LEAD", null);
+        Information_Functions.put("NTH_VALUE", null);
     }
 
     @Override
@@ -309,14 +321,17 @@ public class SQLRBORewriter extends RelShuttleImpl {
 
     @Override
     public RelNode visit(RelNode other) {
-        if (other instanceof LogicalCalc){
-           return visit((LogicalCalc)other);
+        if (other instanceof LogicalCalc) {
+            return visit((LogicalCalc) other);
         }
-        if (other instanceof LogicalRepeatUnion){
-            return visit((LogicalRepeatUnion)other);
+        if (other instanceof LogicalRepeatUnion) {
+            return visit((LogicalRepeatUnion) other);
         }
-        if (other instanceof LogicalTableSpool){
-            return visit((LogicalTableSpool)other);
+        if (other instanceof LogicalTableSpool) {
+            return visit((LogicalTableSpool) other);
+        }
+        if (other instanceof LogicalWindow) {
+            return visit((LogicalWindow) other);
         }
         return other;
     }
@@ -326,11 +341,15 @@ public class SQLRBORewriter extends RelShuttleImpl {
         for (RelNode input : logicalRepeatUnion.getInputs()) {
             builder.add(input.accept(this));
         }
-        return logicalRepeatUnion.copy(logicalRepeatUnion.getTraitSet(),builder.build());
+        return logicalRepeatUnion.copy(logicalRepeatUnion.getTraitSet(), builder.build());
     }
 
     public RelNode visit(LogicalTableSpool logicalTableSpool) {
-        return logicalTableSpool.copy(logicalTableSpool.getTraitSet(),ImmutableList.of(logicalTableSpool.getInput().accept(this)));
+        return logicalTableSpool.copy(logicalTableSpool.getTraitSet(), ImmutableList.of(logicalTableSpool.getInput().accept(this)));
+    }
+
+    public RelNode visit(LogicalWindow logicalWindow) {
+        return logicalWindow.copy(logicalWindow.getTraitSet(), ImmutableList.of(logicalWindow.getInput().accept(this)));
     }
 
     public static RelNode sort(RelNode original, LogicalSort sort) {
@@ -769,6 +788,13 @@ public class SQLRBORewriter extends RelShuttleImpl {
             dataNodeInfo = ((MycatView) input).getDistribution();
             mycatView = (MycatView) original;
             input = ((MycatView) input).getRelNode();
+
+            if (project.containsOver()){
+                if (dataNodeInfo.type() == Distribution.Type.PHY||(dataNodeInfo.type()== Distribution.Type.BroadCast)){
+                    input = project.copy(project.getTraitSet(), ImmutableList.of(input));
+                    return mycatView.changeTo(input, dataNodeInfo);
+                }
+            }
         }
         if (input instanceof QueryBuilder) {
             QueryBuilder queryBuilder = (QueryBuilder) input;
@@ -782,6 +808,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             }
             return project.copy(project.getTraitSet(), ImmutableList.of(queryBuilder));
         }
+
         input = project.copy(project.getTraitSet(), ImmutableList.of(input));
         if (mycatView != null) {
             return mycatView.changeTo(input, dataNodeInfo);

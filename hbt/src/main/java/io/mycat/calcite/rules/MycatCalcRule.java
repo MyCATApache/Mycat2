@@ -36,7 +36,7 @@ public class MycatCalcRule extends MycatConverterRule {
      */
     public MycatCalcRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-        super(Calc.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
+        super(Calc.class, (Predicate<Calc>) r -> !r.containsOver(), MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatCalcRule");
     }
 

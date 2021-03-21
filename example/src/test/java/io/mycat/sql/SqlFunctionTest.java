@@ -418,6 +418,11 @@ public class SqlFunctionTest implements MycatTest {
         //like
         checkValue("select id,user_id from db1.travelrecord where user_id LIKE '99%' order by id");
 
+        checkValue(" SELECT *,\n" +
+                "   rank() over (PARTITION BY id\n" +
+                "                 ORDER BY user_id DESC) AS ranking\n" +
+                "FROM db1.`travelrecord`");
+
         checkValue("select 1");
     }
 

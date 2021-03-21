@@ -36,19 +36,8 @@ public class MycatProjectRule extends MycatConverterRule {
     public MycatProjectRule(final MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
         super(Project.class, project ->
-                        true,
+                        !project.containsOver(),
                 MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatProjectRule");
-    }
-
-    private static boolean userDefinedFunctionInProject(Project project) {
-        CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
-        for (RexNode node : project.getProjects()) {
-            node.accept(visitor);
-            if (visitor.containsUserDefinedFunction()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public RelNode convert(RelNode rel) {

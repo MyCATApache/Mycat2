@@ -17,6 +17,7 @@ package io.mycat.calcite.physical;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.MycatConvention;
+import io.mycat.calcite.MycatEnumerableRelImplementor;
 import io.mycat.calcite.MycatRel;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.enumerable.impl.WinAggAddContextImpl;
@@ -76,6 +77,11 @@ public class MycatWindow extends Window implements MycatRel {
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq)
                 .multiplyBy(EnumerableConvention.COST_MULTIPLIER);
+    }
+
+    @Override
+    public Result implement(MycatEnumerableRelImplementor implementor, Prefer pref) {
+        return implement((EnumerableRelImplementor)implementor,pref);
     }
 
     /** Implementation of {@link RexToLixTranslator.InputGetter}
