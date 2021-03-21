@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 public class ZKLockServiceImpl implements LockService {
     private final static Logger LOGGER = LoggerFactory.getLogger(LocalLockServiceImpl.class);
     @Override
-    public Future<Lock> getLocalLockWithTimeout(String name, long timeout) {
+    public Future<Lock> getLockWithTimeout(String name, long timeout) {
         InterProcessMutex lock = new InterProcessMutex(ZooMap.getClient(), "mycat/lock/"+name);
         return Future.future(event -> {
             try {

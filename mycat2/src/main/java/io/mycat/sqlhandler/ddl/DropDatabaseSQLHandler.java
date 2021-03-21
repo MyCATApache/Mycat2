@@ -12,8 +12,11 @@ import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.Response;
 import io.vertx.core.Future;
+import io.vertx.core.shareddata.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Function;
 
 
 public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseStatement> {
@@ -21,16 +24,23 @@ public class DropDatabaseSQLHandler extends AbstractSQLHandler<SQLDropDatabaseSt
 
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropDatabaseStatement> request, MycatDataContext dataContext, Response response)  {
-        SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
-        String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
-        try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
-            ops.dropSchema(schemaName);
-            ops.commit();
-            onPhysics(schemaName);
-            return response.sendOk();
-        }catch (Throwable throwable){
-            return Future.failedFuture(throwable);
-        }
+        LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        return lockFuture.flatMap(lock -> {
+            SQLDropDatabaseStatement dropDatabaseStatement = request.getAst();
+            String schemaName = SQLUtils.normalize(dropDatabaseStatement.getDatabaseName());
+            try (MycatRouterConfigOps ops = ConfigUpdater.getOps()) {
+                ops.dropSchema(schemaName);
+                ops.commit();
+                onPhysics(schemaName);
+                return response.sendOk();
+            }catch (Throwable throwable){
+                return Future.failedFuture(throwable);
+            }finally {
+                lock.release();
+            }
+        });
+
     }
     protected void onPhysics(String name) {
         MetadataManager metadataManager = MetaClusterCurrent.wrapper(MetadataManager.class);
