@@ -17,7 +17,7 @@ public class MycatMinusRule extends MycatConverterRule {
      */
     public MycatMinusRule(MycatConvention out,
                           RelBuilderFactory relBuilderFactory) {
-        super(Minus.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Minus.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatMinusRule");
     }
 

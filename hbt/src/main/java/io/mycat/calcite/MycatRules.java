@@ -44,7 +44,7 @@ import java.util.List;
  * 1.注意点 转换时候注意目标的表达式是否能接受源表达式,比如有不支持的自定义函数,排序项,分组项
  */
 public class MycatRules {
-    public final static Convention convention = Convention.NONE;
+    public final static Convention IN_CONVENTION = Convention.NONE;
 
     private MycatRules() {
 
@@ -189,7 +189,8 @@ public class MycatRules {
                 new MycatSortAggRule(out, relBuilderFactory),
                 new MycatCorrelateRule(out, relBuilderFactory),
                 new MycatTopNRule(out, relBuilderFactory),
-
+                new MycatRepeatUnionRule(out, relBuilderFactory),
+                new MycatTableSpoolRule(out, relBuilderFactory),
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
                 CoreRules.PROJECT_CALC_MERGE,

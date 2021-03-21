@@ -37,7 +37,7 @@ public class MycatAggregateRule extends MycatConverterRule {
      */
     public MycatAggregateRule(MycatConvention out,
                               RelBuilderFactory relBuilderFactory) {
-        super(Aggregate.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Aggregate.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatAggregateRule");
     }
 

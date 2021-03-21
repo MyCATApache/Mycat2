@@ -35,7 +35,7 @@ public  class MycatTableModificationRule extends MycatConverterRule {
     public MycatTableModificationRule(MycatConvention out,
                                       RelBuilderFactory relBuilderFactory) {
         super(TableModify.class, (Predicate<RelNode>) r -> true,
-                MycatRules.convention, out, relBuilderFactory, "MycatTableModificationRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTableModificationRule");
     }
 
     @Override

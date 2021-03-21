@@ -17,7 +17,7 @@ public class MycatCorrelateRule extends MycatConverterRule {
      */
     public MycatCorrelateRule(MycatConvention out,
                          RelBuilderFactory relBuilderFactory) {
-        super(Correlate.class, (Predicate<RelNode>) r -> true, MycatRules.convention, out,
+        super(Correlate.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION, out,
                 relBuilderFactory, "MycatCorrelateRule");
     }
 

@@ -37,7 +37,7 @@ public class MycatMemSortRule extends MycatConverterRule {
      */
     public MycatMemSortRule(MycatConvention out,
                             RelBuilderFactory relBuilderFactory) {
-        super(Sort.class, (Predicate<RelNode>) r -> true, MycatRules.convention, out,
+        super(Sort.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION, out,
                 relBuilderFactory, "MycatSortRule");
     }
 

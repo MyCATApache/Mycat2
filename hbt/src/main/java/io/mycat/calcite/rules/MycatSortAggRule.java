@@ -31,7 +31,7 @@ public class MycatSortAggRule extends MycatConverterRule {
                             RelBuilderFactory relBuilderFactory) {
         super(Aggregate.class, project ->
                         true,
-                MycatRules.convention, out, relBuilderFactory, "MycatSortAggRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatSortAggRule");
     }
 
     public RelNode convert(RelNode rel) {

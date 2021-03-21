@@ -37,7 +37,7 @@ public class MycatUnionRule extends MycatConverterRule {
      */
     public MycatUnionRule(MycatConvention out,
                           RelBuilderFactory relBuilderFactory) {
-        super(Union.class, (Predicate<RelNode>) r -> true, MycatRules.convention, out,
+        super(Union.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION, out,
                 relBuilderFactory, "MycatUnionRule");
     }
 

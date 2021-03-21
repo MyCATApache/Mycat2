@@ -28,7 +28,7 @@ public class MycatTopNRule extends MycatConverterRule {
                          RelBuilderFactory relBuilderFactory) {
         super(Sort.class, sort ->
                         sort.fetch!=null&&sort.collation!=null,
-                MycatRules.convention, out, relBuilderFactory, "MycatTopNRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatTopNRule");
     }
 
     public RelNode convert(RelNode rel) {

@@ -34,7 +34,7 @@ public class MycatValuesRule extends MycatConverterRule {
      */
     public MycatValuesRule(MycatConvention out,
                            RelBuilderFactory relBuilderFactory) {
-        super(Values.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Values.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatValuesRule");
     }
 

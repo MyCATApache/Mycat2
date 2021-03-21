@@ -36,7 +36,7 @@ public class MycatFilterRule extends MycatConverterRule {
                            RelBuilderFactory relBuilderFactory) {
         super(Filter.class,
                 r -> true,
-                MycatRules.convention, out, relBuilderFactory, "MycatFilterRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatFilterRule");
     }
 
     private static boolean userDefinedFunctionInFilter(Filter filter) {

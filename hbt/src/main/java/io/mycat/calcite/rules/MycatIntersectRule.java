@@ -36,7 +36,7 @@ public class MycatIntersectRule extends MycatConverterRule {
      */
     public MycatIntersectRule(MycatConvention out,
                               RelBuilderFactory relBuilderFactory) {
-        super(Intersect.class, (Predicate<RelNode>) r -> true, MycatRules.convention,
+        super(Intersect.class, (Predicate<RelNode>) r -> true, MycatRules.IN_CONVENTION,
                 out, relBuilderFactory, "MycatIntersectRule");
     }
 

@@ -37,7 +37,7 @@ public class MycatProjectRule extends MycatConverterRule {
                             RelBuilderFactory relBuilderFactory) {
         super(Project.class, project ->
                         true,
-                MycatRules.convention, out, relBuilderFactory, "MycatProjectRule");
+                MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatProjectRule");
     }
 
     private static boolean userDefinedFunctionInProject(Project project) {

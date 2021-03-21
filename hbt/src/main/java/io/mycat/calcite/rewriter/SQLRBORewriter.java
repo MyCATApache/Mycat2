@@ -312,7 +312,25 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (other instanceof LogicalCalc){
            return visit((LogicalCalc)other);
         }
+        if (other instanceof LogicalRepeatUnion){
+            return visit((LogicalRepeatUnion)other);
+        }
+        if (other instanceof LogicalTableSpool){
+            return visit((LogicalTableSpool)other);
+        }
         return other;
+    }
+
+    public RelNode visit(LogicalRepeatUnion logicalRepeatUnion) {
+        ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
+        for (RelNode input : logicalRepeatUnion.getInputs()) {
+            builder.add(input.accept(this));
+        }
+        return logicalRepeatUnion.copy(logicalRepeatUnion.getTraitSet(),builder.build());
+    }
+
+    public RelNode visit(LogicalTableSpool logicalTableSpool) {
+        return logicalTableSpool.copy(logicalTableSpool.getTraitSet(),ImmutableList.of(logicalTableSpool.getInput().accept(this)));
     }
 
     public static RelNode sort(RelNode original, LogicalSort sort) {

@@ -46,7 +46,7 @@ import java.util.List;
  */
 public class MycatMergeJoinRule extends MycatConverterRule {
     public MycatMergeJoinRule(MycatConvention out, RelBuilderFactory relBuilderFactory) {
-        super(Join.class, (j) -> true, MycatRules.convention, out, relBuilderFactory, "MycatMergeJoinRule");
+        super(Join.class, (j) -> true, MycatRules.IN_CONVENTION, out, relBuilderFactory, "MycatMergeJoinRule");
     }
 
     @Override
