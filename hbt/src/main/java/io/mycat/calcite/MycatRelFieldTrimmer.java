@@ -159,6 +159,11 @@ public class MycatRelFieldTrimmer extends RelFieldTrimmer {
         return super.trimFields(relNode, fieldsUsed, extraFields);
     }
 
+    public TrimResult trimFields(MycatWindow relNode, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields) {
+        return super.trimFields(relNode, fieldsUsed, extraFields);
+    }
+
+
     @Override
     public TrimResult trimFields(RelNode rel, ImmutableBitSet fieldsUsed, Set<RelDataTypeField> extraFields) {
         return super.trimFields(rel, fieldsUsed, extraFields);
