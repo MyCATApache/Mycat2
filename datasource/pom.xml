@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>1.16-release</version>
+    <version>1.17-release</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,22 +15,22 @@
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
-    <version>1.16-release</version>
+    <version>1.17-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>common</artifactId>
-    <version>1.16-release</version>
+    <version>1.17-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>plug</artifactId>
-    <version>1.16-release</version>
+    <version>1.17-release</version>
   </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>replica</artifactId>
-    <version>1.16-release</version>
+    <version>1.17-release</version>
   </dependency>
   <dependency>
     <groupId>com.zaxxer</groupId>
