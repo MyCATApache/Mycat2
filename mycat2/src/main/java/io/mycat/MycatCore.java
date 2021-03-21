@@ -88,7 +88,7 @@ public class MycatCore {
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
-        context.put(Scheduler.class,scheduler);
+        context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
         context.put(serverConfig.getClass(), serverConfig);
@@ -107,12 +107,14 @@ public class MycatCore {
         String mode = serverConfig.getMode();
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
+                context.put(LockService.class, new LocalLockServiceImpl());
                 metadataStorageManager = new FileMetadataStorageManager(serverConfig, datasourceProvider, this.baseDirectory);
                 break;
             }
             case PROPERTY_MODE_CLUSTER:
                 String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
+                    context.put(LockService.class, new ZKLockServiceImpl());
                     metadataStorageManager =
                             new CoordinatorMetadataStorageManager(
                                     new FileMetadataStorageManager(serverConfig,
@@ -173,7 +175,7 @@ public class MycatCore {
 
     public static void main(String[] args) throws Exception {
         if (args != null) {
-            Arrays.stream(args).filter(i -> i.startsWith("-D")||i.startsWith("-d"))
+            Arrays.stream(args).filter(i -> i.startsWith("-D") || i.startsWith("-d"))
                     .map(i -> i.substring(2).split("=")).forEach(n -> System.setProperty(n[0], n[1]));
         }
         new MycatCore().start();

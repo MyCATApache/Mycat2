@@ -9,7 +9,7 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.concurrent.TimeUnit;
 
-public class LockServiceImpl implements LockService {
+public class ZKLockServiceImpl implements LockService {
     private final static Logger LOGGER = LoggerFactory.getLogger(LocalLockServiceImpl.class);
     @Override
     public Future<Lock> getLocalLockWithTimeout(String name, long timeout) {
