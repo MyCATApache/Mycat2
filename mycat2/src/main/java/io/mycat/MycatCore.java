@@ -38,7 +38,6 @@ public class MycatCore {
     private final MycatServer mycatServer;
     private final MetadataStorageManager metadataStorageManager;
     private final Path baseDirectory;
-    private final MycatWorkerProcessor mycatWorkerProcessor;
 
     static {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -75,7 +74,6 @@ public class MycatCore {
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
-        this.mycatWorkerProcessor = new MycatWorkerProcessor(workerPool, serverConfig.getServer().getTimeWorkerPool());
 
 
         VertxOptions vertxOptions = new VertxOptions();
@@ -96,7 +94,6 @@ public class MycatCore {
         context.put(serverConfig.getClass(), serverConfig);
         context.put(LoadBalanceManager.class, new LoadBalanceManager(serverConfig.getLoadBalance()));
         context.put(Vertx.class, Vertx.vertx(vertxOptions));
-        context.put(mycatWorkerProcessor.getClass(), mycatWorkerProcessor);
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);

@@ -16,7 +16,9 @@ package io.mycat.datasource.jdbc.datasource;
 
 
 import com.alibaba.druid.util.JdbcUtils;
-import io.mycat.*;
+import io.mycat.ConnectionManager;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatException;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -25,6 +27,7 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.replica.ReplicaSelectorManager;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
+import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,15 +45,13 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcConnectionManager.class);
     private final ConcurrentHashMap<String, JdbcDataSource> dataSourceMap = new ConcurrentHashMap<>();
     private final DatasourceProvider datasourceProvider;
-    private final MycatWorkerProcessor workerProcessor;
     private final ReplicaSelectorManager replicaSelector;
 
     public JdbcConnectionManager(String customerDatasourceProvider,
                                  Map<String, DatasourceConfig> datasources,
                                  Map<String, ClusterConfig> clusterConfigs,
-                                 MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorManager replicaSelector) {
-        this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), workerProcessor, replicaSelector);
+        this(datasources, clusterConfigs, createDatasourceProvider(customerDatasourceProvider), replicaSelector);
     }
 
     private static DatasourceProvider createDatasourceProvider(String customerDatasourceProvider) {
@@ -69,10 +70,8 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
     public JdbcConnectionManager(Map<String, DatasourceConfig> datasources,
                                  Map<String, ClusterConfig> clusterConfigs,
                                  DatasourceProvider provider,
-                                 MycatWorkerProcessor workerProcessor,
                                  ReplicaSelectorManager replicaSelector) {
         this.datasourceProvider = Objects.requireNonNull(provider);
-        this.workerProcessor = workerProcessor;
         this.replicaSelector = replicaSelector;
 
         for (DatasourceConfig datasource : datasources.values()) {
@@ -192,11 +191,14 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
         replicaSelector.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                workerProcessor.getMycatWorker().submit(() -> {
+                Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                vertx.executeBlocking(promise -> {
                     try {
                         heartbeat(heartBeatStrategy);
                     } catch (Exception e) {
                         heartBeatStrategy.onException(e);
+                    }finally {
+                        promise.tryComplete();
                     }
                 });
             }

@@ -79,15 +79,10 @@ public class ConfigPrepareExecuter {
 
         switch (ops.getUpdateType()) {
             case USER: {
-                LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-                MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-
                 this.authenticator = new AuthenticatorImpl(ops.getUsers().stream().distinct().collect(Collectors.toMap(k -> k.getUsername(), v -> v)));
                 break;
             }
             case SEQUENCE: {
-                LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-                MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
                 ServerConfig serverConfig = MetaClusterCurrent.wrapper(MycatServerConfig.class).getServer();
                 this.sequenceGenerator = new SequenceGenerator(serverConfig.getMycatId(), ops.getSequences());
                 break;
@@ -166,7 +161,6 @@ public class ConfigPrepareExecuter {
     public void fullInitBy(MycatRouterConfig mycatRouterConfig) {
 
         LoadBalanceManager loadBalanceManager = MetaClusterCurrent.wrapper(LoadBalanceManager.class);
-        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         Map<String, DatasourceConfig> datasourceConfigMap = mycatRouterConfig.getDatasources().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         Map<String, ClusterConfig> clusters = mycatRouterConfig.getClusters().stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
         replicaSelector = new ReplicaSelectorRuntime(mycatRouterConfig.getClusters(), datasourceConfigMap, loadBalanceManager,
@@ -189,7 +183,6 @@ public class ConfigPrepareExecuter {
                 datasourceProvider,
                 datasourceConfigMap,
                 clusters,
-                mycatWorkerProcessor,
                 replicaSelector);
         datasourceConfigProvider = new DatasourceConfigProvider() {
             @Override

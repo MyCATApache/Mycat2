@@ -17,6 +17,7 @@ import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.util.Dumper;
 import io.mycat.util.TimeUnitUtil;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.Vertx;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -74,9 +75,8 @@ public class  SqlResultSetService implements Closeable, Dumpable {
         SQLSelectStatement sqlSelectStatement = (SQLSelectStatement) sqlStatement;
         ScheduledFuture<?> scheduledFuture = timer.scheduleAtFixedRate(() -> {
             try {
-                MycatWorkerProcessor processor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                NameableExecutor mycatWorker = processor.getMycatWorker();
-                mycatWorker.execute(() -> {
+                Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                vertx.executeBlocking(promise -> {
                     try {
                         cache.invalidate(sqlSelectStatement);
                         loadResultSet(sqlSelectStatement);

@@ -1,6 +1,10 @@
 package io.mycat.plug.sequence;
 
-import io.mycat.*;
+import io.mycat.ConnectionManager;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatConnection;
+import io.mycat.ScheduleUtil;
+import io.vertx.core.Vertx;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -69,15 +73,21 @@ public class DefaultPrototypeGenerator implements Supplier<Number> {
     }
 
     public void fetch() {
-        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-        mycatWorkerProcessor.getMycatWorker().execute(() -> {
-            if (this.value == null) {
-                Value number = getNumber();
-                synchronized (this) {
-                    if (this.value == null) {
-                        this.value = number;
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        vertx.executeBlocking(promise -> {
+            try{
+                if (this.value == null) {
+                    Value number = getNumber();
+                    synchronized (this) {
+                        if (this.value == null) {
+                            this.value = number;
+                        }
                     }
                 }
+            }catch (Throwable throwable){
+                LOGGER.error("",throwable);
+            }finally {
+                promise.tryComplete();
             }
         });
     }

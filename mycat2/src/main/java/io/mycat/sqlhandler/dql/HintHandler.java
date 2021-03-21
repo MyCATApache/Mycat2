@@ -25,7 +25,10 @@ import io.mycat.commands.SqlResultSetService;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.replica.*;
+import io.mycat.replica.PhysicsInstance;
+import io.mycat.replica.ReplicaSelector;
+import io.mycat.replica.ReplicaSelectorManager;
+import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
@@ -682,19 +685,6 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 .addColumnInfo("COMPLETED_TASK", JDBCType.BIGINT)
                                 .addColumnInfo("TOTAL_TASK", JDBCType.BIGINT);
 
-                        MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                        List<NameableExecutor> nameableExecutors = Arrays.asList(mycatWorkerProcessor.getMycatWorker(),
-                                mycatWorkerProcessor.getTimeWorker());
-
-                        for (NameableExecutor w : nameableExecutors) {
-                            builder.addObjectRowPayload(Arrays.asList(
-                                    w.getName(),
-                                    w.getPoolSize(),
-                                    w.getActiveCount(),
-                                    w.getQueue().size(),
-                                    w.getCompletedTaskCount(),
-                                    w.getTaskCount()));
-                        }
                         return response.sendResultSet(() -> builder.build());
                     }
                     if ("showNativeBackends".equalsIgnoreCase(cmd)) {

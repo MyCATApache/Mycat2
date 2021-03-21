@@ -36,8 +36,6 @@ public class NativeMycatServer implements MycatServer {
 
     private ReactorThreadManager reactorManager;
 
-    private MycatWorkerProcessor mycatWorkerProcessor;
-
     private DatasourceConfigProvider datasourceConfigProvider;
 
     private Authenticator authenticator;
@@ -53,8 +51,6 @@ public class NativeMycatServer implements MycatServer {
     public void start() {
         this.authenticator = new ProxyAuthenticator();
         this.datasourceConfigProvider = new ProxyDatasourceConfigProvider();
-
-        this.mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
         startProxy(this.serverConfig.getServer());
     }
 

@@ -1,18 +1,13 @@
 package io.mycat.commands;
 
 import io.mycat.MetaClusterCurrent;
-import io.mycat.MycatWorkerProcessor;
-import io.mycat.NameableExecutor;
 import io.mycat.NativeMycatServer;
 import io.mycat.proxy.MySQLDatasourcePool;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.util.VertxUtil;
 import io.mycat.vertxmycat.AbstractMySqlConnectionImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.sqlclient.SqlConnection;
 
 public class NativeDatasourcePoolImpl extends MycatDatasourcePool {

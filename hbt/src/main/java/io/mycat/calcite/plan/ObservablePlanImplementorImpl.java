@@ -1,33 +1,30 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.*;
+import io.mycat.AsyncMycatDataContextImplImpl;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.MycatDataContext;
+import io.mycat.Response;
 import io.mycat.api.collector.MySQLColumnDef;
 import io.mycat.api.collector.MysqlPayloadObject;
 import io.mycat.api.collector.MysqlRow;
 import io.mycat.calcite.CodeExecuterContext;
-import io.mycat.calcite.ProxyConnectionUsage;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.connectionschedule.Scheduler;
-import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
-import org.apache.calcite.util.RxBuiltInMethodImpl;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.IdentityHashMap;
+import java.util.List;
 
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
@@ -77,19 +74,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
             Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> future = scheduler.schedule(context,params,plan.getCodeExecuterContext());
             future.onSuccess(relNodeListIdentityHashMap -> {
-                    MycatWorkerProcessor mycatWorkerProcessor = MetaClusterCurrent.wrapper(MycatWorkerProcessor.class);
-                    mycatWorkerProcessor.getMycatWorker()
-                            .execute(()->{
                                 try {
                                     IdentityHashMap<RelNode, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
                                     AsyncMycatDataContextImplImpl newMycatDataContext =
                                             new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
                                     Object bindObservable;
-//                            if(codeExecuterContext.getCode().contains("hashJoin(org")){
-//                                bindObservable = bindObservable(newMycatDataContext);
-//                            }else {
                                     bindObservable = bindable.bindObservable(newMycatDataContext);
-//                            }
                                     Observable<Object[]> observable;
                                     if (bindObservable instanceof Observable) {
                                         observable = (Observable) bindObservable;
@@ -103,9 +93,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                 }catch (Throwable throwable){
                                     emitter.onError(throwable);
                                 }
-                            });
-          }).onFailure(event -> emitter.onError(event));
-        });
+                            }).onFailure(event -> emitter.onError(event));
+          });
         return rowObservable;
     }
 }
