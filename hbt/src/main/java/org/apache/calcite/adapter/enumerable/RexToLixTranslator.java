@@ -65,7 +65,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
           findMethod(SqlFunctions.class, "translate3", String.class, String.class,
               String.class), TRANSLATE3);
 
-  final JavaTypeFactory typeFactory;
+ public final JavaTypeFactory typeFactory;
   final RexBuilder builder;
   private final RexProgram program;
   final SqlConformance conformance;
@@ -179,7 +179,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         new RexBuilder(typeFactory), conformance, null);
   }
 
-  Expression translate(RexNode expr) {
+  public Expression translate(RexNode expr) {
     final RexImpTable.NullAs nullAs =
         RexImpTable.NullAs.of(isNullable(expr));
     return translate(expr, nullAs);
@@ -189,7 +189,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     return translate(expr, nullAs, null);
   }
 
-  Expression translate(RexNode expr, Type storageType) {
+  public Expression translate(RexNode expr, Type storageType) {
     final RexImpTable.NullAs nullAs =
         RexImpTable.NullAs.of(isNullable(expr));
     return translate(expr, nullAs, storageType);

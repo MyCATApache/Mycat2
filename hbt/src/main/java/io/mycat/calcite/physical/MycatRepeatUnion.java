@@ -70,7 +70,6 @@ public class MycatRepeatUnion extends RepeatUnion implements MycatRel {
     }
 
 
-
     @Override public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
 
         // return repeatUnion(<seedExp>, <iterativeExp>, iterationLimit, all, <comparer>);

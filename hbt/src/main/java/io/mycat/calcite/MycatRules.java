@@ -191,6 +191,7 @@ public class MycatRules {
                 new MycatTopNRule(out, relBuilderFactory),
                 new MycatRepeatUnionRule(out, relBuilderFactory),
                 new MycatTableSpoolRule(out, relBuilderFactory),
+                new MycatWinodwRule(out, relBuilderFactory),
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
                 CoreRules.PROJECT_CALC_MERGE,
