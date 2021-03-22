@@ -25,10 +25,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
@@ -57,7 +55,6 @@ import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.VertxUtil;
 import io.vertx.core.Future;
-import io.vertx.core.impl.future.PromiseInternal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -78,7 +75,6 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
@@ -88,10 +84,7 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.runtime.CalciteException;
@@ -112,16 +105,12 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,12 +120,10 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.JDBCType;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.rel.rules.CoreRules.*;
 import static org.apache.calcite.tools.Programs.ofRules;
-import static org.apache.calcite.tools.Programs.sequence;
 
 public class DrdsRunner {
     final static Logger log = LoggerFactory.getLogger(DrdsRunner.class);
@@ -736,7 +723,7 @@ public class DrdsRunner {
         } else {
             boolean needJoinReorder = RelOptUtil.countJoins(logPlan) > 2;
             if (needJoinReorder){
-                logPlan = joinReorder(logPlan);
+                logPlan = preJoinReorder(logPlan);
             }
             RelOptCluster cluster = logPlan.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
@@ -770,7 +757,7 @@ public class DrdsRunner {
         }
     }
 
-    public static RelNode joinReorder(RelNode logPlan) {
+    public static RelNode preJoinReorder(RelNode logPlan) {
             final HepProgram hep = new HepProgramBuilder()
                     .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
                     .addMatchOrder(HepMatchOrder.BOTTOM_UP)
