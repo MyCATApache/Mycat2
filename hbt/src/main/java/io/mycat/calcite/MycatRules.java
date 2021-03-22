@@ -194,16 +194,13 @@ public class MycatRules {
                 new MycatWinodwRule(out, relBuilderFactory),
 //                , MycatBatchNestedLoopJoinRule.INSTANCE
 
-                CoreRules.PROJECT_CALC_MERGE,
-                CoreRules.FILTER_CALC_MERGE,
                 CoreRules.FILTER_TO_CALC,
                 CoreRules.PROJECT_TO_CALC,
                 CoreRules.CALC_REMOVE,
                 CoreRules.CALC_MERGE,
                 CoreRules.CALC_TO_WINDOW
-                );
+        );
     }
-
 
     /**
      * Returns whether this Mycat data source can implement a given aggregate

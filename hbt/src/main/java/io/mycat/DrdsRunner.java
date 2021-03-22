@@ -157,6 +157,7 @@ public class DrdsRunner {
         RelNode relNode = hbtQueryConvertor.complie(originSchema);
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
         hepProgramBuilder.addRuleInstance(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
+        hepProgramBuilder.addMatchLimit(512);
         HepProgram hepProgram = hepProgramBuilder.build();
         HepPlanner hepPlanner = new HepPlanner(hepProgram);
         hepPlanner.setRoot(relNode);
@@ -762,7 +763,7 @@ public class DrdsRunner {
                     .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
                     .addMatchOrder(HepMatchOrder.BOTTOM_UP)
                     .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
-                    .addMatchLimit(1024)
+                    .addMatchLimit(512)
                     .build();
             final HepPlanner hepPlanner = new HepPlanner(hep,
                     null, false, null, RelOptCostImpl.FACTORY);
@@ -786,12 +787,11 @@ public class DrdsRunner {
             CoreRules.FILTER_CORRELATE,
             CoreRules.PROJECT_CORRELATE_TRANSPOSE,
             CoreRules.FILTER_AGGREGATE_TRANSPOSE,
-            CoreRules.FILTER_MULTI_JOIN_MERGE,
+//            CoreRules.FILTER_MULTI_JOIN_MERGE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
             CoreRules.FILTER_SET_OP_TRANSPOSE,
             CoreRules.FILTER_PROJECT_TRANSPOSE,
-            CoreRules.SEMI_JOIN_FILTER_TRANSPOSE,
-            CoreRules.PROJECT_FILTER_TRANSPOSE,
+//            CoreRules.SEMI_JOIN_FILTER_TRANSPOSE,
             CoreRules.FILTER_REDUCE_EXPRESSIONS,
             CoreRules.JOIN_REDUCE_EXPRESSIONS,
             CoreRules.PROJECT_REDUCE_EXPRESSIONS,
@@ -809,43 +809,8 @@ public class DrdsRunner {
 
     private static RelNode optimizeWithRBO(RelNode logPlan, DrdsSql drdsSql, OptimizationContext optimizationContext) {
         HepProgramBuilder builder = new HepProgramBuilder();
-        builder.addMatchLimit(1024);
-//        builder.addRuleCollection(FILTER);
-        if (false) {
-//            MycatFilterPhyViewRule mycatFilterPhyViewRule = new MycatFilterPhyViewRule(optimizationContext);
-            ImmutableList<RelOptRule> relOptRules = ImmutableList.of(
-//                    mycatFilterPhyViewRule,
-//                    MycatTablePhyViewRule.INSTANCE,
-                    CoreRules.PROJECT_SET_OP_TRANSPOSE,
-                    CoreRules.FILTER_SET_OP_TRANSPOSE,
-                    CoreRules.JOIN_LEFT_UNION_TRANSPOSE,
-                    CoreRules.JOIN_RIGHT_UNION_TRANSPOSE,
-                    CoreRules.AGGREGATE_UNION_TRANSPOSE,
-                    CoreRules.PROJECT_SET_OP_TRANSPOSE,
-                    CoreRules.FILTER_SET_OP_TRANSPOSE,
-                    CoreRules.AGGREGATE_UNION_TRANSPOSE,
-                    CoreRules.SORT_UNION_TRANSPOSE,
-                    CoreRules.SORT_UNION_TRANSPOSE_MATCH_NULL_FETCH,
-                    CoreRules.UNION_MERGE,
-                    CoreRules.UNION_REMOVE,
-                    CoreRules.PROJECT_MERGE,
-                    CoreRules.FILTER_MERGE
-            );
-            builder.addRuleCollection(relOptRules);
-        }
+        builder.addMatchLimit(512);
         builder.addRuleCollection(FILTER);
-//        builder.addRuleInstance(PROJECT_JOIN_JOIN_REMOVE);
-//        builder.addRuleInstance(PROJECT_JOIN_TRANSPOSE);
-//        builder.addRuleInstance(PROJECT_REMOVE);
-//        builder.addRuleCollection(ImmutableList.of(
-//                new MycatFilterViewRule(optimizationContext),
-//                MycatProjectViewRule.INSTANCE,
-//                MycatJoinViewRule.INSTANCE,
-//                MycatAggregateViewRule.INSTANCE,
-//                MycatSortViewRule.INSTANCE,
-//                CoreRules.AGGREGATE_REDUCE_FUNCTIONS
-//        ));
-
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
