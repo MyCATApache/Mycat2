@@ -533,8 +533,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
         Optional<RelNode> relNodeOptional = bottomJoin(left, right, join);
         if (relNodeOptional.isPresent()) return relNodeOptional.get();
         Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left, right));
-        if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER) {
-            int orgJoinCount = RelOptUtil.countJoins(newJoin);
+        int orgJoinCount = RelOptUtil.countJoins(newJoin);
+        if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 2) {
             RelOptCluster cluster = newJoin.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
@@ -789,8 +789,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
             mycatView = (MycatView) original;
             input = ((MycatView) input).getRelNode();
 
-            if (project.containsOver()){
-                if (dataNodeInfo.type() == Distribution.Type.PHY||(dataNodeInfo.type()== Distribution.Type.BroadCast)){
+            if (project.containsOver()) {
+                if (dataNodeInfo.type() == Distribution.Type.PHY || (dataNodeInfo.type() == Distribution.Type.BroadCast)) {
                     input = project.copy(project.getTraitSet(), ImmutableList.of(input));
                     return mycatView.changeTo(input, dataNodeInfo);
                 }
