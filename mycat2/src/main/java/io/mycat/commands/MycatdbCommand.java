@@ -16,6 +16,7 @@ import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.ShardingSQLHandler;
 import io.mycat.sqlhandler.dcl.*;
 import io.mycat.sqlhandler.ddl.*;
+import io.mycat.sqlhandler.ddl.CreateSequenceHandler;
 import io.mycat.sqlhandler.dml.*;
 import io.mycat.sqlhandler.dql.*;
 import io.mycat.sqlrecorder.SqlRecord;
