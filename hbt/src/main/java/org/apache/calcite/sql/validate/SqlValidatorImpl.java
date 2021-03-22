@@ -2512,6 +2512,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           (usingScope != null) ? usingScope : parentScope;
       SelectScope selectScope =
           new SelectScope(parentScope, windowParentScope, select);
+      selectScope.getOrderList();//fix bug
       scopes.put(select, selectScope);
 
       // Start by registering the WHERE clause

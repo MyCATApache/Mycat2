@@ -2052,7 +2052,7 @@ public class MycatCalciteMySqlNodeVisitor extends MySqlASTVisitorAdapter {
     private SqlNodeList convertOrderby(SQLOrderBy orderBy) {
         if (orderBy == null) {
             //org/apache/calcite/calcite-core/1.23.0/calcite-core-1.23.0-sources.jar!/org/apache/calcite/sql/validate/SqlValidatorImpl.java:1353
-            return null;//
+            return new SqlNodeList(Collections.emptyList(), SqlParserPos.ZERO);
         }
 
         List<SQLSelectOrderByItem> items = orderBy.getItems();

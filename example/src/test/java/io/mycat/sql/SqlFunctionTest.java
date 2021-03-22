@@ -135,7 +135,7 @@ public class SqlFunctionTest implements MycatTest {
         ResultSet rs = null;
         try {
             stmt = conn.createStatement();
-
+            System.out.println(s);
 
             rs = stmt.executeQuery(s);
 
@@ -424,6 +424,15 @@ public class SqlFunctionTest implements MycatTest {
                 "FROM db1.`travelrecord`");
 
         checkValue("select 1");
+
+        checkValue("SELECT\n" +
+                "    user_id,\n" +
+                "    SUM(id) over (PARTITION BY id) sum_user_id\n" +
+                "FROM db1.travelrecord ORDER BY sum_user_id;");
+
+//        checkValue("select\n" +
+//                "    rank() over (partition by user_id order by id) as rank\n" +
+//                "from db1.travelrecord;");
     }
 
 
