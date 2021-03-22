@@ -9,6 +9,7 @@ import io.mycat.MetadataManager;
 import io.mycat.TableHandler;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;

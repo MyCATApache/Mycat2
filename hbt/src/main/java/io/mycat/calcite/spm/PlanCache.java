@@ -24,5 +24,7 @@ public interface PlanCache {
 
     void put(String parameterizedString, List<SqlTypeName> types, Plan plan);
 
+
     void clear();
+
 }

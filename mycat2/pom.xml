@@ -175,6 +175,11 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>va</artifactId>
+            <version>1.14-release</version>
+        </dependency>
     </dependencies>
     <build>
 
