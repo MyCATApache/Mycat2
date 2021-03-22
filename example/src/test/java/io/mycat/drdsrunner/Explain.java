@@ -32,12 +32,12 @@ public class Explain {
         return plan.getMetaData().toSimpleText();
     }
 
-    public String dumpPlan2() {
-        String dumpPlan = Util.toLinux(RelOptUtil.dumpPlan("", plan.getPhysical(), SqlExplainFormat.TEXT,
-                SqlExplainLevel.EXPPLAN_ATTRIBUTES));
-        System.out.println(dumpPlan);
-        return dumpPlan;
-    }
+//    public String dumpPlan2() {
+//        String dumpPlan = Util.toLinux(RelOptUtil.dumpPlan("", plan.getPhysical(), SqlExplainFormat.TEXT,
+//                SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+//        System.out.println(dumpPlan);
+//        return dumpPlan;
+//    }
     public String dumpPlan() {
         return plan.dumpPlan().replaceAll("\r"," ").replaceAll("\n"," ");
     }

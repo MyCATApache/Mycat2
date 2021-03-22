@@ -1,5 +1,7 @@
 package io.mycat;
 
+import io.mycat.calcite.spm.PlanCache;
+import io.mycat.calcite.spm.PlanCacheImpl;
 import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.connectionschedule.Scheduler;
@@ -96,6 +98,7 @@ public class MycatCore {
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
+        context.put(PlanCache.class,new PlanCacheImpl());
         context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);
