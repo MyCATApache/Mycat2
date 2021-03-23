@@ -17,27 +17,21 @@ import java.util.List;
 @Getter
 public class MycatInsertRel extends AbstractRelNode implements MycatRel {
 
-    private static RelOptCluster cluster = DrdsRunner.newCluster();
+    private final static RelOptCluster cluster = DrdsRunner.newCluster();
     private final int finalAutoIncrementIndex;
     private final List<Integer> shardingKeys;
     private final MySqlInsertStatement mySqlInsertStatement;
     private final ShardingTableHandler logicTable;
     private final String[] columnNames;
 
-    public static MycatInsertRel create( int finalAutoIncrementIndex,
-                                         List<Integer> shardingKeys,
-                                         MySqlInsertStatement mySqlInsertStatement,
-                                         ShardingTableHandler logicTable) {
-        return create(cluster,finalAutoIncrementIndex,shardingKeys,mySqlInsertStatement,logicTable);
-    }
-    public static MycatInsertRel create(RelOptCluster cluster,
+    public static MycatInsertRel create(
                                         int finalAutoIncrementIndex,
                                         List<Integer> shardingKeys,
                                         MySqlInsertStatement mySqlInsertStatement,
                                         ShardingTableHandler logicTable) {
-        return new MycatInsertRel(cluster,finalAutoIncrementIndex,shardingKeys,mySqlInsertStatement,logicTable);
+        return new MycatInsertRel(finalAutoIncrementIndex,shardingKeys,mySqlInsertStatement,logicTable);
     }
-    protected MycatInsertRel(RelOptCluster cluster,
+    protected MycatInsertRel(
                              int finalAutoIncrementIndex,
                              List<Integer> shardingKeys,
                              MySqlInsertStatement mySqlInsertStatement,
