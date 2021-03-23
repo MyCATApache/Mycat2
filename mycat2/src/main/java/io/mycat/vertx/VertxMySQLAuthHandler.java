@@ -7,8 +7,8 @@ import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.config.UserConfig;
-import io.mycat.mycatmysql.MycatMySQLHandler;
-import io.mycat.mycatmysql.MycatMysqlSession;
+import io.mycat.mycatmysql.MycatVertxMySQLHandler;
+import io.mycat.mycatmysql.MycatVertxMysqlSession;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.runtime.MycatDataContextImpl;
@@ -119,8 +119,8 @@ public class VertxMySQLAuthHandler implements Handler<Buffer> {
         mycatDataContext.setAutoCommit(true);
         mycatDataContext.setIsolation(MySQLIsolation.REPEATED_READ);
         mycatDataContext.setCharsetIndex(authPacket.getCharacterSet());
-        MycatMysqlSession vertxSession = new MycatMysqlSession(mycatDataContext, socket);
-        socket.handler(new VertxMySQLPacketResolver(socket, new MycatMySQLHandler(vertxSession)));
+        MycatVertxMysqlSession vertxSession = new MycatVertxMysqlSession(mycatDataContext, socket);
+        socket.handler(new VertxMySQLPacketResolver(socket, new MycatVertxMySQLHandler(vertxSession)));
         vertxSession.setPacketId(packetId);
 
         mysqlProxyServerVerticle.addSession(vertxSession);

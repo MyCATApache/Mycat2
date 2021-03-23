@@ -1,7 +1,7 @@
 package io.mycat.vertx;
 
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.mycatmysql.MycatMySQLHandler;
+import io.mycat.mycatmysql.MycatVertxMySQLHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
@@ -15,7 +15,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     State state = HEAD;
     int currentPacketLength;
     int reveicePacketLength = 0;
-    MycatMySQLHandler mySQLHandler;
+    MycatVertxMySQLHandler mySQLHandler;
     NetSocket socket;
     private short packetId;
 
@@ -25,7 +25,7 @@ public class VertxMySQLPacketResolver implements Handler<Buffer> {
     }
 
 
-    public VertxMySQLPacketResolver(NetSocket socket, MycatMySQLHandler mySQLHandler) {
+    public VertxMySQLPacketResolver(NetSocket socket, MycatVertxMySQLHandler mySQLHandler) {
         this.mySQLHandler = mySQLHandler;
         this.socket = socket;
     }

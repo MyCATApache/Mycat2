@@ -45,12 +45,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
-public class MycatMySQLHandler {
-    private MycatMysqlSession session;
+public class MycatVertxMySQLHandler {
+    private MycatVertxMysqlSession session;
     private MycatDataContext mycatDataContext;
-    private static final Logger LOGGER = LoggerFactory.getLogger(MycatMySQLHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatVertxMySQLHandler.class);
 
-    public MycatMySQLHandler(MycatMysqlSession MycatMysqlSession) {
+    public MycatVertxMySQLHandler(MycatVertxMysqlSession MycatMysqlSession) {
         this.mycatDataContext = MycatMysqlSession.getDataContext();
         this.session = MycatMysqlSession;
         NetSocket socket = this.session.getSocket();
@@ -368,7 +368,7 @@ public class MycatMySQLHandler {
         return disposable;
     }
 
-    private void saveBindValue(long statementId, BindValue[] values, MycatMysqlSession MycatMysqlSession) {
+    private void saveBindValue(long statementId, BindValue[] values, MycatVertxMysqlSession MycatMysqlSession) {
         Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {
@@ -377,7 +377,7 @@ public class MycatMySQLHandler {
         preparedStatement.setBindValues(values);
     }
 
-    private BindValue[] getLastBindValue(long statementId, MycatMysqlSession MycatMysqlSession) {
+    private BindValue[] getLastBindValue(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         Map<Long, io.mycat.PreparedStatement> prepareInfo = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = prepareInfo.get(statementId);
         if (preparedStatement == null) {
@@ -386,7 +386,7 @@ public class MycatMySQLHandler {
         return preparedStatement.getBindValues();
     }
 
-    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatMysqlSession MycatMysqlSession) throws Exception {
+    private  Future<Void>  handlePrepareStatementExecute(long statementId, byte flags, int[] params, BindValue[] values, MycatVertxMysqlSession MycatMysqlSession) throws Exception {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -398,7 +398,7 @@ public class MycatMySQLHandler {
         return MycatdbCommand.execute(dataContext, receiver, statement);
     }
 
-    private byte[] getLongData(long statementId, int i, MycatMysqlSession MycatMysqlSession) {
+    private byte[] getLongData(long statementId, int i, MycatVertxMysqlSession MycatMysqlSession) {
         Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = preparedStatementMap.get(statementId);
         ByteArrayOutputStream longData = preparedStatement.getLongData(i);
@@ -408,7 +408,7 @@ public class MycatMySQLHandler {
         return longData.toByteArray();
     }
 
-    private int getNumParamsByStatementId(long statementId, MycatMysqlSession MycatMysqlSession) {
+    private int getNumParamsByStatementId(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         Map<Long, io.mycat.PreparedStatement> preparedStatementMap = mycatDataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = Objects.requireNonNull(
                 preparedStatementMap.get(statementId),
@@ -417,7 +417,7 @@ public class MycatMySQLHandler {
         return preparedStatement.getParametersNumber();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementReset(long statementId, MycatMysqlSession MycatMysqlSession) {
+    private  PromiseInternal<Void>  handlePrepareStatementReset(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -427,18 +427,18 @@ public class MycatMySQLHandler {
         return session.writeOkEndPacket();
     }
 
-    private  PromiseInternal<Void>  handlePrepareStatementFetch(long statementId, long row, MycatMysqlSession MycatMysqlSession) {
+    private  PromiseInternal<Void>  handlePrepareStatementFetch(long statementId, long row, MycatVertxMysqlSession MycatMysqlSession) {
         return MycatMysqlSession.writeErrorEndPacketBySyncInProcessError();
     }
 
-    private PromiseInternal<Void>  handlePrepareStatementClose(long statementId, MycatMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void>  handlePrepareStatementClose(long statementId, MycatVertxMysqlSession MycatMysqlSession) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         longPreparedStatementMap.remove(statementId);
         return VertxUtil.newSuccessPromise();
     }
 
-    private PromiseInternal<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void> handlePrepareStatementLongdata(long statementId, int paramId, byte[] data, MycatVertxMysqlSession MycatMysqlSession) {
         MycatDataContext dataContext = session.getDataContext();
         Map<Long, io.mycat.PreparedStatement> longPreparedStatementMap = dataContext.getPrepareInfo();
         io.mycat.PreparedStatement preparedStatement = longPreparedStatementMap.get(statementId);
@@ -448,7 +448,7 @@ public class MycatMySQLHandler {
         return VertxUtil.newSuccessPromise();
     }
 
-    private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, MycatMysqlSession MycatMysqlSession) {
+    private PromiseInternal<Void> handlePrepareStatement(byte[] bytes, MycatVertxMysqlSession MycatMysqlSession) {
         boolean deprecateEOF = session.isDeprecateEOF();
         String sql = new String(bytes);
         /////////////////////////////////////////////////////
@@ -541,92 +541,92 @@ public class MycatMySQLHandler {
     }
 
 
-    public Future<Void> handleQuery(String sql, MycatMysqlSession session) throws Exception {
+    public Future<Void> handleQuery(String sql, MycatVertxMysqlSession session) throws Exception {
         return MycatdbCommand.INSTANCE.executeQuery(sql, mycatDataContext, (size) ->
                 new ReceiverImpl(session, size, false));
     }
 
-    public PromiseInternal<Void>  handleSleep(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleSleep(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void> handleQuit(MycatMysqlSession session) {
+    public PromiseInternal<Void> handleQuit(MycatVertxMysqlSession session) {
        return session.close();
     }
 
-    public PromiseInternal<Void>  handleInitDb(String db, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleInitDb(String db, MycatVertxMysqlSession session) {
         session.getDataContext().useShcema(db);
         return session.writeOk(false);
     }
 
-    public PromiseInternal<Void>  handlePing(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handlePing(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleFieldList(String table, String filedWildcard, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleFieldList(String table, String filedWildcard, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleSetOption(boolean on, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleSetOption(boolean on, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleCreateDb(String schemaName, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleCreateDb(String schemaName, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDropDb(String schemaName, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleDropDb(String schemaName, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleRefresh(int subCommand, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleRefresh(int subCommand, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleShutdown(int shutdownType, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleShutdown(int shutdownType, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleStatistics(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleStatistics(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleProcessInfo(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleProcessInfo(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleConnect(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleConnect(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleProcessKill(long connectionId, MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleProcessKill(long connectionId, MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDebug(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleDebug(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    public PromiseInternal<Void>  handleTime(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleTime(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
     public PromiseInternal<Void>  handleChangeUser(String userName, String authResponse, String schemaName,
                                  int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-                                 MycatMysqlSession session) {
+                                 MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDelayedInsert(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleDelayedInsert(MycatVertxMysqlSession session) {
         return session.writeErrorEndPacketBySyncInProcessError();
     }
 
-    public PromiseInternal<Void>  handleResetConnection(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleResetConnection(MycatVertxMysqlSession session) {
         session.resetSession();
         return session.writeOkEndPacket();
     }
 
-    public PromiseInternal<Void>  handleDaemon(MycatMysqlSession session) {
+    public PromiseInternal<Void>  handleDaemon(MycatVertxMysqlSession session) {
         return session.writeOkEndPacket();
     }
 }

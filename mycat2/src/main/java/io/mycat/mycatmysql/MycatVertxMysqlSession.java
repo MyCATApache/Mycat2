@@ -5,11 +5,11 @@ import io.mycat.runtime.MycatDataContextImpl;
 import io.mycat.vertx.VertxSessionImpl;
 import io.vertx.core.net.NetSocket;
 
-public class MycatMysqlSession extends VertxSessionImpl {
+public class MycatVertxMysqlSession extends VertxSessionImpl {
 
 
-    public MycatMysqlSession(MycatDataContext mycatDataContext,
-                             NetSocket socket) {
+    public MycatVertxMysqlSession(MycatDataContext mycatDataContext,
+                                  NetSocket socket) {
         super(mycatDataContext, socket);
     }
 }
