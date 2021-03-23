@@ -1,5 +1,6 @@
 package io.mycat;
 
+import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.calcite.spm.PlanCache;
 import io.mycat.calcite.spm.PlanCacheImpl;
 import io.mycat.commands.MycatdbCommand;
@@ -83,6 +84,7 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
+        MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
 
