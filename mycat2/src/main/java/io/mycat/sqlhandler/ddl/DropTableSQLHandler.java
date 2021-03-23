@@ -25,7 +25,7 @@ public class DropTableSQLHandler extends AbstractSQLHandler<SQLDropTableStatemen
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 SQLDropTableStatement ast = request.getAst();

@@ -21,7 +21,7 @@ public class CreateIndexSQLHandler extends AbstractSQLHandler<SQLCreateIndexStat
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateIndexStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 SQLCreateIndexStatement sqlCreateIndexStatement = request.getAst();

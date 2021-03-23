@@ -30,7 +30,7 @@ public class CreateTableSQLHandler extends AbstractSQLHandler<MySqlCreateTableSt
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlCreateTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try{
                 Map hint = Optional.ofNullable(request.getAst().getHeadHintsDirect())

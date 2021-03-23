@@ -18,7 +18,7 @@ public class DropIndexSQLHandler extends AbstractSQLHandler<SQLDropIndexStatemen
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLDropIndexStatement> request, MycatDataContext dataContext, Response response){
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try{
                 SQLDropIndexStatement sqlDropIndexStatement = request.getAst();

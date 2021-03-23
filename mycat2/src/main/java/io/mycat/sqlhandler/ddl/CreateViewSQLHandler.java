@@ -16,7 +16,7 @@ public class CreateViewSQLHandler extends AbstractSQLHandler<SQLCreateViewStatem
     @Override
     protected Future<Void> onExecute(SQLRequest<SQLCreateViewStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             lock.release();
             return response.sendOk();

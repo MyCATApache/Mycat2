@@ -20,7 +20,7 @@ import java.util.*;
 @EqualsAndHashCode
 public abstract class AbstractSQLHandler<Statement extends SQLStatement> implements SQLHandler<Statement> {
     private final Class statementClass;
-
+    public final static String DDL_LOCK = "DDL_LOCK";
     public AbstractSQLHandler() {
         Class<?> statement = ClassUtil.findGenericType(this, AbstractSQLHandler.class, "Statement");
         Objects.requireNonNull(statement);

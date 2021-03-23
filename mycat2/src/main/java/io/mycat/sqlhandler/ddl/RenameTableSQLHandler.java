@@ -28,7 +28,7 @@ public class RenameTableSQLHandler extends AbstractSQLHandler<MySqlRenameTableSt
     @Override
     protected Future<Void> onExecute(SQLRequest<MySqlRenameTableStatement> request, MycatDataContext dataContext, Response response) {
         LockService lockService = MetaClusterCurrent.wrapper(LockService.class);
-        Future<Lock> lockFuture = lockService.getLockWithTimeout(getClass().getName());
+        Future<Lock> lockFuture = lockService.getLockWithTimeout(DDL_LOCK);
         return lockFuture.flatMap(lock -> {
             try {
                 MySqlRenameTableStatement mySqlRenameTableStatement = request.getAst();
