@@ -19,6 +19,7 @@ import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.ConnectionManager;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatException;
+import io.mycat.ScheduleUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterConfig;
 import io.mycat.config.DatasourceConfig;
@@ -26,6 +27,7 @@ import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.DruidDatasourceProvider;
 import io.mycat.replica.ReplicaSelectorManager;
+import io.mycat.replica.ScheduledHanlde;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -36,6 +38,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -178,9 +181,12 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
 
     @Override
     public void close() {
-        for (JdbcDataSource value : dataSourceMap.values()) {
-            value.close();
-        }
+        ScheduleUtil.getTimer().schedule(() -> {
+            for (JdbcDataSource value : dataSourceMap.values()) {
+                value.close();
+            }
+        }, 30, TimeUnit.SECONDS);
+
     }
 
     public Map<String, JdbcDataSource> getDatasourceInfo() {

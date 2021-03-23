@@ -16,6 +16,7 @@ import io.netty.util.internal.SocketUtils;
 import io.vertx.core.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.client.ConnectStringParser;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -108,6 +109,7 @@ public class MycatCore {
         context.put(this.mycatServer.getClass(), mycatServer);
         context.put(MycatServer.class, mycatServer);
         context.put(SqlRecorderRuntime.class, SqlRecorderRuntime.INSTANCE);
+
         ////////////////////////////////////////////tmp///////////////////////////////////
         if (enableGSI) {
             File gsiMapDBFile = baseDirectory.resolve("gsi.db").toFile();
@@ -115,7 +117,8 @@ public class MycatCore {
         }
         MetaClusterCurrent.register(context);
 
-        String mode = serverConfig.getMode();
+        String mode = Optional.ofNullable(System.getProperty("mode", PROPERTY_MODE_LOCAL))
+                .orElse(serverConfig.getMode());
         switch (mode) {
             case PROPERTY_MODE_LOCAL: {
                 context.put(LockService.class, new LocalLockServiceImpl());
@@ -125,16 +128,22 @@ public class MycatCore {
             case PROPERTY_MODE_CLUSTER:
                 String zkAddress = System.getProperty("zk_address", (String) serverConfig.getProperties().get("zk_address"));
                 if (zkAddress != null) {
-                    context.put(LockService.class, new ZKLockServiceImpl());
                     testZkAddressOrStartDefaultZk(zkAddress);
-                    metadataStorageManager =
-                            new CoordinatorMetadataStorageManager(
-                                    new FileMetadataStorageManager(serverConfig,
-                                            datasourceProvider,
-                                            this.baseDirectory),
-                                    zkAddress);
-                    break;
+                }else {
+                    zkAddress = "localhost:2181";
+                    EmbeddedZKServer.startDefaultZK();
                 }
+                ZKBuilder zkBuilder = new ZKBuilder(zkAddress);
+                context.put(LockService.class, new ZKLockServiceImpl());
+                CuratorFramework curatorFramework = zkBuilder.build();
+                context.put(CuratorFramework.class, curatorFramework);
+                metadataStorageManager =
+                        new CoordinatorMetadataStorageManager(
+                                new FileMetadataStorageManager(serverConfig,
+                                        datasourceProvider,
+                                        this.baseDirectory),
+                                curatorFramework);
+                break;
             default: {
                 throw new UnsupportedOperationException();
             }
@@ -210,7 +219,9 @@ public class MycatCore {
     public static void main(String[] args) throws Exception {
         if (args != null) {
             Arrays.stream(args).filter(i -> i.startsWith("-D") || i.startsWith("-d"))
-                    .map(i -> i.substring(2).split("=")).forEach(n -> System.setProperty(n[0], n[1]));
+                    .map(i -> i.substring(2).split("=")).forEach(n -> {
+                System.setProperty(n[0], n[1]);
+            });
         }
         new MycatCore().start();
     }

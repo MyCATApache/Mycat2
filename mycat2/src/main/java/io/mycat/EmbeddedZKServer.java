@@ -1,14 +1,18 @@
 package io.mycat;
 
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class EmbeddedZKServer {
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(EmbeddedZKServer.class);
     public static void startEmbeddedZKServer0(String tickTime,
                                               String dataDir,
                                               String clientPort,
@@ -26,7 +30,14 @@ public class EmbeddedZKServer {
         final ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
         final ServerConfig config = new ServerConfig();
         config.readFrom(quorumConfig);
-        zkServer.runFromConfig(config);
+        new Thread(()->{
+            try {
+                zkServer.runFromConfig(config);
+            } catch (IOException e) {
+                LOGGER.error("",e);
+            }
+        }).start();
+        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
     }
 
 

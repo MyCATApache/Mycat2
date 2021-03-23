@@ -20,7 +20,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ZKStore implements CoordinatorMetadataStorageManager.Store {
-    private ZooMap root;
+    private final CuratorFramework curatorFramework;
+    private final ZooMap root;
     private static final Logger LOGGER = LoggerFactory.getLogger(ZKStore.class);
     private final NameMap<Entry> map = new NameMap<>();
     private Map<String, CoordinatorMetadataStorageManager.ChangedValueCallback> callback = new HashMap<>();
@@ -38,7 +39,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
             this.callback = callback;
 
             String root = zk.getRoot();
-            this.nodeCache = new TreeCache(ZooMap.getClient(), root);
+            this.nodeCache = new TreeCache(zk.getClient(), root);
             Listenable<TreeCacheListener> listenable1 = nodeCache.getListenable();
             listenable1.addListener(new TreeCacheListener() {
                 @Override
@@ -100,9 +101,10 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
     // 初始化zk连接
     public ZKStore(
-            String address, CoordinatorMetadataStorageManager storageManager) throws Exception {
+            CuratorFramework curatorFramework, CoordinatorMetadataStorageManager storageManager) throws Exception {
         this.storageManager = storageManager;
-        ZooMap.connectionString = address;
+        this.curatorFramework = curatorFramework;
+        this.root = ZooMap.newMap(curatorFramework,"/mycat");
     }
 
     @Override
@@ -175,9 +177,9 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
     @SneakyThrows
     public void init() throws Exception {
-        this.root = ZooMap.newMap("/mycat");
+
         map.put("schemas",
-                new Entry(ZooMap.newMap("/mycat/schemas"),
+                new Entry(ZooMap.newMap(curatorFramework,"/mycat/schemas"),
                         new CoordinatorMetadataStorageManager.ChangedValueCallback() {
                             @Override
                             public String getKey() {
@@ -202,7 +204,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
                                 }
                             }
                         }));
-        map.put("datasources", new Entry(ZooMap.newMap("/mycat/datasources"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+        map.put("datasources", new Entry(ZooMap.newMap(curatorFramework,"/mycat/datasources"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
             @Override
             public String getKey() {
                 return "datasources";
@@ -226,7 +228,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
 
 
         }));
-        map.put("clusters", new Entry(ZooMap.newMap("/mycat/clusters"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+        map.put("clusters", new Entry(ZooMap.newMap(curatorFramework,"/mycat/clusters"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
             @Override
             public String getKey() {
                 return "clusters";
@@ -249,7 +251,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
             }
 
         }));
-        map.put("users", new Entry(ZooMap.newMap("/mycat/users"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+        map.put("users", new Entry(ZooMap.newMap(curatorFramework,"/mycat/users"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
             @Override
             public String getKey() {
                 return "users";
@@ -272,7 +274,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
             }
 
         }));
-        map.put("sequences", new Entry(ZooMap.newMap("/mycat/sequences"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+        map.put("sequences", new Entry(ZooMap.newMap(curatorFramework,"/mycat/sequences"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
             @Override
             public String getKey() {
                 return "sequences";
@@ -294,7 +296,7 @@ public class ZKStore implements CoordinatorMetadataStorageManager.Store {
                 }
             }
         }));
-        map.put("sqlcaches", new Entry(ZooMap.newMap("/mycat/sqlcaches"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
+        map.put("sqlcaches", new Entry(ZooMap.newMap(curatorFramework,"/mycat/sqlcaches"), new CoordinatorMetadataStorageManager.ChangedValueCallback() {
             @Override
             public String getKey() {
                 return "sqlcaches";

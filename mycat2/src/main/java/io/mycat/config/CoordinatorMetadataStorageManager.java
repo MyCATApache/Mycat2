@@ -3,6 +3,7 @@ package io.mycat.config;
 import io.mycat.*;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -17,9 +18,9 @@ public class CoordinatorMetadataStorageManager extends MetadataStorageManager {
     final ConfigReaderWriter readerWriter = ConfigReaderWriter.getReaderWriterBySuffix("json");
 
     public CoordinatorMetadataStorageManager(FileMetadataStorageManager storageManager,
-                                             String address) throws Exception {
+                                             CuratorFramework curatorFramework) throws Exception {
         this.storageManager = storageManager;
-        this.store = new ZKStore(address, this);
+        this.store = new ZKStore(curatorFramework, this);
 
     }
 
