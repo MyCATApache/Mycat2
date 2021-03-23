@@ -75,7 +75,7 @@ public class MHAHeartBeatStrategy extends HeartBeatStrategy {
     }
 
     @Override
-    public void onException(Exception e) {
+    public void onException(Throwable e) {
         heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
     }
 

@@ -14,5 +14,5 @@ public interface CommonSQLCallback {
 
     void process(List<List<Map<String, Object>> >resultSetList);
 
-    void onException(Exception e);
+    void onException(Throwable e);
 }

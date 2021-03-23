@@ -41,7 +41,7 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
   }
 
   @Override
-  public void onException(Exception e) {
+  public void onException(Throwable e) {
     this.heartbeatFlow.setStatus(new DatasourceStatus(),DatasourceEnum.ERROR_STATUS);
   }
 

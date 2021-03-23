@@ -226,12 +226,10 @@ public class JdbcConnectionManager implements ConnectionManager<DefaultConnectio
                         }
                     }
                     heartBeatStrategy.process(resultList);
-                } catch (Exception e) {
-                    heartBeatStrategy.onException(e);
-                    throw e;
                 } catch (Throwable e) {
+                    heartBeatStrategy.onException(e);
                     LOGGER.error("", e);
-                } finally {
+                }  finally {
                     if (connection != null) {
                         connection.close();
                     }
