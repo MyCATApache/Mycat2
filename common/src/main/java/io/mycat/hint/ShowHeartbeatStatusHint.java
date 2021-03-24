@@ -12,31 +12,11 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
+package io.mycat.hint;
 
-package io.mycat.api.callback;
-
-/**
- * Delayed job
- * chen junwen
- */
-public interface MySQLJobCallback {
-
-    /**
-     *
-     * @throws Exception
-     */
-    void run() throws Exception;
-
-    /**
-     *impl thar can stop this job
-     * @param reason
-     */
-    void stop(Exception reason);
-
-
-    /**
-     * why run this job
-     * @return
-     */
-    String message();
+public class ShowHeartbeatStatusHint extends HintBuilder {
+    @Override
+    public String getCmd() {
+        return "showHeartbeatStatus";
+    }
 }
