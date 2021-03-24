@@ -535,7 +535,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
         if (relNodeOptional.isPresent()) return relNodeOptional.get();
         Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left, right));
         int orgJoinCount = RelOptUtil.countJoins(newJoin);
-        if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 2 && orgJoinCount < 12) {
+        if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 1 && orgJoinCount < 12) {
             RelOptCluster cluster = newJoin.getCluster();
             RelOptPlanner planner = cluster.getPlanner();
             planner.clear();
@@ -544,6 +544,8 @@ public class SQLRBORewriter extends RelShuttleImpl {
             planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
             planner.addRule(CoreRules.JOIN_ASSOCIATE);
             planner.addRule(CoreRules.FILTER_INTO_JOIN);
+            planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
+            planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
             planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
             planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
             planner.addRule(MycatJoinPushThroughJoinRule.LEFT);

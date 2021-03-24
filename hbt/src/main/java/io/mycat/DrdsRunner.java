@@ -722,7 +722,7 @@ public class DrdsRunner {
         if (logPlan instanceof MycatRel) {
             return (MycatRel) logPlan;
         } else {
-            boolean needJoinReorder = RelOptUtil.countJoins(logPlan) > 2;
+            boolean needJoinReorder = RelOptUtil.countJoins(logPlan) > 1;
             if (needJoinReorder){
                 logPlan = preJoinReorder(logPlan);
             }

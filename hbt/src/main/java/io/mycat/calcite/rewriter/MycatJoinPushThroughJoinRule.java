@@ -328,12 +328,12 @@ public class MycatJoinPushThroughJoinRule
 
     /** Rule configuration. */
     public interface Config extends RelRule.Config {
-        Config RIGHT = EMPTY.withDescription("JoinTernaryCommuteRule:right")
+        Config RIGHT = EMPTY.withDescription("MycatJoinPushThroughJoinRule:right")
                 .as(Config.class)
                 .withOperandFor(LogicalJoin.class)
                 .withRight(true);
 
-        Config LEFT = EMPTY.withDescription("JoinTernaryCommuteRule:left")
+        Config LEFT = EMPTY.withDescription("MycatJoinPushThroughJoinRule:left")
                 .as(Config.class)
                 .withOperandFor(LogicalJoin.class)
                 .withRight(false);
