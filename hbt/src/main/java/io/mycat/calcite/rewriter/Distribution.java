@@ -165,14 +165,14 @@ public class Distribution {
         switch (this.type()) {
             case BroadCast:
             case PHY: {
-                ImmutableMap.Builder<String, DataNode> builder = ImmutableMap.builder();
+              Map<String, DataNode> builder = new HashMap<>();
                 for (NormalTable normalTable : this.normalTables) {
                     builder.put(normalTable.getUniqueName(), normalTable.getDataNode());
                 }
                 for (GlobalTable globalTable : this.globalTables) {
                     builder.put(globalTable.getUniqueName(), globalTable.getDataNode());
                 }
-                return Stream.of(builder.build());
+                return Stream.of(builder);
             }
             case Sharding: {
                 ImmutableMap.Builder<String, DataNode> globalbuilder = ImmutableMap.builder();
