@@ -3,23 +3,23 @@
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-[v1.15-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.15-release)
+[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-3-24)
 
-[v1.16-dev]
-开发目标:支持MGR集群
+[v1.18-dev]
+Development objectives:Improve performance
 
-[入门Mycat2](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695/fb2285b811138a442eb850f0127d7ea3)
-[文档](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
-[版本](http://dl.mycat.org.cn/2.0/1.13-release/)
+[introduction Mycat2](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695/fb2285b811138a442eb850f0127d7ea3)
+[doc](https://www.yuque.com/books/share/6606b3b6-3365-4187-94c4-e51116894695)
 
 
-## 架构
+
+## Framework
 
 ![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
 
-目前仅支持在java8上运行Mycat2,其他版本后续会支持.
+Currently, only mycat2 is supported on java8, and will be supported in other versions later.
 
-## 核心团队
+## Core team
 
 [junwen12221](https://github.com/junwen12221)
 
