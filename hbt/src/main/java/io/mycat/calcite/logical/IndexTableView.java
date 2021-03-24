@@ -1,8 +1,6 @@
 package io.mycat.calcite.logical;
 
-import com.google.common.collect.Iterables;
 import io.mycat.calcite.*;
-import io.mycat.mpp.Row;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;

@@ -10,14 +10,11 @@ import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.rewriter.Distribution;
 import io.mycat.gsi.GSIService;
-import io.mycat.mpp.Row;
-import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.util.FastSqlUtils;
 import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import io.mycat.util.UpdateSQL;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

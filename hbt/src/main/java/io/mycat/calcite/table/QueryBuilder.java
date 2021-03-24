@@ -1,7 +1,6 @@
 package io.mycat.calcite.table;
 
 import io.mycat.calcite.*;
-import io.mycat.mpp.Row;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -37,12 +36,12 @@ public abstract class QueryBuilder extends AbstractRelNode implements MycatRel {
                                                          String name,
                                                          Iterable<Object[]> rows){
         return createRowDefaultQueryBuilder(cluster,name, ()->StreamSupport.stream(
-                rows.spliterator(),false).map(i->Row.of(i)).iterator());
+                rows.spliterator(),false).iterator());
     }
 
     public static QueryBuilder createRowDefaultQueryBuilder(RelOptCluster cluster,
                                                          String name,
-                                                         Iterable<Row> rows) {
+                                                         Iterable<Object[]> rows) {
         return new QueryBuilder(cluster) {
             @Override
             public Optional<QueryBuilder> filter(RexNode condition) {

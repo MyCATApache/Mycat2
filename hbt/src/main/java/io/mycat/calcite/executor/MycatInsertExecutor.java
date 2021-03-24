@@ -17,7 +17,6 @@ import io.mycat.*;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.gsi.GSIService;
-import io.mycat.mpp.Row;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
 import io.mycat.util.FastSqlUtils;
