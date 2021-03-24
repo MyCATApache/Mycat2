@@ -595,6 +595,9 @@ public class MetadataManager implements MysqlVariableService {
     }
 
     private String getCreateTableSQLByJDBC(String schemaName, String tableName, List<DataNode> backends) {
+        backends = new ArrayList<>(backends);
+        backends.add(new BackendTableInfo(prototype,schemaName,tableName));
+
         if (backends == null || backends.isEmpty()) {
             return null;
         }
