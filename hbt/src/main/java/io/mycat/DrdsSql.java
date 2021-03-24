@@ -5,6 +5,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.mycat.beans.mysql.MySQLType;
 import lombok.Data;
+import lombok.ToString;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 
@@ -15,6 +16,7 @@ import java.util.Objects;
 
 
 @Data
+@ToString
 public class DrdsSql {
     private SQLStatement sqlStatement;
     private final String parameterizedString;
