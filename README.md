@@ -1,5 +1,7 @@
 # Mycat2
 
+Distributed database based on MySQL.
+
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
