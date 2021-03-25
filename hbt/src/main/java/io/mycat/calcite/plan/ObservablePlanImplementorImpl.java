@@ -111,6 +111,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                             } catch (Throwable throwable) {
                                                 emitter1.onError(throwable);
                                             }
+                                            emitter1.onComplete();
                                         });
                                     }
                                     observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
