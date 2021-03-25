@@ -15,7 +15,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.AsyncMycatDataContextImplImpl;
+import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
@@ -28,10 +28,7 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.connectionschedule.Scheduler;
 import io.mycat.vertx.VertxExecuter;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -94,8 +91,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             future.onSuccess(relNodeListIdentityHashMap -> {
                                 try {
                                     IdentityHashMap<RelNode, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
-                                    AsyncMycatDataContextImplImpl newMycatDataContext =
-                                            new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
+                                    AsyncMycatDataContextImpl newMycatDataContext =
+                                            new AsyncMycatDataContextImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
                                     Object bindObservable;
                                     bindObservable = bindable.bindObservable(newMycatDataContext);
                                     Observable<Object[]> observable;
