@@ -28,6 +28,7 @@ public class DatasourceConfig {
     private long idleTimeout = TimeUnit.SECONDS.toMillis(60);
     private String jdbcDriverClass;//保留属性
     private String type = DatasourceType.JDBC.name();
+    private int queryTimeout = 30;
 
     public static String getDbTypeRaw(String rawUrl) {
         if (rawUrl == null) {
