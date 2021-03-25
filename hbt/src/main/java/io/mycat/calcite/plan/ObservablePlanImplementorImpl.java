@@ -28,9 +28,13 @@ import io.mycat.calcite.physical.MycatUpdateRel;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.connectionschedule.Scheduler;
 import io.mycat.vertx.VertxExecuter;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
+import io.reactivex.rxjava3.core.ObservableOnSubscribe;
 import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
@@ -99,8 +103,15 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                         observable = (Observable) bindObservable;
                                     } else {
                                         Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                                        List<Object[]> list = enumerable.toList();
-                                        observable = Observable.fromIterable(list);
+                                        observable = Observable.create(emitter1 -> {
+                                            try (Enumerator<Object[]> enumerator = enumerable.enumerator()) {
+                                                while (enumerator.moveNext()) {
+                                                    emitter1.onNext(enumerator.current());
+                                                }
+                                            } catch (Throwable throwable) {
+                                                emitter1.onError(throwable);
+                                            }
+                                        });
                                     }
                                     observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
                                             throwable -> emitter.onError(throwable), () -> emitter.onComplete());
