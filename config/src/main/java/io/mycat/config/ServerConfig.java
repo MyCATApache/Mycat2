@@ -58,6 +58,7 @@ public class ServerConfig {
     private String tempDirectory;
     private int mergeUnionSize = 5;
     private String serverVersion = "5.7.33-mycat-2.0";
+    private boolean ignoreCast = false;
 
     public static void main(String[] args) {
         System.out.println(JsonUtil.toJson(new ServerConfig()));

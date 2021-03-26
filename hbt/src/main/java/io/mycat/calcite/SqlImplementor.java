@@ -17,6 +17,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.*;
+import io.mycat.MetaClusterCurrent;
+import io.mycat.config.ServerConfig;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -588,7 +590,7 @@ public abstract class SqlImplementor {
         private final boolean ignoreCast;
 
         protected Context(SqlDialect dialect, int fieldCount) {
-            this(dialect, fieldCount, false);
+            this(dialect, fieldCount, MetaClusterCurrent.exist(ServerConfig.class) && MetaClusterCurrent.wrapper(ServerConfig.class).isIgnoreCast());
         }
 
         protected Context(SqlDialect dialect, int fieldCount, boolean ignoreCast) {
