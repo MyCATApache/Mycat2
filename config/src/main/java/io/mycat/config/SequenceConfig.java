@@ -37,6 +37,7 @@ public class SequenceConfig {
 
     private String targetName;
     private String schemaName;
+    private String fileName;
 
 
     public SequenceConfig() {
