@@ -36,7 +36,7 @@ public class SequenceFileGenerator implements SequenceHandler {
     @Override
     public synchronized Number get() {
         long value = this.map.getLong(0);
-        this.map.putLong(value++);
+        this.map.putLong(value+1);
         return value;
     }
 
