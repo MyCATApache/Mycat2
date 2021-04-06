@@ -17,7 +17,7 @@ Development objectives:Improve performance
 
 ## Framework
 
-![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
+![](https://cdn.nlark.com/yuque/0/2021/png/658548/1615792485342-b0f62690-e0cf-4f4a-89b6-18e5e1487227.png)
 
 Currently, only mycat2 is supported on java8, and will be supported in other versions later.
 
