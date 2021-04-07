@@ -494,20 +494,20 @@ public class AssembleTest implements MycatTest {
 
     @Test
     public void testBit() throws Exception {
-        Connection mycat = getMySQLConnection(DB_MYCAT);
-        Connection db1Connection = getMySQLConnection(DB1);
-        execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" +
-                "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
+        try(Connection mycat = getMySQLConnection(DB_MYCAT);
+        Connection db1Connection = getMySQLConnection(DB1);){
+            execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" +
+                    "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
 
-        deleteData(mycat,"db1","reader");
+            deleteData(mycat,"db1","reader");
 
-        JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
+            JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
 
-        List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
-        List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+            List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+            List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
 //
-       Assert.assertEquals( mysqlMaps,mycatMaps);
-        System.out.println();
+            Assert.assertEquals( mysqlMaps,mycatMaps);
+        }
     }
 
 
