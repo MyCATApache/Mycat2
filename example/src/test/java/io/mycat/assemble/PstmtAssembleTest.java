@@ -50,5 +50,8 @@ public class PstmtAssembleTest extends AssembleTest {
         super.testInfoFunction();
     }
 
-
+    @Override
+    public void testBit() throws Exception {
+        super.testBit();
+    }
 }
