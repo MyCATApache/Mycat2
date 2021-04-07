@@ -20,6 +20,7 @@ import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.util.StringUtil;
 
+import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
 
@@ -76,8 +77,8 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
             this.columnOrgTable = new byte[]{};
             this.columnTable = new byte[]{};
             this.columnNextLength = 0xC;
-            this.columnLength = columnName.length();
             this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
+            this.columnLength = resultSetMetaData.getColumnType(columnIndex)== JDBCType.BIT.getVendorTypeNumber()?1  : columnName.length();
             this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
             this.columnCharsetSet = 0x21;
         } catch (Exception e) {

@@ -1,5 +1,6 @@
 package io.mycat.assemble;
 
+import com.alibaba.druid.util.JdbcUtils;
 import io.mycat.hint.CreateClusterHint;
 import io.mycat.hint.CreateDataSourceHint;
 import lombok.SneakyThrows;
@@ -7,9 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -491,6 +490,24 @@ public class AssembleTest implements MycatTest {
             List<Map<String, Object>> mysql_result = executeQuery(db1, "SELECT * FROM `db1_1`.`test_timezone_1` LIMIT 0, 1000; ");
             Assert.assertEquals(mysql_result, mycat_result);
         }
+    }
+
+    @Test
+    public void testBit() throws Exception {
+        Connection mycat = getMySQLConnection(DB_MYCAT);
+        Connection db1Connection = getMySQLConnection(DB1);
+        execute(mycat,"CREATE DATABASE IF NOT EXISTS db1 DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;\n" +
+                "CREATE TABLE  if not exists db1.reader ( locked BIT) ENGINE=INNODB;");
+
+        deleteData(mycat,"db1","reader");
+
+        JdbcUtils.execute(mycat,"insert db1.reader (locked) VALUES (?)",Arrays.asList(true));
+
+        List<Map<String, Object>> mycatMaps = executeQuery(mycat, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+        List<Map<String, Object>> mysqlMaps = executeQuery(db1Connection, "SELECT * FROM `db1`.`reader` LIMIT 0, 1000; ");
+//
+       Assert.assertEquals( mysqlMaps,mycatMaps);
+        System.out.println();
     }
 
 
