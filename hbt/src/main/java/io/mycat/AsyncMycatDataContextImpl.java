@@ -17,14 +17,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class AsyncMycatDataContextImplImpl extends NewMycatDataContextImpl {
+public class AsyncMycatDataContextImpl extends NewMycatDataContextImpl {
     private final IdentityHashMap<RelNode, List<Observable<Object[]>>> viewMap;
 
-    public AsyncMycatDataContextImplImpl(MycatDataContext dataContext,
-                                         CodeExecuterContext context,
-                                         IdentityHashMap<RelNode, List<Observable<Object[]>>> map,
-                                         List<Object> params,
-                                         boolean forUpdate) {
+    public AsyncMycatDataContextImpl(MycatDataContext dataContext,
+                                     CodeExecuterContext context,
+                                     IdentityHashMap<RelNode, List<Observable<Object[]>>> map,
+                                     List<Object> params,
+                                     boolean forUpdate) {
         super(dataContext, context, params, forUpdate);
         this.viewMap = map;
     }

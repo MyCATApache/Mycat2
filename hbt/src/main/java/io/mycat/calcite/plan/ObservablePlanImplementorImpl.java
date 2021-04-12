@@ -15,7 +15,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.AsyncMycatDataContextImplImpl;
+import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
@@ -31,6 +31,7 @@ import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
@@ -90,8 +91,8 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             future.onSuccess(relNodeListIdentityHashMap -> {
                                 try {
                                     IdentityHashMap<RelNode, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
-                                    AsyncMycatDataContextImplImpl newMycatDataContext =
-                                            new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
+                                    AsyncMycatDataContextImpl newMycatDataContext =
+                                            new AsyncMycatDataContextImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
                                     Object bindObservable;
                                     bindObservable = bindable.bindObservable(newMycatDataContext);
                                     Observable<Object[]> observable;
@@ -99,8 +100,16 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                         observable = (Observable) bindObservable;
                                     } else {
                                         Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                                        List<Object[]> list = enumerable.toList();
-                                        observable = Observable.fromIterable(list);
+                                        observable = Observable.create(emitter1 -> {
+                                            try (Enumerator<Object[]> enumerator = enumerable.enumerator()) {
+                                                while (enumerator.moveNext()) {
+                                                    emitter1.onNext(enumerator.current());
+                                                }
+                                            } catch (Throwable throwable) {
+                                                emitter1.onError(throwable);
+                                            }
+                                            emitter1.onComplete();
+                                        });
                                     }
                                     observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
                                             throwable -> emitter.onError(throwable), () -> emitter.onComplete());
