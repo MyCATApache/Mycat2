@@ -31,13 +31,14 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.List;
 
 /**
  * Relational expression that uses JDBC calling convention.
  */
-public interface MycatRel extends RelNode, EnumerableRel {
+public interface MycatRel extends RelNode, EnumerableRel, Serializable {
 
     ExplainWriter explain(ExplainWriter writer);
 

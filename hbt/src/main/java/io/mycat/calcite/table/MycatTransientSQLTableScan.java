@@ -83,8 +83,8 @@ public class MycatTransientSQLTableScan extends AbstractRelNode implements Mycat
                         getRowType(),
                         JavaRowFormat.ARRAY);
         ParameterExpression root = implementor.getRootExpression();
-        Expression mycatViewStash = implementor.stash(this, RelNode.class);
-        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", RelNode.class);
+        Expression mycatViewStash = Expressions.constant(this.getDigest());
+        Method getEnumerable = Types.lookupMethod(NewMycatDataContext.class, "getEnumerable", String.class);
         final Expression expression2 = toEnumerable(
                 Expressions.call(root, getEnumerable, mycatViewStash));
         assert Types.isAssignableFrom(Enumerable.class, expression2.getType());

@@ -25,6 +25,7 @@ import org.apache.calcite.linq4j.function.Function;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Calc;
@@ -67,6 +68,12 @@ public class MycatCalc extends Calc implements MycatRel {
         this.program = program;
         this.rowType = program.getOutputRowType();
     }
+    public MycatCalc(RelInput input) {
+        this(input.getCluster(),
+                input.getTraitSet(),
+                input.getInput(),
+                RexProgram.create(input));
+    }
 
     public static MycatCalc create(
             RelTraitSet traitSet,
@@ -84,25 +91,6 @@ public class MycatCalc extends Calc implements MycatRel {
                 program
         );
     }
-
-    public RelWriter explainTerms(RelWriter pw) {
-        return program.explainCalc(super.explainTerms(pw));
-    }
-
-    @Override
-    public double estimateRowCount(RelMetadataQuery mq) {
-        return RelMdUtil.estimateFilteredRows(getInput(), program, mq);
-    }
-
-    public RelOptCost computeSelfCost(RelOptPlanner planner,
-                                      RelMetadataQuery mq) {
-        double dRows = mq.getRowCount(this);
-        double dCpu = mq.getRowCount(getInput())
-                * program.getExprCount();
-        double dIo = 0;
-        return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
-    }
-
 
     @Override
     public Calc copy(RelTraitSet traitSet, RelNode child, RexProgram program) {

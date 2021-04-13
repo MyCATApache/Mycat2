@@ -30,8 +30,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.RepeatUnion;
 import org.apache.calcite.rel.core.Window;
@@ -52,10 +51,7 @@ import org.apache.calcite.util.Util;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -67,6 +63,36 @@ public class MycatWindow extends Window implements MycatRel {
     public MycatWindow(RelOptCluster cluster, RelTraitSet traits, RelNode child,
                        List<RexLiteral> constants, RelDataType rowType, List<Window.Group> groups) {
         super(cluster, traits, child, constants, rowType, groups);
+    }
+
+    public   MycatWindow(RelInput relInput) {
+        super(relInput.getCluster(), relInput.getTraitSet(), relInput.getInput(),(List)relInput.getExpressionList("constants"), relInput.getRowType("rowType"),
+                (List) relInput.getWindowGroupList());
+    }
+
+    @Override
+    public RelWriter explainTerms(RelWriter pw) {
+//        List<Map<String,Object>> maps = new ArrayList<>();
+//        for (Group group : groups) {
+//            final ImmutableBitSet keys = group.keys;
+//            final boolean isRows = group.isRows;
+//            final RexWindowBound lowerBound = group.lowerBound;
+//            final RexWindowBound upperBound = group.upperBound;
+//            final RelCollation orderKeys = group.orderKeys;
+//
+//            HashMap<String,Object> map = new HashMap<>();
+//            map.put("keys",keys);
+//            map.put("isRows",isRows);
+//            map.put("lowerBound",lowerBound);
+//            map.put("upperBound",upperBound);
+//            map.put("orderKeys",orderKeys);
+//            maps.add(map);
+//        }
+
+        return pw
+                .item("constants", constants)
+                .item("groups", groups)
+                .item("rowType", rowType);
     }
 
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {

@@ -21,11 +21,9 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -41,6 +39,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -54,7 +53,12 @@ public class MycatHashJoin extends Join implements MycatRel {
                             JoinRelType joinType) {
         super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
-
+    public MycatHashJoin(RelInput input) {
+        this(input.getCluster(), input.getTraitSet(),
+                input.getInputs().get(0), input.getInputs().get(1),
+                input.getExpression("condition"), ImmutableSet.of(),
+                input.getEnum("joinType", JoinRelType.class));
+    }
     /**
      * Creates an MycatHashJoin.
      */

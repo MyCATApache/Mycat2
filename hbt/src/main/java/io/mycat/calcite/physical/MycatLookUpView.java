@@ -21,7 +21,6 @@ import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 
-import java.util.Collections;
 import java.util.List;
 
 public class MycatLookUpView extends AbstractRelNode implements MycatRel {
@@ -43,7 +42,7 @@ public class MycatLookUpView extends AbstractRelNode implements MycatRel {
     public ExplainWriter explain(ExplainWriter writer) {
         return writer.name("MycatLookUpView")
                 .item("sql", MycatCalciteSupport.INSTANCE
-                        .convertToSql(relNode, MycatSqlDialect.DEFAULT,false))
+                        .convertToSqlTemplate(relNode, MycatSqlDialect.DEFAULT,false))
                 .into().ret();
     }
 

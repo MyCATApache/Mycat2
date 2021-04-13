@@ -34,6 +34,8 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -67,6 +69,13 @@ public class MycatMergeSort extends Sort implements MycatRel {
                              RexNode offset,
                              RexNode fetch) {
         super(cluster, traits, child, collation, offset, fetch);
+    }
+
+    public MycatMergeSort(RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet().plus(relInput.getCollation()),
+                relInput.getInput(),
+                RelCollationTraitDef.INSTANCE.canonize(relInput.getCollation()),
+                relInput.getExpression("offset"), relInput.getExpression("fetch"));
     }
 
     public static MycatMergeSort create(RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch) {

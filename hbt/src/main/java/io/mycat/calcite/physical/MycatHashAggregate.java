@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -52,6 +53,12 @@ public class MycatHashAggregate extends EnumerableAggregateBase implements Mycat
             List<AggregateCall> aggCalls) {
         super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
         assert getConvention() instanceof MycatConvention;
+    }
+    public MycatHashAggregate(
+            RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),
+                relInput.getInput(), relInput.getBitSet("group"),
+                relInput.getBitSetList("groups"), relInput.getAggregateCalls("aggs"));
     }
     public static MycatHashAggregate create(
             RelTraitSet traitSet,

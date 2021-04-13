@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
@@ -48,6 +49,10 @@ public class MycatValues extends Values implements MycatRel {
     public static MycatValues create( RelOptCluster cluster, RelDataType rowType,
                                       ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet) {
         return new MycatValues(cluster, rowType, tuples, traitSet);
+    }
+
+    public MycatValues(RelInput input){
+        this(input.getCluster(),input.getRowType("type"),input.getTuples("tuples"),input.getTraitSet());
     }
 
     @Override

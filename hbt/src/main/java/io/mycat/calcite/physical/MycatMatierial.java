@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.util.RxBuiltInMethod;
@@ -35,6 +36,9 @@ public class MycatMatierial extends SingleRel implements MycatRel {
         super(cluster, traits, input);
         this.input = input;
         this.rowType = input.getRowType();
+    }
+    public MycatMatierial(RelInput relInput) {
+        this(relInput.getCluster(), relInput.getTraitSet(),(MycatRel) relInput.getInput());
     }
     public static final MycatMatierial create( MycatRel input){
         return create(input.getCluster(),input.getTraitSet(),input);
