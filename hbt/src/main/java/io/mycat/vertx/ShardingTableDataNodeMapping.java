@@ -4,7 +4,6 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.logical.MycatViewDataNodeMapping;
 import io.mycat.calcite.logical.MycatViewSqlString;
-import io.mycat.calcite.logical.SqlTemplate;
 import io.mycat.config.ServerConfig;
 import io.mycat.util.JsonUtil;
 import lombok.AllArgsConstructor;
