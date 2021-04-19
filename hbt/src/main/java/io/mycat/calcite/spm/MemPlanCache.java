@@ -89,7 +89,7 @@ public class MemPlanCache implements QueryPlanCache {
     @SneakyThrows
     public static CodeExecuterContext getCodeExecuterContext(BaselinePlan plan) {
         boolean forUpdate = DrdsSql.isForUpdate(plan.getSql());
-        Object attach = plan.getAttach();
+        Object attach = plan.attach;
         if (attach != null) {
             return (CodeExecuterContext) attach;
         }
@@ -107,7 +107,7 @@ public class MemPlanCache implements QueryPlanCache {
             }
         }
 
-        return (CodeExecuterContext) plan.getAttach();
+        return (CodeExecuterContext) plan.attach;
     }
 
 

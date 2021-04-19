@@ -29,10 +29,7 @@ import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.*;
 import io.mycat.util.NameMap;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -371,7 +368,13 @@ public class ConfigPrepareExecuter {
         boolean allMatchMySQL = curConfig.getDatasources().stream().allMatch(s -> "mysql".equalsIgnoreCase(s.getDbType()));
         if (allMatchMySQL){
             XaLog xaLog = MetaClusterCurrent.wrapper(XaLog.class);
-            return xaLog.readXARecoveryLog();
+            LOGGER.info("readXARecoveryLog start");
+            return xaLog.readXARecoveryLog().onComplete(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> event) {
+                    LOGGER.info("readXARecoveryLog end");
+                }
+            });
         }else {
             return Future.succeededFuture();
         }

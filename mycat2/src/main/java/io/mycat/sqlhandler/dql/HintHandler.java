@@ -561,31 +561,6 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 throw new UnsupportedOperationException();
                         }
                     }
-                    if ("loadBaseline".equalsIgnoreCase(cmd)) {
-                        ResultSetBuilder builder = ResultSetBuilder.create();
-                        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
-                        builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
-                                .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
-                                .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
-                                .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
-                                .addColumnInfo("FIXED", JDBCType.VARCHAR)
-                                .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
-                        for (Baseline baseline : queryPlanCache.list()) {
-                            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
-                                String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
-                                String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
-                                String PLAN_ID = String.valueOf(baselinePlan.getId());
-                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
-                                String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
-                                String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
-                                        .map(u->"true").orElse("false");
-                                String ACCEPTED = "true";
-
-                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
-                            }
-                        }
-                        return response.sendResultSet(() -> builder.build());
-                    }
                     mycatDmlHandler(cmd, body, ast);
                     return response.sendOk();
                 }

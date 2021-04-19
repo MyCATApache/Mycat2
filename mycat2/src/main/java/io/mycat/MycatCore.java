@@ -23,6 +23,7 @@ import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
+import io.mycat.vertxmycat.IOExecutor;
 import io.vertx.core.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
@@ -109,7 +110,7 @@ public class MycatCore {
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
-
+        context.put(IOExecutor.class,new IOExecutor());
         context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);

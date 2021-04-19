@@ -36,6 +36,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
@@ -131,8 +133,8 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
         @Override
         @SneakyThrows
         public Future<RowSet<Row>> execute() {
-            Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
-            return vertx.executeBlocking(event -> {
+            IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
+            return ioExecutor.executeBlocking(event -> {
                 try {
                     event.complete( innerExecute());
                 } catch (SQLException sqlException) {
@@ -221,9 +223,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
                 @Override
                 @SneakyThrows
                 public Future<SqlResult<R>> execute() {
-                    Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+                    IOExecutor ioExecutor = MetaClusterCurrent.wrapper(IOExecutor.class);
                     Connection rawConnection = connection.getRawConnection();
-                    return vertx.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
+                    return ioExecutor.executeBlocking(new Handler<Promise<SqlResult<R>>>() {
                         @Override
                         public void handle(Promise<SqlResult<R>> promise) {
                             try (Statement statement = rawConnection.createStatement()) {
