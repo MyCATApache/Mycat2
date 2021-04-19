@@ -32,5 +32,21 @@ public interface QueryPlanCache {
 
     public  PlanResultSet add(boolean fix, DrdsSql drdsSql);
 
+    public  List<Baseline> list();
+
     public void clearCache();
+
+    void loadBaseline(long value);
+
+    void loadPlan(long value);
+
+    void persistPlan(long value);
+
+    void clearBaseline(long value);
+
+    void clearPlan(long value);
+
+    void deleteBaseline(long value);
+
+    void deletePlan(long value);
 }

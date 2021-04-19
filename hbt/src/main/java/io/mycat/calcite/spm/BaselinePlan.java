@@ -2,7 +2,7 @@ package io.mycat.calcite.spm;
 
 import lombok.*;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Objects;
 
 
 @EqualsAndHashCode
@@ -31,6 +31,19 @@ public class BaselinePlan<T> {
     }
 
     public T getAttach() {
-        return attach;
+      return (T)  MemPlanCache.getCodeExecuterContext(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BaselinePlan<?> that = (BaselinePlan<?>) o;
+        return id == that.id && baselineId == that.baselineId && accept == that.accept && Objects.equals(sql, that.sql) && Objects.equals(rel, that.rel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sql, rel, id, baselineId, accept);
     }
 }

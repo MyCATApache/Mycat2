@@ -14,9 +14,10 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
+import io.mycat.calcite.CodeExecuterContext;
 import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
-import io.mycat.calcite.spm.Plan;
+import io.mycat.calcite.spm.*;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
 import io.mycat.calcite.table.SchemaHandler;
@@ -45,11 +46,16 @@ import io.mycat.util.NameMap;
 import io.mycat.util.VertxUtil;
 import io.mycat.vertx.VertxExecuter;
 import io.vertx.core.Future;
+import io.vertx.core.impl.future.PromiseInternal;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
+import org.fusesource.jansi.AnsiRenderer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.Reader;
 import java.sql.JDBCType;
 import java.sql.Timestamp;
@@ -89,217 +95,19 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     MycatServer mycatServer = MetaClusterCurrent.wrapper(MycatServer.class);
 
                     if ("showErGroup".equalsIgnoreCase(cmd)) {
-                        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                        resultSetBuilder.addColumnInfo("groupId", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
-
-                        Map<String, List<ShardingTable>> erTableGroup = metadataManager.getErTableGroup();
-                        Integer index = 0;
-                        for (Map.Entry<String, List<ShardingTable>> e : erTableGroup.entrySet()) {
-                            String key = e.getKey();
-                            Iterator<ShardingTable> iterator = e.getValue().iterator();
-                            while (iterator.hasNext()) {
-                                ShardingTable table = iterator.next();
-                                String schemaName = table.getSchemaName();
-                                String tableName = table.getTableName();
-                                resultSetBuilder.addObjectRowPayload(Arrays.asList(index.toString(), schemaName, tableName));
-                            }
-                            index++;
-                        }
-                        return response.sendResultSet(resultSetBuilder.build());
+                        return showErGroup(response, metadataManager);
                     }
                     if ("loaddata".equalsIgnoreCase(cmd)) {
-                        Map<String, Object> map = JsonUtil.from(body, Map.class);
-                        String schemaName = Objects.requireNonNull((String) map.get("schemaName"));
-                        String tableName = Objects.requireNonNull((String) map.get("tableName"));
-                        final String fileName = Objects.toString(map.get("fileName"));
-                        CSVFormat format = CSVFormat.MYSQL;
-                        final Character delimiter = map.getOrDefault("delimiter", format.getDelimiter() + "")
-                                .toString()
-                                .charAt(0);
-                        final Character quoteChar = map.getOrDefault("quoteChar", format.getQuoteCharacter() + "")
-                                .toString()
-                                .charAt(0);
-                        final QuoteMode quoteMode = QuoteMode.valueOf(map.getOrDefault("quoteMode",
-                                format.getQuoteMode() + "")
-                                .toString());
-                        final Character commentStart = Optional.ofNullable(map.get("commentStart")).map(c ->
-                                c.toString()
-                                        .charAt(0)).orElse(format.getCommentMarker());
-                        final Character escape = map.getOrDefault("escape", format.getEscapeCharacter())
-                                .toString()
-                                .charAt(0);
-                        final Boolean ignoreSurroundingSpaces = Boolean.parseBoolean(map.getOrDefault("escape", format.getIgnoreSurroundingSpaces())
-                                .toString());
-
-                        final Boolean ignoreEmptyLines = Boolean.parseBoolean(map.getOrDefault("ignoreEmptyLines", format.getIgnoreEmptyLines())
-                                .toString());
-                        final String recordSeparator = map.getOrDefault("recordSeparator", format.getRecordSeparator())
-                                .toString();
-                        final String nullString = map.getOrDefault("nullString", format.getNullString())
-                                .toString();
-                        final List headerComments = (List) map.getOrDefault("headerComments", Arrays.asList(
-                                Optional.ofNullable(format.getHeaderComments()).orElse(new String[]{})));
-                        final List<String> header = Optional.ofNullable((List<String>) map.get("header")).orElse(null);
-                        final Boolean skipHeaderRecord = Boolean.parseBoolean(map.getOrDefault("skipHeaderRecord",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean allowMissingColumnNames = Boolean.parseBoolean(map.getOrDefault("allowMissingColumnNames",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean ignoreHeaderCase = Boolean.parseBoolean(map.getOrDefault("ignoreHeaderCase",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean trim = Boolean.parseBoolean(map.getOrDefault("trim",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean trailingDelimiter = Boolean.parseBoolean(map.getOrDefault("trailingDelimiter",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean autoFlush = Boolean.parseBoolean(map.getOrDefault("autoFlush",
-                                format.getSkipHeaderRecord()).toString());
-                        final Boolean allowDuplicateHeaderNames = Boolean.parseBoolean(map.getOrDefault("allowDuplicateHeaderNames",
-                                format.getSkipHeaderRecord()).toString());
-                        format = CSVFormat.newFormat(delimiter)
-                                .withQuote(quoteChar)
-                                .withQuoteMode(quoteMode)
-                                .withCommentMarker(commentStart)
-                                .withEscape(escape)
-                                .withIgnoreSurroundingSpaces(ignoreSurroundingSpaces)
-                                .withIgnoreEmptyLines(ignoreEmptyLines)
-                                .withRecordSeparator(recordSeparator)
-                                .withNullString(nullString)
-                                .withHeaderComments(headerComments)
-                                .withHeader(Optional.ofNullable(header).map(n -> n.toArray(new String[]{})).orElse(null))
-                                .withSkipHeaderRecord(skipHeaderRecord)
-                                .withAllowMissingColumnNames(allowMissingColumnNames)
-                                .withIgnoreHeaderCase(ignoreHeaderCase)
-                                .withTrim(trim)
-                                .withTrailingDelimiter(trailingDelimiter)
-                                .withAutoFlush(autoFlush)
-                                .withAllowDuplicateHeaderNames(allowDuplicateHeaderNames);
-
-
-                        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
-                        mySqlInsertStatement.setTableName(new SQLIdentifierExpr(tableName));
-                        mySqlInsertStatement.getTableSource().setSchema(schemaName);
-                        List<String> columnNames;
-                        if (header == null || header.isEmpty()) {
-                            TableHandler table = Objects.requireNonNull(
-                                    metadataManager.getTable(schemaName, tableName));
-                            columnNames = table.getColumns().stream().map(i -> (i.getColumnName())).collect(Collectors.toList());
-                        } else {
-                            columnNames = header;
-                        }
-                        for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr("`" + i + "`")).collect(Collectors.toList())) {
-                            mySqlInsertStatement.addColumn(columnName);
-                        }
-                        int batch = 1000;
-                        try (Reader in = new FileReader(fileName)) {
-                            Iterable<CSVRecord> records = format.parse(in);
-                            Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.partition(records, batch).spliterator(), false)
-                                    .map(mrecord -> {
-                                        SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
-                                        List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
-                                        for (CSVRecord strings : mrecord) {
-                                            SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
-                                            for (String string : strings) {
-                                                valuesClause.addValue(new SQLCharExpr(string));
-                                            }
-                                            valuesList.add(valuesClause);
-                                        }
-                                        sqlInsertStatement.getValuesList().addAll(valuesList);
-                                        return sqlInsertStatement;
-                                    }).iterator();
-                            DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
-                            XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
-                            Future<long[]> future = Future.succeededFuture(new long[]{0, 0});
-                            while (iterator.hasNext()) {
-                                SQLInsertStatement statement = iterator.next();
-                                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement,dataContext.getDefaultSchema());
-                                Plan plan = UpdateSQLHandler.getPlan(drdsSql);
-                                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
-                                    ( plan.getInsertPhysical()), drdsSql.getParams()));
-                            }
-                            return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
-                        }
+                        return loaddata(dataContext, response, body, metadataManager);
                     }
                     if ("setUserDialect".equalsIgnoreCase(cmd)) {
-                        MycatRouterConfigOps ops = ConfigUpdater.getOps();
-                        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
-                        Map map = JsonUtil.from(body, Map.class);
-                        String username = (String) map.get("username");
-                        String dbType = (String) map.get("dialect");
-                        UserConfig userInfo = authenticator.getUserInfo(username);
-                        if (userInfo == null) {
-                            return response.sendError("unknown username:" + username, MySQLErrorCode.ER_UNKNOWN_ERROR);
-                        }
-                        userInfo.setDialect(dbType);
-                        ops.putUser(userInfo);
-                        ops.commit();
-                        return response.sendOk();
+                        return setUserDialect(response, body);
                     }
                     if ("showSlowSql".equalsIgnoreCase(cmd)) {
-                        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                        resultSetBuilder.addColumnInfo("trace_id", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("sql", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("sql_rows", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("start_time", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("end_time", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("execute_time", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("target_name", JDBCType.VARCHAR);
-                        Stream<SqlRecord> sqlRecords = SqlRecorderRuntime.INSTANCE.getRecords().stream()
-                                .sorted(Comparator.comparingLong(SqlRecord::getExecuteTime).reversed());
-                        Map map = JsonUtil.from(body, Map.class);
-                        Object idText = map.get("trace_id");
-
-                        if (idText != null) {
-                            long id = Long.parseLong(Objects.toString(idText));
-                            sqlRecords = sqlRecords.filter(i -> id == i.getId());
-                        }
-                        sqlRecords.forEach(r -> {
-                            resultSetBuilder.addObjectRowPayload(Arrays.asList(
-                                    Objects.toString(r.getId()),
-                                    Objects.toString(r.getSql()),
-                                    Objects.toString(r.getSqlRows()),
-                                    Objects.toString(r.getStartTime()),
-                                    Objects.toString(r.getEndTime()),
-                                    Objects.toString(r.getExecuteTime()),
-                                    Objects.toString(r.getTarget())
-                            ));
-                        });
-                        return response.sendResultSet(resultSetBuilder.build());
+                        return showSlowSql(response, body);
                     }
                     if ("showDataNodes".equalsIgnoreCase(cmd)) {
-                        Map map = JsonUtil.from(body, Map.class);
-                        TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
-                                (String) map.get("tableName"));
-                        LogicTableType type = table.getType();
-                        List<DataNode> backends = null;
-                        switch (type) {
-                            case SHARDING:
-                                backends = ((ShardingTable) table).getBackends();
-                                break;
-                            case GLOBAL:
-                                backends = ((GlobalTable) table).getGlobalDataNode();
-                                break;
-                            case NORMAL:
-                                backends = Collections.singletonList(
-                                        ((NormalTable) table).getDataNode());
-                                break;
-                            case CUSTOM:
-                                throw new UnsupportedOperationException("unsupport custom table");
-                        }
-                        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
-                        resultSetBuilder.addColumnInfo("targetName", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
-                        resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
-
-                        for (DataNode dataNode : backends) {
-                            String targetName = dataNode.getTargetName();
-                            String schemaName = dataNode.getSchema();
-                            String tableName = dataNode.getTable();
-
-                            resultSetBuilder.addObjectRowPayload(
-                                    Arrays.asList(targetName, schemaName, tableName));
-                        }
-                        return response.sendResultSet(resultSetBuilder.build());
+                        return showDataNodes(response, body, metadataManager);
                     }
                     if ("resetConfig".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();
@@ -401,66 +209,7 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     }
 
                     if ("showTables".equalsIgnoreCase(cmd)) {
-                        Map map = JsonUtil.from(body, Map.class);
-                        String type = (String) map.get("type");
-                        String schemaName = (String) map.get("schemaName");
-
-                        Stream<TableHandler> tables;
-                        Stream<TableHandler> tableHandlerStream;
-                        if (schemaName == null) {
-                            tableHandlerStream = metadataManager.getSchemaMap().values().stream().flatMap(i -> i.logicTables().values().stream());
-                        } else {
-                            SchemaHandler schemaHandler = Objects.requireNonNull(
-                                    metadataManager.getSchemaMap().get(schemaName)
-                            );
-                            NameMap<TableHandler> logicTables = schemaHandler.logicTables();
-                            tableHandlerStream = logicTables.values().stream();
-                        }
-                        if ("global".equalsIgnoreCase(type)) {
-                            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.GLOBAL);
-                        } else if ("sharding".equalsIgnoreCase(type)) {
-                            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.SHARDING);
-                        } else if ("normal".equalsIgnoreCase(type)) {
-                            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.NORMAL);
-                        } else if ("custom".equalsIgnoreCase(type)) {
-                            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.CUSTOM);
-                        } else {
-                            tables = tableHandlerStream;
-                        }
-
-                        ResultSetBuilder builder = ResultSetBuilder.create();
-                        builder.addColumnInfo("SCHEMA_NAME", JDBCType.VARCHAR)
-                                .addColumnInfo("TABLE_NAME", JDBCType.VARCHAR)
-                                .addColumnInfo("CREATE_TABLE_SQL", JDBCType.VARCHAR)
-                                .addColumnInfo("TYPE", JDBCType.VARCHAR)
-                                .addColumnInfo("COLUMNS", JDBCType.VARCHAR)
-                                .addColumnInfo("CONFIG", JDBCType.VARCHAR);
-                        tables.forEach(table -> {
-                            String SCHEMA_NAME = table.getSchemaName();
-                            String TABLE_NAME = table.getTableName();
-                            String CREATE_TABLE_SQL = table.getCreateTableSQL();
-                            LogicTableType TYPE = table.getType();
-                            String COLUMNS = table.getColumns().stream().map(i -> i.toString()).collect(Collectors.joining(","));
-                            String CONFIG = routerConfig.getSchemas().stream()
-                                    .filter(i -> SCHEMA_NAME.equalsIgnoreCase(i.getSchemaName()))
-                                    .map(i -> {
-                                        switch (TYPE) {
-                                            case SHARDING:
-                                                return i.getShadingTables();
-                                            case GLOBAL:
-                                                return i.getGlobalTables();
-                                            case NORMAL:
-                                                return i.getNormalTables();
-                                            case CUSTOM:
-                                                return i.getCustomTables();
-                                            default:
-                                                return null;
-                                        }
-                                    }).map(i -> i.get(TABLE_NAME)).findFirst()
-                                    .map(i -> i.toString()).orElse(null);
-                            builder.addObjectRowPayload(Arrays.asList(SCHEMA_NAME, TABLE_NAME, CREATE_TABLE_SQL, TYPE, COLUMNS, CONFIG));
-                        });
-                        return response.sendResultSet(() -> builder.build());
+                        return showTables(response, body, metadataManager, routerConfig);
                     }
 
                     if ("showClusters".equalsIgnoreCase(cmd)) {
@@ -714,6 +463,129 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                         builder.addObjectRowPayload(Arrays.asList(NAME, IS_TERMINATED, IS_SHUTDOWN, SCHEDULE_COUNT));
                         return response.sendResultSet(() -> builder.build());
                     }
+                    if ("showBaselines".equalsIgnoreCase(cmd)) {
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
+                        builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
+                                .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
+                                .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
+                                .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
+                                .addColumnInfo("FIXED", JDBCType.VARCHAR)
+                                .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                        for (Baseline baseline : queryPlanCache.list()) {
+                            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                                String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
+                                String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
+                                String PLAN_ID = String.valueOf(baselinePlan.getId());
+                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
+                                String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
+                                String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
+                                        .map(u->"true").orElse("false");
+                                String ACCEPTED = "true";
+
+                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                            }
+                        }
+                        return response.sendResultSet(() -> builder.build());
+                    }
+                    if ("baseline".equalsIgnoreCase(cmd)) {
+                        Map<String, Object> map = JsonUtil.from(body, Map.class);
+                        String command = Objects.requireNonNull(map.get("command")).toString().toLowerCase();
+                        long value = Long.parseLong((map.getOrDefault("value","0")).toString());
+                        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
+                        switch (command){
+                            case "showAllPlans":{
+                                ResultSetBuilder builder = ResultSetBuilder.create();
+
+                                builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
+                                        .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
+                                        .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
+                                        .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
+                                        .addColumnInfo("FIXED", JDBCType.VARCHAR)
+                                        .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                                for (Baseline baseline : queryPlanCache.list()) {
+                                    for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                                        String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
+                                        String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
+                                        String PLAN_ID = String.valueOf(baselinePlan.getId());
+                                        CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
+                                        String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
+                                        String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
+                                                .map(u->"true").orElse("false");
+                                        String ACCEPTED = "true";
+
+                                        builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                                    }
+                                }
+                                return response.sendResultSet(() -> builder.build());
+                            }
+                            case "loadBaseline":{
+                                queryPlanCache.loadBaseline(value);
+                                return response.sendOk();
+                            }
+                            case "loadPlan":{
+                                queryPlanCache.loadPlan(value);
+                                return response.sendOk();
+                            }
+                            case "persistPlan":{
+                                queryPlanCache.persistPlan(value);
+                                return response.sendOk();
+                            }
+                            case "clearBaseline":{
+                                queryPlanCache.clearBaseline(value);
+                                return response.sendOk();
+                            }
+                            case "clearPlan":{
+                                queryPlanCache.clearPlan(value);
+                                return response.sendOk();
+                            }
+                            case "deleteBaseline":{
+                                queryPlanCache.deleteBaseline(value);
+                                return response.sendOk();
+                            }
+                            case "deletePlan":{
+                                queryPlanCache.deletePlan(value);
+                                return response.sendOk();
+                            }
+                            case "add":
+                            case "fix":{
+                                SQLStatement sqlStatement = null;
+                                if (ast.getHintStatements() != null && ast.getHintStatements().size() == 1) {
+                                    sqlStatement = ast.getHintStatements().get(0);
+                                    DrdsSqlWithParams drdsSqlWithParams = DrdsRunnerHelper.preParse(sqlStatement, dataContext.getDefaultSchema());
+                                    queryPlanCache.add("fix".equalsIgnoreCase(command),drdsSqlWithParams);
+                                }
+                                return response.sendOk();
+                            }
+                            default:
+                                throw new UnsupportedOperationException();
+                        }
+                    }
+                    if ("loadBaseline".equalsIgnoreCase(cmd)) {
+                        ResultSetBuilder builder = ResultSetBuilder.create();
+                        QueryPlanCache queryPlanCache = MetaClusterCurrent.wrapper(QueryPlanCache.class);
+                        builder.addColumnInfo("BASELINE_ID", JDBCType.VARCHAR)
+                                .addColumnInfo("PARAMETERIZED_SQL", JDBCType.VARCHAR)
+                                .addColumnInfo("PLAN_ID", JDBCType.VARCHAR)
+                                .addColumnInfo("EXTERNALIZED_PLAN", JDBCType.VARCHAR)
+                                .addColumnInfo("FIXED", JDBCType.VARCHAR)
+                                .addColumnInfo("ACCEPTED",JDBCType.VARCHAR);
+                        for (Baseline baseline : queryPlanCache.list()) {
+                            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                                String BASELINE_ID = String.valueOf(baselinePlan.getBaselineId());
+                                String PARAMETERIZED_SQL = String.valueOf(baselinePlan.getSql());
+                                String PLAN_ID = String.valueOf(baselinePlan.getId());
+                                CodeExecuterContext attach =(CodeExecuterContext)baselinePlan.getAttach();
+                                String EXTERNALIZED_PLAN = new PlanImpl (attach.getMycatRel(),attach,Collections.emptyList()).dumpPlan();
+                                String FIXED =     Optional.ofNullable(baseline.getFixPlan()).filter(i->i.getId()==baselinePlan.getId())
+                                        .map(u->"true").orElse("false");
+                                String ACCEPTED = "true";
+
+                                builder.addObjectRowPayload(Arrays.asList(BASELINE_ID, PARAMETERIZED_SQL, PLAN_ID, EXTERNALIZED_PLAN,FIXED,ACCEPTED));
+                            }
+                        }
+                        return response.sendResultSet(() -> builder.build());
+                    }
                     mycatDmlHandler(cmd, body, ast);
                     return response.sendOk();
                 }
@@ -722,6 +594,289 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
         } catch (Throwable throwable) {
             return response.sendError(throwable);
         }
+    }
+
+    @Nullable
+    private Future<Void> showTables(Response response, String body, MetadataManager metadataManager, MycatRouterConfig routerConfig) {
+        Map map = JsonUtil.from(body, Map.class);
+        String type = (String) map.get("type");
+        String schemaName = (String) map.get("schemaName");
+
+        Stream<TableHandler> tables;
+        Stream<TableHandler> tableHandlerStream;
+        if (schemaName == null) {
+            tableHandlerStream = metadataManager.getSchemaMap().values().stream().flatMap(i -> i.logicTables().values().stream());
+        } else {
+            SchemaHandler schemaHandler = Objects.requireNonNull(
+                    metadataManager.getSchemaMap().get(schemaName)
+            );
+            NameMap<TableHandler> logicTables = schemaHandler.logicTables();
+            tableHandlerStream = logicTables.values().stream();
+        }
+        if ("global".equalsIgnoreCase(type)) {
+            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.GLOBAL);
+        } else if ("sharding".equalsIgnoreCase(type)) {
+            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.SHARDING);
+        } else if ("normal".equalsIgnoreCase(type)) {
+            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.NORMAL);
+        } else if ("custom".equalsIgnoreCase(type)) {
+            tables = tableHandlerStream.filter(i -> i.getType() == LogicTableType.CUSTOM);
+        } else {
+            tables = tableHandlerStream;
+        }
+
+        ResultSetBuilder builder = ResultSetBuilder.create();
+        builder.addColumnInfo("SCHEMA_NAME", JDBCType.VARCHAR)
+                .addColumnInfo("TABLE_NAME", JDBCType.VARCHAR)
+                .addColumnInfo("CREATE_TABLE_SQL", JDBCType.VARCHAR)
+                .addColumnInfo("TYPE", JDBCType.VARCHAR)
+                .addColumnInfo("COLUMNS", JDBCType.VARCHAR)
+                .addColumnInfo("CONFIG", JDBCType.VARCHAR);
+        tables.forEach(table -> {
+            String SCHEMA_NAME = table.getSchemaName();
+            String TABLE_NAME = table.getTableName();
+            String CREATE_TABLE_SQL = table.getCreateTableSQL();
+            LogicTableType TYPE = table.getType();
+            String COLUMNS = table.getColumns().stream().map(i -> i.toString()).collect(Collectors.joining(","));
+            String CONFIG = routerConfig.getSchemas().stream()
+                    .filter(i -> SCHEMA_NAME.equalsIgnoreCase(i.getSchemaName()))
+                    .map(i -> {
+                        switch (TYPE) {
+                            case SHARDING:
+                                return i.getShadingTables();
+                            case GLOBAL:
+                                return i.getGlobalTables();
+                            case NORMAL:
+                                return i.getNormalTables();
+                            case CUSTOM:
+                                return i.getCustomTables();
+                            default:
+                                return null;
+                        }
+                    }).map(i -> i.get(TABLE_NAME)).findFirst()
+                    .map(i -> i.toString()).orElse(null);
+            builder.addObjectRowPayload(Arrays.asList(SCHEMA_NAME, TABLE_NAME, CREATE_TABLE_SQL, TYPE, COLUMNS, CONFIG));
+        });
+        return response.sendResultSet(() -> builder.build());
+    }
+
+    private Future<Void> showDataNodes(Response response, String body, MetadataManager metadataManager) {
+        Map map = JsonUtil.from(body, Map.class);
+        TableHandler table = metadataManager.getTable((String) map.get("schemaName"),
+                (String) map.get("tableName"));
+        LogicTableType type = table.getType();
+        List<DataNode> backends = null;
+        switch (type) {
+            case SHARDING:
+                backends = ((ShardingTable) table).getBackends();
+                break;
+            case GLOBAL:
+                backends = ((GlobalTable) table).getGlobalDataNode();
+                break;
+            case NORMAL:
+                backends = Collections.singletonList(
+                        ((NormalTable) table).getDataNode());
+                break;
+            case CUSTOM:
+                throw new UnsupportedOperationException("unsupport custom table");
+        }
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("targetName", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
+
+        for (DataNode dataNode : backends) {
+            String targetName = dataNode.getTargetName();
+            String schemaName = dataNode.getSchema();
+            String tableName = dataNode.getTable();
+
+            resultSetBuilder.addObjectRowPayload(
+                    Arrays.asList(targetName, schemaName, tableName));
+        }
+        return response.sendResultSet(resultSetBuilder.build());
+    }
+
+    private Future<Void> showSlowSql(Response response, String body) {
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("trace_id", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("sql", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("sql_rows", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("start_time", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("end_time", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("execute_time", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("target_name", JDBCType.VARCHAR);
+        Stream<SqlRecord> sqlRecords = SqlRecorderRuntime.INSTANCE.getRecords().stream()
+                .sorted(Comparator.comparingLong(SqlRecord::getExecuteTime).reversed());
+        Map map = JsonUtil.from(body, Map.class);
+        Object idText = map.get("trace_id");
+
+        if (idText != null) {
+            long id = Long.parseLong(Objects.toString(idText));
+            sqlRecords = sqlRecords.filter(i -> id == i.getId());
+        }
+        sqlRecords.forEach(r -> {
+            resultSetBuilder.addObjectRowPayload(Arrays.asList(
+                    Objects.toString(r.getId()),
+                    Objects.toString(r.getSql()),
+                    Objects.toString(r.getSqlRows()),
+                    Objects.toString(r.getStartTime()),
+                    Objects.toString(r.getEndTime()),
+                    Objects.toString(r.getExecuteTime()),
+                    Objects.toString(r.getTarget())
+            ));
+        });
+        return response.sendResultSet(resultSetBuilder.build());
+    }
+
+    private Future<Void> setUserDialect(Response response, String body) throws Exception {
+        MycatRouterConfigOps ops = ConfigUpdater.getOps();
+        Authenticator authenticator = MetaClusterCurrent.wrapper(Authenticator.class);
+        Map map = JsonUtil.from(body, Map.class);
+        String username = (String) map.get("username");
+        String dbType = (String) map.get("dialect");
+        UserConfig userInfo = authenticator.getUserInfo(username);
+        if (userInfo == null) {
+            return response.sendError("unknown username:" + username, MySQLErrorCode.ER_UNKNOWN_ERROR);
+        }
+        userInfo.setDialect(dbType);
+        ops.putUser(userInfo);
+        ops.commit();
+        return response.sendOk();
+    }
+
+    @NotNull
+    private PromiseInternal<Void> loaddata(MycatDataContext dataContext, Response response, String body, MetadataManager metadataManager) throws IOException {
+        Map<String, Object> map = JsonUtil.from(body, Map.class);
+        String schemaName = Objects.requireNonNull((String) map.get("schemaName"));
+        String tableName = Objects.requireNonNull((String) map.get("tableName"));
+        final String fileName = Objects.toString(map.get("fileName"));
+        CSVFormat format = CSVFormat.MYSQL;
+        final Character delimiter = map.getOrDefault("delimiter", format.getDelimiter() + "")
+                .toString()
+                .charAt(0);
+        final Character quoteChar = map.getOrDefault("quoteChar", format.getQuoteCharacter() + "")
+                .toString()
+                .charAt(0);
+        final QuoteMode quoteMode = QuoteMode.valueOf(map.getOrDefault("quoteMode",
+                format.getQuoteMode() + "")
+                .toString());
+        final Character commentStart = Optional.ofNullable(map.get("commentStart")).map(c ->
+                c.toString()
+                        .charAt(0)).orElse(format.getCommentMarker());
+        final Character escape = map.getOrDefault("escape", format.getEscapeCharacter())
+                .toString()
+                .charAt(0);
+        final Boolean ignoreSurroundingSpaces = Boolean.parseBoolean(map.getOrDefault("escape", format.getIgnoreSurroundingSpaces())
+                .toString());
+
+        final Boolean ignoreEmptyLines = Boolean.parseBoolean(map.getOrDefault("ignoreEmptyLines", format.getIgnoreEmptyLines())
+                .toString());
+        final String recordSeparator = map.getOrDefault("recordSeparator", format.getRecordSeparator())
+                .toString();
+        final String nullString = map.getOrDefault("nullString", format.getNullString())
+                .toString();
+        final List headerComments = (List) map.getOrDefault("headerComments", Arrays.asList(
+                Optional.ofNullable(format.getHeaderComments()).orElse(new String[]{})));
+        final List<String> header = Optional.ofNullable((List<String>) map.get("header")).orElse(null);
+        final Boolean skipHeaderRecord = Boolean.parseBoolean(map.getOrDefault("skipHeaderRecord",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean allowMissingColumnNames = Boolean.parseBoolean(map.getOrDefault("allowMissingColumnNames",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean ignoreHeaderCase = Boolean.parseBoolean(map.getOrDefault("ignoreHeaderCase",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean trim = Boolean.parseBoolean(map.getOrDefault("trim",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean trailingDelimiter = Boolean.parseBoolean(map.getOrDefault("trailingDelimiter",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean autoFlush = Boolean.parseBoolean(map.getOrDefault("autoFlush",
+                format.getSkipHeaderRecord()).toString());
+        final Boolean allowDuplicateHeaderNames = Boolean.parseBoolean(map.getOrDefault("allowDuplicateHeaderNames",
+                format.getSkipHeaderRecord()).toString());
+        format = CSVFormat.newFormat(delimiter)
+                .withQuote(quoteChar)
+                .withQuoteMode(quoteMode)
+                .withCommentMarker(commentStart)
+                .withEscape(escape)
+                .withIgnoreSurroundingSpaces(ignoreSurroundingSpaces)
+                .withIgnoreEmptyLines(ignoreEmptyLines)
+                .withRecordSeparator(recordSeparator)
+                .withNullString(nullString)
+                .withHeaderComments(headerComments)
+                .withHeader(Optional.ofNullable(header).map(n -> n.toArray(new String[]{})).orElse(null))
+                .withSkipHeaderRecord(skipHeaderRecord)
+                .withAllowMissingColumnNames(allowMissingColumnNames)
+                .withIgnoreHeaderCase(ignoreHeaderCase)
+                .withTrim(trim)
+                .withTrailingDelimiter(trailingDelimiter)
+                .withAutoFlush(autoFlush)
+                .withAllowDuplicateHeaderNames(allowDuplicateHeaderNames);
+
+
+        MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+        mySqlInsertStatement.setTableName(new SQLIdentifierExpr(tableName));
+        mySqlInsertStatement.getTableSource().setSchema(schemaName);
+        List<String> columnNames;
+        if (header == null || header.isEmpty()) {
+            TableHandler table = Objects.requireNonNull(
+                    metadataManager.getTable(schemaName, tableName));
+            columnNames = table.getColumns().stream().map(i -> (i.getColumnName())).collect(Collectors.toList());
+        } else {
+            columnNames = header;
+        }
+        for (SQLIdentifierExpr columnName : columnNames.stream().map(i -> new SQLIdentifierExpr("`" + i + "`")).collect(Collectors.toList())) {
+            mySqlInsertStatement.addColumn(columnName);
+        }
+        int batch = 1000;
+        try (Reader in = new FileReader(fileName)) {
+            Iterable<CSVRecord> records = format.parse(in);
+            Iterator<SQLInsertStatement> iterator = StreamSupport.stream(Iterables.partition(records, batch).spliterator(), false)
+                    .map(mrecord -> {
+                        SQLInsertStatement sqlInsertStatement = mySqlInsertStatement.clone();
+                        List<SQLInsertStatement.ValuesClause> valuesList = new ArrayList<>(batch);
+                        for (CSVRecord strings : mrecord) {
+                            SQLInsertStatement.ValuesClause valuesClause = new SQLInsertStatement.ValuesClause();
+                            for (String string : strings) {
+                                valuesClause.addValue(new SQLCharExpr(string));
+                            }
+                            valuesList.add(valuesClause);
+                        }
+                        sqlInsertStatement.getValuesList().addAll(valuesList);
+                        return sqlInsertStatement;
+                    }).iterator();
+            DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+            XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
+            Future<long[]> future = Future.succeededFuture(new long[]{0, 0});
+            while (iterator.hasNext()) {
+                SQLInsertStatement statement = iterator.next();
+                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement, dataContext.getDefaultSchema());
+                Plan plan = UpdateSQLHandler.getPlan(drdsSql);
+                future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
+                    ( plan.getInsertPhysical()), drdsSql.getParams()));
+            }
+            return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
+        }
+    }
+
+    private Future<Void> showErGroup(Response response, MetadataManager metadataManager) {
+        ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
+        resultSetBuilder.addColumnInfo("groupId", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("schemaName", JDBCType.VARCHAR);
+        resultSetBuilder.addColumnInfo("tableName", JDBCType.VARCHAR);
+
+        Map<String, List<ShardingTable>> erTableGroup = metadataManager.getErTableGroup();
+        Integer index = 0;
+        for (Map.Entry<String, List<ShardingTable>> e : erTableGroup.entrySet()) {
+            String key = e.getKey();
+            Iterator<ShardingTable> iterator = e.getValue().iterator();
+            while (iterator.hasNext()) {
+                ShardingTable table = iterator.next();
+                String schemaName = table.getSchemaName();
+                String tableName = table.getTableName();
+                resultSetBuilder.addObjectRowPayload(Arrays.asList(index.toString(), schemaName, tableName));
+            }
+            index++;
+        }
+        return response.sendResultSet(resultSetBuilder.build());
     }
 
     public static RowBaseIterator showClusters(String clusterName) {

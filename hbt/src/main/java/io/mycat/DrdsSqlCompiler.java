@@ -306,7 +306,7 @@ public class DrdsSqlCompiler {
         RelNodeContext relNodeContext = null;
         {
             relNodeContext = getRelRoot(plus, drdsSql);
-            logPlan = relNodeContext.getRoot().project(false);
+            logPlan = relNodeContext.getRoot().rel;
         }
 
         if (logPlan instanceof TableModify) {

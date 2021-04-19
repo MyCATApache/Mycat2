@@ -1,5 +1,6 @@
 package io.mycat.calcite.spm;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -7,7 +8,7 @@ import lombok.ToString;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-@Getter
+@Data
 @ToString
 @EqualsAndHashCode
 public class Baseline {
@@ -34,5 +35,15 @@ public class Baseline {
 
     public void removePlanById(long planId) {
         planList.removeIf(baselinePlan -> baselinePlan.id == planId);
+    }
+
+    public void replace(BaselinePlan baselinePlan) {
+        if (this.getFixPlan() != null) {
+            if (this.getFixPlan().getId() == baselinePlan.getId()) {
+                this.setFixPlan(baselinePlan);
+            }
+        }
+        planList.removeIf(i->i.getId() == baselinePlan.getId());
+        planList.add(baselinePlan);
     }
 }

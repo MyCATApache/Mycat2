@@ -16,14 +16,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public class PlanCache2 implements QueryPlanCache {
+public class MemPlanCache implements QueryPlanCache {
     private PlanIds planIds = new PlanIds();
     private PlanManagerPersistor persistor;
     private ConcurrentHashMap<Constraint, Baseline> map = new ConcurrentHashMap<>();
-    private final static Logger log = LoggerFactory.getLogger(PlanCache2.class);
+    private final static Logger log = LoggerFactory.getLogger(MemPlanCache.class);
 
-    public PlanCache2(PlanManagerPersistor persistor) {
+    public MemPlanCache(PlanManagerPersistor persistor) {
         this.persistor = persistor;
     }
 
@@ -31,7 +34,7 @@ public class PlanCache2 implements QueryPlanCache {
         this.map.putAll(persistor.loadAllBaseline());
         this.map.values().stream().flatMap(c -> {
             return c.getPlanList().stream();
-        }).forEach(p ->getCodeExecuterContext(p));
+        }).forEach(p -> getCodeExecuterContext(p));
     }
 
     public void delete(List<String> uniqueTables) {
@@ -138,8 +141,88 @@ public class PlanCache2 implements QueryPlanCache {
         }
     }
 
-    public void clearCache(){
+    @Override
+    public List<Baseline> list() {
+        Collection<Baseline> mem = map.values();
+
+        Collection<Baseline> disk = persistor.loadAllBaseline().values();
+        HashSet<Baseline> objects = new HashSet<>();
+        objects.addAll(mem);
+        objects.addAll(disk);
+        return objects.stream().sorted(Comparator.comparing(new Function<Baseline, Long>() {
+            @Override
+            public Long apply(Baseline x) {
+                return x.getBaselineId();
+            }
+        })).collect(Collectors.toList());
+    }
+
+    public void clearCache() {
         map.clear();
+    }
+
+    @Override
+    public void loadBaseline(long value) {
+        persistor.loadBaseline(value).ifPresent(new Consumer<Baseline>() {
+            @Override
+            public void accept(Baseline baseline) {
+                map.put(baseline.getConstraint(), baseline);
+            }
+        });
+    }
+
+    @Override
+    public synchronized void loadPlan(long value) {
+        persistor.loadPlan(value).ifPresent(new Consumer<BaselinePlan>() {
+            @Override
+            public void accept(BaselinePlan baselinePlan) {
+                long baselineId = baselinePlan.getBaselineId();
+                map.values().stream().filter(i -> i.getBaselineId() == baselineId).findFirst().ifPresent(new Consumer<Baseline>() {
+                    @Override
+                    public void accept(Baseline baseline) {
+                        baseline.replace(baselinePlan);
+                    }
+                });
+            }
+        });
+    }
+
+    @Override
+    public void persistPlan(long value) {
+        for (Baseline baseline : map.values()) {
+            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                if (baselinePlan.getId() == value) {
+                    boolean FIXED = (baseline.getFixPlan() != null) && baseline.getFixPlan().getId() == value;
+                    persistor.savePlan(baselinePlan, FIXED);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void clearBaseline(long baselineId) {
+        map.values().stream().filter(i -> i.getBaselineId() == baselineId).findFirst().ifPresent(baseline -> map.remove(baseline.getConstraint()));
+    }
+
+    @Override
+    public void clearPlan(long value) {
+        for (Baseline baseline : map.values()) {
+            for (BaselinePlan baselinePlan : baseline.getPlanList()) {
+                if (baselinePlan.getId() == value) {
+                    baseline.removePlanById(value);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void deleteBaseline(long value) {
+        persistor.deleteBaseline(value);
+    }
+
+    @Override
+    public void deletePlan(long value) {
+        persistor.deletePlan(value);
     }
 
 }

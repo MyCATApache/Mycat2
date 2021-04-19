@@ -326,13 +326,13 @@ public class ConfigPrepareExecuter {
         if (sqlResultSetService != null) {
             context.put(SqlResultSetService.class, sqlResultSetService);
         }
-        if(!MetaClusterCurrent.exist(PlanCache2.class)){
-            PlanCache2 planCache2 = new PlanCache2((new DbPlanManagerPersistorImpl()));
-            context.put(PlanCache2.class,planCache2);
-            context.put(QueryPlanner.class,new QueryPlanner(planCache2));
+        if(!MetaClusterCurrent.exist(MemPlanCache.class)){
+            MemPlanCache memPlanCache = new MemPlanCache((new DbPlanManagerPersistorImpl()));
+            context.put(MemPlanCache.class, memPlanCache);
+            context.put(QueryPlanner.class,new QueryPlanner(memPlanCache));
         }else {
-            PlanCache2 planCache2 = MetaClusterCurrent.wrapper(PlanCache2.class);
-            planCache2.clearCache();
+            MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+            memPlanCache.clearCache();
         }
 
 //        PlanCache2 planCache = MetaClusterCurrent.wrapper(PlanCache2.class);
@@ -360,8 +360,8 @@ public class ConfigPrepareExecuter {
             @Override
             public void handle(Promise<Void> promise) {
                 try {
-                    PlanCache2 planCache2 = MetaClusterCurrent.wrapper(PlanCache2.class);
-                    planCache2.init();
+                    MemPlanCache memPlanCache = MetaClusterCurrent.wrapper(MemPlanCache.class);
+                    memPlanCache.init();
                 }catch (Throwable throwable){
                     LOGGER.error("",throwable);
                    promise.fail(throwable);

@@ -61,7 +61,8 @@ public class PlanImpl implements Plan {
     }
 
     public PlanImpl(MycatRel relNode,
-                    CodeExecuterContext executerContext, List<String> aliasList) {
+                    CodeExecuterContext executerContext,
+                    List<String> aliasList) {
         this.relNode = relNode;
         this.aliasList = aliasList;
         this.type = Type.PHYSICAL;
