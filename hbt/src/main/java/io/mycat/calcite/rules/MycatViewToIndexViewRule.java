@@ -31,10 +31,12 @@ import java.util.List;
  */
 public class MycatViewToIndexViewRule extends RelOptRule {
     private final OptimizationContext optimizationContext;
+    private boolean joinClustering;
 
-    public MycatViewToIndexViewRule(OptimizationContext optimizationContext) {
+    public MycatViewToIndexViewRule(OptimizationContext optimizationContext,boolean joinClustering) {
         super(operand(MycatView.class, none()), "MycatFilterViewRule");
         this.optimizationContext = optimizationContext;
+        this.joinClustering = joinClustering;
     }
 
     @Override

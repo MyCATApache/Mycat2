@@ -67,10 +67,11 @@ public class SQLRBORewriter extends RelShuttleImpl {
                 Project.class, Union.class, Filter.class, Sort.class);
     }
 
+    private boolean joinClustering;
 
 
-    public SQLRBORewriter() {
-
+    public SQLRBORewriter(boolean joinClustering) {
+        this.joinClustering = joinClustering;
     }
 
     @Override
@@ -525,34 +526,36 @@ public class SQLRBORewriter extends RelShuttleImpl {
     }
 
 
-    public static RelNode join(RelNode left,
+    public RelNode join(RelNode left,
                                RelNode right,
                                LogicalJoin join) {
         Optional<RelNode> relNodeOptional = bottomJoin(left, right, join);
         if (relNodeOptional.isPresent()) return relNodeOptional.get();
         Join newJoin = join.copy(join.getTraitSet(), ImmutableList.of(left, right));
-        int orgJoinCount = RelOptUtil.countJoins(newJoin);
-        if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 1 && orgJoinCount < 12) {
-            RelOptCluster cluster = newJoin.getCluster();
-            RelOptPlanner planner = cluster.getPlanner();
-            planner.clear();
-            MycatConvention.INSTANCE.register(planner);
-            planner.addRule(CoreRules.JOIN_COMMUTE);
-            planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
-            planner.addRule(CoreRules.JOIN_ASSOCIATE);
-            planner.addRule(CoreRules.FILTER_INTO_JOIN);
-            planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
-            planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
-            planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
-            planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
-            planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
-            planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
-            planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
-            planner.setRoot(planner.changeTraits(newJoin, cluster.traitSetOf(MycatConvention.INSTANCE)));
+        if (this.joinClustering){
+            int orgJoinCount = RelOptUtil.countJoins(newJoin);
+            if (!(newJoin instanceof MycatRel) && newJoin.getJoinType() == JoinRelType.INNER && orgJoinCount > 1 && orgJoinCount < 12) {
+                RelOptCluster cluster = newJoin.getCluster();
+                RelOptPlanner planner = cluster.getPlanner();
+                planner.clear();
+                MycatConvention.INSTANCE.register(planner);
+                planner.addRule(CoreRules.JOIN_COMMUTE);
+                planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
+                planner.addRule(CoreRules.JOIN_ASSOCIATE);
+                planner.addRule(CoreRules.FILTER_INTO_JOIN);
+                planner.addRule(CoreRules.JOIN_PUSH_EXPRESSIONS);
+                planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
+                planner.addRule(MycatJoinClusteringRule.Config.DEFAULT.toRule());
+                planner.addRule(MycatProjectJoinClusteringRule.Config.DEFAULT.toRule());
+                planner.addRule(MycatJoinPushThroughJoinRule.LEFT);
+                planner.addRule(MycatJoinPushThroughJoinRule.RIGHT);
+                planner.addRule(MycatFilterJoinRule.JoinConditionPushRule.Config.DEFAULT.withPredicate((join1, joinType, exp) -> false).toRule());
+                planner.setRoot(planner.changeTraits(newJoin, cluster.traitSetOf(MycatConvention.INSTANCE)));
 
-            RelNode bestExp = planner.findBestExp();
-            if (RelOptUtil.countJoins(bestExp) < orgJoinCount) {
-                return bestExp;
+                RelNode bestExp = planner.findBestExp();
+                if (RelOptUtil.countJoins(bestExp) < orgJoinCount) {
+                    return bestExp;
+                }
             }
         }
         return newJoin;

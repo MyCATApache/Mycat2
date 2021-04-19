@@ -339,7 +339,7 @@ public class ConfigPrepareExecuter {
         MySQLManager mySQLManager;
         context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(() -> ((MetadataManager) context.get(MetadataManager.class)).getSchemaMap()));
+        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig()));
         ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));

@@ -35,6 +35,7 @@ import io.mycat.calcite.rules.MycatViewToIndexViewRule;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.spm.PlanImpl;
 import io.mycat.calcite.table.*;
+import io.mycat.config.ServerConfig;
 import io.mycat.gsi.GSIService;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.SchemaConvertor;
@@ -83,9 +84,11 @@ import static org.apache.calcite.rel.rules.CoreRules.JOIN_PUSH_TRANSITIVE_PREDIC
 public class DrdsSqlCompiler {
     private final static Logger log = LoggerFactory.getLogger(DrdsSqlCompiler.class);
     private final SchemaPlus schemas;
+    private final DrdsConst config;
 
     public DrdsSqlCompiler(DrdsConst config) {
         this.schemas = DrdsRunnerHelper.convertRoSchemaPlus(config);
+        this.config = config;
     }
 
     @SneakyThrows
@@ -130,7 +133,7 @@ public class DrdsSqlCompiler {
                         return new MycatTransientSQLTableScan(cluster,
                                 mycatPhysicalTable.getRowType(),
                                 dataNode.getTargetName(), sqlNode.toSqlString(dialect)
-                               .getSql());
+                                .getSql());
                     }
                 }
                 return super.visit(scan);
@@ -140,9 +143,10 @@ public class DrdsSqlCompiler {
         CodeExecuterContext codeExecuterContext = getCodeExecuterContext(mycatRel, false);
         return new PlanImpl(mycatRel, codeExecuterContext, mycatRel.getRowType().getFieldNames());
     }
+
     public MycatRel dispatch(OptimizationContext optimizationContext,
-                             DrdsSql drdsSql){
-       return dispatch(optimizationContext,drdsSql,schemas);
+                             DrdsSql drdsSql) {
+        return dispatch(optimizationContext, drdsSql, schemas);
     }
 
     public MycatRel dispatch(OptimizationContext optimizationContext,
@@ -176,7 +180,7 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = metadataManager.getTable(schemaName, tableName);
             switch (logicTable.getType()) {
                 case SHARDING:
-                    return compileUpdate(logicTable,optimizationContext, drdsSql, plus);
+                    return compileUpdate(logicTable, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
                     return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
@@ -193,7 +197,7 @@ public class DrdsSqlCompiler {
             TableHandler logicTable = metadataManager.getTable(schemaName, tableName);
             switch (logicTable.getType()) {
                 case SHARDING:
-                    return compileDelete(logicTable,optimizationContext, drdsSql, plus);
+                    return compileDelete(logicTable, optimizationContext, drdsSql, plus);
                 case GLOBAL: {
                     return complieGlobalUpdate(optimizationContext, drdsSql, sqlStatement, (GlobalTable) logicTable);
                 }
@@ -225,8 +229,8 @@ public class DrdsSqlCompiler {
         return compileQuery(optimizationContext, plus, drdsSql);
     }
 
-    private MycatRel compileUpdate(TableHandler logicTable,  OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
-        return compileQuery( optimizationContext, plus, drdsSql);
+    private MycatRel compileUpdate(TableHandler logicTable, OptimizationContext optimizationContext, DrdsSql drdsSql, SchemaPlus plus) {
+        return compileQuery(optimizationContext, plus, drdsSql);
     }
 
     private MycatRel compileInsert(ShardingTableHandler logicTable,
@@ -295,9 +299,9 @@ public class DrdsSqlCompiler {
     }
 
     public MycatRel compileQuery(
-                                  OptimizationContext optimizationContext,
-                                  SchemaPlus plus,
-                                  DrdsSql drdsSql) {
+            OptimizationContext optimizationContext,
+            SchemaPlus plus,
+            DrdsSql drdsSql) {
         RelNode logPlan;
         RelNodeContext relNodeContext = null;
         {
@@ -323,7 +327,7 @@ public class DrdsSqlCompiler {
         Collection<RelOptRule> rboInCbo;
         if (MetaClusterCurrent.exist(GSIService.class)) {
             rboInCbo = Collections.singletonList(
-                    new MycatViewToIndexViewRule(optimizationContext)
+                    new MycatViewToIndexViewRule(optimizationContext,config.joinClustering())
             );
         } else {
             rboInCbo = Collections.emptyList();
@@ -334,10 +338,9 @@ public class DrdsSqlCompiler {
     }
 
 
-
     private RelNodeContext getRelRoot(
-                                      SchemaPlus plus, DrdsSql drdsSql) {
-        CalciteCatalogReader catalogReader =DrdsRunnerHelper. newCalciteCatalogReader( plus);
+            SchemaPlus plus, DrdsSql drdsSql) {
+        CalciteCatalogReader catalogReader = DrdsRunnerHelper.newCalciteCatalogReader(plus);
         SqlValidator validator = DrdsRunnerHelper.getSqlValidator(drdsSql, catalogReader);
         RelOptCluster cluster = newCluster();
         SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
@@ -361,11 +364,8 @@ public class DrdsSqlCompiler {
         RelRoot root = sqlToRelConverter.convertQuery(validated, false, true);
         RelNode newRelNode = RelDecorrelator.decorrelateQuery(root.rel, relBuilder);
 
-        return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder,catalogReader,parameterRowType);
+        return new RelNodeContext(root.withRel(newRelNode), sqlToRelConverter, validator, relBuilder, catalogReader, parameterRowType);
     }
-
-
-
 
 
     private MycatRel planUpdate(LogicalTableModify tableModify,
@@ -488,21 +488,22 @@ public class DrdsSqlCompiler {
 
     );
 
-    private static RelNode optimizeWithRBO(RelNode logPlan) {
+    private  RelNode optimizeWithRBO(RelNode logPlan) {
         HepProgramBuilder builder = new HepProgramBuilder();
         builder.addMatchLimit(512);
         builder.addRuleCollection(FILTER);
         HepPlanner planner = new HepPlanner(builder.build());
         planner.setRoot(logPlan);
         RelNode bestExp = planner.findBestExp();
-        SQLRBORewriter sqlrboRewriter = new SQLRBORewriter();
+        SQLRBORewriter sqlrboRewriter = new SQLRBORewriter(config.joinClustering());
         return bestExp.accept(sqlrboRewriter);
     }
 
     @NotNull
-    public  CalciteCatalogReader newCalciteCatalogReader() {
-   return DrdsRunnerHelper.newCalciteCatalogReader(schemas);
+    public CalciteCatalogReader newCalciteCatalogReader() {
+        return DrdsRunnerHelper.newCalciteCatalogReader(schemas);
     }
+
     public static RelOptCluster newCluster() {
         RelOptPlanner planner = new VolcanoPlanner();
         ImmutableList<RelTraitDef> TRAITS = ImmutableList.of(ConventionTraitDef.INSTANCE, RelCollationTraitDef.INSTANCE);

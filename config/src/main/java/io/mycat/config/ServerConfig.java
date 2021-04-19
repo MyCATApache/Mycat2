@@ -59,6 +59,7 @@ public class ServerConfig {
     private String tempDirectory;
     private String pathCacheDirectory;
     private int mergeUnionSize = 5;
+    private boolean joinClustering = true;
     private String serverVersion = "5.7.33-mycat-2.0";
     private boolean ignoreCast = false;
 

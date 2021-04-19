@@ -38,7 +38,7 @@ import static io.mycat.util.CalciteUtls.unCastWrapper;
 public class IndexRBORewriter<T> extends SQLRBORewriter {
     boolean apply = false;
     public IndexRBORewriter() {
-        super();
+        super(false);
     }
 
     @Override
