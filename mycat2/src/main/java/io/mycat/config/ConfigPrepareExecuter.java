@@ -20,6 +20,7 @@ import cn.mycat.vertx.xa.impl.LocalXaMemoryRepositoryImpl;
 import cn.mycat.vertx.xa.impl.XaLogImpl;
 import io.mycat.*;
 import io.mycat.calcite.spm.*;
+import io.mycat.calcite.table.SchemaHandler;
 import io.mycat.commands.MycatMySQLManagerImpl;
 import io.mycat.commands.SqlResultSetService;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
@@ -27,6 +28,7 @@ import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.sequence.SequenceGenerator;
 import io.mycat.proxy.session.AuthenticatorImpl;
 import io.mycat.replica.*;
+import io.mycat.util.NameMap;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -339,7 +341,12 @@ public class ConfigPrepareExecuter {
         MySQLManager mySQLManager;
         context.put(MySQLManager.class, mySQLManager = new MycatMySQLManagerImpl((MycatRouterConfig) context.get(MycatRouterConfig.class)));
 
-        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig()));
+        context.put(DrdsSqlCompiler.class, new DrdsSqlCompiler(new DrdsConfig(){
+            @Override
+            public NameMap<SchemaHandler> schemas() {
+                return ((MetadataManager)(context.get(MetadataManager.class))).getSchemaMap();
+            }
+        }));
         ServerConfig serverConfig = (ServerConfig) context.get(ServerConfig.class);
         LocalXaMemoryRepositoryImpl localXaMemoryRepository = LocalXaMemoryRepositoryImpl.createLocalXaMemoryRepository(() -> mySQLManager);
         context.put(XaLog.class, new XaLogImpl(localXaMemoryRepository, serverConfig.getMycatId(), Objects.requireNonNull(mySQLManager)));
