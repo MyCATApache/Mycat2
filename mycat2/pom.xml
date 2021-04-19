@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-        <version>1.17-release</version>
+        <version>1.18-dev</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -59,14 +59,14 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>proxy</artifactId>
-            <version>1.17-release</version>
+            <version>1.18-dev</version>
             <exclusions>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-            <version>1.17-release</version>
+            <version>1.18-dev</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j</artifactId>
@@ -85,7 +85,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>
-            <version>1.17-release</version>
+            <version>1.18-dev</version>
             <exclusions>
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
@@ -115,7 +115,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>hbt</artifactId>
-            <version>1.17-release</version>
+            <version>1.18-dev</version>
             <exclusions>
                 <exclusion>
                     <artifactId>commons-logging</artifactId>
@@ -162,7 +162,7 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>va</artifactId>
-            <version>1.17-release</version>
+            <version>1.18-dev</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.vertx/vertx-core -->
         <dependency>
