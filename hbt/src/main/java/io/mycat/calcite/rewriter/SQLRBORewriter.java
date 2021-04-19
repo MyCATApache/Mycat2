@@ -35,7 +35,6 @@ import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
@@ -49,8 +48,6 @@ import org.apache.calcite.util.mapping.IntPair;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
-
-import static org.apache.calcite.rel.rules.CoreRules.*;
 
 
 public class SQLRBORewriter extends RelShuttleImpl {
@@ -670,7 +667,7 @@ public class SQLRBORewriter extends RelShuttleImpl {
             List<IntPair> pairs = joinInfo.pairs();
             if (pairs.isEmpty()) return Optional.empty();
 
-            RexNode conditions = left.getConditions().orElse(right.getConditions().orElse(null));
+            RexNode conditions = left.getCondition().orElse(right.getCondition().orElse(null));
 
             ColumnRefResolver leftColumnMapping = new ColumnRefResolver();
             ColumnRefResolver rightColumnMapping = new ColumnRefResolver();

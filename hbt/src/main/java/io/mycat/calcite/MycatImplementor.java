@@ -41,46 +41,28 @@ import java.util.Map;
  **/
 public class MycatImplementor extends RelToSqlConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatImplementor.class);
-    private final List<Object> params;
-    private final Map<String, DataNode> each;
 
+    public MycatImplementor(SqlDialect dialect) {
+        super(dialect);
+    }
     @Override
     public Result visit(TableScan e) {
         try {
             MycatLogicTable logicTable = e.getTable().unwrap(MycatLogicTable.class);
-            DataNode backendTableInfo = null;
-            if (logicTable != null && each != null) {
-                TableHandler tableHandler = logicTable.logicTable();
-                backendTableInfo = each.get(tableHandler.getUniqueName());
-            } else {
-                MycatPhysicalTable physicalTable = e.getTable().unwrap(MycatPhysicalTable.class);
-                if (physicalTable != null) {
-                    backendTableInfo = physicalTable.getDataNode();
-                }
-            }
-            if (backendTableInfo != null) {
-                SqlIdentifier identifier;
-                if (backendTableInfo.getSchema() == null) {
-                    identifier = new SqlIdentifier(Collections.singletonList(backendTableInfo.getTable()), SqlParserPos.ZERO);
-                } else {
-                    identifier = new SqlIdentifier(Arrays.asList(backendTableInfo.getSchema(), backendTableInfo.getTable()), SqlParserPos.ZERO);
-                }
-                return result(identifier, ImmutableList.of(Clause.FROM), e, null);
+            if (logicTable!=null){
+                TableParamSqlNode tableParamSqlNode = new TableParamSqlNode(ImmutableList.of(logicTable.logicTable().getUniqueName()));
+                return result(tableParamSqlNode, ImmutableList.of(Clause.FROM), e, null);
             }
             return super.visit(e);
-
         } catch (Throwable e1) {
             LOGGER.error("", e1);
             return null;
         }
-
     }
 
-    public MycatImplementor(SqlDialect dialect, List<Object> params, Map<String, DataNode> each) {
-        super(dialect);
-        this.params = params;
-        this.each = each;
-    }
+//    public MycatImplementor(SqlDialect dialect) {
+//        this(dialect);
+//    }
 
 
     public Result implement(RelNode node) {
@@ -128,39 +110,40 @@ public class MycatImplementor extends RelToSqlConverter {
         return builder;
     }
 
-    @Override
-    public Result visit(Sort e) {
-        RexNode fetch = e.fetch;
-        if (fetch != null && fetch.getKind() == SqlKind.PLUS) {
-            RexCall fetch1 = (RexCall) fetch;
-            if (!params.isEmpty()) {
-                List<RexNode> operands = fetch1.getOperands();
-                RexNode offsetRexNode = operands.get(0);
-                RexNode limitRexNode = operands.get(1);
-                if (offsetRexNode instanceof RexDynamicParam && limitRexNode instanceof RexDynamicParam) {
-                    RexDynamicParam left = (RexDynamicParam) operands.get(0);
-                    RexDynamicParam right = (RexDynamicParam) operands.get(1);
-                    Number first = (Number) params.get(left.getIndex());
-                    Number second = (Number) params.get(right.getIndex());
-                    e = computeSortFetch(e, first, second);
-                } else if (offsetRexNode instanceof RexLiteral && limitRexNode instanceof RexLiteral) {
-                    e = computeSortFetch(e, ((RexLiteral) offsetRexNode).getValueAs(Long.class), ((RexLiteral) limitRexNode).getValueAs(Long.class));
-                }
-            } else {
-                List<RexNode> operands = fetch1.getOperands();
-                RexLiteral offsetRexNode = (RexLiteral) operands.get(0);
-                RexLiteral limitRexNode = (RexLiteral) operands.get(1);
-                e = computeSortFetch(e, ((Number) offsetRexNode.getValue()).longValue(), ((Number) limitRexNode.getValue()).longValue());
-            }
-
-        }
-        return super.visit(e);
-    }
-
     private Sort computeSortFetch(Sort e, Number first, Number second) {
         RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
         e = e.copy(e.getTraitSet(), e.getInput(), e.getCollation(), e.offset, rexBuilder.makeExactLiteral(
                 BigDecimal.valueOf(first.longValue() + second.longValue())));
         return e;
     }
+
+//    @Override
+//    public Result visit(Sort e) {
+//        RexNode fetch = e.fetch;
+//        if (fetch != null && fetch.getKind() == SqlKind.PLUS) {
+//
+//            RexCall fetch1 = (RexCall) fetch;
+//            if (params!=null&&!params.isEmpty()) {
+//                List<RexNode> operands = fetch1.getOperands();
+//                RexNode offsetRexNode = operands.get(0);
+//                RexNode limitRexNode = operands.get(1);
+//                if (offsetRexNode instanceof RexDynamicParam && limitRexNode instanceof RexDynamicParam) {
+//                    RexDynamicParam left = (RexDynamicParam) operands.get(0);
+//                    RexDynamicParam right = (RexDynamicParam) operands.get(1);
+//                    Number first = (Number) params.get(left.getIndex());
+//                    Number second = (Number) params.get(right.getIndex());
+//                    e = computeSortFetch(e, first, second);
+//                } else if (offsetRexNode instanceof RexLiteral && limitRexNode instanceof RexLiteral) {
+//                    e = computeSortFetch(e, ((RexLiteral) offsetRexNode).getValueAs(Long.class), ((RexLiteral) limitRexNode).getValueAs(Long.class));
+//                }
+//            } else {
+//                List<RexNode> operands = fetch1.getOperands();
+//                RexLiteral offsetRexNode = (RexLiteral) operands.get(0);
+//                RexLiteral limitRexNode = (RexLiteral) operands.get(1);
+//                e = computeSortFetch(e, ((Number) offsetRexNode.getValue()).longValue(), ((Number) limitRexNode.getValue()).longValue());
+//            }
+//
+//        }
+//        return super.visit(e);
+//    }
 }

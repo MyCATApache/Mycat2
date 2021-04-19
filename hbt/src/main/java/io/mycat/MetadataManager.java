@@ -53,6 +53,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -457,6 +458,12 @@ public class MetadataManager implements MysqlVariableService {
                                   ShardingTableConfig tableConfigEntry,
                                   String prototypeServer,
                                   List<DataNode> backends) {
+        ShardingTable shardingTable = createShardingTable(schemaName, orignalTableName, tableConfigEntry, prototypeServer, backends);
+        addLogicTable(shardingTable);
+    }
+
+    @NotNull
+    public  ShardingTable createShardingTable(String schemaName, String orignalTableName, ShardingTableConfig tableConfigEntry, String prototypeServer, List<DataNode> backends) throws Exception {
         ShardingFuntion function = tableConfigEntry.getFunction();
         if (function != null) {
             if (function.getClazz() == null) {
@@ -475,18 +482,16 @@ public class MetadataManager implements MysqlVariableService {
         String createTableSQL = Optional.ofNullable(tableConfigEntry.getCreateTableSQL()).orElseGet(() -> getCreateTableSQLByJDBC(schemaName, orignalTableName, backends));
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(prototypeServer, schemaName, orignalTableName, createTableSQL, backends);
         Map<String, IndexInfo> indexInfos = getIndexInfo(createTableSQL, schemaName, columns);
-
         //////////////////////////////////////////////
         String s = schemaName + "_" + orignalTableName;
         Supplier<Number> sequence = sequenceGenerator.getSequence(s);
         ShardingTable shardingTable = LogicTable.createShardingTable(schemaName, orignalTableName,
                 backends, columns, null, indexInfos, createTableSQL);
         shardingTable.setShardingFuntion(PartitionRuleFunctionManager.getRuleAlgorithm(shardingTable, tableConfigEntry.getFunction()));
-        addLogicTable(shardingTable);
-
         for (SimpleColumnInfo column : columns) {
             column.setShardingKey(shardingTable.function().isShardingKey(column.getColumnName()));
         }
+        return shardingTable;
     }
 
     private synchronized void addLogicTable(TableHandler logicTable) {

@@ -15,6 +15,7 @@
 
 package io.mycat.beans.mycat;
 
+import java.io.Serializable;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.util.*;
@@ -24,7 +25,7 @@ import java.util.*;
  * date 2020-01-09 23:18
  * column information,like a jdbc
  **/
-public interface MycatRowMetaData {
+public interface MycatRowMetaData extends Serializable {
 
     int getColumnCount();
 
@@ -103,4 +104,8 @@ public interface MycatRowMetaData {
         }
         return fields;
     }
+
+   public default String toJson(){
+        return null;
+   }
 }

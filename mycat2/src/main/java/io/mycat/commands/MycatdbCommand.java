@@ -178,6 +178,7 @@ public enum MycatdbCommand {
     }
 
     public static Future<Void> execute(MycatDataContext dataContext, Response receiver, SQLStatement sqlStatement) {
+        sqlStatement.setAfterSemi(false);//remove semi
         boolean existSqlResultSetService = MetaClusterCurrent.exist(SqlResultSetService.class);
         //////////////////////////////////apply transaction///////////////////////////////////
         TransactionSession transactionSession = dataContext.getTransactionSession();

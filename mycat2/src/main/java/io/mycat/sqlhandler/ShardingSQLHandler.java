@@ -16,7 +16,7 @@ package io.mycat.sqlhandler;
 
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import io.mycat.*;
-import io.mycat.calcite.physical.MycatCalc;
+import io.mycat.calcite.DrdsRunnerHelper;
 import io.mycat.util.Pair;
 import io.vertx.core.Future;
 import org.slf4j.Logger;
@@ -32,8 +32,7 @@ public class ShardingSQLHandler extends AbstractSQLHandler<SQLSelectStatement> {
                 Pair<String, String> plan = hackRouter.getPlan();
                 return response.proxySelect(plan.getKey(),plan.getValue());
             } else {
-                DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                return drdsRunner.runOnDrds(dataContext, request.getAst(), response);
+               return DrdsRunnerHelper.runOnDrds(dataContext,request.getAst(),response);
             }
         }catch (Throwable throwable){
             LOGGER.error(request.getAst().toString(),throwable);

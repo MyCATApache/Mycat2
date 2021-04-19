@@ -5,9 +5,12 @@ import com.alibaba.druid.sql.ast.SQLLimit;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLExprUtils;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.expr.*;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlFlushStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.druid.sql.visitor.VisitorFeature;
@@ -19,6 +22,7 @@ import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import lombok.SneakyThrows;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +37,13 @@ import java.util.stream.Collectors;
 public class MycatPreparedStatementUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatPreparedStatementUtil.class);
 
-    public static void main(String[] args) {
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("INSERT INTO `sharding` (`user_id`, `user_name`) VALUES \t('123', '323'),  \t('223', '323')");
-        StringBuilder sb = new StringBuilder();
-        ArrayList<Object> objects = new ArrayList<>();
-        outputToParameterized(sqlStatement, sb, new ArrayList<>(), objects);
-        System.out.println("objects = " + objects);
-    }
+//    public static void main(String[] args) {
+//        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement("INSERT INTO `sharding` (`user_id`, `user_name`) VALUES \t('123', '323'),  \t('223', '323')");
+//        StringBuilder sb = new StringBuilder();
+//        ArrayList<Object> objects = new ArrayList<>();
+//        outputToParameterized(sqlStatement, sb, new ArrayList<>(), objects);
+//        System.out.println("objects = " + objects);
+//    }
 
     /**
      * 将参数改为占位符(?), 同时将占位符替换过的参数, 添加到outputParameters数组中.
@@ -50,32 +54,92 @@ public class MycatPreparedStatementUtil {
      * @param inputParameters  输入参数
      * @param outputParameters 输出被参数化的参数
      */
-    public static void outputToParameterized(SQLStatement sqlStatement, StringBuilder sb, List<Object> inputParameters, List<Object> outputParameters) {
+    public static void outputToParameterized(SQLStatement sqlStatement,
+                                             String defaultSchema,
+                                             StringBuilder sb,
+                                             List<Object> inputParameters,
+                                             List<Object> outputParameters,
+                                             MutableBoolean complex) {
         MySqlExportParameterVisitor parameterVisitor = new MySqlExportParameterVisitor(outputParameters, sb, true) {
+            @Override
+            public boolean visit(SQLExprTableSource x) {
+                if (x.getTableName()!=null){
+                    if(x.getSchema()==null){
+                        x.setSchema(defaultSchema);
+                    }
+                }
+                return super.visit(x);
+            }
 
             @Override
-            public boolean visit(SQLOrderBy x) {
-                try {
-                    this.parameterized = false;
-                    return super.visit(x);
-                } finally {
-                    this.parameterized = true;
-                }
+            public boolean visit(SQLInSubQueryExpr x) {
+                complex.setValue(true);
+                return super.visit(x);
+            }
+
+            @Override
+            public boolean visit(SQLJoinTableSource x) {
+                complex.setValue(true);
+                return super.visit(x);
+            }
+
+            @Override
+            public boolean visit(SQLSelectGroupByClause x) {
+                complex.setValue(true);
+                return super.visit(x);
             }
 
             @Override
             public boolean visit(SQLLimit x) {
-                try {
-                    this.parameterized = false;
-                    return super.visit(x);
-                } finally {
-                    this.parameterized = true;
-                }
+                complex.setValue(true);
+                return super.visit(x);
             }
+
+            @Override
+            public boolean visit(SQLOrderBy x) {
+                complex.setValue(true);
+                return super.visit(x);
+            }
+
+            @Override
+            public boolean visit(SQLAggregateExpr x) {
+                complex.setValue(true);
+                return super.visit(x);
+            }
+//            @Override
+//            public boolean visit(SQLOrderBy x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
+//
+//            @Override
+//            public boolean visit(SQLLimit x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
+//
+//
+//            @Override
+//            public boolean visit(SQLSelectItem x) {
+//                try {
+//                    this.parameterized = false;
+//                    return super.visit(x);
+//                } finally {
+//                    this.parameterized = true;
+//                }
+//            }
 
 
             @Override
-            public boolean visit(SQLSelectItem x) {
+            public boolean visit(SQLIntervalExpr x) {
                 try {
                     this.parameterized = false;
                     return super.visit(x);

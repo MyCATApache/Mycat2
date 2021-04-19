@@ -15,23 +15,19 @@
 package io.mycat;
 
 import io.mycat.beans.mysql.MySQLVersion;
-import io.mycat.calcite.spm.PlanCache;
-import io.mycat.calcite.spm.PlanCacheImpl;
-import io.mycat.commands.MycatdbCommand;
 import io.mycat.config.*;
 import io.mycat.connectionschedule.Scheduler;
 import io.mycat.exporter.PrometheusExporter;
 import io.mycat.gsi.GSIService;
 import io.mycat.gsi.mapdb.MapDBGSIService;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.proxy.handler.front.SocketAddressUtil;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.vertx.VertxMycatServer;
-import io.netty.util.internal.SocketUtils;
 import io.vertx.core.*;
 import lombok.SneakyThrows;
 import org.apache.calcite.util.RxBuiltInMethod;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.groovy.util.Maps;
 import org.apache.zookeeper.client.ConnectStringParser;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -39,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -49,8 +44,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -98,6 +91,7 @@ public class MycatCore {
         System.out.println("path:" + this.baseDirectory);
         ServerConfiguration serverConfiguration = new ServerConfigurationImpl(MycatCore.class, path);
         MycatServerConfig serverConfig = serverConfiguration.serverConfig();
+        MetaClusterCurrent.register(Maps.of(MycatServerConfig.class,serverConfig,serverConfig.getServer().getClass(),serverConfig.getServer()));
         MySQLVersion.setServerVersion(serverConfig.getServer().getServerVersion());
         String datasourceProvider = Optional.ofNullable(serverConfig.getDatasourceProvider()).orElse(io.mycat.datasource.jdbc.DruidDatasourceProvider.class.getCanonicalName());
         ThreadPoolExecutorConfig workerPool = serverConfig.getServer().getWorkerPool();
@@ -115,7 +109,7 @@ public class MycatCore {
         Scheduler scheduler = new Scheduler(TimeUnit.valueOf(workerPool.getTimeUnit()).toMillis(workerPool.getTaskTimeout()));
         Thread thread = new Thread(scheduler, "mycat connection scheduler");
         thread.start();
-        context.put(PlanCache.class,new PlanCacheImpl());
+
         context.put(Scheduler.class, scheduler);
         context.put(serverConfig.getServer().getClass(), serverConfig.getServer());
         context.put(serverConfiguration.getClass(), serverConfiguration);

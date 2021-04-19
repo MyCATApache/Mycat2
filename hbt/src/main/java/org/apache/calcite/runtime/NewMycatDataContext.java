@@ -9,16 +9,16 @@ import java.util.List;
 
 public interface NewMycatDataContext extends DataContext {
 
-    Enumerable<Object[]> getEnumerable(org.apache.calcite.rel.RelNode node);
+    Enumerable<Object[]> getEnumerable(String node);
 
-    Enumerable<Object[]> getEnumerable(org.apache.calcite.rel.RelNode node,
+    Enumerable<Object[]> getEnumerable(String node,
                                        org.apache.calcite.linq4j.function.Function1 function1,
                                        java.util.Comparator comparator, int offset, int fetch);
 
-     Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode node);
+     Observable<Object[]> getObservable(String node);
 
 
-     Observable<Object[]> getObservable(org.apache.calcite.rel.RelNode relNode,
+     Observable<Object[]> getObservable(String relNode,
                                                org.apache.calcite.linq4j.function.Function1 function1,
                                                java.util.Comparator comparator, int offset, int fetch);
 

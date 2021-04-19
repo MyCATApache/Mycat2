@@ -19,97 +19,50 @@ package io.mycat;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import io.mycat.beans.mysql.MySQLType;
+import io.mycat.calcite.spm.Constraint;
+import io.mycat.calcite.spm.Plan;
 import lombok.Data;
 import lombok.ToString;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.groovy.util.Maps;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 
 @Data
 @ToString
 public class DrdsSql {
-    private SQLStatement sqlStatement;
-    private final String parameterizedString;
-    private final List<Object> params;
-    private RelNode relNode;
-    private List<String> aliasList;
-    private final boolean forUpdate;
+    private String parameterizedSql;
+    private Plan plan;
+    private final List<SqlTypeName> typeNames;
+    private final boolean complex;
 
-    public DrdsSql(SQLStatement sqlStatement, String parameterizedString, List<Object> params) {
-        this.sqlStatement = sqlStatement;
-        this.parameterizedString = parameterizedString;
-        this.params = Objects.requireNonNull(params);
+    public DrdsSql(String parameterizedSqlStatement,boolean complex,List<SqlTypeName> typeNames) {
+        this.parameterizedSql = parameterizedSqlStatement;
+        this.typeNames = typeNames;
+        this.complex = complex;
+    }
+
+    public Constraint constraint(){
+        return new Constraint(parameterizedSql,typeNames);
+    }
+
+    public static boolean isForUpdate(String sqlStatement) {
+        return isForUpdate(SQLUtils.parseSingleMysqlStatement(sqlStatement));
+    }
+
+    public static boolean isForUpdate(SQLStatement sqlStatement) {
+        final boolean forUpdate;
         if (sqlStatement instanceof SQLSelectStatement) {
             forUpdate = ((SQLSelectStatement) sqlStatement).getSelect().getFirstQueryBlock().isForUpdate();
         } else {
             forUpdate = false;
         }
+        return forUpdate;
     }
 
-    public List<SqlTypeName> getTypes() {
-        if (params == null || params.isEmpty()) return Collections.emptyList();
-        if (params.get(0) instanceof List) {
-            return getSqlTypeNames((List) params.get(0));
-        } else {
-            return getSqlTypeNames(params);
-        }
-    }
-
-    public static List<SqlTypeName> getSqlTypeNames(List<Object> params) {
-        ArrayList<SqlTypeName> list = new ArrayList<>();
-        for (Object param : params) {
-            if (param == null) {
-                list.add(SqlTypeName.NULL);
-            } else {
-                Class<?> aClass = param.getClass();
-                SqlTypeName sqlTypeName = null;
-                MySQLType[] mySQLTypes = MySQLType.values();
-                for (MySQLType value : mySQLTypes) {
-                    if (value.getJavaClass() == aClass) {
-                        sqlTypeName = (SqlTypeName.getNameForJdbcType(value.getJdbcType()));
-                        break;
-                    }
-                    if (Integer.class == aClass) {
-                        sqlTypeName = SqlTypeName.INTEGER;
-                        break;
-                    }
-                    if (byte[].class == aClass) {
-                        sqlTypeName = SqlTypeName.BINARY;
-                        break;
-                    }
-                }
-                list.add(Objects.requireNonNull(sqlTypeName, () -> "unknown type :" + param.getClass()));
-            }
-        }
-        return list;
-    }
-
-    public static DrdsSql of(
-            SQLStatement sqlStatement,
-            String parameterizedString,
-            List<Object> params
-    ) {
-        return new DrdsSql(sqlStatement, parameterizedString, params);
-    }
-
-    public static DrdsSql of(
-            String parameterizedString,
-            List<Object> params
-    ) {
-        return of(null, parameterizedString, params);
-    }
-
-    public <T extends SQLStatement> T getSqlStatement() {
-        return (T) (sqlStatement == null ? sqlStatement = SQLUtils.parseSingleMysqlStatement(parameterizedString) : sqlStatement);
-    }
-
-    public void setAliasList(List<String> aliasList) {
-        this.aliasList = aliasList;
+    public <T extends SQLStatement> T getParameterizedStatement() {
+        return (T) SQLUtils.parseSingleMysqlStatement(parameterizedSql);
     }
 }

@@ -14,9 +14,6 @@
  */
 package io.mycat.calcite.rewriter;
 
-import io.mycat.calcite.MycatRel;
-import io.mycat.calcite.spm.PlanCache;
-import io.mycat.calcite.spm.PlanImpl;
 import lombok.Getter;
 
 @Getter

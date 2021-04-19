@@ -11,24 +11,16 @@ import java.util.concurrent.*;
  * @author wangzihaogithub 2021-02-25
  */
 public class ReadWriteThreadPool {
-    private final ThreadPoolExecutor readThreadPool;
-    private final ThreadPoolExecutor writeThreadPool;
+    private final ExecutorService readThreadPool;
+    private final ExecutorService writeThreadPool;
     private int outOfThreadsBlockTimeoutMs;
 
     public ReadWriteThreadPool(String name, int maxReadThreads, int maxWriteThreads, int outOfThreadsBlockTimeoutMs) {
         long keepAliveTime = 60L;
         this.outOfThreadsBlockTimeoutMs = outOfThreadsBlockTimeoutMs;
         RejectedExecutionHandler handler = new BlockRejectedExecutionHandler();
-        this.readThreadPool = new ThreadPoolExecutor(readCoreSize(maxReadThreads), maxReadThreads,
-                keepAliveTime, TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                new NameableThreadFactory(name + "-read", false),
-                handler);
-        this.writeThreadPool = new ThreadPoolExecutor(writeCoreSize(maxWriteThreads), maxWriteThreads,
-                keepAliveTime, TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                new NameableThreadFactory(name + "-write", false),
-                handler);
+        this.readThreadPool = Executors.newCachedThreadPool();
+        this.writeThreadPool = this.readThreadPool;
     }
 
     public void execute(boolean read, Runnable runnable) throws RejectedExecutionException {

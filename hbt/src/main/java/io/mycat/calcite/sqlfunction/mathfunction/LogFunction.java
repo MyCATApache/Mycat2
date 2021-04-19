@@ -27,7 +27,7 @@ public class LogFunction extends MycatSqlDefinedFunction {
     public static LogFunction INSTANCE = new LogFunction();
 
     public LogFunction() {
-        super("Log", ReturnTypes.DOUBLE, InferTypes.FIRST_KNOWN, OperandTypes.ANY,
+        super("Log", ReturnTypes.DOUBLE, InferTypes.FIRST_KNOWN, OperandTypes.NUMERIC,
                 MycatScalarFunction.create(LogFunction.class, "log", 1), SqlFunctionCategory.SYSTEM);
     }
 

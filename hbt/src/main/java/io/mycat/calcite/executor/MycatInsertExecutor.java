@@ -16,6 +16,7 @@ import com.alibaba.druid.sql.visitor.MycatSQLEvalVisitorUtils;
 import io.mycat.*;
 import io.mycat.calcite.ExplainWriter;
 import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.physical.MycatRouteInsertCore;
 import io.mycat.gsi.GSIService;
 import io.mycat.router.CustomRuleFunction;
 import io.mycat.router.ShardingTableHandler;
@@ -24,7 +25,6 @@ import io.mycat.util.Pair;
 import io.mycat.util.SQL;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,12 +112,13 @@ public class MycatInsertExecutor {
 
     @SneakyThrows
     private Map<SQL, Group> runNormalParams() {
-        MySqlInsertStatement mySqlInsertStatement = mycatInsertRel.getMySqlInsertStatement();
-        ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
+        MycatRouteInsertCore mycatRouteInsertCore = mycatInsertRel.getMycatRouteInsertCore();
+        MySqlInsertStatement mySqlInsertStatement = mycatRouteInsertCore.getMySqlInsertStatement();
+        ShardingTableHandler logicTable = mycatRouteInsertCore.logicTable();
         CustomRuleFunction function = logicTable.function();
-        int finalAutoIncrementIndex = mycatInsertRel.getFinalAutoIncrementIndex();
-        List<Integer> shardingKeys = mycatInsertRel.getShardingKeys();
-        String[] columnNames = mycatInsertRel.getColumnNames();
+        int finalAutoIncrementIndex = mycatRouteInsertCore.getFinalAutoIncrementIndex();
+        List<Integer> shardingKeys = mycatRouteInsertCore.getShardingKeys();
+        String[] columnNames = mycatRouteInsertCore.getColumnNames();
         Supplier<Number> stringSupplier = logicTable.nextSequence();
 
         Map<SQL, Group> group = new HashMap<>();
@@ -166,15 +167,16 @@ public class MycatInsertExecutor {
 
     @SneakyThrows
     private Map<SQL, Group> runMultiParams() {
-        ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
+        MycatRouteInsertCore mycatRouteInsertCore = mycatInsertRel.getMycatRouteInsertCore();
+        ShardingTableHandler logicTable = mycatRouteInsertCore.logicTable();
         CustomRuleFunction function = logicTable.function();
-        int finalAutoIncrementIndex = mycatInsertRel.getFinalAutoIncrementIndex();
-        List<Integer> shardingKeys = mycatInsertRel.getShardingKeys();
-        String[] columnNames = mycatInsertRel.getColumnNames();
+        int finalAutoIncrementIndex = mycatRouteInsertCore.getFinalAutoIncrementIndex();
+        List<Integer> shardingKeys = mycatRouteInsertCore.getShardingKeys();
+        String[] columnNames = mycatRouteInsertCore.getColumnNames();
         Supplier<Number> stringSupplier = logicTable.nextSequence();
         Map<SQL, Group> group = new HashMap<>();
         for (Object param : params) {
-            MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatInsertRel.getMySqlInsertStatement();
+            MySqlInsertStatement mySqlInsertStatement = (MySqlInsertStatement) mycatRouteInsertCore.getMySqlInsertStatement();
             List<Object> arg = (List<Object>) param;
             Number sequence = null;
             SQLInsertStatement.ValuesClause valuesClause = mySqlInsertStatement.getValues();
@@ -259,7 +261,8 @@ public class MycatInsertExecutor {
     }
 
     public void onInsertSuccess() {
-        ShardingTableHandler logicTable = mycatInsertRel.getLogicTable();
+        MycatRouteInsertCore mycatRouteInsertCore = mycatInsertRel.getMycatRouteInsertCore();
+        ShardingTableHandler logicTable = mycatRouteInsertCore.logicTable();
         if (!logicTable.canIndex()) {
             return;
         }
@@ -271,7 +274,7 @@ public class MycatInsertExecutor {
         TransactionSession transactionSession = mycatDataContext.getTransactionSession();
         String txId = transactionSession.getXid();
 
-        String[] columnNames = mycatInsertRel.getColumnNames();
+        String[] columnNames = mycatRouteInsertCore.getColumnNames();
         SimpleColumnInfo[] columns = new SimpleColumnInfo[columnNames.length];
         for (int i = 0; i < columnNames.length; i++) {
             columns[i] = logicTable.getColumnByName(columnNames[i]);

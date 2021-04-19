@@ -2,10 +2,14 @@ package org.apache.calcite.util;
 
 
 import hu.akarnokd.rxjava3.operators.Flowables;
+import io.mycat.serializable.MaterializedRecordSetFactory;
+import io.mycat.serializable.OffHeapObjectList;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Predicate1;
 
@@ -31,7 +35,7 @@ public class RxBuiltInMethodImpl {
     }
 
     public static Observable<Object[]> unionAll(Observable<Object[]> left, Observable<Object[]> right) {
-        return Observable.merge(left,right);
+        return Observable.merge(left, right);
     }
 
     public static Observable<Object[]> topN(Observable<Object[]> input, Comparator<Object[]> sortFunction, long skip, long limit) {
@@ -74,8 +78,44 @@ public class RxBuiltInMethodImpl {
     }
 
     public static Enumerable<Object[]> matierial(Enumerable<Object[]> input) {
-        return Linq4j.asEnumerable(input.toList());
+        return new AbstractEnumerable<Object[]>() {
+
+            @Override
+            public Enumerator<Object[]> enumerator() {
+                OffHeapObjectList recordSet = MaterializedRecordSetFactory.DEFAULT_FACTORY.createRecordSet();
+                Enumerator<Object[]> enumerator = input.enumerator();
+                while (enumerator.moveNext()) {
+                    recordSet.addObjects(enumerator.current());
+                }
+                recordSet.finish();
+                enumerator.close();
+                return new Enumerator<Object[]>() {
+                    Enumerator<Object[]> iterator = Linq4j.iterableEnumerator(recordSet);
+
+                    @Override
+                    public Object[] current() {
+                        return iterator.current();
+                    }
+
+                    @Override
+                    public boolean moveNext() {
+                        return iterator.moveNext();
+                    }
+
+                    @Override
+                    public void reset() {
+                        iterator = Linq4j.iterableEnumerator(recordSet);
+                    }
+
+                    @Override
+                    public void close() {
+                        recordSet.close();
+                    }
+                };
+            }
+        };
     }
+
 
     public static Observable<Object[]> asObservable(Object[][] input) {
         return Observable.fromArray(input);

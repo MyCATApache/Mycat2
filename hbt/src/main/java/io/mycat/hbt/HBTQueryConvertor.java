@@ -462,7 +462,7 @@ public class HBTQueryConvertor {
                     RelOptTableImpl.create(relBuilder.getRelOptSchema(),
                             unwrap.getRowType(),
                             mycatPhysicalTable,
-                            ImmutableList.of(dataNode.getTargetName(),dataNode.getSchema(), dataNode.getTable())),
+                            ImmutableList.of(dataNode.getSchema(), dataNode.getTable())),
                     ImmutableList.of()
             );
             count++;
@@ -695,8 +695,7 @@ public class HBTQueryConvertor {
     public RelNode makeTransientSQLScan(String targetName, RelNode input, boolean forUpdate) {
         RelDataType rowType = input.getRowType();
         SqlDialect sqlDialect = MycatCalciteSupport.INSTANCE.getSqlDialectByTargetName(targetName);
-        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSql(input, sqlDialect, forUpdate).getSql()
-        );
+        return makeBySql(rowType, targetName, MycatCalciteSupport.INSTANCE.convertToSqlTemplate(input, sqlDialect, forUpdate).toSqlString(sqlDialect).getSql());
     }
 
     /**

@@ -1,6 +1,6 @@
 package io.mycat.calcite.rewriter;
 
-import io.mycat.DrdsRunner;
+import io.mycat.DrdsSqlCompiler;
 import io.mycat.calcite.MycatCalciteSupport;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
@@ -584,7 +584,7 @@ public class ColumnMappingTest {
     }
 
     public static RelBuilder createRelBuilder() {
-        RelOptCluster relOptCluster = DrdsRunner.newCluster();
+        RelOptCluster relOptCluster = DrdsSqlCompiler.newCluster();
         return MycatCalciteSupport.relBuilderFactory.create(relOptCluster, null);
     }
 }

@@ -14,15 +14,19 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.vertx.VertxExecuter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.sqlclient.*;
+import jdk.nashorn.internal.runtime.logging.DebugLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MycatVertxPreparedStatement implements PreparedStatement {
     private final String sql;
     private final AbstractMySqlConnection abstractMySqlConnection;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MycatVertxPreparedStatement.class);
     public MycatVertxPreparedStatement(String sql,AbstractMySqlConnection abstractMySqlConnection) {
         this.sql = sql;
         this.abstractMySqlConnection = abstractMySqlConnection;
@@ -30,6 +34,9 @@ public class MycatVertxPreparedStatement implements PreparedStatement {
 
     @Override
     public PreparedQuery<RowSet<Row>> query() {
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug(sql);
+        }
         return abstractMySqlConnection.preparedQuery(sql);
     }
 

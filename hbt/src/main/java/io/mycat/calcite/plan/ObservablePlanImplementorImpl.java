@@ -15,7 +15,7 @@
 package io.mycat.calcite.plan;
 
 import cn.mycat.vertx.xa.XaSqlConnection;
-import io.mycat.AsyncMycatDataContextImplImpl;
+import io.mycat.AsyncMycatDataContextImpl;
 import io.mycat.MetaClusterCurrent;
 import io.mycat.MycatDataContext;
 import io.mycat.Response;
@@ -31,6 +31,7 @@ import io.mycat.vertx.VertxExecuter;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Future;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class ObservablePlanImplementorImpl implements PlanImplementor {
@@ -56,15 +58,15 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public Future<Void> execute(MycatUpdateRel mycatUpdateRel) {
-        Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel, params);
+    public Future<Void> executeUpdate(Plan mycatUpdateRel) {
+        Future<long[]> future = VertxExecuter.runMycatUpdateRel(xaSqlConnection, context, mycatUpdateRel.getUpdatePhysical(), params);
         return future.eventually(u->context.getTransactionSession().closeStatementState())
                 .flatMap(result-> response.sendOk(result[0], result[1]));
     }
 
     @Override
-    public Future<Void> execute(MycatInsertRel logical) {
-        Future<long[]> future = innerExecuteInsert(logical);
+    public Future<Void> executeInsert(Plan logical) {
+        Future<long[]> future = innerExecuteInsert(logical.getInsertPhysical());
         return future.eventually(u->context.getTransactionSession().closeStatementState())
                 .flatMap(result-> response.sendOk(result[0], result[1]));
     }
@@ -74,7 +76,7 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
     }
 
     @Override
-    public Future<Void> execute(Plan plan) {
+    public Future<Void> executeQuery(Plan plan) {
         Observable<MysqlPayloadObject> rowObservable = getMysqlPayloadObjectObservable(context,params,plan);
         return response.sendResultSet(rowObservable);
     }
@@ -86,12 +88,12 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
             CodeExecuterContext codeExecuterContext = plan.getCodeExecuterContext();
             ArrayBindable bindable = codeExecuterContext.getBindable();
             Scheduler scheduler = MetaClusterCurrent.wrapper(Scheduler.class);
-            Future<IdentityHashMap<RelNode, List<Observable<Object[]>>>> future = scheduler.schedule(context,params,plan.getCodeExecuterContext());
+            Future<Map<String, List<Observable<Object[]>>>> future = scheduler.schedule(context,params,plan.getCodeExecuterContext());
             future.onSuccess(relNodeListIdentityHashMap -> {
                                 try {
-                                    IdentityHashMap<RelNode, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
-                                    AsyncMycatDataContextImplImpl newMycatDataContext =
-                                            new AsyncMycatDataContextImplImpl(context, codeExecuterContext, (IdentityHashMap) map, params, plan.forUpdate());
+                                    Map<String, List<Observable<Object[]>>> map = relNodeListIdentityHashMap;
+                                    AsyncMycatDataContextImpl newMycatDataContext =
+                                            new AsyncMycatDataContextImpl(context, codeExecuterContext, map, params, plan.forUpdate());
                                     Object bindObservable;
                                     bindObservable = bindable.bindObservable(newMycatDataContext);
                                     Observable<Object[]> observable;
@@ -99,8 +101,16 @@ public class ObservablePlanImplementorImpl implements PlanImplementor {
                                         observable = (Observable) bindObservable;
                                     } else {
                                         Enumerable<Object[]> enumerable = (Enumerable) bindObservable;
-                                        List<Object[]> list = enumerable.toList();
-                                        observable = Observable.fromIterable(list);
+                                        observable = Observable.create(emitter1 -> {
+                                            try (Enumerator<Object[]> enumerator = enumerable.enumerator()) {
+                                                while (enumerator.moveNext()) {
+                                                    emitter1.onNext(enumerator.current());
+                                                }
+                                            } catch (Throwable throwable) {
+                                                emitter1.onError(throwable);
+                                            }
+                                            emitter1.onComplete();
+                                        });
                                     }
                                     observable.subscribe(objects -> emitter.onNext(new MysqlRow(objects)),
                                             throwable -> emitter.onError(throwable), () -> emitter.onComplete());

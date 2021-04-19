@@ -54,24 +54,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.sql.JoinConditionType;
-import org.apache.calcite.sql.JoinType;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlDelete;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlInsert;
-import org.apache.calcite.sql.SqlIntervalLiteral;
-import org.apache.calcite.sql.SqlJoin;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlMatchRecognize;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.SqlUpdate;
-import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlSingleValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -752,10 +735,27 @@ public class RelToSqlConverter extends SqlImplementor
    * The builder must have been created with OFFSET and FETCH clauses. */
   void offsetFetch(Sort e, Builder builder) {
     if (e.fetch != null) {
-      builder.setFetch(builder.context.toSql(null, e.fetch));
+      SqlNode sqlNode = builder.context.toSql(null, e.fetch);
+      if(sqlNode.getKind() == SqlKind.PLUS&&sqlNode instanceof SqlCall){
+        SqlCall call = (SqlCall) sqlNode;
+        if (call.getOperandList().stream().allMatch(i->i instanceof SqlDynamicParam)){
+          SqlDynamicParam offsetNode = (SqlDynamicParam)call.getOperandList().get(0);
+          SqlDynamicParam fetchNode = (SqlDynamicParam)call.getOperandList().get(1);
+          builder.setFetch(new SqlBasicCall(call.getOperator(),new SqlNode[]{
+                new SortSqlNode(  offsetNode.getIndex(),offsetNode.getParserPosition()),   new SortSqlNode(  fetchNode.getIndex(),fetchNode.getParserPosition())},
+                  sqlNode.getParserPosition()));
+        }
+      }else{
+        builder.setFetch(sqlNode);
+      }
     }
+
     if (e.offset != null) {
-      builder.setOffset(builder.context.toSql(null, e.offset));
+      SqlNode sqlNode = builder.context.toSql(null, e.offset);
+//      if (sqlNode instanceof SqlDynamicParam){
+//        sqlNode = new SortSqlNode(((SqlDynamicParam) sqlNode).getIndex(),sqlNode.getParserPosition());
+//      }
+      builder.setOffset(sqlNode);
     }
   }
 

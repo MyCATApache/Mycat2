@@ -61,6 +61,9 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
     }
 
     private RowSet<Row> innerExecute(Tuple tuple) throws SQLException {
+        if (LOGGER.isDebugEnabled()){
+            LOGGER.debug(sql);
+        }
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setParams(tuple, preparedStatement);
             if (!preparedStatement.execute()) {

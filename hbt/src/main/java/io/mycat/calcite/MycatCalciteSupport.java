@@ -14,7 +14,13 @@
  */
 package io.mycat.calcite;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import io.mycat.DataNode;
@@ -22,6 +28,7 @@ import io.mycat.MetaClusterCurrent;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.RowIteratorUtil;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.logical.SqlTemplate;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.sqlfunction.cmpfunction.StrictEqualFunction;
 import io.mycat.calcite.sqlfunction.datefunction.*;
@@ -62,7 +69,10 @@ import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.sql.type.*;
+import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
@@ -356,6 +366,8 @@ public enum MycatCalciteSupport implements Context {
                             TimestampFunction.INSTANCE,
                             Timestamp2Function.INSTANCE,
                             Timestamp3Function.INSTANCE,
+                            Timestamp4Function.INSTANCE,
+                            Timestamp5Function.INSTANCE,
                             TimestampComposeFunction.INSTANCE,
                             TimestampAddFunction.INSTANCE,
                             TimestampDiffFunction.INSTANCE,
@@ -435,6 +447,10 @@ public enum MycatCalciteSupport implements Context {
             public void lookupOperatorOverloads(SqlIdentifier opName, SqlFunctionCategory category, SqlSyntax syntax, List<SqlOperator> operatorList, SqlNameMatcher nameMatcher) {
                 Collection<SqlOperator> sqlOperator = map.get(opName.getSimple().toUpperCase());
                 if (sqlOperator != null) {
+//                    sqlOperator =  sqlOperator.stream() .filter(m-> {
+//                        boolean validCount = m.getOperandCountRange().isValidCount(operatorList.size());
+//                        return validCount;
+//                    }).collect(Collectors.toList());
                     operatorList.addAll(sqlOperator);
                     if (sqlOperator == ConvertFunction.INSTANCE) {//fix bug
                         // class org.apache.calcite.sql.fun.SqlConvertFunction: CONVERT is broken.
@@ -614,45 +630,62 @@ public enum MycatCalciteSupport implements Context {
         return calciteConnectionConfig;
     }
 
-    public SqlString convertToSql(RelNode input, SqlDialect dialect, boolean forUpdate) {
-        return convertToSql(input, dialect,Collections.emptyMap(), forUpdate, Collections.emptyList());
-    }
-
-    public SqlString convertToSql(RelNode input,
-                                  SqlDialect dialect,
-                                  Map<String, DataNode> map,
-                                  boolean forUpdate,
-                                  List<Object> params) {
-        MycatImplementor mycatImplementor = new MycatImplementor(dialect, params, map);
+    public SqlNode convertToSqlTemplate(RelNode input,
+                                        SqlDialect dialect,
+                                        boolean forUpdate) {
+        MycatImplementor mycatImplementor = new MycatImplementor(dialect);
         SqlImplementor.Result implement = mycatImplementor.implement(input);
         SqlNode sqlNode = implement.asStatement();
         if (forUpdate) {
             sqlNode = SqlForUpdate.OPERATOR.createCall(SqlParserPos.ZERO, sqlNode);
         }
+
+        return sqlNode;
+    }
+
+    public static SqlString toSqlString(SqlNode node, SqlDialect dialect) {
         final SqlWriterConfig config = SqlPrettyWriter.config().withDialect(dialect)
                 .withAlwaysUseParentheses(true)
                 .withSelectListItemsOnSeparateLines(false)
                 .withUpdateSetListNewline(false)
                 .withQuoteAllIdentifiers(false);//mysql fun name should not wrapper quote
-        SqlPrettyWriter writer = new SqlPrettyWriter(config) {
-            @Override
-            public void dynamicParam(int index) {
-                super.dynamicParam(index);
-            }
-
-            @Override
-            public void identifier(String name, boolean quoted) {
-                super.identifier(name, quoted);
-            }
-
-            @Override
-            public Frame startFunCall(String funName) {
-                return super.startFunCall(funName);
-            }
-        };
-        sqlNode.unparse(writer, 0, 0);
+        SqlPrettyWriter writer = new SqlPrettyWriter(config);
+        node.unparse(writer, 0, 0);
         return writer.toSqlString();
+    }
 
+    public SqlNode sqlTemplateApply(SqlNode sqlTemplate,List<Object> params, Map<String, DataNode> map) {
+        return sqlTemplate.accept(new SqlShuttle() {
+                                      @Override
+                                      public SqlNode visit(SqlIdentifier id) {
+                                          if (id instanceof TableParamSqlNode) {
+                                              DataNode dataNode = map.get(id.getSimple());
+                                              return new SqlIdentifier(ImmutableList.of(dataNode.getSchema(), dataNode.getTable()), SqlParserPos.ZERO);
+                                          }
+                                          return super.visit(id);
+                                      }
+
+                                      @Override
+                                      public SqlNode visit(SqlDynamicParam param) {
+                                          return super.visit(param);
+                                      }
+
+                                      @Override
+                                      public SqlNode visit(SqlCall call) {
+                                          if (call.getKind() == SqlKind.PLUS){
+                                             if (call.getOperandList().size()==2&&call.getOperandList().stream().allMatch(i->i instanceof SortSqlNode)){
+                                                 SortSqlNode offsetNode = (SortSqlNode)call.getOperandList().get(0);
+                                                 SortSqlNode fetchNode = (SortSqlNode)call.getOperandList().get(1);
+                                                 Number offset = (Number) params.get(offsetNode.getIndex());
+                                                 Number fetch = (Number) params.get(fetchNode.getIndex());
+                                                 return SqlLiteral.createExactNumeric(String.valueOf(offset.longValue()+fetch.longValue()),SqlParserPos.ZERO);
+                                             }
+                                          }
+                                          return super.visit(call);
+                                      }
+                                  }
+
+        );
     }
 
     public String convertToMycatRelNodeText(RelNode node) {

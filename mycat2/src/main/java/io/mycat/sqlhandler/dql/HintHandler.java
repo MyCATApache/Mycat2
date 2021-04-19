@@ -14,7 +14,8 @@ import io.mycat.*;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.beans.mysql.MySQLErrorCode;
-import io.mycat.calcite.physical.MycatInsertRel;
+import io.mycat.calcite.DrdsRunnerHelper;
+import io.mycat.calcite.plan.ObservablePlanImplementorImpl;
 import io.mycat.calcite.spm.Plan;
 import io.mycat.calcite.table.GlobalTable;
 import io.mycat.calcite.table.NormalTable;
@@ -36,6 +37,7 @@ import io.mycat.sqlhandler.AbstractSQLHandler;
 import io.mycat.sqlhandler.ConfigUpdater;
 import io.mycat.sqlhandler.SQLRequest;
 import io.mycat.sqlhandler.SqlHints;
+import io.mycat.sqlhandler.dml.UpdateSQLHandler;
 import io.mycat.sqlrecorder.SqlRecord;
 import io.mycat.sqlrecorder.SqlRecorderRuntime;
 import io.mycat.util.JsonUtil;
@@ -205,15 +207,15 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                         sqlInsertStatement.getValuesList().addAll(valuesList);
                                         return sqlInsertStatement;
                                     }).iterator();
-                            DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
+                            DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
                             XaSqlConnection transactionSession = (XaSqlConnection) dataContext.getTransactionSession();
                             Future<long[]> future = Future.succeededFuture(new long[]{0, 0});
                             while (iterator.hasNext()) {
                                 SQLInsertStatement statement = iterator.next();
-                                DrdsSql drdsSql = drdsRunner.preParse(statement);
-                                Plan plan = drdsRunner.getPlan(dataContext, drdsSql);
+                                DrdsSqlWithParams drdsSql = DrdsRunnerHelper.preParse(statement,dataContext.getDefaultSchema());
+                                Plan plan = UpdateSQLHandler.getPlan(drdsSql);
                                 future=  future.flatMap((l) -> VertxExecuter.runMycatInsertRel(transactionSession, dataContext,
-                                        (MycatInsertRel) plan.getPhysical(), drdsSql.getParams()));
+                                    ( plan.getInsertPhysical()), drdsSql.getParams()));
                             }
                             return VertxUtil.castPromise(future.flatMap(l -> response.sendOk(l[0], l[1])));
                         }
@@ -308,8 +310,11 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                     if ("run".equalsIgnoreCase(cmd)) {
                         Map<String, Object> map = JsonUtil.from(body, Map.class);
                         String hbt = Objects.toString(map.get("hbt"));
-                        DrdsRunner drdsRunner = MetaClusterCurrent.wrapper(DrdsRunner.class);
-                        return drdsRunner.runHbtOnDrds(dataContext, hbt, response);
+                        DrdsSqlCompiler drdsRunner = MetaClusterCurrent.wrapper(DrdsSqlCompiler.class);
+                        Plan plan = drdsRunner.doHbt(hbt);
+                        return new ObservablePlanImplementorImpl(
+                                (XaSqlConnection)dataContext.getTransactionSession(),
+                                dataContext, Collections.emptyList(), response).executeQuery(plan);
                     }
                     if ("createSqlCache".equalsIgnoreCase(cmd)) {
                         MycatRouterConfigOps ops = ConfigUpdater.getOps();

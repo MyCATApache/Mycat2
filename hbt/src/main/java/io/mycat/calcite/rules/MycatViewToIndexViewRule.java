@@ -31,12 +31,10 @@ import java.util.List;
  */
 public class MycatViewToIndexViewRule extends RelOptRule {
     private final OptimizationContext optimizationContext;
-    private final List<Object> params;
 
-    public MycatViewToIndexViewRule(OptimizationContext optimizationContext, List<Object> params) {
+    public MycatViewToIndexViewRule(OptimizationContext optimizationContext) {
         super(operand(MycatView.class, none()), "MycatFilterViewRule");
         this.optimizationContext = optimizationContext;
-        this.params = params;
     }
 
     @Override

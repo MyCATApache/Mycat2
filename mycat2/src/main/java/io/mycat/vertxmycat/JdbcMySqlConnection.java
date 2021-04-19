@@ -163,6 +163,9 @@ public class JdbcMySqlConnection extends AbstractMySqlConnection {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("MycatMySQLManager targetName:{} sql:{} rawConnection:{}", targetName, sql, rawConnection);
             }
+            if (LOGGER.isDebugEnabled()){
+                LOGGER.debug(sql);
+            }
             if (!statement.execute(sql, Statement.RETURN_GENERATED_KEYS)) {
                 VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
                 vertxRowSet.setAffectRow(statement.getUpdateCount());

@@ -14,15 +14,23 @@
  */
 package io.mycat.calcite.spm;
 
-import org.apache.calcite.sql.type.SqlTypeName;
+import io.mycat.DrdsSql;
+import io.mycat.calcite.CodeExecuterContext;
 
 import java.util.List;
 
-public interface PlanCache {
+public interface QueryPlanCache {
 
-    Plan getMinCostPlan(String sql, List<SqlTypeName> types);
+    public void init();
 
-    void put(String parameterizedString, List<SqlTypeName> types, Plan plan);
+    public void delete(List<String> uniqueTables);
+    public Baseline getBaseline(DrdsSql baseLineSql);
 
-    void clear();
+    public PlanResultSet saveBaselinePlan(boolean fix, boolean complex,Baseline baseline, BaselinePlan newBaselinePlan);
+
+    public List<CodeExecuterContext> getAcceptedMycatRelList(DrdsSql baselineSql);
+
+    public  PlanResultSet add(boolean fix, DrdsSql drdsSql);
+
+    public void clearCache();
 }

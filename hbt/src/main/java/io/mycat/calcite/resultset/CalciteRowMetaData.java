@@ -74,8 +74,8 @@ public class CalciteRowMetaData implements MycatRowMetaData {
 
     @Override
     public String getColumnName(int column) {
-        if (this.aliasList != null && this.aliasList.size() >= column) {
-            String columnName = this.aliasList.get(column - 1);
+        if (this.aliasList != null && this.aliasList.size() > column) {
+            String columnName = this.aliasList.get(column);
             if (columnName != null) {
                 return columnName;
             }
