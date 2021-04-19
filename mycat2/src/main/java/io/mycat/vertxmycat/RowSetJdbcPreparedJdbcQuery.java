@@ -14,12 +14,15 @@
  */
 package io.mycat.vertxmycat;
 
+import io.mycat.MetaClusterCurrent;
 import io.mycat.beans.mycat.JdbcRowMetaData;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.calcite.executor.MycatPreparedStatementUtil;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.impl.JDBCRow;
 import io.vertx.mysqlclient.impl.MySQLRowDesc;
 import io.vertx.mysqlclient.impl.codec.StreamMysqlCollector;
@@ -50,14 +53,12 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
     private String targetName;
     private final String sql;
     private final Connection connection;
-    private ReadWriteThreadPool threadPool;
     public static final Logger LOGGER = LoggerFactory.getLogger(AbstractMySqlConnectionImpl.class);
 
-    public RowSetJdbcPreparedJdbcQuery(String targetName, String sql, Connection connection, ReadWriteThreadPool threadPool) {
+    public RowSetJdbcPreparedJdbcQuery(String targetName, String sql, Connection connection) {
         this.targetName = targetName;
         this.sql = sql;
         this.connection = connection;
-        this.threadPool = threadPool;
     }
 
     private RowSet<Row> innerExecute(Tuple tuple) throws SQLException {
@@ -130,42 +131,47 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
 
     @Override
     public Future<RowSet<Row>> execute(Tuple tuple) {
-        return Future.future(promise -> threadPool.execute(true, () -> {
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        return vertx.executeBlocking(promise -> {
             try {
                 promise.complete(innerExecute(tuple));
             } catch (SQLException throwables) {
                 promise.tryFail(throwables);
             }
-        }));
+        });
     }
 
     @Override
     public Future<RowSet<Row>> executeBatch(List<Tuple> batch) {
-        return Future.future(promise -> threadPool.execute(true, () -> {
-            try {
-                PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                for (Tuple tuple : batch) {
-                    setParams(tuple, preparedStatement);
-                    preparedStatement.addBatch();
-                }
-                VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
-                vertxRowSet.setAffectRow(Arrays.stream(preparedStatement.executeBatch()).sum());
-                long lastInsertId = 0;
+        Vertx vertx = MetaClusterCurrent.wrapper(Vertx.class);
+        return vertx.executeBlocking(new Handler<Promise<RowSet<Row>>>() {
+            @Override
+            public void handle(Promise<RowSet<Row>> promise) {
                 try {
-                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                    while (generatedKeys.next()) {
-                        BigDecimal aLong = generatedKeys.getBigDecimal(1);
-                        lastInsertId = aLong.longValue();
+                    PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                    for (Tuple tuple : batch) {
+                        setParams(tuple, preparedStatement);
+                        preparedStatement.addBatch();
                     }
+                    VertxRowSetImpl vertxRowSet = new VertxRowSetImpl();
+                    vertxRowSet.setAffectRow(Arrays.stream(preparedStatement.executeBatch()).sum());
+                    long lastInsertId = 0;
+                    try {
+                        ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                        while (generatedKeys.next()) {
+                            BigDecimal aLong = generatedKeys.getBigDecimal(1);
+                            lastInsertId = aLong.longValue();
+                        }
+                    } catch (Throwable throwable) {
+                        LOGGER.error("", throwable);
+                    }
+                    vertxRowSet.setLastInsertId(lastInsertId);
+                    promise.tryComplete(vertxRowSet);
                 } catch (Throwable throwable) {
-                    LOGGER.error("", throwable);
+                    promise.tryFail(throwable);
                 }
-                vertxRowSet.setLastInsertId(lastInsertId);
-                promise.tryComplete(vertxRowSet);
-            } catch (Throwable throwable) {
-                promise.tryFail(throwable);
             }
-        }));
+        });
 
     }
 
@@ -176,7 +182,7 @@ public class RowSetJdbcPreparedJdbcQuery implements AbstractMySqlPreparedQuery<R
 
     @Override
     public <R> PreparedQuery<SqlResult<R>> collecting(Collector<Row, ?, R> collector) {
-        return new SqlResultCollectingPrepareJdbcQuery<R>(sql, connection, collector,threadPool);
+        return new SqlResultCollectingPrepareJdbcQuery<R>(sql, connection, collector);
     }
 
     @Override
