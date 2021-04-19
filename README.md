@@ -5,7 +5,7 @@ Distributed database based on MySQL.
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Main/badge.svg)
 ![](https://github.com/MyCATApache/Mycat2/workflows/Java%20CI%20-%20Mycat2%20Dev/badge.svg)
 
-[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-3-24)
+[v1.17-release](https://github.com/MyCATApache/Mycat2/releases/tag/v1.17-2021-4-13)
 
 [v1.18-dev]
 Development objectives:Improve performance
@@ -17,7 +17,7 @@ Development objectives:Improve performance
 
 ## Framework
 
-![](https://raw.githubusercontent.com/wiki/MyCATApache/Mycat2/img/stack.png)
+![](https://cdn.nlark.com/yuque/0/2021/png/658548/1615792485342-b0f62690-e0cf-4f4a-89b6-18e5e1487227.png)
 
 Currently, only mycat2 is supported on java8, and will be supported in other versions later.
 

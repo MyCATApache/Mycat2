@@ -34,6 +34,7 @@
       "maxPoolSize":1024,
       "taskTimeout":5,
       "timeUnit":"MINUTES"
-    }
+    },
+    "ignoreCast": true
   }
 }

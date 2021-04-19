@@ -113,7 +113,8 @@ public class UserCaseTest implements MycatTest {
 
     @Test
     public void case2() throws Exception {
-        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysqlConnection = getMySQLConnection(DB1)) {
             execute(mycatConnection, RESET_CONFIG);
 
             execute(mycatConnection, "DROP DATABASE db1");
@@ -141,14 +142,17 @@ public class UserCaseTest implements MycatTest {
             deleteData(mycatConnection, "db1", "user");
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
-            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
+            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");
+            Assert.assertEquals(right,maps);
+//            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
         }
     }
 
 
     @Test
     public void case3() throws Exception {
-        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT)) {
+        try (Connection mycatConnection = getMySQLConnection(DB_MYCAT);
+             Connection mysqlConnection = getMySQLConnection(DB1)) {
             execute(mycatConnection, RESET_CONFIG);
 
             execute(mycatConnection, "DROP DATABASE db1");
@@ -176,7 +180,8 @@ public class UserCaseTest implements MycatTest {
             deleteData(mycatConnection, "db1", "user");
             execute(mycatConnection, "insert into `user`(`id`,`name`,`is_enable`) values (1,'abc',1);");
             List<Map<String, Object>> maps = executeQuery(mycatConnection, "SELECT * FROM `user`;");
-            Assert.assertArrayEquals(new byte[]{1}, ((byte[]) maps.get(0).get("is_enable")));
+            List<Map<String, Object>> right = executeQuery(mysqlConnection, "SELECT * FROM db1.`user`;");
+            Assert.assertEquals(right,maps);
         }
     }
 }
