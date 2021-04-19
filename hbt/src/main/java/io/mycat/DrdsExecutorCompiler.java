@@ -8,7 +8,6 @@ import io.mycat.beans.mysql.MySQLType;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logical.MycatView;
 import io.mycat.calcite.logical.MycatViewDataNodeMapping;
-import io.mycat.calcite.logical.SqlTemplate;
 import io.mycat.calcite.physical.MycatInsertRel;
 import io.mycat.calcite.physical.MycatMergeSort;
 import io.mycat.calcite.physical.MycatUpdateRel;
