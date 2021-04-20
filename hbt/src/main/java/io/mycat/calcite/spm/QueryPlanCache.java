@@ -49,4 +49,6 @@ public interface QueryPlanCache {
     void deleteBaseline(long value);
 
     void deletePlan(long value);
+
+    public void saveBaselines();
 }

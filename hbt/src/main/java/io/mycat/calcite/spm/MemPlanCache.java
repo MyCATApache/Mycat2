@@ -225,4 +225,7 @@ public class MemPlanCache implements QueryPlanCache {
         persistor.deletePlan(value);
     }
 
+    public void saveBaselines() {
+        persistor.saveBaselines(map.values());
+    }
 }

@@ -519,6 +519,10 @@ public class HintHandler extends AbstractSQLHandler<MySqlHintStatement> {
                                 }
                                 return response.sendResultSet(() -> builder.build());
                             }
+                            case "persistAllBaselines":{
+                                queryPlanCache.saveBaselines();
+                                return response.sendOk();
+                            }
                             case "loadBaseline":{
                                 queryPlanCache.loadBaseline(value);
                                 return response.sendOk();
